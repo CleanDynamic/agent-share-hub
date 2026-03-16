@@ -59,32 +59,60 @@ export type Database = {
       ai_tools_registry: {
         Row: {
           approved_at: string | null
+          approved_by: string | null
+          category: string | null
           created_at: string
+          description: string | null
           id: string
+          is_official: boolean
+          logo_url: string | null
           name: string
           rejected_reason: string | null
+          slug: string | null
           status: string
           submitted_by: string | null
+          website_url: string | null
         }
         Insert: {
           approved_at?: string | null
+          approved_by?: string | null
+          category?: string | null
           created_at?: string
+          description?: string | null
           id?: string
+          is_official?: boolean
+          logo_url?: string | null
           name: string
           rejected_reason?: string | null
+          slug?: string | null
           status?: string
           submitted_by?: string | null
+          website_url?: string | null
         }
         Update: {
           approved_at?: string | null
+          approved_by?: string | null
+          category?: string | null
           created_at?: string
+          description?: string | null
           id?: string
+          is_official?: boolean
+          logo_url?: string | null
           name?: string
           rejected_reason?: string | null
+          slug?: string | null
           status?: string
           submitted_by?: string | null
+          website_url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_tools_registry_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_tools_registry_submitted_by_fkey"
             columns: ["submitted_by"]
