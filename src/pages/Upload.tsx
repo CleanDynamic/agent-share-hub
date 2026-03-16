@@ -104,7 +104,7 @@ function SuggestToolInline() {
 const Upload = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { data: AI_TOOLS = [] } = useApprovedTools();
+  const { data: AI_TOOLS } = useApprovedToolNames();
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
   const [submitting, setSubmitting] = useState(false);
