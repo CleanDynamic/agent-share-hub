@@ -142,7 +142,7 @@ const Home = () => {
   return (
     <div>
       {/* ── Hero ── */}
-      <section className="py-24 sm:py-32 px-6 text-center">
+      <section className="py-16 sm:py-24 lg:py-32 px-4 sm:px-6 text-center">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -152,15 +152,15 @@ const Home = () => {
           }}
           className="mx-auto max-w-3xl"
         >
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]">
             The AI Agent Tactics Forum
           </h1>
-          <p className="mt-5 text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+          <p className="mt-4 sm:mt-5 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
             Download. Use. Build. Works with ChatGPT, Claude, Gemini, and any AI.
           </p>
 
-          <div className="mt-8 flex items-center justify-center gap-3 flex-wrap">
-            <Button size="lg" asChild>
+          <div className="mt-6 sm:mt-8 flex flex-col xs:flex-row items-center justify-center gap-3">
+            <Button size="lg" className="w-full xs:w-auto min-h-[44px]" asChild>
               <Link to="/browse">
                 Browse Assistants <ArrowRight className="ml-1.5 h-4 w-4" />
               </Link>
@@ -168,7 +168,7 @@ const Home = () => {
             <Button
               size="lg"
               variant="outline"
-              className="border-secondary text-secondary hover:bg-secondary/10"
+              className="w-full xs:w-auto min-h-[44px] border-secondary text-secondary hover:bg-secondary/10"
               asChild
             >
               <Link to="/upload">Upload Your Setup</Link>
