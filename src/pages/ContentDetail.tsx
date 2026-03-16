@@ -480,6 +480,26 @@ const ContentDetail = () => {
           </div>
         )}
       </div>
+
+      {/* Guest ad modal */}
+      {item && (
+        <GuestDownloadModal
+          open={guestModalOpen}
+          onOpenChange={setGuestModalOpen}
+          contentId={item.id}
+          onDownload={doDownload}
+        />
+      )}
+
+      {/* Account gate modal */}
+      {item && (
+        <AccountGateModal
+          open={accountGateOpen}
+          onOpenChange={setAccountGateOpen}
+          contentId={item.id}
+          mode={accountGateMode}
+        />
+      )}
     </div>
   );
 };
