@@ -30,7 +30,7 @@ const CONTENT_TYPES = [
   "Agent Stack", "Model Config Guide", "Integration Guide", "Evaluation Framework", "Failure Library",
 ];
 const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
-const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance"];
+const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance", "Hobby", "Other"];
 const ACCEPTED_TYPES = [".txt", ".md", ".json", ".pdf"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
