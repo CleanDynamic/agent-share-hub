@@ -15,7 +15,11 @@ import { useAuth } from "@/contexts/AuthContext";
 
 function getNavLinks(isLoggedIn: boolean) {
   const links = [{ label: "Browse", to: "/browse" }];
-  if (isLoggedIn) links.push({ label: "Feed", to: "/feed" });
+  links.push({ label: "Recent", to: "/recent" });
+  if (isLoggedIn) {
+    links.push({ label: "For You", to: "/fyp" });
+    links.push({ label: "Feed", to: "/feed" });
+  }
   links.push({ label: "Upload", to: "/upload" });
   if (!isLoggedIn) links.push({ label: "About", to: "/about" });
   return links;
