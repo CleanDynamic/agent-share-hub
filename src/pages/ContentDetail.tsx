@@ -471,6 +471,10 @@ const ContentDetail = () => {
                   {subscriberUnlocked ? "Download" : label}
                 </Button>
               )}
+
+              {/* Bookmark button */}
+              <div className="flex justify-center">
+                <BookmarkButton contentId={item.id} />
               {isPaid && (
                 <p className="text-[11px] text-muted-foreground text-center">£{(item.price_gbp ?? 0).toFixed(2)} — one-time payment</p>
               )}
