@@ -88,6 +88,9 @@ export function ContentCard({
   price_gbp,
   file_url,
   creator_username,
+  avg_rating = 0,
+  rating_count = 0,
+  view_count = 0,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
