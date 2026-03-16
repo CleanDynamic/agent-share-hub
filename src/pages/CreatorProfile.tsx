@@ -20,6 +20,7 @@ const CreatorProfile = () => {
   const { username } = useParams<{ username: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+  const [subscribing, setSubscribing] = useState(false);
 
   // Fetch profile
   const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
@@ -84,17 +85,40 @@ const CreatorProfile = () => {
 
   const totalDownloads = contentItems?.reduce((sum, item) => sum + item.download_count, 0) ?? 0;
   const hasDonationContent = contentItems?.some((item) => item.donation_enabled) ?? false;
-  const hasSubscriptionContent = contentItems?.some((item) => item.monetisation_type === "subscription") ?? false;
+  const hasSubscriptionPriceId = !!(profile as any)?.subscription_price_id;
 
   // Enquiry modal state
   const [enquiryListing, setEnquiryListing] = useState<{ id: string; title: string } | null>(null);
   const [enquirySubmitting, setEnquirySubmitting] = useState(false);
 
-  // Tip success banner
+  // Banner states from URL params
   const tipSuccess = searchParams.get("tip") === "success";
-  if (tipSuccess) {
-    // Clear param once read
+  const subscribedSuccess = searchParams.get("subscribed") === "success";
+  if (tipSuccess || subscribedSuccess) {
     setTimeout(() => setSearchParams({}, { replace: true }), 0);
+  }
+
+  async function handleSubscribe() {
+    if (!profile) return;
+    setSubscribing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-subscription-session", {
+        body: {
+          creator_id: profile.id,
+          price_id: (profile as any).subscription_price_id,
+          success_url: `${window.location.origin}/creator/${profile.username}?subscribed=success`,
+          cancel_url: `${window.location.origin}/creator/${profile.username}`,
+        },
+      });
+      if (error || !data?.url) {
+        toast({ title: "Could not start subscription", description: "Please sign in and try again.", variant: "destructive" });
+      } else {
+        window.location.href = data.url;
+      }
+    } catch {
+      toast({ title: "Something went wrong", variant: "destructive" });
+    }
+    setSubscribing(false);
   }
 
   async function handleEnquiry(e: React.FormEvent<HTMLFormElement>) {
@@ -153,6 +177,14 @@ const CreatorProfile = () => {
           </div>
         )}
 
+        {/* Subscription success banner */}
+        {subscribedSuccess && (
+          <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+            <CheckCircle2 className="h-5 w-5 shrink-0" />
+            <p className="text-sm font-medium">You are now subscribed to {displayName}. Exclusive content unlocked.</p>
+          </div>
+        )}
+
         {/* Layout: header + sidebar */}
         <div className="flex flex-col lg:flex-row gap-10">
           {/* Main column */}
@@ -203,6 +235,7 @@ const CreatorProfile = () => {
                       download_count={item.download_count}
                       monetisation_type={item.monetisation_type}
                       price_gbp={item.price_gbp ?? undefined}
+                      creator_username={profile.username ?? undefined}
                     />
                   ))}
                 </div>
@@ -216,6 +249,27 @@ const CreatorProfile = () => {
 
           {/* Sidebar */}
           <div className="w-full lg:w-72 shrink-0 space-y-4">
+            {/* Subscribe */}
+            {hasSubscriptionPriceId && (
+              <div className="border border-border rounded-xl p-5 bg-card space-y-2">
+                <Button
+                  className="w-full bg-[#2EC4B6] hover:bg-[#2EC4B6]/90 text-white"
+                  onClick={handleSubscribe}
+                  disabled={subscribing}
+                >
+                  {subscribing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Users className="mr-2 h-4 w-4" />
+                  )}
+                  Subscribe to {displayName}
+                </Button>
+                <p className="text-[11px] text-muted-foreground text-center">
+                  {subCount ?? 0} subscriber{subCount !== 1 ? "s" : ""}
+                </p>
+              </div>
+            )}
+
             {/* Tip */}
             {hasDonationContent && (
               <div className="border border-border rounded-xl p-5 bg-card space-y-3">
@@ -226,24 +280,6 @@ const CreatorProfile = () => {
                   successUrl={`${window.location.origin}/creator/${profile.username}?tip=success`}
                   cancelUrl={`${window.location.origin}/creator/${profile.username}`}
                 />
-              </div>
-            )}
-
-            {/* Subscribe */}
-            {hasSubscriptionContent && (
-              <div className="border border-border rounded-xl p-5 bg-card space-y-2">
-                <Button
-                  className="w-full border-secondary text-secondary hover:bg-secondary/10"
-                  variant="outline"
-                  asChild
-                >
-                  <a href="https://placeholder-stripe-sub.example.com" target="_blank" rel="noopener noreferrer">
-                    <Users className="mr-2 h-4 w-4" /> Subscribe to {displayName}
-                  </a>
-                </Button>
-                <p className="text-[11px] text-muted-foreground text-center">
-                  {subCount ?? 0} subscriber{subCount !== 1 ? "s" : ""}
-                </p>
               </div>
             )}
 
