@@ -172,6 +172,42 @@ export type Database = {
           },
         ]
       }
+      comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "content_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_blocks: {
         Row: {
           block_type: string
@@ -225,10 +261,67 @@ export type Database = {
           },
         ]
       }
+      content_comments: {
+        Row: {
+          block_id: string | null
+          content_id: string
+          created_at: string
+          id: string
+          is_deleted: boolean
+          like_count: number
+          text: string
+          user_id: string
+        }
+        Insert: {
+          block_id?: string | null
+          content_id: string
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          like_count?: number
+          text: string
+          user_id: string
+        }
+        Update: {
+          block_id?: string | null
+          content_id?: string
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          like_count?: number
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_comments_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "content_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_comments_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_items: {
         Row: {
           ai_tools: string[] | null
           approved_at: string | null
+          avg_rating: number
+          comment_count: number
           content_type: string
           created_at: string
           creator_id: string
@@ -240,16 +333,20 @@ export type Database = {
           id: string
           monetisation_type: string
           price_gbp: number | null
+          rating_count: number
           star_rating: number
           status: string
           title: string
           use_cases: string[] | null
           use_instructions: string | null
+          view_count: number
           what_to_expect: string | null
         }
         Insert: {
           ai_tools?: string[] | null
           approved_at?: string | null
+          avg_rating?: number
+          comment_count?: number
           content_type: string
           created_at?: string
           creator_id: string
@@ -261,16 +358,20 @@ export type Database = {
           id?: string
           monetisation_type?: string
           price_gbp?: number | null
+          rating_count?: number
           star_rating?: number
           status?: string
           title: string
           use_cases?: string[] | null
           use_instructions?: string | null
+          view_count?: number
           what_to_expect?: string | null
         }
         Update: {
           ai_tools?: string[] | null
           approved_at?: string | null
+          avg_rating?: number
+          comment_count?: number
           content_type?: string
           created_at?: string
           creator_id?: string
@@ -282,17 +383,97 @@ export type Database = {
           id?: string
           monetisation_type?: string
           price_gbp?: number | null
+          rating_count?: number
           star_rating?: number
           status?: string
           title?: string
           use_cases?: string[] | null
           use_instructions?: string | null
+          view_count?: number
           what_to_expect?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "content_items_creator_id_fkey"
             columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_ratings: {
+        Row: {
+          content_id: string
+          created_at: string
+          id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          created_at?: string
+          id?: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_ratings_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_ratings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_views: {
+        Row: {
+          content_id: string
+          id: string
+          user_id: string | null
+          viewed_at: string
+        }
+        Insert: {
+          content_id: string
+          id?: string
+          user_id?: string | null
+          viewed_at?: string
+        }
+        Update: {
+          content_id?: string
+          id?: string
+          user_id?: string | null
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_views_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_views_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -651,6 +832,58 @@ export type Database = {
           {
             foreignKeyName: "subscriptions_subscriber_id_fkey"
             columns: ["subscriber_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_interactions: {
+        Row: {
+          content_id: string
+          created_at: string
+          id: string
+          interaction_meta: Json | null
+          interaction_type: string
+          project_id: string | null
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          created_at?: string
+          id?: string
+          interaction_meta?: Json | null
+          interaction_type: string
+          project_id?: string | null
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          created_at?: string
+          id?: string
+          interaction_meta?: Json | null
+          interaction_type?: string
+          project_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_interactions_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_interactions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_interactions_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
