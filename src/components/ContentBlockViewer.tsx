@@ -543,6 +543,31 @@ export function ContentBlockViewer({
                         </Button>
                       </div>
                     )}
+
+                    {/* Block-level comments toggle */}
+                    {isUnblurred && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <button
+                          onClick={() => setBlockCommentsOpen((p) => ({ ...p, [block.id]: !p[block.id] }))}
+                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <MessageCircle className="h-3 w-3" />
+                          {blockCommentsOpen[block.id] ? "Hide comments" : "Comment on this block"}
+                        </button>
+                        {blockCommentsOpen[block.id] && (
+                          <div className="mt-3">
+                            <CommentsSection
+                              contentId={contentId}
+                              contentTitle={contentTitle}
+                              blockId={block.id}
+                              commentCount={0}
+                              isEligible={isEligible}
+                              compact
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
