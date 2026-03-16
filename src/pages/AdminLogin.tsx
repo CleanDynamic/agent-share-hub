@@ -32,6 +32,7 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-6">
+      <SeoHead title="Admin Login — NeoScale AI" description="Admin login." path="/admin/login" noIndex />
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-xl font-bold text-foreground">Admin Sign In</h1>
