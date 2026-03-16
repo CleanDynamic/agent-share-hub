@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, CheckCircle, XCircle, Loader2, ExternalLink } from "lucide-react";
+import { SeoHead } from "@/components/SeoHead";
 
 const Admin = () => {
   const navigate = useNavigate();
