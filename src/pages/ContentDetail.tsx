@@ -109,10 +109,50 @@ const ContentDetail = () => {
   const isSub = item?.monetisation_type === "subscription";
   const label = item ? getDownloadLabel(item.content_type, item.monetisation_type, item.price_gbp ?? undefined) : "";
 
+  // Handle post-payment auto-download
+  useEffect(() => {
+    if (searchParams.get("payment") === "success" && item && !paymentHandled) {
+      setPaymentSuccess(true);
+      setPaymentHandled(true);
+      // Remove query param
+      setSearchParams({}, { replace: true });
+      // Auto-trigger download
+      (async () => {
+        setDownloading(true);
+        const result = await triggerDownload(item.id, item.file_url);
+        if (result.error) {
+          toast({ title: "Download failed", description: result.error, variant: "destructive" });
+        } else if (result.newCount !== undefined) {
+          setLocalCount(result.newCount);
+        }
+        setDownloading(false);
+      })();
+    }
+  }, [searchParams, item, paymentHandled]);
+
   async function handleDownload() {
     if (!item) return;
     if (isPaid) {
-      toast({ title: "Payment coming soon", description: "Check back shortly." });
+      setDownloading(true);
+      try {
+        const priceInPence = Math.round((item.price_gbp ?? 0) * 100);
+        const { data, error } = await supabase.functions.invoke("create-checkout-session", {
+          body: {
+            content_id: item.id,
+            price_amount: priceInPence,
+            success_url: `${window.location.origin}/content/${item.id}?payment=success`,
+            cancel_url: `${window.location.origin}/content/${item.id}`,
+          },
+        });
+        if (error || !data?.url) {
+          toast({ title: "Checkout failed", description: "Could not start payment.", variant: "destructive" });
+        } else {
+          window.location.href = data.url;
+        }
+      } catch {
+        toast({ title: "Checkout failed", description: "Something went wrong.", variant: "destructive" });
+      }
+      setDownloading(false);
       return;
     }
     if (isSub) {
