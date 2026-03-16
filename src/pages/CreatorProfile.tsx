@@ -218,12 +218,14 @@ const CreatorProfile = () => {
           <div className="w-full lg:w-72 shrink-0 space-y-4">
             {/* Tip */}
             {hasDonationContent && (
-              <div className="border border-border rounded-xl p-5 bg-card">
-                <Button className="w-full" asChild>
-                  <a href="https://placeholder-stripe-tip.example.com" target="_blank" rel="noopener noreferrer">
-                    <Heart className="mr-2 h-4 w-4" /> Support {displayName}
-                  </a>
-                </Button>
+              <div className="border border-border rounded-xl p-5 bg-card space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Support</p>
+                <TipSelector
+                  creatorId={profile.id}
+                  creatorDisplayName={displayName}
+                  successUrl={`${window.location.origin}/creator/${profile.username}?tip=success`}
+                  cancelUrl={`${window.location.origin}/creator/${profile.username}`}
+                />
               </div>
             )}
 
