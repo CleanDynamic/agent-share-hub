@@ -81,15 +81,14 @@ const Upload = () => {
   // (file handling now done inside ContentBlockBuilder)
 
   async function onSubmit(values: FormValues) {
-    if (!file) {
-      setFileError("Please upload a file.");
+    if (contentBlocks.length === 0) {
+      toast({ title: "Add content", description: "Please add at least one content block.", variant: "destructive" });
       return;
     }
 
     setSubmitting(true);
 
     try {
-      // Check auth
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({ title: "Sign in required", description: "Please sign in before uploading.", variant: "destructive" });
@@ -97,20 +96,8 @@ const Upload = () => {
         return;
       }
 
-      // Upload file to storage
-      const filePath = `${user.id}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from("content-files")
-        .upload(filePath, file);
-
-      if (uploadError) {
-        toast({ title: "File upload failed", description: "Please try again.", variant: "destructive" });
-        setSubmitting(false);
-        return;
-      }
-
-      // Insert content_items row
-      const { error: insertError } = await supabase.from("content_items").insert({
+      // Insert content_items row (file_url left null — blocks hold the content now)
+      const { data: insertedItem, error: insertError } = await supabase.from("content_items").insert({
         creator_id: user.id,
         title: values.title,
         content_type: values.content_type,
@@ -118,24 +105,106 @@ const Upload = () => {
         difficulty: values.difficulty,
         ai_tools: values.ai_tools,
         use_cases: values.use_cases,
-        file_url: filePath,
+        file_url: null,
         use_instructions: values.use_instructions,
         what_to_expect: values.what_to_expect,
         status: "pending",
         monetisation_type: values.monetisation_type,
         price_gbp: values.monetisation_type === "paid" ? values.price_gbp ?? null : null,
         donation_enabled: values.donation_enabled,
-      });
+      }).select("id").single();
 
-      if (insertError) {
-        toast({ title: "Submission failed", description: insertError.message, variant: "destructive" });
+      if (insertError || !insertedItem) {
+        toast({ title: "Submission failed", description: insertError?.message ?? "Unknown error", variant: "destructive" });
         setSubmitting(false);
         return;
       }
 
+      const contentId = insertedItem.id;
+
+      // Save each block
+      for (let i = 0; i < contentBlocks.length; i++) {
+        const block = contentBlocks[i];
+        const position = i + 1;
+
+        let fileUrl: string | null = null;
+        let fileName: string | null = null;
+        let fileSizeBytes: number | null = null;
+        let imageUrl: string | null = null;
+
+        // Upload block file
+        if (block.type === "file" && block.file) {
+          const path = `${contentId}/${position}/${block.file.name}`;
+          const { error } = await supabase.storage.from("content-files").upload(path, block.file);
+          if (error) throw new Error(`File upload failed: ${error.message}`);
+          fileUrl = path;
+          fileName = block.file.name;
+          fileSizeBytes = block.file.size;
+        }
+
+        // Upload block image
+        if (block.type === "image" && block.imageFile) {
+          const path = `${contentId}/${position}/${block.imageFile.name}`;
+          const { error } = await supabase.storage.from("content-files").upload(path, block.imageFile);
+          if (error) throw new Error(`Image upload failed: ${error.message}`);
+          imageUrl = path;
+        }
+
+        const { data: insertedBlock, error: blockError } = await supabase.from("content_blocks").insert({
+          content_id: contentId,
+          position,
+          block_type: block.type,
+          text_content: block.type === "text" ? block.textContent : null,
+          formatting: block.type === "text" ? { type: block.formatting } : null,
+          file_url: fileUrl,
+          file_name: fileName,
+          file_size_bytes: fileSizeBytes,
+          image_url: imageUrl,
+          image_description: block.type === "image" ? block.imageDescription : null,
+        }).select("id").single();
+
+        if (blockError || !insertedBlock) throw new Error(blockError?.message ?? "Block insert failed");
+
+        // Save variations
+        for (let vi = 0; vi < block.variations.length; vi++) {
+          const v = block.variations[vi];
+          let vFileUrl: string | null = null;
+          let vFileName: string | null = null;
+          let vImageUrl: string | null = null;
+
+          if (v.type === "file" && v.file) {
+            const path = `${contentId}/variations/${position}-${v.label}/${v.file.name}`;
+            const { error } = await supabase.storage.from("content-files").upload(path, v.file);
+            if (error) throw new Error(`Variation file upload failed: ${error.message}`);
+            vFileUrl = path;
+            vFileName = v.file.name;
+          }
+
+          if (v.type === "image" && v.imageFile) {
+            const path = `${contentId}/variations/${position}-${v.label}/${v.imageFile.name}`;
+            const { error } = await supabase.storage.from("content-files").upload(path, v.imageFile);
+            if (error) throw new Error(`Variation image upload failed: ${error.message}`);
+            vImageUrl = path;
+          }
+
+          await supabase.from("block_variations").insert({
+            block_id: insertedBlock.id,
+            variation_label: v.label,
+            variation_type: v.type,
+            text_content: v.type === "text" ? v.textContent : null,
+            formatting: v.type === "text" ? { type: v.formatting } : null,
+            file_url: vFileUrl,
+            file_name: vFileName,
+            image_url: vImageUrl,
+            image_description: v.type === "image" ? v.imageDescription : null,
+            position: vi + 1,
+          });
+        }
+      }
+
       setSuccess(true);
-    } catch {
-      toast({ title: "Something went wrong", description: "Please try again.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Something went wrong", description: err?.message ?? "Please try again.", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
