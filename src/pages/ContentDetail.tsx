@@ -3,11 +3,12 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
+import { ContentCard } from "@/components/ContentCard";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Lock, Loader2, ArrowLeft, User } from "lucide-react";
+import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users } from "lucide-react";
 
 const TYPE_COLORS: Record<string, string> = {
   "Prompt File": "bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/30",
@@ -34,18 +35,25 @@ function difficultyColor(level: string) {
   }
 }
 
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-GB", {
+    day: "numeric", month: "short", year: "numeric",
+  });
+}
+
 const ContentDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
   const [localCount, setLocalCount] = useState<number | null>(null);
 
+  // Fetch content item with creator profile
   const { data: item, isLoading, error } = useQuery({
     queryKey: ["content_detail", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
-        .select("*, profiles(username, display_name)")
+        .select("*, profiles(id, username, display_name, bio)")
         .eq("id", id!)
         .eq("status", "approved")
         .maybeSingle();
@@ -55,14 +63,57 @@ const ContentDetail = () => {
     enabled: !!id,
   });
 
+  // Fetch creator total downloads
+  const creator = item?.profiles as { id: string; username: string; display_name: string | null; bio: string | null } | null;
+
+  const { data: creatorStats } = useQuery({
+    queryKey: ["creator_total_downloads", creator?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("content_items")
+        .select("download_count")
+        .eq("creator_id", creator!.id)
+        .eq("status", "approved");
+      if (error) throw error;
+      return {
+        totalDownloads: (data ?? []).reduce((s, r) => s + r.download_count, 0),
+        totalItems: data?.length ?? 0,
+      };
+    },
+    enabled: !!creator?.id,
+  });
+
+  // Fetch related content (same type, exclude current)
+  const { data: related } = useQuery({
+    queryKey: ["related_content", item?.content_type, id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("content_items")
+        .select("*")
+        .eq("content_type", item!.content_type)
+        .eq("status", "approved")
+        .neq("id", id!)
+        .order("download_count", { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!item?.content_type && !!id,
+  });
+
   const count = localCount ?? item?.download_count ?? 0;
   const isPaid = item?.monetisation_type === "paid";
+  const isSub = item?.monetisation_type === "subscription";
   const label = item ? getDownloadLabel(item.content_type, item.monetisation_type, item.price_gbp ?? undefined) : "";
 
   async function handleDownload() {
     if (!item) return;
     if (isPaid) {
       toast({ title: "Payment coming soon", description: "Check back shortly." });
+      return;
+    }
+    if (isSub) {
+      toast({ title: "Subscription required", description: "Subscribe to the creator to unlock this content." });
       return;
     }
     setDownloading(true);
@@ -77,10 +128,17 @@ const ContentDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="py-16 px-6 mx-auto max-w-3xl space-y-4">
-        <Skeleton className="h-8 w-3/4 rounded-md" />
+      <div className="py-16 px-6 mx-auto max-w-4xl space-y-4">
+        <Skeleton className="h-6 w-40 rounded-md" />
+        <Skeleton className="h-10 w-3/4 rounded-md" />
         <Skeleton className="h-5 w-1/2 rounded-md" />
-        <Skeleton className="h-40 w-full rounded-xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+          <div className="lg:col-span-2 space-y-4">
+            <Skeleton className="h-40 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
+          </div>
+          <Skeleton className="h-56 w-full rounded-xl" />
+        </div>
       </div>
     );
   }
@@ -88,7 +146,7 @@ const ContentDetail = () => {
   if (!item || error) {
     return (
       <div className="py-20 px-6 flex flex-col items-center gap-4 text-center">
-        <p className="text-sm text-muted-foreground">Content not found or not yet approved.</p>
+        <p className="text-sm text-muted-foreground">Content not found.</p>
         <Button variant="outline" size="sm" asChild>
           <Link to="/browse"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Browse</Link>
         </Button>
@@ -96,119 +154,192 @@ const ContentDetail = () => {
     );
   }
 
-  const creator = item.profiles as { username: string; display_name: string | null } | null;
-
   return (
     <div className="py-12 px-6">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-4xl">
         {/* Back */}
         <Link to="/browse" className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Browse
         </Link>
 
-        {/* Header */}
-        <div className="flex flex-wrap items-start gap-3 mb-2">
-          <Badge
-            variant="outline"
-            className={`text-[10px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}
-          >
+        {/* Badges */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <Badge variant="outline" className={`text-[10px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
             {item.content_type}
           </Badge>
           <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(item.difficulty)}`}>
             {item.difficulty}
           </Badge>
-          {!isPaid && (
-            <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">
-              Free
+          {!isPaid && !isSub && (
+            <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">Free</Badge>
+          )}
+          {isPaid && (
+            <Badge variant="outline" className="text-[10px] font-medium bg-primary/15 text-primary border-primary/30">
+              £{(item.price_gbp ?? 0).toFixed(2)}
             </Badge>
+          )}
+          {isSub && (
+            <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">Subscription</Badge>
           )}
         </div>
 
+        {/* Title + description */}
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{item.title}</h1>
         <p className="text-sm text-muted-foreground leading-relaxed mb-4">{item.description}</p>
 
-        {/* Creator + stats */}
-        <div className="flex flex-wrap items-center gap-4 mb-8 text-sm">
+        {/* Meta row */}
+        <div className="flex flex-wrap items-center gap-4 mb-8 text-sm text-muted-foreground">
           {creator && (
-            <Link
-              to={`/creator/${creator.username}`}
-              className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <Link to={`/creator/${creator.username}`} className="flex items-center gap-1.5 hover:text-foreground transition-colors">
               <User className="h-3.5 w-3.5" />
-              <span>{creator.display_name || creator.username}</span>
+              <span>By {creator.display_name || creator.username}</span>
             </Link>
           )}
-          <div className="flex items-center gap-1 text-muted-foreground">
+          <div className="flex items-center gap-1">
             <Download className="h-3.5 w-3.5" />
             <span>{count.toLocaleString()} downloads</span>
           </div>
+          <div className="flex items-center gap-1">
+            <Calendar className="h-3.5 w-3.5" />
+            <span>{formatDate(item.approved_at ?? item.created_at)}</span>
+          </div>
         </div>
 
-        {/* AI Tools */}
-        {item.ai_tools && item.ai_tools.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Works with</h3>
-            <div className="flex flex-wrap gap-2">
-              {item.ai_tools.map((tool) => (
-                <span key={tool} className="text-xs px-2 py-1 rounded-lg bg-accent text-muted-foreground">
-                  {tool}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Use Cases */}
-        {item.use_cases && item.use_cases.length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Use cases</h3>
-            <div className="flex flex-wrap gap-2">
-              {item.use_cases.map((uc) => (
-                <span key={uc} className="text-xs px-2 py-1 rounded-lg border border-border text-muted-foreground">
-                  {uc}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Download button */}
-        <div className="border border-border rounded-xl p-6 bg-card mb-8">
-          <Button size="lg" className="w-full" onClick={handleDownload} disabled={downloading}>
-            {downloading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : isPaid ? (
-              <Lock className="mr-2 h-4 w-4" />
-            ) : (
-              <Download className="mr-2 h-4 w-4" />
+        {/* Two-column layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main content — left 2 cols */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* AI Tools */}
+            {item.ai_tools && item.ai_tools.length > 0 && (
+              <div>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Works with</h3>
+                <div className="flex flex-wrap gap-2">
+                  {item.ai_tools.map((tool) => (
+                    <span key={tool} className="text-xs px-2 py-1 rounded-lg bg-accent text-muted-foreground">{tool}</span>
+                  ))}
+                </div>
+              </div>
             )}
-            {label}
-          </Button>
-          {isPaid && (
-            <p className="text-[11px] text-muted-foreground text-center mt-2">
-              £{(item.price_gbp ?? 0).toFixed(2)} — one-time payment
-            </p>
-          )}
+
+            {/* How to use */}
+            {item.use_instructions && (
+              <div>
+                <h2 className="text-lg font-semibold text-foreground mb-3">How to Use This</h2>
+                <div className="border border-border rounded-xl p-5 bg-card">
+                  <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-[inherit] leading-relaxed">
+                    {item.use_instructions}
+                  </pre>
+                </div>
+              </div>
+            )}
+
+            {/* What to expect */}
+            {item.what_to_expect && (
+              <div>
+                <h2 className="text-lg font-semibold text-foreground mb-3">What to Expect</h2>
+                <div className="border border-border rounded-xl p-5 bg-card">
+                  <p className="text-sm text-muted-foreground leading-relaxed">{item.what_to_expect}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Use cases */}
+            {item.use_cases && item.use_cases.length > 0 && (
+              <div>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Use Cases</h3>
+                <div className="flex flex-wrap gap-2">
+                  {item.use_cases.map((uc) => (
+                    <span key={uc} className="text-xs px-2 py-1 rounded-lg border border-border text-muted-foreground">{uc}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar — right col */}
+          <div className="space-y-4">
+            {/* Download / Action box */}
+            <div className="border border-border rounded-xl p-5 bg-card space-y-3">
+              <Button size="lg" className="w-full" onClick={handleDownload} disabled={downloading}>
+                {downloading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : isPaid ? (
+                  <Lock className="mr-2 h-4 w-4" />
+                ) : isSub ? (
+                  <Users className="mr-2 h-4 w-4" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                {isSub ? "Subscribe to Unlock" : label}
+              </Button>
+
+              {isPaid && (
+                <p className="text-[11px] text-muted-foreground text-center">
+                  £{(item.price_gbp ?? 0).toFixed(2)} — one-time payment
+                </p>
+              )}
+
+              {isSub && creator && (
+                <Button variant="outline" size="sm" className="w-full border-secondary text-secondary hover:bg-secondary/10" asChild>
+                  <Link to={`/creator/${creator.username}`}>View Creator Profile</Link>
+                </Button>
+              )}
+
+              {item.donation_enabled && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => toast({ title: "Tipping coming soon", description: "Check back shortly." })}
+                >
+                  <Heart className="mr-2 h-3.5 w-3.5" /> Tip the Creator
+                </Button>
+              )}
+            </div>
+
+            {/* Creator card */}
+            {creator && (
+              <Link
+                to={`/creator/${creator.username}`}
+                className="block border border-border rounded-xl p-5 bg-card hover:border-primary/30 transition-colors"
+              >
+                <p className="text-sm font-semibold text-foreground mb-1">
+                  {creator.display_name || creator.username}
+                </p>
+                {creator.bio && (
+                  <p className="text-xs text-muted-foreground leading-relaxed mb-3 line-clamp-3">
+                    {creator.bio}
+                  </p>
+                )}
+                <div className="flex gap-4 text-xs text-muted-foreground">
+                  <span>{creatorStats?.totalItems ?? 0} published</span>
+                  <span>{(creatorStats?.totalDownloads ?? 0).toLocaleString()} downloads</span>
+                </div>
+              </Link>
+            )}
+          </div>
         </div>
 
-        {/* Instructions */}
-        {item.use_instructions && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold text-foreground mb-3">How to Use</h2>
-            <div className="border border-border rounded-xl p-5 bg-card">
-              <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-[inherit] leading-relaxed">
-                {item.use_instructions}
-              </pre>
-            </div>
-          </div>
-        )}
-
-        {/* What to expect */}
-        {item.what_to_expect && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold text-foreground mb-3">What to Expect</h2>
-            <div className="border border-border rounded-xl p-5 bg-card">
-              <p className="text-sm text-muted-foreground leading-relaxed">{item.what_to_expect}</p>
+        {/* Related content */}
+        {related && related.length > 0 && (
+          <div className="mt-16">
+            <h2 className="text-lg font-semibold text-foreground mb-4">More Like This</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {related.map((r) => (
+                <ContentCard
+                  key={r.id}
+                  id={r.id}
+                  content_type={r.content_type}
+                  title={r.title}
+                  description={r.description ?? ""}
+                  difficulty={r.difficulty}
+                  ai_tools={r.ai_tools ?? []}
+                  download_count={r.download_count}
+                  monetisation_type={r.monetisation_type}
+                  price_gbp={r.price_gbp ?? undefined}
+                  file_url={r.file_url}
+                />
+              ))}
             </div>
           </div>
         )}
