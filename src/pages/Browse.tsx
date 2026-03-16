@@ -535,6 +535,8 @@ const Browse = () => {
             )}
           </div>
         )}
+        </>
+        )}
       </div>
 
       <SubmitToolModal open={submitToolOpen} onOpenChange={setSubmitToolOpen} />
