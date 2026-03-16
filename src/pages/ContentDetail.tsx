@@ -463,18 +463,19 @@ const ContentDetail = () => {
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide lg:grid lg:grid-cols-3 lg:overflow-visible">
               {related.map((r) => (
                 <div key={r.id} className="min-w-[280px] lg:min-w-0">
-                  key={r.id}
-                  id={r.id}
-                  content_type={r.content_type}
-                  title={r.title}
-                  description={r.description ?? ""}
-                  difficulty={r.difficulty}
-                  ai_tools={r.ai_tools ?? []}
-                  download_count={r.download_count}
-                  monetisation_type={r.monetisation_type}
-                  price_gbp={r.price_gbp ?? undefined}
-                  file_url={r.file_url}
-                />
+                  <ContentCard
+                    id={r.id}
+                    content_type={r.content_type}
+                    title={r.title}
+                    description={r.description ?? ""}
+                    difficulty={r.difficulty}
+                    ai_tools={r.ai_tools ?? []}
+                    download_count={r.download_count}
+                    monetisation_type={r.monetisation_type}
+                    price_gbp={r.price_gbp ?? undefined}
+                    file_url={r.file_url}
+                  />
+                </div>
               ))}
             </div>
           </div>
