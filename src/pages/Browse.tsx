@@ -9,6 +9,7 @@ import { ContentCard } from "@/components/ContentCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApprovedToolNames } from "@/hooks/useApprovedTools";
+import { SubmitToolModal } from "@/components/SubmitToolModal";
 
 const ALL = "all";
 
