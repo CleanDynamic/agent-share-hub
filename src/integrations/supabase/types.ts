@@ -14,13 +14,270 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      content_items: {
+        Row: {
+          ai_tools: string[] | null
+          approved_at: string | null
+          content_type: string
+          created_at: string
+          creator_id: string
+          description: string | null
+          difficulty: string
+          donation_enabled: boolean
+          download_count: number
+          file_url: string | null
+          id: string
+          monetisation_type: string
+          price_gbp: number | null
+          star_rating: number
+          status: string
+          title: string
+          use_cases: string[] | null
+          use_instructions: string | null
+          what_to_expect: string | null
+        }
+        Insert: {
+          ai_tools?: string[] | null
+          approved_at?: string | null
+          content_type: string
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          difficulty: string
+          donation_enabled?: boolean
+          download_count?: number
+          file_url?: string | null
+          id?: string
+          monetisation_type?: string
+          price_gbp?: number | null
+          star_rating?: number
+          status?: string
+          title: string
+          use_cases?: string[] | null
+          use_instructions?: string | null
+          what_to_expect?: string | null
+        }
+        Update: {
+          ai_tools?: string[] | null
+          approved_at?: string | null
+          content_type?: string
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          difficulty?: string
+          donation_enabled?: boolean
+          download_count?: number
+          file_url?: string | null
+          id?: string
+          monetisation_type?: string
+          price_gbp?: number | null
+          star_rating?: number
+          status?: string
+          title?: string
+          use_cases?: string[] | null
+          use_instructions?: string | null
+          what_to_expect?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_items_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      downloads: {
+        Row: {
+          content_id: string
+          downloaded_at: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          content_id: string
+          downloaded_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          content_id?: string
+          downloaded_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "downloads_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "downloads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          is_admin: boolean
+          is_creator: boolean
+          stripe_account_id: string | null
+          username: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          is_admin?: boolean
+          is_creator?: boolean
+          stripe_account_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_admin?: boolean
+          is_creator?: boolean
+          stripe_account_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      service_enquiries: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string
+          message: string | null
+          requester_email: string
+          requester_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id: string
+          message?: string | null
+          requester_email: string
+          requester_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string
+          message?: string | null
+          requester_email?: string
+          requester_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_enquiries_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "service_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_listings: {
+        Row: {
+          created_at: string
+          creator_id: string
+          description: string | null
+          id: string
+          is_active: boolean
+          price_gbp: number | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          price_gbp?: number | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          price_gbp?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_listings_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          status: string
+          stripe_subscription_id: string | null
+          subscriber_id: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          subscriber_id: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          subscriber_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_subscriber_id_fkey"
+            columns: ["subscriber_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
