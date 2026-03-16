@@ -133,6 +133,7 @@ export type Database = {
           is_admin: boolean
           is_creator: boolean
           stripe_account_id: string | null
+          subscription_price_id: string | null
           username: string | null
         }
         Insert: {
@@ -143,6 +144,7 @@ export type Database = {
           is_admin?: boolean
           is_creator?: boolean
           stripe_account_id?: string | null
+          subscription_price_id?: string | null
           username?: string | null
         }
         Update: {
@@ -153,6 +155,7 @@ export type Database = {
           is_admin?: boolean
           is_creator?: boolean
           stripe_account_id?: string | null
+          subscription_price_id?: string | null
           username?: string | null
         }
         Relationships: []

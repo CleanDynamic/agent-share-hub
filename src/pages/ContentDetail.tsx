@@ -107,9 +107,31 @@ const ContentDetail = () => {
     enabled: !!item?.content_type && !!id,
   });
 
-  const count = localCount ?? item?.download_count ?? 0;
-  const isPaid = item?.monetisation_type === "paid";
+  // Check subscription status for subscription content
   const isSub = item?.monetisation_type === "subscription";
+  const isPaid = item?.monetisation_type === "paid";
+
+  const { data: hasActiveSubscription } = useQuery({
+    queryKey: ["subscription_check", creator?.id],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("id")
+        .eq("subscriber_id", user.id)
+        .eq("creator_id", creator!.id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (error) return false;
+      return !!data;
+    },
+    enabled: isSub && !!creator?.id,
+  });
+
+  const subscriberUnlocked = isSub && hasActiveSubscription === true;
+
+  const count = localCount ?? item?.download_count ?? 0;
   const label = item ? getDownloadLabel(item.content_type, item.monetisation_type, item.price_gbp ?? undefined) : "";
 
   // Handle post-payment auto-download
@@ -161,8 +183,8 @@ const ContentDetail = () => {
       setDownloading(false);
       return;
     }
-    if (isSub) {
-      toast({ title: "Subscription required", description: "Subscribe to the creator to unlock this content." });
+    if (isSub && !subscriberUnlocked) {
+      // Do nothing — locked state shows UI instead
       return;
     }
     setDownloading(true);
@@ -244,7 +266,7 @@ const ContentDetail = () => {
             </Badge>
           )}
           {isSub && (
-            <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">Subscription</Badge>
+            <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">Subscribers only</Badge>
           )}
         </div>
 
@@ -286,8 +308,26 @@ const ContentDetail = () => {
               </div>
             )}
 
+            {/* Subscription lock message */}
+            {isSub && !subscriberUnlocked && creator && (
+              <div className="border border-border rounded-xl p-5 bg-card">
+                <div className="flex items-center gap-3 mb-3">
+                  <Lock className="h-5 w-5 text-muted-foreground" />
+                  <p className="text-sm font-medium text-foreground">Subscriber-only content</p>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  This content is for subscribers of {creator.display_name || creator.username}.
+                </p>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to={`/creator/${creator.username}`}>
+                    <Users className="mr-2 h-3.5 w-3.5" /> Subscribe to unlock
+                  </Link>
+                </Button>
+              </div>
+            )}
+
             {/* How to use */}
-            {item.use_instructions && (
+            {item.use_instructions && (!isSub || subscriberUnlocked) && (
               <div>
                 <h2 className="text-lg font-semibold text-foreground mb-3">How to Use This</h2>
                 <div className="border border-border rounded-xl p-5 bg-card">
@@ -299,7 +339,7 @@ const ContentDetail = () => {
             )}
 
             {/* What to expect */}
-            {item.what_to_expect && (
+            {item.what_to_expect && (!isSub || subscriberUnlocked) && (
               <div>
                 <h2 className="text-lg font-semibold text-foreground mb-3">What to Expect</h2>
                 <div className="border border-border rounded-xl p-5 bg-card">
@@ -325,29 +365,37 @@ const ContentDetail = () => {
           <div className="space-y-4">
             {/* Download / Action box */}
             <div className="border border-border rounded-xl p-5 bg-card space-y-3">
-              <Button size="lg" className="w-full" onClick={handleDownload} disabled={downloading}>
-                {downloading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : isPaid ? (
-                  <Lock className="mr-2 h-4 w-4" />
-                ) : isSub ? (
-                  <Users className="mr-2 h-4 w-4" />
-                ) : (
-                  <Download className="mr-2 h-4 w-4" />
-                )}
-                {isSub ? "Subscribe to Unlock" : label}
-              </Button>
+              {isSub && !subscriberUnlocked ? (
+                <>
+                  <Button size="lg" className="w-full" disabled>
+                    <Lock className="mr-2 h-4 w-4" />
+                    Subscribers only
+                  </Button>
+                  {creator && (
+                    <Button variant="outline" size="sm" className="w-full border-secondary text-secondary hover:bg-secondary/10" asChild>
+                      <Link to={`/creator/${creator.username}`}>
+                        <Users className="mr-2 h-3.5 w-3.5" /> Subscribe to unlock
+                      </Link>
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <Button size="lg" className="w-full" onClick={handleDownload} disabled={downloading}>
+                  {downloading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : isPaid ? (
+                    <Lock className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
+                  {subscriberUnlocked ? "Download" : label}
+                </Button>
+              )}
 
               {isPaid && (
                 <p className="text-[11px] text-muted-foreground text-center">
                   £{(item.price_gbp ?? 0).toFixed(2)} — one-time payment
                 </p>
-              )}
-
-              {isSub && creator && (
-                <Button variant="outline" size="sm" className="w-full border-secondary text-secondary hover:bg-secondary/10" asChild>
-                  <Link to={`/creator/${creator.username}`}>View Creator Profile</Link>
-                </Button>
               )}
 
               {item.donation_enabled && creator && (

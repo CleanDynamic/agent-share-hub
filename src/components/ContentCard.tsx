@@ -18,6 +18,7 @@ export interface ContentCardProps {
   monetisation_type: string;
   price_gbp?: number;
   file_url?: string | null;
+  creator_username?: string;
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -56,16 +57,24 @@ export function ContentCard({
   monetisation_type,
   price_gbp,
   file_url,
+  creator_username,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [count, setCount] = useState(initialCount);
   const [downloading, setDownloading] = useState(false);
   const isPaid = monetisation_type === "paid";
+  const isSub = monetisation_type === "subscription";
   const label = getDownloadLabel(content_type, monetisation_type, price_gbp);
 
   async function handleDownload(e: React.MouseEvent) {
     e.stopPropagation();
+
+    if (isSub) {
+      // Navigate to content detail page (which handles subscription check)
+      navigate(`/content/${id}`);
+      return;
+    }
 
     if (isPaid) {
       setDownloading(true);
@@ -114,13 +123,17 @@ export function ContentCard({
         >
           {content_type}
         </Badge>
-        {!isPaid ? (
+        {isSub ? (
           <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">
-            Free
+            Subscribers only
           </Badge>
-        ) : (
+        ) : isPaid ? (
           <Badge variant="outline" className="text-[10px] font-medium bg-orange-500/15 text-orange-400 border-orange-500/30">
             £{(price_gbp ?? 0).toFixed(2)}
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">
+            Free
           </Badge>
         )}
       </div>
@@ -145,10 +158,12 @@ export function ContentCard({
           {difficulty}
         </Badge>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <Download className="h-3 w-3" />
-            <span className="text-[10px]">{count.toLocaleString()}</span>
-          </div>
+          {!isSub && (
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <Download className="h-3 w-3" />
+              <span className="text-[10px]">{count.toLocaleString()}</span>
+            </div>
+          )}
           <Button
             size="sm"
             variant="ghost"
@@ -158,6 +173,8 @@ export function ContentCard({
           >
             {downloading ? (
               <Loader2 className="h-3 w-3 animate-spin" />
+            ) : isSub ? (
+              <><Lock className="h-3 w-3 mr-1" />Subscribers only</>
             ) : isPaid ? (
               <><Lock className="h-3 w-3 mr-1" />{label}</>
             ) : (
