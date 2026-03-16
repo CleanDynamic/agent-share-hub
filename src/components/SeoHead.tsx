@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 
-const SITE_URL = import.meta.env.VITE_SITE_URL || "https://neoscale.ai";
+const SITE_URL = import.meta.env.VITE_SITE_URL || "https://neoscaleai.com";
 
 interface SeoHeadProps {
   title: string;
