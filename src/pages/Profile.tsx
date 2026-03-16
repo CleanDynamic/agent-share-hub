@@ -116,6 +116,7 @@ export default function Profile() {
 
   return (
     <div className="py-12 px-6">
+      <SeoHead title="My Profile — NeoScale AI" description="Your NeoScale AI profile." path="/profile" noIndex />
       <div className="mx-auto max-w-5xl">
         <div className="flex flex-col lg:flex-row gap-10">
           {/* Main */}

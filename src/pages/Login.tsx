@@ -67,6 +67,7 @@ export default function Login() {
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4">
+      <SeoHead title="Sign In — NeoScale AI" description="Sign in to your NeoScale AI account." path="/login" noIndex />
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 sm:p-8">
         <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
 
