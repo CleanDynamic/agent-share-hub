@@ -122,6 +122,109 @@ export type Database = {
           },
         ]
       }
+      block_variations: {
+        Row: {
+          block_id: string
+          file_name: string | null
+          file_url: string | null
+          formatting: Json | null
+          id: string
+          image_description: string | null
+          image_url: string | null
+          position: number
+          text_content: string | null
+          variation_label: string
+          variation_type: string
+        }
+        Insert: {
+          block_id: string
+          file_name?: string | null
+          file_url?: string | null
+          formatting?: Json | null
+          id?: string
+          image_description?: string | null
+          image_url?: string | null
+          position: number
+          text_content?: string | null
+          variation_label: string
+          variation_type: string
+        }
+        Update: {
+          block_id?: string
+          file_name?: string | null
+          file_url?: string | null
+          formatting?: Json | null
+          id?: string
+          image_description?: string | null
+          image_url?: string | null
+          position?: number
+          text_content?: string | null
+          variation_label?: string
+          variation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "block_variations_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "content_blocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_blocks: {
+        Row: {
+          block_type: string
+          content_id: string
+          created_at: string
+          file_name: string | null
+          file_size_bytes: number | null
+          file_url: string | null
+          formatting: Json | null
+          id: string
+          image_description: string | null
+          image_url: string | null
+          position: number
+          text_content: string | null
+        }
+        Insert: {
+          block_type: string
+          content_id: string
+          created_at?: string
+          file_name?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          formatting?: Json | null
+          id?: string
+          image_description?: string | null
+          image_url?: string | null
+          position: number
+          text_content?: string | null
+        }
+        Update: {
+          block_type?: string
+          content_id?: string
+          created_at?: string
+          file_name?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          formatting?: Json | null
+          id?: string
+          image_description?: string | null
+          image_url?: string | null
+          position?: number
+          text_content?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_blocks_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_items: {
         Row: {
           ai_tools: string[] | null
@@ -337,6 +440,108 @@ export type Database = {
         }
         Relationships: []
       }
+      project_components: {
+        Row: {
+          component_label: string | null
+          component_note: string | null
+          component_type: string
+          id: string
+          inline_content_id: string | null
+          linked_content_id: string | null
+          position: number
+          project_id: string
+          show_on_browse: boolean
+        }
+        Insert: {
+          component_label?: string | null
+          component_note?: string | null
+          component_type: string
+          id?: string
+          inline_content_id?: string | null
+          linked_content_id?: string | null
+          position: number
+          project_id: string
+          show_on_browse?: boolean
+        }
+        Update: {
+          component_label?: string | null
+          component_note?: string | null
+          component_type?: string
+          id?: string
+          inline_content_id?: string | null
+          linked_content_id?: string | null
+          position?: number
+          project_id?: string
+          show_on_browse?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_components_inline_content_id_fkey"
+            columns: ["inline_content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_components_linked_content_id_fkey"
+            columns: ["linked_content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_components_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          approved_at: string | null
+          cover_image_url: string | null
+          created_at: string
+          creator_id: string
+          description: string
+          id: string
+          status: string
+          title: string
+          view_count: number
+        }
+        Insert: {
+          approved_at?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id: string
+          description: string
+          id?: string
+          status?: string
+          title: string
+          view_count?: number
+        }
+        Update: {
+          approved_at?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string
+          id?: string
+          status?: string
+          title?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_enquiries: {
         Row: {
           created_at: string
@@ -456,18 +661,21 @@ export type Database = {
         Row: {
           content_id: string
           id: string
+          project_id: string | null
           saved_at: string
           user_id: string
         }
         Insert: {
           content_id: string
           id?: string
+          project_id?: string | null
           saved_at?: string
           user_id: string
         }
         Update: {
           content_id?: string
           id?: string
+          project_id?: string | null
           saved_at?: string
           user_id?: string
         }
@@ -477,6 +685,13 @@ export type Database = {
             columns: ["content_id"]
             isOneToOne: false
             referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_saves_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
