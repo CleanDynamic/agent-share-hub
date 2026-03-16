@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Upload as UploadIcon, Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useApprovedToolNames } from "@/hooks/useApprovedTools";
@@ -22,6 +22,7 @@ import {
   Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
 import { SubmitToolModal } from "@/components/SubmitToolModal";
+import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
 
 const CONTENT_TYPES = [
   "Prompt File", "Prompt Tutorial", "Agent Blueprint", "Workflow Template",
@@ -53,8 +54,7 @@ const Upload = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
-  const [file, setFile] = useState<File | null>(null);
-  const [fileError, setFileError] = useState("");
+  const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([emptyBlock("text")]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
@@ -78,32 +78,17 @@ const Upload = () => {
 
   const monetisationType = form.watch("monetisation_type");
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setFileError("");
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const ext = "." + f.name.split(".").pop()?.toLowerCase();
-    if (!ACCEPTED_TYPES.includes(ext)) {
-      setFileError("Only .txt, .md, .json, and .pdf files are accepted.");
-      return;
-    }
-    if (f.size > MAX_FILE_SIZE) {
-      setFileError("File must be under 10MB.");
-      return;
-    }
-    setFile(f);
-  }
+  // (file handling now done inside ContentBlockBuilder)
 
   async function onSubmit(values: FormValues) {
-    if (!file) {
-      setFileError("Please upload a file.");
+    if (contentBlocks.length === 0) {
+      toast({ title: "Add content", description: "Please add at least one content block.", variant: "destructive" });
       return;
     }
 
     setSubmitting(true);
 
     try {
-      // Check auth
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({ title: "Sign in required", description: "Please sign in before uploading.", variant: "destructive" });
@@ -111,20 +96,8 @@ const Upload = () => {
         return;
       }
 
-      // Upload file to storage
-      const filePath = `${user.id}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from("content-files")
-        .upload(filePath, file);
-
-      if (uploadError) {
-        toast({ title: "File upload failed", description: "Please try again.", variant: "destructive" });
-        setSubmitting(false);
-        return;
-      }
-
-      // Insert content_items row
-      const { error: insertError } = await supabase.from("content_items").insert({
+      // Insert content_items row (file_url left null — blocks hold the content now)
+      const { data: insertedItem, error: insertError } = await supabase.from("content_items").insert({
         creator_id: user.id,
         title: values.title,
         content_type: values.content_type,
@@ -132,24 +105,106 @@ const Upload = () => {
         difficulty: values.difficulty,
         ai_tools: values.ai_tools,
         use_cases: values.use_cases,
-        file_url: filePath,
+        file_url: null,
         use_instructions: values.use_instructions,
         what_to_expect: values.what_to_expect,
         status: "pending",
         monetisation_type: values.monetisation_type,
         price_gbp: values.monetisation_type === "paid" ? values.price_gbp ?? null : null,
         donation_enabled: values.donation_enabled,
-      });
+      }).select("id").single();
 
-      if (insertError) {
-        toast({ title: "Submission failed", description: insertError.message, variant: "destructive" });
+      if (insertError || !insertedItem) {
+        toast({ title: "Submission failed", description: insertError?.message ?? "Unknown error", variant: "destructive" });
         setSubmitting(false);
         return;
       }
 
+      const contentId = insertedItem.id;
+
+      // Save each block
+      for (let i = 0; i < contentBlocks.length; i++) {
+        const block = contentBlocks[i];
+        const position = i + 1;
+
+        let fileUrl: string | null = null;
+        let fileName: string | null = null;
+        let fileSizeBytes: number | null = null;
+        let imageUrl: string | null = null;
+
+        // Upload block file
+        if (block.type === "file" && block.file) {
+          const path = `${contentId}/${position}/${block.file.name}`;
+          const { error } = await supabase.storage.from("content-files").upload(path, block.file);
+          if (error) throw new Error(`File upload failed: ${error.message}`);
+          fileUrl = path;
+          fileName = block.file.name;
+          fileSizeBytes = block.file.size;
+        }
+
+        // Upload block image
+        if (block.type === "image" && block.imageFile) {
+          const path = `${contentId}/${position}/${block.imageFile.name}`;
+          const { error } = await supabase.storage.from("content-files").upload(path, block.imageFile);
+          if (error) throw new Error(`Image upload failed: ${error.message}`);
+          imageUrl = path;
+        }
+
+        const { data: insertedBlock, error: blockError } = await supabase.from("content_blocks").insert({
+          content_id: contentId,
+          position,
+          block_type: block.type,
+          text_content: block.type === "text" ? block.textContent : null,
+          formatting: block.type === "text" ? { type: block.formatting } : null,
+          file_url: fileUrl,
+          file_name: fileName,
+          file_size_bytes: fileSizeBytes,
+          image_url: imageUrl,
+          image_description: block.type === "image" ? block.imageDescription : null,
+        }).select("id").single();
+
+        if (blockError || !insertedBlock) throw new Error(blockError?.message ?? "Block insert failed");
+
+        // Save variations
+        for (let vi = 0; vi < block.variations.length; vi++) {
+          const v = block.variations[vi];
+          let vFileUrl: string | null = null;
+          let vFileName: string | null = null;
+          let vImageUrl: string | null = null;
+
+          if (v.type === "file" && v.file) {
+            const path = `${contentId}/variations/${position}-${v.label}/${v.file.name}`;
+            const { error } = await supabase.storage.from("content-files").upload(path, v.file);
+            if (error) throw new Error(`Variation file upload failed: ${error.message}`);
+            vFileUrl = path;
+            vFileName = v.file.name;
+          }
+
+          if (v.type === "image" && v.imageFile) {
+            const path = `${contentId}/variations/${position}-${v.label}/${v.imageFile.name}`;
+            const { error } = await supabase.storage.from("content-files").upload(path, v.imageFile);
+            if (error) throw new Error(`Variation image upload failed: ${error.message}`);
+            vImageUrl = path;
+          }
+
+          await supabase.from("block_variations").insert({
+            block_id: insertedBlock.id,
+            variation_label: v.label,
+            variation_type: v.type,
+            text_content: v.type === "text" ? v.textContent : null,
+            formatting: v.type === "text" ? { type: v.formatting } : null,
+            file_url: vFileUrl,
+            file_name: vFileName,
+            image_url: vImageUrl,
+            image_description: v.type === "image" ? v.imageDescription : null,
+            position: vi + 1,
+          });
+        }
+      }
+
       setSuccess(true);
-    } catch {
-      toast({ title: "Something went wrong", description: "Please try again.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Something went wrong", description: err?.message ?? "Please try again.", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -165,7 +220,7 @@ const Upload = () => {
         </p>
         <div className="flex gap-3 mt-4">
           <Button variant="outline" onClick={() => navigate("/browse")}>Browse Content</Button>
-          <Button onClick={() => { setSuccess(false); form.reset(); setFile(null); }}>Upload Another</Button>
+          <Button variant="outline" onClick={() => { setSuccess(false); form.reset(); setContentBlocks([emptyBlock("text")]); }}>Upload Another</Button>
         </div>
       </div>
     );
@@ -356,29 +411,8 @@ const Upload = () => {
               )}
             />
 
-            {/* 7. File Upload */}
-            <div className="space-y-2">
-              <Label>File Upload</Label>
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-xl bg-card cursor-pointer hover:border-primary/40 transition-colors">
-                <UploadIcon className="h-6 w-6 text-muted-foreground mb-2" />
-                {file ? (
-                  <span className="text-sm text-foreground">{file.name}</span>
-                ) : (
-                  <span className="text-sm text-muted-foreground">Click to select a file</span>
-                )}
-                <span className="text-[10px] text-muted-foreground mt-1">.txt, .md, .json, .pdf — max 10MB</span>
-                <input
-                  type="file"
-                  accept=".txt,.md,.json,.pdf"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
-              <p className="text-xs text-muted-foreground">
-                Upload the actual file. .txt and .md work for prompt files. .json for workflows.
-              </p>
-              {fileError && <p className="text-sm font-medium text-destructive">{fileError}</p>}
-            </div>
+            {/* 7. Content Block Builder */}
+            <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} />
 
             {/* 8. Use Instructions */}
             <FormField
