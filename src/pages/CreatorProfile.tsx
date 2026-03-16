@@ -311,15 +311,73 @@ const CreatorProfile = () => {
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold text-foreground mb-4">Content by {displayName}</h2>
-              {contentItems && contentItems.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {contentItems.map((item) => (
-                    <ContentCard key={item.id} id={item.id} content_type={item.content_type} title={item.title} description={item.description ?? ""} difficulty={item.difficulty} ai_tools={item.ai_tools ?? []} download_count={item.download_count} monetisation_type={item.monetisation_type} price_gbp={item.price_gbp ?? undefined} creator_username={profile.username ?? undefined} />
-                  ))}
-                </div>
+              {/* Tab control */}
+              <div className="flex gap-1 mb-4">
+                <button
+                  onClick={() => setCreatorTab("content")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                    creatorTab === "content"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-accent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Content
+                </button>
+                <button
+                  onClick={() => setCreatorTab("projects")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                    creatorTab === "projects"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-accent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Projects
+                </button>
+              </div>
+
+              {creatorTab === "content" ? (
+                <>
+                  <h2 className="text-lg font-semibold text-foreground mb-4">Content by {displayName}</h2>
+                  {contentItems && contentItems.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {contentItems.map((item) => (
+                        <ContentCard key={item.id} id={item.id} content_type={item.content_type} title={item.title} description={item.description ?? ""} difficulty={item.difficulty} ai_tools={item.ai_tools ?? []} download_count={item.download_count} monetisation_type={item.monetisation_type} price_gbp={item.price_gbp ?? undefined} creator_username={profile.username ?? undefined} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-10 text-center">{displayName} hasn't published anything yet.</p>
+                  )}
+                </>
               ) : (
-                <p className="text-sm text-muted-foreground py-10 text-center">{displayName} hasn't published anything yet.</p>
+                <>
+                  <h2 className="text-lg font-semibold text-foreground mb-4">Projects by {displayName}</h2>
+                  {creatorProjects && creatorProjects.length > 0 ? (
+                    <div className="space-y-3">
+                      {creatorProjects.map((proj: any) => {
+                        const compIds = (proj.project_components ?? []).map((c: any) => c.linked_content_id || c.inline_content_id).filter(Boolean);
+                        const types = [...new Set(
+                          compIds.map((cid: string) => projContentTypes?.find((ci: any) => ci.id === cid)?.content_type).filter(Boolean)
+                        )] as string[];
+                        return (
+                          <ProjectCard
+                            key={proj.id}
+                            id={proj.id}
+                            title={proj.title}
+                            description={proj.description}
+                            coverImageUrl={null}
+                            creatorDisplayName={displayName}
+                            creatorUsername={profile.username ?? ""}
+                            componentTypes={types}
+                            componentCount={(proj.project_components ?? []).length}
+                            viewCount={proj.view_count}
+                          />
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-10 text-center">{displayName} hasn't published any projects yet.</p>
+                  )}
+                </>
               )}
             </div>
           </div>
