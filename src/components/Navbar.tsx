@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { Upload, Rss } from "lucide-react";
-import { Menu, X, LogOut, User, Bookmark } from "lucide-react";
+import { Upload, Rss, Bookmark as BookmarkIcon } from "lucide-react";
+import { Menu, X, LogOut, User, Bookmark, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavBadges } from "@/hooks/useNavBadges";
 
 function getNavLinks(isLoggedIn: boolean) {
   const links = [{ label: "Browse", to: "/browse" }];
@@ -30,6 +31,7 @@ export function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isLoggedIn, profile, signOut } = useAuth();
+  const { hasUnseenSaves, fypCount } = useNavBadges();
 
   const handleSignOut = async () => {
     await signOut();
@@ -41,6 +43,8 @@ export function Navbar() {
   const initials = profile?.display_name
     ? profile.display_name.slice(0, 2).toUpperCase()
     : profile?.username?.slice(0, 2).toUpperCase() ?? "?";
+
+  const fypBadgeLabel = fypCount > 9 ? "9+" : fypCount > 0 ? String(fypCount) : null;
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -73,53 +77,82 @@ export function Navbar() {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`text-sm transition-colors ${
+                className={`relative text-sm transition-colors ${
                   location.pathname === link.to
                     ? "text-foreground font-medium"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {link.label}
+                {link.to === "/fyp" && fypBadgeLabel && (
+                  <span className="absolute -top-2 -right-4 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                    {fypBadgeLabel}
+                  </span>
+                )}
               </Link>
             ))}
 
-            {isLoggedIn ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="rounded-full outline-none ring-ring focus-visible:ring-2">
-                    <Avatar className="h-8 w-8 cursor-pointer">
-                      {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile" className="flex items-center gap-2">
-                      <User className="h-4 w-4" /> My Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  {profile?.is_creator && (
+            {isLoggedIn && (
+              <>
+                {/* Bookmark quick-access */}
+                <button
+                  onClick={() => navigate("/saved")}
+                  className="relative rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground hover:bg-accent"
+                  aria-label="Saved items"
+                >
+                  <BookmarkIcon className="h-4 w-4" />
+                  {hasUnseenSaves && (
+                    <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-primary" />
+                  )}
+                </button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="rounded-full outline-none ring-ring focus-visible:ring-2">
+                      <Avatar className="h-8 w-8 cursor-pointer">
+                        {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
+                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link to="/fyp" className="flex items-center gap-2">
+                        <Heart className="h-4 w-4" /> For You
+                        {fypBadgeLabel && (
+                          <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                            {fypBadgeLabel}
+                          </span>
+                        )}
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/my-uploads" className="flex items-center gap-2">
                         <Upload className="h-4 w-4" /> My Uploads
                       </Link>
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem asChild>
-                    <Link to="/saved" className="flex items-center gap-2">
-                      <Bookmark className="h-4 w-4" /> Saved
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 text-destructive">
-                    <LogOut className="h-4 w-4" /> Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="flex items-center gap-2">
+                        <User className="h-4 w-4" /> My Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/saved" className="flex items-center gap-2">
+                        <Bookmark className="h-4 w-4" /> Saved
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 text-destructive">
+                      <LogOut className="h-4 w-4" /> Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+
+            {!isLoggedIn && (
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild>
                   <Link to="/login">Sign in</Link>
@@ -165,6 +198,11 @@ export function Navbar() {
                   }`}
                 >
                   {link.label}
+                  {link.to === "/fyp" && fypBadgeLabel && (
+                    <span className="ml-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                      {fypBadgeLabel}
+                    </span>
+                  )}
                 </Link>
               ))}
 
@@ -172,17 +210,26 @@ export function Navbar() {
 
               {isLoggedIn ? (
                 <>
+                  <Link to="/fyp" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 min-h-[44px] text-sm text-muted-foreground hover:text-foreground px-3 rounded-lg hover:bg-accent/50">
+                    <Heart className="h-4 w-4" /> For You
+                    {fypBadgeLabel && (
+                      <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                        {fypBadgeLabel}
+                      </span>
+                    )}
+                  </Link>
+                  <Link to="/my-uploads" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 min-h-[44px] text-sm text-muted-foreground hover:text-foreground px-3 rounded-lg hover:bg-accent/50">
+                    <Upload className="h-4 w-4" /> My Uploads
+                  </Link>
                   <Link to="/profile" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 min-h-[44px] text-sm text-muted-foreground hover:text-foreground px-3 rounded-lg hover:bg-accent/50">
                     <User className="h-4 w-4" /> My Profile
                   </Link>
                   <Link to="/saved" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 min-h-[44px] text-sm text-muted-foreground hover:text-foreground px-3 rounded-lg hover:bg-accent/50">
                     <Bookmark className="h-4 w-4" /> Saved
+                    {hasUnseenSaves && (
+                      <span className="ml-auto h-2 w-2 rounded-full bg-primary" />
+                    )}
                   </Link>
-                  {profile?.is_creator && (
-                    <Link to="/my-uploads" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 min-h-[44px] text-sm text-muted-foreground hover:text-foreground px-3 rounded-lg hover:bg-accent/50">
-                      <Upload className="h-4 w-4" /> My Uploads
-                    </Link>
-                  )}
                   <div className="border-t border-border my-3" />
                   <button
                     onClick={() => { handleSignOut(); setMobileOpen(false); }}
