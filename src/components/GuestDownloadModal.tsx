@@ -96,7 +96,7 @@ export function GuestDownloadModal({ open, onOpenChange, contentId, onDownload }
             <button
               onClick={handleContinueAsGuest}
               disabled={!ready}
-              className={`text-sm transition-colors ${
+              className={`text-sm min-h-[44px] transition-colors ${
                 ready ? "text-muted-foreground hover:text-foreground cursor-pointer" : "text-muted-foreground/40 cursor-not-allowed"
               }`}
             >

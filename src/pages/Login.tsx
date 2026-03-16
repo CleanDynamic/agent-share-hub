@@ -57,7 +57,7 @@ export default function Login() {
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-8">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 sm:p-8">
         <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">

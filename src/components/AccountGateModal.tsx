@@ -32,7 +32,7 @@ export function AccountGateModal({ open, onOpenChange, contentId, mode }: Accoun
           <p className="text-sm text-muted-foreground leading-relaxed">
             You need a free account to {mode === "purchase" ? "purchase" : "subscribe to"} content on NeoScale AI.
           </p>
-          <Button onClick={handleCreateAccount} className="w-full">
+          <Button onClick={handleCreateAccount} className="w-full min-h-[44px]">
             Create free account
           </Button>
           <button

@@ -123,7 +123,7 @@ export default function Signup() {
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-8">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 sm:p-8">
         <h1 className="text-2xl font-bold text-foreground">Join NeoScale AI</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Free to join. Download AI assistants, save your favourites, and follow creators.

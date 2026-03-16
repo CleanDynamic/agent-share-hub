@@ -68,7 +68,7 @@ export default function Onboarding() {
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4">
-      <div className="w-full max-w-lg rounded-xl border border-border bg-card p-8">
+      <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 sm:p-8">
         {/* Step indicators */}
         <div className="flex gap-2 mb-6">
           {[1, 2, 3].map((s) => (
