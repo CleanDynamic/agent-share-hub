@@ -119,7 +119,9 @@ export function ContentCard({
             Free
           </Badge>
         ) : (
-          <span className="text-xs font-semibold text-foreground">£{(price_gbp ?? 0).toFixed(2)}</span>
+          <Badge variant="outline" className="text-[10px] font-medium bg-orange-500/15 text-orange-400 border-orange-500/30">
+            £{(price_gbp ?? 0).toFixed(2)}
+          </Badge>
         )}
       </div>
 
