@@ -90,6 +90,35 @@ const CreatorProfile = () => {
     enabled: !!profile?.id,
   });
 
+  const { data: creatorProjects } = useQuery({
+    queryKey: ["creator_projects", profile?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*, profiles(id, username, display_name), project_components(id, component_type, linked_content_id, inline_content_id)")
+        .eq("creator_id", profile!.id)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!profile?.id,
+  });
+
+  // Fetch content types for project components
+  const projContentIds = (creatorProjects ?? []).flatMap((p: any) =>
+    (p.project_components ?? []).map((c: any) => c.linked_content_id || c.inline_content_id).filter(Boolean)
+  );
+  const { data: projContentTypes } = useQuery({
+    queryKey: ["creator_proj_content_types", projContentIds.join(",")],
+    queryFn: async () => {
+      if (projContentIds.length === 0) return [];
+      const { data } = await supabase.from("content_items").select("id, content_type").in("id", projContentIds);
+      return data ?? [];
+    },
+    enabled: projContentIds.length > 0,
+  });
+
   const { data: services } = useQuery({
     queryKey: ["creator_services", profile?.id],
     queryFn: async () => {
