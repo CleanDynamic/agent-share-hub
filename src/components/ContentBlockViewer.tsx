@@ -38,10 +38,12 @@ interface VariationRow {
 
 interface Props {
   contentId: string;
+  contentTitle?: string;
   monetisationType: string;
   creatorId: string;
   useInstructions: string | null;
   onTriggerPaywall: () => void;
+  isEligible?: boolean;
 }
 
 // ─── Ad Modal ───────────────────────────────────────────────
