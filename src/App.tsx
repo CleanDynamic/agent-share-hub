@@ -27,6 +27,8 @@ import Profile from "./pages/Profile";
 import Saved from "./pages/Saved";
 import Feed from "./pages/Feed";
 import MyUploads from "./pages/MyUploads";
+import RecentPage from "./pages/Recent";
+import FYPPage from "./pages/FYP";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +47,8 @@ const App = () => (
               <Route element={<Layout />}>
                 <Route path="/" element={<Home />} />
                 <Route path="/browse" element={<Browse />} />
+                <Route path="/recent" element={<RecentPage />} />
+                <Route path="/fyp" element={<FYPPage />} />
                 <Route path="/upload" element={<Upload />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/content/:id" element={<ContentDetail />} />
