@@ -249,10 +249,12 @@ function RenderBlockContent({
 
 export function ContentBlockViewer({
   contentId,
+  contentTitle = "",
   monetisationType,
   creatorId,
   useInstructions,
   onTriggerPaywall,
+  isEligible = false,
 }: Props) {
   const { isLoggedIn, profile } = useAuth();
   const [unblurred, setUnblurred] = useState<Record<string, boolean>>({});
