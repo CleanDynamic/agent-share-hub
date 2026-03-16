@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, CheckCircle, XCircle, Loader2, Wrench } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { LogOut, CheckCircle, XCircle, Loader2, ExternalLink } from "lucide-react";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -85,14 +85,13 @@ const Admin = () => {
     },
   });
 
-  // ── Tool submissions ──
-  const { data: pendingTools, isLoading: toolsLoading } = useQuery({
-    queryKey: ["admin_pending_tools"],
+  // ── All AI tools (all statuses for admin) ──
+  const { data: allTools, isLoading: toolsLoading } = useQuery({
+    queryKey: ["admin_all_tools"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ai_tools_registry" as any)
-        .select("*")
-        .eq("status", "pending")
+        .select("*, profiles:submitted_by(username, display_name)")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data as any[];
@@ -101,16 +100,22 @@ const Admin = () => {
 
   const approveToolMutation = useMutation({
     mutationFn: async (toolId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("ai_tools_registry" as any)
-        .update({ status: "approved", approved_at: new Date().toISOString() } as any)
+        .update({
+          status: "approved",
+          approved_at: new Date().toISOString(),
+          approved_by: user?.id ?? null,
+        } as any)
         .eq("id", toolId);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_pending_tools"] });
+    onSuccess: (_data, toolId) => {
+      const tool = allTools?.find((t: any) => t.id === toolId);
+      queryClient.invalidateQueries({ queryKey: ["admin_all_tools"] });
       queryClient.invalidateQueries({ queryKey: ["approved_ai_tools"] });
-      toast({ title: "Tool approved" });
+      toast({ title: `${tool?.name || "Tool"} is now live in the AI Tools filter` });
     },
   });
 
@@ -123,10 +128,14 @@ const Admin = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_pending_tools"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_all_tools"] });
       toast({ title: "Tool rejected" });
     },
   });
+
+  const pendingToolsList = allTools?.filter((t: any) => t.status === "pending") ?? [];
+  const approvedToolsList = allTools?.filter((t: any) => t.status === "approved") ?? [];
+  const rejectedToolsList = allTools?.filter((t: any) => t.status === "rejected") ?? [];
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -147,7 +156,7 @@ const Admin = () => {
           <TabsList className="bg-card border border-border">
             <TabsTrigger value="content">Content Queue</TabsTrigger>
             <TabsTrigger value="services">Service Listings</TabsTrigger>
-            <TabsTrigger value="tools">Tool Submissions</TabsTrigger>
+            <TabsTrigger value="tools">AI Tools</TabsTrigger>
           </TabsList>
 
           {/* ── Content approval queue ── */}
@@ -251,50 +260,77 @@ const Admin = () => {
             )}
           </TabsContent>
 
-          {/* ── Tool submissions review ── */}
-          <TabsContent value="tools" className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">Pending Tool Suggestions</h2>
+          {/* ── AI Tools registry ── */}
+          <TabsContent value="tools" className="space-y-6">
             {toolsLoading ? (
               <div className="space-y-3">
+                <Skeleton className="h-10 w-full rounded-xl" />
                 <Skeleton className="h-16 w-full rounded-xl" />
                 <Skeleton className="h-16 w-full rounded-xl" />
               </div>
-            ) : !pendingTools || pendingTools.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-10 text-center">No pending tool submissions.</p>
             ) : (
-              <div className="space-y-3">
-                {pendingTools.map((tool: any) => (
-                  <div key={tool.id} className="border border-border rounded-xl p-4 bg-card flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground">{tool.name}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Submitted {new Date(tool.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 shrink-0">
-                      <Button
-                        size="sm"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
-                        onClick={() => approveToolMutation.mutate(tool.id)}
-                        disabled={approveToolMutation.isPending}
-                      >
-                        {approveToolMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-xs h-8 border-destructive text-destructive hover:bg-destructive/10"
-                        onClick={() => rejectToolMutation.mutate({ id: tool.id })}
-                        disabled={rejectToolMutation.isPending}
-                      >
-                        {rejectToolMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3 mr-1" />}
-                        Reject
-                      </Button>
-                    </div>
+              <>
+                {/* Stats bar */}
+                <div className="flex gap-4 text-sm">
+                  <span className="text-foreground font-medium">{approvedToolsList.length} tools approved</span>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="text-muted-foreground">{pendingToolsList.length} pending review</span>
+                </div>
+
+                {/* Pending */}
+                {pendingToolsList.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-foreground">Pending</h3>
+                    {pendingToolsList.map((tool: any) => (
+                      <ToolCard
+                        key={tool.id}
+                        tool={tool}
+                        onApprove={() => approveToolMutation.mutate(tool.id)}
+                        onReject={(reason) => rejectToolMutation.mutate({ id: tool.id, reason })}
+                        approving={approveToolMutation.isPending}
+                        rejecting={rejectToolMutation.isPending}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+
+                {/* Approved */}
+                {approvedToolsList.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-foreground">Approved</h3>
+                    {approvedToolsList.map((tool: any) => (
+                      <div key={tool.id} className="border border-border rounded-xl p-4 bg-card">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">{tool.name}</p>
+                          {tool.is_official && (
+                            <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">Official</Badge>
+                          )}
+                          <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Approved</Badge>
+                        </div>
+                        {tool.description && <p className="text-xs text-muted-foreground mt-1">{tool.description}</p>}
+                        <p className="text-xs text-muted-foreground mt-1">{tool.category}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Rejected */}
+                {rejectedToolsList.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-foreground text-muted-foreground">Rejected</h3>
+                    {rejectedToolsList.map((tool: any) => (
+                      <div key={tool.id} className="border border-border rounded-xl p-3 bg-card opacity-60">
+                        <p className="text-sm text-foreground">{tool.name}</p>
+                        {tool.rejected_reason && <p className="text-xs text-destructive mt-0.5">{tool.rejected_reason}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!allTools || allTools.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-10 text-center">No tools in the registry yet.</p>
+                ) : null}
+              </>
             )}
           </TabsContent>
         </Tabs>
@@ -302,5 +338,88 @@ const Admin = () => {
     </div>
   );
 };
+
+/** A detailed card for a pending tool submission with approve/reject */
+function ToolCard({
+  tool,
+  onApprove,
+  onReject,
+  approving,
+  rejecting,
+}: {
+  tool: any;
+  onApprove: () => void;
+  onReject: (reason?: string) => void;
+  approving: boolean;
+  rejecting: boolean;
+}) {
+  const [rejectReason, setRejectReason] = useState("");
+  const [showReject, setShowReject] = useState(false);
+  const submitter = tool.profiles as { username: string | null; display_name: string | null } | null;
+
+  return (
+    <div className="border border-border rounded-xl p-4 bg-card space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+        <div className="flex-1 min-w-0 space-y-1">
+          <p className="text-sm font-semibold text-foreground">{tool.name}</p>
+          {tool.website_url && (
+            <a
+              href={tool.website_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              {tool.website_url} <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+          {tool.description && <p className="text-xs text-muted-foreground">{tool.description}</p>}
+          <p className="text-xs text-muted-foreground">
+            Category: {tool.category} · Submitted by @{submitter?.username || "unknown"} · {new Date(tool.created_at).toLocaleDateString()}
+          </p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <Button
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
+            onClick={onApprove}
+            disabled={approving}
+          >
+            {approving ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+            Approve
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs h-8 border-destructive text-destructive hover:bg-destructive/10"
+            onClick={() => showReject ? onReject(rejectReason) : setShowReject(true)}
+            disabled={rejecting}
+          >
+            {rejecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3 mr-1" />}
+            Reject
+          </Button>
+        </div>
+      </div>
+      {showReject && (
+        <div className="flex gap-2">
+          <Input
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Rejection reason (optional)"
+            className="h-8 text-xs bg-background border-border rounded-lg flex-1"
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs"
+            onClick={() => onReject(rejectReason)}
+            disabled={rejecting}
+          >
+            Confirm
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default Admin;
