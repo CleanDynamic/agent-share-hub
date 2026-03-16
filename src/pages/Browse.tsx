@@ -150,6 +150,47 @@ const Browse = () => {
     queryFn: fetchApprovedContent,
   });
 
+  // Projects query
+  const { data: projects, isLoading: projectsLoading } = useQuery({
+    queryKey: ["projects_approved"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*, profiles(id, username, display_name), project_components(id, component_type, linked_content_id, inline_content_id)")
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: browseTab === "projects",
+  });
+
+  // Fetch content items for project component types
+  const projectContentIds = (projects ?? []).flatMap((p: any) =>
+    (p.project_components ?? []).map((c: any) => c.linked_content_id || c.inline_content_id).filter(Boolean)
+  );
+  const { data: projectContentItems } = useQuery({
+    queryKey: ["project_content_types", projectContentIds.join(",")],
+    queryFn: async () => {
+      if (projectContentIds.length === 0) return [];
+      const { data } = await supabase
+        .from("content_items")
+        .select("id, content_type")
+        .in("id", projectContentIds);
+      return data ?? [];
+    },
+    enabled: projectContentIds.length > 0,
+  });
+
+  const filteredProjects = useMemo(() => {
+    if (!projects) return [];
+    const q = projectSearch.toLowerCase();
+    if (!q) return projects;
+    return projects.filter((p: any) =>
+      p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
+    );
+  }, [projects, projectSearch]);
+
   const hasFilters = search || typeFilter !== ALL || difficultyFilter !== ALL || toolFilter !== ALL || useCaseFilter !== ALL;
 
   const filtered = useMemo(() => {
