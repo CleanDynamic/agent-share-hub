@@ -78,21 +78,7 @@ const Upload = () => {
 
   const monetisationType = form.watch("monetisation_type");
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setFileError("");
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const ext = "." + f.name.split(".").pop()?.toLowerCase();
-    if (!ACCEPTED_TYPES.includes(ext)) {
-      setFileError("Only .txt, .md, .json, and .pdf files are accepted.");
-      return;
-    }
-    if (f.size > MAX_FILE_SIZE) {
-      setFileError("File must be under 10MB.");
-      return;
-    }
-    setFile(f);
-  }
+  // (file handling now done inside ContentBlockBuilder)
 
   async function onSubmit(values: FormValues) {
     if (!file) {
