@@ -7,6 +7,7 @@ import { ContentCard } from "@/components/ContentCard";
 import { TipSelector } from "@/components/TipSelector";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
 import { AccountGateModal } from "@/components/AccountGateModal";
+import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
 import { useToast } from "@/hooks/use-toast";
@@ -352,15 +353,14 @@ const ContentDetail = () => {
               </div>
             )}
 
-            {item.use_instructions && (!isSub || subscriberUnlocked) && (
-              <div>
-                <h2 className="text-lg font-semibold text-foreground mb-3">How to Use This</h2>
-                <div className="border border-border rounded-xl p-5 bg-card">
-                  <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-[inherit] leading-relaxed">
-                    {item.use_instructions}
-                  </pre>
-                </div>
-              </div>
+            {(!isSub || subscriberUnlocked) && (
+              <ContentBlockViewer
+                contentId={item.id}
+                monetisationType={item.monetisation_type}
+                creatorId={item.creator_id}
+                useInstructions={item.use_instructions}
+                onTriggerPaywall={handleDownload}
+              />
             )}
 
             {item.what_to_expect && (!isSub || subscriberUnlocked) && (
