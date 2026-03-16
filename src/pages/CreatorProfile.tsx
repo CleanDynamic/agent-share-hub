@@ -151,6 +151,7 @@ const CreatorProfile = () => {
   const hasDonationContent = contentItems?.some((item) => item.donation_enabled) ?? false;
   const hasSubscriptionPriceId = !!(profile as any)?.subscription_price_id;
   const [followerDelta, setFollowerDelta] = useState(0);
+  const [creatorTab, setCreatorTab] = useState<"content" | "projects">("content");
   const followerCount = ((profile as any)?.follower_count ?? 0) + followerDelta;
 
   const [enquiryListing, setEnquiryListing] = useState<{ id: string; title: string } | null>(null);
