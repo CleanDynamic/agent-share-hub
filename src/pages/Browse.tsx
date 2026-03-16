@@ -53,11 +53,27 @@ function CardSkeleton() {
 }
 
 const Browse = () => {
+  const { isLoggedIn, profile } = useAuth();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState(ALL);
   const [difficultyFilter, setDifficultyFilter] = useState(ALL);
   const [toolFilter, setToolFilter] = useState(ALL);
   const [useCaseFilter, setUseCaseFilter] = useState(ALL);
+  const [matchInterests, setMatchInterests] = useState(false);
+
+  // Fetch full profile with interests for personalisation
+  const { data: fullProfile } = useQuery({
+    queryKey: ["browse_profile", profile?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_interests, user_ai_tools")
+        .eq("id", profile!.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!profile?.id && isLoggedIn,
+  });
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["content_items_approved"],
