@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { ContentCard } from "@/components/ContentCard";
 import { TipSelector } from "@/components/TipSelector";
+import { GuestDownloadModal } from "@/components/GuestDownloadModal";
+import { AccountGateModal } from "@/components/AccountGateModal";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,12 +49,16 @@ const ContentDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+  const { isLoggedIn } = useAuth();
   const [downloading, setDownloading] = useState(false);
   const [localCount, setLocalCount] = useState<number | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentHandled, setPaymentHandled] = useState(false);
   const [tipSuccess, setTipSuccess] = useState(false);
   const [tipHandled, setTipHandled] = useState(false);
+  const [guestModalOpen, setGuestModalOpen] = useState(false);
+  const [accountGateOpen, setAccountGateOpen] = useState(false);
+  const [accountGateMode, setAccountGateMode] = useState<"purchase" | "subscription">("purchase");
 
   // Fetch content item with creator profile
   const { data: item, isLoading, error } = useQuery({
@@ -158,9 +165,26 @@ const ContentDetail = () => {
     }
   }, [searchParams, item, paymentHandled, tipHandled]);
 
+  async function doDownload() {
+    if (!item) return;
+    setDownloading(true);
+    const result = await triggerDownload(item.id, item.file_url);
+    if (result.error) {
+      toast({ title: "Download failed", description: result.error, variant: "destructive" });
+    } else if (result.newCount !== undefined) {
+      setLocalCount(result.newCount);
+    }
+    setDownloading(false);
+  }
+
   async function handleDownload() {
     if (!item) return;
     if (isPaid) {
+      if (!isLoggedIn) {
+        setAccountGateMode("purchase");
+        setAccountGateOpen(true);
+        return;
+      }
       setDownloading(true);
       try {
         const priceInPence = Math.round((item.price_gbp ?? 0) * 100);
@@ -184,17 +208,18 @@ const ContentDetail = () => {
       return;
     }
     if (isSub && !subscriberUnlocked) {
-      // Do nothing — locked state shows UI instead
+      if (!isLoggedIn) {
+        setAccountGateMode("subscription");
+        setAccountGateOpen(true);
+      }
       return;
     }
-    setDownloading(true);
-    const result = await triggerDownload(item.id, item.file_url);
-    if (result.error) {
-      toast({ title: "Download failed", description: result.error, variant: "destructive" });
-    } else if (result.newCount !== undefined) {
-      setLocalCount(result.newCount);
+    // Free content
+    if (!isLoggedIn) {
+      setGuestModalOpen(true);
+      return;
     }
-    setDownloading(false);
+    await doDownload();
   }
 
   if (isLoading) {
@@ -455,6 +480,26 @@ const ContentDetail = () => {
           </div>
         )}
       </div>
+
+      {/* Guest ad modal */}
+      {item && (
+        <GuestDownloadModal
+          open={guestModalOpen}
+          onOpenChange={setGuestModalOpen}
+          contentId={item.id}
+          onDownload={doDownload}
+        />
+      )}
+
+      {/* Account gate modal */}
+      {item && (
+        <AccountGateModal
+          open={accountGateOpen}
+          onOpenChange={setAccountGateOpen}
+          contentId={item.id}
+          mode={accountGateMode}
+        />
+      )}
     </div>
   );
 };

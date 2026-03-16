@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,11 @@ import { Check, X, Loader2 } from "lucide-react";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isLoggedIn } = useAuth();
   const { toast } = useToast();
+  const afterDownload = searchParams.get("after_download");
+  const afterPurchase = searchParams.get("after_purchase");
 
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
@@ -87,7 +90,25 @@ export default function Signup() {
         .eq("id", data.user.id);
 
       toast({ title: "Account created! Welcome to NeoScale AI." });
-      navigate("/browse");
+
+      // Handle post-signup actions
+      if (afterDownload) {
+        // Mark the ad impression as converted
+        await supabase.from("ad_impressions").update({ converted: true } as any)
+          .eq("content_id", afterDownload)
+          .is("user_id", null)
+          .is("dismissed_at", null)
+          .order("shown_at", { ascending: false })
+          .limit(1);
+        // Auto-download the content
+        const { triggerDownload } = await import("@/lib/download");
+        triggerDownload(afterDownload, null); // Will use file_url from the content detail page
+        navigate(`/content/${afterDownload}`);
+      } else if (afterPurchase) {
+        navigate(`/content/${afterPurchase}`);
+      } else {
+        navigate("/onboarding");
+      }
     } catch (err: any) {
       toast({ title: err.message || "Something went wrong.", variant: "destructive" });
     } finally {

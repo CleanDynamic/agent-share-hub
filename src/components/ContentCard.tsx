@@ -7,6 +7,9 @@ import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { GuestDownloadModal } from "@/components/GuestDownloadModal";
+import { AccountGateModal } from "@/components/AccountGateModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface ContentCardProps {
   id: string;
@@ -62,22 +65,39 @@ export function ContentCard({
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isLoggedIn } = useAuth();
   const [count, setCount] = useState(initialCount);
   const [downloading, setDownloading] = useState(false);
+  const [guestModalOpen, setGuestModalOpen] = useState(false);
+  const [accountGateOpen, setAccountGateOpen] = useState(false);
   const isPaid = monetisation_type === "paid";
   const isSub = monetisation_type === "subscription";
   const label = getDownloadLabel(content_type, monetisation_type, price_gbp);
+
+  async function doDownload() {
+    setDownloading(true);
+    const result = await triggerDownload(id, file_url ?? null);
+    if (result.error) {
+      toast({ title: "Download failed", description: result.error, variant: "destructive" });
+    } else if (result.newCount !== undefined) {
+      setCount(result.newCount);
+    }
+    setDownloading(false);
+  }
 
   async function handleDownload(e: React.MouseEvent) {
     e.stopPropagation();
 
     if (isSub) {
-      // Navigate to content detail page (which handles subscription check)
       navigate(`/content/${id}`);
       return;
     }
 
     if (isPaid) {
+      if (!isLoggedIn) {
+        setAccountGateOpen(true);
+        return;
+      }
       setDownloading(true);
       try {
         const priceInPence = Math.round((price_gbp ?? 0) * 100);
@@ -101,93 +121,110 @@ export function ContentCard({
       return;
     }
 
-    setDownloading(true);
-    const result = await triggerDownload(id, file_url ?? null);
-    if (result.error) {
-      toast({ title: "Download failed", description: result.error, variant: "destructive" });
-    } else if (result.newCount !== undefined) {
-      setCount(result.newCount);
+    // Free content
+    if (!isLoggedIn) {
+      setGuestModalOpen(true);
+      return;
     }
-    setDownloading(false);
+
+    await doDownload();
   }
 
   return (
-    <div
-      onClick={() => navigate(`/content/${id}`)}
-      className="relative w-full text-left border border-border rounded-xl p-5 bg-card hover:border-primary/40 transition-colors flex flex-col group cursor-pointer"
-    >
-      {/* Bookmark */}
-      <div className="absolute top-3 right-3 z-10">
-        <BookmarkButton contentId={id} />
-      </div>
-      {/* Top row */}
-      <div className="flex items-start justify-between mb-3">
-        <Badge
-          variant="outline"
-          className={`text-[10px] font-medium ${TYPE_COLORS[content_type] ?? TYPE_COLORS["Failure Library"]}`}
-        >
-          {content_type}
-        </Badge>
-        {isSub ? (
-          <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">
-            Subscribers only
-          </Badge>
-        ) : isPaid ? (
-          <Badge variant="outline" className="text-[10px] font-medium bg-orange-500/15 text-orange-400 border-orange-500/30">
-            £{(price_gbp ?? 0).toFixed(2)}
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">
-            Free
-          </Badge>
-        )}
-      </div>
-
-      <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
-        {title}
-      </h3>
-      <p className="text-xs text-muted-foreground leading-relaxed mb-4 flex-1">{description}</p>
-
-      {/* AI tools */}
-      <div className="flex flex-wrap gap-1 mb-3">
-        {ai_tools.map((tool) => (
-          <span key={tool} className="text-[10px] px-1.5 py-0.5 rounded-md bg-accent text-muted-foreground">
-            {tool}
-          </span>
-        ))}
-      </div>
-
-      {/* Bottom */}
-      <div className="flex items-center justify-between pt-3 border-t border-border">
-        <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(difficulty)}`}>
-          {difficulty}
-        </Badge>
-        <div className="flex items-center gap-2">
-          {!isSub && (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <Download className="h-3 w-3" />
-              <span className="text-[10px]">{count.toLocaleString()}</span>
-            </div>
-          )}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-xs text-primary hover:text-primary h-7 px-2"
-            onClick={handleDownload}
-            disabled={downloading}
+    <>
+      <div
+        onClick={() => navigate(`/content/${id}`)}
+        className="relative w-full text-left border border-border rounded-xl p-5 bg-card hover:border-primary/40 transition-colors flex flex-col group cursor-pointer"
+      >
+        {/* Bookmark */}
+        <div className="absolute top-3 right-3 z-10">
+          <BookmarkButton contentId={id} />
+        </div>
+        {/* Top row */}
+        <div className="flex items-start justify-between mb-3 pr-6">
+          <Badge
+            variant="outline"
+            className={`text-[10px] font-medium ${TYPE_COLORS[content_type] ?? TYPE_COLORS["Failure Library"]}`}
           >
-            {downloading ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : isSub ? (
-              <><Lock className="h-3 w-3 mr-1" />Subscribers only</>
-            ) : isPaid ? (
-              <><Lock className="h-3 w-3 mr-1" />{label}</>
-            ) : (
-              label
+            {content_type}
+          </Badge>
+          {isSub ? (
+            <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">
+              Subscribers only
+            </Badge>
+          ) : isPaid ? (
+            <Badge variant="outline" className="text-[10px] font-medium bg-orange-500/15 text-orange-400 border-orange-500/30">
+              £{(price_gbp ?? 0).toFixed(2)}
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">
+              Free
+            </Badge>
+          )}
+        </div>
+
+        <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
+          {title}
+        </h3>
+        <p className="text-xs text-muted-foreground leading-relaxed mb-4 flex-1">{description}</p>
+
+        {/* AI tools */}
+        <div className="flex flex-wrap gap-1 mb-3">
+          {ai_tools.map((tool) => (
+            <span key={tool} className="text-[10px] px-1.5 py-0.5 rounded-md bg-accent text-muted-foreground">
+              {tool}
+            </span>
+          ))}
+        </div>
+
+        {/* Bottom */}
+        <div className="flex items-center justify-between pt-3 border-t border-border">
+          <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(difficulty)}`}>
+            {difficulty}
+          </Badge>
+          <div className="flex items-center gap-2">
+            {!isSub && (
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Download className="h-3 w-3" />
+                <span className="text-[10px]">{count.toLocaleString()}</span>
+              </div>
             )}
-          </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-xs text-primary hover:text-primary h-7 px-2"
+              onClick={handleDownload}
+              disabled={downloading}
+            >
+              {downloading ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : isSub ? (
+                <><Lock className="h-3 w-3 mr-1" />Subscribers only</>
+              ) : isPaid ? (
+                <><Lock className="h-3 w-3 mr-1" />{label}</>
+              ) : (
+                label
+              )}
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Guest ad modal for free content */}
+      <GuestDownloadModal
+        open={guestModalOpen}
+        onOpenChange={setGuestModalOpen}
+        contentId={id}
+        onDownload={doDownload}
+      />
+
+      {/* Account gate for paid content */}
+      <AccountGateModal
+        open={accountGateOpen}
+        onOpenChange={setAccountGateOpen}
+        contentId={id}
+        mode="purchase"
+      />
+    </>
   );
 }
