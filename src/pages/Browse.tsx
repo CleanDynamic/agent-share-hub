@@ -95,9 +95,17 @@ const Browse = () => {
       if (difficultyFilter !== ALL && item.difficulty !== difficultyFilter) return false;
       if (toolFilter !== ALL && !(item.ai_tools ?? []).includes(toolFilter)) return false;
       if (useCaseFilter !== ALL && !(item.use_cases ?? []).includes(useCaseFilter)) return false;
+      // Personalised filter
+      if (matchInterests && fullProfile) {
+        const interests = (fullProfile as any).user_interests ?? [];
+        const tools = (fullProfile as any).user_ai_tools ?? [];
+        const matchesInterest = (item.use_cases ?? []).some((u: string) => interests.includes(u));
+        const matchesTool = (item.ai_tools ?? []).some((t: string) => tools.includes(t));
+        if (!matchesInterest && !matchesTool) return false;
+      }
       return true;
     });
-  }, [items, search, typeFilter, difficultyFilter, toolFilter, useCaseFilter]);
+  }, [items, search, typeFilter, difficultyFilter, toolFilter, useCaseFilter, matchInterests, fullProfile]);
 
   function clearFilters() {
     setSearch("");
