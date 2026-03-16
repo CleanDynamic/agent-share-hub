@@ -319,8 +319,8 @@ const CreatorProfile = () => {
       <Dialog open={!!enquiryListing} onOpenChange={(open) => !open && setEnquiryListing(null)}>
         <DialogContent className="bg-card border-border sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Enquire about {enquiryListing?.title}</DialogTitle>
-            <DialogDescription>Send a message to {displayName}.</DialogDescription>
+            <DialogTitle>Work with {displayName}</DialogTitle>
+            <DialogDescription>Send a commission enquiry for "{enquiryListing?.title}".</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEnquiry} className="space-y-4">
             <div className="space-y-2">
@@ -333,12 +333,22 @@ const CreatorProfile = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="message">Message</Label>
-              <Textarea id="message" name="message" rows={4} required className="bg-background border-border rounded-xl" />
+              <Textarea
+                id="message"
+                name="message"
+                rows={4}
+                required
+                placeholder="Describe what you need and any relevant details"
+                className="bg-background border-border rounded-xl"
+              />
             </div>
-            <Button type="submit" className="w-full" disabled={enquirySubmitting}>
+            <Button type="submit" className="w-full bg-[#E8571A] hover:bg-[#E8571A]/90 text-white" disabled={enquirySubmitting}>
               {enquirySubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Send Enquiry
             </Button>
+            <p className="text-[11px] text-muted-foreground text-center">
+              Your message will be sent directly to {displayName}.
+            </p>
           </form>
         </DialogContent>
       </Dialog>
