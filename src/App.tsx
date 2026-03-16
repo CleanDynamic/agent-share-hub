@@ -47,6 +47,8 @@ const App = () => (
               <Route element={<Layout />}>
                 <Route path="/" element={<Home />} />
                 <Route path="/browse" element={<Browse />} />
+                <Route path="/recent" element={<RecentPage />} />
+                <Route path="/fyp" element={<FYPPage />} />
                 <Route path="/upload" element={<Upload />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/content/:id" element={<ContentDetail />} />
