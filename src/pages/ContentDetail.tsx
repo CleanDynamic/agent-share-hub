@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { ContentCard } from "@/components/ContentCard";
+import { TipSelector } from "@/components/TipSelector";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
