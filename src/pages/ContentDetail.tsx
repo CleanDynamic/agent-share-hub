@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,13 +8,15 @@ import { TipSelector } from "@/components/TipSelector";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
 import { AccountGateModal } from "@/components/AccountGateModal";
 import { ContentBlockViewer } from "@/components/ContentBlockViewer";
+import { StarRating } from "@/components/StarRating";
+import { CommentsSection } from "@/components/CommentsSection";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2 } from "lucide-react";
+import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2, Eye } from "lucide-react";
 
 const TYPE_COLORS: Record<string, string> = {
   "Prompt File": "bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/30",
@@ -77,7 +79,7 @@ const ContentDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
   const [downloading, setDownloading] = useState(false);
   const [localCount, setLocalCount] = useState<number | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -87,6 +89,7 @@ const ContentDetail = () => {
   const [guestModalOpen, setGuestModalOpen] = useState(false);
   const [accountGateOpen, setAccountGateOpen] = useState(false);
   const [accountGateMode, setAccountGateMode] = useState<"purchase" | "subscription">("purchase");
+  const viewTracked = useRef(false);
 
   const { data: item, isLoading, error } = useQuery({
     queryKey: ["content_detail", id],
@@ -104,6 +107,31 @@ const ContentDetail = () => {
   });
 
   const creator = item?.profiles as { id: string; username: string; display_name: string | null; bio: string | null } | null;
+
+  // ─── View tracking ──────────────────────────────────────
+  useEffect(() => {
+    if (!item || viewTracked.current) return;
+    viewTracked.current = true;
+
+    // Increment view_count
+    supabase.rpc("increment_content_view_count", { _content_id: item.id });
+
+    // Insert content_views row
+    supabase.from("content_views" as any).insert({
+      content_id: item.id,
+      user_id: user?.id ?? null,
+    } as any);
+
+    // Insert user_interaction for logged-in users
+    if (user) {
+      supabase.from("user_interactions" as any).insert({
+        user_id: user.id,
+        content_id: item.id,
+        interaction_type: "viewed_block",
+        interaction_meta: { title: item.title },
+      } as any);
+    }
+  }, [item, user]);
 
   const { data: creatorStats } = useQuery({
     queryKey: ["creator_total_downloads", creator?.id],
@@ -160,8 +188,29 @@ const ContentDetail = () => {
     enabled: isSub && !!creator?.id,
   });
 
+  // Check if user has downloaded this content (used for eligibility)
+  const { data: hasDownloaded } = useQuery({
+    queryKey: ["user_has_downloaded", id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data } = await supabase
+        .from("downloads")
+        .select("id")
+        .eq("content_id", id!)
+        .eq("user_id", user.id)
+        .limit(1);
+      return (data?.length ?? 0) > 0;
+    },
+    enabled: !!id && !!user,
+  });
+
   const subscriberUnlocked = isSub && hasActiveSubscription === true;
+  const isFreeContent = item?.monetisation_type === "free" || item?.monetisation_type === "donation";
+  // Eligible = logged in AND (free content OR has downloaded OR has subscription)
+  const isEligible = isLoggedIn && (isFreeContent || hasDownloaded === true || subscriberUnlocked);
+
   const count = localCount ?? item?.download_count ?? 0;
+  const viewCount = (item as any)?.view_count ?? 0;
   const label = item ? getDownloadLabel(item.content_type, item.monetisation_type, item.price_gbp ?? undefined) : "";
 
   useEffect(() => {
@@ -314,6 +363,10 @@ const ContentDetail = () => {
             </Link>
           )}
           <div className="flex items-center gap-1">
+            <Eye className="h-3.5 w-3.5" />
+            <span>{viewCount.toLocaleString()} views</span>
+          </div>
+          <div className="flex items-center gap-1">
             <Download className="h-3.5 w-3.5" />
             <span>{count.toLocaleString()} downloads</span>
           </div>
@@ -356,10 +409,12 @@ const ContentDetail = () => {
             {(!isSub || subscriberUnlocked) && (
               <ContentBlockViewer
                 contentId={item.id}
+                contentTitle={item.title}
                 monetisationType={item.monetisation_type}
                 creatorId={item.creator_id}
                 useInstructions={item.use_instructions}
                 onTriggerPaywall={handleDownload}
+                isEligible={isEligible}
               />
             )}
 
@@ -381,6 +436,16 @@ const ContentDetail = () => {
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Comments section — below ContentBlockViewer, above related content */}
+            {(!isSub || subscriberUnlocked) && (
+              <CommentsSection
+                contentId={item.id}
+                contentTitle={item.title}
+                commentCount={(item as any).comment_count ?? 0}
+                isEligible={isEligible}
+              />
             )}
           </div>
 
@@ -409,6 +474,18 @@ const ContentDetail = () => {
               {isPaid && (
                 <p className="text-[11px] text-muted-foreground text-center">£{(item.price_gbp ?? 0).toFixed(2)} — one-time payment</p>
               )}
+
+              {/* Star Rating — below download button, above creator card */}
+              <div className="pt-2 border-t border-border">
+                <StarRating
+                  contentId={item.id}
+                  contentTitle={item.title}
+                  avgRating={Number((item as any).avg_rating) || 0}
+                  ratingCount={(item as any).rating_count ?? 0}
+                  isEligible={isEligible}
+                />
+              </div>
+
               {item.donation_enabled && creator && (
                 <TipSelector
                   creatorId={creator.id}
