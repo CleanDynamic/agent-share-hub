@@ -179,12 +179,9 @@ export function Navbar() {
                       <Upload className="h-4 w-4" /> My Uploads
                     </Link>
                   )}
-                  <Link to="/settings" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 min-h-[44px] text-sm text-muted-foreground hover:text-foreground px-3 rounded-lg hover:bg-accent/50">
-                    <Settings className="h-4 w-4" /> Settings
-                  </Link>
                   <div className="border-t border-border my-3" />
                   <button
-                    onClick={() => { signOut(); setMobileOpen(false); }}
+                    onClick={() => { handleSignOut(); setMobileOpen(false); }}
                     className="flex items-center gap-3 min-h-[44px] text-sm text-destructive px-3 rounded-lg hover:bg-accent/50 w-full"
                   >
                     <LogOut className="h-4 w-4" /> Sign out
