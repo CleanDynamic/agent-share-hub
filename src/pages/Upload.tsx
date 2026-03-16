@@ -40,7 +40,7 @@ const schema = z.object({
   use_instructions: z.string().trim().min(1, "Instructions are required").max(5000),
   what_to_expect: z.string().trim().min(1, "This field is required").max(2000),
   monetisation_type: z.enum(["free", "paid", "donation"]),
-  price_gbp: z.coerce.number().positive().optional(),
+  price_gbp: z.coerce.number().min(1, "Minimum price is £1").optional(),
   donation_enabled: z.boolean(),
 });
 
@@ -463,7 +463,7 @@ const Upload = () => {
                             <Input
                               type="number"
                               step="0.01"
-                              min="0.50"
+                              min="1"
                               placeholder="4.99"
                               className="bg-background border-border rounded-xl w-32"
                               {...field}

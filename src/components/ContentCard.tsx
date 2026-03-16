@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Lock, Loader2 } from "lucide-react";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ContentCardProps {
   id: string;
@@ -67,7 +68,26 @@ export function ContentCard({
     e.stopPropagation();
 
     if (isPaid) {
-      toast({ title: "Payment coming soon", description: "Check back shortly." });
+      setDownloading(true);
+      try {
+        const priceInPence = Math.round((price_gbp ?? 0) * 100);
+        const { data, error } = await supabase.functions.invoke("create-checkout-session", {
+          body: {
+            content_id: id,
+            price_amount: priceInPence,
+            success_url: `${window.location.origin}/content/${id}?payment=success`,
+            cancel_url: `${window.location.origin}/content/${id}`,
+          },
+        });
+        if (error || !data?.url) {
+          toast({ title: "Checkout failed", description: "Could not start payment. Please try again.", variant: "destructive" });
+        } else {
+          window.location.href = data.url;
+        }
+      } catch {
+        toast({ title: "Checkout failed", description: "Something went wrong.", variant: "destructive" });
+      }
+      setDownloading(false);
       return;
     }
 
@@ -99,7 +119,9 @@ export function ContentCard({
             Free
           </Badge>
         ) : (
-          <span className="text-xs font-semibold text-foreground">£{(price_gbp ?? 0).toFixed(2)}</span>
+          <Badge variant="outline" className="text-[10px] font-medium bg-orange-500/15 text-orange-400 border-orange-500/30">
+            £{(price_gbp ?? 0).toFixed(2)}
+          </Badge>
         )}
       </div>
 

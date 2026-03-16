@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users } from "lucide-react";
+import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2 } from "lucide-react";
 
 const TYPE_COLORS: Record<string, string> = {
   "Prompt File": "bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/30",
@@ -43,9 +43,12 @@ function formatDate(dateStr: string) {
 
 const ContentDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
   const [localCount, setLocalCount] = useState<number | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentHandled, setPaymentHandled] = useState(false);
 
   // Fetch content item with creator profile
   const { data: item, isLoading, error } = useQuery({
@@ -106,10 +109,50 @@ const ContentDetail = () => {
   const isSub = item?.monetisation_type === "subscription";
   const label = item ? getDownloadLabel(item.content_type, item.monetisation_type, item.price_gbp ?? undefined) : "";
 
+  // Handle post-payment auto-download
+  useEffect(() => {
+    if (searchParams.get("payment") === "success" && item && !paymentHandled) {
+      setPaymentSuccess(true);
+      setPaymentHandled(true);
+      // Remove query param
+      setSearchParams({}, { replace: true });
+      // Auto-trigger download
+      (async () => {
+        setDownloading(true);
+        const result = await triggerDownload(item.id, item.file_url);
+        if (result.error) {
+          toast({ title: "Download failed", description: result.error, variant: "destructive" });
+        } else if (result.newCount !== undefined) {
+          setLocalCount(result.newCount);
+        }
+        setDownloading(false);
+      })();
+    }
+  }, [searchParams, item, paymentHandled]);
+
   async function handleDownload() {
     if (!item) return;
     if (isPaid) {
-      toast({ title: "Payment coming soon", description: "Check back shortly." });
+      setDownloading(true);
+      try {
+        const priceInPence = Math.round((item.price_gbp ?? 0) * 100);
+        const { data, error } = await supabase.functions.invoke("create-checkout-session", {
+          body: {
+            content_id: item.id,
+            price_amount: priceInPence,
+            success_url: `${window.location.origin}/content/${item.id}?payment=success`,
+            cancel_url: `${window.location.origin}/content/${item.id}`,
+          },
+        });
+        if (error || !data?.url) {
+          toast({ title: "Checkout failed", description: "Could not start payment.", variant: "destructive" });
+        } else {
+          window.location.href = data.url;
+        }
+      } catch {
+        toast({ title: "Checkout failed", description: "Something went wrong.", variant: "destructive" });
+      }
+      setDownloading(false);
       return;
     }
     if (isSub) {
@@ -161,6 +204,14 @@ const ContentDetail = () => {
         <Link to="/browse" className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Browse
         </Link>
+
+        {/* Payment success banner */}
+        {paymentSuccess && (
+          <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+            <CheckCircle2 className="h-5 w-5 shrink-0" />
+            <p className="text-sm font-medium">Payment successful. Your download is ready.</p>
+          </div>
+        )}
 
         {/* Badges */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
