@@ -11,7 +11,7 @@ interface BookmarkButtonProps {
   className?: string;
 }
 
-export function BookmarkButton({ contentId, className }: BookmarkButtonProps) {
+export function BookmarkButton({ contentId, projectId, className }: BookmarkButtonProps) {
   const { isLoggedIn, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -23,17 +23,22 @@ export function BookmarkButton({ contentId, className }: BookmarkButtonProps) {
       setLoaded(true);
       return;
     }
-    supabase
+    const query = supabase
       .from("user_saves")
       .select("id")
-      .eq("user_id", user.id)
-      .eq("content_id", contentId)
-      .maybeSingle()
-      .then(({ data }) => {
-        setSaved(!!data);
-        setLoaded(true);
-      });
-  }, [isLoggedIn, user, contentId]);
+      .eq("user_id", user.id);
+
+    if (projectId) {
+      query.eq("project_id", projectId);
+    } else {
+      query.eq("content_id", contentId);
+    }
+
+    query.maybeSingle().then(({ data }) => {
+      setSaved(!!data);
+      setLoaded(true);
+    });
+  }, [isLoggedIn, user, contentId, projectId]);
 
   const handleClick = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
