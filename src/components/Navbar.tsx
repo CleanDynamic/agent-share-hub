@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
+import { Upload } from "lucide-react";
 import { Menu, X, LogOut, User, Bookmark, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -64,10 +65,17 @@ export function Navbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem asChild>
-                  <Link to={`/creator/${profile?.username ?? ""}`} className="flex items-center gap-2">
+                  <Link to="/profile" className="flex items-center gap-2">
                     <User className="h-4 w-4" /> My Profile
                   </Link>
                 </DropdownMenuItem>
+                {profile?.is_creator && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-uploads" className="flex items-center gap-2">
+                      <Upload className="h-4 w-4" /> My Uploads
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                   <Link to="/saved" className="flex items-center gap-2">
                     <Bookmark className="h-4 w-4" /> Saved
