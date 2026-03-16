@@ -90,7 +90,25 @@ export default function Signup() {
         .eq("id", data.user.id);
 
       toast({ title: "Account created! Welcome to NeoScale AI." });
-      navigate("/browse");
+
+      // Handle post-signup actions
+      if (afterDownload) {
+        // Mark the ad impression as converted
+        await supabase.from("ad_impressions").update({ converted: true } as any)
+          .eq("content_id", afterDownload)
+          .is("user_id", null)
+          .is("dismissed_at", null)
+          .order("shown_at", { ascending: false })
+          .limit(1);
+        // Auto-download the content
+        const { triggerDownload } = await import("@/lib/download");
+        triggerDownload(afterDownload, null); // Will use file_url from the content detail page
+        navigate(`/content/${afterDownload}`);
+      } else if (afterPurchase) {
+        navigate(`/content/${afterPurchase}`);
+      } else {
+        navigate("/onboarding");
+      }
     } catch (err: any) {
       toast({ title: err.message || "Something went wrong.", variant: "destructive" });
     } finally {
