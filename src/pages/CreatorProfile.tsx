@@ -148,6 +148,7 @@ const CreatorProfile = () => {
   });
 
   const totalDownloads = contentItems?.reduce((sum, item) => sum + item.download_count, 0) ?? 0;
+  const totalViews = contentItems?.reduce((sum, item) => sum + ((item as any).view_count ?? 0), 0) ?? 0;
   const hasDonationContent = contentItems?.some((item) => item.donation_enabled) ?? false;
   const hasSubscriptionPriceId = !!(profile as any)?.subscription_price_id;
   const [followerDelta, setFollowerDelta] = useState(0);
