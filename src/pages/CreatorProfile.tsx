@@ -285,6 +285,11 @@ const CreatorProfile = () => {
                   <span className="text-muted-foreground">published</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-foreground font-medium">{totalViews.toLocaleString()}</span>
+                  <span className="text-muted-foreground">total views</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
                   <Download className="h-4 w-4 text-muted-foreground" />
                   <span className="text-foreground font-medium">{totalDownloads.toLocaleString()}</span>
                   <span className="text-muted-foreground">downloads</span>
