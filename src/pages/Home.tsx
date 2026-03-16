@@ -178,12 +178,14 @@ const Home = () => {
       </section>
 
       {/* ── How It Works ── */}
-      <section className="border-t border-border py-20 px-6">
+      <section className="border-t border-border py-16 sm:py-20 px-4 sm:px-6">
         <div className="mx-auto max-w-5xl">
-          <h2 className="text-2xl font-bold tracking-tight text-foreground text-center mb-12">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground text-center mb-10 sm:mb-12">
             How It Works
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+            {/* Connecting line for mobile */}
+            <div className="absolute left-6 top-12 bottom-12 w-px bg-border md:hidden" />
             {STEPS.map((step, i) => (
               <motion.div
                 key={step.number}
@@ -192,16 +194,16 @@ const Home = () => {
                 whileInView="visible"
                 viewport={{ once: true }}
                 variants={fade}
-                className="text-center space-y-3"
+                className="text-center md:text-center relative flex flex-col items-center md:items-center"
               >
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-card">
+                <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-card">
                   <step.icon className="h-5 w-5 text-primary" />
                 </div>
-                <span className="inline-block text-xs font-bold text-primary uppercase tracking-widest">
+                <span className="inline-block text-xs font-bold text-primary uppercase tracking-widest mt-3">
                   Step {step.number}
                 </span>
-                <h3 className="text-base font-semibold text-foreground">{step.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
+                <h3 className="text-base font-semibold text-foreground mt-2">{step.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto mt-1">
                   {step.description}
                 </p>
               </motion.div>
