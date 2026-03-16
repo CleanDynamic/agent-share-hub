@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { triggerDownload } from "@/lib/download";
+import { CommentsSection } from "@/components/CommentsSection";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Download, Loader2, Eye } from "lucide-react";
+import { FileText, Download, Loader2, Eye, MessageCircle } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -38,10 +39,12 @@ interface VariationRow {
 
 interface Props {
   contentId: string;
+  contentTitle?: string;
   monetisationType: string;
   creatorId: string;
   useInstructions: string | null;
   onTriggerPaywall: () => void;
+  isEligible?: boolean;
 }
 
 // ─── Ad Modal ───────────────────────────────────────────────
@@ -247,10 +250,12 @@ function RenderBlockContent({
 
 export function ContentBlockViewer({
   contentId,
+  contentTitle = "",
   monetisationType,
   creatorId,
   useInstructions,
   onTriggerPaywall,
+  isEligible = false,
 }: Props) {
   const { isLoggedIn, profile } = useAuth();
   const [unblurred, setUnblurred] = useState<Record<string, boolean>>({});
@@ -329,6 +334,7 @@ export function ContentBlockViewer({
 
   // Active variation tab per block
   const [activeTab, setActiveTab] = useState<Record<string, string>>({});
+  const [blockCommentsOpen, setBlockCommentsOpen] = useState<Record<string, boolean>>({});
 
   const insertAdImpression = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -535,6 +541,31 @@ export function ContentBlockViewer({
                           <Eye className="h-4 w-4" />
                           View
                         </Button>
+                      </div>
+                    )}
+
+                    {/* Block-level comments toggle */}
+                    {isUnblurred && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <button
+                          onClick={() => setBlockCommentsOpen((p) => ({ ...p, [block.id]: !p[block.id] }))}
+                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <MessageCircle className="h-3 w-3" />
+                          {blockCommentsOpen[block.id] ? "Hide comments" : "Comment on this block"}
+                        </button>
+                        {blockCommentsOpen[block.id] && (
+                          <div className="mt-3">
+                            <CommentsSection
+                              contentId={contentId}
+                              contentTitle={contentTitle}
+                              blockId={block.id}
+                              commentCount={0}
+                              isEligible={isEligible}
+                              compact
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

@@ -941,6 +941,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment_content_view_count: {
+        Args: { _content_id: string }
+        Returns: undefined
+      }
       increment_download_count: {
         Args: { _content_id: string }
         Returns: undefined
