@@ -24,6 +24,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { isLoggedIn, profile, signOut } = useAuth();
+  const NAV_LINKS = getNavLinks(isLoggedIn);
 
   const initials = profile?.display_name
     ? profile.display_name.slice(0, 2).toUpperCase()
