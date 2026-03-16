@@ -143,6 +143,109 @@ const Admin = () => {
   const approvedToolsList = allTools?.filter((t: any) => t.status === "approved") ?? [];
   const rejectedToolsList = allTools?.filter((t: any) => t.status === "rejected") ?? [];
 
+  // ── Projects ──
+  const { data: pendingProjects, isLoading: pendingProjectsLoading } = useQuery({
+    queryKey: ["admin_pending_projects"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*, profiles(username, display_name), project_components(id, component_type, linked_content_id, inline_content_id)")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: approvedProjects, isLoading: approvedProjectsLoading } = useQuery({
+    queryKey: ["admin_approved_projects"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*, profiles(username, display_name), project_components(id)")
+        .eq("status", "approved")
+        .order("approved_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Fetch content items for pending project components
+  const pendingProjContentIds = (pendingProjects ?? []).flatMap((p: any) =>
+    (p.project_components ?? []).map((c: any) => c.linked_content_id || c.inline_content_id).filter(Boolean)
+  );
+  const { data: pendingProjContent } = useQuery({
+    queryKey: ["admin_pending_proj_content", pendingProjContentIds.join(",")],
+    queryFn: async () => {
+      if (pendingProjContentIds.length === 0) return [];
+      const { data } = await supabase.from("content_items").select("id, title, content_type, monetisation_type").in("id", pendingProjContentIds);
+      return data ?? [];
+    },
+    enabled: pendingProjContentIds.length > 0,
+  });
+
+  const approveProjectMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      // Approve project
+      const { error } = await supabase
+        .from("projects")
+        .update({ status: "approved", approved_at: new Date().toISOString() })
+        .eq("id", projectId);
+      if (error) throw error;
+
+      // Approve all inline pending components
+      const project = pendingProjects?.find((p: any) => p.id === projectId);
+      if (project) {
+        const inlineIds = (project.project_components ?? [])
+          .filter((c: any) => c.inline_content_id)
+          .map((c: any) => c.inline_content_id);
+        if (inlineIds.length > 0) {
+          await supabase
+            .from("content_items")
+            .update({ status: "approved", approved_at: new Date().toISOString() })
+            .in("id", inlineIds)
+            .eq("status", "pending");
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_pending_projects"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_approved_projects"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_pending_content"] });
+      toast({ title: "Project approved" });
+    },
+  });
+
+  const rejectProjectMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      // TODO: notify creator of rejection reason
+      const { error } = await supabase
+        .from("projects")
+        .update({ status: "rejected" })
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_pending_projects"] });
+      toast({ title: "Project rejected" });
+    },
+  });
+
+  const removeProjectMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      const { error } = await supabase
+        .from("projects")
+        .update({ status: "pending" })
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_approved_projects"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_pending_projects"] });
+      toast({ title: "Project removed from site" });
+    },
+  });
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     navigate("/");
