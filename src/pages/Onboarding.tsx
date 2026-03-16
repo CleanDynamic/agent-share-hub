@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useApprovedTools } from "@/hooks/useApprovedTools";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,11 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Check } from "lucide-react";
 
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance"];
-const AI_TOOLS = ["ChatGPT", "Claude", "Gemini", "Grok", "Zapier", "Make", "n8n", "Other"];
 
 export default function Onboarding() {
   const { isLoggedIn, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const { data: AI_TOOLS = [] } = useApprovedTools();
   const [step, setStep] = useState(1);
   const [interests, setInterests] = useState<string[]>([]);
   const [tools, setTools] = useState<string[]>([]);
@@ -121,7 +122,7 @@ export default function Onboarding() {
               <p className="text-sm text-muted-foreground mt-1">Pick all that apply.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              {AI_TOOLS.map((tool) => {
+              {AI_TOOLS.filter((t) => t !== "Any Tool").map((tool) => {
                 const selected = tools.includes(tool);
                 return (
                   <button

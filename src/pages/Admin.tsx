@@ -8,7 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { LogOut, CheckCircle, XCircle, Loader2, Wrench } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -84,6 +85,49 @@ const Admin = () => {
     },
   });
 
+  // ── Tool submissions ──
+  const { data: pendingTools, isLoading: toolsLoading } = useQuery({
+    queryKey: ["admin_pending_tools"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_tools_registry" as any)
+        .select("*")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const approveToolMutation = useMutation({
+    mutationFn: async (toolId: string) => {
+      const { error } = await supabase
+        .from("ai_tools_registry" as any)
+        .update({ status: "approved", approved_at: new Date().toISOString() } as any)
+        .eq("id", toolId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_pending_tools"] });
+      queryClient.invalidateQueries({ queryKey: ["approved_ai_tools"] });
+      toast({ title: "Tool approved" });
+    },
+  });
+
+  const rejectToolMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+      const { error } = await supabase
+        .from("ai_tools_registry" as any)
+        .update({ status: "rejected", rejected_reason: reason || null } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_pending_tools"] });
+      toast({ title: "Tool rejected" });
+    },
+  });
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     navigate("/");
@@ -103,6 +147,7 @@ const Admin = () => {
           <TabsList className="bg-card border border-border">
             <TabsTrigger value="content">Content Queue</TabsTrigger>
             <TabsTrigger value="services">Service Listings</TabsTrigger>
+            <TabsTrigger value="tools">Tool Submissions</TabsTrigger>
           </TabsList>
 
           {/* ── Content approval queue ── */}
@@ -202,6 +247,53 @@ const Admin = () => {
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ── Tool submissions review ── */}
+          <TabsContent value="tools" className="space-y-4">
+            <h2 className="text-lg font-semibold text-foreground">Pending Tool Suggestions</h2>
+            {toolsLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-16 w-full rounded-xl" />
+                <Skeleton className="h-16 w-full rounded-xl" />
+              </div>
+            ) : !pendingTools || pendingTools.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-10 text-center">No pending tool submissions.</p>
+            ) : (
+              <div className="space-y-3">
+                {pendingTools.map((tool: any) => (
+                  <div key={tool.id} className="border border-border rounded-xl p-4 bg-card flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{tool.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Submitted {new Date(tool.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
+                        onClick={() => approveToolMutation.mutate(tool.id)}
+                        disabled={approveToolMutation.isPending}
+                      >
+                        {approveToolMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-8 border-destructive text-destructive hover:bg-destructive/10"
+                        onClick={() => rejectToolMutation.mutate({ id: tool.id })}
+                        disabled={rejectToolMutation.isPending}
+                      >
+                        {rejectToolMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3 mr-1" />}
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </TabsContent>

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ContentCard } from "@/components/ContentCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useApprovedTools } from "@/hooks/useApprovedTools";
 
 const ALL = "all";
 
@@ -16,7 +17,7 @@ const CONTENT_TYPES = [
   "Agent Stack", "Model Config Guide", "Integration Guide", "Evaluation Framework", "Failure Library",
 ];
 const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
-const AI_TOOLS = ["Any Tool", "ChatGPT", "Claude", "Gemini", "Grok", "Zapier", "Make", "n8n"];
+
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance"];
 
 async function fetchApprovedContent() {
@@ -54,6 +55,7 @@ function CardSkeleton() {
 
 const Browse = () => {
   const { isLoggedIn, profile } = useAuth();
+  const { data: AI_TOOLS = [] } = useApprovedTools();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState(ALL);
   const [difficultyFilter, setDifficultyFilter] = useState(ALL);

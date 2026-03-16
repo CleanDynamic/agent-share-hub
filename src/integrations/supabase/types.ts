@@ -56,6 +56,44 @@ export type Database = {
           },
         ]
       }
+      ai_tools_registry: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          id: string
+          name: string
+          rejected_reason: string | null
+          status: string
+          submitted_by: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          rejected_reason?: string | null
+          status?: string
+          submitted_by?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          rejected_reason?: string | null
+          status?: string
+          submitted_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_tools_registry_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_items: {
         Row: {
           ai_tools: string[] | null
