@@ -11,6 +11,7 @@ interface Profile {
   is_admin: boolean;
   is_creator: boolean;
   account_type: string;
+  user_interests: string[];
 }
 
 interface AuthState {
