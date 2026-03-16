@@ -11,8 +11,11 @@ import { Check, X, Loader2 } from "lucide-react";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isLoggedIn } = useAuth();
   const { toast } = useToast();
+  const afterDownload = searchParams.get("after_download");
+  const afterPurchase = searchParams.get("after_purchase");
 
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
