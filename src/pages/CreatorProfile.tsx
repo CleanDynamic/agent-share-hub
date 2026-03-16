@@ -18,6 +18,7 @@ import { TipSelector } from "@/components/TipSelector";
 
 const CreatorProfile = () => {
   const { username } = useParams<{ username: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
   // Fetch profile
