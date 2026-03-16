@@ -6,6 +6,7 @@ import { Download, Lock, Loader2 } from "lucide-react";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { BookmarkButton } from "@/components/BookmarkButton";
 
 export interface ContentCardProps {
   id: string;
