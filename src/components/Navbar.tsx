@@ -24,7 +24,13 @@ function getNavLinks(isLoggedIn: boolean) {
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { isLoggedIn, profile, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
   const NAV_LINKS = getNavLinks(isLoggedIn);
   const panelRef = useRef<HTMLDivElement>(null);
 
