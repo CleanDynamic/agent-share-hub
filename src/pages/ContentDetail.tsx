@@ -350,15 +350,13 @@ const ContentDetail = () => {
                 </Button>
               )}
 
-              {item.donation_enabled && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => toast({ title: "Tipping coming soon", description: "Check back shortly." })}
-                >
-                  <Heart className="mr-2 h-3.5 w-3.5" /> Tip the Creator
-                </Button>
+              {item.donation_enabled && creator && (
+                <TipSelector
+                  creatorId={creator.id}
+                  creatorDisplayName={creator.display_name || creator.username}
+                  successUrl={`${window.location.origin}/content/${item.id}?tip=success`}
+                  cancelUrl={`${window.location.origin}/content/${item.id}`}
+                />
               )}
             </div>
 
