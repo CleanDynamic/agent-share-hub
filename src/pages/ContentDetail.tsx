@@ -251,7 +251,7 @@ const ContentDetail = () => {
   }
 
   return (
-    <div className="py-12 px-6">
+    <div className="py-8 sm:py-12 px-4 sm:px-6 pb-24 lg:pb-12">
       <div className="mx-auto max-w-4xl">
         {/* Back */}
         <Link to="/browse" className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground mb-6 transition-colors">
