@@ -252,7 +252,7 @@ const Home = () => {
       </section>
 
       {/* ── Featured This Week ── */}
-      <section className="border-t border-border py-20 px-6">
+      <section className="border-t border-border py-16 sm:py-20 px-4 sm:px-6">
         <div className="mx-auto max-w-5xl">
           <div className="flex items-end justify-between mb-8">
             <div>
