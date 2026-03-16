@@ -90,7 +90,7 @@ export function GuestDownloadModal({ open, onOpenChange, contentId, onDownload }
             Create a free account to skip this wait, save content, and follow your favourite creators. It takes 30 seconds.
           </p>
           <div className="flex flex-col gap-2 pt-1">
-            <Button onClick={handleCreateAccount} className="w-full">
+            <Button onClick={handleCreateAccount} className="w-full min-h-[44px]">
               Create free account
             </Button>
             <button
