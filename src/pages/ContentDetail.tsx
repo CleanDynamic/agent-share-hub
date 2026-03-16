@@ -165,9 +165,26 @@ const ContentDetail = () => {
     }
   }, [searchParams, item, paymentHandled, tipHandled]);
 
+  async function doDownload() {
+    if (!item) return;
+    setDownloading(true);
+    const result = await triggerDownload(item.id, item.file_url);
+    if (result.error) {
+      toast({ title: "Download failed", description: result.error, variant: "destructive" });
+    } else if (result.newCount !== undefined) {
+      setLocalCount(result.newCount);
+    }
+    setDownloading(false);
+  }
+
   async function handleDownload() {
     if (!item) return;
     if (isPaid) {
+      if (!isLoggedIn) {
+        setAccountGateMode("purchase");
+        setAccountGateOpen(true);
+        return;
+      }
       setDownloading(true);
       try {
         const priceInPence = Math.round((item.price_gbp ?? 0) * 100);
@@ -191,17 +208,18 @@ const ContentDetail = () => {
       return;
     }
     if (isSub && !subscriberUnlocked) {
-      // Do nothing — locked state shows UI instead
+      if (!isLoggedIn) {
+        setAccountGateMode("subscription");
+        setAccountGateOpen(true);
+      }
       return;
     }
-    setDownloading(true);
-    const result = await triggerDownload(item.id, item.file_url);
-    if (result.error) {
-      toast({ title: "Download failed", description: result.error, variant: "destructive" });
-    } else if (result.newCount !== undefined) {
-      setLocalCount(result.newCount);
+    // Free content
+    if (!isLoggedIn) {
+      setGuestModalOpen(true);
+      return;
     }
-    setDownloading(false);
+    await doDownload();
   }
 
   if (isLoading) {
