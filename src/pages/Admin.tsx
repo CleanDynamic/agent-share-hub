@@ -9,8 +9,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, CheckCircle, XCircle, Loader2, ExternalLink } from "lucide-react";
+import { LogOut, CheckCircle, XCircle, Loader2, ExternalLink, Eye } from "lucide-react";
 import { SeoHead } from "@/components/SeoHead";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Admin = () => {
   const navigate = useNavigate();
