@@ -206,6 +206,16 @@ const Browse = () => {
           </Select>
         </div>
 
+        {/* Submit a tool link */}
+        <div className="mb-4">
+          <button
+            onClick={() => setSubmitToolOpen(true)}
+            className="text-xs text-primary hover:underline"
+          >
+            Don't see your AI tool? Submit it →
+          </button>
+        </div>
+
         {/* Results count */}
         {!isLoading && (
           <p className="text-xs text-muted-foreground mb-4">
