@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { BadgeCheck, Download, FileText, Heart, Users, Loader2, CheckCircle2 } from "lucide-react";
 import { TipSelector } from "@/components/TipSelector";
+import { FollowButton } from "@/components/FollowButton";
 
 const CreatorProfile = () => {
   const { username } = useParams<{ username: string }>();
