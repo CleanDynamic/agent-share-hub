@@ -6,6 +6,7 @@ import { Download, Lock, Loader2 } from "lucide-react";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { BookmarkButton } from "@/components/BookmarkButton";
 
 export interface ContentCardProps {
   id: string;
@@ -113,8 +114,12 @@ export function ContentCard({
   return (
     <div
       onClick={() => navigate(`/content/${id}`)}
-      className="w-full text-left border border-border rounded-xl p-5 bg-card hover:border-primary/40 transition-colors flex flex-col group cursor-pointer"
+      className="relative w-full text-left border border-border rounded-xl p-5 bg-card hover:border-primary/40 transition-colors flex flex-col group cursor-pointer"
     >
+      {/* Bookmark */}
+      <div className="absolute top-3 right-3 z-10">
+        <BookmarkButton contentId={id} />
+      </div>
       {/* Top row */}
       <div className="flex items-start justify-between mb-3">
         <Badge

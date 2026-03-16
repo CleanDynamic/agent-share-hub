@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { BadgeCheck, Download, FileText, Heart, Users, Loader2, CheckCircle2 } from "lucide-react";
 import { TipSelector } from "@/components/TipSelector";
+import { FollowButton } from "@/components/FollowButton";
 
 const CreatorProfile = () => {
   const { username } = useParams<{ username: string }>();
@@ -86,6 +87,8 @@ const CreatorProfile = () => {
   const totalDownloads = contentItems?.reduce((sum, item) => sum + item.download_count, 0) ?? 0;
   const hasDonationContent = contentItems?.some((item) => item.donation_enabled) ?? false;
   const hasSubscriptionPriceId = !!(profile as any)?.subscription_price_id;
+  const [followerDelta, setFollowerDelta] = useState(0);
+  const followerCount = ((profile as any)?.follower_count ?? 0) + followerDelta;
 
   // Enquiry modal state
   const [enquiryListing, setEnquiryListing] = useState<{ id: string; title: string } | null>(null);
@@ -199,8 +202,12 @@ const CreatorProfile = () => {
                     <BadgeCheck className="h-3 w-3 mr-1" /> Verified Creator
                   </Badge>
                 )}
+                <FollowButton creatorId={profile.id} onCountChange={(d) => setFollowerDelta((prev) => prev + d)} />
               </div>
-              <p className="text-sm text-muted-foreground mb-4">@{profile.username}</p>
+              <div className="flex items-center gap-3 mb-4">
+                <p className="text-sm text-muted-foreground">@{profile.username}</p>
+                <span className="text-xs text-muted-foreground">{followerCount} follower{followerCount !== 1 ? "s" : ""}</span>
+              </div>
               {profile.bio && (
                 <p className="text-sm text-muted-foreground leading-relaxed mb-6">{profile.bio}</p>
               )}

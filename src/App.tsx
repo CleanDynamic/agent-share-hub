@@ -20,6 +20,7 @@ import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import Profile from "./pages/Profile";
 import Saved from "./pages/Saved";
+import Feed from "./pages/Feed";
 import MyUploads from "./pages/MyUploads";
 import NotFound from "./pages/NotFound";
 
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/saved" element={<ProtectedRoute><Saved /></ProtectedRoute>} />
+              <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
               <Route path="/my-uploads" element={<ProtectedRoute requireCreator><MyUploads /></ProtectedRoute>} />
             </Route>
             <Route path="*" element={<NotFound />} />

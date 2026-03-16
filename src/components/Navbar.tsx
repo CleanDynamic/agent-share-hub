@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { Upload } from "lucide-react";
+import { Upload, Rss } from "lucide-react";
 import { Menu, X, LogOut, User, Bookmark, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,16 +13,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 
-const NAV_LINKS = [
-  { label: "Browse", to: "/browse" },
-  { label: "Upload", to: "/upload" },
-  { label: "About", to: "/about" },
-];
+function getNavLinks(isLoggedIn: boolean) {
+  const links = [{ label: "Browse", to: "/browse" }];
+  if (isLoggedIn) links.push({ label: "Feed", to: "/feed" });
+  links.push({ label: "Upload", to: "/upload" }, { label: "About", to: "/about" });
+  return links;
+}
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { isLoggedIn, profile, signOut } = useAuth();
+  const NAV_LINKS = getNavLinks(isLoggedIn);
 
   const initials = profile?.display_name
     ? profile.display_name.slice(0, 2).toUpperCase()

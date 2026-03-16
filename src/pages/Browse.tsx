@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ContentCard } from "@/components/ContentCard";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ALL = "all";
 
@@ -52,11 +53,27 @@ function CardSkeleton() {
 }
 
 const Browse = () => {
+  const { isLoggedIn, profile } = useAuth();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState(ALL);
   const [difficultyFilter, setDifficultyFilter] = useState(ALL);
   const [toolFilter, setToolFilter] = useState(ALL);
   const [useCaseFilter, setUseCaseFilter] = useState(ALL);
+  const [matchInterests, setMatchInterests] = useState(false);
+
+  // Fetch full profile with interests for personalisation
+  const { data: fullProfile } = useQuery({
+    queryKey: ["browse_profile", profile?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_interests, user_ai_tools")
+        .eq("id", profile!.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!profile?.id && isLoggedIn,
+  });
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["content_items_approved"],
@@ -78,9 +95,17 @@ const Browse = () => {
       if (difficultyFilter !== ALL && item.difficulty !== difficultyFilter) return false;
       if (toolFilter !== ALL && !(item.ai_tools ?? []).includes(toolFilter)) return false;
       if (useCaseFilter !== ALL && !(item.use_cases ?? []).includes(useCaseFilter)) return false;
+      // Personalised filter
+      if (matchInterests && fullProfile) {
+        const interests = (fullProfile as any).user_interests ?? [];
+        const tools = (fullProfile as any).user_ai_tools ?? [];
+        const matchesInterest = (item.use_cases ?? []).some((u: string) => interests.includes(u));
+        const matchesTool = (item.ai_tools ?? []).some((t: string) => tools.includes(t));
+        if (!matchesInterest && !matchesTool) return false;
+      }
       return true;
     });
-  }, [items, search, typeFilter, difficultyFilter, toolFilter, useCaseFilter]);
+  }, [items, search, typeFilter, difficultyFilter, toolFilter, useCaseFilter, matchInterests, fullProfile]);
 
   function clearFilters() {
     setSearch("");
@@ -103,6 +128,28 @@ const Browse = () => {
             className="pl-10 h-12 bg-card border-border text-foreground placeholder:text-muted-foreground rounded-xl"
           />
         </div>
+
+        {/* Personalised toggle */}
+        {isLoggedIn && fullProfile && (((fullProfile as any).user_interests ?? []).length > 0 || ((fullProfile as any).user_ai_tools ?? []).length > 0) && (
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setMatchInterests(false)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                !matchInterests ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All content
+            </button>
+            <button
+              onClick={() => setMatchInterests(true)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                matchInterests ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Matches my interests
+            </button>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex gap-3 overflow-x-auto pb-2 mb-6 scrollbar-hide">
