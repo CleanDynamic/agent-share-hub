@@ -7,6 +7,7 @@ import { ContentCard } from "@/components/ContentCard";
 import { TipSelector } from "@/components/TipSelector";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
 import { AccountGateModal } from "@/components/AccountGateModal";
+import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
 import { useToast } from "@/hooks/use-toast";
