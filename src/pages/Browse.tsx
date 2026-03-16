@@ -55,6 +55,7 @@ function CardSkeleton() {
 
 const Browse = () => {
   const { isLoggedIn, profile } = useAuth();
+  const { data: AI_TOOLS = [] } = useApprovedTools();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState(ALL);
   const [difficultyFilter, setDifficultyFilter] = useState(ALL);

@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Upload as UploadIcon, Loader2, CheckCircle2 } from "lucide-react";
+import { Upload as UploadIcon, Loader2, CheckCircle2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useApprovedTools } from "@/hooks/useApprovedTools";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +26,6 @@ const CONTENT_TYPES = [
   "Agent Stack", "Model Config Guide", "Integration Guide", "Evaluation Framework", "Failure Library",
 ];
 const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
-const AI_TOOLS = ["Any Tool", "ChatGPT", "Claude", "Gemini", "Grok", "Zapier", "Make", "n8n"];
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance"];
 const ACCEPTED_TYPES = [".txt", ".md", ".json", ".pdf"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
