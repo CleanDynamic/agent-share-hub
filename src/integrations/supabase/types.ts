@@ -220,6 +220,8 @@ export type Database = {
           stripe_account_id: string | null
           subscription_price_id: string | null
           twitter_handle: string | null
+          user_ai_tools: string[]
+          user_interests: string[]
           username: string | null
           website_url: string | null
         }
@@ -240,6 +242,8 @@ export type Database = {
           stripe_account_id?: string | null
           subscription_price_id?: string | null
           twitter_handle?: string | null
+          user_ai_tools?: string[]
+          user_interests?: string[]
           username?: string | null
           website_url?: string | null
         }
@@ -260,6 +264,8 @@ export type Database = {
           stripe_account_id?: string | null
           subscription_price_id?: string | null
           twitter_handle?: string | null
+          user_ai_tools?: string[]
+          user_interests?: string[]
           username?: string | null
           website_url?: string | null
         }
