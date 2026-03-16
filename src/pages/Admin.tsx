@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, CheckCircle, XCircle, Loader2, ExternalLink } from "lucide-react";
+import { SeoHead } from "@/components/SeoHead";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -144,6 +145,7 @@ const Admin = () => {
 
   return (
     <div className="py-10 px-6">
+      <SeoHead title="Admin — NeoScale AI" description="Admin panel." path="/admin" noIndex />
       <div className="mx-auto max-w-5xl">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-foreground">Admin Panel</h1>

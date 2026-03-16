@@ -7,6 +7,7 @@ import { Upload as UploadIcon, Loader2, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useApprovedToolNames } from "@/hooks/useApprovedTools";
+import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -172,6 +173,7 @@ const Upload = () => {
 
   return (
     <div className="py-10 px-6">
+      <SeoHead title="Upload — NeoScale AI" description="Share your AI assistants, blueprints and workflows with the community." path="/upload" />
       <div className="mx-auto max-w-2xl">
         {/* Header */}
         <div className="mb-8">

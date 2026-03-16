@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { SeoHead } from "@/components/SeoHead";
 import { Badge } from "@/components/ui/badge";
 import { Search, Download, Zap, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -141,6 +142,11 @@ const fade = {
 const Home = () => {
   return (
     <div>
+      <SeoHead
+        title="NeoScale AI — The AI Agent Tactics Forum"
+        description="Download AI assistants, blueprints and workflows. Works with ChatGPT, Claude, Gemini and any AI tool. Free to browse. Built by experts. Usable by anyone."
+        path="/"
+      />
       {/* ── Hero ── */}
       <section className="py-16 sm:py-24 lg:py-32 px-4 sm:px-6 text-center">
         <motion.div

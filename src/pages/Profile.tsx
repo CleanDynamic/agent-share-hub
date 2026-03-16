@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SeoHead } from "@/components/SeoHead";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -115,6 +116,7 @@ export default function Profile() {
 
   return (
     <div className="py-12 px-6">
+      <SeoHead title="My Profile — NeoScale AI" description="Your NeoScale AI profile." path="/profile" noIndex />
       <div className="mx-auto max-w-5xl">
         <div className="flex flex-col lg:flex-row gap-10">
           {/* Main */}

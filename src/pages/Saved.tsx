@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ContentCard } from "@/components/ContentCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { Bookmark } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -43,6 +44,7 @@ export default function Saved() {
 
   return (
     <div className="py-12 px-6">
+      <SeoHead title="Saved Content — NeoScale AI" description="Your saved content on NeoScale AI." path="/saved" noIndex />
       <div className="mx-auto max-w-5xl">
         <h1 className="text-2xl font-bold text-foreground mb-6">Your saved content</h1>
 

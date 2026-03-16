@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApprovedToolNames } from "@/hooks/useApprovedTools";
+import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,6 +69,7 @@ export default function Onboarding() {
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4">
+      <SeoHead title="Onboarding — NeoScale AI" description="Set up your NeoScale AI profile." path="/onboarding" noIndex />
       <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 sm:p-8">
         {/* Step indicators */}
         <div className="flex gap-2 mb-6">

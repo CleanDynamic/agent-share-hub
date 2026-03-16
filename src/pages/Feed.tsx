@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ContentCard } from "@/components/ContentCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SeoHead } from "@/components/SeoHead";
 import { Rss } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -69,6 +70,7 @@ export default function Feed() {
 
   return (
     <div className="py-12 px-6">
+      <SeoHead title="Your Feed — NeoScale AI" description="Latest content from creators you follow." path="/feed" noIndex />
       <div className="mx-auto max-w-3xl">
         <h1 className="text-2xl font-bold text-foreground mb-6">Your feed</h1>
 

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { SeoHead } from "@/components/SeoHead";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ export default function MyUploads() {
 
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6">
+      <SeoHead title="My Uploads — NeoScale AI" description="Manage your uploaded content." path="/my-uploads" noIndex />
       <div className="mx-auto max-w-5xl">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-foreground">My uploads</h1>

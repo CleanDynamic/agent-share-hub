@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { SeoHead } from "@/components/SeoHead";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-6">
+      <SeoHead title="Admin Login — NeoScale AI" description="Admin login." path="/admin/login" noIndex />
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-xl font-bold text-foreground">Admin Sign In</h1>

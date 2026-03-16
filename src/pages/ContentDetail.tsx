@@ -8,6 +8,7 @@ import { TipSelector } from "@/components/TipSelector";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
 import { AccountGateModal } from "@/components/AccountGateModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { SeoHead } from "@/components/SeoHead";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -241,8 +242,28 @@ const ContentDetail = () => {
     );
   }
 
+  const SITE_URL = import.meta.env.VITE_SITE_URL || "https://neoscale.ai";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": item.title,
+    "description": item.description || "",
+    "applicationCategory": "AIApplication",
+    "offers": {
+      "@type": "Offer",
+      "price": item.monetisation_type === "paid" ? String(item.price_gbp ?? 0) : "0",
+      "priceCurrency": "GBP",
+    },
+  };
+
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6 pb-24 lg:pb-12">
+      <SeoHead
+        title={`${item.title} — NeoScale AI`}
+        description={item.description || `${item.content_type} for ${(item.ai_tools ?? []).join(", ") || "any AI tool"}`}
+        path={`/content/${item.id}`}
+        jsonLd={jsonLd}
+      />
       <div className="mx-auto max-w-4xl">
         <Link to="/browse" className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Browse

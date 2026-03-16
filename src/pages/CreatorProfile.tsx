@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { SeoHead } from "@/components/SeoHead";
 import { supabase } from "@/integrations/supabase/client";
 import { ContentCard } from "@/components/ContentCard";
 import { Button } from "@/components/ui/button";
@@ -187,8 +188,27 @@ const CreatorProfile = () => {
 
   const displayName = profile.display_name || profile.username || "Creator";
 
+  const bioTruncated = (profile.bio || "").slice(0, 155);
+  const itemCount = contentItems?.length ?? 0;
+  const seoDesc = `${bioTruncated}${bioTruncated ? " — " : ""}${itemCount} item${itemCount !== 1 ? "s" : ""} published on NeoScale AI.`;
+  const SITE_URL = import.meta.env.VITE_SITE_URL || "https://neoscale.ai";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": displayName,
+    "description": profile.bio || "",
+    "url": `${SITE_URL}/creator/${profile.username}`,
+  };
+
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6">
+      <SeoHead
+        title={`${displayName} on NeoScale AI`}
+        description={seoDesc}
+        path={`/creator/${profile.username}`}
+        ogType="profile"
+        jsonLd={jsonLd}
+      />
       <div className="mx-auto max-w-5xl">
         {tipSuccess && (
           <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">

@@ -1,10 +1,16 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { SeoHead } from "@/components/SeoHead";
 
 const About = () => {
   return (
     <div className="py-16 px-6">
+      <SeoHead
+        title="About NeoScale AI"
+        description="The community hub for AI builders and curious humans. Free to browse. Every item reviewed before it goes live."
+        path="/about"
+      />
       <div className="mx-auto max-w-2xl space-y-12">
         {/* Main content */}
         <div className="space-y-6">

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +67,7 @@ export default function Login() {
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4">
+      <SeoHead title="Sign In — NeoScale AI" description="Sign in to your NeoScale AI account." path="/login" noIndex />
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 sm:p-8">
         <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
 
