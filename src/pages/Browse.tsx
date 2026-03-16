@@ -191,6 +191,11 @@ const Browse = () => {
 
   return (
     <div className="py-10 px-4 sm:px-6">
+      <SeoHead
+        title="Browse AI Assistants — NeoScale AI"
+        description="Find ready-made AI setups for any task. Filter by type, difficulty, and the AI tools you already use. Free to download."
+        path="/browse"
+      />
       <div className="mx-auto max-w-5xl">
         {/* Search */}
         <div className="relative mb-4">
