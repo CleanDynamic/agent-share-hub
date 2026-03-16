@@ -96,22 +96,39 @@ export default function MyUploads() {
                     <TableHead className="text-muted-foreground">Title</TableHead>
                     <TableHead className="text-muted-foreground">Type</TableHead>
                     <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Rating</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Views</TableHead>
                     <TableHead className="text-muted-foreground text-right">Downloads</TableHead>
                     <TableHead className="text-muted-foreground text-right">Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.id} className="border-border cursor-pointer hover:bg-accent/50" onClick={() => navigate(`/content/${item.id}`)}>
-                      <TableCell className="text-foreground font-medium text-sm">{item.title}</TableCell>
-                      <TableCell className="text-muted-foreground text-xs">{item.content_type}</TableCell>
-                      <TableCell>{statusBadge(item.status)}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm text-right">{item.download_count}</TableCell>
-                      <TableCell className="text-muted-foreground text-xs text-right">
-                        {new Date(item.created_at).toLocaleDateString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {items.map((item) => {
+                    const rc = (item as any).rating_count ?? 0;
+                    const sv = roundedStars(Number((item as any).avg_rating) || 0, rc);
+                    return (
+                      <TableRow key={item.id} className="border-border cursor-pointer hover:bg-accent/50" onClick={() => navigate(`/content/${item.id}`)}>
+                        <TableCell className="text-foreground font-medium text-sm">{item.title}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs">{item.content_type}</TableCell>
+                        <TableCell>{statusBadge(item.status)}</TableCell>
+                        <TableCell className="text-right">
+                          {rc > 0 ? (
+                            <div className="flex items-center justify-end gap-1">
+                              <TinyStars value={sv} />
+                              <span className="text-[10px] text-muted-foreground">({rc})</span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm text-right">{(item as any).view_count ?? 0}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm text-right">{item.download_count}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs text-right">
+                          {new Date(item.created_at).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
