@@ -206,6 +206,18 @@ export function ContentCard({
           ))}
         </div>
 
+        {/* Rating */}
+        <div className="flex items-center gap-1.5 mb-3">
+          {rating_count > 0 ? (
+            <>
+              <MiniStars value={roundedStars(avg_rating, rating_count)} />
+              <span className="text-[10px] text-muted-foreground">({rating_count})</span>
+            </>
+          ) : (
+            <span className="text-[10px] text-muted-foreground">No ratings</span>
+          )}
+        </div>
+
         {/* Bottom */}
         <div className="flex items-center justify-between pt-3 border-t border-border">
           <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(difficulty)}`}>
@@ -213,9 +225,10 @@ export function ContentCard({
           </Badge>
           <div className="flex items-center gap-2">
             {!isSub && (
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Download className="h-3 w-3" />
-                <span className="text-[10px]">{count.toLocaleString()}</span>
+              <div className="flex items-center gap-2 text-muted-foreground text-[10px]">
+                <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" />{view_count.toLocaleString()}</span>
+                <span>·</span>
+                <span className="flex items-center gap-0.5"><Download className="h-3 w-3" />{count.toLocaleString()}</span>
               </div>
             )}
             <Button
