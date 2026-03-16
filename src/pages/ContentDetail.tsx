@@ -50,6 +50,8 @@ const ContentDetail = () => {
   const [localCount, setLocalCount] = useState<number | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentHandled, setPaymentHandled] = useState(false);
+  const [tipSuccess, setTipSuccess] = useState(false);
+  const [tipHandled, setTipHandled] = useState(false);
 
   // Fetch content item with creator profile
   const { data: item, isLoading, error } = useQuery({
