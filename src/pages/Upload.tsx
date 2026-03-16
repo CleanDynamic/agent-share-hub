@@ -411,29 +411,8 @@ const Upload = () => {
               )}
             />
 
-            {/* 7. File Upload */}
-            <div className="space-y-2">
-              <Label>File Upload</Label>
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-xl bg-card cursor-pointer hover:border-primary/40 transition-colors">
-                <UploadIcon className="h-6 w-6 text-muted-foreground mb-2" />
-                {file ? (
-                  <span className="text-sm text-foreground">{file.name}</span>
-                ) : (
-                  <span className="text-sm text-muted-foreground">Click to select a file</span>
-                )}
-                <span className="text-[10px] text-muted-foreground mt-1">.txt, .md, .json, .pdf — max 10MB</span>
-                <input
-                  type="file"
-                  accept=".txt,.md,.json,.pdf"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
-              <p className="text-xs text-muted-foreground">
-                Upload the actual file. .txt and .md work for prompt files. .json for workflows.
-              </p>
-              {fileError && <p className="text-sm font-medium text-destructive">{fileError}</p>}
-            </div>
+            {/* 7. Content Block Builder */}
+            <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} />
 
             {/* 8. Use Instructions */}
             <FormField
