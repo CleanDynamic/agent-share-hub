@@ -56,6 +56,7 @@ const Upload = () => {
   const [fileError, setFileError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submitToolOpen, setSubmitToolOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
