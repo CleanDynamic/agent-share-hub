@@ -458,11 +458,11 @@ const ContentDetail = () => {
 
         {/* Related content */}
         {related && related.length > 0 && (
-          <div className="mt-16">
+          <div className="mt-12 sm:mt-16">
             <h2 className="text-lg font-semibold text-foreground mb-4">More Like This</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide lg:grid lg:grid-cols-3 lg:overflow-visible">
               {related.map((r) => (
-                <ContentCard
+                <div key={r.id} className="min-w-[280px] lg:min-w-0">
                   key={r.id}
                   id={r.id}
                   content_type={r.content_type}

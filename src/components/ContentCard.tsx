@@ -136,8 +136,8 @@ export function ContentCard({
         onClick={() => navigate(`/content/${id}`)}
         className="relative w-full text-left border border-border rounded-xl p-5 bg-card hover:border-primary/40 transition-colors flex flex-col group cursor-pointer"
       >
-        {/* Bookmark */}
-        <div className="absolute top-3 right-3 z-10">
+        {/* Bookmark — 44px tap target */}
+        <div className="absolute top-2 right-2 z-10 min-w-[44px] min-h-[44px] flex items-center justify-center">
           <BookmarkButton contentId={id} />
         </div>
         {/* Top row */}
