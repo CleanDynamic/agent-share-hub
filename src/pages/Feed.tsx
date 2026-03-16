@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,16 +5,35 @@ import { ContentCard } from "@/components/ContentCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Rss } from "lucide-react";
+import { Link } from "react-router-dom";
+
+function FeedSkeleton() {
+  return (
+    <div className="space-y-6">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="space-y-2">
+          <Skeleton className="h-3 w-32 rounded-md" />
+          <div className="border border-border rounded-xl p-5 bg-card space-y-3">
+            <div className="flex justify-between">
+              <Skeleton className="h-5 w-24 rounded-md" />
+              <Skeleton className="h-5 w-12 rounded-md" />
+            </div>
+            <Skeleton className="h-4 w-3/4 rounded-md" />
+            <Skeleton className="h-3 w-full rounded-md" />
+            <div className="flex justify-between pt-3 border-t border-border">
+              <Skeleton className="h-5 w-20 rounded-md" />
+              <Skeleton className="h-4 w-10 rounded-md" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function Feed() {
-  const { isLoggedIn, user, loading } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
-  useEffect(() => {
-    if (!loading && !isLoggedIn) navigate("/login", { replace: true });
-  }, [loading, isLoggedIn, navigate]);
-
-  // Fetch who the user follows
   const { data: followingIds } = useQuery({
     queryKey: ["my_following_ids", user?.id],
     queryFn: async () => {
@@ -30,8 +47,7 @@ export default function Feed() {
     enabled: !!user?.id,
   });
 
-  // Fetch content from followed creators
-  const { data: feedItems, isLoading: feedLoading } = useQuery({
+  const { data: feedItems, isLoading: feedLoading, error } = useQuery({
     queryKey: ["feed_content", followingIds],
     queryFn: async () => {
       if (!followingIds || followingIds.length === 0) return [];
@@ -48,8 +64,6 @@ export default function Feed() {
     enabled: !!followingIds,
   });
 
-  if (loading) return null;
-
   const isEmpty = !feedLoading && (!feedItems || feedItems.length === 0);
   const notFollowing = followingIds && followingIds.length === 0;
 
@@ -58,21 +72,25 @@ export default function Feed() {
       <div className="mx-auto max-w-3xl">
         <h1 className="text-2xl font-bold text-foreground mb-6">Your feed</h1>
 
-        {feedLoading && (
-          <div className="space-y-6">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-48 rounded-xl" />
-            ))}
+        {feedLoading && <FeedSkeleton />}
+
+        {error && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <p className="text-sm text-muted-foreground mb-4">Something went wrong loading your feed.</p>
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Reload</Button>
           </div>
         )}
 
-        {isEmpty && (
+        {!error && isEmpty && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Rss className="h-10 w-10 text-muted-foreground mb-4" />
-            <p className="text-sm text-muted-foreground mb-2">
+            <p className="text-sm text-foreground font-medium mb-1">
+              {notFollowing ? "Your feed is empty." : "No new content from creators you follow yet."}
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
               {notFollowing
-                ? "Your feed is empty. Follow some creators to see their latest content here."
-                : "No new content from creators you follow yet."}
+                ? "Follow creators to see their latest content here."
+                : "Check back soon."}
             </p>
             <Button variant="outline" size="sm" asChild>
               <Link to="/browse">Discover creators</Link>

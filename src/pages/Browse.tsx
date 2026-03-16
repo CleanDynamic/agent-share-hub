@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -140,10 +141,12 @@ const Browse = () => {
     enabled: !!profile?.id && isLoggedIn,
   });
 
-  const { data: items, isLoading } = useQuery({
+  const { data: items, isLoading, error } = useQuery({
     queryKey: ["content_items_approved"],
     queryFn: fetchApprovedContent,
   });
+
+  const hasFilters = search || typeFilter !== ALL || difficultyFilter !== ALL || toolFilter !== ALL || useCaseFilter !== ALL;
 
   const filtered = useMemo(() => {
     if (!items) return [];
@@ -177,6 +180,7 @@ const Browse = () => {
     setDifficultyFilter(ALL);
     setToolFilter(ALL);
     setUseCaseFilter(ALL);
+    setMatchInterests(false);
   }
 
   const filterProps = {
@@ -315,10 +319,18 @@ const Browse = () => {
         </div>
 
         {/* Results count */}
-        {!isLoading && (
+        {!isLoading && !error && (
           <p className="text-xs text-muted-foreground mb-4">
             Showing {filtered.length} result{filtered.length !== 1 ? "s" : ""}
           </p>
+        )}
+
+        {/* Error state */}
+        {error && (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <p className="text-sm text-muted-foreground text-center">Something went wrong loading content. Please try again.</p>
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Reload</Button>
+          </div>
         )}
 
         {/* Loading */}
@@ -329,7 +341,7 @@ const Browse = () => {
         )}
 
         {/* Grid */}
-        {!isLoading && filtered.length > 0 && (
+        {!isLoading && !error && filtered.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((item) => (
               <ContentCard
@@ -349,15 +361,37 @@ const Browse = () => {
           </div>
         )}
 
-        {/* Empty state */}
-        {!isLoading && filtered.length === 0 && (
+        {/* Empty states */}
+        {!isLoading && !error && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <p className="text-sm text-muted-foreground text-center max-w-md">
-              Nothing found for that combination. Try removing a filter or searching for something else.
-            </p>
-            <Button variant="outline" size="sm" onClick={clearFilters}>
-              Clear all filters
-            </Button>
+            {matchInterests && hasFilters ? (
+              <>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  Nothing matches your interests yet. We'll add more content soon — or browse everything.
+                </p>
+                <Button variant="outline" size="sm" onClick={() => { setMatchInterests(false); clearFilters(); }}>
+                  Show all content
+                </Button>
+              </>
+            ) : hasFilters ? (
+              <>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  Nothing matches those filters. Try removing one or clearing them all.
+                </p>
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  Clear all filters
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  Nothing here yet — be the first to share something.
+                </p>
+                <Button size="sm" asChild>
+                  <Link to="/upload">Upload your work</Link>
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>

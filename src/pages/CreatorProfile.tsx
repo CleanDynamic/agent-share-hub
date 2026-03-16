@@ -17,13 +17,48 @@ import { BadgeCheck, Download, FileText, Heart, Users, Loader2, CheckCircle2 } f
 import { TipSelector } from "@/components/TipSelector";
 import { FollowButton } from "@/components/FollowButton";
 
+function ProfileSkeleton() {
+  return (
+    <div className="py-8 sm:py-12 px-4 sm:px-6">
+      <div className="mx-auto max-w-5xl">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
+          <div className="flex-1 min-w-0 space-y-6">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-10 w-48 rounded-md" />
+              <Skeleton className="h-5 w-28 rounded-md" />
+            </div>
+            <div className="flex gap-3">
+              <Skeleton className="h-4 w-20 rounded-md" />
+              <Skeleton className="h-4 w-24 rounded-md" />
+            </div>
+            <Skeleton className="h-16 w-full rounded-md" />
+            <Skeleton className="h-9 w-24 rounded-md" />
+            <div className="flex gap-6">
+              <Skeleton className="h-4 w-24 rounded-md" />
+              <Skeleton className="h-4 w-28 rounded-md" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-40 rounded-xl" />
+              ))}
+            </div>
+          </div>
+          <div className="hidden lg:block w-72 shrink-0 space-y-4">
+            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-24 rounded-xl" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const CreatorProfile = () => {
   const { username } = useParams<{ username: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [subscribing, setSubscribing] = useState(false);
 
-  // Fetch profile
   const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
     queryKey: ["creator_profile", username],
     queryFn: async () => {
@@ -38,7 +73,6 @@ const CreatorProfile = () => {
     enabled: !!username,
   });
 
-  // Fetch approved content
   const { data: contentItems } = useQuery({
     queryKey: ["creator_content", profile?.id],
     queryFn: async () => {
@@ -54,7 +88,6 @@ const CreatorProfile = () => {
     enabled: !!profile?.id,
   });
 
-  // Fetch service listings
   const { data: services } = useQuery({
     queryKey: ["creator_services", profile?.id],
     queryFn: async () => {
@@ -69,7 +102,6 @@ const CreatorProfile = () => {
     enabled: !!profile?.id,
   });
 
-  // Subscriber count
   const { data: subCount } = useQuery({
     queryKey: ["creator_sub_count", profile?.id],
     queryFn: async () => {
@@ -90,11 +122,9 @@ const CreatorProfile = () => {
   const [followerDelta, setFollowerDelta] = useState(0);
   const followerCount = ((profile as any)?.follower_count ?? 0) + followerDelta;
 
-  // Enquiry modal state
   const [enquiryListing, setEnquiryListing] = useState<{ id: string; title: string } | null>(null);
   const [enquirySubmitting, setEnquirySubmitting] = useState(false);
 
-  // Banner states from URL params
   const tipSuccess = searchParams.get("tip") === "success";
   const subscribedSuccess = searchParams.get("subscribed") === "success";
   if (tipSuccess || subscribedSuccess) {
@@ -115,9 +145,7 @@ const CreatorProfile = () => {
       });
       if (error || !data?.url) {
         toast({ title: "Could not start subscription", description: "Please sign in and try again.", variant: "destructive" });
-      } else {
-        window.location.href = data.url;
-      }
+      } else { window.location.href = data.url; }
     } catch {
       toast({ title: "Something went wrong", variant: "destructive" });
     }
@@ -129,7 +157,6 @@ const CreatorProfile = () => {
     if (!enquiryListing) return;
     setEnquirySubmitting(true);
     const fd = new FormData(e.currentTarget);
-    // TODO: email notification to creator when enquiry is submitted
     const { error } = await supabase.from("service_enquiries").insert({
       listing_id: enquiryListing.id,
       requester_name: fd.get("name") as string,
@@ -145,18 +172,8 @@ const CreatorProfile = () => {
     }
   }
 
-  // Loading
-  if (profileLoading) {
-    return (
-      <div className="py-16 px-6 mx-auto max-w-5xl space-y-6">
-        <Skeleton className="h-10 w-64 rounded-md" />
-        <Skeleton className="h-5 w-40 rounded-md" />
-        <Skeleton className="h-20 w-full rounded-md" />
-      </div>
-    );
-  }
+  if (profileLoading) return <ProfileSkeleton />;
 
-  // Not found
   if (!profile || profileError) {
     return (
       <div className="py-20 px-6 flex flex-col items-center gap-4 text-center">
@@ -173,7 +190,6 @@ const CreatorProfile = () => {
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6">
       <div className="mx-auto max-w-5xl">
-        {/* Tip success banner */}
         {tipSuccess && (
           <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
             <CheckCircle2 className="h-5 w-5 shrink-0" />
@@ -187,13 +203,9 @@ const CreatorProfile = () => {
           </div>
         )}
 
-        {/* Layout: header + sidebar */}
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
-          {/* Main column */}
           <div className="flex-1 min-w-0">
-            {/* Profile header */}
             <div className="mb-8 sm:mb-10">
-              {/* Mobile: avatar stacks above */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
                 <div className="flex items-center gap-3">
                   <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{displayName}</h1>
@@ -208,16 +220,12 @@ const CreatorProfile = () => {
                 <p className="text-sm text-muted-foreground">@{profile.username}</p>
                 <span className="text-xs text-muted-foreground">{followerCount} follower{followerCount !== 1 ? "s" : ""}</span>
               </div>
-              {profile.bio && (
-                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{profile.bio}</p>
-              )}
-              {/* Follow button — full width on mobile */}
+              {profile.bio && <p className="text-sm text-muted-foreground leading-relaxed mb-4">{profile.bio}</p>}
               <div className="mb-4 sm:mb-6">
                 <div className="w-full sm:w-auto">
                   <FollowButton creatorId={profile.id} onCountChange={(d) => setFollowerDelta((prev) => prev + d)} />
                 </div>
               </div>
-
               <div className="flex gap-6">
                 <div className="flex items-center gap-2 text-sm">
                   <FileText className="h-4 w-4 text-muted-foreground" />
@@ -232,7 +240,7 @@ const CreatorProfile = () => {
               </div>
             </div>
 
-            {/* Sidebar moves below profile on mobile */}
+            {/* Mobile sidebar */}
             <div className="lg:hidden mb-8 space-y-4">
               {hasSubscriptionPriceId && (
                 <div className="border border-border rounded-xl p-5 bg-card space-y-2">
@@ -251,7 +259,6 @@ const CreatorProfile = () => {
               )}
             </div>
 
-            {/* Content grid */}
             <div>
               <h2 className="text-lg font-semibold text-foreground mb-4">Content by {displayName}</h2>
               {contentItems && contentItems.length > 0 ? (
@@ -261,67 +268,38 @@ const CreatorProfile = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground py-10 text-center">Nothing published yet. Check back soon.</p>
+                <p className="text-sm text-muted-foreground py-10 text-center">{displayName} hasn't published anything yet.</p>
               )}
             </div>
           </div>
 
-          {/* Desktop sidebar — hidden on mobile (shown inline above) */}
+          {/* Desktop sidebar */}
           <div className="hidden lg:block w-72 shrink-0 space-y-4">
-            {/* Subscribe */}
             {hasSubscriptionPriceId && (
               <div className="border border-border rounded-xl p-5 bg-card space-y-2">
-                <Button
-                  className="w-full bg-[#2EC4B6] hover:bg-[#2EC4B6]/90 text-white"
-                  onClick={handleSubscribe}
-                  disabled={subscribing}
-                >
-                  {subscribing ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Users className="mr-2 h-4 w-4" />
-                  )}
+                <Button className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground" onClick={handleSubscribe} disabled={subscribing}>
+                  {subscribing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
                   Subscribe to {displayName}
                 </Button>
-                <p className="text-[11px] text-muted-foreground text-center">
-                  {subCount ?? 0} subscriber{subCount !== 1 ? "s" : ""}
-                </p>
+                <p className="text-[11px] text-muted-foreground text-center">{subCount ?? 0} subscriber{subCount !== 1 ? "s" : ""}</p>
               </div>
             )}
-
-            {/* Tip */}
             {hasDonationContent && (
               <div className="border border-border rounded-xl p-5 bg-card space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Support</p>
-                <TipSelector
-                  creatorId={profile.id}
-                  creatorDisplayName={displayName}
-                  successUrl={`${window.location.origin}/creator/${profile.username}?tip=success`}
-                  cancelUrl={`${window.location.origin}/creator/${profile.username}`}
-                />
+                <TipSelector creatorId={profile.id} creatorDisplayName={displayName} successUrl={`${window.location.origin}/creator/${profile.username}?tip=success`} cancelUrl={`${window.location.origin}/creator/${profile.username}`} />
               </div>
             )}
-
-            {/* Service listings */}
             {services && services.length > 0 && (
               <div className="border border-border rounded-xl p-5 bg-card space-y-4">
                 <h3 className="text-sm font-semibold text-foreground">Work with {displayName}</h3>
                 {services.map((svc) => (
                   <div key={svc.id} className="space-y-2 border-t border-border pt-3 first:border-0 first:pt-0">
                     <p className="text-sm font-medium text-foreground">{svc.title}</p>
-                    {svc.description && (
-                      <p className="text-xs text-muted-foreground leading-relaxed">{svc.description}</p>
-                    )}
+                    {svc.description && <p className="text-xs text-muted-foreground leading-relaxed">{svc.description}</p>}
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-orange-400">
-                        £{Number(svc.price_gbp ?? 0).toFixed(2)}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-xs h-7 border-secondary text-secondary hover:bg-secondary/10"
-                        onClick={() => setEnquiryListing({ id: svc.id, title: svc.title })}
-                      >
+                      <span className="text-xs font-bold text-primary">£{Number(svc.price_gbp ?? 0).toFixed(2)}</span>
+                      <Button size="sm" variant="outline" className="text-xs h-7 border-secondary text-secondary hover:bg-secondary/10" onClick={() => setEnquiryListing({ id: svc.id, title: svc.title })}>
                         Enquire
                       </Button>
                     </div>
@@ -333,7 +311,6 @@ const CreatorProfile = () => {
         </div>
       </div>
 
-      {/* Enquiry modal */}
       <Dialog open={!!enquiryListing} onOpenChange={(open) => !open && setEnquiryListing(null)}>
         <DialogContent className="bg-card border-border sm:max-w-md">
           <DialogHeader>
@@ -351,22 +328,13 @@ const CreatorProfile = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="message">Message</Label>
-              <Textarea
-                id="message"
-                name="message"
-                rows={4}
-                required
-                placeholder="Describe what you need and any relevant details"
-                className="bg-background border-border rounded-xl"
-              />
+              <Textarea id="message" name="message" rows={4} required placeholder="Describe what you need and any relevant details" className="bg-background border-border rounded-xl" />
             </div>
-            <Button type="submit" className="w-full bg-[#E8571A] hover:bg-[#E8571A]/90 text-white" disabled={enquirySubmitting}>
+            <Button type="submit" className="w-full" disabled={enquirySubmitting}>
               {enquirySubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Send Enquiry
             </Button>
-            <p className="text-[11px] text-muted-foreground text-center">
-              Your message will be sent directly to {displayName}.
-            </p>
+            <p className="text-[11px] text-muted-foreground text-center">Your message will be sent directly to {displayName}.</p>
           </form>
         </DialogContent>
       </Dialog>

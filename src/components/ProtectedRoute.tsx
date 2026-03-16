@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, requireCreator }: ProtectedRouteProps) {
   const { isLoggedIn, isCreator, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -18,7 +19,9 @@ export function ProtectedRoute({ children, requireCreator }: ProtectedRouteProps
     );
   }
 
-  if (!isLoggedIn) return <Navigate to="/login" replace />;
+  if (!isLoggedIn) {
+    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+  }
   if (requireCreator && !isCreator) return <Navigate to="/" replace />;
 
   return <>{children}</>;
