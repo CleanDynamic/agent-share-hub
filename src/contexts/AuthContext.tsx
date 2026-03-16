@@ -11,6 +11,7 @@ interface Profile {
   is_admin: boolean;
   is_creator: boolean;
   account_type: string;
+  user_interests: string[];
 }
 
 interface AuthState {
@@ -35,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url, bio, is_admin, is_creator, account_type")
+      .select("id, username, display_name, avatar_url, bio, is_admin, is_creator, account_type, user_interests")
       .eq("id", userId)
       .maybeSingle();
     setProfile(data as Profile | null);

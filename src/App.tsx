@@ -21,6 +21,7 @@ import AdminLogin from "./pages/AdminLogin";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
+import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import Saved from "./pages/Saved";
 import Feed from "./pages/Feed";
@@ -51,6 +52,7 @@ const App = () => (
                 <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/saved" element={<ProtectedRoute><Saved /></ProtectedRoute>} />

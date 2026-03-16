@@ -26,7 +26,11 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (!loading && !isLoggedIn) navigate("/login", { replace: true });
-  }, [loading, isLoggedIn, navigate]);
+    // Skip onboarding if user has already completed it
+    if (!loading && isLoggedIn && profile && profile.user_interests && (profile.user_interests as string[]).length > 0) {
+      navigate("/browse", { replace: true });
+    }
+  }, [loading, isLoggedIn, profile, navigate]);
 
   const toggle = (list: string[], item: string, setter: (v: string[]) => void) => {
     setter(list.includes(item) ? list.filter((i) => i !== item) : [...list, item]);

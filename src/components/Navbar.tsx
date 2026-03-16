@@ -1,7 +1,7 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { Upload, Rss } from "lucide-react";
-import { Menu, X, LogOut, User, Bookmark, Settings } from "lucide-react";
+import { Menu, X, LogOut, User, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -24,7 +24,13 @@ function getNavLinks(isLoggedIn: boolean) {
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { isLoggedIn, profile, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
   const NAV_LINKS = getNavLinks(isLoggedIn);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -103,13 +109,8 @@ export function Navbar() {
                       <Bookmark className="h-4 w-4" /> Saved
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings" className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" /> Settings
-                    </Link>
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()} className="flex items-center gap-2 text-destructive">
+                  <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 text-destructive">
                     <LogOut className="h-4 w-4" /> Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -178,12 +179,9 @@ export function Navbar() {
                       <Upload className="h-4 w-4" /> My Uploads
                     </Link>
                   )}
-                  <Link to="/settings" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 min-h-[44px] text-sm text-muted-foreground hover:text-foreground px-3 rounded-lg hover:bg-accent/50">
-                    <Settings className="h-4 w-4" /> Settings
-                  </Link>
                   <div className="border-t border-border my-3" />
                   <button
-                    onClick={() => { signOut(); setMobileOpen(false); }}
+                    onClick={() => { handleSignOut(); setMobileOpen(false); }}
                     className="flex items-center gap-3 min-h-[44px] text-sm text-destructive px-3 rounded-lg hover:bg-accent/50 w-full"
                   >
                     <LogOut className="h-4 w-4" /> Sign out
