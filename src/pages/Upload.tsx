@@ -596,6 +596,7 @@ const Upload = () => {
             </Button>
           </form>
         </Form>
+        )}
       </div>
 
       <SubmitToolModal open={submitToolOpen} onOpenChange={setSubmitToolOpen} />
