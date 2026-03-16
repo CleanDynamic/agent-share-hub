@@ -15,6 +15,7 @@ import Browse from "./pages/Browse";
 import Upload from "./pages/Upload";
 import About from "./pages/About";
 import ContentDetail from "./pages/ContentDetail";
+import ProjectDetail from "./pages/ProjectDetail";
 import CreatorProfile from "./pages/CreatorProfile";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
