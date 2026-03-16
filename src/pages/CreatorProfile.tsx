@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { SeoHead } from "@/components/SeoHead";
 import { supabase } from "@/integrations/supabase/client";
 import { ContentCard } from "@/components/ContentCard";
 import { Button } from "@/components/ui/button";
