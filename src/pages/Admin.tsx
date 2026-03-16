@@ -85,6 +85,49 @@ const Admin = () => {
     },
   });
 
+  // ── Tool submissions ──
+  const { data: pendingTools, isLoading: toolsLoading } = useQuery({
+    queryKey: ["admin_pending_tools"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_tools_registry" as any)
+        .select("*")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const approveToolMutation = useMutation({
+    mutationFn: async (toolId: string) => {
+      const { error } = await supabase
+        .from("ai_tools_registry" as any)
+        .update({ status: "approved", approved_at: new Date().toISOString() } as any)
+        .eq("id", toolId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_pending_tools"] });
+      queryClient.invalidateQueries({ queryKey: ["approved_ai_tools"] });
+      toast({ title: "Tool approved" });
+    },
+  });
+
+  const rejectToolMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+      const { error } = await supabase
+        .from("ai_tools_registry" as any)
+        .update({ status: "rejected", rejected_reason: reason || null } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_pending_tools"] });
+      toast({ title: "Tool rejected" });
+    },
+  });
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     navigate("/");
