@@ -219,6 +219,14 @@ const ContentDetail = () => {
           </div>
         )}
 
+        {/* Tip success banner */}
+        {tipSuccess && (
+          <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+            <CheckCircle2 className="h-5 w-5 shrink-0" />
+            <p className="text-sm font-medium">Thanks for supporting the creator.</p>
+          </div>
+        )}
+
         {/* Badges */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <Badge variant="outline" className={`text-[10px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
