@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, FileText, FolderOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ProjectUploadForm } from "@/components/ProjectUploadForm";
 import { useToast } from "@/hooks/use-toast";
 import { useApprovedToolNames } from "@/hooks/useApprovedTools";
 import { SeoHead } from "@/components/SeoHead";
@@ -54,6 +55,7 @@ const Upload = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
+  const [uploadType, setUploadType] = useState<"single" | "project">("single");
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([emptyBlock("text")]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -238,6 +240,51 @@ const Upload = () => {
           </p>
         </div>
 
+        {/* Upload type selector */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+          <button
+            type="button"
+            onClick={() => setUploadType("single")}
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${
+              uploadType === "single"
+                ? "border-[#E8571A] bg-[#E8571A]/5"
+                : "border-border bg-card hover:border-muted-foreground/40"
+            }`}
+          >
+            <FileText className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "single" ? "text-[#E8571A]" : "text-muted-foreground"}`} />
+            <div>
+              <p className={`text-sm font-semibold ${uploadType === "single" ? "text-foreground" : "text-foreground"}`}>
+                Single piece of content
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                A prompt file, tutorial, blueprint, workflow, or guide
+              </p>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setUploadType("project")}
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${
+              uploadType === "project"
+                ? "border-[#E8571A] bg-[#E8571A]/5"
+                : "border-border bg-card hover:border-muted-foreground/40"
+            }`}
+          >
+            <FolderOpen className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "project" ? "text-[#E8571A]" : "text-muted-foreground"}`} />
+            <div>
+              <p className={`text-sm font-semibold ${uploadType === "project" ? "text-foreground" : "text-foreground"}`}>
+                Project
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                A collection of related content with a timeline
+              </p>
+            </div>
+          </button>
+        </div>
+
+        {uploadType === "project" ? (
+          <ProjectUploadForm />
+        ) : (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* 1. Title */}
@@ -549,6 +596,7 @@ const Upload = () => {
             </Button>
           </form>
         </Form>
+        )}
       </div>
 
       <SubmitToolModal open={submitToolOpen} onOpenChange={setSubmitToolOpen} />
