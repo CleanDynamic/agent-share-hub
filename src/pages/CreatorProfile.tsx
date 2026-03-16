@@ -87,6 +87,8 @@ const CreatorProfile = () => {
   const totalDownloads = contentItems?.reduce((sum, item) => sum + item.download_count, 0) ?? 0;
   const hasDonationContent = contentItems?.some((item) => item.donation_enabled) ?? false;
   const hasSubscriptionPriceId = !!(profile as any)?.subscription_price_id;
+  const [followerDelta, setFollowerDelta] = useState(0);
+  const followerCount = ((profile as any)?.follower_count ?? 0) + followerDelta;
 
   // Enquiry modal state
   const [enquiryListing, setEnquiryListing] = useState<{ id: string; title: string } | null>(null);
