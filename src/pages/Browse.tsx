@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ContentCard } from "@/components/ContentCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useApprovedTools } from "@/hooks/useApprovedTools";
+import { useApprovedToolNames } from "@/hooks/useApprovedTools";
+import { SubmitToolModal } from "@/components/SubmitToolModal";
 
 const ALL = "all";
 
@@ -55,13 +56,14 @@ function CardSkeleton() {
 
 const Browse = () => {
   const { isLoggedIn, profile } = useAuth();
-  const { data: AI_TOOLS = [] } = useApprovedTools();
+  const { data: AI_TOOLS } = useApprovedToolNames();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState(ALL);
   const [difficultyFilter, setDifficultyFilter] = useState(ALL);
   const [toolFilter, setToolFilter] = useState(ALL);
   const [useCaseFilter, setUseCaseFilter] = useState(ALL);
   const [matchInterests, setMatchInterests] = useState(false);
+  const [submitToolOpen, setSubmitToolOpen] = useState(false);
 
   // Fetch full profile with interests for personalisation
   const { data: fullProfile } = useQuery({
@@ -204,6 +206,16 @@ const Browse = () => {
           </Select>
         </div>
 
+        {/* Submit a tool link */}
+        <div className="mb-4">
+          <button
+            onClick={() => setSubmitToolOpen(true)}
+            className="text-xs text-primary hover:underline"
+          >
+            Don't see your AI tool? Submit it →
+          </button>
+        </div>
+
         {/* Results count */}
         {!isLoading && (
           <p className="text-xs text-muted-foreground mb-4">
@@ -253,6 +265,8 @@ const Browse = () => {
           </div>
         )}
       </div>
+
+      <SubmitToolModal open={submitToolOpen} onOpenChange={setSubmitToolOpen} />
     </div>
   );
 };

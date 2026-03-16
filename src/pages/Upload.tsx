@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Upload as UploadIcon, Loader2, CheckCircle2, Plus } from "lucide-react";
+import { Upload as UploadIcon, Loader2, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useApprovedTools } from "@/hooks/useApprovedTools";
+import { useApprovedToolNames } from "@/hooks/useApprovedTools";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,7 @@ import {
 import {
   Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
+import { SubmitToolModal } from "@/components/SubmitToolModal";
 
 const CONTENT_TYPES = [
   "Prompt File", "Prompt Tutorial", "Agent Blueprint", "Workflow Template",
@@ -46,69 +47,16 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-function SuggestToolInline() {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const { toast } = useToast();
-
-  async function handleSubmit() {
-    const trimmed = name.trim().replace(/[^a-zA-Z0-9 .\-]/g, "");
-    if (!trimmed || trimmed.length > 50) return;
-    setSubmitting(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSubmitting(false); return; }
-    const { error } = await supabase.from("ai_tools_registry" as any).insert({ name: trimmed, submitted_by: user.id } as any);
-    setSubmitting(false);
-    if (error) {
-      if (error.code === "23505") {
-        toast({ title: "Tool already exists or is pending review" });
-      } else {
-        toast({ title: "Failed to submit", description: error.message, variant: "destructive" });
-      }
-      return;
-    }
-    setSubmitted(true);
-    toast({ title: "Tool suggested!", description: "It will appear once approved by an admin." });
-  }
-
-  if (submitted) {
-    return <p className="text-xs text-muted-foreground mt-2">✓ Tool suggestion submitted for review.</p>;
-  }
-
-  if (!open) {
-    return (
-      <button type="button" onClick={() => setOpen(true)} className="flex items-center gap-1 text-xs text-primary hover:underline mt-2">
-        <Plus className="h-3 w-3" /> Suggest a tool not listed here
-      </button>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-2 mt-2">
-      <Input
-        value={name}
-        onChange={(e) => setName(e.target.value.slice(0, 50))}
-        placeholder="Tool name"
-        className="h-8 text-xs bg-card border-border rounded-lg max-w-[200px]"
-      />
-      <Button type="button" size="sm" className="h-8 text-xs" onClick={handleSubmit} disabled={submitting || !name.trim()}>
-        {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Submit"}
-      </Button>
-      <button type="button" onClick={() => setOpen(false)} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
-    </div>
-  );
-}
 
 const Upload = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { data: AI_TOOLS = [] } = useApprovedTools();
+  const { data: AI_TOOLS } = useApprovedToolNames();
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submitToolOpen, setSubmitToolOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -359,7 +307,9 @@ const Upload = () => {
                     ))}
                   </div>
                   {/* Suggest a tool */}
-                  <SuggestToolInline />
+                  <button type="button" onClick={() => setSubmitToolOpen(true)} className="text-xs text-primary hover:underline mt-2">
+                    Don't see your AI tool? Submit it →
+                  </button>
                   <FormDescription>Tick every tool you have tested this with. Tick 'Any Tool' if it works everywhere.</FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -564,6 +514,8 @@ const Upload = () => {
           </form>
         </Form>
       </div>
+
+      <SubmitToolModal open={submitToolOpen} onOpenChange={setSubmitToolOpen} />
     </div>
   );
 };
