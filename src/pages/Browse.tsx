@@ -63,6 +63,7 @@ const Browse = () => {
   const [toolFilter, setToolFilter] = useState(ALL);
   const [useCaseFilter, setUseCaseFilter] = useState(ALL);
   const [matchInterests, setMatchInterests] = useState(false);
+  const [submitToolOpen, setSubmitToolOpen] = useState(false);
 
   // Fetch full profile with interests for personalisation
   const { data: fullProfile } = useQuery({
