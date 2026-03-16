@@ -241,6 +241,97 @@ const Browse = () => {
         path="/browse"
       />
       <div className="mx-auto max-w-5xl">
+        {/* Content / Projects tabs */}
+        <div className="flex gap-1 mb-4">
+          <button
+            onClick={() => setBrowseTab("content")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+              browseTab === "content"
+                ? "bg-primary text-primary-foreground"
+                : "bg-accent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Content
+          </button>
+          <button
+            onClick={() => setBrowseTab("projects")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+              browseTab === "projects"
+                ? "bg-primary text-primary-foreground"
+                : "bg-accent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Projects
+          </button>
+        </div>
+
+        {browseTab === "projects" ? (
+          <>
+            {/* Project search */}
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search projects..."
+                value={projectSearch}
+                onChange={(e) => setProjectSearch(e.target.value)}
+                className="pl-10 h-12 bg-card border-border text-foreground placeholder:text-muted-foreground rounded-xl"
+              />
+            </div>
+
+            {!projectsLoading && (
+              <p className="text-xs text-muted-foreground mb-4">
+                Showing {filteredProjects.length} project{filteredProjects.length !== 1 ? "s" : ""}
+              </p>
+            )}
+
+            {projectsLoading && (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-28 w-full rounded-xl" />
+                ))}
+              </div>
+            )}
+
+            {!projectsLoading && filteredProjects.length > 0 && (
+              <div className="space-y-3">
+                {filteredProjects.map((proj: any) => {
+                  const creator = proj.profiles as { id: string; username: string; display_name: string | null } | null;
+                  const compIds = (proj.project_components ?? []).map((c: any) => c.linked_content_id || c.inline_content_id).filter(Boolean);
+                  const types = [...new Set(
+                    compIds.map((cid: string) => projectContentItems?.find((ci: any) => ci.id === cid)?.content_type).filter(Boolean)
+                  )] as string[];
+
+                  return (
+                    <ProjectCard
+                      key={proj.id}
+                      id={proj.id}
+                      title={proj.title}
+                      description={proj.description}
+                      coverImageUrl={null}
+                      creatorDisplayName={creator?.display_name || creator?.username || "Unknown"}
+                      creatorUsername={creator?.username || ""}
+                      componentTypes={types}
+                      componentCount={(proj.project_components ?? []).length}
+                      viewCount={proj.view_count}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {!projectsLoading && filteredProjects.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  {projectSearch ? "No projects match that search." : "No projects published yet."}
+                </p>
+                {projectSearch && (
+                  <Button variant="outline" size="sm" onClick={() => setProjectSearch("")}>Clear search</Button>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+        <>
         {/* Search */}
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
