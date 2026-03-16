@@ -119,7 +119,9 @@ function FilterDropdowns({
 const Browse = () => {
   const { isLoggedIn, profile } = useAuth();
   const { data: AI_TOOLS } = useApprovedToolNames();
+  const [browseTab, setBrowseTab] = useState<"content" | "projects">("content");
   const [search, setSearch] = useState("");
+  const [projectSearch, setProjectSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState(ALL);
   const [difficultyFilter, setDifficultyFilter] = useState(ALL);
   const [toolFilter, setToolFilter] = useState(ALL);
