@@ -21,6 +21,7 @@ import AdminLogin from "./pages/AdminLogin";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
+import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import Saved from "./pages/Saved";
 import Feed from "./pages/Feed";
