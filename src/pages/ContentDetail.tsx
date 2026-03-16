@@ -556,6 +556,9 @@ const ContentDetail = () => {
                     download_count={r.download_count}
                     monetisation_type={r.monetisation_type}
                     price_gbp={r.price_gbp ?? undefined}
+                    avg_rating={Number((r as any).avg_rating) || 0}
+                    rating_count={(r as any).rating_count ?? 0}
+                    view_count={(r as any).view_count ?? 0}
                   />
                 </div>
               ))}
