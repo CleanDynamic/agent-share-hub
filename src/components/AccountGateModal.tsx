@@ -23,7 +23,7 @@ export function AccountGateModal({ open, onOpenChange, contentId, mode }: Accoun
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border sm:max-w-md">
+      <DialogContent className="bg-card border-border sm:max-w-md max-w-[calc(100vw-32px)]">
         <div className="flex flex-col items-center text-center space-y-4 py-4">
           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
             <Lock className="h-5 w-5 text-primary" />
