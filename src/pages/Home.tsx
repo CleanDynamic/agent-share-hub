@@ -213,16 +213,16 @@ const Home = () => {
       </section>
 
       {/* ── 9 Content Types ── */}
-      <section className="border-t border-border py-20 px-6">
+      <section className="border-t border-border py-16 sm:py-20 px-4 sm:px-6">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2">
             What You Can Download
           </h2>
-          <p className="text-sm text-muted-foreground mb-10">
+          <p className="text-sm text-muted-foreground mb-8 sm:mb-10">
             Nine content types — from quick prompt files to full automation stacks.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-3 gap-4">
             {CONTENT_TYPES.map((ct, i) => (
               <motion.div
                 key={ct.name}
