@@ -386,8 +386,8 @@ const ContentDetail = () => {
             )}
           </div>
 
-          {/* Sidebar — right col */}
-          <div className="space-y-4">
+          {/* Sidebar — right col (hidden on mobile, sticky bar instead) */}
+          <div className="hidden lg:block space-y-4">
             {/* Download / Action box */}
             <div className="border border-border rounded-xl p-5 bg-card space-y-3">
               {isSub && !subscriberUnlocked ? (
