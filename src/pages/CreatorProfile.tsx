@@ -90,6 +90,13 @@ const CreatorProfile = () => {
   const [enquiryListing, setEnquiryListing] = useState<{ id: string; title: string } | null>(null);
   const [enquirySubmitting, setEnquirySubmitting] = useState(false);
 
+  // Tip success banner
+  const tipSuccess = searchParams.get("tip") === "success";
+  if (tipSuccess) {
+    // Clear param once read
+    setTimeout(() => setSearchParams({}, { replace: true }), 0);
+  }
+
   async function handleEnquiry(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!enquiryListing) return;
