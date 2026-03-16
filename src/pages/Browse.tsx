@@ -129,6 +129,28 @@ const Browse = () => {
           />
         </div>
 
+        {/* Personalised toggle */}
+        {isLoggedIn && fullProfile && (((fullProfile as any).user_interests ?? []).length > 0 || ((fullProfile as any).user_ai_tools ?? []).length > 0) && (
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setMatchInterests(false)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                !matchInterests ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All content
+            </button>
+            <button
+              onClick={() => setMatchInterests(true)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                matchInterests ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Matches my interests
+            </button>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="flex gap-3 overflow-x-auto pb-2 mb-6 scrollbar-hide">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
