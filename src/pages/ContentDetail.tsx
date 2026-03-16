@@ -117,9 +117,7 @@ const ContentDetail = () => {
     if (searchParams.get("payment") === "success" && item && !paymentHandled) {
       setPaymentSuccess(true);
       setPaymentHandled(true);
-      // Remove query param
       setSearchParams({}, { replace: true });
-      // Auto-trigger download
       (async () => {
         setDownloading(true);
         const result = await triggerDownload(item.id, item.file_url);
@@ -131,7 +129,12 @@ const ContentDetail = () => {
         setDownloading(false);
       })();
     }
-  }, [searchParams, item, paymentHandled]);
+    if (searchParams.get("tip") === "success" && !tipHandled) {
+      setTipSuccess(true);
+      setTipHandled(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, item, paymentHandled, tipHandled]);
 
   async function handleDownload() {
     if (!item) return;
