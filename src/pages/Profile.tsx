@@ -233,6 +233,9 @@ export default function Profile() {
                       monetisation_type={item.monetisation_type}
                       price_gbp={item.price_gbp ?? undefined}
                       creator_username={profile.username ?? undefined}
+                      avg_rating={Number((item as any).avg_rating) || 0}
+                      rating_count={(item as any).rating_count ?? 0}
+                      view_count={(item as any).view_count ?? 0}
                     />
                   ))}
                 </div>

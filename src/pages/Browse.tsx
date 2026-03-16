@@ -497,6 +497,9 @@ const Browse = () => {
                 monetisation_type={item.monetisation_type}
                 price_gbp={item.price_gbp ?? undefined}
                 file_url={item.file_url}
+                avg_rating={Number((item as any).avg_rating) || 0}
+                rating_count={(item as any).rating_count ?? 0}
+                view_count={(item as any).view_count ?? 0}
               />
             ))}
           </div>
