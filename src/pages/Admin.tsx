@@ -8,7 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { LogOut, CheckCircle, XCircle, Loader2, Wrench } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 const Admin = () => {
   const navigate = useNavigate();
