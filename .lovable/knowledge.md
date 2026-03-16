@@ -55,7 +55,7 @@ Any Tool, ChatGPT, Claude, Gemini, Grok, Zapier, Make, n8n — can be added by u
 
 ## USE CASE TAGS
 
-Social Media, Research, Business, Productivity, Content, Learning, Email, Finance
+Social Media, Research, Business, Productivity, Content, Learning, Email, Finance, Hobby, Other
 
 ## MONETISATION TYPES
 

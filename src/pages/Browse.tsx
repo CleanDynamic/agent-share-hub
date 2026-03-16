@@ -24,7 +24,7 @@ const CONTENT_TYPES = [
   "Agent Stack", "Model Config Guide", "Integration Guide", "Evaluation Framework", "Failure Library",
 ];
 const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
-const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance"];
+const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance", "Hobby", "Other"];
 
 async function fetchApprovedContent() {
   const { data, error } = await supabase
