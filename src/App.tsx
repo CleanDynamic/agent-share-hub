@@ -15,6 +15,7 @@ import Browse from "./pages/Browse";
 import Upload from "./pages/Upload";
 import About from "./pages/About";
 import ContentDetail from "./pages/ContentDetail";
+import ProjectDetail from "./pages/ProjectDetail";
 import CreatorProfile from "./pages/CreatorProfile";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
@@ -47,6 +48,7 @@ const App = () => (
                 <Route path="/upload" element={<Upload />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/content/:id" element={<ContentDetail />} />
+                <Route path="/project/:id" element={<ProjectDetail />} />
                 <Route path="/creator/:username" element={<CreatorProfile />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />

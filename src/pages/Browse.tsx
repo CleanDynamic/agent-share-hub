@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ContentCard } from "@/components/ContentCard";
+import { ProjectCard } from "@/components/ProjectCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApprovedToolNames } from "@/hooks/useApprovedTools";
@@ -118,7 +119,9 @@ function FilterDropdowns({
 const Browse = () => {
   const { isLoggedIn, profile } = useAuth();
   const { data: AI_TOOLS } = useApprovedToolNames();
+  const [browseTab, setBrowseTab] = useState<"content" | "projects">("content");
   const [search, setSearch] = useState("");
+  const [projectSearch, setProjectSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState(ALL);
   const [difficultyFilter, setDifficultyFilter] = useState(ALL);
   const [toolFilter, setToolFilter] = useState(ALL);
@@ -146,6 +149,47 @@ const Browse = () => {
     queryKey: ["content_items_approved"],
     queryFn: fetchApprovedContent,
   });
+
+  // Projects query
+  const { data: projects, isLoading: projectsLoading } = useQuery({
+    queryKey: ["projects_approved"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*, profiles(id, username, display_name), project_components(id, component_type, linked_content_id, inline_content_id)")
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: browseTab === "projects",
+  });
+
+  // Fetch content items for project component types
+  const projectContentIds = (projects ?? []).flatMap((p: any) =>
+    (p.project_components ?? []).map((c: any) => c.linked_content_id || c.inline_content_id).filter(Boolean)
+  );
+  const { data: projectContentItems } = useQuery({
+    queryKey: ["project_content_types", projectContentIds.join(",")],
+    queryFn: async () => {
+      if (projectContentIds.length === 0) return [];
+      const { data } = await supabase
+        .from("content_items")
+        .select("id, content_type")
+        .in("id", projectContentIds);
+      return data ?? [];
+    },
+    enabled: projectContentIds.length > 0,
+  });
+
+  const filteredProjects = useMemo(() => {
+    if (!projects) return [];
+    const q = projectSearch.toLowerCase();
+    if (!q) return projects;
+    return projects.filter((p: any) =>
+      p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
+    );
+  }, [projects, projectSearch]);
 
   const hasFilters = search || typeFilter !== ALL || difficultyFilter !== ALL || toolFilter !== ALL || useCaseFilter !== ALL;
 
@@ -197,6 +241,97 @@ const Browse = () => {
         path="/browse"
       />
       <div className="mx-auto max-w-5xl">
+        {/* Content / Projects tabs */}
+        <div className="flex gap-1 mb-4">
+          <button
+            onClick={() => setBrowseTab("content")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+              browseTab === "content"
+                ? "bg-primary text-primary-foreground"
+                : "bg-accent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Content
+          </button>
+          <button
+            onClick={() => setBrowseTab("projects")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+              browseTab === "projects"
+                ? "bg-primary text-primary-foreground"
+                : "bg-accent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Projects
+          </button>
+        </div>
+
+        {browseTab === "projects" ? (
+          <>
+            {/* Project search */}
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search projects..."
+                value={projectSearch}
+                onChange={(e) => setProjectSearch(e.target.value)}
+                className="pl-10 h-12 bg-card border-border text-foreground placeholder:text-muted-foreground rounded-xl"
+              />
+            </div>
+
+            {!projectsLoading && (
+              <p className="text-xs text-muted-foreground mb-4">
+                Showing {filteredProjects.length} project{filteredProjects.length !== 1 ? "s" : ""}
+              </p>
+            )}
+
+            {projectsLoading && (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-28 w-full rounded-xl" />
+                ))}
+              </div>
+            )}
+
+            {!projectsLoading && filteredProjects.length > 0 && (
+              <div className="space-y-3">
+                {filteredProjects.map((proj: any) => {
+                  const creator = proj.profiles as { id: string; username: string; display_name: string | null } | null;
+                  const compIds = (proj.project_components ?? []).map((c: any) => c.linked_content_id || c.inline_content_id).filter(Boolean);
+                  const types = [...new Set(
+                    compIds.map((cid: string) => projectContentItems?.find((ci: any) => ci.id === cid)?.content_type).filter(Boolean)
+                  )] as string[];
+
+                  return (
+                    <ProjectCard
+                      key={proj.id}
+                      id={proj.id}
+                      title={proj.title}
+                      description={proj.description}
+                      coverImageUrl={null}
+                      creatorDisplayName={creator?.display_name || creator?.username || "Unknown"}
+                      creatorUsername={creator?.username || ""}
+                      componentTypes={types}
+                      componentCount={(proj.project_components ?? []).length}
+                      viewCount={proj.view_count}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {!projectsLoading && filteredProjects.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  {projectSearch ? "No projects match that search." : "No projects published yet."}
+                </p>
+                {projectSearch && (
+                  <Button variant="outline" size="sm" onClick={() => setProjectSearch("")}>Clear search</Button>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+        <>
         {/* Search */}
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -399,6 +534,8 @@ const Browse = () => {
               </>
             )}
           </div>
+        )}
+        </>
         )}
       </div>
 
