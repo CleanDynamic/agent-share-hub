@@ -142,7 +142,7 @@ const Home = () => {
   return (
     <div>
       {/* ── Hero ── */}
-      <section className="py-24 sm:py-32 px-6 text-center">
+      <section className="py-16 sm:py-24 lg:py-32 px-4 sm:px-6 text-center">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -152,15 +152,15 @@ const Home = () => {
           }}
           className="mx-auto max-w-3xl"
         >
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]">
             The AI Agent Tactics Forum
           </h1>
-          <p className="mt-5 text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+          <p className="mt-4 sm:mt-5 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
             Download. Use. Build. Works with ChatGPT, Claude, Gemini, and any AI.
           </p>
 
-          <div className="mt-8 flex items-center justify-center gap-3 flex-wrap">
-            <Button size="lg" asChild>
+          <div className="mt-6 sm:mt-8 flex flex-col xs:flex-row items-center justify-center gap-3">
+            <Button size="lg" className="w-full xs:w-auto min-h-[44px]" asChild>
               <Link to="/browse">
                 Browse Assistants <ArrowRight className="ml-1.5 h-4 w-4" />
               </Link>
@@ -168,7 +168,7 @@ const Home = () => {
             <Button
               size="lg"
               variant="outline"
-              className="border-secondary text-secondary hover:bg-secondary/10"
+              className="w-full xs:w-auto min-h-[44px] border-secondary text-secondary hover:bg-secondary/10"
               asChild
             >
               <Link to="/upload">Upload Your Setup</Link>
@@ -178,12 +178,14 @@ const Home = () => {
       </section>
 
       {/* ── How It Works ── */}
-      <section className="border-t border-border py-20 px-6">
+      <section className="border-t border-border py-16 sm:py-20 px-4 sm:px-6">
         <div className="mx-auto max-w-5xl">
-          <h2 className="text-2xl font-bold tracking-tight text-foreground text-center mb-12">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground text-center mb-10 sm:mb-12">
             How It Works
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+            {/* Connecting line for mobile */}
+            <div className="absolute left-6 top-12 bottom-12 w-px bg-border md:hidden" />
             {STEPS.map((step, i) => (
               <motion.div
                 key={step.number}
@@ -192,16 +194,16 @@ const Home = () => {
                 whileInView="visible"
                 viewport={{ once: true }}
                 variants={fade}
-                className="text-center space-y-3"
+                className="text-center md:text-center relative flex flex-col items-center md:items-center"
               >
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-card">
+                <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-card">
                   <step.icon className="h-5 w-5 text-primary" />
                 </div>
-                <span className="inline-block text-xs font-bold text-primary uppercase tracking-widest">
+                <span className="inline-block text-xs font-bold text-primary uppercase tracking-widest mt-3">
                   Step {step.number}
                 </span>
-                <h3 className="text-base font-semibold text-foreground">{step.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
+                <h3 className="text-base font-semibold text-foreground mt-2">{step.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto mt-1">
                   {step.description}
                 </p>
               </motion.div>
@@ -211,16 +213,16 @@ const Home = () => {
       </section>
 
       {/* ── 9 Content Types ── */}
-      <section className="border-t border-border py-20 px-6">
+      <section className="border-t border-border py-16 sm:py-20 px-4 sm:px-6">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2">
             What You Can Download
           </h2>
-          <p className="text-sm text-muted-foreground mb-10">
+          <p className="text-sm text-muted-foreground mb-8 sm:mb-10">
             Nine content types — from quick prompt files to full automation stacks.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-3 gap-4">
             {CONTENT_TYPES.map((ct, i) => (
               <motion.div
                 key={ct.name}
@@ -250,7 +252,7 @@ const Home = () => {
       </section>
 
       {/* ── Featured This Week ── */}
-      <section className="border-t border-border py-20 px-6">
+      <section className="border-t border-border py-16 sm:py-20 px-4 sm:px-6">
         <div className="mx-auto max-w-5xl">
           <div className="flex items-end justify-between mb-8">
             <div>

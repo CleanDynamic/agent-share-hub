@@ -171,7 +171,7 @@ const CreatorProfile = () => {
   const displayName = profile.display_name || profile.username || "Creator";
 
   return (
-    <div className="py-12 px-6">
+    <div className="py-8 sm:py-12 px-4 sm:px-6">
       <div className="mx-auto max-w-5xl">
         {/* Tip success banner */}
         {tipSuccess && (
@@ -180,8 +180,6 @@ const CreatorProfile = () => {
             <p className="text-sm font-medium">Thanks for supporting {displayName}.</p>
           </div>
         )}
-
-        {/* Subscription success banner */}
         {subscribedSuccess && (
           <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
             <CheckCircle2 className="h-5 w-5 shrink-0" />
@@ -190,27 +188,35 @@ const CreatorProfile = () => {
         )}
 
         {/* Layout: header + sidebar */}
-        <div className="flex flex-col lg:flex-row gap-10">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
           {/* Main column */}
           <div className="flex-1 min-w-0">
             {/* Profile header */}
-            <div className="mb-10">
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-3xl font-bold text-foreground">{displayName}</h1>
-                {profile.is_creator && (
-                  <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">
-                    <BadgeCheck className="h-3 w-3 mr-1" /> Verified Creator
-                  </Badge>
-                )}
-                <FollowButton creatorId={profile.id} onCountChange={(d) => setFollowerDelta((prev) => prev + d)} />
+            <div className="mb-8 sm:mb-10">
+              {/* Mobile: avatar stacks above */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{displayName}</h1>
+                  {profile.is_creator && (
+                    <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">
+                      <BadgeCheck className="h-3 w-3 mr-1" /> Verified Creator
+                    </Badge>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-3">
                 <p className="text-sm text-muted-foreground">@{profile.username}</p>
                 <span className="text-xs text-muted-foreground">{followerCount} follower{followerCount !== 1 ? "s" : ""}</span>
               </div>
               {profile.bio && (
-                <p className="text-sm text-muted-foreground leading-relaxed mb-6">{profile.bio}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{profile.bio}</p>
               )}
+              {/* Follow button — full width on mobile */}
+              <div className="mb-4 sm:mb-6">
+                <div className="w-full sm:w-auto">
+                  <FollowButton creatorId={profile.id} onCountChange={(d) => setFollowerDelta((prev) => prev + d)} />
+                </div>
+              </div>
 
               <div className="flex gap-6">
                 <div className="flex items-center gap-2 text-sm">
@@ -226,37 +232,42 @@ const CreatorProfile = () => {
               </div>
             </div>
 
+            {/* Sidebar moves below profile on mobile */}
+            <div className="lg:hidden mb-8 space-y-4">
+              {hasSubscriptionPriceId && (
+                <div className="border border-border rounded-xl p-5 bg-card space-y-2">
+                  <Button className="w-full min-h-[44px] bg-secondary hover:bg-secondary/90 text-secondary-foreground" onClick={handleSubscribe} disabled={subscribing}>
+                    {subscribing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
+                    Subscribe to {displayName}
+                  </Button>
+                  <p className="text-[11px] text-muted-foreground text-center">{subCount ?? 0} subscriber{subCount !== 1 ? "s" : ""}</p>
+                </div>
+              )}
+              {hasDonationContent && (
+                <div className="border border-border rounded-xl p-5 bg-card space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Support</p>
+                  <TipSelector creatorId={profile.id} creatorDisplayName={displayName} successUrl={`${window.location.origin}/creator/${profile.username}?tip=success`} cancelUrl={`${window.location.origin}/creator/${profile.username}`} />
+                </div>
+              )}
+            </div>
+
             {/* Content grid */}
             <div>
               <h2 className="text-lg font-semibold text-foreground mb-4">Content by {displayName}</h2>
               {contentItems && contentItems.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {contentItems.map((item) => (
-                    <ContentCard
-                      key={item.id}
-                      id={item.id}
-                      content_type={item.content_type}
-                      title={item.title}
-                      description={item.description ?? ""}
-                      difficulty={item.difficulty}
-                      ai_tools={item.ai_tools ?? []}
-                      download_count={item.download_count}
-                      monetisation_type={item.monetisation_type}
-                      price_gbp={item.price_gbp ?? undefined}
-                      creator_username={profile.username ?? undefined}
-                    />
+                    <ContentCard key={item.id} id={item.id} content_type={item.content_type} title={item.title} description={item.description ?? ""} difficulty={item.difficulty} ai_tools={item.ai_tools ?? []} download_count={item.download_count} monetisation_type={item.monetisation_type} price_gbp={item.price_gbp ?? undefined} creator_username={profile.username ?? undefined} />
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground py-10 text-center">
-                  Nothing published yet. Check back soon.
-                </p>
+                <p className="text-sm text-muted-foreground py-10 text-center">Nothing published yet. Check back soon.</p>
               )}
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="w-full lg:w-72 shrink-0 space-y-4">
+          {/* Desktop sidebar — hidden on mobile (shown inline above) */}
+          <div className="hidden lg:block w-72 shrink-0 space-y-4">
             {/* Subscribe */}
             {hasSubscriptionPriceId && (
               <div className="border border-border rounded-xl p-5 bg-card space-y-2">

@@ -48,50 +48,73 @@ export default function MyUploads() {
   if (loading) return null;
 
   return (
-    <div className="py-12 px-6">
+    <div className="py-8 sm:py-12 px-4 sm:px-6">
       <div className="mx-auto max-w-5xl">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-foreground">My uploads</h1>
-          <Button size="sm" asChild>
+          <Button size="sm" className="min-h-[44px]" asChild>
             <Link to="/upload"><Plus className="h-4 w-4 mr-1.5" /> Upload new</Link>
           </Button>
         </div>
 
         {isLoading ? (
           <div className="space-y-3">
-            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 rounded-md" />)}
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 sm:h-12 rounded-xl" />)}
           </div>
         ) : items && items.length > 0 ? (
-          <div className="border border-border rounded-xl overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border">
-                  <TableHead className="text-muted-foreground">Title</TableHead>
-                  <TableHead className="text-muted-foreground">Type</TableHead>
-                  <TableHead className="text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-muted-foreground text-right">Downloads</TableHead>
-                  <TableHead className="text-muted-foreground text-right">Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item.id} className="border-border cursor-pointer hover:bg-accent/50" onClick={() => navigate(`/content/${item.id}`)}>
-                    <TableCell className="text-foreground font-medium text-sm">{item.title}</TableCell>
-                    <TableCell className="text-muted-foreground text-xs">{item.content_type}</TableCell>
-                    <TableCell>{statusBadge(item.status)}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm text-right">{item.download_count}</TableCell>
-                    <TableCell className="text-muted-foreground text-xs text-right">
-                      {new Date(item.created_at).toLocaleDateString()}
-                    </TableCell>
+          <>
+            {/* Desktop table */}
+            <div className="hidden sm:block border border-border rounded-xl overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border">
+                    <TableHead className="text-muted-foreground">Title</TableHead>
+                    <TableHead className="text-muted-foreground">Type</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Downloads</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Date</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => (
+                    <TableRow key={item.id} className="border-border cursor-pointer hover:bg-accent/50" onClick={() => navigate(`/content/${item.id}`)}>
+                      <TableCell className="text-foreground font-medium text-sm">{item.title}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">{item.content_type}</TableCell>
+                      <TableCell>{statusBadge(item.status)}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm text-right">{item.download_count}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs text-right">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile card layout */}
+            <div className="sm:hidden space-y-3">
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => navigate(`/content/${item.id}`)}
+                  className="border border-border rounded-xl p-4 bg-card cursor-pointer hover:border-primary/30 transition-colors space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold text-foreground line-clamp-2">{item.title}</p>
+                    {statusBadge(item.status)}
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span>{item.download_count} downloads</span>
+                    <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <p className="text-sm text-muted-foreground mb-4">You haven't uploaded anything yet.</p>
-            <Button asChild>
+            <Button className="min-h-[44px]" asChild>
               <Link to="/upload">Upload your first content</Link>
             </Button>
           </div>

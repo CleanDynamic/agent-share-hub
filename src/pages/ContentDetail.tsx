@@ -251,7 +251,7 @@ const ContentDetail = () => {
   }
 
   return (
-    <div className="py-12 px-6">
+    <div className="py-8 sm:py-12 px-4 sm:px-6 pb-24 lg:pb-12">
       <div className="mx-auto max-w-4xl">
         {/* Back */}
         <Link to="/browse" className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground mb-6 transition-colors">
@@ -386,8 +386,8 @@ const ContentDetail = () => {
             )}
           </div>
 
-          {/* Sidebar — right col */}
-          <div className="space-y-4">
+          {/* Sidebar — right col (hidden on mobile, sticky bar instead) */}
+          <div className="hidden lg:block space-y-4">
             {/* Download / Action box */}
             <div className="border border-border rounded-xl p-5 bg-card space-y-3">
               {isSub && !subscriberUnlocked ? (
@@ -458,26 +458,49 @@ const ContentDetail = () => {
 
         {/* Related content */}
         {related && related.length > 0 && (
-          <div className="mt-16">
+          <div className="mt-12 sm:mt-16">
             <h2 className="text-lg font-semibold text-foreground mb-4">More Like This</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide lg:grid lg:grid-cols-3 lg:overflow-visible">
               {related.map((r) => (
-                <ContentCard
-                  key={r.id}
-                  id={r.id}
-                  content_type={r.content_type}
-                  title={r.title}
-                  description={r.description ?? ""}
-                  difficulty={r.difficulty}
-                  ai_tools={r.ai_tools ?? []}
-                  download_count={r.download_count}
-                  monetisation_type={r.monetisation_type}
-                  price_gbp={r.price_gbp ?? undefined}
-                  file_url={r.file_url}
-                />
+                <div key={r.id} className="min-w-[280px] lg:min-w-0">
+                  <ContentCard
+                    id={r.id}
+                    content_type={r.content_type}
+                    title={r.title}
+                    description={r.description ?? ""}
+                    difficulty={r.difficulty}
+                    ai_tools={r.ai_tools ?? []}
+                    download_count={r.download_count}
+                    monetisation_type={r.monetisation_type}
+                    price_gbp={r.price_gbp ?? undefined}
+                    file_url={r.file_url}
+                  />
+                </div>
               ))}
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Mobile sticky download bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden border-t border-border bg-background/95 backdrop-blur-md p-4 space-y-2">
+        {isSub && !subscriberUnlocked ? (
+          <Button size="lg" className="w-full min-h-[44px]" disabled>
+            <Lock className="mr-2 h-4 w-4" /> Subscribers only
+          </Button>
+        ) : (
+          <Button size="lg" className="w-full min-h-[44px]" onClick={handleDownload} disabled={downloading}>
+            {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isPaid ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
+            {subscriberUnlocked ? "Download" : label}
+          </Button>
+        )}
+        {item?.donation_enabled && creator && (
+          <TipSelector
+            creatorId={creator.id}
+            creatorDisplayName={creator.display_name || creator.username}
+            successUrl={`${window.location.origin}/content/${item.id}?tip=success`}
+            cancelUrl={`${window.location.origin}/content/${item.id}`}
+          />
         )}
       </div>
 

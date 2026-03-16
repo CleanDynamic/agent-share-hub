@@ -60,10 +60,10 @@ export function GuestDownloadModal({ open, onOpenChange, contentId, onDownload }
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (ready || !v) onOpenChange(v); }}>
-      <DialogContent className="bg-card border-border sm:max-w-md p-0 gap-0 overflow-hidden">
+      <DialogContent className="bg-card border-border sm:max-w-md max-w-[calc(100vw-32px)] p-0 gap-0 overflow-hidden">
         {/* Ad placeholder */}
         <div className="flex items-center justify-center bg-accent/50 border-b border-border" style={{ minHeight: 100 }}>
-          <div className="w-[320px] h-[100px] rounded-lg border border-dashed border-border flex items-center justify-center">
+          <div className="w-full max-w-[320px] h-[100px] rounded-lg border border-dashed border-border flex items-center justify-center">
             <p className="text-xs text-muted-foreground text-center px-4">
               Ad placeholder — will be replaced with live ad network code before launch.
             </p>
@@ -90,13 +90,13 @@ export function GuestDownloadModal({ open, onOpenChange, contentId, onDownload }
             Create a free account to skip this wait, save content, and follow your favourite creators. It takes 30 seconds.
           </p>
           <div className="flex flex-col gap-2 pt-1">
-            <Button onClick={handleCreateAccount} className="w-full">
+            <Button onClick={handleCreateAccount} className="w-full min-h-[44px]">
               Create free account
             </Button>
             <button
               onClick={handleContinueAsGuest}
               disabled={!ready}
-              className={`text-sm transition-colors ${
+              className={`text-sm min-h-[44px] transition-colors ${
                 ready ? "text-muted-foreground hover:text-foreground cursor-pointer" : "text-muted-foreground/40 cursor-not-allowed"
               }`}
             >
