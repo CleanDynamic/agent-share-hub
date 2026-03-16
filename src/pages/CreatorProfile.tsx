@@ -126,6 +126,7 @@ const CreatorProfile = () => {
     if (!enquiryListing) return;
     setEnquirySubmitting(true);
     const fd = new FormData(e.currentTarget);
+    // TODO: email notification to creator when enquiry is submitted
     const { error } = await supabase.from("service_enquiries").insert({
       listing_id: enquiryListing.id,
       requester_name: fd.get("name") as string,
@@ -136,7 +137,7 @@ const CreatorProfile = () => {
     if (error) {
       toast({ title: "Failed to send", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Enquiry sent", description: "The creator will be in touch." });
+      toast({ title: "Enquiry sent", description: `${displayName} will be in touch.` });
       setEnquiryListing(null);
     }
   }
