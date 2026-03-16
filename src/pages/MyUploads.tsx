@@ -10,7 +10,30 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, Star, StarHalf } from "lucide-react";
+
+function roundedStars(avg: number, count: number): number {
+  if (count === 0) return 0;
+  if (avg >= 4.5) return 5;
+  if (avg >= 4.1) return 4.5;
+  if (avg >= 3.5) return 4;
+  if (avg >= 3.1) return 3.5;
+  if (avg >= 2.5) return 3;
+  if (avg >= 2.1) return 2.5;
+  if (avg >= 1.5) return 2;
+  if (avg >= 1.1) return 1.5;
+  return 1;
+}
+
+function TinyStars({ value }: { value: number }) {
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    if (i <= Math.floor(value)) stars.push(<Star key={i} className="h-2.5 w-2.5 fill-primary text-primary" />);
+    else if (i - 0.5 === value) stars.push(<StarHalf key={i} className="h-2.5 w-2.5 fill-primary text-primary" />);
+    else stars.push(<Star key={i} className="h-2.5 w-2.5 text-muted-foreground/30" />);
+  }
+  return <span className="inline-flex gap-0.5">{stars}</span>;
+}
 
 function statusBadge(status: string) {
   switch (status) {
