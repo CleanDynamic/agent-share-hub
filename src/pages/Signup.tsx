@@ -23,6 +23,9 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [accountType, setAccountType] = useState<"user" | "creator">("user");
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
 
   // Username availability
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
@@ -53,14 +56,17 @@ export default function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError("");
+    setEmailError("");
+    setUsernameError("");
     const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
 
     if (!displayName.trim() || !cleanUsername || !email.trim() || password.length < 8) {
-      toast({ title: "Please fill in all fields correctly.", variant: "destructive" });
+      setFormError("Please fill in all fields correctly.");
       return;
     }
     if (usernameStatus === "taken") {
-      toast({ title: "Username is already taken.", variant: "destructive" });
+      setUsernameError("That username is already taken. Please choose another.");
       return;
     }
 
@@ -75,7 +81,15 @@ export default function Signup() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.toLowerCase().includes("already registered") || error.message.toLowerCase().includes("already been registered")) {
+          setEmailError("An account with this email already exists.");
+        } else {
+          setFormError(error.message);
+        }
+        setSubmitting(false);
+        return;
+      }
       if (!data.user) throw new Error("Signup failed");
 
       // Update the profile row created by the trigger
@@ -91,18 +105,15 @@ export default function Signup() {
 
       toast({ title: "Account created! Welcome to NeoScale AI." });
 
-      // Handle post-signup actions
       if (afterDownload) {
-        // Mark the ad impression as converted
         await supabase.from("ad_impressions").update({ converted: true } as any)
           .eq("content_id", afterDownload)
           .is("user_id", null)
           .is("dismissed_at", null)
           .order("shown_at", { ascending: false })
           .limit(1);
-        // Auto-download the content
         const { triggerDownload } = await import("@/lib/download");
-        triggerDownload(afterDownload, null); // Will use file_url from the content detail page
+        triggerDownload(afterDownload, null);
         navigate(`/content/${afterDownload}`);
       } else if (afterPurchase) {
         navigate(`/content/${afterPurchase}`);
@@ -110,7 +121,7 @@ export default function Signup() {
         navigate("/onboarding");
       }
     } catch (err: any) {
-      toast({ title: err.message || "Something went wrong.", variant: "destructive" });
+      setFormError(err.message || "Something went wrong.");
     } finally {
       setSubmitting(false);
     }
@@ -130,20 +141,18 @@ export default function Signup() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          {/* Display name */}
           <div className="space-y-1.5">
             <Label htmlFor="displayName">Display name</Label>
             <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
           </div>
 
-          {/* Username */}
           <div className="space-y-1.5">
             <Label htmlFor="username">Username</Label>
             <div className="relative">
               <Input
                 id="username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ""))}
+                onChange={(e) => { setUsername(e.target.value.toLowerCase().replace(/\s/g, "")); setUsernameError(""); }}
                 placeholder="lowercase, no spaces"
                 required
               />
@@ -151,18 +160,22 @@ export default function Signup() {
                 <span className="absolute right-3 top-1/2 -translate-y-1/2">{usernameIcon}</span>
               )}
             </div>
-            {usernameStatus === "taken" && (
-              <p className="text-xs text-destructive">Username is taken</p>
+            {(usernameStatus === "taken" || usernameError) && (
+              <p className="text-xs text-destructive">{usernameError || "That username is already taken. Please choose another."}</p>
             )}
           </div>
 
-          {/* Email */}
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Input id="email" type="email" value={email} onChange={(e) => { setEmail(e.target.value); setEmailError(""); }} required />
+            {emailError && (
+              <p className="text-xs text-destructive">
+                {emailError}{" "}
+                <Link to="/login" className="text-secondary hover:underline">Sign in instead?</Link>
+              </p>
+            )}
           </div>
 
-          {/* Password */}
           <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
             <Input
@@ -176,7 +189,6 @@ export default function Signup() {
             />
           </div>
 
-          {/* Account type */}
           <div className="space-y-2">
             <Label>I want to…</Label>
             <RadioGroup value={accountType} onValueChange={(v) => setAccountType(v as "user" | "creator")} className="space-y-2">
@@ -194,6 +206,8 @@ export default function Signup() {
               </label>
             </RadioGroup>
           </div>
+
+          {formError && <p className="text-sm text-destructive">{formError}</p>}
 
           <Button type="submit" className="w-full bg-primary text-primary-foreground" disabled={submitting || usernameStatus === "taken"}>
             {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

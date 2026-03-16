@@ -28,21 +28,47 @@ const TYPE_COLORS: Record<string, string> = {
 
 function difficultyColor(level: string) {
   switch (level) {
-    case "Beginner":
-      return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
-    case "Intermediate":
-      return "bg-amber-500/15 text-amber-400 border-amber-500/30";
-    case "Advanced":
-      return "bg-red-500/15 text-red-400 border-red-500/30";
-    default:
-      return "bg-muted text-muted-foreground border-border";
+    case "Beginner": return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+    case "Intermediate": return "bg-amber-500/15 text-amber-400 border-amber-500/30";
+    case "Advanced": return "bg-red-500/15 text-red-400 border-red-500/30";
+    default: return "bg-muted text-muted-foreground border-border";
   }
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-GB", {
-    day: "numeric", month: "short", year: "numeric",
-  });
+  return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="py-8 sm:py-12 px-4 sm:px-6">
+      <div className="mx-auto max-w-4xl space-y-4">
+        <Skeleton className="h-4 w-24 rounded-md" />
+        <div className="flex gap-2">
+          <Skeleton className="h-5 w-20 rounded-md" />
+          <Skeleton className="h-5 w-16 rounded-md" />
+        </div>
+        <Skeleton className="h-8 w-3/4 rounded-md" />
+        <Skeleton className="h-4 w-1/2 rounded-md" />
+        <div className="flex gap-4">
+          <Skeleton className="h-4 w-24 rounded-md" />
+          <Skeleton className="h-4 w-28 rounded-md" />
+          <Skeleton className="h-4 w-24 rounded-md" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+          <div className="lg:col-span-2 space-y-4">
+            <Skeleton className="h-8 w-32 rounded-md" />
+            <Skeleton className="h-40 w-full rounded-xl" />
+            <Skeleton className="h-8 w-36 rounded-md" />
+            <Skeleton className="h-32 w-full rounded-xl" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-56 w-full rounded-xl" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 const ContentDetail = () => {
@@ -60,7 +86,6 @@ const ContentDetail = () => {
   const [accountGateOpen, setAccountGateOpen] = useState(false);
   const [accountGateMode, setAccountGateMode] = useState<"purchase" | "subscription">("purchase");
 
-  // Fetch content item with creator profile
   const { data: item, isLoading, error } = useQuery({
     queryKey: ["content_detail", id],
     queryFn: async () => {
@@ -76,7 +101,6 @@ const ContentDetail = () => {
     enabled: !!id,
   });
 
-  // Fetch creator total downloads
   const creator = item?.profiles as { id: string; username: string; display_name: string | null; bio: string | null } | null;
 
   const { data: creatorStats } = useQuery({
@@ -96,7 +120,6 @@ const ContentDetail = () => {
     enabled: !!creator?.id,
   });
 
-  // Fetch related content (same type, exclude current)
   const { data: related } = useQuery({
     queryKey: ["related_content", item?.content_type, id],
     queryFn: async () => {
@@ -114,7 +137,6 @@ const ContentDetail = () => {
     enabled: !!item?.content_type && !!id,
   });
 
-  // Check subscription status for subscription content
   const isSub = item?.monetisation_type === "subscription";
   const isPaid = item?.monetisation_type === "paid";
 
@@ -137,11 +159,9 @@ const ContentDetail = () => {
   });
 
   const subscriberUnlocked = isSub && hasActiveSubscription === true;
-
   const count = localCount ?? item?.download_count ?? 0;
   const label = item ? getDownloadLabel(item.content_type, item.monetisation_type, item.price_gbp ?? undefined) : "";
 
-  // Handle post-payment auto-download
   useEffect(() => {
     if (searchParams.get("payment") === "success" && item && !paymentHandled) {
       setPaymentSuccess(true);
@@ -180,27 +200,20 @@ const ContentDetail = () => {
   async function handleDownload() {
     if (!item) return;
     if (isPaid) {
-      if (!isLoggedIn) {
-        setAccountGateMode("purchase");
-        setAccountGateOpen(true);
-        return;
-      }
+      if (!isLoggedIn) { setAccountGateMode("purchase"); setAccountGateOpen(true); return; }
       setDownloading(true);
       try {
         const priceInPence = Math.round((item.price_gbp ?? 0) * 100);
         const { data, error } = await supabase.functions.invoke("create-checkout-session", {
           body: {
-            content_id: item.id,
-            price_amount: priceInPence,
+            content_id: item.id, price_amount: priceInPence,
             success_url: `${window.location.origin}/content/${item.id}?payment=success`,
             cancel_url: `${window.location.origin}/content/${item.id}`,
           },
         });
         if (error || !data?.url) {
           toast({ title: "Checkout failed", description: "Could not start payment.", variant: "destructive" });
-        } else {
-          window.location.href = data.url;
-        }
+        } else { window.location.href = data.url; }
       } catch {
         toast({ title: "Checkout failed", description: "Something went wrong.", variant: "destructive" });
       }
@@ -208,41 +221,19 @@ const ContentDetail = () => {
       return;
     }
     if (isSub && !subscriberUnlocked) {
-      if (!isLoggedIn) {
-        setAccountGateMode("subscription");
-        setAccountGateOpen(true);
-      }
+      if (!isLoggedIn) { setAccountGateMode("subscription"); setAccountGateOpen(true); }
       return;
     }
-    // Free content
-    if (!isLoggedIn) {
-      setGuestModalOpen(true);
-      return;
-    }
+    if (!isLoggedIn) { setGuestModalOpen(true); return; }
     await doDownload();
   }
 
-  if (isLoading) {
-    return (
-      <div className="py-16 px-6 mx-auto max-w-4xl space-y-4">
-        <Skeleton className="h-6 w-40 rounded-md" />
-        <Skeleton className="h-10 w-3/4 rounded-md" />
-        <Skeleton className="h-5 w-1/2 rounded-md" />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-          <div className="lg:col-span-2 space-y-4">
-            <Skeleton className="h-40 w-full rounded-xl" />
-            <Skeleton className="h-32 w-full rounded-xl" />
-          </div>
-          <Skeleton className="h-56 w-full rounded-xl" />
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <DetailSkeleton />;
 
   if (!item || error) {
     return (
       <div className="py-20 px-6 flex flex-col items-center gap-4 text-center">
-        <p className="text-sm text-muted-foreground">Content not found.</p>
+        <p className="text-sm text-muted-foreground">This content doesn't exist or has been removed.</p>
         <Button variant="outline" size="sm" asChild>
           <Link to="/browse"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Browse</Link>
         </Button>
@@ -253,20 +244,16 @@ const ContentDetail = () => {
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6 pb-24 lg:pb-12">
       <div className="mx-auto max-w-4xl">
-        {/* Back */}
         <Link to="/browse" className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Browse
         </Link>
 
-        {/* Payment success banner */}
         {paymentSuccess && (
           <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
             <CheckCircle2 className="h-5 w-5 shrink-0" />
             <p className="text-sm font-medium">Payment successful. Your download is ready.</p>
           </div>
         )}
-
-        {/* Tip success banner */}
         {tipSuccess && (
           <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
             <CheckCircle2 className="h-5 w-5 shrink-0" />
@@ -274,7 +261,6 @@ const ContentDetail = () => {
           </div>
         )}
 
-        {/* Badges */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <Badge variant="outline" className={`text-[10px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
             {item.content_type}
@@ -295,11 +281,9 @@ const ContentDetail = () => {
           )}
         </div>
 
-        {/* Title + description */}
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{item.title}</h1>
         <p className="text-sm text-muted-foreground leading-relaxed mb-4">{item.description}</p>
 
-        {/* Meta row */}
         <div className="flex flex-wrap items-center gap-4 mb-8 text-sm text-muted-foreground">
           {creator && (
             <Link to={`/creator/${creator.username}`} className="flex items-center gap-1.5 hover:text-foreground transition-colors">
@@ -317,11 +301,8 @@ const ContentDetail = () => {
           </div>
         </div>
 
-        {/* Two-column layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main content — left 2 cols */}
           <div className="lg:col-span-2 space-y-6">
-            {/* AI Tools */}
             {item.ai_tools && item.ai_tools.length > 0 && (
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Works with</h3>
@@ -333,7 +314,6 @@ const ContentDetail = () => {
               </div>
             )}
 
-            {/* Subscription lock message */}
             {isSub && !subscriberUnlocked && creator && (
               <div className="border border-border rounded-xl p-5 bg-card">
                 <div className="flex items-center gap-3 mb-3">
@@ -351,7 +331,6 @@ const ContentDetail = () => {
               </div>
             )}
 
-            {/* How to use */}
             {item.use_instructions && (!isSub || subscriberUnlocked) && (
               <div>
                 <h2 className="text-lg font-semibold text-foreground mb-3">How to Use This</h2>
@@ -363,7 +342,6 @@ const ContentDetail = () => {
               </div>
             )}
 
-            {/* What to expect */}
             {item.what_to_expect && (!isSub || subscriberUnlocked) && (
               <div>
                 <h2 className="text-lg font-semibold text-foreground mb-3">What to Expect</h2>
@@ -373,7 +351,6 @@ const ContentDetail = () => {
               </div>
             )}
 
-            {/* Use cases */}
             {item.use_cases && item.use_cases.length > 0 && (
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Use Cases</h3>
@@ -386,15 +363,13 @@ const ContentDetail = () => {
             )}
           </div>
 
-          {/* Sidebar — right col (hidden on mobile, sticky bar instead) */}
+          {/* Sidebar */}
           <div className="hidden lg:block space-y-4">
-            {/* Download / Action box */}
             <div className="border border-border rounded-xl p-5 bg-card space-y-3">
               {isSub && !subscriberUnlocked ? (
                 <>
                   <Button size="lg" className="w-full" disabled>
-                    <Lock className="mr-2 h-4 w-4" />
-                    Subscribers only
+                    <Lock className="mr-2 h-4 w-4" /> Subscribers only
                   </Button>
                   {creator && (
                     <Button variant="outline" size="sm" className="w-full border-secondary text-secondary hover:bg-secondary/10" asChild>
@@ -406,23 +381,13 @@ const ContentDetail = () => {
                 </>
               ) : (
                 <Button size="lg" className="w-full" onClick={handleDownload} disabled={downloading}>
-                  {downloading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : isPaid ? (
-                    <Lock className="mr-2 h-4 w-4" />
-                  ) : (
-                    <Download className="mr-2 h-4 w-4" />
-                  )}
+                  {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isPaid ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
                   {subscriberUnlocked ? "Download" : label}
                 </Button>
               )}
-
               {isPaid && (
-                <p className="text-[11px] text-muted-foreground text-center">
-                  £{(item.price_gbp ?? 0).toFixed(2)} — one-time payment
-                </p>
+                <p className="text-[11px] text-muted-foreground text-center">£{(item.price_gbp ?? 0).toFixed(2)} — one-time payment</p>
               )}
-
               {item.donation_enabled && creator && (
                 <TipSelector
                   creatorId={creator.id}
@@ -433,34 +398,54 @@ const ContentDetail = () => {
               )}
             </div>
 
-            {/* Creator card */}
             {creator && (
               <Link
                 to={`/creator/${creator.username}`}
                 className="block border border-border rounded-xl p-5 bg-card hover:border-primary/30 transition-colors"
               >
-                <p className="text-sm font-semibold text-foreground mb-1">
-                  {creator.display_name || creator.username}
-                </p>
-                {creator.bio && (
-                  <p className="text-xs text-muted-foreground leading-relaxed mb-3 line-clamp-3">
-                    {creator.bio}
-                  </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Created by</p>
+                <p className="text-sm font-semibold text-foreground">{creator.display_name || creator.username}</p>
+                {creator.bio && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{creator.bio}</p>}
+                {creatorStats && (
+                  <div className="flex gap-3 mt-3 text-xs text-muted-foreground">
+                    <span>{creatorStats.totalItems} published</span>
+                    <span>{creatorStats.totalDownloads.toLocaleString()} downloads</span>
+                  </div>
                 )}
-                <div className="flex gap-4 text-xs text-muted-foreground">
-                  <span>{creatorStats?.totalItems ?? 0} published</span>
-                  <span>{(creatorStats?.totalDownloads ?? 0).toLocaleString()} downloads</span>
-                </div>
               </Link>
             )}
           </div>
         </div>
 
+        {/* Mobile sticky bar */}
+        <div className="fixed bottom-0 left-0 right-0 lg:hidden border-t border-border bg-background p-4 z-30">
+          {isSub && !subscriberUnlocked ? (
+            <Button size="lg" className="w-full" disabled>
+              <Lock className="mr-2 h-4 w-4" /> Subscribers only
+            </Button>
+          ) : (
+            <div className="space-y-2">
+              <Button size="lg" className="w-full" onClick={handleDownload} disabled={downloading}>
+                {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isPaid ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
+                {subscriberUnlocked ? "Download" : label}
+              </Button>
+              {item.donation_enabled && creator && (
+                <TipSelector
+                  creatorId={creator.id}
+                  creatorDisplayName={creator.display_name || creator.username}
+                  successUrl={`${window.location.origin}/content/${item.id}?tip=success`}
+                  cancelUrl={`${window.location.origin}/content/${item.id}`}
+                />
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Related content */}
         {related && related.length > 0 && (
-          <div className="mt-12 sm:mt-16">
-            <h2 className="text-lg font-semibold text-foreground mb-4">More Like This</h2>
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide lg:grid lg:grid-cols-3 lg:overflow-visible">
+          <div className="mt-12">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Related Content</h2>
+            <div className="flex gap-4 overflow-x-auto pb-2 lg:grid lg:grid-cols-3 lg:overflow-visible scrollbar-hide">
               {related.map((r) => (
                 <div key={r.id} className="min-w-[280px] lg:min-w-0">
                   <ContentCard
@@ -473,7 +458,6 @@ const ContentDetail = () => {
                     download_count={r.download_count}
                     monetisation_type={r.monetisation_type}
                     price_gbp={r.price_gbp ?? undefined}
-                    file_url={r.file_url}
                   />
                 </div>
               ))}
@@ -482,47 +466,19 @@ const ContentDetail = () => {
         )}
       </div>
 
-      {/* Mobile sticky download bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden border-t border-border bg-background/95 backdrop-blur-md p-4 space-y-2">
-        {isSub && !subscriberUnlocked ? (
-          <Button size="lg" className="w-full min-h-[44px]" disabled>
-            <Lock className="mr-2 h-4 w-4" /> Subscribers only
-          </Button>
-        ) : (
-          <Button size="lg" className="w-full min-h-[44px]" onClick={handleDownload} disabled={downloading}>
-            {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isPaid ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
-            {subscriberUnlocked ? "Download" : label}
-          </Button>
-        )}
-        {item?.donation_enabled && creator && (
-          <TipSelector
-            creatorId={creator.id}
-            creatorDisplayName={creator.display_name || creator.username}
-            successUrl={`${window.location.origin}/content/${item.id}?tip=success`}
-            cancelUrl={`${window.location.origin}/content/${item.id}`}
-          />
-        )}
-      </div>
-
-      {/* Guest ad modal */}
-      {item && (
-        <GuestDownloadModal
-          open={guestModalOpen}
-          onOpenChange={setGuestModalOpen}
-          contentId={item.id}
-          onDownload={doDownload}
-        />
-      )}
-
-      {/* Account gate modal */}
-      {item && (
-        <AccountGateModal
-          open={accountGateOpen}
-          onOpenChange={setAccountGateOpen}
-          contentId={item.id}
-          mode={accountGateMode}
-        />
-      )}
+      <GuestDownloadModal
+        open={guestModalOpen}
+        onOpenChange={setGuestModalOpen}
+        contentId={item.id}
+        fileUrl={item.file_url}
+        onDownloaded={(newCount) => setLocalCount(newCount)}
+      />
+      <AccountGateModal
+        open={accountGateOpen}
+        onOpenChange={setAccountGateOpen}
+        contentId={item.id}
+        mode={accountGateMode}
+      />
     </div>
   );
 };

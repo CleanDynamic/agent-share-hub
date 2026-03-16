@@ -1,39 +1,48 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isLoggedIn } = useAuth();
-  const { toast } = useToast();
+  const redirect = searchParams.get("redirect") || "/browse";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (isLoggedIn) navigate("/", { replace: true });
-  }, [isLoggedIn, navigate]);
+    if (isLoggedIn) navigate(redirect, { replace: true });
+  }, [isLoggedIn, navigate, redirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
-      if (error) throw error;
-      navigate("/browse");
-    } catch (err: any) {
-      toast({ title: err.message || "Invalid credentials.", variant: "destructive" });
+      if (authError) {
+        if (authError.message.includes("Email not confirmed")) {
+          setError("Please check your email and click the confirmation link before signing in.");
+        } else {
+          setError("Incorrect email or password.");
+        }
+      } else {
+        navigate(redirect);
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -41,17 +50,17 @@ export default function Login() {
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
-      toast({ title: "Enter your email first.", variant: "destructive" });
+      setError("Enter your email first.");
       return;
     }
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/reset-password`,
       });
-      if (error) throw error;
+      if (resetError) throw resetError;
       setForgotSent(true);
     } catch (err: any) {
-      toast({ title: err.message, variant: "destructive" });
+      setError(err.message);
     }
   };
 
@@ -63,13 +72,15 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Input id="email" type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} required />
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <Input id="password" type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} required />
           </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <Button type="submit" className="w-full bg-primary text-primary-foreground" disabled={submitting}>
             {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
