@@ -482,6 +482,28 @@ const ContentDetail = () => {
         )}
       </div>
 
+      {/* Mobile sticky download bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden border-t border-border bg-background/95 backdrop-blur-md p-4 space-y-2">
+        {isSub && !subscriberUnlocked ? (
+          <Button size="lg" className="w-full min-h-[44px]" disabled>
+            <Lock className="mr-2 h-4 w-4" /> Subscribers only
+          </Button>
+        ) : (
+          <Button size="lg" className="w-full min-h-[44px]" onClick={handleDownload} disabled={downloading}>
+            {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isPaid ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
+            {subscriberUnlocked ? "Download" : label}
+          </Button>
+        )}
+        {item?.donation_enabled && creator && (
+          <TipSelector
+            creatorId={creator.id}
+            creatorDisplayName={creator.display_name || creator.username}
+            successUrl={`${window.location.origin}/content/${item.id}?tip=success`}
+            cancelUrl={`${window.location.origin}/content/${item.id}`}
+          />
+        )}
+      </div>
+
       {/* Guest ad modal */}
       {item && (
         <GuestDownloadModal

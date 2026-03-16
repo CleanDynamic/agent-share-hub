@@ -266,8 +266,8 @@ const CreatorProfile = () => {
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="w-full lg:w-72 shrink-0 space-y-4">
+          {/* Desktop sidebar — hidden on mobile (shown inline above) */}
+          <div className="hidden lg:block w-72 shrink-0 space-y-4">
             {/* Subscribe */}
             {hasSubscriptionPriceId && (
               <div className="border border-border rounded-xl p-5 bg-card space-y-2">
