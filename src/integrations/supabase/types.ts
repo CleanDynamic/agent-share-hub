@@ -712,6 +712,10 @@ export type Database = {
         Args: { _content_id: string }
         Returns: undefined
       }
+      increment_project_view_count: {
+        Args: { _project_id: string }
+        Returns: undefined
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
