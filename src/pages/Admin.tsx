@@ -250,6 +250,53 @@ const Admin = () => {
               </div>
             )}
           </TabsContent>
+
+          {/* ── Tool submissions review ── */}
+          <TabsContent value="tools" className="space-y-4">
+            <h2 className="text-lg font-semibold text-foreground">Pending Tool Suggestions</h2>
+            {toolsLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-16 w-full rounded-xl" />
+                <Skeleton className="h-16 w-full rounded-xl" />
+              </div>
+            ) : !pendingTools || pendingTools.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-10 text-center">No pending tool submissions.</p>
+            ) : (
+              <div className="space-y-3">
+                {pendingTools.map((tool: any) => (
+                  <div key={tool.id} className="border border-border rounded-xl p-4 bg-card flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{tool.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Submitted {new Date(tool.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
+                        onClick={() => approveToolMutation.mutate(tool.id)}
+                        disabled={approveToolMutation.isPending}
+                      >
+                        {approveToolMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-8 border-destructive text-destructive hover:bg-destructive/10"
+                        onClick={() => rejectToolMutation.mutate({ id: tool.id })}
+                        disabled={rejectToolMutation.isPending}
+                      >
+                        {rejectToolMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3 mr-1" />}
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
     </div>
