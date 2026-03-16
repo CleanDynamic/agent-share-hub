@@ -470,8 +470,7 @@ const ContentDetail = () => {
         open={guestModalOpen}
         onOpenChange={setGuestModalOpen}
         contentId={item.id}
-        fileUrl={item.file_url}
-        onDownloaded={(newCount) => setLocalCount(newCount)}
+        onDownload={doDownload}
       />
       <AccountGateModal
         open={accountGateOpen}
