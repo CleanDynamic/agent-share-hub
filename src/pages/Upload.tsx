@@ -463,7 +463,7 @@ const Upload = () => {
                             <Input
                               type="number"
                               step="0.01"
-                              min="0.50"
+                              min="1"
                               placeholder="4.99"
                               className="bg-background border-border rounded-xl w-32"
                               {...field}
