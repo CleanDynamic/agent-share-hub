@@ -8,6 +8,7 @@ import { TipSelector } from "@/components/TipSelector";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
 import { AccountGateModal } from "@/components/AccountGateModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { SeoHead } from "@/components/SeoHead";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
