@@ -10,7 +10,30 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, Star, StarHalf } from "lucide-react";
+
+function roundedStars(avg: number, count: number): number {
+  if (count === 0) return 0;
+  if (avg >= 4.5) return 5;
+  if (avg >= 4.1) return 4.5;
+  if (avg >= 3.5) return 4;
+  if (avg >= 3.1) return 3.5;
+  if (avg >= 2.5) return 3;
+  if (avg >= 2.1) return 2.5;
+  if (avg >= 1.5) return 2;
+  if (avg >= 1.1) return 1.5;
+  return 1;
+}
+
+function TinyStars({ value }: { value: number }) {
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    if (i <= Math.floor(value)) stars.push(<Star key={i} className="h-2.5 w-2.5 fill-primary text-primary" />);
+    else if (i - 0.5 === value) stars.push(<StarHalf key={i} className="h-2.5 w-2.5 fill-primary text-primary" />);
+    else stars.push(<Star key={i} className="h-2.5 w-2.5 text-muted-foreground/30" />);
+  }
+  return <span className="inline-flex gap-0.5">{stars}</span>;
+}
 
 function statusBadge(status: string) {
   switch (status) {
@@ -37,7 +60,7 @@ export default function MyUploads() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
-        .select("id, title, content_type, status, download_count, created_at")
+        .select("id, title, content_type, status, download_count, created_at, avg_rating, rating_count, view_count")
         .eq("creator_id", profile!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -73,22 +96,39 @@ export default function MyUploads() {
                     <TableHead className="text-muted-foreground">Title</TableHead>
                     <TableHead className="text-muted-foreground">Type</TableHead>
                     <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Rating</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Views</TableHead>
                     <TableHead className="text-muted-foreground text-right">Downloads</TableHead>
                     <TableHead className="text-muted-foreground text-right">Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.id} className="border-border cursor-pointer hover:bg-accent/50" onClick={() => navigate(`/content/${item.id}`)}>
-                      <TableCell className="text-foreground font-medium text-sm">{item.title}</TableCell>
-                      <TableCell className="text-muted-foreground text-xs">{item.content_type}</TableCell>
-                      <TableCell>{statusBadge(item.status)}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm text-right">{item.download_count}</TableCell>
-                      <TableCell className="text-muted-foreground text-xs text-right">
-                        {new Date(item.created_at).toLocaleDateString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {items.map((item) => {
+                    const rc = (item as any).rating_count ?? 0;
+                    const sv = roundedStars(Number((item as any).avg_rating) || 0, rc);
+                    return (
+                      <TableRow key={item.id} className="border-border cursor-pointer hover:bg-accent/50" onClick={() => navigate(`/content/${item.id}`)}>
+                        <TableCell className="text-foreground font-medium text-sm">{item.title}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs">{item.content_type}</TableCell>
+                        <TableCell>{statusBadge(item.status)}</TableCell>
+                        <TableCell className="text-right">
+                          {rc > 0 ? (
+                            <div className="flex items-center justify-end gap-1">
+                              <TinyStars value={sv} />
+                              <span className="text-[10px] text-muted-foreground">({rc})</span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm text-right">{(item as any).view_count ?? 0}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm text-right">{item.download_count}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs text-right">
+                          {new Date(item.created_at).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

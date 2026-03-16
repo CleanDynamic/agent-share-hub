@@ -128,6 +128,9 @@ export default function Feed() {
                     price_gbp={item.price_gbp ?? undefined}
                     file_url={item.file_url}
                     creator_username={creatorProfile?.username}
+                    avg_rating={Number((item as any).avg_rating) || 0}
+                    rating_count={(item as any).rating_count ?? 0}
+                    view_count={(item as any).view_count ?? 0}
                   />
                 </div>
               );

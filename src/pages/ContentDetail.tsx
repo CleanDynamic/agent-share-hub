@@ -3,6 +3,7 @@ import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
+import { BookmarkButton } from "@/components/BookmarkButton";
 import { ContentCard } from "@/components/ContentCard";
 import { TipSelector } from "@/components/TipSelector";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
@@ -471,6 +472,11 @@ const ContentDetail = () => {
                   {subscriberUnlocked ? "Download" : label}
                 </Button>
               )}
+
+              {/* Bookmark button */}
+              <div className="flex justify-center">
+                <BookmarkButton contentId={item.id} />
+              </div>
               {isPaid && (
                 <p className="text-[11px] text-muted-foreground text-center">£{(item.price_gbp ?? 0).toFixed(2)} — one-time payment</p>
               )}
@@ -556,6 +562,9 @@ const ContentDetail = () => {
                     download_count={r.download_count}
                     monetisation_type={r.monetisation_type}
                     price_gbp={r.price_gbp ?? undefined}
+                    avg_rating={Number((r as any).avg_rating) || 0}
+                    rating_count={(r as any).rating_count ?? 0}
+                    view_count={(r as any).view_count ?? 0}
                   />
                 </div>
               ))}

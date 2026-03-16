@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { BadgeCheck, Download, FileText, Heart, Users, Loader2, CheckCircle2 } from "lucide-react";
+import { BadgeCheck, Download, Eye, FileText, Heart, Users, Loader2, CheckCircle2 } from "lucide-react";
 import { TipSelector } from "@/components/TipSelector";
 import { FollowButton } from "@/components/FollowButton";
 
@@ -148,6 +148,7 @@ const CreatorProfile = () => {
   });
 
   const totalDownloads = contentItems?.reduce((sum, item) => sum + item.download_count, 0) ?? 0;
+  const totalViews = contentItems?.reduce((sum, item) => sum + ((item as any).view_count ?? 0), 0) ?? 0;
   const hasDonationContent = contentItems?.some((item) => item.donation_enabled) ?? false;
   const hasSubscriptionPriceId = !!(profile as any)?.subscription_price_id;
   const [followerDelta, setFollowerDelta] = useState(0);
@@ -284,6 +285,11 @@ const CreatorProfile = () => {
                   <span className="text-muted-foreground">published</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-foreground font-medium">{totalViews.toLocaleString()}</span>
+                  <span className="text-muted-foreground">total views</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
                   <Download className="h-4 w-4 text-muted-foreground" />
                   <span className="text-foreground font-medium">{totalDownloads.toLocaleString()}</span>
                   <span className="text-muted-foreground">downloads</span>
@@ -341,7 +347,7 @@ const CreatorProfile = () => {
                   {contentItems && contentItems.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {contentItems.map((item) => (
-                        <ContentCard key={item.id} id={item.id} content_type={item.content_type} title={item.title} description={item.description ?? ""} difficulty={item.difficulty} ai_tools={item.ai_tools ?? []} download_count={item.download_count} monetisation_type={item.monetisation_type} price_gbp={item.price_gbp ?? undefined} creator_username={profile.username ?? undefined} />
+                        <ContentCard key={item.id} id={item.id} content_type={item.content_type} title={item.title} description={item.description ?? ""} difficulty={item.difficulty} ai_tools={item.ai_tools ?? []} download_count={item.download_count} monetisation_type={item.monetisation_type} price_gbp={item.price_gbp ?? undefined} creator_username={profile.username ?? undefined} avg_rating={Number((item as any).avg_rating) || 0} rating_count={(item as any).rating_count ?? 0} view_count={(item as any).view_count ?? 0} />
                       ))}
                     </div>
                   ) : (
