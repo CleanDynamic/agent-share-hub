@@ -55,6 +55,7 @@ const Upload = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
+  const [uploadType, setUploadType] = useState<"single" | "project">("single");
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([emptyBlock("text")]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
