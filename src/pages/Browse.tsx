@@ -186,6 +186,7 @@ const Browse = () => {
                 download_count={item.download_count}
                 monetisation_type={item.monetisation_type}
                 price_gbp={item.price_gbp ?? undefined}
+                file_url={item.file_url}
               />
             ))}
           </div>
