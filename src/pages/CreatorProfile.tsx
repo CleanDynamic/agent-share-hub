@@ -295,7 +295,7 @@ const CreatorProfile = () => {
                       <p className="text-xs text-muted-foreground leading-relaxed">{svc.description}</p>
                     )}
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-foreground">
+                      <span className="text-xs font-bold text-orange-400">
                         £{Number(svc.price_gbp ?? 0).toFixed(2)}
                       </span>
                       <Button
