@@ -20,6 +20,7 @@ import {
 import {
   Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
+import { SubmitToolModal } from "@/components/SubmitToolModal";
 
 const CONTENT_TYPES = [
   "Prompt File", "Prompt Tutorial", "Agent Blueprint", "Workflow Template",
