@@ -43,9 +43,12 @@ function formatDate(dateStr: string) {
 
 const ContentDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
   const [localCount, setLocalCount] = useState<number | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentHandled, setPaymentHandled] = useState(false);
 
   // Fetch content item with creator profile
   const { data: item, isLoading, error } = useQuery({
