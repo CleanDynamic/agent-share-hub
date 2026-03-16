@@ -126,6 +126,7 @@ const CreatorProfile = () => {
     if (!enquiryListing) return;
     setEnquirySubmitting(true);
     const fd = new FormData(e.currentTarget);
+    // TODO: email notification to creator when enquiry is submitted
     const { error } = await supabase.from("service_enquiries").insert({
       listing_id: enquiryListing.id,
       requester_name: fd.get("name") as string,
@@ -136,7 +137,7 @@ const CreatorProfile = () => {
     if (error) {
       toast({ title: "Failed to send", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Enquiry sent", description: "The creator will be in touch." });
+      toast({ title: "Enquiry sent", description: `${displayName} will be in touch.` });
       setEnquiryListing(null);
     }
   }
@@ -294,7 +295,7 @@ const CreatorProfile = () => {
                       <p className="text-xs text-muted-foreground leading-relaxed">{svc.description}</p>
                     )}
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-foreground">
+                      <span className="text-xs font-bold text-orange-400">
                         £{Number(svc.price_gbp ?? 0).toFixed(2)}
                       </span>
                       <Button
@@ -318,8 +319,8 @@ const CreatorProfile = () => {
       <Dialog open={!!enquiryListing} onOpenChange={(open) => !open && setEnquiryListing(null)}>
         <DialogContent className="bg-card border-border sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Enquire about {enquiryListing?.title}</DialogTitle>
-            <DialogDescription>Send a message to {displayName}.</DialogDescription>
+            <DialogTitle>Work with {displayName}</DialogTitle>
+            <DialogDescription>Send a commission enquiry for "{enquiryListing?.title}".</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEnquiry} className="space-y-4">
             <div className="space-y-2">
@@ -332,12 +333,22 @@ const CreatorProfile = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="message">Message</Label>
-              <Textarea id="message" name="message" rows={4} required className="bg-background border-border rounded-xl" />
+              <Textarea
+                id="message"
+                name="message"
+                rows={4}
+                required
+                placeholder="Describe what you need and any relevant details"
+                className="bg-background border-border rounded-xl"
+              />
             </div>
-            <Button type="submit" className="w-full" disabled={enquirySubmitting}>
+            <Button type="submit" className="w-full bg-[#E8571A] hover:bg-[#E8571A]/90 text-white" disabled={enquirySubmitting}>
               {enquirySubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Send Enquiry
             </Button>
+            <p className="text-[11px] text-muted-foreground text-center">
+              Your message will be sent directly to {displayName}.
+            </p>
           </form>
         </DialogContent>
       </Dialog>
