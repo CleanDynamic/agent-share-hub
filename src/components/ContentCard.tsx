@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Lock, Loader2 } from "lucide-react";
+import { Download, Lock, Loader2, Eye, Star, StarHalf } from "lucide-react";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,32 @@ export interface ContentCardProps {
   price_gbp?: number;
   file_url?: string | null;
   creator_username?: string;
+  avg_rating?: number;
+  rating_count?: number;
+  view_count?: number;
+}
+
+function roundedStars(avg: number, count: number): number {
+  if (count === 0) return 0;
+  if (avg >= 4.5) return 5;
+  if (avg >= 4.1) return 4.5;
+  if (avg >= 3.5) return 4;
+  if (avg >= 3.1) return 3.5;
+  if (avg >= 2.5) return 3;
+  if (avg >= 2.1) return 2.5;
+  if (avg >= 1.5) return 2;
+  if (avg >= 1.1) return 1.5;
+  return 1;
+}
+
+function MiniStars({ value }: { value: number }) {
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    if (i <= Math.floor(value)) stars.push(<Star key={i} className="h-3 w-3 fill-primary text-primary" />);
+    else if (i - 0.5 === value) stars.push(<StarHalf key={i} className="h-3 w-3 fill-primary text-primary" />);
+    else stars.push(<Star key={i} className="h-3 w-3 text-muted-foreground/30" />);
+  }
+  return <div className="flex gap-0.5">{stars}</div>;
 }
 
 const TYPE_COLORS: Record<string, string> = {
