@@ -101,6 +101,7 @@ function SuggestToolInline() {
   );
 }
 
+const Upload = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: AI_TOOLS = [] } = useApprovedTools();
