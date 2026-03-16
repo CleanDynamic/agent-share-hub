@@ -13,11 +13,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 
-const NAV_LINKS = [
-  { label: "Browse", to: "/browse" },
-  { label: "Upload", to: "/upload" },
-  { label: "About", to: "/about" },
-];
+function getNavLinks(isLoggedIn: boolean) {
+  const links = [{ label: "Browse", to: "/browse" }];
+  if (isLoggedIn) links.push({ label: "Feed", to: "/feed" });
+  links.push({ label: "Upload", to: "/upload" }, { label: "About", to: "/about" });
+  return links;
+}
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
