@@ -47,60 +47,6 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-function SuggestToolInline() {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const { toast } = useToast();
-
-  async function handleSubmit() {
-    const trimmed = name.trim().replace(/[^a-zA-Z0-9 .\-]/g, "");
-    if (!trimmed || trimmed.length > 50) return;
-    setSubmitting(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSubmitting(false); return; }
-    const { error } = await supabase.from("ai_tools_registry" as any).insert({ name: trimmed, submitted_by: user.id } as any);
-    setSubmitting(false);
-    if (error) {
-      if (error.code === "23505") {
-        toast({ title: "Tool already exists or is pending review" });
-      } else {
-        toast({ title: "Failed to submit", description: error.message, variant: "destructive" });
-      }
-      return;
-    }
-    setSubmitted(true);
-    toast({ title: "Tool suggested!", description: "It will appear once approved by an admin." });
-  }
-
-  if (submitted) {
-    return <p className="text-xs text-muted-foreground mt-2">✓ Tool suggestion submitted for review.</p>;
-  }
-
-  if (!open) {
-    return (
-      <button type="button" onClick={() => setOpen(true)} className="flex items-center gap-1 text-xs text-primary hover:underline mt-2">
-        <Plus className="h-3 w-3" /> Suggest a tool not listed here
-      </button>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-2 mt-2">
-      <Input
-        value={name}
-        onChange={(e) => setName(e.target.value.slice(0, 50))}
-        placeholder="Tool name"
-        className="h-8 text-xs bg-card border-border rounded-lg max-w-[200px]"
-      />
-      <Button type="button" size="sm" className="h-8 text-xs" onClick={handleSubmit} disabled={submitting || !name.trim()}>
-        {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Submit"}
-      </Button>
-      <button type="button" onClick={() => setOpen(false)} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
-    </div>
-  );
-}
 
 const Upload = () => {
   const navigate = useNavigate();
