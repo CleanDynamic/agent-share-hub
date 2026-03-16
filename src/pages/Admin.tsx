@@ -444,6 +444,122 @@ const Admin = () => {
               </>
             )}
           </TabsContent>
+
+          {/* ── Projects ── */}
+          <TabsContent value="projects" className="space-y-6">
+            {/* Pending Projects */}
+            <h2 className="text-lg font-semibold text-foreground">Pending Projects</h2>
+            {pendingProjectsLoading ? (
+              <div className="space-y-3"><Skeleton className="h-20 w-full rounded-xl" /><Skeleton className="h-20 w-full rounded-xl" /></div>
+            ) : !pendingProjects || pendingProjects.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">No pending projects.</p>
+            ) : (
+              <div className="space-y-3">
+                {pendingProjects.map((proj: any) => {
+                  const creator = proj.profiles as { username: string | null; display_name: string | null } | null;
+                  const comps = proj.project_components ?? [];
+                  return (
+                    <div key={proj.id} className="border border-border rounded-xl p-4 bg-card space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <p className="text-sm font-semibold text-foreground">{proj.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            by {creator?.display_name || creator?.username || "Unknown"} · {new Date(proj.created_at).toLocaleDateString()} · {comps.length} component{comps.length !== 1 ? "s" : ""}
+                          </p>
+                          <p className="text-xs text-muted-foreground line-clamp-2">{proj.description}</p>
+                          {/* Component summaries */}
+                          <div className="space-y-1 pt-1">
+                            {comps.map((c: any, i: number) => {
+                              const cid = c.linked_content_id || c.inline_content_id;
+                              const ci = pendingProjContent?.find((x: any) => x.id === cid);
+                              return (
+                                <p key={c.id} className="text-[10px] text-muted-foreground">
+                                  {i + 1}. {ci?.title ?? "Unknown"} — {ci?.content_type ?? ""} ({ci?.monetisation_type ?? "free"})
+                                </p>
+                              );
+                            })}
+                          </div>
+                          {proj.cover_image_url && (
+                            <button type="button" onClick={() => window.open(`/project/${proj.id}`, "_blank")} className="text-[10px] text-primary hover:underline">
+                              View cover image
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8" onClick={() => approveProjectMutation.mutate(proj.id)} disabled={approveProjectMutation.isPending}>
+                            {approveProjectMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+                            Approve
+                          </Button>
+                          <Button size="sm" variant="outline" className="text-xs h-8 border-destructive text-destructive hover:bg-destructive/10" onClick={() => rejectProjectMutation.mutate(proj.id)} disabled={rejectProjectMutation.isPending}>
+                            {rejectProjectMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3 mr-1" />}
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Approved Projects */}
+            <h2 className="text-lg font-semibold text-foreground mt-8">Approved Projects</h2>
+            {approvedProjectsLoading ? (
+              <Skeleton className="h-20 w-full rounded-xl" />
+            ) : !approvedProjects || approvedProjects.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">No approved projects.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left">
+                      <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Title</th>
+                      <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Creator</th>
+                      <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Components</th>
+                      <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Views</th>
+                      <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Approved</th>
+                      <th className="py-2 px-3 text-xs text-muted-foreground font-medium"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {approvedProjects.map((proj: any) => {
+                      const creator = proj.profiles as { username: string | null; display_name: string | null } | null;
+                      return (
+                        <tr key={proj.id} className="border-b border-border">
+                          <td className="py-2.5 px-3 text-foreground font-medium truncate max-w-[200px]">{proj.title}</td>
+                          <td className="py-2.5 px-3 text-muted-foreground">@{creator?.username || "unknown"}</td>
+                          <td className="py-2.5 px-3 text-muted-foreground">{(proj.project_components ?? []).length}</td>
+                          <td className="py-2.5 px-3 text-muted-foreground">{proj.view_count}</td>
+                          <td className="py-2.5 px-3 text-muted-foreground">{proj.approved_at ? new Date(proj.approved_at).toLocaleDateString() : "—"}</td>
+                          <td className="py-2.5 px-3">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="outline" className="text-xs h-7 border-destructive text-destructive hover:bg-destructive/10">
+                                  Remove
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-card border-border">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Remove "{proj.title}"?</AlertDialogTitle>
+                                  <AlertDialogDescription>This will set the project back to pending. It will no longer be visible on the site.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => removeProjectMutation.mutate(proj.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Remove
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
     </div>
