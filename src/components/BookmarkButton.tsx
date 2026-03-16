@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface BookmarkButtonProps {
   contentId: string;
+  projectId?: string;
   className?: string;
 }
 
