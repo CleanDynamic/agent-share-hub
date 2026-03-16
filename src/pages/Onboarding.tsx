@@ -14,6 +14,7 @@ const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Cont
 export default function Onboarding() {
   const { isLoggedIn, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const { data: AI_TOOLS = [] } = useApprovedTools();
   const [step, setStep] = useState(1);
   const [interests, setInterests] = useState<string[]>([]);
   const [tools, setTools] = useState<string[]>([]);

@@ -49,6 +49,7 @@ type FormValues = z.infer<typeof schema>;
 const Upload = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: AI_TOOLS = [] } = useApprovedTools();
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
   const [submitting, setSubmitting] = useState(false);
