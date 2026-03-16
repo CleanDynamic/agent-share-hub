@@ -173,6 +173,7 @@ const Upload = () => {
 
   return (
     <div className="py-10 px-6">
+      <SeoHead title="Upload — NeoScale AI" description="Share your AI assistants, blueprints and workflows with the community." path="/upload" />
       <div className="mx-auto max-w-2xl">
         {/* Header */}
         <div className="mb-8">
