@@ -147,6 +147,7 @@ const Admin = () => {
           <TabsList className="bg-card border border-border">
             <TabsTrigger value="content">Content Queue</TabsTrigger>
             <TabsTrigger value="services">Service Listings</TabsTrigger>
+            <TabsTrigger value="tools">Tool Submissions</TabsTrigger>
           </TabsList>
 
           {/* ── Content approval queue ── */}
