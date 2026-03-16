@@ -334,6 +334,7 @@ export function ContentBlockViewer({
 
   // Active variation tab per block
   const [activeTab, setActiveTab] = useState<Record<string, string>>({});
+  const [blockCommentsOpen, setBlockCommentsOpen] = useState<Record<string, boolean>>({});
 
   const insertAdImpression = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
