@@ -52,20 +52,25 @@ export function BookmarkButton({ contentId, projectId, className }: BookmarkButt
 
     if (saved) {
       setSaved(false);
-      const { error } = await supabase
-        .from("user_saves")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("content_id", contentId);
+      const query = supabase.from("user_saves").delete().eq("user_id", user.id);
+      if (projectId) {
+        query.eq("project_id", projectId);
+      } else {
+        query.eq("content_id", contentId);
+      }
+      const { error } = await query;
       if (error) setSaved(true);
     } else {
       setSaved(true);
-      const { error } = await supabase
-        .from("user_saves")
-        .insert({ user_id: user.id, content_id: contentId });
+      const insertData: any = { user_id: user.id, content_id: contentId };
+      if (projectId) {
+        insertData.project_id = projectId;
+        delete insertData.content_id;
+      }
+      const { error } = await supabase.from("user_saves").insert(insertData);
       if (error) setSaved(false);
     }
-  }, [saved, isLoggedIn, user, contentId, navigate, toast]);
+  }, [saved, isLoggedIn, user, contentId, projectId, navigate, toast]);
 
   if (!loaded) return null;
 
