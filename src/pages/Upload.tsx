@@ -307,7 +307,9 @@ const Upload = () => {
                     ))}
                   </div>
                   {/* Suggest a tool */}
-                  <SuggestToolInline />
+                  <button type="button" onClick={() => setSubmitToolOpen(true)} className="text-xs text-primary hover:underline mt-2">
+                    Don't see your AI tool? Submit it →
+                  </button>
                   <FormDescription>Tick every tool you have tested this with. Tick 'Any Tool' if it works everywhere.</FormDescription>
                   <FormMessage />
                 </FormItem>
