@@ -49,12 +49,16 @@ const ContentDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+  const { isLoggedIn } = useAuth();
   const [downloading, setDownloading] = useState(false);
   const [localCount, setLocalCount] = useState<number | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentHandled, setPaymentHandled] = useState(false);
   const [tipSuccess, setTipSuccess] = useState(false);
   const [tipHandled, setTipHandled] = useState(false);
+  const [guestModalOpen, setGuestModalOpen] = useState(false);
+  const [accountGateOpen, setAccountGateOpen] = useState(false);
+  const [accountGateMode, setAccountGateMode] = useState<"purchase" | "subscription">("purchase");
 
   // Fetch content item with creator profile
   const { data: item, isLoading, error } = useQuery({
