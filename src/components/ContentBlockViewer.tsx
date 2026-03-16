@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { triggerDownload } from "@/lib/download";
+import { CommentsSection } from "@/components/CommentsSection";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Download, Loader2, Eye } from "lucide-react";
+import { FileText, Download, Loader2, Eye, MessageCircle } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────
 
