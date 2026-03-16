@@ -1,7 +1,7 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { Upload, Rss } from "lucide-react";
-import { Menu, X, LogOut, User, Bookmark, Settings } from "lucide-react";
+import { Menu, X, LogOut, User, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
