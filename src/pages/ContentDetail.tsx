@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { ContentCard } from "@/components/ContentCard";
+import { TipSelector } from "@/components/TipSelector";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +50,8 @@ const ContentDetail = () => {
   const [localCount, setLocalCount] = useState<number | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentHandled, setPaymentHandled] = useState(false);
+  const [tipSuccess, setTipSuccess] = useState(false);
+  const [tipHandled, setTipHandled] = useState(false);
 
   // Fetch content item with creator profile
   const { data: item, isLoading, error } = useQuery({
@@ -114,9 +117,7 @@ const ContentDetail = () => {
     if (searchParams.get("payment") === "success" && item && !paymentHandled) {
       setPaymentSuccess(true);
       setPaymentHandled(true);
-      // Remove query param
       setSearchParams({}, { replace: true });
-      // Auto-trigger download
       (async () => {
         setDownloading(true);
         const result = await triggerDownload(item.id, item.file_url);
@@ -128,7 +129,12 @@ const ContentDetail = () => {
         setDownloading(false);
       })();
     }
-  }, [searchParams, item, paymentHandled]);
+    if (searchParams.get("tip") === "success" && !tipHandled) {
+      setTipSuccess(true);
+      setTipHandled(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, item, paymentHandled, tipHandled]);
 
   async function handleDownload() {
     if (!item) return;
@@ -210,6 +216,14 @@ const ContentDetail = () => {
           <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
             <CheckCircle2 className="h-5 w-5 shrink-0" />
             <p className="text-sm font-medium">Payment successful. Your download is ready.</p>
+          </div>
+        )}
+
+        {/* Tip success banner */}
+        {tipSuccess && (
+          <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+            <CheckCircle2 className="h-5 w-5 shrink-0" />
+            <p className="text-sm font-medium">Thanks for supporting the creator.</p>
           </div>
         )}
 
@@ -336,15 +350,13 @@ const ContentDetail = () => {
                 </Button>
               )}
 
-              {item.donation_enabled && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => toast({ title: "Tipping coming soon", description: "Check back shortly." })}
-                >
-                  <Heart className="mr-2 h-3.5 w-3.5" /> Tip the Creator
-                </Button>
+              {item.donation_enabled && creator && (
+                <TipSelector
+                  creatorId={creator.id}
+                  creatorDisplayName={creator.display_name || creator.username}
+                  successUrl={`${window.location.origin}/content/${item.id}?tip=success`}
+                  cancelUrl={`${window.location.origin}/content/${item.id}`}
+                />
               )}
             </div>
 

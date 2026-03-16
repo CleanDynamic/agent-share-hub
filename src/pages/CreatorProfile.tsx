@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ContentCard } from "@/components/ContentCard";
@@ -13,10 +13,12 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { BadgeCheck, Download, FileText, Heart, Users, Loader2 } from "lucide-react";
+import { BadgeCheck, Download, FileText, Heart, Users, Loader2, CheckCircle2 } from "lucide-react";
+import { TipSelector } from "@/components/TipSelector";
 
 const CreatorProfile = () => {
   const { username } = useParams<{ username: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
   // Fetch profile
@@ -88,6 +90,13 @@ const CreatorProfile = () => {
   const [enquiryListing, setEnquiryListing] = useState<{ id: string; title: string } | null>(null);
   const [enquirySubmitting, setEnquirySubmitting] = useState(false);
 
+  // Tip success banner
+  const tipSuccess = searchParams.get("tip") === "success";
+  if (tipSuccess) {
+    // Clear param once read
+    setTimeout(() => setSearchParams({}, { replace: true }), 0);
+  }
+
   async function handleEnquiry(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!enquiryListing) return;
@@ -136,6 +145,14 @@ const CreatorProfile = () => {
   return (
     <div className="py-12 px-6">
       <div className="mx-auto max-w-5xl">
+        {/* Tip success banner */}
+        {tipSuccess && (
+          <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+            <CheckCircle2 className="h-5 w-5 shrink-0" />
+            <p className="text-sm font-medium">Thanks for supporting {displayName}.</p>
+          </div>
+        )}
+
         {/* Layout: header + sidebar */}
         <div className="flex flex-col lg:flex-row gap-10">
           {/* Main column */}
@@ -201,12 +218,14 @@ const CreatorProfile = () => {
           <div className="w-full lg:w-72 shrink-0 space-y-4">
             {/* Tip */}
             {hasDonationContent && (
-              <div className="border border-border rounded-xl p-5 bg-card">
-                <Button className="w-full" asChild>
-                  <a href="https://placeholder-stripe-tip.example.com" target="_blank" rel="noopener noreferrer">
-                    <Heart className="mr-2 h-4 w-4" /> Support {displayName}
-                  </a>
-                </Button>
+              <div className="border border-border rounded-xl p-5 bg-card space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Support</p>
+                <TipSelector
+                  creatorId={profile.id}
+                  creatorDisplayName={displayName}
+                  successUrl={`${window.location.origin}/creator/${profile.username}?tip=success`}
+                  cancelUrl={`${window.location.origin}/creator/${profile.username}`}
+                />
               </div>
             )}
 
