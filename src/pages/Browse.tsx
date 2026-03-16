@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ContentCard } from "@/components/ContentCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useApprovedTools } from "@/hooks/useApprovedTools";
 
 const ALL = "all";
 
