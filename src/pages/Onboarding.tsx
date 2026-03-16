@@ -122,7 +122,7 @@ export default function Onboarding() {
               <p className="text-sm text-muted-foreground mt-1">Pick all that apply.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              {AI_TOOLS.map((tool) => {
+              {AI_TOOLS.filter((t) => t !== "Any Tool").map((tool) => {
                 const selected = tools.includes(tool);
                 return (
                   <button

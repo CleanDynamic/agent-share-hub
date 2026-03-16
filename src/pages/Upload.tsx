@@ -303,6 +303,8 @@ const Upload = () => {
                       />
                     ))}
                   </div>
+                  {/* Suggest a tool */}
+                  <SuggestToolInline />
                   <FormDescription>Tick every tool you have tested this with. Tick 'Any Tool' if it works everywhere.</FormDescription>
                   <FormMessage />
                 </FormItem>
