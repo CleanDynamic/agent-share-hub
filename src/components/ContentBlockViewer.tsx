@@ -485,7 +485,7 @@ export function ContentBlockViewer({
                   {block.position}
                 </div>
 
-                <div className="border border-[#1E1E2A] rounded-xl bg-[#111118] overflow-hidden">
+                <div className={`border rounded-xl overflow-hidden ${isPreview ? "border-[#2EC4B6]/40 bg-[#111118]" : "border-[#1E1E2A] bg-[#111118]"}`}>
                   {/* Variation tabs */}
                   {hasVars && (
                     <div className="flex gap-1 px-4 pt-3 pb-1">
