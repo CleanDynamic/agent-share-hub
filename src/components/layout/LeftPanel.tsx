@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, Search, LayoutGrid, Clock, Heart, Upload, Info,
-  Bookmark, User, MoreHorizontal, LogOut, Settings, Bell,
+  Bookmark, User, MoreHorizontal, LogOut, Settings, Bell, MessageCircle,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
