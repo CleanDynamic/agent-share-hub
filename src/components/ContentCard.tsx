@@ -196,8 +196,13 @@ export function ContentCard({
           )}
         </div>
 
-        <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
+        <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1 flex items-center gap-1.5">
           {title}
+          {is_fork && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground font-normal">
+              <GitFork className="h-2.5 w-2.5" /> Fork
+            </span>
+          )}
         </h3>
         <p className="text-xs text-muted-foreground leading-relaxed mb-4 flex-1">{description}</p>
 
