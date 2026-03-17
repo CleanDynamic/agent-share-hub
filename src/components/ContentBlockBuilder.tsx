@@ -438,15 +438,37 @@ export function ContentBlockBuilder({ blocks, onChange }: Props) {
           const showingMain = activeTab === "A";
 
           return (
-            <div key={block.id} className="border border-border rounded-xl bg-card overflow-hidden">
+            <div key={block.id} className={`border rounded-xl bg-card overflow-hidden ${block.isPreview ? "border-[#2EC4B6]/50" : "border-border"}`}>
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border">
                 <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <BlockTypeIcon type={block.type} />
-                  <span className="capitalize">{block.type}</span>
+                  <span>{BLOCK_TYPE_LABELS[block.type]}</span>
                   <span className="text-xs text-muted-foreground">Block {index + 1}</span>
+                  {block.isPreview && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2EC4B6]/15 text-[#2EC4B6] font-medium">Preview</span>}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
+                  {/* Preview toggle */}
+                  {(() => {
+                    const previewCount = blocks.filter((b) => b.isPreview).length;
+                    const canToggle = block.isPreview || previewCount < 2;
+                    return (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-muted-foreground">Free preview</span>
+                            <Switch
+                              checked={block.isPreview}
+                              disabled={!canToggle}
+                              onCheckedChange={(checked) => update(index, { isPreview: checked })}
+                              className="scale-75"
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        {!canToggle && <TooltipContent>Maximum 2 preview blocks</TooltipContent>}
+                      </Tooltip>
+                    );
+                  })()}
                   <button
                     type="button"
                     onClick={() => moveBlock(index, -1)}
