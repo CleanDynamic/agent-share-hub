@@ -175,7 +175,26 @@ export default function MyUploads() {
                           <TableCell className="text-muted-foreground text-xs text-right">
                             {new Date(item.created_at).toLocaleDateString()}
                           </TableCell>
-                        </TableRow>
+                          <TableCell className="text-muted-foreground text-xs">
+                            v{(item as any).current_version || "1.0"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {item.status === "approved" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setUpdateTarget({
+                                    id: item.id,
+                                    title: item.title,
+                                    version: (item as any).current_version || "1.0",
+                                  });
+                                }}
+                                className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                              >
+                                <RefreshCw className="h-3 w-3" /> Publish update
+                              </button>
+                            )}
+                          </TableCell>
                       );
                     })}
                   </TableBody>
