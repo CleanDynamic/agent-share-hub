@@ -386,11 +386,18 @@ export function MobileNav() {
           <span className={`text-[10px] mb-1 ${isActive("/upload") ? "text-primary" : "text-muted-foreground"}`}>Upload</span>
         </div>
 
-        {/* Tab 4: Recent */}
-        <button onClick={() => navigate("/recent")} className={`relative flex flex-col items-center justify-center flex-1 h-full ${isActive("/recent") ? "text-primary" : "text-muted-foreground"}`}>
-          <Clock className="h-6 w-6" />
-          {recentBadge && <span className="absolute top-2 right-1/2 translate-x-3 h-2 w-2 rounded-full bg-primary" />}
-          <span className="text-[10px] mt-0.5">Recent</span>
+        {/* Tab 4: Messages */}
+        <button
+          onClick={() => navigate(isLoggedIn ? "/messages" : "/login")}
+          className={`relative flex flex-col items-center justify-center flex-1 h-full ${isActive("/messages") ? "text-primary" : "text-muted-foreground"}`}
+        >
+          <MessageCircle className="h-6 w-6" />
+          {msgBadge && (
+            <span className="absolute top-1.5 right-1/2 translate-x-4 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
+              {msgBadge}
+            </span>
+          )}
+          <span className="text-[10px] mt-0.5">Messages</span>
         </button>
 
         {/* Tab 5: Notifications */}
