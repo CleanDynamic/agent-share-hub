@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { insertNotification } from "@/lib/notifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Star, StarHalf } from "lucide-react";
@@ -96,6 +97,22 @@ export function StarRating({ contentId, contentTitle, avgRating, ratingCount, is
         user_id: user.id,
         rating: n,
       } as any);
+
+      // Notification for new rating (not updates)
+      const { data: contentRow } = await supabase
+        .from("content_items")
+        .select("creator_id")
+        .eq("id", contentId)
+        .maybeSingle();
+      if (contentRow) {
+        insertNotification({
+          recipient_id: contentRow.creator_id,
+          actor_id: user.id,
+          notification_type: "new_rating",
+          content_id: contentId,
+          metadata: { rating: n, content_title: contentTitle },
+        });
+      }
     }
 
     // Log interaction

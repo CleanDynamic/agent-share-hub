@@ -1,1 +1,4 @@
 project_id = "zybdotagjwektucfdkri"
+
+[functions.notify-version-update]
+verify_jwt = false

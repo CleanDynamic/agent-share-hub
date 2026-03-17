@@ -2,13 +2,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, Search, LayoutGrid, Clock, Heart, Upload, Info,
-  Bookmark, User, MoreHorizontal, LogOut, Settings,
+  Bookmark, User, MoreHorizontal, LogOut, Settings, Bell,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavBadges } from "@/hooks/useNavBadges";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { supabase } from "@/integrations/supabase/client";
 
 interface NavItem {
@@ -24,6 +25,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
   const navigate = useNavigate();
   const { isLoggedIn, profile, signOut } = useAuth();
   const { hasUnseenSaves, fypCount } = useNavBadges();
+  const { display: notifBadge } = useUnreadNotifications();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +39,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     { icon: Upload, label: "Upload", to: "/upload" },
     { icon: Info, label: "About", to: "/about" },
     { icon: Bookmark, label: "Saved", to: "/saved", authOnly: true },
+    { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true, badge: notifBadge },
     { icon: User, label: "My Profile", to: "/profile", authOnly: true },
   ];
 

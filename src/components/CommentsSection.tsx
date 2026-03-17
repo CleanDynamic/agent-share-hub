@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { insertNotification } from "@/lib/notifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -135,6 +136,24 @@ export function CommentsSection({
       interaction_type: "commented",
       interaction_meta: { comment_id: commentId, content_title: contentTitle },
     } as any);
+
+    // Comment notification (only for top-level comments, not block-level)
+    if (!blockId) {
+      const { data: contentRow } = await supabase
+        .from("content_items")
+        .select("creator_id")
+        .eq("id", contentId)
+        .maybeSingle();
+      if (contentRow) {
+        insertNotification({
+          recipient_id: contentRow.creator_id,
+          actor_id: user.id,
+          notification_type: "new_comment",
+          content_id: contentId,
+          metadata: { comment_excerpt: newText.trim().slice(0, 80), content_title: contentTitle },
+        });
+      }
+    }
 
     // Optimistic add
     setComments((prev) => [

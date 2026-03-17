@@ -2,13 +2,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, Search, Upload, Clock, User, X, LayoutGrid,
-  Heart, Bookmark, Info, Settings, UserPlus, MoreHorizontal, LogOut,
+  Heart, Bookmark, Info, Settings, UserPlus, MoreHorizontal, LogOut, Bell,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavBadges } from "@/hooks/useNavBadges";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { RightPanel } from "./RightPanel";
 
@@ -307,7 +308,7 @@ export function MobileNav() {
   const navigate = useNavigate();
   const { isLoggedIn, profile, user } = useAuth();
   const recentBadge = useRecentBadge();
-  const profileBadge = useProfileBadge(user?.id);
+  const { display: notifBadge } = useUnreadNotifications();
   const [showDiscover, setShowDiscover] = useState(false);
 
   useEffect(() => {
@@ -388,14 +389,18 @@ export function MobileNav() {
           <span className="text-[10px] mt-0.5">Recent</span>
         </button>
 
-        {/* Tab 5: Profile */}
+        {/* Tab 5: Notifications */}
         <button
-          onClick={() => navigate(isLoggedIn ? "/profile" : "/login")}
-          className={`relative flex flex-col items-center justify-center flex-1 h-full ${isActive("/profile") ? "text-primary" : "text-muted-foreground"}`}
+          onClick={() => navigate(isLoggedIn ? "/notifications" : "/login")}
+          className={`relative flex flex-col items-center justify-center flex-1 h-full ${isActive("/notifications") ? "text-primary" : "text-muted-foreground"}`}
         >
-          <User className="h-6 w-6" />
-          {profileBadge && <span className="absolute top-2 right-1/2 translate-x-3 h-2 w-2 rounded-full bg-primary" />}
-          <span className="text-[10px] mt-0.5">Profile</span>
+          <Bell className="h-6 w-6" />
+          {notifBadge && (
+            <span className="absolute top-1.5 right-1/2 translate-x-4 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
+              {notifBadge}
+            </span>
+          )}
+          <span className="text-[10px] mt-0.5">Alerts</span>
         </button>
 
         {/* Tab 6: Discover (>375px only) */}
