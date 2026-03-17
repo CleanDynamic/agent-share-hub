@@ -12,6 +12,8 @@ import { ContentCard } from "@/components/ContentCard";
 import { ProjectCard } from "@/components/ProjectCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useApprovedToolNames } from "@/hooks/useApprovedTools";
 import { SubmitToolModal } from "@/components/SubmitToolModal";
 import {
