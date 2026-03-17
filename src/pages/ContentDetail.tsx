@@ -97,6 +97,8 @@ const ContentDetail = () => {
   const [guestModalOpen, setGuestModalOpen] = useState(false);
   const [accountGateOpen, setAccountGateOpen] = useState(false);
   const [accountGateMode, setAccountGateMode] = useState<"purchase" | "subscription">("purchase");
+  const [forkModalOpen, setForkModalOpen] = useState(false);
+  const [forksModalOpen, setForksModalOpen] = useState(false);
   const viewTracked = useRef(false);
 
   const { data: item, isLoading, error } = useQuery({
