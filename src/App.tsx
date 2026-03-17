@@ -34,6 +34,7 @@ import NotificationsPage from "./pages/Notifications";
 import MessagesPage from "./pages/Messages";
 import CollectionDetail from "./pages/CollectionDetail";
 import LearningPathDetail from "./pages/LearningPathDetail";
+import Analytics from "./pages/Analytics";
 
 const queryClient = new QueryClient();
 
