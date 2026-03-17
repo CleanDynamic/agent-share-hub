@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 // ─── Types ───────────────────────────────────────────────────
 
 export type FormattingType = "paragraph" | "bullets" | "numbers" | "sub_list";
-export type BlockType = "text" | "file" | "image";
+export type BlockType = "text" | "long_text" | "file" | "image";
 
 export interface BlockVariation {
   id: string;
