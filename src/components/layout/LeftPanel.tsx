@@ -266,6 +266,16 @@ function SearchSection() {
               ))}
             </div>
           )}
+          {query.length >= 2 && !loading && (
+            <div className="p-2 border-t border-border">
+              <button
+                onClick={() => go(`/search?q=${encodeURIComponent(query.trim())}`)}
+                className="w-full text-center text-xs text-primary hover:underline py-1.5"
+              >
+                See all results for "{query}"
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
