@@ -32,16 +32,35 @@ export function RightPanel() {
 
   return (
     <div className="flex flex-col gap-6 p-4 pt-5">
-      {/* Section 1 — Category Directory */}
-      <CategoryDirectory navigate={navigate} />
+      {/* Position 1 — Auth buttons (guests only) */}
+      {!isLoggedIn && (
+        <div className="flex flex-col gap-2">
+          <Link
+            to="/login"
+            className="flex items-center justify-center h-9 w-full rounded-[20px] text-sm font-semibold text-foreground border border-border hover:brightness-110 transition-colors"
+            style={{ background: "#111118" }}
+          >
+            Sign in
+          </Link>
+          <Link
+            to="/signup"
+            className="flex items-center justify-center h-9 w-full rounded-[20px] bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            Join free
+          </Link>
+        </div>
+      )}
 
-      {/* Section 2 — Trending */}
+      {/* Position 2 — Trending */}
       <TrendingSection navigate={navigate} />
 
-      {/* Section 3 — Who to follow (logged-in only) */}
+      {/* Position 3 — Category Directory */}
+      <CategoryDirectory navigate={navigate} />
+
+      {/* Position 4 — Who to follow (logged-in only) */}
       {isLoggedIn && user && <WhoToFollow userId={user.id} />}
 
-      {/* Section 4 — Footer links */}
+      {/* Position 5 — Footer links */}
       <div className="mt-auto pt-4 flex items-center gap-3 text-[11px] text-muted-foreground">
         <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
         <span>·</span>

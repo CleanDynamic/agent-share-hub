@@ -526,6 +526,9 @@ const Home = () => {
         </div>
       )}
 
+      {/* How It Works (guests only, scrolls away above sticky tabs) */}
+      {!isLoggedIn && <HowItWorks />}
+
       {/* Tab bar (sticky) */}
       <div className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="flex">
