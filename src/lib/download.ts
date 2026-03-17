@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { insertNotification } from "@/lib/notifications";
 
 export function getDownloadLabel(contentType: string, monetisationType: string, priceGbp?: number): string {
   if (monetisationType === "paid") {
