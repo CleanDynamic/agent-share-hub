@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,8 +10,9 @@ import { AccountGateModal } from "@/components/AccountGateModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Eye, User, Info, Lock, ChevronDown, ChevronUp, ExternalLink,
+  ArrowLeft, Eye, User, Info, Lock, ChevronDown, ChevronUp, ExternalLink, CheckCircle2,
 } from "lucide-react";
 
 const TYPE_COLORS: Record<string, string> = {
@@ -35,12 +36,80 @@ function difficultyColor(level: string) {
   }
 }
 
+/* ── Package Pricing Banner ─────────────────────────────── */
+function PackageBanner({
+  project,
+  paidComponentCount,
+  totalIndividualPrice,
+  hasPackage,
+  isLoggedIn,
+  onUnlock,
+  unlocking,
+}: {
+  project: any;
+  paidComponentCount: number;
+  totalIndividualPrice: number;
+  hasPackage: boolean;
+  isLoggedIn: boolean;
+  onUnlock: () => void;
+  unlocking: boolean;
+}) {
+  const packagePrice = Number(project.package_price_gbp ?? 0);
+  const saving = totalIndividualPrice - packagePrice;
+
+  if (hasPackage) {
+    return (
+      <div className="rounded-xl border border-emerald-500/40 bg-[#111118] p-5 mb-8">
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+          <span className="text-sm font-semibold text-emerald-400">You own this project ✓</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">All components unlocked</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-[#E8571A] bg-[#111118] p-5 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <Lock className="h-6 w-6 text-[#E8571A] mt-0.5 shrink-0" />
+          <div>
+            <p className="text-base font-semibold text-foreground">
+              Unlock everything — £{packagePrice.toFixed(2)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Get instant access to all {paidComponentCount} paid component{paidComponentCount !== 1 ? "s" : ""} in one purchase.
+              {saving > 0 && (
+                <> Save <span className="text-emerald-400 font-medium">£{saving.toFixed(2)}</span> vs buying individually.</>
+              )}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <Button
+            onClick={onUnlock}
+            disabled={unlocking}
+            className="bg-[#E8571A] hover:bg-[#E8571A]/90 text-white font-semibold"
+          >
+            {unlocking ? "Redirecting…" : "Unlock full project"}
+          </Button>
+          <p className="text-[10px] text-muted-foreground">Or unlock components individually below.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { isLoggedIn } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { isLoggedIn, profile } = useAuth();
+  const { toast } = useToast();
   const [expandedComponents, setExpandedComponents] = useState<Record<string, boolean>>({});
   const [accountGateOpen, setAccountGateOpen] = useState(false);
   const [accountGateContentId, setAccountGateContentId] = useState("");
+  const [unlocking, setUnlocking] = useState(false);
 
   // Fetch project
   const { data: project, isLoading, error } = useQuery({
@@ -99,6 +168,40 @@ const ProjectDetail = () => {
     enabled: contentIds.length > 0,
   });
 
+  // Check if user owns project package
+  const { data: packagePurchase, refetch: refetchPurchase } = useQuery({
+    queryKey: ["project_package_purchase", id, profile?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("project_package_purchases")
+        .select("id")
+        .eq("project_id", id!)
+        .eq("user_id", profile!.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!id && !!profile?.id,
+  });
+
+  const hasPackage = !!packagePurchase;
+
+  // Verify payment on success redirect
+  useEffect(() => {
+    const packageStatus = searchParams.get("package");
+    const sessionId = searchParams.get("session_id");
+    if (packageStatus === "success" && id && profile?.id) {
+      // Verify and record the purchase
+      supabase.functions
+        .invoke("verify-project-package", {
+          body: { session_id: sessionId, project_id: id },
+        })
+        .then(() => {
+          refetchPurchase();
+          toast({ title: "Purchase complete!", description: "All components are now unlocked." });
+        });
+    }
+  }, [searchParams, id, profile?.id]);
+
   // Cover image signed URL
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -124,9 +227,35 @@ const ProjectDetail = () => {
       setAccountGateOpen(true);
       return;
     }
-    // Redirect to content detail for payment
     window.location.href = `/content/${contentId}`;
   };
+
+  const handleUnlockPackage = async () => {
+    if (!isLoggedIn) {
+      window.location.href = `/signup?after_purchase=project:${id}`;
+      return;
+    }
+    setUnlocking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-project-package-session", {
+        body: {
+          project_id: id,
+          success_url: `${window.location.origin}/project/${id}?package=success`,
+          cancel_url: `${window.location.origin}/project/${id}`,
+        },
+      });
+      if (error || data?.error) throw new Error(data?.error || "Failed to create session");
+      if (data?.url) window.location.href = data.url;
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setUnlocking(false);
+    }
+  };
+
+  // Calculate package pricing info
+  const paidComponents = (contentItems ?? []).filter((c) => c.monetisation_type === "paid");
+  const totalIndividualPrice = paidComponents.reduce((sum, c) => sum + Number(c.price_gbp ?? 0), 0);
 
   if (isLoading) {
     return (
@@ -194,6 +323,19 @@ const ProjectDetail = () => {
           {project.view_count} view{project.view_count !== 1 ? "s" : ""}
         </div>
 
+        {/* Package pricing banner */}
+        {(project as any).package_price_enabled && paidComponents.length > 0 && (
+          <PackageBanner
+            project={project}
+            paidComponentCount={paidComponents.length}
+            totalIndividualPrice={totalIndividualPrice}
+            hasPackage={hasPackage}
+            isLoggedIn={isLoggedIn}
+            onUnlock={handleUnlockPackage}
+            unlocking={unlocking}
+          />
+        )}
+
         {/* Info banner */}
         <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-[#2EC4B6]/10 border border-[#2EC4B6]/20 mb-8">
           <Info className="h-4 w-4 text-[#2EC4B6] mt-0.5 shrink-0" />
@@ -223,6 +365,7 @@ const ProjectDetail = () => {
               const isFree = content.monetisation_type === "free" || content.monetisation_type === "donation";
               const isExpanded = !!expandedComponents[comp.id];
               const isExclusiveInline = comp.component_type === "inline" && !comp.show_on_browse;
+              const unlockedViaPackage = isPaid && hasPackage;
 
               return (
                 <div key={comp.id} className="relative">
@@ -244,6 +387,11 @@ const ProjectDetail = () => {
                         <p className="text-xs text-muted-foreground">{comp.component_note}</p>
                       )}
 
+                      {/* Package unlock label */}
+                      {unlockedViaPackage && (
+                        <p className="text-[11px] text-[#2EC4B6]">Included in your purchase</p>
+                      )}
+
                       {/* Badges */}
                       <div className="flex flex-wrap gap-2">
                         <Badge variant="outline" className={`text-[10px] ${TYPE_COLORS[content.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
@@ -252,13 +400,15 @@ const ProjectDetail = () => {
                         <Badge variant="outline" className={`text-[10px] ${difficultyColor(content.difficulty)}`}>
                           {content.difficulty}
                         </Badge>
-                        {isPaid && (
+                        {isPaid && !unlockedViaPackage && (
                           <Badge variant="outline" className="text-[10px] bg-primary/15 text-primary border-primary/30">
                             £{Number(content.price_gbp ?? 0).toFixed(2)}
                           </Badge>
                         )}
-                        {isFree && (
-                          <Badge variant="outline" className="text-[10px] bg-secondary/15 text-secondary border-secondary/30">Free</Badge>
+                        {(isFree || unlockedViaPackage) && (
+                          <Badge variant="outline" className="text-[10px] bg-secondary/15 text-secondary border-secondary/30">
+                            {unlockedViaPackage ? "Unlocked" : "Free"}
+                          </Badge>
                         )}
                       </div>
 
@@ -278,35 +428,27 @@ const ProjectDetail = () => {
 
                       {/* Action area */}
                       <div className="pt-2 border-t border-border space-y-2">
-                        {isFree || isPaid ? (
+                        {(isFree || unlockedViaPackage) ? (
                           <Button
                             size="sm"
-                            onClick={() => {
-                              if (isPaid) {
-                                handlePaywall(content.id);
-                              } else {
-                                toggleExpand(comp.id);
-                              }
-                            }}
+                            onClick={() => toggleExpand(comp.id)}
                             className="gap-1.5 text-xs"
-                            style={isFree ? { backgroundColor: "#2EC4B6" } : undefined}
+                            style={{ backgroundColor: "#2EC4B6" }}
                           >
-                            {isPaid ? (
-                              <>
-                                <Lock className="h-3.5 w-3.5" />
-                                Unlock — £{Number(content.price_gbp ?? 0).toFixed(2)}
-                              </>
-                            ) : isExpanded ? (
-                              <>
-                                <ChevronUp className="h-3.5 w-3.5" />
-                                Collapse
-                              </>
+                            {isExpanded ? (
+                              <><ChevronUp className="h-3.5 w-3.5" /> Collapse</>
                             ) : (
-                              <>
-                                <Eye className="h-3.5 w-3.5" />
-                                View
-                              </>
+                              <><Eye className="h-3.5 w-3.5" /> View</>
                             )}
+                          </Button>
+                        ) : isPaid ? (
+                          <Button
+                            size="sm"
+                            onClick={() => handlePaywall(content.id)}
+                            className="gap-1.5 text-xs"
+                          >
+                            <Lock className="h-3.5 w-3.5" />
+                            Unlock — £{Number(content.price_gbp ?? 0).toFixed(2)}
                           </Button>
                         ) : null}
 
@@ -327,11 +469,11 @@ const ProjectDetail = () => {
                     </div>
 
                     {/* Expanded ContentBlockViewer */}
-                    {isExpanded && isFree && (
+                    {isExpanded && (isFree || unlockedViaPackage) && (
                       <div className="border-t border-border p-5">
                         <ContentBlockViewer
                           contentId={content.id}
-                          monetisationType={content.monetisation_type}
+                          monetisationType={unlockedViaPackage ? "free" : content.monetisation_type}
                           creatorId={content.creator_id}
                           useInstructions={content.use_instructions}
                           onTriggerPaywall={() => handlePaywall(content.id)}

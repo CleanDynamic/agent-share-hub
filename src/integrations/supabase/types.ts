@@ -679,6 +679,48 @@ export type Database = {
           },
         ]
       }
+      project_package_purchases: {
+        Row: {
+          amount_gbp: number | null
+          id: string
+          project_id: string
+          purchased_at: string
+          stripe_payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_gbp?: number | null
+          id?: string
+          project_id: string
+          purchased_at?: string
+          stripe_payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_gbp?: number | null
+          id?: string
+          project_id?: string
+          purchased_at?: string
+          stripe_payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_package_purchases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_package_purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           approved_at: string | null
@@ -687,6 +729,9 @@ export type Database = {
           creator_id: string
           description: string
           id: string
+          package_price_enabled: boolean
+          package_price_gbp: number | null
+          package_stripe_price_id: string | null
           status: string
           title: string
           view_count: number
@@ -698,6 +743,9 @@ export type Database = {
           creator_id: string
           description: string
           id?: string
+          package_price_enabled?: boolean
+          package_price_gbp?: number | null
+          package_stripe_price_id?: string | null
           status?: string
           title: string
           view_count?: number
@@ -709,6 +757,9 @@ export type Database = {
           creator_id?: string
           description?: string
           id?: string
+          package_price_enabled?: boolean
+          package_price_gbp?: number | null
+          package_stripe_price_id?: string | null
           status?: string
           title?: string
           view_count?: number

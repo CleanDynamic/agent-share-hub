@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
@@ -49,6 +49,7 @@ function statusBadge(status: string) {
 export default function MyUploads() {
   const { isLoggedIn, isCreator, profile, loading } = useAuth();
   const navigate = useNavigate();
+  const [tab, setTab] = useState<"content" | "projects">("content");
 
   useEffect(() => {
     if (!loading && !isLoggedIn) navigate("/login", { replace: true });
@@ -69,6 +70,34 @@ export default function MyUploads() {
     enabled: !!profile?.id,
   });
 
+  const { data: projects, isLoading: projectsLoading } = useQuery({
+    queryKey: ["my_projects", profile?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, title, status, view_count, created_at, package_price_enabled, package_price_gbp")
+        .eq("creator_id", profile!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      // Fetch component counts
+      if (!data || data.length === 0) return [];
+      const projectIds = data.map((p) => p.id);
+      const { data: comps } = await supabase
+        .from("project_components")
+        .select("project_id")
+        .in("project_id", projectIds);
+
+      const countMap: Record<string, number> = {};
+      (comps ?? []).forEach((c) => {
+        countMap[c.project_id] = (countMap[c.project_id] || 0) + 1;
+      });
+
+      return data.map((p) => ({ ...p, componentCount: countMap[p.id] || 0 }));
+    },
+    enabled: !!profile?.id,
+  });
+
   if (loading) return null;
 
   return (
@@ -82,84 +111,193 @@ export default function MyUploads() {
           </Button>
         </div>
 
-        {isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 sm:h-12 rounded-xl" />)}
-          </div>
-        ) : items && items.length > 0 ? (
-          <>
-            {/* Desktop table */}
-            <div className="hidden sm:block border border-border rounded-xl overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border">
-                    <TableHead className="text-muted-foreground">Title</TableHead>
-                    <TableHead className="text-muted-foreground">Type</TableHead>
-                    <TableHead className="text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-muted-foreground text-right">Rating</TableHead>
-                    <TableHead className="text-muted-foreground text-right">Views</TableHead>
-                    <TableHead className="text-muted-foreground text-right">Downloads</TableHead>
-                    <TableHead className="text-muted-foreground text-right">Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => {
-                    const rc = (item as any).rating_count ?? 0;
-                    const sv = roundedStars(Number((item as any).avg_rating) || 0, rc);
-                    return (
-                      <TableRow key={item.id} className="border-border cursor-pointer hover:bg-accent/50" onClick={() => navigate(`/content/${item.id}`)}>
-                        <TableCell className="text-foreground font-medium text-sm">{item.title}</TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{item.content_type}</TableCell>
-                        <TableCell>{statusBadge(item.status)}</TableCell>
-                        <TableCell className="text-right">
-                          {rc > 0 ? (
-                            <div className="flex items-center justify-end gap-1">
-                              <TinyStars value={sv} />
-                              <span className="text-[10px] text-muted-foreground">({rc})</span>
-                            </div>
+        {/* Tabs */}
+        <div className="flex gap-0 border-b border-border mb-6">
+          {(["content", "projects"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                tab === t
+                  ? "text-foreground border-primary"
+                  : "text-muted-foreground border-transparent hover:text-foreground"
+              }`}
+            >
+              {t === "content" ? "Content" : "Projects"}
+            </button>
+          ))}
+        </div>
+
+        {tab === "content" ? (
+          isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 sm:h-12 rounded-xl" />)}
+            </div>
+          ) : items && items.length > 0 ? (
+            <>
+              {/* Desktop table */}
+              <div className="hidden sm:block border border-border rounded-xl overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border">
+                      <TableHead className="text-muted-foreground">Title</TableHead>
+                      <TableHead className="text-muted-foreground">Type</TableHead>
+                      <TableHead className="text-muted-foreground">Status</TableHead>
+                      <TableHead className="text-muted-foreground text-right">Rating</TableHead>
+                      <TableHead className="text-muted-foreground text-right">Views</TableHead>
+                      <TableHead className="text-muted-foreground text-right">Downloads</TableHead>
+                      <TableHead className="text-muted-foreground text-right">Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((item) => {
+                      const rc = (item as any).rating_count ?? 0;
+                      const sv = roundedStars(Number((item as any).avg_rating) || 0, rc);
+                      return (
+                        <TableRow key={item.id} className="border-border cursor-pointer hover:bg-accent/50" onClick={() => navigate(`/content/${item.id}`)}>
+                          <TableCell className="text-foreground font-medium text-sm">{item.title}</TableCell>
+                          <TableCell className="text-muted-foreground text-xs">{item.content_type}</TableCell>
+                          <TableCell>{statusBadge(item.status)}</TableCell>
+                          <TableCell className="text-right">
+                            {rc > 0 ? (
+                              <div className="flex items-center justify-end gap-1">
+                                <TinyStars value={sv} />
+                                <span className="text-[10px] text-muted-foreground">({rc})</span>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm text-right">{(item as any).view_count ?? 0}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm text-right">{item.download_count}</TableCell>
+                          <TableCell className="text-muted-foreground text-xs text-right">
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile card layout */}
+              <div className="sm:hidden space-y-3">
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => navigate(`/content/${item.id}`)}
+                    className="border border-border rounded-xl p-4 bg-card cursor-pointer hover:border-primary/30 transition-colors space-y-2"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold text-foreground line-clamp-2">{item.title}</p>
+                      {statusBadge(item.status)}
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span>{item.download_count} downloads</span>
+                      <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <p className="text-sm text-muted-foreground mb-4">You haven't uploaded anything yet.</p>
+              <Button className="min-h-[44px]" asChild>
+                <Link to="/upload">Upload your first content</Link>
+              </Button>
+            </div>
+          )
+        ) : (
+          projectsLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 sm:h-12 rounded-xl" />)}
+            </div>
+          ) : projects && projects.length > 0 ? (
+            <>
+              {/* Desktop table */}
+              <div className="hidden sm:block border border-border rounded-xl overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border">
+                      <TableHead className="text-muted-foreground">Title</TableHead>
+                      <TableHead className="text-muted-foreground">Components</TableHead>
+                      <TableHead className="text-muted-foreground">Pricing</TableHead>
+                      <TableHead className="text-muted-foreground text-right">Views</TableHead>
+                      <TableHead className="text-muted-foreground">Status</TableHead>
+                      <TableHead className="text-muted-foreground text-right">Date</TableHead>
+                      <TableHead className="text-muted-foreground text-right"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {projects.map((proj) => (
+                      <TableRow key={proj.id} className="border-border cursor-pointer hover:bg-accent/50" onClick={() => navigate(`/project/${proj.id}`)}>
+                        <TableCell className="text-foreground font-medium text-sm">{proj.title}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{proj.componentCount}</TableCell>
+                        <TableCell>
+                          {(proj as any).package_price_enabled ? (
+                            <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px]">
+                              Package: £{Number((proj as any).package_price_gbp ?? 0).toFixed(2)}
+                            </Badge>
                           ) : (
-                            <span className="text-[10px] text-muted-foreground">—</span>
+                            <span className="text-xs text-muted-foreground">Individual only</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-sm text-right">{(item as any).view_count ?? 0}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm text-right">{item.download_count}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm text-right">{proj.view_count}</TableCell>
+                        <TableCell>{statusBadge(proj.status)}</TableCell>
                         <TableCell className="text-muted-foreground text-xs text-right">
-                          {new Date(item.created_at).toLocaleDateString()}
+                          {new Date(proj.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {/* TODO: build project edit page */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/project/${proj.id}/edit`);
+                            }}
+                            className="text-[11px] text-primary hover:underline"
+                          >
+                            Edit pricing
+                          </button>
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
-            {/* Mobile card layout */}
-            <div className="sm:hidden space-y-3">
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => navigate(`/content/${item.id}`)}
-                  className="border border-border rounded-xl p-4 bg-card cursor-pointer hover:border-primary/30 transition-colors space-y-2"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-foreground line-clamp-2">{item.title}</p>
-                    {statusBadge(item.status)}
+              {/* Mobile card layout */}
+              <div className="sm:hidden space-y-3">
+                {projects.map((proj) => (
+                  <div
+                    key={proj.id}
+                    onClick={() => navigate(`/project/${proj.id}`)}
+                    className="border border-border rounded-xl p-4 bg-card cursor-pointer hover:border-primary/30 transition-colors space-y-2"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold text-foreground line-clamp-2">{proj.title}</p>
+                      {statusBadge(proj.status)}
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span>{proj.componentCount} components</span>
+                      <span>
+                        {(proj as any).package_price_enabled
+                          ? `Package: £${Number((proj as any).package_price_gbp ?? 0).toFixed(2)}`
+                          : "Individual only"}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span>{item.download_count} downloads</span>
-                    <span>{new Date(item.created_at).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <p className="text-sm text-muted-foreground mb-4">You haven't created any projects yet.</p>
+              <Button className="min-h-[44px]" asChild>
+                <Link to="/upload">Create your first project</Link>
+              </Button>
             </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-sm text-muted-foreground mb-4">You haven't uploaded anything yet.</p>
-            <Button className="min-h-[44px]" asChild>
-              <Link to="/upload">Upload your first content</Link>
-            </Button>
-          </div>
+          )
         )}
       </div>
     </div>

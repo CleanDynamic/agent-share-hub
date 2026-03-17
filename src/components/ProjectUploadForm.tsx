@@ -405,6 +405,8 @@ export function ProjectUploadForm() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [addMode, setAddMode] = useState<null | "choose" | "existing">(null);
+  const [packageEnabled, setPackageEnabled] = useState(false);
+  const [packagePrice, setPackagePrice] = useState<number | undefined>(undefined);
 
   // Cover image handler
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -526,7 +528,9 @@ export function ProjectUploadForm() {
           description: description.trim(),
           cover_image_url: coverUrl,
           status: "pending",
-        })
+          package_price_enabled: packageEnabled,
+          package_price_gbp: packageEnabled && packagePrice ? packagePrice : null,
+        } as any)
         .select("id")
         .single();
 
@@ -800,6 +804,43 @@ export function ProjectUploadForm() {
             <Plus className="h-3.5 w-3.5" />
             Add component
           </Button>
+        )}
+      </div>
+
+      {/* Full project pricing */}
+      <div className="space-y-3 border border-border rounded-xl p-4 bg-card">
+        <div>
+          <Label className="text-sm font-medium">Full project pricing (optional)</Label>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Offer a single price that unlocks all paid components in this project at once.
+            Leave off to keep individual component pricing only.
+          </p>
+        </div>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-foreground">Enable full project purchase</p>
+          <Switch checked={packageEnabled} onCheckedChange={setPackageEnabled} />
+        </div>
+        {packageEnabled && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-foreground font-medium">£</span>
+              <Input
+                type="number"
+                step="0.01"
+                min="1"
+                placeholder="9.99"
+                value={packagePrice ?? ""}
+                onChange={(e) => setPackagePrice(e.target.value ? Number(e.target.value) : undefined)}
+                className="bg-background border-border rounded-xl w-32 text-sm"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Set this lower than the sum of all individual component prices to incentivise the bundle purchase.
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              Buyers who purchase the full project unlock all current and future paid components in this project automatically.
+            </p>
+          </div>
         )}
       </div>
 
