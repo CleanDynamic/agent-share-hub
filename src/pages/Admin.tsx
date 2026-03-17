@@ -666,6 +666,54 @@ const Admin = () => {
               </div>
             )}
           </TabsContent>
+
+          {/* ── Learning Paths ── */}
+          <TabsContent value="paths" className="space-y-4">
+            <h2 className="text-lg font-semibold text-foreground">Pending Learning Paths</h2>
+            {pendingPathsLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-20 w-full rounded-xl" />
+              </div>
+            ) : !pendingPaths || pendingPaths.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-10 text-center">No pending learning paths.</p>
+            ) : (
+              <div className="space-y-3">
+                {pendingPaths.map((path: any) => {
+                  const creator = path.profiles as any;
+                  return (
+                    <div key={path.id} className="border border-border rounded-xl p-4 bg-card flex flex-col sm:flex-row sm:items-center gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{path.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          by {creator?.display_name || creator?.username || "Unknown"} · {path.difficulty_range}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{path.description}</p>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
+                          onClick={() => approvePathMutation.mutate(path.id)}
+                          disabled={approvePathMutation.isPending}
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" /> Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-8 border-destructive text-destructive hover:bg-destructive/10"
+                          onClick={() => rejectPathMutation.mutate(path.id)}
+                          disabled={rejectPathMutation.isPending}
+                        >
+                          <XCircle className="h-3 w-3 mr-1" /> Reject
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
     </div>
