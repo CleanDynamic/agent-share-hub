@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { BadgeCheck, Download, Eye, FileText, Heart, Users, Loader2, CheckCircle2 } from "lucide-react";
+import { BadgeCheck, Download, Eye, FileText, Heart, Users, Loader2, CheckCircle2, MessageCircle } from "lucide-react";
 import { TipSelector } from "@/components/TipSelector";
 import { FollowButton } from "@/components/FollowButton";
 
