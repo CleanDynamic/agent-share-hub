@@ -49,6 +49,25 @@ export async function triggerDownload(contentId: string, fileUrl: string | null)
     }),
   ]);
 
+  // Send download notification (fire and forget)
+  if (user) {
+    const { data: contentRow } = await supabase
+      .from("content_items")
+      .select("creator_id, title")
+      .eq("id", contentId)
+      .maybeSingle();
+    if (contentRow && contentRow.creator_id !== user.id) {
+      const { data: myProfile } = await supabase.from("profiles").select("username").eq("id", user.id).maybeSingle();
+      insertNotification({
+        recipient_id: contentRow.creator_id,
+        actor_id: user.id,
+        notification_type: "new_download",
+        content_id: contentId,
+        metadata: { content_title: contentRow.title, downloader: myProfile?.username || "" },
+      });
+    }
+  }
+
   // Fetch updated count
   const { data: updated } = await supabase
     .from("content_items")
