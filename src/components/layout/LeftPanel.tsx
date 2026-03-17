@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavBadges } from "@/hooks/useNavBadges";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { supabase } from "@/integrations/supabase/client";
 
 interface NavItem {
