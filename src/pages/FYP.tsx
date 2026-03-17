@@ -152,7 +152,7 @@ export default function FYPPage() {
       const contentIds = [...new Set(deduped.map((r: any) => r.content_id))];
       const { data: contents } = await supabase
         .from("content_items")
-        .select("id, title, description, content_type, difficulty, avg_rating, rating_count, download_count, profiles(display_name, username)")
+        .select("id, title, description, content_type, difficulty, avg_rating, rating_count, download_count, profiles!content_items_creator_id_fkey(display_name, username)")
         .in("id", contentIds)
         .eq("status", "approved");
 

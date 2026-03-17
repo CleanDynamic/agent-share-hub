@@ -172,6 +172,141 @@ export type Database = {
           },
         ]
       }
+      collection_follows: {
+        Row: {
+          collection_id: string
+          followed_at: string
+          follower_id: string
+          id: string
+        }
+        Insert: {
+          collection_id: string
+          followed_at?: string
+          follower_id: string
+          id?: string
+        }
+        Update: {
+          collection_id?: string
+          followed_at?: string
+          follower_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_follows_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collection_items: {
+        Row: {
+          added_at: string
+          added_by: string
+          collection_id: string
+          content_id: string
+          id: string
+          note: string | null
+          position: number
+        }
+        Insert: {
+          added_at?: string
+          added_by: string
+          collection_id: string
+          content_id: string
+          id?: string
+          note?: string | null
+          position: number
+        }
+        Update: {
+          added_at?: string
+          added_by?: string
+          collection_id?: string
+          content_id?: string
+          id?: string
+          note?: string | null
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_items_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          created_at: string
+          description: string | null
+          follower_count: number
+          id: string
+          is_public: boolean
+          item_count: number
+          owner_id: string
+          slug: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          follower_count?: number
+          id?: string
+          is_public?: boolean
+          item_count?: number
+          owner_id: string
+          slug?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          follower_count?: number
+          id?: string
+          is_public?: boolean
+          item_count?: number
+          owner_id?: string
+          slug?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collections_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_likes: {
         Row: {
           comment_id: string
@@ -325,12 +460,17 @@ export type Database = {
           content_type: string
           created_at: string
           creator_id: string
+          current_version: string
           description: string | null
           difficulty: string
           donation_enabled: boolean
           download_count: number
           file_url: string | null
+          fork_count: number
+          fork_of_content_id: string | null
+          fork_of_creator_id: string | null
           id: string
+          is_verified: boolean
           monetisation_type: string
           price_gbp: number | null
           rating_count: number
@@ -339,6 +479,7 @@ export type Database = {
           title: string
           use_cases: string[] | null
           use_instructions: string | null
+          verification_count: number
           view_count: number
           what_to_expect: string | null
         }
@@ -350,12 +491,17 @@ export type Database = {
           content_type: string
           created_at?: string
           creator_id: string
+          current_version?: string
           description?: string | null
           difficulty: string
           donation_enabled?: boolean
           download_count?: number
           file_url?: string | null
+          fork_count?: number
+          fork_of_content_id?: string | null
+          fork_of_creator_id?: string | null
           id?: string
+          is_verified?: boolean
           monetisation_type?: string
           price_gbp?: number | null
           rating_count?: number
@@ -364,6 +510,7 @@ export type Database = {
           title: string
           use_cases?: string[] | null
           use_instructions?: string | null
+          verification_count?: number
           view_count?: number
           what_to_expect?: string | null
         }
@@ -375,12 +522,17 @@ export type Database = {
           content_type?: string
           created_at?: string
           creator_id?: string
+          current_version?: string
           description?: string | null
           difficulty?: string
           donation_enabled?: boolean
           download_count?: number
           file_url?: string | null
+          fork_count?: number
+          fork_of_content_id?: string | null
+          fork_of_creator_id?: string | null
           id?: string
+          is_verified?: boolean
           monetisation_type?: string
           price_gbp?: number | null
           rating_count?: number
@@ -389,6 +541,7 @@ export type Database = {
           title?: string
           use_cases?: string[] | null
           use_instructions?: string | null
+          verification_count?: number
           view_count?: number
           what_to_expect?: string | null
         }
@@ -396,6 +549,20 @@ export type Database = {
           {
             foreignKeyName: "content_items_creator_id_fkey"
             columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_items_fork_of_content_id_fkey"
+            columns: ["fork_of_content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_items_fork_of_creator_id_fkey"
+            columns: ["fork_of_creator_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -438,6 +605,138 @@ export type Database = {
           {
             foreignKeyName: "content_ratings_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_tips: {
+        Row: {
+          ai_tool_context: string | null
+          content_id: string
+          created_at: string
+          id: string
+          is_deleted: boolean
+          text: string
+          upvote_count: number
+          user_id: string
+        }
+        Insert: {
+          ai_tool_context?: string | null
+          content_id: string
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          text: string
+          upvote_count?: number
+          user_id: string
+        }
+        Update: {
+          ai_tool_context?: string | null
+          content_id?: string
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          text?: string
+          upvote_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_tips_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_tips_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_verifications: {
+        Row: {
+          ai_tool_used: string | null
+          content_id: string
+          id: string
+          user_id: string
+          verified_at: string
+        }
+        Insert: {
+          ai_tool_used?: string | null
+          content_id: string
+          id?: string
+          user_id: string
+          verified_at?: string
+        }
+        Update: {
+          ai_tool_used?: string | null
+          content_id?: string
+          id?: string
+          user_id?: string
+          verified_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_verifications_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_verifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_versions: {
+        Row: {
+          blocks_snapshot: Json | null
+          changelog: string
+          content_id: string
+          created_at: string
+          created_by: string
+          id: string
+          version_number: string
+        }
+        Insert: {
+          blocks_snapshot?: Json | null
+          changelog: string
+          content_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          version_number: string
+        }
+        Update: {
+          blocks_snapshot?: Json | null
+          changelog?: string
+          content_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          version_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_versions_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_versions_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -546,6 +845,270 @@ export type Database = {
           {
             foreignKeyName: "follows_following_id_fkey"
             columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_path_progress: {
+        Row: {
+          completed_at: string | null
+          completed_step_ids: string[]
+          id: string
+          path_id: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_step_ids?: string[]
+          id?: string
+          path_id: string
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_step_ids?: string[]
+          id?: string
+          path_id?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_path_progress_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_path_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_path_steps: {
+        Row: {
+          content_id: string
+          id: string
+          path_id: string
+          position: number
+          step_label: string | null
+          step_note: string | null
+        }
+        Insert: {
+          content_id: string
+          id?: string
+          path_id: string
+          position: number
+          step_label?: string | null
+          step_note?: string | null
+        }
+        Update: {
+          content_id?: string
+          id?: string
+          path_id?: string
+          position?: number
+          step_label?: string | null
+          step_note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_path_steps_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_path_steps_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_paths: {
+        Row: {
+          completion_count: number
+          created_at: string
+          creator_id: string
+          description: string
+          difficulty_range: string | null
+          estimated_time_minutes: number | null
+          follower_count: number
+          id: string
+          is_platform_curated: boolean
+          status: string
+          title: string
+        }
+        Insert: {
+          completion_count?: number
+          created_at?: string
+          creator_id: string
+          description: string
+          difficulty_range?: string | null
+          estimated_time_minutes?: number | null
+          follower_count?: number
+          id?: string
+          is_platform_curated?: boolean
+          status?: string
+          title: string
+        }
+        Update: {
+          completion_count?: number
+          created_at?: string
+          creator_id?: string
+          description?: string
+          difficulty_range?: string | null
+          estimated_time_minutes?: number | null
+          follower_count?: number
+          id?: string
+          is_platform_curated?: boolean
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_paths_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          id: string
+          is_read: boolean
+          recipient_id: string
+          reply_to_enquiry_id: string | null
+          sender_id: string
+          sent_at: string
+          text: string
+          thread_id: string
+        }
+        Insert: {
+          id?: string
+          is_read?: boolean
+          recipient_id: string
+          reply_to_enquiry_id?: string | null
+          sender_id: string
+          sent_at?: string
+          text: string
+          thread_id: string
+        }
+        Update: {
+          id?: string
+          is_read?: boolean
+          recipient_id?: string
+          reply_to_enquiry_id?: string | null
+          sender_id?: string
+          sent_at?: string
+          text?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_enquiry_id_fkey"
+            columns: ["reply_to_enquiry_id"]
+            isOneToOne: false
+            referencedRelation: "service_enquiries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          collection_id: string | null
+          content_id: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          metadata: Json | null
+          notification_type: string
+          project_id: string | null
+          recipient_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          collection_id?: string | null
+          content_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          metadata?: Json | null
+          notification_type: string
+          project_id?: string | null
+          recipient_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          collection_id?: string | null
+          content_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          metadata?: Json | null
+          notification_type?: string
+          project_id?: string | null
+          recipient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -883,6 +1446,42 @@ export type Database = {
           {
             foreignKeyName: "subscriptions_subscriber_id_fkey"
             columns: ["subscriber_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tip_upvotes: {
+        Row: {
+          created_at: string
+          id: string
+          tip_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tip_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tip_upvotes_tip_id_fkey"
+            columns: ["tip_id"]
+            isOneToOne: false
+            referencedRelation: "content_tips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tip_upvotes_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

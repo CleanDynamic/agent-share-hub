@@ -28,7 +28,7 @@ const Admin = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
-        .select("*, profiles(username, display_name)")
+        .select("*, profiles!content_items_creator_id_fkey(username, display_name)")
         .eq("status", "pending")
         .order("created_at", { ascending: true });
       if (error) throw error;
