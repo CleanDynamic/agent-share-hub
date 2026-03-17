@@ -89,6 +89,12 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
             ref={inputRef}
             value={query}
             onChange={(e) => handleChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && query.trim().length >= 1) {
+                onClose();
+                navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+              }
+            }}
             placeholder="Search users or content..."
             className="h-10 bg-card border-border pl-9 text-sm"
           />
