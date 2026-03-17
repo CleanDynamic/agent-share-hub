@@ -405,6 +405,8 @@ export function ProjectUploadForm() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [addMode, setAddMode] = useState<null | "choose" | "existing">(null);
+  const [packageEnabled, setPackageEnabled] = useState(false);
+  const [packagePrice, setPackagePrice] = useState<number | undefined>(undefined);
 
   // Cover image handler
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
