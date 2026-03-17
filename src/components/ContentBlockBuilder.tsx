@@ -1,8 +1,10 @@
 import { useState, useCallback } from "react";
 import {
   Type, Paperclip, ImageIcon, ChevronUp, ChevronDown, Trash2, Plus,
-  List, ListOrdered, AlignLeft, ListTree,
+  List, ListOrdered, AlignLeft, ListTree, FileText, Heading,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
