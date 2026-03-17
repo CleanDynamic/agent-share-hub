@@ -56,6 +56,8 @@ const App = () => (
                 <Route path="/browse" element={<Browse />} />
                 <Route path="/recent" element={<RecentPage />} />
                 <Route path="/fyp" element={<FYPPage />} />
+                <Route path="/search" element={<SearchPage />} />
+                <Route path="/category/:slug" element={<Category />} />
                 <Route path="/upload" element={<Upload />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/content/:id" element={<ContentDetail />} />

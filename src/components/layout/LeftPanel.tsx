@@ -209,6 +209,14 @@ function SearchSection() {
     debounceRef.current = setTimeout(() => doSearch(val), 300);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && query.trim().length >= 1) {
+      setOpen(false);
+      setQuery("");
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    }
+  };
+
   const go = (path: string) => { setOpen(false); setQuery(""); navigate(path); };
 
   const noResults = !loading && users.length === 0 && content.length === 0 && query.length >= 2;
