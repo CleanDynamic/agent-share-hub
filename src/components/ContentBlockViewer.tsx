@@ -556,8 +556,8 @@ export function ContentBlockViewer({
                       )}
                     </div>
 
-                    {/* View button overlay */}
-                    {!isUnblurred && (
+                    {/* View button overlay — not shown for preview blocks */}
+                    {!isUnblurred && !isPreview && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <Button
                           onClick={() => handleViewClick(block.id)}
