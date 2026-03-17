@@ -30,6 +30,7 @@ import MyUploads from "./pages/MyUploads";
 import RecentPage from "./pages/Recent";
 import FYPPage from "./pages/FYP";
 import NotFound from "./pages/NotFound";
+import NotificationsPage from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
