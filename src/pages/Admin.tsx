@@ -163,6 +163,47 @@ const Admin = () => {
   const rejectedToolsList = allTools?.filter((t: any) => t.status === "rejected") ?? [];
 
   // ── Projects ──
+  // ── Learning Paths ──
+  const { data: pendingPaths, isLoading: pendingPathsLoading } = useQuery({
+    queryKey: ["admin_pending_paths"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("learning_paths")
+        .select("*, profiles!learning_paths_creator_id_fkey(username, display_name)")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const approvePathMutation = useMutation({
+    mutationFn: async (pathId: string) => {
+      const { error } = await supabase
+        .from("learning_paths")
+        .update({ status: "approved" })
+        .eq("id", pathId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_pending_paths"] });
+      toast({ title: "Learning path approved" });
+    },
+  });
+
+  const rejectPathMutation = useMutation({
+    mutationFn: async (pathId: string) => {
+      const { error } = await supabase
+        .from("learning_paths")
+        .update({ status: "rejected" })
+        .eq("id", pathId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_pending_paths"] });
+      toast({ title: "Learning path rejected" });
+    },
+  });
   const { data: pendingProjects, isLoading: pendingProjectsLoading } = useQuery({
     queryKey: ["admin_pending_projects"],
     queryFn: async () => {
