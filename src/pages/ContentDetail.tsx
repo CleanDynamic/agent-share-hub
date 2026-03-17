@@ -501,7 +501,7 @@ const ContentDetail = () => {
               </div>
             )}
 
-            {/* Comments section — below ContentBlockViewer, above related content */}
+            {/* Comments section */}
             {(!isSub || subscriberUnlocked) && (
               <CommentsSection
                 contentId={item.id}
@@ -509,6 +509,11 @@ const ContentDetail = () => {
                 commentCount={(item as any).comment_count ?? 0}
                 isEligible={isEligible}
               />
+            )}
+
+            {/* Version History */}
+            {(!isSub || subscriberUnlocked) && (
+              <VersionHistory contentId={item.id} currentVersion={item.current_version} />
             )}
           </div>
 
