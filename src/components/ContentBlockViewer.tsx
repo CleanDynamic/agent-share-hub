@@ -134,10 +134,27 @@ function RenderBlockContent({
     }
   }, [type, imageUrl]);
 
-  if (type === "text") {
+  if (type === "text" || type === "long_text") {
     const fmt = formatting?.type ?? "paragraph";
     const items: string[] = formatting?.items ?? [];
     const text = textContent ?? "";
+    const isLong = type === "long_text";
+
+    // Long text article rendering
+    if (isLong) {
+      const paragraphs = text.split("\n\n").filter(Boolean);
+      return (
+        <div className="max-w-prose" style={{ lineHeight: 1.8 }}>
+          {paragraphs.map((p, i) => {
+            // Check if it's a heading (starts with # or formatting says heading)
+            if (p.startsWith("# ") || (formatting?.type === "heading" && i === 0)) {
+              return <h3 key={i} className="text-lg font-bold text-foreground mt-4 mb-2">{p.replace(/^#\s*/, "")}</h3>;
+            }
+            return <p key={i} className="text-sm text-muted-foreground mb-[1.2em] whitespace-pre-wrap">{p}</p>;
+          })}
+        </div>
+      );
+    }
 
     if (fmt === "paragraph") {
       return <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{text}</p>;
@@ -161,7 +178,6 @@ function RenderBlockContent({
       );
     }
     if (fmt === "sub_list") {
-      // items can be strings or objects with { text, sub: string[] }
       const entries = items.length > 0 ? items : text.split("\n").filter(Boolean);
       return (
         <ol className="list-decimal list-inside space-y-2">
