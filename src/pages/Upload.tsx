@@ -242,24 +242,20 @@ const Upload = () => {
         </div>
 
         {/* Upload type selector */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
           <button
             type="button"
             onClick={() => setUploadType("single")}
             className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${
               uploadType === "single"
-                ? "border-[#E8571A] bg-[#E8571A]/5"
+                ? "border-primary bg-primary/5"
                 : "border-border bg-card hover:border-muted-foreground/40"
             }`}
           >
-            <FileText className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "single" ? "text-[#E8571A]" : "text-muted-foreground"}`} />
+            <FileText className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "single" ? "text-primary" : "text-muted-foreground"}`} />
             <div>
-              <p className={`text-sm font-semibold ${uploadType === "single" ? "text-foreground" : "text-foreground"}`}>
-                Single piece of content
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                A prompt file, tutorial, blueprint, workflow, or guide
-              </p>
+              <p className="text-sm font-semibold text-foreground">Single content</p>
+              <p className="text-xs text-muted-foreground mt-0.5">A prompt, tutorial, blueprint, or guide</p>
             </div>
           </button>
           <button
@@ -267,18 +263,29 @@ const Upload = () => {
             onClick={() => setUploadType("project")}
             className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${
               uploadType === "project"
-                ? "border-[#E8571A] bg-[#E8571A]/5"
+                ? "border-primary bg-primary/5"
                 : "border-border bg-card hover:border-muted-foreground/40"
             }`}
           >
-            <FolderOpen className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "project" ? "text-[#E8571A]" : "text-muted-foreground"}`} />
+            <FolderOpen className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "project" ? "text-primary" : "text-muted-foreground"}`} />
             <div>
-              <p className={`text-sm font-semibold ${uploadType === "project" ? "text-foreground" : "text-foreground"}`}>
-                Project
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                A collection of related content with a timeline
-              </p>
+              <p className="text-sm font-semibold text-foreground">Project</p>
+              <p className="text-xs text-muted-foreground mt-0.5">A collection of related content</p>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setUploadType("path")}
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${
+              uploadType === "path"
+                ? "border-primary bg-primary/5"
+                : "border-border bg-card hover:border-muted-foreground/40"
+            }`}
+          >
+            <GraduationCap className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "path" ? "text-primary" : "text-muted-foreground"}`} />
+            <div>
+              <p className="text-sm font-semibold text-foreground">Learning Path</p>
+              <p className="text-xs text-muted-foreground mt-0.5">A guided sequence through existing posts</p>
             </div>
           </button>
         </div>
