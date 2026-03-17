@@ -79,6 +79,35 @@ export default function Saved() {
     enabled: projContentIds.length > 0,
   });
 
+  // Collections queries
+  const { data: myCollections, isLoading: colLoading } = useQuery({
+    queryKey: ["my_collections", profile?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("collections")
+        .select("id, title, description, item_count, is_public, follower_count, slug")
+        .eq("owner_id", profile!.id)
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!profile?.id,
+  });
+
+  const { data: followedCollections } = useQuery({
+    queryKey: ["followed_collections", profile?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("collection_follows")
+        .select("collection_id, collections(id, title, description, item_count, is_public, follower_count, slug, profiles!collections_owner_id_fkey(display_name, username))")
+        .eq("follower_id", profile!.id)
+        .order("followed_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!profile?.id,
+  });
+
   return (
     <div className="py-12 px-6">
       <SeoHead title="Saved — NeoScale AI" description="Your saved content on NeoScale AI." path="/saved" noIndex />
