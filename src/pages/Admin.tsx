@@ -39,11 +39,29 @@ const Admin = () => {
 
   const approveMutation = useMutation({
     mutationFn: async (contentId: string) => {
+      // Fetch content info before approving
+      const { data: contentRow } = await supabase
+        .from("content_items")
+        .select("creator_id, title")
+        .eq("id", contentId)
+        .maybeSingle();
+
       const { error } = await supabase
         .from("content_items")
         .update({ status: "approved", approved_at: new Date().toISOString() })
         .eq("id", contentId);
       if (error) throw error;
+
+      // Send approval notification
+      if (contentRow) {
+        insertNotification({
+          recipient_id: contentRow.creator_id,
+          actor_id: null,
+          notification_type: "content_approved",
+          content_id: contentId,
+          metadata: { content_title: contentRow.title },
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_pending_content"] });
