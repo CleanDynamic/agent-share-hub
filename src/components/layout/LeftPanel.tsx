@@ -46,6 +46,10 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     { icon: User, label: "My Profile", to: "/profile", authOnly: true },
   ];
 
+  if (isLoggedIn && profile?.is_creator) {
+    navItems.splice(navItems.length - 1, 0, { icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true });
+  }
+
   const visibleItems = navItems.filter((item) => !item.authOnly || isLoggedIn);
 
   const initials = profile?.display_name

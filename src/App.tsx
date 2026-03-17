@@ -73,6 +73,7 @@ const App = () => (
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/my-uploads" element={<ProtectedRoute requireCreator><MyUploads /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute requireCreator><Analytics /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

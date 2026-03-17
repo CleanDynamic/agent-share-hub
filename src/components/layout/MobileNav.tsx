@@ -170,6 +170,7 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
     { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true },
     { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true },
     { icon: Upload, label: "Upload", to: "/upload" },
+    ...(isLoggedIn && profile?.is_creator ? [{ icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true }] : []),
     { icon: Info, label: "About", to: "/about" },
   ].filter((item) => !item.authOnly || isLoggedIn);
 
