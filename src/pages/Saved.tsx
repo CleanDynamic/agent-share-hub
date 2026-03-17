@@ -7,8 +7,10 @@ import { ProjectCard } from "@/components/ProjectCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Folder } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Bookmark, Folder, LayoutGrid, Globe, Lock, Users, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { AddToCollectionModal } from "@/components/AddToCollectionModal";
 
 function CardSkeleton() {
   return (
