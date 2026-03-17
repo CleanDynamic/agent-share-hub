@@ -675,6 +675,40 @@ const ContentDetail = () => {
         contentId={item.id}
         mode={accountGateMode}
       />
+
+      {/* Fork modal */}
+      {creator && (
+        <ForkModal
+          open={forkModalOpen}
+          onOpenChange={setForkModalOpen}
+          originalItem={item as any}
+          originalCreatorUsername={creator.username}
+        />
+      )}
+
+      {/* Forks list modal */}
+      <Dialog open={forksModalOpen} onOpenChange={setForksModalOpen}>
+        <DialogContent className="bg-card border-border sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Forks of this content</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {forks && forks.length > 0 ? forks.map((f: any) => (
+              <Link
+                key={f.id}
+                to={`/content/${f.id}`}
+                onClick={() => setForksModalOpen(false)}
+                className="block p-3 rounded-lg border border-border hover:border-primary/30 transition-colors"
+              >
+                <p className="text-sm font-medium text-foreground">{f.title}</p>
+                <p className="text-xs text-muted-foreground">by {f.profiles?.display_name || f.profiles?.username}</p>
+              </Link>
+            )) : (
+              <p className="text-sm text-muted-foreground">No public forks yet.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
