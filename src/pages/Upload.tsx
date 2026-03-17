@@ -290,7 +290,9 @@ const Upload = () => {
           </button>
         </div>
 
-        {uploadType === "project" ? (
+        {uploadType === "path" ? (
+          <LearningPathUploadForm />
+        ) : uploadType === "project" ? (
           <ProjectUploadForm />
         ) : (
         <Form {...form}>
