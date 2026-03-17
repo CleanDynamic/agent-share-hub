@@ -133,7 +133,7 @@ export default function FYPPage() {
         .from("user_interactions" as any)
         .select("id, user_id, content_id, interaction_type, interaction_meta, created_at")
         .in("user_id", followingIds)
-        .in("interaction_type", ["downloaded", "rated", "commented", "bookmarked"])
+        .in("interaction_type", ["downloaded", "rated", "commented", "bookmarked", "added_to_collection"])
         .order("created_at", { ascending: false })
         .range(pageParam, pageParam + PAGE_SIZE - 1);
 
