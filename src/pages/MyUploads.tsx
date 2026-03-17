@@ -196,6 +196,7 @@ export default function MyUploads() {
                               </button>
                             )}
                           </TableCell>
+                        </TableRow>
                       );
                     })}
                   </TableBody>
