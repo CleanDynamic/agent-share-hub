@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Lock, Loader2, Eye, Star, StarHalf } from "lucide-react";
+import { Download, Lock, Loader2, Eye, Star, StarHalf, GitFork } from "lucide-react";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";

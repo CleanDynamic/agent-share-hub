@@ -335,6 +335,18 @@ export default function MyUploads() {
           )
         )}
       </div>
+
+      {/* Publish update modal */}
+      {updateTarget && profile && (
+        <PublishUpdateModal
+          open={!!updateTarget}
+          onOpenChange={(o) => { if (!o) setUpdateTarget(null); }}
+          contentId={updateTarget.id}
+          contentTitle={updateTarget.title}
+          currentVersion={updateTarget.version}
+          creatorId={profile.id}
+        />
+      )}
     </div>
   );
 }
