@@ -359,6 +359,11 @@ export function ContentBlockViewer({
     });
   }, [contentId]);
 
+  // Guest page-level ad flag
+  const guestAdKey = `neoscale_page_ad_shown_${contentId}`;
+  const guestPageAdShown = () => sessionStorage.getItem(guestAdKey) === "true";
+  const markGuestPageAd = () => sessionStorage.setItem(guestAdKey, "true");
+
   const handleViewClick = useCallback(
     (blockId: string) => {
       // State D: paid, not purchased — trigger paywall
@@ -373,35 +378,40 @@ export function ContentBlockViewer({
         return;
       }
 
-      // State A: guest, free — 2 ad modals
+      // State A: guest, free — one 3s ad per PAGE (not per block)
       if (!isLoggedIn) {
+        if (guestPageAdShown()) {
+          // Ad already shown this page session, instant unblur
+          setUnblurred((p) => ({ ...p, [blockId]: true }));
+          return;
+        }
         setAdModal({ blockId, phase: 1 });
-        insertAdImpression(); // first impression
+        insertAdImpression();
         return;
       }
 
-      // State B: logged in, free — 1 ad modal
+      // State B: logged in, free — 1 ad modal per block
       setAdModal({ blockId, phase: 1 });
       insertAdImpression();
     },
-    [isFree, paidAndUnlocked, isLoggedIn, insertAdImpression, onTriggerPaywall]
+    [isFree, paidAndUnlocked, isLoggedIn, insertAdImpression, onTriggerPaywall, contentId]
   );
 
   const handleAdComplete = useCallback(() => {
     if (!adModal) return;
 
-    // Guest gets 2 modals, logged-in gets 1
-    if (adModal.phase === 1 && !isLoggedIn) {
-      // Move to phase 2
-      setAdModal({ blockId: adModal.blockId, phase: 2 });
-      insertAdImpression(); // second impression
+    // Guest: single 3s ad, then done for the page
+    if (!isLoggedIn) {
+      markGuestPageAd();
+      setUnblurred((p) => ({ ...p, [adModal.blockId]: true }));
+      setAdModal(null);
       return;
     }
 
-    // Unblur and close
+    // Logged-in: single ad per block
     setUnblurred((p) => ({ ...p, [adModal.blockId]: true }));
     setAdModal(null);
-  }, [adModal, isLoggedIn, insertAdImpression]);
+  }, [adModal, isLoggedIn, contentId]);
 
   // ─── Fallback: no blocks, show use_instructions ─────────
 
