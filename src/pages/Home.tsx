@@ -467,7 +467,13 @@ function TrendingTab() {
       }
 
       return pool
-        .sort((a, b) => (b.download_count + b.view_count + b.rating_count) - (a.download_count + a.view_count + a.rating_count))
+        .map((item) => {
+          const hoursOld = (Date.now() - new Date(item.approved_at || item.created_at).getTime()) / 3600000;
+          const score = (item.download_count * 1.5 + item.view_count + item.rating_count * 2 + item.comment_count * 1.2)
+            / Math.pow(hoursOld + 2, 1.5);
+          return { ...item, _score: score };
+        })
+        .sort((a, b) => b._score - a._score)
         .slice(0, 20);
     },
     staleTime: 60_000,

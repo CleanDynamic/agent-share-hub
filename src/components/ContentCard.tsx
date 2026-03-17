@@ -205,7 +205,10 @@ export function ContentCard({
             </span>
           )}
         </h3>
-        <p className="text-xs text-muted-foreground leading-relaxed mb-4 flex-1">{description}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed mb-1 flex-1">{description}</p>
+        {has_preview && (
+          <p className="text-[11px] font-medium mb-3" style={{ color: "#2EC4B6" }}>Preview available</p>
+        )}
 
         {/* AI tools */}
         <div className="flex flex-wrap gap-1 mb-3">
