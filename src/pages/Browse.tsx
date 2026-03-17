@@ -312,7 +312,9 @@ const Browse = () => {
           </button>
         </div>
 
-        {browseTab === "projects" ? (
+        {browseTab === "paths" ? (
+          <BrowseLearningPaths userId={profile?.id} />
+        ) : browseTab === "projects" ? (
           <>
             {/* Project search */}
             <div className="relative mb-4">
