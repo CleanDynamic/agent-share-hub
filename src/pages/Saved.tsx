@@ -31,7 +31,7 @@ function CardSkeleton() {
 
 export default function Saved() {
   const { profile } = useAuth();
-  const [tab, setTab] = useState<"content" | "projects">("content");
+  const [tab, setTab] = useState<"content" | "projects" | "collections">("content");
 
   const { data: savedItems, isLoading, error } = useQuery({
     queryKey: ["user_saves_content", profile?.id],
