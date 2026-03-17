@@ -41,6 +41,7 @@ export interface ContentBlock {
   imagePreview?: string;
   imageDescription: string;
   variations: BlockVariation[];
+  isPreview: boolean;
 }
 
 interface Props {
