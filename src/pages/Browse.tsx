@@ -116,19 +116,49 @@ function FilterDropdowns({
   );
 }
 
+const SLUG_TO_TYPE: Record<string, string> = {
+  "prompt-file": "Prompt File",
+  "prompt-tutorial": "Prompt Tutorial",
+  "agent-blueprint": "Agent Blueprint",
+  "workflow-template": "Workflow Template",
+  "agent-stack": "Agent Stack",
+  "model-config-guide": "Model Config Guide",
+  "integration-guide": "Integration Guide",
+  "evaluation-framework": "Evaluation Framework",
+  "failure-library": "Failure Library",
+};
+
 const Browse = () => {
   const { isLoggedIn, profile } = useAuth();
   const { data: AI_TOOLS } = useApprovedToolNames();
-  const [browseTab, setBrowseTab] = useState<"content" | "projects">("content");
+  const [searchParams] = useSearchParams();
+  const [browseTab, setBrowseTab] = useState<"content" | "projects">(
+    searchParams.get("tab") === "projects" ? "projects" : "content"
+  );
   const [search, setSearch] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState(ALL);
+  const [typeFilter, setTypeFilter] = useState(() => {
+    const slug = searchParams.get("type");
+    return slug && SLUG_TO_TYPE[slug] ? SLUG_TO_TYPE[slug] : ALL;
+  });
   const [difficultyFilter, setDifficultyFilter] = useState(ALL);
   const [toolFilter, setToolFilter] = useState(ALL);
   const [useCaseFilter, setUseCaseFilter] = useState(ALL);
   const [matchInterests, setMatchInterests] = useState(false);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  // React to query param changes from right panel navigation
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    const typeSlug = searchParams.get("type");
+    if (tab === "projects") {
+      setBrowseTab("projects");
+    } else if (typeSlug && SLUG_TO_TYPE[typeSlug]) {
+      setBrowseTab("content");
+      setTypeFilter(SLUG_TO_TYPE[typeSlug]);
+    }
+  }, [searchParams]);
 
   const activeFilterCount = [typeFilter, difficultyFilter, toolFilter, useCaseFilter].filter((f) => f !== ALL).length;
 
