@@ -393,7 +393,7 @@ const ContentDetail = () => {
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{item.title}</h1>
         <p className="text-sm text-muted-foreground leading-relaxed mb-4">{item.description}</p>
 
-        <div className="flex flex-wrap items-center gap-4 mb-8 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-4 mb-2 text-sm text-muted-foreground">
           {creator && (
             <Link to={`/creator/${creator.username}`} className="flex items-center gap-1.5 hover:text-foreground transition-colors">
               <User className="h-3.5 w-3.5" />
@@ -412,7 +412,32 @@ const ContentDetail = () => {
             <Calendar className="h-3.5 w-3.5" />
             <span>{formatDate(item.approved_at ?? item.created_at)}</span>
           </div>
+          {(item as any).fork_count > 0 && (
+            <button
+              onClick={() => setForksModalOpen(true)}
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
+            >
+              <GitFork className="h-3.5 w-3.5" />
+              <span>{(item as any).fork_count} fork{(item as any).fork_count !== 1 ? "s" : ""}</span>
+            </button>
+          )}
         </div>
+
+        {/* Fork attribution */}
+        {forkOrigin && (
+          <p className="text-xs text-muted-foreground mb-4 flex items-center gap-1">
+            <ExternalLink className="h-3 w-3" />
+            Forked from{" "}
+            <Link to={`/creator/${forkOrigin.profiles?.username}`} className="text-primary hover:underline">
+              {forkOrigin.profiles?.display_name || forkOrigin.profiles?.username}
+            </Link>'s{" "}
+            <Link to={`/content/${forkOrigin.id}`} className="text-primary hover:underline">
+              {forkOrigin.title}
+            </Link>
+          </p>
+        )}
+
+        <div className="mb-8" />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
