@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavBadges } from "@/hooks/useNavBadges";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { RightPanel } from "./RightPanel";
 
