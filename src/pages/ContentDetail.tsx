@@ -216,8 +216,36 @@ const ContentDetail = () => {
 
   const subscriberUnlocked = isSub && hasActiveSubscription === true;
   const isFreeContent = item?.monetisation_type === "free" || item?.monetisation_type === "donation";
-  // Eligible = logged in AND (free content OR has downloaded OR has subscription)
   const isEligible = isLoggedIn && (isFreeContent || hasDownloaded === true || subscriberUnlocked);
+
+  // Fork origin data
+  const { data: forkOrigin } = useQuery({
+    queryKey: ["fork_origin", item?.fork_of_content_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_items")
+        .select("id, title, profiles!content_items_creator_id_fkey(username, display_name)")
+        .eq("id", item!.fork_of_content_id!)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!item?.fork_of_content_id,
+  });
+
+  // Forks of this content
+  const { data: forks } = useQuery({
+    queryKey: ["content_forks", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_items")
+        .select("id, title, profiles!content_items_creator_id_fkey(username, display_name)")
+        .eq("fork_of_content_id", id!)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!id,
+  });
 
   const count = localCount ?? item?.download_count ?? 0;
   const viewCount = (item as any)?.view_count ?? 0;
