@@ -62,7 +62,7 @@ export default function MyUploads() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
-        .select("id, title, content_type, status, download_count, created_at, avg_rating, rating_count, view_count")
+        .select("id, title, content_type, status, download_count, created_at, avg_rating, rating_count, view_count, current_version")
         .eq("creator_id", profile!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
