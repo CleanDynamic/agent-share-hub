@@ -52,7 +52,7 @@ export default function Analytics() {
 
   return (
     <>
-      <SeoHead title="Your Analytics — NeoScale AI" description="Track your content performance" />
+      <SeoHead title="Your Analytics — NeoScale AI" description="Track your content performance" path="/analytics" />
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
