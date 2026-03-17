@@ -216,9 +216,21 @@ export default function MyUploads() {
                       {statusBadge(item.status)}
                     </div>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span>v{(item as any).current_version || "1.0"}</span>
                       <span>{item.download_count} downloads</span>
                       <span>{new Date(item.created_at).toLocaleDateString()}</span>
                     </div>
+                    {item.status === "approved" && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUpdateTarget({ id: item.id, title: item.title, version: (item as any).current_version || "1.0" });
+                        }}
+                        className="text-[11px] text-primary flex items-center gap-1 mt-1"
+                      >
+                        <RefreshCw className="h-3 w-3" /> Publish update
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
