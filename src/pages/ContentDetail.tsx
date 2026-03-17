@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { AddToCollectionButton } from "@/components/AddToCollectionButton";
 import { ContentCard } from "@/components/ContentCard";
 import { TipSelector } from "@/components/TipSelector";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
@@ -473,9 +474,10 @@ const ContentDetail = () => {
                 </Button>
               )}
 
-              {/* Bookmark button */}
-              <div className="flex justify-center">
+              {/* Bookmark + Collection buttons */}
+              <div className="flex justify-center gap-2">
                 <BookmarkButton contentId={item.id} />
+                <AddToCollectionButton contentId={item.id} contentTitle={item.title} />
               </div>
               {isPaid && (
                 <p className="text-[11px] text-muted-foreground text-center">£{(item.price_gbp ?? 0).toFixed(2)} — one-time payment</p>

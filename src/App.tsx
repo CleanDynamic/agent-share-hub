@@ -32,6 +32,7 @@ import FYPPage from "./pages/FYP";
 import NotFound from "./pages/NotFound";
 import NotificationsPage from "./pages/Notifications";
 import MessagesPage from "./pages/Messages";
+import CollectionDetail from "./pages/CollectionDetail";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
                 <Route path="/content/:id" element={<ContentDetail />} />
                 <Route path="/project/:id" element={<ProjectDetail />} />
                 <Route path="/creator/:username" element={<CreatorProfile />} />
+                <Route path="/collections/:slug" element={<CollectionDetail />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
                 <Route path="/signup" element={<Signup />} />

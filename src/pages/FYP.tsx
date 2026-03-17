@@ -74,6 +74,7 @@ function interactionLabel(type: string, meta: any): string {
     case "rated": return `rated ★${meta?.rating ?? "?"}`;
     case "commented": return "commented on";
     case "bookmarked": return "saved";
+    case "added_to_collection": return `added to ${meta?.collection_title ?? "a collection"}:`;
     default: return type;
   }
 }
@@ -132,7 +133,7 @@ export default function FYPPage() {
         .from("user_interactions" as any)
         .select("id, user_id, content_id, interaction_type, interaction_meta, created_at")
         .in("user_id", followingIds)
-        .in("interaction_type", ["downloaded", "rated", "commented", "bookmarked"])
+        .in("interaction_type", ["downloaded", "rated", "commented", "bookmarked", "added_to_collection"])
         .order("created_at", { ascending: false })
         .range(pageParam, pageParam + PAGE_SIZE - 1);
 

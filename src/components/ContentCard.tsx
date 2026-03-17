@@ -7,6 +7,7 @@ import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { AddToCollectionButton } from "@/components/AddToCollectionButton";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
 import { AccountGateModal } from "@/components/AccountGateModal";
 import { useAuth } from "@/contexts/AuthContext";
@@ -165,8 +166,9 @@ export function ContentCard({
         onClick={() => navigate(`/content/${id}`)}
         className="relative w-full text-left border border-border rounded-xl p-5 bg-card hover:border-primary/40 transition-colors flex flex-col group cursor-pointer"
       >
-        {/* Bookmark — 44px tap target */}
-        <div className="absolute top-2 right-2 z-10 min-w-[44px] min-h-[44px] flex items-center justify-center">
+        {/* Actions — bookmark + collection */}
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-0.5 min-h-[44px]">
+          <AddToCollectionButton contentId={id} contentTitle={title} />
           <BookmarkButton contentId={id} />
         </div>
         {/* Top row */}
