@@ -312,6 +312,7 @@ export function MobileNav() {
   const { isLoggedIn, profile, user } = useAuth();
   const recentBadge = useRecentBadge();
   const { display: notifBadge } = useUnreadNotifications();
+  const { display: msgBadge } = useUnreadMessages();
   const [showDiscover, setShowDiscover] = useState(false);
 
   useEffect(() => {
