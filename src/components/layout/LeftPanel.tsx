@@ -229,6 +229,7 @@ function SearchSection() {
         <Input
           value={query}
           onChange={(e) => handleChange(e.target.value)}
+          onKeyDown={handleKeyDown}
           onFocus={() => query.length >= 2 && setOpen(true)}
           placeholder="Search users or content..."
           className="h-10 bg-card border-border pl-9 text-sm"
