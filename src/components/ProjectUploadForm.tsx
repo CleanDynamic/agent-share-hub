@@ -528,7 +528,9 @@ export function ProjectUploadForm() {
           description: description.trim(),
           cover_image_url: coverUrl,
           status: "pending",
-        })
+          package_price_enabled: packageEnabled,
+          package_price_gbp: packageEnabled && packagePrice ? packagePrice : null,
+        } as any)
         .select("id")
         .single();
 
