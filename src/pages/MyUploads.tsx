@@ -149,9 +149,10 @@ export default function MyUploads() {
                       <TableHead className="text-muted-foreground text-right">Downloads</TableHead>
                       <TableHead className="text-muted-foreground text-right">Date</TableHead>
                       <TableHead className="text-muted-foreground">Version</TableHead>
-                      <TableHead className="text-muted-foreground text-right"></TableHead>
-                  </TableHeader>
-                  <TableBody>
+                       <TableHead className="text-muted-foreground text-right"></TableHead>
+                    </TableRow>
+                   </TableHeader>
+                   <TableBody>
                     {items.map((item) => {
                       const rc = (item as any).rating_count ?? 0;
                       const sv = roundedStars(Number((item as any).avg_rating) || 0, rc);
