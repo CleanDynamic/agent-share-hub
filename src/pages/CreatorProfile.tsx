@@ -59,7 +59,9 @@ function ProfileSkeleton() {
 const CreatorProfile = () => {
   const { username } = useParams<{ username: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { isLoggedIn, user } = useAuth();
   const [subscribing, setSubscribing] = useState(false);
 
   const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
