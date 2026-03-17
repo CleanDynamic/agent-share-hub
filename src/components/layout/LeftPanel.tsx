@@ -41,6 +41,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     { icon: Upload, label: "Upload", to: "/upload" },
     { icon: Info, label: "About", to: "/about" },
     { icon: Bookmark, label: "Saved", to: "/saved", authOnly: true },
+    { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true, badge: msgBadge },
     { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true, badge: notifBadge },
     { icon: User, label: "My Profile", to: "/profile", authOnly: true },
   ];
