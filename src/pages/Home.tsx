@@ -458,7 +458,7 @@ function TrendingTab() {
         const ids = pool.map(p => p.id);
         const { data: month } = await supabase
           .from("content_items")
-          .select("id, title, description, content_type, difficulty, ai_tools, avg_rating, rating_count, download_count, view_count, comment_count, created_at, profiles!content_items_creator_id_fkey(display_name, username)")
+          .select("id, title, description, content_type, difficulty, ai_tools, avg_rating, rating_count, download_count, view_count, comment_count, created_at, approved_at, profiles!content_items_creator_id_fkey(display_name, username)")
           .eq("status", "approved")
           .gte("created_at", d30)
           .limit(50);
