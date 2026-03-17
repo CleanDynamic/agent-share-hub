@@ -130,6 +130,134 @@ const SLUG_TO_TYPE: Record<string, string> = {
   "failure-library": "Failure Library",
 };
 
+const DIFF_COLORS: Record<string, string> = {
+  "Beginner only": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  "Beginner to Intermediate": "bg-secondary/15 text-secondary border-secondary/30",
+  "Intermediate to Advanced": "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  "Beginner to Advanced": "bg-primary/15 text-primary border-primary/30",
+};
+
+function BrowseLearningPaths({ userId }: { userId?: string }) {
+  const { data: paths, isLoading } = useQuery({
+    queryKey: ["browse_learning_paths"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("learning_paths")
+        .select("*, profiles!learning_paths_creator_id_fkey(display_name, username)")
+        .eq("status", "approved")
+        .order("follower_count", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: progressMap } = useQuery({
+    queryKey: ["browse_paths_progress", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("learning_path_progress")
+        .select("path_id, completed_step_ids, completed_at")
+        .eq("user_id", userId!);
+      const map = new Map<string, { completed: number; done: boolean }>();
+      (data ?? []).forEach((r) => {
+        map.set(r.path_id, {
+          completed: ((r.completed_step_ids as string[]) ?? []).length,
+          done: r.completed_at != null,
+        });
+      });
+      return map;
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch step counts per path
+  const pathIds = (paths ?? []).map((p) => p.id);
+  const { data: stepCounts } = useQuery({
+    queryKey: ["browse_paths_step_counts", pathIds.join(",")],
+    queryFn: async () => {
+      if (pathIds.length === 0) return new Map<string, number>();
+      const { data } = await supabase
+        .from("learning_path_steps")
+        .select("path_id")
+        .in("path_id", pathIds);
+      const map = new Map<string, number>();
+      (data ?? []).forEach((r) => map.set(r.path_id, (map.get(r.path_id) ?? 0) + 1));
+      return map;
+    },
+    enabled: pathIds.length > 0,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((n) => <Skeleton key={n} className="h-32 w-full rounded-xl" />)}
+      </div>
+    );
+  }
+
+  if (!paths || paths.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <p className="text-sm text-muted-foreground">No learning paths published yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {paths.map((path) => {
+        const creator = path.profiles as any;
+        const stepsCount = stepCounts?.get(path.id) ?? 0;
+        const prog = progressMap?.get(path.id);
+
+        return (
+          <Link
+            key={path.id}
+            to={`/path/${path.id}`}
+            className="border border-border rounded-xl p-5 bg-card hover:border-primary/40 transition-colors block"
+          >
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              {path.difficulty_range && (
+                <Badge variant="outline" className={`text-[10px] font-medium ${DIFF_COLORS[path.difficulty_range] ?? "bg-secondary/15 text-secondary border-secondary/30"}`}>
+                  {path.difficulty_range}
+                </Badge>
+              )}
+              {path.is_platform_curated && (
+                <Badge variant="outline" className="text-[10px] bg-primary/15 text-primary border-primary/30">Curated</Badge>
+              )}
+            </div>
+            <h3 className="text-sm font-semibold text-foreground mb-0.5">{path.title}</h3>
+            <p className="text-xs text-muted-foreground mb-1">
+              {path.is_platform_curated ? "NeoScale AI" : creator?.display_name || creator?.username || "Unknown"}
+            </p>
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{path.description}</p>
+
+            <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+              <span>{stepsCount} steps</span>
+              {path.estimated_time_minutes && (
+                <span className="flex items-center gap-0.5"><Clock className="h-3 w-3" />~{path.estimated_time_minutes}m</span>
+              )}
+              <span className="flex items-center gap-0.5"><Users className="h-3 w-3" />{path.follower_count}</span>
+            </div>
+
+            {prog && !prog.done && stepsCount > 0 && (
+              <div className="mt-3">
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                  <span>{prog.completed}/{stepsCount} completed</span>
+                </div>
+                <Progress value={(prog.completed / stepsCount) * 100} className="h-1.5" />
+              </div>
+            )}
+            {prog?.done && (
+              <p className="text-[10px] text-primary font-medium mt-2">✓ Completed</p>
+            )}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 const Browse = () => {
   const { isLoggedIn, profile } = useAuth();
   const { data: AI_TOOLS } = useApprovedToolNames();
