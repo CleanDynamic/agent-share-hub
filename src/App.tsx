@@ -34,6 +34,7 @@ import NotificationsPage from "./pages/Notifications";
 import MessagesPage from "./pages/Messages";
 import CollectionDetail from "./pages/CollectionDetail";
 import LearningPathDetail from "./pages/LearningPathDetail";
+import Analytics from "./pages/Analytics";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/my-uploads" element={<ProtectedRoute requireCreator><MyUploads /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute requireCreator><Analytics /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

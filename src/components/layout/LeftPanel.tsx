@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, Search, LayoutGrid, Clock, Heart, Upload, Info,
-  Bookmark, User, MoreHorizontal, LogOut, Settings, Bell, MessageCircle,
+  Bookmark, User, MoreHorizontal, LogOut, Settings, Bell, MessageCircle, BarChart3,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,10 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true, badge: notifBadge },
     { icon: User, label: "My Profile", to: "/profile", authOnly: true },
   ];
+
+  if (isLoggedIn && profile?.is_creator) {
+    navItems.splice(navItems.length - 1, 0, { icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true });
+  }
 
   const visibleItems = navItems.filter((item) => !item.authOnly || isLoggedIn);
 
