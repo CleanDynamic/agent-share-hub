@@ -160,6 +160,8 @@ const Browse = () => {
     const typeSlug = searchParams.get("type");
     if (tab === "projects") {
       setBrowseTab("projects");
+    } else if (tab === "paths") {
+      setBrowseTab("paths");
     } else if (typeSlug && SLUG_TO_TYPE[typeSlug]) {
       setBrowseTab("content");
       setTypeFilter(SLUG_TO_TYPE[typeSlug]);
