@@ -105,9 +105,11 @@ const FORMATS: { value: FormattingType; icon: typeof AlignLeft; label: string }[
 const FormatBar = ({
   active,
   onChange,
+  showHeading = false,
 }: {
   active: FormattingType;
   onChange: (f: FormattingType) => void;
+  showHeading?: boolean;
 }) => (
   <div className="flex gap-1 mb-2">
     {FORMATS.map((f) => {
@@ -130,6 +132,17 @@ const FormatBar = ({
         </button>
       );
     })}
+    {showHeading && (
+      <button
+        type="button"
+        onClick={() => onChange("paragraph")}
+        title="Use # at the start of a line for headings"
+        className="p-1.5 rounded-md text-xs flex items-center gap-1 text-muted-foreground hover:bg-muted"
+      >
+        <Heading className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Heading (# prefix)</span>
+      </button>
+    )}
   </div>
 );
 
