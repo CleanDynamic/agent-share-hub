@@ -468,6 +468,7 @@ export type Database = {
           difficulty: string
           donation_enabled: boolean
           download_count: number
+          embedding: string | null
           file_url: string | null
           fork_count: number
           fork_of_content_id: string | null
@@ -499,6 +500,7 @@ export type Database = {
           difficulty: string
           donation_enabled?: boolean
           download_count?: number
+          embedding?: string | null
           file_url?: string | null
           fork_count?: number
           fork_of_content_id?: string | null
@@ -530,6 +532,7 @@ export type Database = {
           difficulty?: string
           donation_enabled?: boolean
           download_count?: number
+          embedding?: string | null
           file_url?: string | null
           fork_count?: number
           fork_of_content_id?: string | null
@@ -1607,6 +1610,14 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      semantic_search: {
+        Args: { match_count: number; query_embedding: string }
+        Returns: {
+          id: string
+          similarity: number
+          title: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
