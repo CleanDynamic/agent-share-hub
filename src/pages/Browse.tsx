@@ -279,7 +279,7 @@ const Browse = () => {
         path="/browse"
       />
       <div className="mx-auto max-w-5xl">
-        {/* Content / Projects tabs */}
+        {/* Content / Projects / Paths tabs */}
         <div className="flex gap-1 mb-4">
           <button
             onClick={() => setBrowseTab("content")}
@@ -300,6 +300,16 @@ const Browse = () => {
             }`}
           >
             Projects
+          </button>
+          <button
+            onClick={() => setBrowseTab("paths")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+              browseTab === "paths"
+                ? "bg-primary text-primary-foreground"
+                : "bg-accent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Learning Paths
           </button>
         </div>
 
