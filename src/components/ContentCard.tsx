@@ -27,6 +27,7 @@ export interface ContentCardProps {
   avg_rating?: number;
   rating_count?: number;
   view_count?: number;
+  is_fork?: boolean;
 }
 
 function roundedStars(avg: number, count: number): number {
