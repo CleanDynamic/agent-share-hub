@@ -451,7 +451,8 @@ export function ContentBlockViewer({
       <AdModal
         open={!!adModal}
         onComplete={handleAdComplete}
-        label={adModal?.phase === 1 ? "Your content unblurs in" : "Almost there..."}
+        label="Your content unblurs in"
+        countdownSeconds={3}
       />
 
       <div className="relative pl-8">
