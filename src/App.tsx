@@ -33,6 +33,7 @@ import NotFound from "./pages/NotFound";
 import NotificationsPage from "./pages/Notifications";
 import MessagesPage from "./pages/Messages";
 import CollectionDetail from "./pages/CollectionDetail";
+import LearningPathDetail from "./pages/LearningPathDetail";
 
 const queryClient = new QueryClient();
 
