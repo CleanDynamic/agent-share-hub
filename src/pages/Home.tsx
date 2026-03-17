@@ -486,6 +486,29 @@ function TrendingTab() {
   );
 }
 
+/* ---- How It Works (guests only) ---- */
+function HowItWorks() {
+  const steps = [
+    { icon: <SearchIcon className="h-8 w-8 text-primary" />, label: "STEP 1", title: "Find what you need", sub: "Search or filter by what you want your AI to do." },
+    { icon: <Download className="h-8 w-8 text-primary" />, label: "STEP 2", title: "Download or read it", sub: "Get the prompt, blueprint, or workflow instantly." },
+    { icon: <Upload className="h-8 w-8 text-primary" />, label: "STEP 3", title: "Use it in your AI tool", sub: "Paste it into ChatGPT, Claude, Gemini, or any AI." },
+  ];
+  return (
+    <div className="px-4 py-6 border-b border-border">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        {steps.map((s) => (
+          <div key={s.label} className="flex flex-col items-center text-center gap-2">
+            {s.icon}
+            <span className="text-[11px] font-semibold text-primary tracking-[0.1em]">{s.label}</span>
+            <p className="text-base font-bold text-foreground">{s.title}</p>
+            <p className="text-[13px] text-muted-foreground">{s.sub}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ---- Main Home Page ---- */
 const TABS = ["Recent", "For You", "Following", "Trending"] as const;
 type Tab = typeof TABS[number];
