@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Download, Eye, Star, StarHalf, Loader2, MessageSquare, Upload,
+  Download, Eye, Star, StarHalf, Loader2, MessageSquare, Upload, Search as SearchIcon,
 } from "lucide-react";
 
 /* ---- shared helpers ---- */
