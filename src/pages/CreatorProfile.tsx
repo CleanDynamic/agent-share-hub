@@ -363,7 +363,7 @@ const CreatorProfile = () => {
                   {contentItems && contentItems.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {contentItems.map((item) => (
-                        <ContentCard key={item.id} id={item.id} content_type={item.content_type} title={item.title} description={item.description ?? ""} difficulty={item.difficulty} ai_tools={item.ai_tools ?? []} download_count={item.download_count} monetisation_type={item.monetisation_type} price_gbp={item.price_gbp ?? undefined} creator_username={profile.username ?? undefined} avg_rating={Number((item as any).avg_rating) || 0} rating_count={(item as any).rating_count ?? 0} view_count={(item as any).view_count ?? 0} />
+                        <ContentCard key={item.id} id={item.id} content_type={item.content_type} title={item.title} description={item.description ?? ""} difficulty={item.difficulty} ai_tools={item.ai_tools ?? []} download_count={item.download_count} monetisation_type={item.monetisation_type} price_gbp={item.price_gbp ?? undefined} creator_username={profile.username ?? undefined} avg_rating={Number((item as any).avg_rating) || 0} rating_count={(item as any).rating_count ?? 0} view_count={(item as any).view_count ?? 0} is_fork={!!(item as any).fork_of_content_id} />
                       ))}
                     </div>
                   ) : (
