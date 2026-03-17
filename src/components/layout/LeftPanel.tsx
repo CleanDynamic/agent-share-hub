@@ -209,6 +209,14 @@ function SearchSection() {
     debounceRef.current = setTimeout(() => doSearch(val), 300);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && query.trim().length >= 1) {
+      setOpen(false);
+      setQuery("");
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    }
+  };
+
   const go = (path: string) => { setOpen(false); setQuery(""); navigate(path); };
 
   const noResults = !loading && users.length === 0 && content.length === 0 && query.length >= 2;
@@ -221,6 +229,7 @@ function SearchSection() {
         <Input
           value={query}
           onChange={(e) => handleChange(e.target.value)}
+          onKeyDown={handleKeyDown}
           onFocus={() => query.length >= 2 && setOpen(true)}
           placeholder="Search users or content..."
           className="h-10 bg-card border-border pl-9 text-sm"
@@ -255,6 +264,16 @@ function SearchSection() {
                   {c.profiles?.username && <span className="ml-auto text-xs text-muted-foreground">@{c.profiles.username}</span>}
                 </button>
               ))}
+            </div>
+          )}
+          {query.length >= 2 && !loading && (
+            <div className="p-2 border-t border-border">
+              <button
+                onClick={() => go(`/search?q=${encodeURIComponent(query.trim())}`)}
+                className="w-full text-center text-xs text-primary hover:underline py-1.5"
+              >
+                See all results for "{query}"
+              </button>
             </div>
           )}
         </div>

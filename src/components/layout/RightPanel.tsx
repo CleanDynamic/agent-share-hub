@@ -82,7 +82,7 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
         <button
           key={cat.slug}
           onClick={() =>
-            navigate(cat.isProject ? "/browse?tab=projects" : `/browse?type=${cat.slug}`)
+            navigate(`/category/${cat.slug}`)
           }
           className="text-left rounded-xl p-3.5 transition-colors hover:brightness-110"
           style={{
