@@ -21,6 +21,7 @@ interface BlockRow {
   file_size_bytes: number | null;
   image_url: string | null;
   image_description: string | null;
+  is_preview: boolean;
 }
 
 interface VariationRow {
