@@ -467,7 +467,8 @@ export function ContentBlockViewer({
             const blockVariations = (variations ?? []).filter((v) => v.block_id === block.id);
             const hasVars = blockVariations.length > 0;
             const currentTab = activeTab[block.id] ?? "A";
-            const isUnblurred = !!unblurred[block.id];
+            const isPreview = !!block.is_preview;
+            const isUnblurred = isPreview || !!unblurred[block.id];
 
             // Determine which content to show
             const showingVariation = currentTab !== "A"
