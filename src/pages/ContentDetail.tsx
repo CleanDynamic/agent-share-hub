@@ -18,7 +18,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2, Eye } from "lucide-react";
+import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2, Eye, GitFork, ExternalLink } from "lucide-react";
+import { VersionHistory } from "@/components/VersionHistory";
+import { ForkModal } from "@/components/ForkModal";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 
 const TYPE_COLORS: Record<string, string> = {
   "Prompt File": "bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/30",
@@ -91,6 +97,8 @@ const ContentDetail = () => {
   const [guestModalOpen, setGuestModalOpen] = useState(false);
   const [accountGateOpen, setAccountGateOpen] = useState(false);
   const [accountGateMode, setAccountGateMode] = useState<"purchase" | "subscription">("purchase");
+  const [forkModalOpen, setForkModalOpen] = useState(false);
+  const [forksModalOpen, setForksModalOpen] = useState(false);
   const viewTracked = useRef(false);
 
   const { data: item, isLoading, error } = useQuery({
@@ -208,8 +216,36 @@ const ContentDetail = () => {
 
   const subscriberUnlocked = isSub && hasActiveSubscription === true;
   const isFreeContent = item?.monetisation_type === "free" || item?.monetisation_type === "donation";
-  // Eligible = logged in AND (free content OR has downloaded OR has subscription)
   const isEligible = isLoggedIn && (isFreeContent || hasDownloaded === true || subscriberUnlocked);
+
+  // Fork origin data
+  const { data: forkOrigin } = useQuery({
+    queryKey: ["fork_origin", item?.fork_of_content_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_items")
+        .select("id, title, profiles!content_items_creator_id_fkey(username, display_name)")
+        .eq("id", item!.fork_of_content_id!)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!item?.fork_of_content_id,
+  });
+
+  // Forks of this content
+  const { data: forks } = useQuery({
+    queryKey: ["content_forks", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_items")
+        .select("id, title, profiles!content_items_creator_id_fkey(username, display_name)")
+        .eq("fork_of_content_id", id!)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!id,
+  });
 
   const count = localCount ?? item?.download_count ?? 0;
   const viewCount = (item as any)?.view_count ?? 0;
@@ -357,7 +393,7 @@ const ContentDetail = () => {
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{item.title}</h1>
         <p className="text-sm text-muted-foreground leading-relaxed mb-4">{item.description}</p>
 
-        <div className="flex flex-wrap items-center gap-4 mb-8 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-4 mb-2 text-sm text-muted-foreground">
           {creator && (
             <Link to={`/creator/${creator.username}`} className="flex items-center gap-1.5 hover:text-foreground transition-colors">
               <User className="h-3.5 w-3.5" />
@@ -376,7 +412,32 @@ const ContentDetail = () => {
             <Calendar className="h-3.5 w-3.5" />
             <span>{formatDate(item.approved_at ?? item.created_at)}</span>
           </div>
+          {(item as any).fork_count > 0 && (
+            <button
+              onClick={() => setForksModalOpen(true)}
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
+            >
+              <GitFork className="h-3.5 w-3.5" />
+              <span>{(item as any).fork_count} fork{(item as any).fork_count !== 1 ? "s" : ""}</span>
+            </button>
+          )}
         </div>
+
+        {/* Fork attribution */}
+        {forkOrigin && (
+          <p className="text-xs text-muted-foreground mb-4 flex items-center gap-1">
+            <ExternalLink className="h-3 w-3" />
+            Forked from{" "}
+            <Link to={`/creator/${forkOrigin.profiles?.username}`} className="text-primary hover:underline">
+              {forkOrigin.profiles?.display_name || forkOrigin.profiles?.username}
+            </Link>'s{" "}
+            <Link to={`/content/${forkOrigin.id}`} className="text-primary hover:underline">
+              {forkOrigin.title}
+            </Link>
+          </p>
+        )}
+
+        <div className="mb-8" />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
@@ -440,7 +501,7 @@ const ContentDetail = () => {
               </div>
             )}
 
-            {/* Comments section — below ContentBlockViewer, above related content */}
+            {/* Comments section */}
             {(!isSub || subscriberUnlocked) && (
               <CommentsSection
                 contentId={item.id}
@@ -448,6 +509,11 @@ const ContentDetail = () => {
                 commentCount={(item as any).comment_count ?? 0}
                 isEligible={isEligible}
               />
+            )}
+
+            {/* Version History */}
+            {(!isSub || subscriberUnlocked) && (
+              <VersionHistory contentId={item.id} currentVersion={item.current_version} />
             )}
           </div>
 
@@ -502,6 +568,28 @@ const ContentDetail = () => {
                   cancelUrl={`${window.location.origin}/content/${item.id}`}
                 />
               )}
+
+              {/* Fork button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs text-muted-foreground border-border hover:text-foreground"
+                      onClick={() => {
+                        if (!isLoggedIn) { window.location.href = "/signup"; return; }
+                        setForkModalOpen(true);
+                      }}
+                    >
+                      <GitFork className="h-3.5 w-3.5 mr-1" /> Fork this ↗
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Clone to your drafts and make it your own</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
 
             {creator && (
@@ -587,6 +675,40 @@ const ContentDetail = () => {
         contentId={item.id}
         mode={accountGateMode}
       />
+
+      {/* Fork modal */}
+      {creator && (
+        <ForkModal
+          open={forkModalOpen}
+          onOpenChange={setForkModalOpen}
+          originalItem={item as any}
+          originalCreatorUsername={creator.username}
+        />
+      )}
+
+      {/* Forks list modal */}
+      <Dialog open={forksModalOpen} onOpenChange={setForksModalOpen}>
+        <DialogContent className="bg-card border-border sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Forks of this content</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {forks && forks.length > 0 ? forks.map((f: any) => (
+              <Link
+                key={f.id}
+                to={`/content/${f.id}`}
+                onClick={() => setForksModalOpen(false)}
+                className="block p-3 rounded-lg border border-border hover:border-primary/30 transition-colors"
+              >
+                <p className="text-sm font-medium text-foreground">{f.title}</p>
+                <p className="text-xs text-muted-foreground">by {f.profiles?.display_name || f.profiles?.username}</p>
+              </Link>
+            )) : (
+              <p className="text-sm text-muted-foreground">No public forks yet.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

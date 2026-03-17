@@ -10,7 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Star, StarHalf } from "lucide-react";
+import { Plus, Star, StarHalf, RefreshCw } from "lucide-react";
+import { PublishUpdateModal } from "@/components/PublishUpdateModal";
 
 function roundedStars(avg: number, count: number): number {
   if (count === 0) return 0;
@@ -50,7 +51,7 @@ export default function MyUploads() {
   const { isLoggedIn, isCreator, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"content" | "projects">("content");
-
+  const [updateTarget, setUpdateTarget] = useState<{ id: string; title: string; version: string } | null>(null);
   useEffect(() => {
     if (!loading && !isLoggedIn) navigate("/login", { replace: true });
     if (!loading && isLoggedIn && !isCreator) navigate("/", { replace: true });
@@ -61,7 +62,7 @@ export default function MyUploads() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
-        .select("id, title, content_type, status, download_count, created_at, avg_rating, rating_count, view_count")
+        .select("id, title, content_type, status, download_count, created_at, avg_rating, rating_count, view_count, current_version")
         .eq("creator_id", profile!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -147,9 +148,11 @@ export default function MyUploads() {
                       <TableHead className="text-muted-foreground text-right">Views</TableHead>
                       <TableHead className="text-muted-foreground text-right">Downloads</TableHead>
                       <TableHead className="text-muted-foreground text-right">Date</TableHead>
+                      <TableHead className="text-muted-foreground">Version</TableHead>
+                       <TableHead className="text-muted-foreground text-right"></TableHead>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                   </TableHeader>
+                   <TableBody>
                     {items.map((item) => {
                       const rc = (item as any).rating_count ?? 0;
                       const sv = roundedStars(Number((item as any).avg_rating) || 0, rc);
@@ -173,6 +176,26 @@ export default function MyUploads() {
                           <TableCell className="text-muted-foreground text-xs text-right">
                             {new Date(item.created_at).toLocaleDateString()}
                           </TableCell>
+                          <TableCell className="text-muted-foreground text-xs">
+                            v{(item as any).current_version || "1.0"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {item.status === "approved" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setUpdateTarget({
+                                    id: item.id,
+                                    title: item.title,
+                                    version: (item as any).current_version || "1.0",
+                                  });
+                                }}
+                                className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                              >
+                                <RefreshCw className="h-3 w-3" /> Publish update
+                              </button>
+                            )}
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -193,9 +216,21 @@ export default function MyUploads() {
                       {statusBadge(item.status)}
                     </div>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span>v{(item as any).current_version || "1.0"}</span>
                       <span>{item.download_count} downloads</span>
                       <span>{new Date(item.created_at).toLocaleDateString()}</span>
                     </div>
+                    {item.status === "approved" && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUpdateTarget({ id: item.id, title: item.title, version: (item as any).current_version || "1.0" });
+                        }}
+                        className="text-[11px] text-primary flex items-center gap-1 mt-1"
+                      >
+                        <RefreshCw className="h-3 w-3" /> Publish update
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -300,6 +335,18 @@ export default function MyUploads() {
           )
         )}
       </div>
+
+      {/* Publish update modal */}
+      {updateTarget && profile && (
+        <PublishUpdateModal
+          open={!!updateTarget}
+          onOpenChange={(o) => { if (!o) setUpdateTarget(null); }}
+          contentId={updateTarget.id}
+          contentTitle={updateTarget.title}
+          currentVersion={updateTarget.version}
+          creatorId={profile.id}
+        />
+      )}
     </div>
   );
 }

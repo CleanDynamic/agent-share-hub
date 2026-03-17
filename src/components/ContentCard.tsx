@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Lock, Loader2, Eye, Star, StarHalf } from "lucide-react";
+import { Download, Lock, Loader2, Eye, Star, StarHalf, GitFork } from "lucide-react";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +27,7 @@ export interface ContentCardProps {
   avg_rating?: number;
   rating_count?: number;
   view_count?: number;
+  is_fork?: boolean;
 }
 
 function roundedStars(avg: number, count: number): number {
@@ -92,6 +93,7 @@ export function ContentCard({
   avg_rating = 0,
   rating_count = 0,
   view_count = 0,
+  is_fork = false,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -194,8 +196,13 @@ export function ContentCard({
           )}
         </div>
 
-        <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1">
+        <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1 flex items-center gap-1.5">
           {title}
+          {is_fork && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground font-normal">
+              <GitFork className="h-2.5 w-2.5" /> Fork
+            </span>
+          )}
         </h3>
         <p className="text-xs text-muted-foreground leading-relaxed mb-4 flex-1">{description}</p>
 
