@@ -135,9 +135,12 @@ const Browse = () => {
   const { isLoggedIn, profile } = useAuth();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const [searchParams] = useSearchParams();
-  const [browseTab, setBrowseTab] = useState<"content" | "projects">(
-    searchParams.get("tab") === "projects" ? "projects" : "content"
-  );
+  const [browseTab, setBrowseTab] = useState<"content" | "projects" | "paths">(() => {
+    const t = searchParams.get("tab");
+    if (t === "projects") return "projects";
+    if (t === "paths") return "paths";
+    return "content";
+  });
   const [search, setSearch] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState(() => {
