@@ -90,6 +90,7 @@ export const emptyBlock = (type: BlockType): ContentBlock => ({
   imageFile: null,
   imageDescription: "",
   variations: [],
+  isPreview: false,
 });
 
 // ─── Formatting toggle bar ──────────────────────────────────
