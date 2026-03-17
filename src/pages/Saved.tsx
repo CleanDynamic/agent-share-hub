@@ -103,6 +103,14 @@ export default function Saved() {
           >
             Saved projects
           </button>
+          <button
+            onClick={() => setTab("collections")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+              tab === "collections" ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Collections
+          </button>
         </div>
 
         {tab === "content" && (
