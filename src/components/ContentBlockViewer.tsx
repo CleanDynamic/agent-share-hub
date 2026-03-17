@@ -54,16 +54,18 @@ function AdModal({
   open,
   onComplete,
   label,
+  countdownSeconds = 3,
 }: {
   open: boolean;
   onComplete: () => void;
   label: string;
+  countdownSeconds?: number;
 }) {
-  const [seconds, setSeconds] = useState(5);
+  const [seconds, setSeconds] = useState(countdownSeconds);
 
   useEffect(() => {
     if (!open) {
-      setSeconds(5);
+      setSeconds(countdownSeconds);
       return;
     }
     if (seconds <= 0) {
@@ -72,25 +74,20 @@ function AdModal({
     }
     const t = setTimeout(() => setSeconds((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [open, seconds, onComplete]);
+  }, [open, seconds, onComplete, countdownSeconds]);
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="flex flex-col items-center gap-5 px-6 text-center">
-        {/* Ad placeholder */}
         <div className="w-[320px] h-[100px] bg-muted/40 rounded-lg flex items-center justify-center border border-border">
           <span className="text-xs text-muted-foreground">Ad Space</span>
         </div>
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Advertisement</p>
-
-        {/* Countdown */}
         <p className="text-sm text-foreground">
           {label} <span className="font-bold text-[#2EC4B6]">{seconds}</span>…
         </p>
-
-        {/* Sign in link */}
         <a href="/login" className="text-xs text-muted-foreground hover:text-foreground underline">
           Sign in to skip ads
         </a>
