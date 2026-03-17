@@ -447,7 +447,7 @@ function TrendingTab() {
 
       const { data: week } = await supabase
         .from("content_items")
-        .select("id, title, description, content_type, difficulty, ai_tools, avg_rating, rating_count, download_count, view_count, comment_count, created_at, profiles!content_items_creator_id_fkey(display_name, username)")
+        .select("id, title, description, content_type, difficulty, ai_tools, avg_rating, rating_count, download_count, view_count, comment_count, created_at, approved_at, profiles!content_items_creator_id_fkey(display_name, username)")
         .eq("status", "approved")
         .gte("created_at", d7)
         .limit(50);
@@ -458,7 +458,7 @@ function TrendingTab() {
         const ids = pool.map(p => p.id);
         const { data: month } = await supabase
           .from("content_items")
-          .select("id, title, description, content_type, difficulty, ai_tools, avg_rating, rating_count, download_count, view_count, comment_count, created_at, profiles!content_items_creator_id_fkey(display_name, username)")
+          .select("id, title, description, content_type, difficulty, ai_tools, avg_rating, rating_count, download_count, view_count, comment_count, created_at, approved_at, profiles!content_items_creator_id_fkey(display_name, username)")
           .eq("status", "approved")
           .gte("created_at", d30)
           .limit(50);
@@ -467,7 +467,13 @@ function TrendingTab() {
       }
 
       return pool
-        .sort((a, b) => (b.download_count + b.view_count + b.rating_count) - (a.download_count + a.view_count + a.rating_count))
+        .map((item) => {
+          const hoursOld = (Date.now() - new Date(item.approved_at || item.created_at).getTime()) / 3600000;
+          const score = (item.download_count * 1.5 + item.view_count + item.rating_count * 2 + item.comment_count * 1.2)
+            / Math.pow(hoursOld + 2, 1.5);
+          return { ...item, _score: score };
+        })
+        .sort((a, b) => b._score - a._score)
         .slice(0, 20);
     },
     staleTime: 60_000,

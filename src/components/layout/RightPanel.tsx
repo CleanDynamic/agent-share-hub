@@ -110,15 +110,20 @@ function TrendingSection({ navigate }: { navigate: ReturnType<typeof useNavigate
       const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
       const { data } = await supabase
         .from("content_items")
-        .select("id, title, content_type, download_count, view_count, rating_count")
+        .select("id, title, content_type, download_count, view_count, rating_count, comment_count, approved_at, created_at")
         .eq("status", "approved")
         .gte("created_at", weekAgo)
         .order("download_count", { ascending: false })
         .limit(20);
       if (!data) return [];
-      // Sort by combined score client-side
       return data
-        .sort((a, b) => (b.download_count + b.view_count + b.rating_count) - (a.download_count + a.view_count + a.rating_count))
+        .map((item) => {
+          const hoursOld = (Date.now() - new Date(item.approved_at || item.created_at).getTime()) / 3600000;
+          const score = (item.download_count * 1.5 + item.view_count + item.rating_count * 2 + (item.comment_count || 0) * 1.2)
+            / Math.pow(hoursOld + 2, 1.5);
+          return { ...item, _score: score };
+        })
+        .sort((a, b) => b._score - a._score)
         .slice(0, 5);
     },
     staleTime: 60_000,

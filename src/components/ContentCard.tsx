@@ -28,6 +28,7 @@ export interface ContentCardProps {
   rating_count?: number;
   view_count?: number;
   is_fork?: boolean;
+  has_preview?: boolean;
 }
 
 function roundedStars(avg: number, count: number): number {
@@ -94,6 +95,7 @@ export function ContentCard({
   rating_count = 0,
   view_count = 0,
   is_fork = false,
+  has_preview = false,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -204,7 +206,10 @@ export function ContentCard({
             </span>
           )}
         </h3>
-        <p className="text-xs text-muted-foreground leading-relaxed mb-4 flex-1">{description}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed mb-1 flex-1">{description}</p>
+        {has_preview && (
+          <p className="text-[11px] font-medium mb-3" style={{ color: "#2EC4B6" }}>Preview available</p>
+        )}
 
         {/* AI tools */}
         <div className="flex flex-wrap gap-1 mb-3">

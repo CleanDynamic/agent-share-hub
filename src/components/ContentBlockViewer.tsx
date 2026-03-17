@@ -21,6 +21,7 @@ interface BlockRow {
   file_size_bytes: number | null;
   image_url: string | null;
   image_description: string | null;
+  is_preview: boolean;
 }
 
 interface VariationRow {
@@ -53,16 +54,18 @@ function AdModal({
   open,
   onComplete,
   label,
+  countdownSeconds = 3,
 }: {
   open: boolean;
   onComplete: () => void;
   label: string;
+  countdownSeconds?: number;
 }) {
-  const [seconds, setSeconds] = useState(5);
+  const [seconds, setSeconds] = useState(countdownSeconds);
 
   useEffect(() => {
     if (!open) {
-      setSeconds(5);
+      setSeconds(countdownSeconds);
       return;
     }
     if (seconds <= 0) {
@@ -71,25 +74,20 @@ function AdModal({
     }
     const t = setTimeout(() => setSeconds((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [open, seconds, onComplete]);
+  }, [open, seconds, onComplete, countdownSeconds]);
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="flex flex-col items-center gap-5 px-6 text-center">
-        {/* Ad placeholder */}
         <div className="w-[320px] h-[100px] bg-muted/40 rounded-lg flex items-center justify-center border border-border">
           <span className="text-xs text-muted-foreground">Ad Space</span>
         </div>
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Advertisement</p>
-
-        {/* Countdown */}
         <p className="text-sm text-foreground">
           {label} <span className="font-bold text-[#2EC4B6]">{seconds}</span>…
         </p>
-
-        {/* Sign in link */}
         <a href="/login" className="text-xs text-muted-foreground hover:text-foreground underline">
           Sign in to skip ads
         </a>
@@ -136,10 +134,27 @@ function RenderBlockContent({
     }
   }, [type, imageUrl]);
 
-  if (type === "text") {
+  if (type === "text" || type === "long_text") {
     const fmt = formatting?.type ?? "paragraph";
     const items: string[] = formatting?.items ?? [];
     const text = textContent ?? "";
+    const isLong = type === "long_text";
+
+    // Long text article rendering
+    if (isLong) {
+      const paragraphs = text.split("\n\n").filter(Boolean);
+      return (
+        <div className="max-w-prose" style={{ lineHeight: 1.8 }}>
+          {paragraphs.map((p, i) => {
+            // Check if it's a heading (starts with # or formatting says heading)
+            if (p.startsWith("# ") || (formatting?.type === "heading" && i === 0)) {
+              return <h3 key={i} className="text-lg font-bold text-foreground mt-4 mb-2">{p.replace(/^#\s*/, "")}</h3>;
+            }
+            return <p key={i} className="text-sm text-muted-foreground mb-[1.2em] whitespace-pre-wrap">{p}</p>;
+          })}
+        </div>
+      );
+    }
 
     if (fmt === "paragraph") {
       return <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{text}</p>;
@@ -163,7 +178,6 @@ function RenderBlockContent({
       );
     }
     if (fmt === "sub_list") {
-      // items can be strings or objects with { text, sub: string[] }
       const entries = items.length > 0 ? items : text.split("\n").filter(Boolean);
       return (
         <ol className="list-decimal list-inside space-y-2">
@@ -345,6 +359,11 @@ export function ContentBlockViewer({
     });
   }, [contentId]);
 
+  // Guest page-level ad flag
+  const guestAdKey = `neoscale_page_ad_shown_${contentId}`;
+  const guestPageAdShown = () => sessionStorage.getItem(guestAdKey) === "true";
+  const markGuestPageAd = () => sessionStorage.setItem(guestAdKey, "true");
+
   const handleViewClick = useCallback(
     (blockId: string) => {
       // State D: paid, not purchased — trigger paywall
@@ -359,35 +378,40 @@ export function ContentBlockViewer({
         return;
       }
 
-      // State A: guest, free — 2 ad modals
+      // State A: guest, free — one 3s ad per PAGE (not per block)
       if (!isLoggedIn) {
+        if (guestPageAdShown()) {
+          // Ad already shown this page session, instant unblur
+          setUnblurred((p) => ({ ...p, [blockId]: true }));
+          return;
+        }
         setAdModal({ blockId, phase: 1 });
-        insertAdImpression(); // first impression
+        insertAdImpression();
         return;
       }
 
-      // State B: logged in, free — 1 ad modal
+      // State B: logged in, free — 1 ad modal per block
       setAdModal({ blockId, phase: 1 });
       insertAdImpression();
     },
-    [isFree, paidAndUnlocked, isLoggedIn, insertAdImpression, onTriggerPaywall]
+    [isFree, paidAndUnlocked, isLoggedIn, insertAdImpression, onTriggerPaywall, contentId]
   );
 
   const handleAdComplete = useCallback(() => {
     if (!adModal) return;
 
-    // Guest gets 2 modals, logged-in gets 1
-    if (adModal.phase === 1 && !isLoggedIn) {
-      // Move to phase 2
-      setAdModal({ blockId: adModal.blockId, phase: 2 });
-      insertAdImpression(); // second impression
+    // Guest: single 3s ad, then done for the page
+    if (!isLoggedIn) {
+      markGuestPageAd();
+      setUnblurred((p) => ({ ...p, [adModal.blockId]: true }));
+      setAdModal(null);
       return;
     }
 
-    // Unblur and close
+    // Logged-in: single ad per block
     setUnblurred((p) => ({ ...p, [adModal.blockId]: true }));
     setAdModal(null);
-  }, [adModal, isLoggedIn, insertAdImpression]);
+  }, [adModal, isLoggedIn, contentId]);
 
   // ─── Fallback: no blocks, show use_instructions ─────────
 
@@ -427,7 +451,8 @@ export function ContentBlockViewer({
       <AdModal
         open={!!adModal}
         onComplete={handleAdComplete}
-        label={adModal?.phase === 1 ? "Your content unblurs in" : "Almost there..."}
+        label="Your content unblurs in"
+        countdownSeconds={3}
       />
 
       <div className="relative pl-8">
@@ -442,7 +467,8 @@ export function ContentBlockViewer({
             const blockVariations = (variations ?? []).filter((v) => v.block_id === block.id);
             const hasVars = blockVariations.length > 0;
             const currentTab = activeTab[block.id] ?? "A";
-            const isUnblurred = !!unblurred[block.id];
+            const isPreview = !!block.is_preview;
+            const isUnblurred = isPreview || !!unblurred[block.id];
 
             // Determine which content to show
             const showingVariation = currentTab !== "A"
@@ -459,7 +485,7 @@ export function ContentBlockViewer({
                   {block.position}
                 </div>
 
-                <div className="border border-[#1E1E2A] rounded-xl bg-[#111118] overflow-hidden">
+                <div className={`border rounded-xl overflow-hidden ${isPreview ? "border-[#2EC4B6]/40 bg-[#111118]" : "border-[#1E1E2A] bg-[#111118]"}`}>
                   {/* Variation tabs */}
                   {hasVars && (
                     <div className="flex gap-1 px-4 pt-3 pb-1">
@@ -530,8 +556,8 @@ export function ContentBlockViewer({
                       )}
                     </div>
 
-                    {/* View button overlay */}
-                    {!isUnblurred && (
+                    {/* View button overlay — not shown for preview blocks */}
+                    {!isUnblurred && !isPreview && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <Button
                           onClick={() => handleViewClick(block.id)}

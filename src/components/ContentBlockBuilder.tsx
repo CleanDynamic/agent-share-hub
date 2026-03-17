@@ -1,8 +1,10 @@
 import { useState, useCallback } from "react";
 import {
   Type, Paperclip, ImageIcon, ChevronUp, ChevronDown, Trash2, Plus,
-  List, ListOrdered, AlignLeft, ListTree,
+  List, ListOrdered, AlignLeft, ListTree, FileText, Heading,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -11,7 +13,7 @@ import { Label } from "@/components/ui/label";
 // ─── Types ───────────────────────────────────────────────────
 
 export type FormattingType = "paragraph" | "bullets" | "numbers" | "sub_list";
-export type BlockType = "text" | "file" | "image";
+export type BlockType = "text" | "long_text" | "file" | "image";
 
 export interface BlockVariation {
   id: string;
@@ -39,6 +41,7 @@ export interface ContentBlock {
   imagePreview?: string;
   imageDescription: string;
   variations: BlockVariation[];
+  isPreview: boolean;
 }
 
 interface Props {
@@ -87,6 +90,7 @@ export const emptyBlock = (type: BlockType): ContentBlock => ({
   imageFile: null,
   imageDescription: "",
   variations: [],
+  isPreview: false,
 });
 
 // ─── Formatting toggle bar ──────────────────────────────────
@@ -101,9 +105,11 @@ const FORMATS: { value: FormattingType; icon: typeof AlignLeft; label: string }[
 const FormatBar = ({
   active,
   onChange,
+  showHeading = false,
 }: {
   active: FormattingType;
   onChange: (f: FormattingType) => void;
+  showHeading?: boolean;
 }) => (
   <div className="flex gap-1 mb-2">
     {FORMATS.map((f) => {
@@ -126,6 +132,17 @@ const FormatBar = ({
         </button>
       );
     })}
+    {showHeading && (
+      <button
+        type="button"
+        onClick={() => onChange("paragraph")}
+        title="Use # at the start of a line for headings"
+        className="p-1.5 rounded-md text-xs flex items-center gap-1 text-muted-foreground hover:bg-muted"
+      >
+        <Heading className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Heading (# prefix)</span>
+      </button>
+    )}
   </div>
 );
 
@@ -289,8 +306,16 @@ const ImagePicker = ({
 
 const BlockTypeIcon = ({ type }: { type: BlockType }) => {
   if (type === "text") return <Type className="h-4 w-4" />;
+  if (type === "long_text") return <FileText className="h-4 w-4" />;
   if (type === "file") return <Paperclip className="h-4 w-4" />;
   return <ImageIcon className="h-4 w-4" />;
+};
+
+const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
+  text: "Text",
+  long_text: "Article",
+  file: "File",
+  image: "Image",
 };
 
 // ─── Variation renderer ─────────────────────────────────────
@@ -413,15 +438,37 @@ export function ContentBlockBuilder({ blocks, onChange }: Props) {
           const showingMain = activeTab === "A";
 
           return (
-            <div key={block.id} className="border border-border rounded-xl bg-card overflow-hidden">
+            <div key={block.id} className={`border rounded-xl bg-card overflow-hidden ${block.isPreview ? "border-[#2EC4B6]/50" : "border-border"}`}>
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border">
                 <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <BlockTypeIcon type={block.type} />
-                  <span className="capitalize">{block.type}</span>
+                  <span>{BLOCK_TYPE_LABELS[block.type]}</span>
                   <span className="text-xs text-muted-foreground">Block {index + 1}</span>
+                  {block.isPreview && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2EC4B6]/15 text-[#2EC4B6] font-medium">Preview</span>}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
+                  {/* Preview toggle */}
+                  {(() => {
+                    const previewCount = blocks.filter((b) => b.isPreview).length;
+                    const canToggle = block.isPreview || previewCount < 2;
+                    return (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-muted-foreground">Free preview</span>
+                            <Switch
+                              checked={block.isPreview}
+                              disabled={!canToggle}
+                              onCheckedChange={(checked) => update(index, { isPreview: checked })}
+                              className="scale-75"
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        {!canToggle && <TooltipContent>Maximum 2 preview blocks</TooltipContent>}
+                      </Tooltip>
+                    );
+                  })()}
                   <button
                     type="button"
                     onClick={() => moveBlock(index, -1)}
@@ -500,6 +547,19 @@ export function ContentBlockBuilder({ blocks, onChange }: Props) {
                         onFormatChange={(f) => update(index, { formatting: f })}
                       />
                     )}
+                    {block.type === "long_text" && (
+                      <div>
+                        <FormatBar active={block.formatting} onChange={(f) => update(index, { formatting: f })} showHeading />
+                        <Textarea
+                          value={block.textContent}
+                          onChange={(e) => update(index, { textContent: e.target.value })}
+                          rows={10}
+                          placeholder="Write your article content… Use # at the start of a line for headings."
+                          className="bg-background border-border rounded-xl text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">No character limit. Use # prefix for headings.</p>
+                      </div>
+                    )}
                     {block.type === "file" && (
                       <FilePicker
                         file={block.file}
@@ -572,36 +632,18 @@ export function ContentBlockBuilder({ blocks, onChange }: Props) {
       </div>
 
       {/* Add block buttons */}
-      <div className="flex gap-2 pt-1">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => addBlock("text")}
-          className="gap-1.5"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Text
+      <div className="flex flex-wrap gap-2 pt-1">
+        <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5">
+          <Plus className="h-3.5 w-3.5" /> Text
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => addBlock("file")}
-          className="gap-1.5"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          File
+        <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5">
+          <Plus className="h-3.5 w-3.5" /> Long Text
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => addBlock("image")}
-          className="gap-1.5"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Image
+        <Button type="button" variant="outline" size="sm" onClick={() => addBlock("file")} className="gap-1.5">
+          <Plus className="h-3.5 w-3.5" /> File
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => addBlock("image")} className="gap-1.5">
+          <Plus className="h-3.5 w-3.5" /> Image
         </Button>
       </div>
     </div>

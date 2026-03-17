@@ -156,14 +156,15 @@ const Upload = () => {
         const { data: insertedBlock, error: blockError } = await supabase.from("content_blocks").insert({
           content_id: contentId,
           position,
-          block_type: block.type,
-          text_content: block.type === "text" ? block.textContent : null,
-          formatting: block.type === "text" ? { type: block.formatting } : null,
+          block_type: block.type === "long_text" ? "long_text" : block.type,
+          text_content: (block.type === "text" || block.type === "long_text") ? block.textContent : null,
+          formatting: (block.type === "text" || block.type === "long_text") ? { type: block.formatting } : null,
           file_url: fileUrl,
           file_name: fileName,
           file_size_bytes: fileSizeBytes,
           image_url: imageUrl,
           image_description: block.type === "image" ? block.imageDescription : null,
+          is_preview: block.isPreview ?? false,
         }).select("id").single();
 
         if (blockError || !insertedBlock) throw new Error(blockError?.message ?? "Block insert failed");

@@ -355,6 +355,7 @@ export type Database = {
           id: string
           image_description: string | null
           image_url: string | null
+          is_preview: boolean
           position: number
           text_content: string | null
         }
@@ -369,6 +370,7 @@ export type Database = {
           id?: string
           image_description?: string | null
           image_url?: string | null
+          is_preview?: boolean
           position: number
           text_content?: string | null
         }
@@ -383,6 +385,7 @@ export type Database = {
           id?: string
           image_description?: string | null
           image_url?: string | null
+          is_preview?: boolean
           position?: number
           text_content?: string | null
         }
