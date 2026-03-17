@@ -807,6 +807,43 @@ export function ProjectUploadForm() {
         )}
       </div>
 
+      {/* Full project pricing */}
+      <div className="space-y-3 border border-border rounded-xl p-4 bg-card">
+        <div>
+          <Label className="text-sm font-medium">Full project pricing (optional)</Label>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Offer a single price that unlocks all paid components in this project at once.
+            Leave off to keep individual component pricing only.
+          </p>
+        </div>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-foreground">Enable full project purchase</p>
+          <Switch checked={packageEnabled} onCheckedChange={setPackageEnabled} />
+        </div>
+        {packageEnabled && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-foreground font-medium">£</span>
+              <Input
+                type="number"
+                step="0.01"
+                min="1"
+                placeholder="9.99"
+                value={packagePrice ?? ""}
+                onChange={(e) => setPackagePrice(e.target.value ? Number(e.target.value) : undefined)}
+                className="bg-background border-border rounded-xl w-32 text-sm"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Set this lower than the sum of all individual component prices to incentivise the bundle purchase.
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              Buyers who purchase the full project unlock all current and future paid components in this project automatically.
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* Submit */}
       <Button type="submit" size="lg" className="w-full" disabled={submitting}>
         {submitting ? (
