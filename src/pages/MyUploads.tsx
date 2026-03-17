@@ -51,7 +51,7 @@ export default function MyUploads() {
   const { isLoggedIn, isCreator, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"content" | "projects">("content");
-
+  const [updateTarget, setUpdateTarget] = useState<{ id: string; title: string; version: string } | null>(null);
   useEffect(() => {
     if (!loading && !isLoggedIn) navigate("/login", { replace: true });
     if (!loading && isLoggedIn && !isCreator) navigate("/", { replace: true });
