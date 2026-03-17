@@ -97,7 +97,7 @@ const ContentDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
-        .select("*, profiles(id, username, display_name, bio)")
+        .select("*, profiles!content_items_creator_id_fkey(id, username, display_name, bio)")
         .eq("id", id!)
         .eq("status", "approved")
         .maybeSingle();
