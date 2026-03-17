@@ -148,7 +148,8 @@ export default function MyUploads() {
                       <TableHead className="text-muted-foreground text-right">Views</TableHead>
                       <TableHead className="text-muted-foreground text-right">Downloads</TableHead>
                       <TableHead className="text-muted-foreground text-right">Date</TableHead>
-                    </TableRow>
+                      <TableHead className="text-muted-foreground">Version</TableHead>
+                      <TableHead className="text-muted-foreground text-right"></TableHead>
                   </TableHeader>
                   <TableBody>
                     {items.map((item) => {
