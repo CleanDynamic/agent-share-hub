@@ -25,6 +25,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
   const navigate = useNavigate();
   const { isLoggedIn, profile, signOut } = useAuth();
   const { hasUnseenSaves, fypCount } = useNavBadges();
+  const { display: notifBadge } = useUnreadNotifications();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -38,6 +39,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     { icon: Upload, label: "Upload", to: "/upload" },
     { icon: Info, label: "About", to: "/about" },
     { icon: Bookmark, label: "Saved", to: "/saved", authOnly: true },
+    { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true, badge: notifBadge },
     { icon: User, label: "My Profile", to: "/profile", authOnly: true },
   ];
 
