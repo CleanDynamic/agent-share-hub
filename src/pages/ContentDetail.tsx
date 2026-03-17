@@ -568,6 +568,28 @@ const ContentDetail = () => {
                   cancelUrl={`${window.location.origin}/content/${item.id}`}
                 />
               )}
+
+              {/* Fork button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs text-muted-foreground border-border hover:text-foreground"
+                      onClick={() => {
+                        if (!isLoggedIn) { window.location.href = "/signup"; return; }
+                        setForkModalOpen(true);
+                      }}
+                    >
+                      <GitFork className="h-3.5 w-3.5 mr-1" /> Fork this ↗
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Clone to your drafts and make it your own</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
 
             {creator && (
