@@ -306,8 +306,16 @@ const ImagePicker = ({
 
 const BlockTypeIcon = ({ type }: { type: BlockType }) => {
   if (type === "text") return <Type className="h-4 w-4" />;
+  if (type === "long_text") return <FileText className="h-4 w-4" />;
   if (type === "file") return <Paperclip className="h-4 w-4" />;
   return <ImageIcon className="h-4 w-4" />;
+};
+
+const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
+  text: "Text",
+  long_text: "Article",
+  file: "File",
+  image: "Image",
 };
 
 // ─── Variation renderer ─────────────────────────────────────
