@@ -277,8 +277,21 @@ const CreatorProfile = () => {
               </div>
               {profile.bio && <p className="text-sm text-muted-foreground leading-relaxed mb-4">{profile.bio}</p>}
               <div className="mb-4 sm:mb-6">
-                <div className="w-full sm:w-auto">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <FollowButton creatorId={profile.id} onCountChange={(d) => setFollowerDelta((prev) => prev + d)} />
+                  {user?.id !== profile.id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-border text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        if (!isLoggedIn) { navigate("/login"); return; }
+                        navigate(`/messages?to=${profile.id}`);
+                      }}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Message
+                    </Button>
+                  )}
                 </div>
               </div>
               <div className="flex gap-6">
