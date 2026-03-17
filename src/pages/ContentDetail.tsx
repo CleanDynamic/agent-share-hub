@@ -474,9 +474,10 @@ const ContentDetail = () => {
                 </Button>
               )}
 
-              {/* Bookmark button */}
-              <div className="flex justify-center">
+              {/* Bookmark + Collection buttons */}
+              <div className="flex justify-center gap-2">
                 <BookmarkButton contentId={item.id} />
+                <AddToCollectionButton contentId={item.id} contentTitle={item.title} />
               </div>
               {isPaid && (
                 <p className="text-[11px] text-muted-foreground text-center">£{(item.price_gbp ?? 0).toFixed(2)} — one-time payment</p>

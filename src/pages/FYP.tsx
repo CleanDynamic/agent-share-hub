@@ -74,6 +74,7 @@ function interactionLabel(type: string, meta: any): string {
     case "rated": return `rated ★${meta?.rating ?? "?"}`;
     case "commented": return "commented on";
     case "bookmarked": return "saved";
+    case "added_to_collection": return `added to ${meta?.collection_title ?? "a collection"}:`;
     default: return type;
   }
 }
