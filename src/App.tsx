@@ -31,6 +31,7 @@ import RecentPage from "./pages/Recent";
 import FYPPage from "./pages/FYP";
 import NotFound from "./pages/NotFound";
 import NotificationsPage from "./pages/Notifications";
+import MessagesPage from "./pages/Messages";
 
 const queryClient = new QueryClient();
 
