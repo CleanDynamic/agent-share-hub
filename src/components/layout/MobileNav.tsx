@@ -131,6 +131,14 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
             ))}
           </div>
         )}
+        {query.length >= 2 && !loading && (
+          <button
+            onClick={() => { onClose(); navigate(`/search?q=${encodeURIComponent(query.trim())}`); }}
+            className="w-full text-center text-xs text-primary hover:underline py-3"
+          >
+            See all results for "{query}"
+          </button>
+        )}
       </div>
     </div>
   );
