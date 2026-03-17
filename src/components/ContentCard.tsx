@@ -93,6 +93,7 @@ export function ContentCard({
   avg_rating = 0,
   rating_count = 0,
   view_count = 0,
+  is_fork = false,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
