@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, Search, Upload, Clock, User, X, LayoutGrid,
-  Heart, Bookmark, Info, Settings, UserPlus, MoreHorizontal, LogOut, Bell,
+  Heart, Bookmark, Info, Settings, UserPlus, MoreHorizontal, LogOut, Bell, MessageCircle, MoreVertical,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { supabase } from "@/integrations/supabase/client";
 import { RightPanel } from "./RightPanel";
 
@@ -166,6 +167,8 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
     { icon: Clock, label: "Recent", to: "/recent" },
     { icon: Heart, label: "For You", to: "/fyp", authOnly: true, badge: fypBadge },
     { icon: Bookmark, label: "Bookmarks", to: "/saved", authOnly: true },
+    { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true },
+    { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true },
     { icon: Upload, label: "Upload", to: "/upload" },
     { icon: Info, label: "About", to: "/about" },
   ].filter((item) => !item.authOnly || isLoggedIn);
@@ -309,6 +312,7 @@ export function MobileNav() {
   const { isLoggedIn, profile, user } = useAuth();
   const recentBadge = useRecentBadge();
   const { display: notifBadge } = useUnreadNotifications();
+  const { display: msgBadge } = useUnreadMessages();
   const [showDiscover, setShowDiscover] = useState(false);
 
   useEffect(() => {
@@ -382,11 +386,18 @@ export function MobileNav() {
           <span className={`text-[10px] mb-1 ${isActive("/upload") ? "text-primary" : "text-muted-foreground"}`}>Upload</span>
         </div>
 
-        {/* Tab 4: Recent */}
-        <button onClick={() => navigate("/recent")} className={`relative flex flex-col items-center justify-center flex-1 h-full ${isActive("/recent") ? "text-primary" : "text-muted-foreground"}`}>
-          <Clock className="h-6 w-6" />
-          {recentBadge && <span className="absolute top-2 right-1/2 translate-x-3 h-2 w-2 rounded-full bg-primary" />}
-          <span className="text-[10px] mt-0.5">Recent</span>
+        {/* Tab 4: Messages */}
+        <button
+          onClick={() => navigate(isLoggedIn ? "/messages" : "/login")}
+          className={`relative flex flex-col items-center justify-center flex-1 h-full ${isActive("/messages") ? "text-primary" : "text-muted-foreground"}`}
+        >
+          <MessageCircle className="h-6 w-6" />
+          {msgBadge && (
+            <span className="absolute top-1.5 right-1/2 translate-x-4 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
+              {msgBadge}
+            </span>
+          )}
+          <span className="text-[10px] mt-0.5">Messages</span>
         </button>
 
         {/* Tab 5: Notifications */}

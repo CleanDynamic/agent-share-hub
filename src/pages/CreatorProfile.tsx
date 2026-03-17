@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { SeoHead } from "@/components/SeoHead";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { ContentCard } from "@/components/ContentCard";
 import { ProjectCard } from "@/components/ProjectCard";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { BadgeCheck, Download, Eye, FileText, Heart, Users, Loader2, CheckCircle2 } from "lucide-react";
+import { BadgeCheck, Download, Eye, FileText, Heart, Users, Loader2, CheckCircle2, MessageCircle } from "lucide-react";
 import { TipSelector } from "@/components/TipSelector";
 import { FollowButton } from "@/components/FollowButton";
 
@@ -58,7 +59,9 @@ function ProfileSkeleton() {
 const CreatorProfile = () => {
   const { username } = useParams<{ username: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { isLoggedIn, user } = useAuth();
   const [subscribing, setSubscribing] = useState(false);
 
   const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
@@ -274,8 +277,21 @@ const CreatorProfile = () => {
               </div>
               {profile.bio && <p className="text-sm text-muted-foreground leading-relaxed mb-4">{profile.bio}</p>}
               <div className="mb-4 sm:mb-6">
-                <div className="w-full sm:w-auto">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <FollowButton creatorId={profile.id} onCountChange={(d) => setFollowerDelta((prev) => prev + d)} />
+                  {user?.id !== profile.id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-border text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        if (!isLoggedIn) { navigate("/login"); return; }
+                        navigate(`/messages?to=${profile.id}`);
+                      }}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Message
+                    </Button>
+                  )}
                 </div>
               </div>
               <div className="flex gap-6">
