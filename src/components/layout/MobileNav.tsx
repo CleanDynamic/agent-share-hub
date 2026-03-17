@@ -308,7 +308,7 @@ export function MobileNav() {
   const navigate = useNavigate();
   const { isLoggedIn, profile, user } = useAuth();
   const recentBadge = useRecentBadge();
-  const profileBadge = useProfileBadge(user?.id);
+  const { display: notifBadge } = useUnreadNotifications();
   const [showDiscover, setShowDiscover] = useState(false);
 
   useEffect(() => {
