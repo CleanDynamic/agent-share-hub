@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useApprovedToolNames } from "@/hooks/useApprovedTools";
+import { useMicrotagDefinitions } from "@/hooks/useMicrotags";
 import { SubmitToolModal } from "@/components/SubmitToolModal";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
