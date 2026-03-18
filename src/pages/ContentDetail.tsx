@@ -462,7 +462,7 @@ const ContentDetail = () => {
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{item.title}</h1>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-4">{item.description}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-4"><MentionText text={item.description || ""} /></p>
 
         <div className="flex flex-wrap items-center gap-4 mb-2 text-sm text-muted-foreground">
           {/* Creator byline with collaborator avatars */}
