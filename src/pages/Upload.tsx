@@ -212,6 +212,9 @@ const Upload = () => {
         setSubmitting(false);
         return;
       }
+      setInsertedContentId(insertedItem.id);
+        return;
+      }
 
       const contentId = insertedItem.id;
 
