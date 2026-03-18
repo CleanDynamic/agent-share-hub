@@ -65,12 +65,23 @@ export default function Login() {
   };
 
   const handleForgotPassword = async () => {
-    if (!email.trim()) {
-      setError("Enter your email first.");
+    const val = identifier.trim();
+    if (!val) {
+      setError("Enter your email or username first.");
       return;
     }
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      let emailForReset = val;
+      if (!val.includes("@")) {
+        const { data: emailData } = await supabase
+          .rpc("get_email_by_username", { _username: val } as any);
+        if (!emailData) {
+          setError("No account found with that username.");
+          return;
+        }
+        emailForReset = emailData as unknown as string;
+      }
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(emailForReset, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (resetError) throw resetError;
@@ -88,8 +99,8 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} required />
+            <Label htmlFor="identifier">Email or username</Label>
+            <Input id="identifier" type="text" value={identifier} onChange={(e) => { setIdentifier(e.target.value); setError(""); }} required />
           </div>
 
           <div className="space-y-1.5">
