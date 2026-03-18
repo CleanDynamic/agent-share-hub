@@ -116,17 +116,7 @@ function FilterDropdowns({
   );
 }
 
-const SLUG_TO_TYPE: Record<string, string> = {
-  "prompt-file": "Prompt File",
-  "prompt-tutorial": "Prompt Tutorial",
-  "agent-blueprint": "Agent Blueprint",
-  "workflow-template": "Workflow Template",
-  "agent-stack": "Agent Stack",
-  "model-config-guide": "Model Config Guide",
-  "integration-guide": "Integration Guide",
-  "evaluation-framework": "Evaluation Framework",
-  "failure-library": "Failure Library",
-};
+// SLUG_TO_TYPE imported from shared module
 
 const DIFF_COLORS: Record<string, string> = {
   "Beginner only": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",

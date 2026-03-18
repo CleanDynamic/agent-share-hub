@@ -459,7 +459,7 @@ const Upload = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription>Not sure? Prompt File is the simplest. Blueprint includes setup steps.</FormDescription>
+                  <FormDescription>Not sure? Prompt(s) is the simplest. Blueprint includes setup steps.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
