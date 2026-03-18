@@ -213,8 +213,6 @@ const Upload = () => {
         return;
       }
       setInsertedContentId(insertedItem.id);
-        return;
-      }
 
       const contentId = insertedItem.id;
 
