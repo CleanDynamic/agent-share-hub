@@ -302,7 +302,7 @@ function FeaturedCollectionsSection({ navigate }: { navigate: ReturnType<typeof 
       const { data } = await supabase
         .from("collections")
         .select("slug, title, item_count, follower_count, profiles!collections_owner_id_fkey(display_name, username)")
-        .eq("visibility" as any, "public")
+        .eq("is_public", true)
         .gte("item_count", 3)
         .order("follower_count", { ascending: false })
         .limit(3);
