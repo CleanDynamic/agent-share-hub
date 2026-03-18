@@ -321,6 +321,23 @@ const ContentDetail = () => {
     enabled: !!id,
   });
 
+  // Curator recommendations
+  const { data: curatorRecs, refetch: refetchCuratorRecs } = useQuery({
+    queryKey: ["curator_recs", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("curator_recommendations")
+        .select("id, recommendation_text, created_at, curators!curator_recommendations_curator_id_fkey(id, user_id, profiles:user_id(username, display_name, avatar_url, follower_count))")
+        .eq("content_id", id!)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!id,
+  });
+
+  const isCurator = (profile as any)?.is_curator === true;
+
   const count = localCount ?? item?.download_count ?? 0;
   const viewCount = (item as any)?.view_count ?? 0;
   const label = item ? getDownloadLabel(item.content_type, item.monetisation_type, item.price_gbp ?? undefined) : "";
