@@ -374,6 +374,7 @@ const Admin = () => {
             <TabsTrigger value="tools">AI Tools</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="paths">Learning Paths</TabsTrigger>
+            <TabsTrigger value="curators">Curators</TabsTrigger>
           </TabsList>
 
           {/* ── Content approval queue ── */}
