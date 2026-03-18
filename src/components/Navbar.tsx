@@ -106,49 +106,14 @@ export function Navbar() {
                   )}
                 </button>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="rounded-full outline-none ring-ring focus-visible:ring-2">
-                      <Avatar className="h-8 w-8 cursor-pointer">
-                        {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem asChild>
-                      <Link to="/fyp" className="flex items-center gap-2">
-                        <Heart className="h-4 w-4" /> For You
-                        {fypBadgeLabel && (
-                          <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
-                            {fypBadgeLabel}
-                          </span>
-                        )}
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/my-uploads" className="flex items-center gap-2">
-                        <Upload className="h-4 w-4" /> My Uploads
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/profile" className="flex items-center gap-2">
-                        <User className="h-4 w-4" /> My Profile
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/saved" className="flex items-center gap-2">
-                        <Bookmark className="h-4 w-4" /> Saved
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 text-destructive">
-                      <LogOut className="h-4 w-4" /> Sign out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Link to="/profile" className="rounded-full outline-none ring-ring focus-visible:ring-2">
+                  <Avatar className="h-8 w-8 cursor-pointer">
+                    {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
               </>
             )}
 
