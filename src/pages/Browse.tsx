@@ -368,7 +368,7 @@ const Browse = () => {
     );
   }, [projects, projectSearch]);
 
-  const hasFilters = search || typeFilter !== ALL || difficultyFilter !== ALL || toolFilter !== ALL || useCaseFilter !== ALL;
+  const hasFilters = search || typeFilter !== ALL || difficultyFilter !== ALL || toolFilter !== ALL || useCaseFilter !== ALL || microtagFilters.length > 0;
 
   const filtered = useMemo(() => {
     if (!items) return [];
