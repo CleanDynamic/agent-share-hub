@@ -157,6 +157,14 @@ export function CommentsSection({
       }
     }
 
+    // Send mention notifications
+    await sendMentionNotifications({
+      text: newText.trim(),
+      actorId: user.id,
+      contentId,
+      context: "comment",
+    });
+
     // Optimistic add
     setComments((prev) => [
       {
