@@ -583,33 +583,23 @@ const Upload = () => {
                 <p className="text-xs text-muted-foreground mt-0.5">Optional — free by default</p>
               </div>
 
-              {/* Free / Paid toggle */}
+              {/* Free / Paid / PWYW selector */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-foreground">Free download</p>
-                    <p className="text-xs text-muted-foreground">Anyone can download for free</p>
+                {(["free", "paid"] as const).map((type) => (
+                  <div key={type} className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-foreground">{type === "free" ? "Free download" : "Paid (fixed price)"}</p>
+                      <p className="text-xs text-muted-foreground">{type === "free" ? "Anyone can download for free" : "Set a price in GBP"}</p>
+                    </div>
+                    <Switch
+                      checked={monetisationType === type && !pwywFloor && !(monetisationType === "paid" && form.getValues("price_gbp") === undefined)}
+                      onCheckedChange={(checked) => {
+                        if (checked) { form.setValue("monetisation_type", type); setPwywFloor(0); }
+                        else if (type === monetisationType) form.setValue("monetisation_type", "free");
+                      }}
+                    />
                   </div>
-                  <Switch
-                    checked={monetisationType === "free"}
-                    onCheckedChange={(checked) =>
-                      form.setValue("monetisation_type", checked ? "free" : "paid")
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-foreground">Paid download</p>
-                    <p className="text-xs text-muted-foreground">Set a price in GBP</p>
-                  </div>
-                  <Switch
-                    checked={monetisationType === "paid"}
-                    onCheckedChange={(checked) =>
-                      form.setValue("monetisation_type", checked ? "paid" : "free")
-                    }
-                  />
-                </div>
+                ))}
 
                 {monetisationType === "paid" && (
                   <FormField
@@ -620,14 +610,7 @@ const Upload = () => {
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-foreground font-medium">£</span>
                           <FormControl>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="1"
-                              placeholder="4.99"
-                              className="bg-background border-border rounded-xl w-32"
-                              {...field}
-                            />
+                            <Input type="number" step="0.01" min="1" placeholder="4.99" className="bg-background border-border rounded-xl w-32" {...field} />
                           </FormControl>
                         </div>
                         <FormMessage />
@@ -652,8 +635,16 @@ const Upload = () => {
               </div>
             </div>
 
+            {/* Revenue Splits — only for paid content */}
+            {monetisationType === "paid" && (
+              <RevenueSplitPicker splits={revenueSplits} onChange={setRevenueSplits} />
+            )}
+
             {/* Dependencies */}
             <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
+
+            {/* Co-author invites */}
+            <CollabInvitePicker invitees={collabInvitees} onChange={setCollabInvitees} />
 
             {/* Submit */}
             <Button type="submit" size="lg" className="w-full" disabled={submitting}>
