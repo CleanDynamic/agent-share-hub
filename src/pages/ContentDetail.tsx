@@ -631,7 +631,10 @@ const ContentDetail = () => {
           </p>
         )}
 
-        {/* 6. ACTION BOX — inline, full width */}
+        {/* 7. WHAT TO EXPECT — always visible, never blurred */}
+        <WhatToExpectSection item={item} />
+
+        {/* 8. ACTION BOX — inline, full width */}
         <div className="rounded-xl border border-border bg-card p-3.5 sm:p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             {/* Left: rating */}
