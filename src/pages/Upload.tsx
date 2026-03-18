@@ -66,6 +66,8 @@ interface InlineSplit {
 
 const Upload = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const draftId = searchParams.get("draft");
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const [uploadType, setUploadType] = useState<"single" | "project">("single");
@@ -86,6 +88,8 @@ const Upload = () => {
   const [toolUrl, setToolUrl] = useState("");
   const [customUseCaseDesc, setCustomUseCaseDesc] = useState("");
   const [otherToolName, setOtherToolName] = useState("");
+  const [draftMeta, setDraftMeta] = useState<{ name: string; savedAt: string } | null>(null);
+  const [draftLoading, setDraftLoading] = useState(!!draftId);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
