@@ -1,16 +1,24 @@
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { SeoHead } from "@/components/SeoHead";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// Re-use the ProfileView from Profile.tsx — but since that's a default export with
-// internal component, we rebuild as a thin wrapper that fetches the profile data
-// and renders the same layout. We import the shared component.
-
-import ProfileViewWrapper from "./Profile";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { FeedItem } from "@/components/FeedItem";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  BadgeCheck, Download, FileText, Eye, Camera, ExternalLink,
+  ShieldCheck, Calendar, Heart, Image as ImageIcon, MessageSquare,
+} from "lucide-react";
+import { FollowButton } from "@/components/FollowButton";
+import { format } from "date-fns";
 
 function ProfileSkeleton() {
   return (
@@ -28,6 +36,7 @@ function ProfileSkeleton() {
 const CreatorProfile = () => {
   const { username } = useParams<{ username: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ["creator_profile", username],
@@ -43,6 +52,13 @@ const CreatorProfile = () => {
     enabled: !!username,
   });
 
+  // Redirect to own profile if viewing self
+  useEffect(() => {
+    if (profile && user?.id === profile.id) {
+      navigate("/profile", { replace: true });
+    }
+  }, [profile, user, navigate]);
+
   if (isLoading) return <ProfileSkeleton />;
 
   if (!profile || error) {
@@ -56,58 +72,17 @@ const CreatorProfile = () => {
     );
   }
 
-  // If viewing own profile, redirect logic is handled by profile page
-  const isOwnProfile = user?.id === profile.id;
+  if (user?.id === profile.id) return null;
 
-  return <CreatorProfileView profile={profile} isOwnProfile={isOwnProfile} currentUserId={user?.id} />;
+  return <OtherProfileView profile={profile} currentUserId={user?.id} />;
 };
 
 export default CreatorProfile;
 
-// We need to export ProfileView from Profile.tsx. Since we can't easily,
-// let's create an inline version that uses the same pattern.
-// Actually, let's refactor: we'll create a shared component file.
-
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { FeedItem } from "@/components/FeedItem";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  BadgeCheck, Download, FileText, Eye, Loader2, Camera, ExternalLink,
-  Library, ShieldCheck, Calendar, Upload, Heart, Image as ImageIcon,
-  MessageSquare,
-} from "lucide-react";
-import { FollowButton } from "@/components/FollowButton";
-import { format } from "date-fns";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-
-function CreatorProfileView({ profile, isOwnProfile, currentUserId }: { profile: any; isOwnProfile: boolean; currentUserId?: string }) {
-  // This is a duplicate — we should share. But to avoid circular imports,
-  // let's just import from a shared file. For now, redirect to /profile if own.
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isOwnProfile) {
-      navigate("/profile", { replace: true });
-    }
-  }, [isOwnProfile, navigate]);
-
-  if (isOwnProfile) return null;
-
-  // For other users, render the full profile view inline
-  return <OtherProfileView profile={profile} currentUserId={currentUserId} />;
-}
+/* ======= Other User's Profile View ======= */
 
 function OtherProfileView({ profile, currentUserId }: { profile: any; currentUserId?: string }) {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [followersOpen, setFollowersOpen] = useState(false);
   const [followingOpen, setFollowingOpen] = useState(false);
   const [followerDelta, setFollowerDelta] = useState(0);
@@ -126,7 +101,6 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
     { key: "likes", label: "Likes" },
   ];
 
-  // Posts
   const { data: contentItems } = useQuery({
     queryKey: ["profile_content", profile.id],
     queryFn: async () => {
@@ -144,7 +118,6 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
   const totalDownloads = contentItems?.reduce((sum, i: any) => sum + (i.download_count ?? 0), 0) ?? 0;
   const totalViews = contentItems?.reduce((sum, i: any) => sum + (i.view_count ?? 0), 0) ?? 0;
 
-  // Replies
   const { data: replies } = useQuery({
     queryKey: ["profile_replies", profile.id],
     queryFn: async () => {
@@ -160,7 +133,6 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
     enabled: !!profile.id && activeTab === "replies",
   });
 
-  // Media
   const { data: mediaItems } = useQuery({
     queryKey: ["profile_media", profile.id],
     queryFn: async () => {
@@ -176,7 +148,6 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
     enabled: !!profile.id && activeTab === "media",
   });
 
-  // Likes
   const { data: likedItems } = useQuery({
     queryKey: ["profile_likes", profile.id],
     queryFn: async () => {
@@ -200,7 +171,6 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
     enabled: !!profile.id && activeTab === "likes",
   });
 
-  // Collections
   const { data: collections } = useQuery({
     queryKey: ["profile_collections", profile.id],
     queryFn: async () => {
@@ -227,12 +197,7 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
 
   return (
     <div className="w-full">
-      <SeoHead
-        title={`${displayName} on NeoScale AI`}
-        description={seoDesc}
-        path={`/creator/${profile.username}`}
-        ogType="profile"
-      />
+      <SeoHead title={`${displayName} on NeoScale AI`} description={seoDesc} path={`/creator/${profile.username}`} ogType="profile" />
 
       {/* BANNER */}
       <div className="relative w-full" style={{ height: 200 }}>
@@ -418,12 +383,13 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
         )}
       </div>
 
-      {/* Followers Modal */}
       <FollowListModal open={followersOpen} onClose={() => setFollowersOpen(false)} userId={profile.id} mode="followers" />
       <FollowListModal open={followingOpen} onClose={() => setFollowingOpen(false)} userId={profile.id} mode="following" />
     </div>
   );
 }
+
+/* ======= Shared Modals & Helpers ======= */
 
 function FollowListModal({ open, onClose, userId, mode }: { open: boolean; onClose: () => void; userId: string; mode: "followers" | "following" }) {
   const { data: users } = useQuery({
