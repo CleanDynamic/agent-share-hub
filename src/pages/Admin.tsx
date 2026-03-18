@@ -10,8 +10,40 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, CheckCircle, XCircle, Loader2, ExternalLink, Eye } from "lucide-react";
+import { LogOut, CheckCircle, XCircle, Loader2, ExternalLink, Eye, Database } from "lucide-react";
 import { SeoHead } from "@/components/SeoHead";
+
+function SeedDemoButton() {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleSeed = async () => {
+    setLoading(true);
+    toast({ title: "Seeding demo data…", description: "This may take a minute." });
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-demo-data`,
+        { method: "POST", headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
+      );
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Seed failed");
+      toast({ title: json.message || "Demo data seeded!" });
+    } catch (err: any) {
+      toast({ title: "Seed failed", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mb-6 flex justify-end">
+      <Button variant="outline" className="border-[hsl(var(--primary))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/10" onClick={handleSeed} disabled={loading}>
+        {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Database className="h-4 w-4 mr-2" />}
+        Seed demo data
+      </Button>
+    </div>
+  );
+}
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -366,6 +398,9 @@ const Admin = () => {
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Comments</p>
           </div>
         </div>
+
+        {/* Seed demo data */}
+        <SeedDemoButton />
 
         <Tabs defaultValue="content" className="space-y-6">
           <TabsList className="bg-card border border-border">

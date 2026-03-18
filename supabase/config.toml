@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.create-pwyw-checkout-session]
 verify_jwt = false
+
+[functions.seed-demo-data]
+verify_jwt = false
