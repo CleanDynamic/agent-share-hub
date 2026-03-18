@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, CheckCircle2, FileText, FolderOpen, ImagePlus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectUploadForm } from "@/components/ProjectUploadForm";
-import { RevenueSplitPicker, type RevenueSplit } from "@/components/RevenueSplitPicker";
 import { CollabInvitePicker, type CollabInvitee } from "@/components/CollabInvitePicker";
 import { useToast } from "@/hooks/use-toast";
 import { useApprovedToolNames } from "@/hooks/useApprovedTools";
@@ -14,11 +13,11 @@ import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MentionInput } from "@/components/MentionInput";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -27,7 +26,7 @@ import {
 } from "@/components/ui/form";
 import { SubmitToolModal } from "@/components/SubmitToolModal";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
-// LearningPathUploadForm removed from UI
+import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
 import { useMicrotagDefinitions } from "@/hooks/useMicrotags";
 import { ORDERED_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, ANY_DIFFICULTY_TYPES, displayContentType } from "@/lib/content-types";
@@ -41,7 +40,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const schema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
   content_type: z.string().min(1, "Select a content type"),
-  description: z.string().trim().min(1, "Description is required").max(500, "Max 500 characters"),
+  description: z.string().trim().min(1, "Description is required").max(120, "Max 120 characters"),
   difficulty: z.string().min(1, "Select a difficulty level"),
   ai_tools: z.array(z.string()).min(1, "Select at least one AI tool"),
   use_cases: z.array(z.string()),
@@ -54,6 +53,15 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+// ─── Revenue Split Row (inline) ─────────────────────────────
+
+interface InlineSplit {
+  userId: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  percentage: number;
+}
 
 const Upload = () => {
   const navigate = useNavigate();
@@ -61,12 +69,13 @@ const Upload = () => {
   const { data: AI_TOOLS } = useApprovedToolNames();
   const [uploadType, setUploadType] = useState<"single" | "project">("single");
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([emptyBlock("text")]);
+  const [wteBlocks, setWteBlocks] = useState<WteBlock[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
-  const [revenueSplits, setRevenueSplits] = useState<RevenueSplit[]>([]);
   const [collabInvitees, setCollabInvitees] = useState<CollabInvitee[]>([]);
+  const [inlineSplits, setInlineSplits] = useState<InlineSplit[]>([]);
   const [pwywFloor, setPwywFloor] = useState<number>(0);
   const [customTags, setCustomTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -74,6 +83,7 @@ const Upload = () => {
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   const [toolUrl, setToolUrl] = useState("");
   const [customUseCaseDesc, setCustomUseCaseDesc] = useState("");
+  const [otherToolName, setOtherToolName] = useState("");
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -93,17 +103,47 @@ const Upload = () => {
 
   const watchedContentType = form.watch("content_type");
   const isAIToolsType = watchedContentType === "AI Tools (LLMs)";
+  const watchedAiTools = form.watch("ai_tools");
+  const isOtherSelected = watchedAiTools?.includes("Other");
 
-  // Auto-set difficulty for AI Tools (LLMs)
   useEffect(() => {
-    if (isAIToolsType) {
-      form.setValue("difficulty", "Any");
-    }
+    if (isAIToolsType) form.setValue("difficulty", "Any");
   }, [isAIToolsType, form]);
 
-  const monetisationType = form.watch("monetisation_type");
+  // Clear otherToolName when Other is deselected
+  useEffect(() => {
+    if (!isOtherSelected) setOtherToolName("");
+  }, [isOtherSelected]);
 
-  // (file handling now done inside ContentBlockBuilder)
+  const monetisationType = form.watch("monetisation_type");
+  const showRevenueSplit = (monetisationType === "paid" || pwywFloor > 0) && collabInvitees.length > 0;
+
+  // Sync inline splits when co-authors change
+  useEffect(() => {
+    setInlineSplits((prev) => {
+      const existing = new Map(prev.map((s) => [s.userId, s]));
+      return collabInvitees.map((inv) => existing.get(inv.id) ?? {
+        userId: inv.id,
+        username: inv.username,
+        displayName: inv.displayName,
+        avatarUrl: inv.avatarUrl,
+        percentage: 10,
+      });
+    });
+  }, [collabInvitees]);
+
+  const totalSplitPct = inlineSplits.reduce((s, x) => s + (x.percentage || 0), 0);
+  const keepPct = 100 - totalSplitPct;
+  const splitError = totalSplitPct > 90;
+
+  // Sort AI_TOOLS: "Other" always last, "Any Tool" always first
+  const sortedTools = [...(AI_TOOLS ?? [])].sort((a, b) => {
+    if (a === "Any Tool") return -1;
+    if (b === "Any Tool") return 1;
+    if (a === "Other") return 1;
+    if (b === "Other") return -1;
+    return a.localeCompare(b);
+  });
 
   async function onSubmit(values: FormValues) {
     if (contentBlocks.length === 0) {
@@ -114,7 +154,6 @@ const Upload = () => {
     setSubmitting(true);
 
     try {
-      // Refresh session to prevent RLS errors
       await supabase.auth.refreshSession();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -124,13 +163,26 @@ const Upload = () => {
       }
 
       const isPwyw = monetisationType === "paid" && pwywFloor >= 0 && form.getValues("price_gbp") === undefined;
-      // Determine if PWYW based on a separate flag
       const actualMonetisationType = monetisationType;
       const actualPriceGbp = monetisationType === "paid" && !isPwyw ? values.price_gbp ?? null : null;
       const actualPwywEnabled = isPwyw;
       const actualPwywFloor = isPwyw ? pwywFloor : null;
 
-      // Insert content_items row (file_url left null — blocks hold the content now)
+      // Serialize WTE blocks to jsonb
+      const wteBlocksJsonb = wteBlocks.length > 0
+        ? wteBlocks.map((b, i) => ({
+            id: b.id,
+            position: i + 1,
+            block_type: b.type,
+            text_content: b.textContent || null,
+            formatting_type: b.formatting,
+            sub_blocks: b.formatting === "sub_list" && b.subBlocks?.length > 0 ? b.subBlocks : null,
+            use_instructions: b.useInstructions?.trim() || null,
+            image_description: b.type === "image" ? b.imageDescription : null,
+            // image_url will be set after upload
+          }))
+        : null;
+
       const { data: insertedItem, error: insertError } = await supabase.from("content_items").insert({
         creator_id: user.id,
         title: values.title,
@@ -142,6 +194,8 @@ const Upload = () => {
         file_url: null,
         use_instructions: values.use_instructions,
         what_to_expect: values.what_to_expect,
+        what_to_expect_blocks: wteBlocksJsonb,
+        other_tool_name: isOtherSelected && otherToolName.trim() ? otherToolName.trim() : null,
         status: "pending",
         monetisation_type: actualMonetisationType,
         price_gbp: actualPriceGbp,
@@ -159,17 +213,30 @@ const Upload = () => {
 
       const contentId = insertedItem.id;
 
-      // Save tool_url if AI Tools type
       if (isAIToolsType && toolUrl.trim()) {
         await supabase.from("content_items").update({ tool_url: toolUrl.trim() } as any).eq("id", contentId);
       }
 
-      // Save custom use case description
       if (customUseCaseDesc.trim() && values.use_cases.includes("Other")) {
         await supabase.from("content_items").update({ custom_use_case_description: customUseCaseDesc.trim() } as any).eq("id", contentId);
       }
 
-      // Upload cover image if selected
+      // Upload WTE images
+      if (wteBlocks.length > 0) {
+        const updatedWte = [...(wteBlocksJsonb ?? [])];
+        for (let i = 0; i < wteBlocks.length; i++) {
+          const wb = wteBlocks[i];
+          if (wb.type === "image" && wb.imageFile) {
+            const path = `${contentId}/wte/${i + 1}/${wb.imageFile.name}`;
+            const { error } = await supabase.storage.from("content-files").upload(path, wb.imageFile);
+            if (!error && updatedWte[i]) {
+              (updatedWte[i] as any).image_url = path;
+            }
+          }
+        }
+        await supabase.from("content_items").update({ what_to_expect_blocks: updatedWte } as any).eq("id", contentId);
+      }
+
       if (coverImageFile) {
         const coverPath = `covers/${contentId}/${coverImageFile.name}`;
         const { error: coverErr } = await supabase.storage.from("content-files").upload(coverPath, coverImageFile);
@@ -181,7 +248,6 @@ const Upload = () => {
         }
       }
 
-      // Save dependencies
       for (const dep of dependencies) {
         await supabase.from("content_dependencies").insert({
           content_id: contentId,
@@ -190,18 +256,21 @@ const Upload = () => {
         });
       }
 
-      // Save revenue splits
-      for (const split of revenueSplits) {
-        await supabase.from("revenue_splits").insert({
-          content_id: contentId,
-          recipient_id: split.recipientId,
-          percentage: split.percentage,
-          set_by: user.id,
-        } as any);
+      // Save revenue splits (inline)
+      for (const split of inlineSplits) {
+        if (showRevenueSplit && split.percentage > 0) {
+          await supabase.from("revenue_splits").insert({
+            content_id: contentId,
+            recipient_id: split.userId,
+            percentage: split.percentage,
+            set_by: user.id,
+          } as any);
+        }
       }
 
       // Save collab invites
       for (const inv of collabInvitees) {
+        const splitForInv = inlineSplits.find((s) => s.userId === inv.id);
         const { data: inviteData } = await supabase.from("collab_invites").insert({
           content_id: contentId,
           inviter_id: user.id,
@@ -209,7 +278,6 @@ const Upload = () => {
           status: "pending",
         } as any).select("id").single();
 
-        // Send notification
         await supabase.from("notifications").insert({
           recipient_id: inv.id,
           notification_type: "collab_invite",
@@ -219,6 +287,7 @@ const Upload = () => {
             inviter_username: user.email?.split("@")[0] || "",
             content_title: values.title,
             invite_id: inviteData?.id,
+            split_percentage: splitForInv?.percentage ?? null,
           },
         } as any);
       }
@@ -233,7 +302,6 @@ const Upload = () => {
         let fileSizeBytes: number | null = null;
         let imageUrl: string | null = null;
 
-        // Upload block file
         if (block.type === "file" && block.file) {
           const path = `${contentId}/${position}/${block.file.name}`;
           const { error } = await supabase.storage.from("content-files").upload(path, block.file);
@@ -243,7 +311,6 @@ const Upload = () => {
           fileSizeBytes = block.file.size;
         }
 
-        // Upload block image
         if (block.type === "image" && block.imageFile) {
           const path = `${contentId}/${position}/${block.imageFile.name}`;
           const { error } = await supabase.storage.from("content-files").upload(path, block.imageFile);
@@ -251,7 +318,7 @@ const Upload = () => {
           imageUrl = path;
         }
 
-      const { data: insertedBlock, error: blockError } = await supabase.from("content_blocks").insert({
+        const { data: insertedBlock, error: blockError } = await supabase.from("content_blocks").insert({
           content_id: contentId,
           position,
           block_type: block.type === "long_text" ? "long_text" : block.type,
@@ -307,7 +374,7 @@ const Upload = () => {
         }
       }
 
-      // Save free-text tags to content_items.tags
+      // Save free-text tags
       if (customTags.length > 0) {
         await supabase.from("content_items").update({ tags: customTags } as any).eq("id", contentId);
       }
@@ -330,7 +397,7 @@ const Upload = () => {
         </p>
         <div className="flex gap-3 mt-4">
           <Button variant="outline" onClick={() => navigate("/browse")}>Browse Blueprints</Button>
-          <Button variant="outline" onClick={() => { setSuccess(false); form.reset(); setContentBlocks([emptyBlock("text")]); setDependencies([]); setCoverImageFile(null); setCoverImagePreview(null); }}>Upload Another</Button>
+          <Button variant="outline" onClick={() => { setSuccess(false); form.reset(); setContentBlocks([emptyBlock("text")]); setWteBlocks([]); setDependencies([]); setCoverImageFile(null); setCoverImagePreview(null); }}>Upload Another</Button>
         </div>
       </div>
     );
@@ -348,32 +415,18 @@ const Upload = () => {
           </p>
         </div>
 
-        {/* Upload type selector */}
+        {/* 1. Upload type selector */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
-          <button
-            type="button"
-            onClick={() => setUploadType("single")}
-            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${
-              uploadType === "single"
-                ? "border-primary bg-primary/5"
-                : "border-border bg-card hover:border-muted-foreground/40"
-            }`}
-          >
+          <button type="button" onClick={() => setUploadType("single")}
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${uploadType === "single" ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/40"}`}>
             <FileText className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "single" ? "text-primary" : "text-muted-foreground"}`} />
             <div>
               <p className="text-sm font-semibold text-foreground">Blueprint</p>
               <p className="text-xs text-muted-foreground mt-0.5">A prompt, tutorial, or guide</p>
             </div>
           </button>
-          <button
-            type="button"
-            onClick={() => setUploadType("project")}
-            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${
-              uploadType === "project"
-                ? "border-primary bg-primary/5"
-                : "border-border bg-card hover:border-muted-foreground/40"
-            }`}
-          >
+          <button type="button" onClick={() => setUploadType("project")}
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${uploadType === "project" ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/40"}`}>
             <FolderOpen className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "project" ? "text-primary" : "text-muted-foreground"}`} />
             <div>
               <p className="text-sm font-semibold text-foreground">Project</p>
@@ -387,34 +440,27 @@ const Upload = () => {
         ) : (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* 1. Title */}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="E.g. Email Summariser" className="bg-card border-border rounded-xl" {...field} />
-                  </FormControl>
-                  <FormDescription>Give it a clear name. E.g. 'Email Summariser' or 'Daily Tweet Writer'</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
-            {/* Cover Image (optional) */}
+            {/* 2. Title */}
+            <FormField control={form.control} name="title" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                  <Input placeholder="E.g. Email Summariser" className="bg-card border-border rounded-xl" {...field} />
+                </FormControl>
+                <FormDescription>Give it a clear name. E.g. 'Email Summariser' or 'Daily Tweet Writer'</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* 3. Cover Image (optional) */}
             <div className="space-y-2">
               <Label>Cover image (optional)</Label>
               <p className="text-xs text-muted-foreground">A visual that appears in the feed. Recommended: 1200×630px.</p>
               {coverImagePreview ? (
                 <div className="relative">
                   <img src={coverImagePreview} alt="Cover preview" className="w-full rounded-xl object-cover" style={{ maxHeight: 200 }} />
-                  <button
-                    type="button"
-                    onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); }}
-                    className="absolute top-2 right-2 p-1 rounded-full bg-background/80 text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <button type="button" onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); }} className="absolute top-2 right-2 p-1 rounded-full bg-background/80 text-muted-foreground hover:text-foreground transition-colors">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
@@ -422,198 +468,153 @@ const Upload = () => {
                 <label className="flex flex-col items-center justify-center gap-2 py-6 px-4 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/40 transition-colors">
                   <ImagePlus className="h-6 w-6 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Click to upload (.jpg, .png, .webp — max 3MB)</span>
-                  <input
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      if (file.size > 3 * 1024 * 1024) {
-                        toast({ title: "File too large", description: "Cover image must be under 3MB.", variant: "destructive" });
-                        return;
-                      }
-                      setCoverImageFile(file);
-                      setCoverImagePreview(URL.createObjectURL(file));
-                    }}
-                  />
+                  <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 3 * 1024 * 1024) { toast({ title: "File too large", description: "Cover image must be under 3MB.", variant: "destructive" }); return; }
+                    setCoverImageFile(file);
+                    setCoverImagePreview(URL.createObjectURL(file));
+                  }} />
                 </label>
               )}
             </div>
 
-            {/* 2. Content Type */}
-            <FormField
-              control={form.control}
-              name="content_type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Content Type</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="bg-card border-border rounded-xl">
-                        <SelectValue placeholder="Select a type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-card border-border">
-                      {CONTENT_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>{displayContentType(t)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>Not sure? Prompt(s) is the simplest. Blueprint includes setup steps.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* 3. Description */}
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
+            {/* 4. Content Type */}
+            <FormField control={form.control} name="content_type" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Content Type</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <MentionInput
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Turns your AI into a specialist that…"
-                      maxLength={500}
-                      rows={3}
-                    />
+                    <SelectTrigger className="bg-card border-border rounded-xl"><SelectValue placeholder="Select a type" /></SelectTrigger>
                   </FormControl>
-                  <FormDescription>
-                    Describe what it does in plain English. Max 500 characters. Use @username to mention creators.
-                    <span className="ml-2 text-muted-foreground">{field.value.length}/500</span>
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  <SelectContent className="bg-card border-border">
+                    {CONTENT_TYPES.map((t) => <SelectItem key={t} value={t}>{displayContentType(t)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <FormDescription>Not sure? Prompt(s) is the simplest. Blueprint includes setup steps.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
 
-            {/* 4. Difficulty */}
-            <FormField
-              control={form.control}
-              name="difficulty"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Difficulty</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="bg-card border-border rounded-xl">
-                        <SelectValue placeholder="Select difficulty" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-card border-border">
-                      {DIFFICULTIES.map((d) => (
-                        <SelectItem key={d} value={d}>{d}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>Beginner = anyone can use this immediately. Advanced = multiple tools required.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* 5. Description (one-liner, max 120 chars) */}
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Input
+                    value={field.value}
+                    onChange={(e) => { if (e.target.value.length <= 120) field.onChange(e.target.value); }}
+                    placeholder="Turns your AI into a specialist that…"
+                    className="bg-card border-border rounded-xl"
+                    maxLength={120}
+                  />
+                </FormControl>
+                <FormDescription>
+                  One-line description. Max 120 characters.
+                  <span className="ml-2 text-muted-foreground">{field.value.length}/120</span>
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
 
-            {/* 5. AI Tools (checkboxes) */}
-            <FormField
-              control={form.control}
-              name="ai_tools"
-              render={() => (
-                <FormItem>
-                  <FormLabel>AI Tools Required</FormLabel>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
-                    {AI_TOOLS.map((tool) => (
-                      <FormField
-                        key={tool}
-                        control={form.control}
-                        name="ai_tools"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(tool)}
-                                onCheckedChange={(checked) => {
-                                  field.onChange(
-                                    checked
-                                      ? [...(field.value ?? []), tool]
-                                      : (field.value ?? []).filter((v) => v !== tool)
-                                  );
-                                }}
-                              />
-                            </FormControl>
-                            <Label className="text-xs text-foreground font-normal cursor-pointer">{tool}</Label>
-                          </FormItem>
-                        )}
+            {/* 6. What to Expect (block builder) */}
+            <WhatToExpectBuilder blocks={wteBlocks} onChange={setWteBlocks} />
+
+            {/* 7. Your Blueprint (content block builder) */}
+            <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} />
+
+            {/* 8. Difficulty */}
+            <FormField control={form.control} name="difficulty" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Difficulty</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="bg-card border-border rounded-xl"><SelectValue placeholder="Select difficulty" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="bg-card border-border">
+                    {DIFFICULTIES.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <FormDescription>Beginner = anyone can use this immediately. Advanced = multiple tools required.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* 9. AI Tools Required (Other always last) */}
+            <FormField control={form.control} name="ai_tools" render={() => (
+              <FormItem>
+                <FormLabel>AI Tools Required</FormLabel>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+                  {sortedTools.map((tool) => (
+                    <FormField key={tool} control={form.control} name="ai_tools" render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value?.includes(tool)}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked ? [...(field.value ?? []), tool] : (field.value ?? []).filter((v) => v !== tool));
+                            }}
+                          />
+                        </FormControl>
+                        <Label className="text-xs text-foreground font-normal cursor-pointer">{tool}</Label>
+                      </FormItem>
+                    )} />
+                  ))}
+                </div>
+                {/* Other tool name input */}
+                {isOtherSelected && (
+                  <div className="mt-2">
+                    <div className="relative">
+                      <Input
+                        value={otherToolName}
+                        onChange={(e) => setOtherToolName(e.target.value.slice(0, 60))}
+                        placeholder="What tool? e.g. 'Notion AI', 'Perplexity', 'Mistral'..."
+                        className="h-9 text-sm bg-card border-border pr-14"
+                        maxLength={60}
                       />
-                    ))}
-                  </div>
-                  {/* Suggest a tool */}
-                  <button type="button" onClick={() => setSubmitToolOpen(true)} className="text-xs text-primary hover:underline mt-2">
-                    Don't see your AI tool? Submit it →
-                  </button>
-                  <FormDescription>Tick every tool you have tested this with. Tick 'Any Tool' if it works everywhere.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* 6. Use Case Tags (pills) */}
-            <FormField
-              control={form.control}
-              name="use_cases"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Use Case Tags</FormLabel>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {USE_CASES.map((uc) => {
-                      const selected = field.value.includes(uc);
-                      return (
-                        <button
-                          key={uc}
-                          type="button"
-                          onClick={() =>
-                            field.onChange(
-                              selected
-                                ? field.value.filter((v) => v !== uc)
-                                : [...field.value, uc]
-                            )
-                          }
-                          className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                            selected
-                              ? "bg-primary/15 text-primary border-primary/30"
-                              : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
-                          }`}
-                        >
-                          {uc}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {field.value.includes("Other") && (
-                    <div className="mt-2">
-                      <Label className="text-xs text-muted-foreground">Describe your use case (optional)</Label>
-                      <div className="relative mt-1">
-                        <Input
-                          value={customUseCaseDesc}
-                          onChange={(e) => setCustomUseCaseDesc(e.target.value.slice(0, 50))}
-                          placeholder="e.g. Legal research, Recipe planning..."
-                          className="h-9 text-sm bg-card border-border pr-14"
-                          maxLength={50}
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{customUseCaseDesc.length} / 50</span>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground mt-1">This appears on your post in the feed. It's still categorised as 'Other' in filters.</p>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{otherToolName.length} / 60</span>
                     </div>
-                  )}
-                  <FormDescription>Select all that apply. This helps people find your content.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  </div>
+                )}
+                <button type="button" onClick={() => setSubmitToolOpen(true)} className="text-xs text-primary hover:underline mt-2">
+                  Don't see your AI tool? Submit it →
+                </button>
+                <FormDescription>Tick every tool you have tested this with. Tick 'Any Tool' if it works everywhere.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
 
-            {/* Tags — free-text */}
+            {/* 10. Use Case Tags */}
+            <FormField control={form.control} name="use_cases" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Use Case Tags</FormLabel>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {USE_CASES.map((uc) => {
+                    const selected = field.value.includes(uc);
+                    return (
+                      <button key={uc} type="button" onClick={() => field.onChange(selected ? field.value.filter((v) => v !== uc) : [...field.value, uc])}
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${selected ? "bg-primary/15 text-primary border-primary/30" : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"}`}>
+                        {uc}
+                      </button>
+                    );
+                  })}
+                </div>
+                {field.value.includes("Other") && (
+                  <div className="mt-2">
+                    <Label className="text-xs text-muted-foreground">Describe your use case (optional)</Label>
+                    <div className="relative mt-1">
+                      <Input value={customUseCaseDesc} onChange={(e) => setCustomUseCaseDesc(e.target.value.slice(0, 50))} placeholder="e.g. Legal research, Recipe planning..." className="h-9 text-sm bg-card border-border pr-14" maxLength={50} />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{customUseCaseDesc.length} / 50</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">This appears on your post in the feed.</p>
+                  </div>
+                )}
+                <FormDescription>Select all that apply. This helps people find your content.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* 11. Tags — free-text */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Tags (optional)</label>
               <p className="text-xs text-muted-foreground">Add up to 5 tags to help people find your blueprint.</p>
@@ -627,72 +628,31 @@ const Upload = () => {
               </div>
               {customTags.length < 5 && (
                 <div className="flex gap-2">
-                  <Input
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 30))}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && tagInput.trim()) {
-                        e.preventDefault();
-                        const tag = tagInput.trim().toLowerCase();
-                        if (!customTags.includes(tag)) setCustomTags([...customTags, tag]);
-                        setTagInput("");
-                      }
-                    }}
-                    placeholder="Type a tag and press Enter"
-                    className="bg-card border-border rounded-xl text-sm flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (tagInput.trim()) {
-                        const tag = tagInput.trim().toLowerCase();
-                        if (!customTags.includes(tag)) setCustomTags([...customTags, tag]);
-                        setTagInput("");
-                      }
-                    }}
-                  >Add</Button>
+                  <Input value={tagInput} onChange={(e) => setTagInput(e.target.value.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 30))} onKeyDown={(e) => {
+                    if (e.key === "Enter" && tagInput.trim()) {
+                      e.preventDefault();
+                      const tag = tagInput.trim().toLowerCase();
+                      if (!customTags.includes(tag)) setCustomTags([...customTags, tag]);
+                      setTagInput("");
+                    }
+                  }} placeholder="Type a tag and press Enter" className="bg-card border-border rounded-xl text-sm flex-1" />
+                  <Button type="button" variant="outline" size="sm" onClick={() => {
+                    if (tagInput.trim()) {
+                      const tag = tagInput.trim().toLowerCase();
+                      if (!customTags.includes(tag)) setCustomTags([...customTags, tag]);
+                      setTagInput("");
+                    }
+                  }}>Add</Button>
                 </div>
               )}
             </div>
 
-            {/* 7. Content Block Builder */}
-            <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} />
-
-            {/* Use instructions are now per-block inside ContentBlockBuilder */}
-
-            {/* 9. What to expect (optional) */}
-            <FormField
-              control={form.control}
-              name="what_to_expect"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>What to Expect (optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      rows={3}
-                      placeholder="Describe what a good output looks like so the user knows it worked."
-                      className="bg-card border-border rounded-xl"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Optional. Describe what a good output looks like.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Monetisation */}
+            {/* 12. Monetisation */}
             <div className="border border-border rounded-xl p-5 bg-card space-y-5">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Monetisation</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">Optional — free by default</p>
               </div>
-
-              {/* Free / Paid / PWYW selector */}
               <div className="space-y-4">
                 {(["free", "paid"] as const).map((type) => (
                   <div key={type} className="flex items-center justify-between">
@@ -711,21 +671,17 @@ const Upload = () => {
                 ))}
 
                 {monetisationType === "paid" && (
-                  <FormField
-                    control={form.control}
-                    name="price_gbp"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-foreground font-medium">£</span>
-                          <FormControl>
-                            <Input type="number" step="0.01" min="1" placeholder="4.99" className="bg-background border-border rounded-xl w-32" {...field} />
-                          </FormControl>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={form.control} name="price_gbp" render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-foreground font-medium">£</span>
+                        <FormControl>
+                          <Input type="number" step="0.01" min="1" placeholder="4.99" className="bg-background border-border rounded-xl w-32" {...field} />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 )}
 
                 <div className="flex items-center justify-between pt-2 border-t border-border">
@@ -733,30 +689,59 @@ const Upload = () => {
                     <p className="text-sm text-foreground">Donation button</p>
                     <p className="text-xs text-muted-foreground">Add a tip button so readers can support your work</p>
                   </div>
-                  <FormField
-                    control={form.control}
-                    name="donation_enabled"
-                    render={({ field }) => (
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    )}
-                  />
+                  <FormField control={form.control} name="donation_enabled" render={({ field }) => (
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  )} />
                 </div>
               </div>
             </div>
 
-            {/* Revenue Splits — only for paid content */}
-            {monetisationType === "paid" && (
-              <RevenueSplitPicker splits={revenueSplits} onChange={setRevenueSplits} />
-            )}
-
-            {/* Dependencies */}
-            <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
-
-            {/* Co-author invites */}
+            {/* 13. Co-authors */}
             <CollabInvitePicker invitees={collabInvitees} onChange={setCollabInvitees} />
 
-            {/* Submit */}
-            <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+            {/* Revenue Split — inline after co-authors when paid + co-authors */}
+            {showRevenueSplit && (
+              <div className="border border-border rounded-xl p-5 bg-card space-y-4">
+                <div className="border-b border-border pb-3">
+                  <h3 className="text-sm font-semibold text-foreground">Split your earnings</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Set how your earnings are split. Co-authors can propose a change after accepting.</p>
+                </div>
+
+                {inlineSplits.map((split) => (
+                  <div key={split.userId} className="flex items-center gap-3">
+                    <Avatar className="h-7 w-7 shrink-0">
+                      {split.avatarUrl && <AvatarImage src={split.avatarUrl} />}
+                      <AvatarFallback className="text-[10px] bg-accent text-muted-foreground">
+                        {(split.displayName || split.username).slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm text-foreground min-w-0 truncate">@{split.username}</span>
+                    <div className="flex items-center gap-1 ml-auto shrink-0">
+                      <Input
+                        type="number" min={1} max={89}
+                        value={split.percentage}
+                        onChange={(e) => setInlineSplits((prev) => prev.map((s) => s.userId === split.userId ? { ...s, percentage: Number(e.target.value) || 0 } : s))}
+                        className="w-20 h-8 text-sm bg-background border-border"
+                      />
+                      <span className="text-xs text-muted-foreground">% of your creator share</span>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Live summary */}
+                <div className={`text-xs ${splitError ? "text-destructive" : "text-muted-foreground"} pt-2 border-t border-border`}>
+                  You keep {keepPct}%
+                  {inlineSplits.map((s) => <span key={s.userId}> · {s.displayName} gets {s.percentage}%</span>)}
+                </div>
+                {splitError && <p className="text-xs text-destructive">You must keep at least 10% of your share.</p>}
+              </div>
+            )}
+
+            {/* 14. Dependencies */}
+            <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
+
+            {/* 15. Submit */}
+            <Button type="submit" size="lg" className="w-full" disabled={submitting || splitError}>
               {submitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

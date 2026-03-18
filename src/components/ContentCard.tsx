@@ -48,6 +48,7 @@ export interface ContentCardProps {
   collaborators?: { id: string; display_name: string | null; username: string | null; avatar_url: string | null; is_primary_author: boolean }[];
   has_curator_recommendation?: boolean;
   microtags?: string[];
+  other_tool_name?: string | null;
 }
 
 function roundedStars(avg: number, count: number): number {
@@ -118,6 +119,7 @@ export function ContentCard({
   collaborators = [],
   has_curator_recommendation = false,
   microtags: microtagsProp,
+  other_tool_name = null,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -293,11 +295,14 @@ export function ContentCard({
 
         {/* AI tools */}
         <div className="flex flex-wrap gap-1 mb-1.5">
-          {ai_tools.map((tool) => (
-            <span key={tool} className="text-[10px] px-1.5 py-0.5 rounded-md bg-accent text-muted-foreground">
-              {tool}
-            </span>
-          ))}
+          {ai_tools.map((tool) => {
+            const label = tool === "Other" && other_tool_name ? other_tool_name : tool;
+            return (
+              <span key={tool} className="text-[10px] px-1.5 py-0.5 rounded-md bg-accent text-muted-foreground">
+                {label}
+              </span>
+            );
+          })}
         </div>
 
         {/* Micro-tags */}

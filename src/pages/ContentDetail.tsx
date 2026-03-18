@@ -739,9 +739,10 @@ const ContentDetail = () => {
           <div className="mb-3">
             <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Works with</h3>
             <div className="flex flex-wrap gap-2">
-              {item.ai_tools.map((tool) => (
-                <span key={tool} className="text-xs px-2 py-1 rounded-lg bg-accent text-muted-foreground">{tool}</span>
-              ))}
+              {item.ai_tools.map((tool) => {
+                const label = tool === "Other" && (item as any)?.other_tool_name ? (item as any).other_tool_name : tool;
+                return <span key={tool} className="text-xs px-2 py-1 rounded-lg bg-accent text-muted-foreground">{label}</span>;
+              })}
             </div>
           </div>
         )}
