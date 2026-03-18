@@ -143,7 +143,7 @@ function RenderBlockContent({
   }, [type, imageUrl]);
 
   if (type === "text" || type === "long_text") {
-    const fmt = formatting?.type ?? "paragraph";
+    const fmt = formattingType ?? formatting?.type ?? "paragraph";
     const items: string[] = formatting?.items ?? [];
     const text = textContent ?? "";
     const isLong = type === "long_text";
