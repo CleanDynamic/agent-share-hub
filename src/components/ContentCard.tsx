@@ -119,6 +119,7 @@ export function ContentCard({
   collaborators = [],
   has_curator_recommendation = false,
   microtags: microtagsProp,
+  other_tool_name = null,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
