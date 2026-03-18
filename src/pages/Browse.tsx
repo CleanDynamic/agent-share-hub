@@ -259,6 +259,145 @@ function BrowseLearningPaths({ userId }: { userId?: string }) {
   );
 }
 
+function BrowseCollections() {
+  const [sort, setSort] = useState<"followers" | "newest" | "items">("followers");
+  const { data: collections, isLoading } = useQuery({
+    queryKey: ["browse_collections", sort],
+    queryFn: async () => {
+      const orderCol = sort === "followers" ? "follower_count" : sort === "newest" ? "created_at" : "item_count";
+      const { data, error } = await supabase
+        .from("collections")
+        .select("*, profiles!collections_owner_id_fkey(display_name, username)")
+        .eq("is_public", true)
+        .order(orderCol, { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Fetch microtags for collection items
+  const collectionIds = (collections ?? []).map((c) => c.id);
+  const { data: collectionMicrotags } = useQuery({
+    queryKey: ["browse_collection_microtags", collectionIds.join(",")],
+    queryFn: async () => {
+      if (collectionIds.length === 0) return new Map<string, string[]>();
+      // Get all collection_items content_ids, then their microtags
+      const { data: ciData } = await supabase
+        .from("collection_items")
+        .select("collection_id, content_id")
+        .in("collection_id", collectionIds);
+      if (!ciData || ciData.length === 0) return new Map<string, string[]>();
+      const contentIds = [...new Set(ciData.map((r) => r.content_id))];
+      const { data: mtData } = await supabase
+        .from("content_microtags")
+        .select("content_id, tag")
+        .in("content_id", contentIds.slice(0, 500));
+      // Build per-content tag map
+      const contentTagMap = new Map<string, string[]>();
+      (mtData ?? []).forEach((r: any) => {
+        const arr = contentTagMap.get(r.content_id) ?? [];
+        arr.push(r.tag);
+        contentTagMap.set(r.content_id, arr);
+      });
+      // Build per-collection top 3 tags
+      const result = new Map<string, string[]>();
+      for (const colId of collectionIds) {
+        const items = ciData.filter((ci) => ci.collection_id === colId);
+        const freq = new Map<string, number>();
+        for (const ci of items) {
+          for (const tag of (contentTagMap.get(ci.content_id) ?? [])) {
+            freq.set(tag, (freq.get(tag) ?? 0) + 1);
+          }
+        }
+        const top3 = [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t]) => t);
+        if (top3.length > 0) result.set(colId, top3);
+      }
+      return result;
+    },
+    enabled: collectionIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const sortOptions = [
+    { value: "followers" as const, label: "Most followed" },
+    { value: "newest" as const, label: "Newest" },
+    { value: "items" as const, label: "Most items" },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((n) => <Skeleton key={n} className="h-32 w-full rounded-xl" />)}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Sort pills */}
+      <div className="flex gap-1 mb-4">
+        {sortOptions.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setSort(opt.value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] ${
+              sort === opt.value
+                ? "bg-primary text-primary-foreground"
+                : "bg-accent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {(collections ?? []).length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <p className="text-sm text-muted-foreground">No public collections yet.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {(collections ?? []).map((col) => {
+            const owner = col.profiles as any;
+            const tags = collectionMicrotags?.get(col.id) ?? [];
+            return (
+              <Link
+                key={col.id}
+                to={`/collections/${col.slug}`}
+                className="border border-border rounded-xl p-5 bg-card hover:border-primary/40 transition-colors block"
+              >
+                <h3 className="text-sm font-semibold text-foreground mb-0.5 truncate">{col.title}</h3>
+                {owner && (
+                  <p className="text-[10px] text-muted-foreground mb-1">
+                    by {owner.display_name || owner.username}
+                  </p>
+                )}
+                {col.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{col.description}</p>
+                )}
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {tags.map((tag) => (
+                      <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,15%)] text-[hsl(240,7%,60%)]">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-3 text-[10px] text-muted-foreground pt-2 border-t border-border">
+                  <span>{col.item_count} items</span>
+                  <span>{col.follower_count} followers</span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const Browse = () => {
   const { isLoggedIn, profile } = useAuth();
   const { data: AI_TOOLS } = useApprovedToolNames();
