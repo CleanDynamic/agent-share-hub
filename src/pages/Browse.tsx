@@ -876,7 +876,7 @@ const Browse = () => {
               const useCasesArr = (item.use_cases ?? []) as string[];
               return (
                 <div key={item.id}>
-                  <FeedItem item={item} />
+                  <FeedItem item={item} context="browse" />
                   {(toolsArr.length > 0 || useCasesArr.length > 0) && (
                     <div className="px-4 pb-2 -mt-1 border-b border-border">
                       {toolsArr.length > 0 && (

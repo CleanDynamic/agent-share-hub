@@ -362,7 +362,7 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
         )}
         {activeTab === "likes" && (
           likedItems && likedItems.length > 0 ? (
-            <div>{likedItems.map((item: any) => <FeedItem key={item.id} item={item} />)}</div>
+            <div>{likedItems.map((item: any) => <FeedItem key={item.id} item={item} context="profile" navState={{ from: "profile", name: displayName }} />)}</div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <Heart className="h-10 w-10 text-muted-foreground mb-4" />

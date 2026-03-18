@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, Link, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { AddToCollectionButton } from "@/components/AddToCollectionButton";
 import { AddToLibraryButton } from "@/components/AddToLibraryButton";
-import { ContentCard } from "@/components/ContentCard";
+
 import { TipSelector } from "@/components/TipSelector";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
 import { AccountGateModal } from "@/components/AccountGateModal";
@@ -87,6 +87,8 @@ function DetailSkeleton() {
 
 const ContentDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { isLoggedIn, user, profile } = useAuth();
@@ -208,7 +210,7 @@ const ContentDetail = () => {
         .eq("status", "approved")
         .neq("id", id!)
         .order("download_count", { ascending: false })
-        .limit(3);
+        .limit(4);
       if (error) throw error;
       return data;
     },
@@ -435,9 +437,23 @@ const ContentDetail = () => {
         jsonLd={jsonLd}
       />
       <div className="mx-auto max-w-4xl">
-        <Link to="/browse" className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground mb-6 transition-colors">
-          <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Browse
-        </Link>
+        {(() => {
+          const state = location.state as { from?: string; name?: string } | null;
+          let backLabel = "Back";
+          if (state?.from === "browse") backLabel = "Back to Browse";
+          else if (state?.from === "feed") backLabel = "Back to Feed";
+          else if (state?.from === "profile" && state.name) backLabel = `Back to ${state.name}`;
+          else if (state?.from === "category" && state.name) backLabel = `Back to ${state.name}`;
+          else if (state?.from === "related") backLabel = "Back";
+          return (
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center text-[13px] text-[#9999AA] hover:text-foreground mb-4 transition-colors duration-100 cursor-pointer"
+            >
+              <ArrowLeft className="mr-1 h-3.5 w-3.5" /> {backLabel}
+            </button>
+          );
+        })()}
 
         {paymentSuccess && (
           <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
@@ -840,8 +856,42 @@ const ContentDetail = () => {
                 >
                   <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Add your recommendation
                 </Button>
-              )}
-            </div>
+            )}
+
+            {/* Related content — compact rows */}
+            {related && related.length > 0 && (
+              <div className="border border-border rounded-xl p-4 bg-card">
+                <p className="text-[15px] font-semibold text-foreground mb-3">Related</p>
+                <div className="space-y-2.5">
+                  {related.slice(0, 4).map((r) => {
+                    const accent = TYPE_COLORS[r.content_type]?.match(/text-\[([^\]]+)\]/)?.[1] || "#9999AA";
+                    return (
+                      <Link
+                        key={r.id}
+                        to={`/content/${r.id}`}
+                        state={{ from: "related" }}
+                        className="flex items-center gap-3 group"
+                      >
+                        <div className="w-[52px] h-[52px] rounded-md shrink-0 overflow-hidden">
+                          {(r as any).cover_image_url ? (
+                            <img src={(r as any).cover_image_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-accent/50">
+                              <span className="text-lg font-bold text-muted-foreground">{r.content_type[0]}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13px] font-semibold text-foreground leading-tight line-clamp-2 group-hover:text-primary transition-colors">{r.title}</p>
+                          <Badge variant="outline" className={`text-[9px] font-medium mt-1 ${difficultyColor(r.difficulty)}`}>{r.difficulty}</Badge>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
 
             {creator && (
               <Link
@@ -886,32 +936,7 @@ const ContentDetail = () => {
           )}
         </div>
 
-        {/* Related content */}
-        {related && related.length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Related Content</h2>
-            <div className="flex gap-4 overflow-x-auto pb-2 lg:grid lg:grid-cols-3 lg:overflow-visible scrollbar-hide">
-              {related.map((r) => (
-                <div key={r.id} className="min-w-[280px] lg:min-w-0">
-                  <ContentCard
-                    id={r.id}
-                    content_type={r.content_type}
-                    title={r.title}
-                    description={r.description ?? ""}
-                    difficulty={r.difficulty}
-                    ai_tools={r.ai_tools ?? []}
-                    download_count={r.download_count}
-                    monetisation_type={r.monetisation_type}
-                    price_gbp={r.price_gbp ?? undefined}
-                    avg_rating={Number((r as any).avg_rating) || 0}
-                    rating_count={(r as any).rating_count ?? 0}
-                    view_count={(r as any).view_count ?? 0}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Related content moved to sidebar */}
       </div>
 
       <GuestDownloadModal

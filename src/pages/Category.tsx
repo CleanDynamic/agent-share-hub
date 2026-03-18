@@ -208,7 +208,7 @@ export default function Category() {
       ) : (
         <div>
           {items.map((item: any) => (
-            <FeedItem key={item.id} item={item} />
+            <FeedItem key={item.id} item={item} context="category" navState={{ from: "category", name: cat.name }} />
           ))}
         </div>
       )}

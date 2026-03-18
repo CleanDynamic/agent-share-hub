@@ -97,19 +97,28 @@ function ToolsUseCasesRow({ item }: { item: any }) {
 interface FeedItemProps {
   item: any;
   rank?: number;
+  /** Where this feed item is rendered — controls density */
+  context?: "home" | "browse" | "category" | "profile";
+  /** Navigation state label for back button on detail page */
+  navState?: { from: string; name?: string };
 }
 
-export function FeedItem({ item, rank }: FeedItemProps) {
+export function FeedItem({ item, rank, context = "home", navState }: FeedItemProps) {
   const navigate = useNavigate();
   const profile = item.profiles as any;
   const starVal = roundedStars(Number(item.avg_rating) || 0, item.rating_count ?? 0);
   const initials = (profile?.display_name || profile?.username || "?").slice(0, 2).toUpperCase();
 
+  const state = navState ?? { from: context === "browse" ? "browse" : "feed" };
+
   const handleCardClick = () => {
-    navigate(`/content/${item.id}`);
+    navigate(`/content/${item.id}`, { state });
   };
 
   const stop = (e: React.MouseEvent) => e.stopPropagation();
+
+  const isLight = context === "home";
+  const showDescription = item.title.length <= 60 && !!item.description;
 
   return (
     <div
@@ -154,15 +163,15 @@ export function FeedItem({ item, rank }: FeedItemProps) {
       </div>
 
       {/* LINE 3 — Title */}
-      <p className="text-[15px] font-semibold text-foreground leading-[1.3] mt-1 line-clamp-2">{item.title}</p>
+      <p className="text-sm font-semibold text-foreground leading-[1.3] mt-1 line-clamp-2">{item.title}</p>
 
-      {/* LINE 4 — Description */}
-      {item.description && (
+      {/* LINE 4 — Description (hidden if long title) */}
+      {showDescription && (
         <p className="text-[13px] text-muted-foreground truncate mt-0.5">{item.description}</p>
       )}
 
-      {/* LINE 4.5 — Tools + Use Cases row */}
-      <ToolsUseCasesRow item={item} />
+      {/* LINE 4.5 — Tools + Use Cases row (hidden on home/light feeds) */}
+      {!isLight && <ToolsUseCasesRow item={item} />}
 
       {/* LINE 5 — Cover image */}
       {item.cover_image_url && (
@@ -172,7 +181,7 @@ export function FeedItem({ item, rank }: FeedItemProps) {
           loading="lazy"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           className="w-full rounded-xl mt-2 block object-cover"
-          style={{ maxHeight: 240 }}
+          style={{ maxHeight: 200 }}
         />
       )}
 
@@ -187,8 +196,12 @@ export function FeedItem({ item, rank }: FeedItemProps) {
             <MiniStars value={starVal} />
           </>
         )}
-        <span className="text-[#444450] shrink-0">·</span>
-        <span className="inline-flex items-center gap-[3px] shrink-0"><MessageSquare className="h-3 w-3" />{item.comment_count ?? 0}</span>
+        {!isLight && (
+          <>
+            <span className="text-[#444450] shrink-0">·</span>
+            <span className="inline-flex items-center gap-[3px] shrink-0"><MessageSquare className="h-3 w-3" />{item.comment_count ?? 0}</span>
+          </>
+        )}
       </div>
     </div>
   );
