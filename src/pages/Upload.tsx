@@ -41,7 +41,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const schema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
   content_type: z.string().min(1, "Select a content type"),
-  description: z.string().trim().min(1, "Description is required").max(120, "Max 120 characters"),
+  description: z.string().trim().min(1, "Description is required").max(500, "Max 500 characters"),
   difficulty: z.string().min(1, "Select a difficulty level"),
   ai_tools: z.array(z.string()).min(1, "Select at least one AI tool"),
   use_cases: z.array(z.string()),
