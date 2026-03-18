@@ -672,6 +672,7 @@ export type Database = {
           star_rating: number
           status: string
           title: string
+          tool_url: string | null
           use_cases: string[] | null
           use_instructions: string | null
           verification_count: number
@@ -714,6 +715,7 @@ export type Database = {
           star_rating?: number
           status?: string
           title: string
+          tool_url?: string | null
           use_cases?: string[] | null
           use_instructions?: string | null
           verification_count?: number
@@ -756,6 +758,7 @@ export type Database = {
           star_rating?: number
           status?: string
           title?: string
+          tool_url?: string | null
           use_cases?: string[] | null
           use_instructions?: string | null
           verification_count?: number

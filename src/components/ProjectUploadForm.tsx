@@ -22,10 +22,8 @@ import {
 
 // ─── Constants ──────────────────────────────────────────────
 
-const CONTENT_TYPES = [
-  "Prompt File", "Prompt Tutorial", "Agent Blueprint", "Workflow Template",
-  "Agent Stack", "Model Config Guide", "Integration Guide", "Evaluation Framework", "Failure Library",
-];
+import { ORDERED_CONTENT_TYPES } from "@/lib/content-types";
+const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
 const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;

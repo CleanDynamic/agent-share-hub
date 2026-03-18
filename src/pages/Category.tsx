@@ -21,10 +21,10 @@ interface CategoryDef {
 const CATEGORIES: CategoryDef[] = [
   {
     slug: "prompt-file",
-    name: "Prompt Files",
+    name: "Prompt(s)",
     contentType: "Prompt File",
     description: "Ready-made prompts you can paste directly into any AI tool to get specialist results instantly.",
-    seoTitle: "Prompt Files — Download AI Prompts | NeoScale AI",
+    seoTitle: "Prompts — Download AI Prompts | NeoScale AI",
     seoDescription: "Download ready-made prompts for ChatGPT, Claude, Gemini and any AI. Paste in and your AI becomes a specialist instantly. Free to download.",
   },
   {
@@ -99,6 +99,14 @@ const CATEGORIES: CategoryDef[] = [
     seoTitle: "AI Projects — Curated Bundles | NeoScale AI",
     seoDescription: "Complete AI project bundles combining prompts, automations, and guides into ready-to-use packages.",
     isProject: true,
+  },
+  {
+    slug: "ai-tools-llms",
+    name: "AI Tools (LLMs)",
+    contentType: "AI Tools (LLMs)",
+    description: "Discover and share AI tools, models, and platforms. Reviews, guides, and commentary from the community.",
+    seoTitle: "AI Tools & LLMs — Discover AI Models | NeoScale AI",
+    seoDescription: "Explore AI tools, LLMs, and platforms. Community reviews and guides for ChatGPT, Claude, Gemini, and more.",
   },
 ];
 

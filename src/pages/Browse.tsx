@@ -22,10 +22,9 @@ import {
 
 const ALL = "all";
 
-const CONTENT_TYPES = [
-  "Prompt File", "Prompt Tutorial", "Agent Blueprint", "Workflow Template",
-  "Agent Stack", "Model Config Guide", "Integration Guide", "Evaluation Framework", "Failure Library",
-];
+import { ORDERED_CONTENT_TYPES, SLUG_TO_TYPE, displayContentType } from "@/lib/content-types";
+
+const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
 const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance", "Hobby", "Other"];
 
@@ -75,7 +74,7 @@ function FilterDropdowns({
           </SelectTrigger>
           <SelectContent className="bg-card border-border">
             <SelectItem value={ALL}>All Types</SelectItem>
-            {CONTENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            {CONTENT_TYPES.map((t) => <SelectItem key={t} value={t}>{displayContentType(t)}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -119,17 +118,7 @@ function FilterDropdowns({
   );
 }
 
-const SLUG_TO_TYPE: Record<string, string> = {
-  "prompt-file": "Prompt File",
-  "prompt-tutorial": "Prompt Tutorial",
-  "agent-blueprint": "Agent Blueprint",
-  "workflow-template": "Workflow Template",
-  "agent-stack": "Agent Stack",
-  "model-config-guide": "Model Config Guide",
-  "integration-guide": "Integration Guide",
-  "evaluation-framework": "Evaluation Framework",
-  "failure-library": "Failure Library",
-};
+// SLUG_TO_TYPE imported from shared module
 
 const DIFF_COLORS: Record<string, string> = {
   "Beginner only": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",

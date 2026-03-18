@@ -10,18 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Library, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const CONTENT_TYPES = [
-  "All",
-  "Prompt File",
-  "Prompt Tutorial",
-  "Agent Blueprint",
-  "Workflow Template",
-  "Agent Stack",
-  "Model Config Guide",
-  "Integration Guide",
-  "Evaluation Framework",
-  "Failure Library",
-];
+import { ORDERED_CONTENT_TYPES, displayContentType } from "@/lib/content-types";
+const CONTENT_TYPES = ["All", ...ORDERED_CONTENT_TYPES];
 
 type StatusFilter = "all" | "updated" | "new";
 

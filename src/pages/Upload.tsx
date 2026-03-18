@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -31,11 +31,10 @@ import { LearningPathUploadForm } from "@/components/LearningPathUploadForm";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
 import { useMicrotagDefinitions } from "@/hooks/useMicrotags";
 
-const CONTENT_TYPES = [
-  "Prompt File", "Prompt Tutorial", "Agent Blueprint", "Workflow Template",
-  "Agent Stack", "Model Config Guide", "Integration Guide", "Evaluation Framework", "Failure Library",
-];
-const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
+import { ORDERED_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, ANY_DIFFICULTY_TYPES, displayContentType } from "@/lib/content-types";
+
+const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
+const DIFFICULTIES = [...DIFF_LIST, "Any"];
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance", "Hobby", "Other"];
 const ACCEPTED_TYPES = [".txt", ".md", ".json", ".pdf"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -74,6 +73,7 @@ const Upload = () => {
   const [microtagError, setMicrotagError] = useState("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  const [toolUrl, setToolUrl] = useState("");
   const { data: microtagDefs } = useMicrotagDefinitions();
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -91,6 +91,16 @@ const Upload = () => {
       donation_enabled: false,
     },
   });
+
+  const watchedContentType = form.watch("content_type");
+  const isAIToolsType = watchedContentType === "AI Tools (LLMs)";
+
+  // Auto-set difficulty for AI Tools (LLMs)
+  useEffect(() => {
+    if (isAIToolsType) {
+      form.setValue("difficulty", "Any");
+    }
+  }, [isAIToolsType, form]);
 
   const monetisationType = form.watch("monetisation_type");
 
@@ -152,6 +162,11 @@ const Upload = () => {
       }
 
       const contentId = insertedItem.id;
+
+      // Save tool_url if AI Tools type
+      if (isAIToolsType && toolUrl.trim()) {
+        await supabase.from("content_items").update({ tool_url: toolUrl.trim() } as any).eq("id", contentId);
+      }
 
       // Upload cover image if selected
       if (coverImageFile) {
@@ -456,11 +471,11 @@ const Upload = () => {
                     </FormControl>
                     <SelectContent className="bg-card border-border">
                       {CONTENT_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                        <SelectItem key={t} value={t}>{displayContentType(t)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription>Not sure? Prompt File is the simplest. Blueprint includes setup steps.</FormDescription>
+                  <FormDescription>Not sure? Prompt(s) is the simplest. Blueprint includes setup steps.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

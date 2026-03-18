@@ -6,17 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { AddToLibraryButton } from "@/components/AddToLibraryButton";
 import { CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
 
-const TYPE_COLORS: Record<string, string> = {
-  "Prompt File": "bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/30",
-  "Prompt Tutorial": "bg-[#2EC4B6]/15 text-[#2EC4B6] border-[#2EC4B6]/30",
-  "Agent Blueprint": "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  "Workflow Template": "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  "Agent Stack": "bg-red-500/15 text-red-400 border-red-500/30",
-  "Model Config Guide": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  "Integration Guide": "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  "Evaluation Framework": "bg-pink-500/15 text-pink-400 border-pink-500/30",
-  "Failure Library": "bg-muted text-muted-foreground border-border",
-};
+import { TYPE_COLORS } from "@/lib/content-types";
 
 interface Props {
   contentId: string;

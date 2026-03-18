@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Lock, Loader2, Eye, Star, StarHalf, GitFork, Link2, Clock } from "lucide-react";
+import { Download, Lock, Loader2, Eye, Star, StarHalf, GitFork, Link2, Clock, ExternalLink } from "lucide-react";
+import { TYPE_COLORS as SHARED_TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CompatibilityBadge } from "@/components/CompatibilityBadge";
 import { formatDistanceToNow } from "date-fns";
@@ -72,17 +73,7 @@ function MiniStars({ value }: { value: number }) {
   return <div className="flex gap-0.5">{stars}</div>;
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  "Prompt File": "bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/30",
-  "Prompt Tutorial": "bg-[#2EC4B6]/15 text-[#2EC4B6] border-[#2EC4B6]/30",
-  "Agent Blueprint": "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  "Workflow Template": "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  "Agent Stack": "bg-red-500/15 text-red-400 border-red-500/30",
-  "Model Config Guide": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  "Integration Guide": "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  "Evaluation Framework": "bg-pink-500/15 text-pink-400 border-pink-500/30",
-  "Failure Library": "bg-muted text-muted-foreground border-border",
-};
+const TYPE_COLORS = SHARED_TYPE_COLORS;
 
 function difficultyColor(level: string) {
   switch (level) {
@@ -225,7 +216,7 @@ export function ContentCard({
             variant="outline"
             className={`text-[10px] font-medium ${TYPE_COLORS[content_type] ?? TYPE_COLORS["Failure Library"]}`}
           >
-            {content_type}
+            {displayContentType(content_type)}
           </Badge>
         {isSub ? (
             <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">
