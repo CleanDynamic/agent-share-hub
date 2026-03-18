@@ -62,6 +62,7 @@ const Upload = () => {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
+  const [dependencies, setDependencies] = useState<Dependency[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
