@@ -391,6 +391,44 @@ const Upload = () => {
               )}
             />
 
+            {/* Cover Image (optional) */}
+            <div className="space-y-2">
+              <Label>Cover image (optional)</Label>
+              <p className="text-xs text-muted-foreground">A visual that appears in the feed. Recommended: 1200×630px.</p>
+              {coverImagePreview ? (
+                <div className="relative">
+                  <img src={coverImagePreview} alt="Cover preview" className="w-full rounded-xl object-cover" style={{ maxHeight: 200 }} />
+                  <button
+                    type="button"
+                    onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); }}
+                    className="absolute top-2 right-2 p-1 rounded-full bg-background/80 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center gap-2 py-6 px-4 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/40 transition-colors">
+                  <ImagePlus className="h-6 w-6 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Click to upload (.jpg, .png, .webp — max 3MB)</span>
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 3 * 1024 * 1024) {
+                        toast({ title: "File too large", description: "Cover image must be under 3MB.", variant: "destructive" });
+                        return;
+                      }
+                      setCoverImageFile(file);
+                      setCoverImagePreview(URL.createObjectURL(file));
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+
             {/* 2. Content Type */}
             <FormField
               control={form.control}
