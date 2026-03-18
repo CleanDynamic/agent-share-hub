@@ -622,7 +622,6 @@ const Browse = () => {
         {browseTab === "collections" ? (
           <BrowseCollections />
         ) : browseTab === "projects" ? (
-        ) : browseTab === "projects" ? (
           <>
             {/* Project search */}
             <div className="relative mb-4">
