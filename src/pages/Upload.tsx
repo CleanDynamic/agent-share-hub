@@ -72,6 +72,7 @@ const Upload = () => {
   const [wteBlocks, setWteBlocks] = useState<WteBlock[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [insertedContentId, setInsertedContentId] = useState<string | null>(null);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
   const [collabInvitees, setCollabInvitees] = useState<CollabInvitee[]>([]);
