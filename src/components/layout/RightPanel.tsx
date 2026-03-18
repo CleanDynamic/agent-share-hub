@@ -13,7 +13,7 @@ import { ORDERED_CONTENT_TYPES, TYPE_COLORS, displayContentType } from "@/lib/co
 const CATEGORIES: { name: string; dbType: string; difficulty: string; slug: string; isProject?: boolean }[] = [
   { name: "Prompt(s)", dbType: "Prompt File", difficulty: "Beginner", slug: "prompt-file" },
   { name: "Prompt Tutorial", dbType: "Prompt Tutorial", difficulty: "Beginner", slug: "prompt-tutorial" },
-  { name: "Agent Blueprint", dbType: "Agent Blueprint", difficulty: "Beginner", slug: "agent-blueprint" },
+  { name: "Agent(s) Blueprint", dbType: "Agent Blueprint", difficulty: "Beginner", slug: "agent-blueprint" },
   { name: "Model Config Guide", dbType: "Model Config Guide", difficulty: "Beginner", slug: "model-config-guide" },
   { name: "Integration Guide", dbType: "Integration Guide", difficulty: "Beginner", slug: "integration-guide" },
   { name: "Workflow Template", dbType: "Workflow Template", difficulty: "Intermediate", slug: "workflow-template" },
@@ -199,12 +199,17 @@ function SearchSection() {
 function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
   const location = useLocation();
 
-  // Determine active slug from URL
+  // Determine active slug from URL — single source of truth
   const getActiveSlug = (): string | null => {
-    const match = location.pathname.match(/^\/category\/(.+)$/);
-    if (match) return match[1];
-    const params = new URLSearchParams(location.search);
-    if (location.pathname === "/browse" && params.get("tab") === "projects") return "projects";
+    // Match /category/:slug routes
+    const catMatch = location.pathname.match(/^\/category\/(.+)$/);
+    if (catMatch) return catMatch[1];
+    // Match /browse?tab=projects
+    if (location.pathname === "/browse") {
+      const params = new URLSearchParams(location.search);
+      if (params.get("tab") === "projects") return "projects";
+    }
+    // Any other page: no card active
     return null;
   };
   const activeSlug = getActiveSlug();
@@ -214,11 +219,12 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
       {CATEGORIES.map((cat, i) => {
         const isLast = i === CATEGORIES.length - 1;
         const isAITools = cat.dbType === "AI Tools (LLMs)";
-        const isActive = activeSlug === cat.slug;
+
+        // Strict equality — only highlight when slug explicitly matches
+        const isActive = activeSlug !== null && activeSlug !== "" && activeSlug === cat.slug;
 
         const handleClick = () => {
           if (isActive) {
-            // Deactivate — go to browse with no filter
             navigate("/browse");
           } else if (cat.isProject) {
             navigate("/browse?tab=projects");
@@ -231,12 +237,13 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
           <button
             key={cat.slug}
             onClick={handleClick}
-            className={`text-left rounded-xl p-3.5 transition-colors hover:brightness-110 ${isLast ? "col-span-2" : ""}`}
+            className={`text-left rounded-xl transition-colors hover:brightness-110 ${isLast ? "col-span-2" : ""}`}
             style={{
               background: isActive ? "rgba(232, 87, 26, 0.08)" : "#111118",
               border: isActive
                 ? "2px solid #E8571A"
                 : `1px solid ${cat.isProject ? "#2EC4B6" : isAITools ? "#7C3AED" : "#1E1E2A"}`,
+              padding: isActive ? "calc(0.875rem - 1px) calc(0.875rem - 1px)" : "0.875rem",
             }}
           >
             <p className="text-sm font-bold text-foreground leading-tight">{cat.name}</p>
