@@ -13,6 +13,7 @@ import { useApprovedToolNames } from "@/hooks/useApprovedTools";
 import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MentionInput } from "@/components/MentionInput";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
