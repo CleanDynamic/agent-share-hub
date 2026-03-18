@@ -225,7 +225,13 @@ export function ContentCard({
         </h3>
         <p className="text-xs text-muted-foreground leading-relaxed mb-1 flex-1">{description}</p>
         {has_preview && (
-          <p className="text-[11px] font-medium mb-3" style={{ color: "#2EC4B6" }}>Preview available</p>
+          <p className="text-[11px] font-medium mb-1" style={{ color: "#2EC4B6" }}>Preview available</p>
+        )}
+        {last_changelog_at && (
+          <p className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1">
+            <Clock className="h-2.5 w-2.5" />
+            Updated {formatDistanceToNow(new Date(last_changelog_at), { addSuffix: true })}
+          </p>
         )}
 
         {/* AI tools */}
