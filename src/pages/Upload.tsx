@@ -72,6 +72,7 @@ const Upload = () => {
   const [wteBlocks, setWteBlocks] = useState<WteBlock[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [insertedContentId, setInsertedContentId] = useState<string | null>(null);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
   const [collabInvitees, setCollabInvitees] = useState<CollabInvitee[]>([]);
@@ -196,7 +197,8 @@ const Upload = () => {
         what_to_expect: values.what_to_expect,
         what_to_expect_blocks: wteBlocksJsonb,
         other_tool_name: isOtherSelected && otherToolName.trim() ? otherToolName.trim() : null,
-        status: "pending",
+        status: "approved",
+        approved_at: new Date().toISOString(),
         monetisation_type: actualMonetisationType,
         price_gbp: actualPriceGbp,
         donation_enabled: values.donation_enabled,
@@ -210,6 +212,7 @@ const Upload = () => {
         setSubmitting(false);
         return;
       }
+      setInsertedContentId(insertedItem.id);
 
       const contentId = insertedItem.id;
 
@@ -389,13 +392,15 @@ const Upload = () => {
     return (
       <div className="py-20 px-6 flex flex-col items-center justify-center text-center gap-4">
         <CheckCircle2 className="h-12 w-12 text-secondary" />
-        <h2 className="text-xl font-bold text-foreground">Submission Received</h2>
+        <h2 className="text-xl font-bold text-foreground">Your post is live!</h2>
         <p className="text-sm text-muted-foreground max-w-md">
-          Your submission has been received. We will review it and get back to you within 48 hours.
+          Your blueprint has been published and is now visible in the feed.
         </p>
         <div className="flex gap-3 mt-4">
-          <Button variant="outline" onClick={() => navigate("/browse")}>Browse Blueprints</Button>
-          <Button variant="outline" onClick={() => { setSuccess(false); form.reset(); setContentBlocks([emptyBlock("text")]); setWteBlocks([]); setDependencies([]); setCoverImageFile(null); setCoverImagePreview(null); }}>Upload Another</Button>
+          {insertedContentId && (
+            <Button onClick={() => navigate(`/content/${insertedContentId}`)}>View Post</Button>
+          )}
+          <Button variant="outline" onClick={() => { setSuccess(false); setInsertedContentId(null); form.reset(); setContentBlocks([emptyBlock("text")]); setWteBlocks([]); setDependencies([]); setCoverImageFile(null); setCoverImagePreview(null); }}>Upload Another</Button>
         </div>
       </div>
     );
