@@ -63,7 +63,9 @@ const Upload = () => {
   const [success, setSuccess] = useState(false);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
-
+  const [revenueSplits, setRevenueSplits] = useState<RevenueSplit[]>([]);
+  const [collabInvitees, setCollabInvitees] = useState<CollabInvitee[]>([]);
+  const [pwywFloor, setPwywFloor] = useState<number>(0);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
