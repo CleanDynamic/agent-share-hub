@@ -213,7 +213,7 @@ function FollowingTab() {
       if (!followIds || followIds.length === 0) return [];
       const { data, error } = await supabase
         .from("content_items")
-        .select("id, title, description, content_type, difficulty, ai_tools, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, creator_id, profiles!content_items_creator_id_fkey(display_name, username)")
+        .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, creator_id, profiles!content_items_creator_id_fkey(display_name, username)")
         .in("creator_id", followIds)
         .eq("status", "approved")
         .order("created_at", { ascending: false })
