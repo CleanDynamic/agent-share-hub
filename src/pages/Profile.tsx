@@ -231,8 +231,28 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Content grid for creators */}
-            {profile.is_creator && contentItems && contentItems.length > 0 && (
+            {/* Tabs */}
+            <div className="flex gap-1 mb-4">
+              <button
+                onClick={() => setProfileTab("content")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  profileTab === "content" ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Content
+              </button>
+              <button
+                onClick={() => setProfileTab("library")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  profileTab === "library" ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Library className="h-3.5 w-3.5 inline mr-1" />Library
+              </button>
+            </div>
+
+            {/* Content tab */}
+            {profileTab === "content" && profile.is_creator && contentItems && contentItems.length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold text-foreground mb-4">Your content</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -255,6 +275,54 @@ export default function Profile() {
                     />
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Library tab */}
+            {profileTab === "library" && (
+              <div>
+                <h2 className="text-lg font-semibold text-foreground mb-4">Your library</h2>
+                {libraryItems && libraryItems.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {libraryItems.map((lib: any) => {
+                      const item = lib.content_items;
+                      if (!item) return null;
+                      return (
+                        <div key={lib.id} className="relative">
+                          {lib.has_update && (
+                            <div className="absolute -top-1.5 -right-1.5 z-10 h-3 w-3 rounded-full bg-primary" />
+                          )}
+                          <ContentCard
+                            id={item.id}
+                            content_type={item.content_type}
+                            title={item.title}
+                            description={item.description ?? ""}
+                            difficulty={item.difficulty}
+                            ai_tools={item.ai_tools ?? []}
+                            download_count={item.download_count}
+                            monetisation_type={item.monetisation_type}
+                            price_gbp={item.price_gbp ?? undefined}
+                            avg_rating={Number(item.avg_rating) || 0}
+                            rating_count={item.rating_count ?? 0}
+                            view_count={item.view_count ?? 0}
+                          />
+                          {lib.has_update && (
+                            <p className="text-[11px] text-primary mt-1 px-1">Updated since you saved this</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <Library className="h-10 w-10 text-muted-foreground mb-4" />
+                    <p className="text-sm text-foreground font-medium mb-1">Your library is empty.</p>
+                    <p className="text-sm text-muted-foreground mb-4">Add content using the shelf icon on any post.</p>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to="/browse">Browse content</Link>
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
