@@ -526,7 +526,7 @@ export function ContentBlockViewer({
                   {/* Block content with blur */}
                   <div className="p-5 relative min-h-[80px]">
                     <div
-                      className={isUnblurred ? "" : "blur-[8px] pointer-events-none select-none"}
+                      className={isUnblurred ? "" : "blur-[6px] pointer-events-none select-none"}
                       style={{ transition: "filter 0.3s ease" }}
                     >
                       {showingVariation ? (
