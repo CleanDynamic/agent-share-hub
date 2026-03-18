@@ -528,11 +528,13 @@ export function ContentBlockViewer({
                       className={isUnblurred ? "" : "blur-[6px] pointer-events-none select-none"}
                       style={{ transition: "filter 0.3s ease" }}
                     >
-                      {showingVariation ? (
+                     {showingVariation ? (
                         <RenderBlockContent
                           type={showingVariation.variation_type}
                           textContent={showingVariation.text_content}
                           formatting={showingVariation.formatting}
+                          formattingType={null}
+                          subBlocks={null}
                           fileUrl={showingVariation.file_url}
                           fileName={showingVariation.file_name}
                           fileSizeBytes={null}
@@ -545,6 +547,8 @@ export function ContentBlockViewer({
                           type={block.block_type}
                           textContent={block.text_content}
                           formatting={block.formatting}
+                          formattingType={block.formatting_type}
+                          subBlocks={block.sub_blocks}
                           fileUrl={block.file_url}
                           fileName={block.file_name}
                           fileSizeBytes={block.file_size_bytes}
