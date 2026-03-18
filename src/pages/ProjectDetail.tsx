@@ -510,6 +510,38 @@ const ProjectDetail = () => {
                     );
                   })}
                 </div>
+
+                {/* Creator: Add blueprint */}
+                {isProjectOwner && (
+                  <div className="mt-6 relative">
+                    {showAddExistingSearch ? (
+                      <ExistingBlueprintSearch
+                        excludeIds={existingLinkedIds}
+                        onSelect={handleAddExistingBlueprint}
+                        onClose={() => { setShowAddExistingSearch(false); setShowAddDropdown(false); }}
+                      />
+                    ) : showAddDropdown ? (
+                      <div className="flex gap-3">
+                        <Button type="button" variant="outline" size="sm"
+                          className="flex-1 gap-1.5 border-secondary text-secondary hover:bg-secondary/10"
+                          onClick={() => navigate("/upload")}>
+                          <Plus className="h-3.5 w-3.5" /> New blueprint
+                        </Button>
+                        <Button type="button" variant="outline" size="sm"
+                          className="flex-1 gap-1.5 border-secondary text-secondary hover:bg-secondary/10"
+                          onClick={() => setShowAddExistingSearch(true)}>
+                          <Plus className="h-3.5 w-3.5" /> Add existing
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button type="button" variant="outline" size="sm"
+                        className="gap-1.5 border-secondary text-secondary hover:bg-secondary/10"
+                        onClick={() => setShowAddDropdown(true)}>
+                        <Plus className="h-3.5 w-3.5" /> Add blueprint
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
