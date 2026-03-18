@@ -492,7 +492,7 @@ function FeaturedCollectionsSection({ navigate }: { navigate: ReturnType<typeof 
         })}
       </div>
       <Link to="/browse?tab=collections" className="text-[11px] text-muted-foreground hover:text-foreground transition-colors mt-1.5 inline-block">
-        Browse all →
+        Discover all →
       </Link>
     </div>
   );

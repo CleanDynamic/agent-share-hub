@@ -153,7 +153,7 @@ export default function Category() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <h1 className="text-2xl font-bold mb-4">Category not found</h1>
-        <Link to="/browse" className="text-primary hover:underline">Back to Browse</Link>
+        <Link to="/browse" className="text-primary hover:underline">Back to Discover</Link>
       </div>
     );
   }

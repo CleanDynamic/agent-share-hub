@@ -589,7 +589,7 @@ const Browse = () => {
                 : "bg-accent text-muted-foreground hover:text-foreground"
             }`}
           >
-            Content
+             Blueprints
           </button>
           <button
             onClick={() => setBrowseTab("projects")}

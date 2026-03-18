@@ -455,7 +455,7 @@ const ContentDetail = () => {
         {(() => {
           const state = location.state as { from?: string; name?: string } | null;
           let backLabel = "Back";
-          if (state?.from === "browse") backLabel = "Back to Browse";
+          if (state?.from === "browse") backLabel = "Back to Discover";
           else if (state?.from === "feed") backLabel = "Back to Feed";
           else if (state?.from === "profile" && state.name) backLabel = `Back to ${state.name}`;
           else if (state?.from === "category" && state.name) backLabel = `Back to ${state.name}`;

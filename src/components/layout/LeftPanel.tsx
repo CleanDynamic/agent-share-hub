@@ -37,7 +37,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
 
   const navItems: NavItem[] = [
     { icon: Home, label: "Home", to: "/" },
-    { icon: LayoutGrid, label: "Browse", to: "/browse" },
+    { icon: LayoutGrid, label: "Discover", to: "/browse" },
     { icon: Upload, label: "Upload", to: "/upload" },
     { icon: FilePenLine, label: "Drafts", to: "/drafts", authOnly: true, badge: draftBadge },
     { icon: Bookmark, label: "Saved", to: "/saved", authOnly: true },

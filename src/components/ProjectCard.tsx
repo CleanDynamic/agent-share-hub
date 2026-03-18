@@ -60,7 +60,7 @@ export function ProjectCard({
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-              {componentCount} component{componentCount !== 1 ? "s" : ""}
+              {componentCount} blueprint{componentCount !== 1 ? "s" : ""}
             </span>
             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
               <Eye className="h-3 w-3" />
