@@ -95,7 +95,7 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
   const displayName = profile.display_name || profile.username || "Creator";
 
   const tabs = [
-    { key: "posts", label: "Posts" },
+    { key: "posts", label: "Portfolio" },
     { key: "replies", label: "Replies" },
     { key: "media", label: "Media" },
     { key: "likes", label: "Likes" },
