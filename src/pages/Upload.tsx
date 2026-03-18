@@ -657,36 +657,36 @@ const Upload = () => {
             {/* 7. Content Block Builder */}
             <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} />
 
-            {/* 8. Use Instructions */}
+            {/* 8. Use Instructions (optional) */}
             <FormField
               control={form.control}
               name="use_instructions"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Use Instructions</FormLabel>
+                  <FormLabel>Use Instructions (optional)</FormLabel>
                   <FormControl>
                     <Textarea
-                      rows={5}
+                      rows={4}
                       placeholder={"1. Open ChatGPT.\n2. Paste the file content into the message box.\n3. Type your first instruction."}
                       className="bg-card border-border rounded-xl"
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    Number each step. Write as if explaining to someone who has never used AI.
+                    Optional. Number each step if you want to guide users.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* 9. What to expect */}
+            {/* 9. What to expect (optional) */}
             <FormField
               control={form.control}
               name="what_to_expect"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>What to Expect</FormLabel>
+                  <FormLabel>What to Expect (optional)</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={3}
@@ -696,7 +696,7 @@ const Upload = () => {
                     />
                   </FormControl>
                   <FormDescription>
-                    Describe what a good output looks like so the user knows it worked.
+                    Optional. Describe what a good output looks like.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
