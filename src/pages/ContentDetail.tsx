@@ -437,9 +437,23 @@ const ContentDetail = () => {
         jsonLd={jsonLd}
       />
       <div className="mx-auto max-w-4xl">
-        <Link to="/browse" className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground mb-6 transition-colors">
-          <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Browse
-        </Link>
+        {(() => {
+          const state = location.state as { from?: string; name?: string } | null;
+          let backLabel = "Back";
+          if (state?.from === "browse") backLabel = "Back to Browse";
+          else if (state?.from === "feed") backLabel = "Back to Feed";
+          else if (state?.from === "profile" && state.name) backLabel = `Back to ${state.name}`;
+          else if (state?.from === "category" && state.name) backLabel = `Back to ${state.name}`;
+          else if (state?.from === "related") backLabel = "Back";
+          return (
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center text-[13px] text-[#9999AA] hover:text-foreground mb-4 transition-colors duration-100 cursor-pointer"
+            >
+              <ArrowLeft className="mr-1 h-3.5 w-3.5" /> {backLabel}
+            </button>
+          );
+        })()}
 
         {paymentSuccess && (
           <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
