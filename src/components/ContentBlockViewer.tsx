@@ -106,6 +106,8 @@ function RenderBlockContent({
   type,
   textContent,
   formatting,
+  formattingType,
+  subBlocks,
   fileUrl,
   fileName,
   fileSizeBytes,
@@ -116,6 +118,8 @@ function RenderBlockContent({
   type: string;
   textContent: string | null;
   formatting: any;
+  formattingType: string | null;
+  subBlocks: string[] | null;
   fileUrl: string | null;
   fileName: string | null;
   fileSizeBytes: number | null;
