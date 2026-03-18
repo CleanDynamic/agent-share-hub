@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { ContentCard } from "@/components/ContentCard";
 import {
-  BadgeCheck, Download, FileText, Heart, Users, Loader2, Pencil, Camera, ExternalLink, Library,
+  BadgeCheck, Download, FileText, Heart, Users, Loader2, Pencil, Camera, ExternalLink, Library, ShieldCheck,
 } from "lucide-react";
 import { TipSelector } from "@/components/TipSelector";
 
