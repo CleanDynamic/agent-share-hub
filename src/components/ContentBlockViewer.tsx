@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { triggerDownload } from "@/lib/download";
 import { CommentsSection } from "@/components/CommentsSection";
+import { MentionText } from "@/components/MentionText";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Download, Loader2, Eye, MessageCircle } from "lucide-react";
@@ -146,24 +147,23 @@ function RenderBlockContent({
       return (
         <div className="max-w-prose" style={{ lineHeight: 1.8 }}>
           {paragraphs.map((p, i) => {
-            // Check if it's a heading (starts with # or formatting says heading)
             if (p.startsWith("# ") || (formatting?.type === "heading" && i === 0)) {
               return <h3 key={i} className="text-lg font-bold text-foreground mt-4 mb-2">{p.replace(/^#\s*/, "")}</h3>;
             }
-            return <p key={i} className="text-sm text-muted-foreground mb-[1.2em] whitespace-pre-wrap">{p}</p>;
+            return <p key={i} className="text-sm text-muted-foreground mb-[1.2em] whitespace-pre-wrap"><MentionText text={p} /></p>;
           })}
         </div>
       );
     }
 
     if (fmt === "paragraph") {
-      return <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{text}</p>;
+      return <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap"><MentionText text={text} /></p>;
     }
     if (fmt === "bullets") {
       return (
         <ul className="list-disc list-inside space-y-1">
           {(items.length > 0 ? items : text.split("\n").filter(Boolean)).map((line, i) => (
-            <li key={i} className="text-sm text-muted-foreground">{line}</li>
+            <li key={i} className="text-sm text-muted-foreground"><MentionText text={line} /></li>
           ))}
         </ul>
       );
@@ -172,7 +172,7 @@ function RenderBlockContent({
       return (
         <ol className="list-decimal list-inside space-y-1">
           {(items.length > 0 ? items : text.split("\n").filter(Boolean)).map((line, i) => (
-            <li key={i} className="text-sm text-muted-foreground">{line}</li>
+            <li key={i} className="text-sm text-muted-foreground"><MentionText text={line} /></li>
           ))}
         </ol>
       );
@@ -204,7 +204,7 @@ function RenderBlockContent({
         </ol>
       );
     }
-    return <p className="text-sm text-muted-foreground whitespace-pre-wrap">{text}</p>;
+    return <p className="text-sm text-muted-foreground whitespace-pre-wrap"><MentionText text={text} /></p>;
   }
 
   if (type === "file") {

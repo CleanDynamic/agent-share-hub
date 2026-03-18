@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { insertNotification } from "@/lib/notifications";
+import { sendMentionNotifications } from "@/lib/mentions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { MentionInput } from "@/components/MentionInput";
+import { MentionText } from "@/components/MentionText";
 import { Heart, Loader2, MessageCircle } from "lucide-react";
 
 interface Comment {
@@ -155,6 +157,14 @@ export function CommentsSection({
       }
     }
 
+    // Send mention notifications
+    await sendMentionNotifications({
+      text: newText.trim(),
+      actorId: user.id,
+      contentId,
+      context: "comment",
+    });
+
     // Optimistic add
     setComments((prev) => [
       {
@@ -253,7 +263,7 @@ export function CommentsSection({
                   </span>
                   <span className="text-[10px] text-muted-foreground">{timeAgo(c.created_at)}</span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-0.5">{c.text}</p>
+                <MentionText text={c.text} className="text-sm text-muted-foreground mt-0.5" />
                 <button
                   onClick={() => toggleLike(c.id)}
                   className="flex items-center gap-1 mt-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -289,13 +299,12 @@ export function CommentsSection({
         </p>
       ) : (
         <div className="space-y-2">
-          <Textarea
+          <MentionInput
             value={newText}
-            onChange={(e) => setNewText(e.target.value.slice(0, 500))}
+            onChange={(v) => setNewText(v.slice(0, 500))}
             placeholder="Add a comment..."
             rows={compact ? 2 : 3}
             maxLength={500}
-            className="bg-background border-border rounded-xl text-sm resize-none"
           />
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-muted-foreground">{newText.length}/500</span>

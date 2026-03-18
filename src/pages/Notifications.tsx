@@ -58,6 +58,11 @@ function formatNotification(n: any): { text: string; link: string } {
       return { text: `${actor} declined your co-author invite`, link: "/" };
     case "compatibility_warning":
       return { text: `Your post "${meta.content_title || ""}" hasn't been verified in ${meta.days_since_verified || "90+"} days`, link: n.content_id ? `/content/${n.content_id}` : "/" };
+    case "mention":
+      return {
+        text: `@${meta.mentioner_username || actor} mentioned you in a ${meta.context || "comment"} on "${meta.content_title || "content"}"`,
+        link: n.content_id ? `/content/${n.content_id}` : "/",
+      };
     default:
       return { text: "You have a new notification", link: "/" };
   }

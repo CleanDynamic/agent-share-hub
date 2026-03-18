@@ -27,6 +27,7 @@ import { ForkModal } from "@/components/ForkModal";
 import { DependencyDisplay } from "@/components/DependencyDisplay";
 import { CompatibilityBadge } from "@/components/CompatibilityBadge";
 import { PwywPriceSelector } from "@/components/PwywPriceSelector";
+import { MentionText } from "@/components/MentionText";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -461,7 +462,7 @@ const ContentDetail = () => {
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{item.title}</h1>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-4">{item.description}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-4"><MentionText text={item.description || ""} /></p>
 
         <div className="flex flex-wrap items-center gap-4 mb-2 text-sm text-muted-foreground">
           {/* Creator byline with collaborator avatars */}
@@ -567,8 +568,8 @@ const ContentDetail = () => {
           <p className="text-xs text-muted-foreground mb-4 flex items-center gap-1">
             <ExternalLink className="h-3 w-3" />
             Forked from{" "}
-            <Link to={`/creator/${forkOrigin.profiles?.username}`} className="text-primary hover:underline">
-              {forkOrigin.profiles?.display_name || forkOrigin.profiles?.username}
+            <Link to={`/creator/${forkOrigin.profiles?.username}`} className="mention-link">
+              @{forkOrigin.profiles?.username}
             </Link>'s{" "}
             <Link to={`/content/${forkOrigin.id}`} className="text-primary hover:underline">
               {forkOrigin.title}

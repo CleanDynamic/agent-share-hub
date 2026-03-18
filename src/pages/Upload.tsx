@@ -13,6 +13,7 @@ import { useApprovedToolNames } from "@/hooks/useApprovedTools";
 import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MentionInput } from "@/components/MentionInput";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -405,15 +406,16 @@ const Upload = () => {
                 <FormItem>
                   <FormLabel>One-line description</FormLabel>
                   <FormControl>
-                    <Input
+                    <MentionInput
+                      value={field.value}
+                      onChange={field.onChange}
                       placeholder="Turns your AI into a specialist that…"
                       maxLength={120}
-                      className="bg-card border-border rounded-xl"
-                      {...field}
+                      rows={1}
                     />
                   </FormControl>
                   <FormDescription>
-                    Describe what it does in plain English. Start with a verb. Max 120 characters.
+                    Describe what it does in plain English. Start with a verb. Max 120 characters. Use @username to mention creators.
                     <span className="ml-2 text-muted-foreground">{field.value.length}/120</span>
                   </FormDescription>
                   <FormMessage />

@@ -84,3 +84,12 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+.mention-link {
+  color: hsl(18 80% 51%);
+  text-decoration: none;
+  font-weight: 500;
+}
+.mention-link:hover {
+  text-decoration: underline;
+}

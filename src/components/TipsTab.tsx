@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { sendMentionNotifications } from "@/lib/mentions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { MentionInput } from "@/components/MentionInput";
+import { MentionText } from "@/components/MentionText";
 import { ThumbsUp, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -43,6 +45,13 @@ export function TipsTab({ contentId, isEligible }: Props) {
       text: text.trim(),
     });
     if (!error) {
+      // Send mention notifications
+      await sendMentionNotifications({
+        text: text.trim(),
+        actorId: user.id,
+        contentId,
+        context: "tip",
+      });
       queryClient.invalidateQueries({ queryKey: ["content_tips", contentId] });
       setText("");
       toast({ title: "Tip posted" });
@@ -70,12 +79,11 @@ export function TipsTab({ contentId, isEligible }: Props) {
     <div className="space-y-4">
       {isEligible && (
         <div className="space-y-2">
-          <Textarea
+          <MentionInput
             placeholder="Share a tip or gotcha about this content..."
             value={text}
-            onChange={e => setText(e.target.value)}
+            onChange={setText}
             rows={2}
-            className="bg-card border-border rounded-xl text-sm"
           />
           <Button size="sm" onClick={handlePost} disabled={!text.trim() || posting} className="text-xs">
             {posting ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
@@ -92,7 +100,7 @@ export function TipsTab({ contentId, isEligible }: Props) {
         <div className="space-y-3">
           {tips.map((tip: any) => (
             <div key={tip.id} className="border border-border rounded-lg p-3 bg-card">
-              <p className="text-sm text-foreground mb-2">{tip.text}</p>
+              <MentionText text={tip.text} className="text-sm text-foreground mb-2" />
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-muted-foreground">
                   {(tip.profiles as any)?.display_name || (tip.profiles as any)?.username || "User"} · {formatDistanceToNow(new Date(tip.created_at), { addSuffix: true })}
