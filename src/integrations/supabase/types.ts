@@ -224,6 +224,54 @@ export type Database = {
           },
         ]
       }
+      collab_split_contests: {
+        Row: {
+          content_id: string
+          contestant_id: string
+          created_at: string
+          id: string
+          original_percentage: number
+          proposed_percentage: number
+          reason: string | null
+          status: string
+        }
+        Insert: {
+          content_id: string
+          contestant_id: string
+          created_at?: string
+          id?: string
+          original_percentage: number
+          proposed_percentage: number
+          reason?: string | null
+          status?: string
+        }
+        Update: {
+          content_id?: string
+          contestant_id?: string
+          created_at?: string
+          id?: string
+          original_percentage?: number
+          proposed_percentage?: number
+          reason?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_split_contests_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_split_contests_contestant_id_fkey"
+            columns: ["contestant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collection_follows: {
         Row: {
           collection_id: string
@@ -417,12 +465,15 @@ export type Database = {
           file_size_bytes: number | null
           file_url: string | null
           formatting: Json | null
+          formatting_type: string
           id: string
           image_description: string | null
           image_url: string | null
           is_preview: boolean
           position: number
+          sub_blocks: Json | null
           text_content: string | null
+          use_instructions: string | null
         }
         Insert: {
           block_type: string
@@ -432,12 +483,15 @@ export type Database = {
           file_size_bytes?: number | null
           file_url?: string | null
           formatting?: Json | null
+          formatting_type?: string
           id?: string
           image_description?: string | null
           image_url?: string | null
           is_preview?: boolean
           position: number
+          sub_blocks?: Json | null
           text_content?: string | null
+          use_instructions?: string | null
         }
         Update: {
           block_type?: string
@@ -447,12 +501,15 @@ export type Database = {
           file_size_bytes?: number | null
           file_url?: string | null
           formatting?: Json | null
+          formatting_type?: string
           id?: string
           image_description?: string | null
           image_url?: string | null
           is_preview?: boolean
           position?: number
+          sub_blocks?: Json | null
           text_content?: string | null
+          use_instructions?: string | null
         }
         Relationships: [
           {
@@ -664,6 +721,7 @@ export type Database = {
           is_verified: boolean
           last_verified_at: string | null
           monetisation_type: string
+          other_tool_name: string | null
           price_gbp: number | null
           pwyw_avg_paid_gbp: number | null
           pwyw_enabled: boolean | null
@@ -681,6 +739,7 @@ export type Database = {
           verified_by_creator_at: string | null
           view_count: number
           what_to_expect: string | null
+          what_to_expect_blocks: Json | null
         }
         Insert: {
           ai_tools?: string[] | null
@@ -709,6 +768,7 @@ export type Database = {
           is_verified?: boolean
           last_verified_at?: string | null
           monetisation_type?: string
+          other_tool_name?: string | null
           price_gbp?: number | null
           pwyw_avg_paid_gbp?: number | null
           pwyw_enabled?: boolean | null
@@ -726,6 +786,7 @@ export type Database = {
           verified_by_creator_at?: string | null
           view_count?: number
           what_to_expect?: string | null
+          what_to_expect_blocks?: Json | null
         }
         Update: {
           ai_tools?: string[] | null
@@ -754,6 +815,7 @@ export type Database = {
           is_verified?: boolean
           last_verified_at?: string | null
           monetisation_type?: string
+          other_tool_name?: string | null
           price_gbp?: number | null
           pwyw_avg_paid_gbp?: number | null
           pwyw_enabled?: boolean | null
@@ -771,6 +833,7 @@ export type Database = {
           verified_by_creator_at?: string | null
           view_count?: number
           what_to_expect?: string | null
+          what_to_expect_blocks?: Json | null
         }
         Relationships: [
           {
@@ -1739,6 +1802,7 @@ export type Database = {
           content_id: string | null
           created_at: string | null
           id: string
+          is_contested: boolean
           percentage: number
           project_id: string | null
           recipient_id: string
@@ -1748,6 +1812,7 @@ export type Database = {
           content_id?: string | null
           created_at?: string | null
           id?: string
+          is_contested?: boolean
           percentage: number
           project_id?: string | null
           recipient_id: string
@@ -1757,6 +1822,7 @@ export type Database = {
           content_id?: string | null
           created_at?: string | null
           id?: string
+          is_contested?: boolean
           percentage?: number
           project_id?: string | null
           recipient_id?: string
