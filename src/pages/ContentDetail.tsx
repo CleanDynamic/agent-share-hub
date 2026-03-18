@@ -760,7 +760,7 @@ const ContentDetail = () => {
 
         {/* 10. Tags */}
         <div className="mb-3">
-          <DetailMicrotags contentId={item.id} />
+          <DetailMicrotags contentId={item.id} itemTags={(item as any).tags} />
         </div>
 
         {/* Dependencies */}
