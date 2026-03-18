@@ -1,0 +1,1 @@
+ALTER TABLE public.content_changelogs ADD COLUMN fields_changed_count integer;

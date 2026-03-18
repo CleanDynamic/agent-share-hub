@@ -527,6 +527,7 @@ export type Database = {
           content_id: string
           created_at: string | null
           created_by: string
+          fields_changed_count: number | null
           id: string
           version_label: string | null
         }
@@ -535,6 +536,7 @@ export type Database = {
           content_id: string
           created_at?: string | null
           created_by: string
+          fields_changed_count?: number | null
           id?: string
           version_label?: string | null
         }
@@ -543,6 +545,7 @@ export type Database = {
           content_id?: string
           created_at?: string | null
           created_by?: string
+          fields_changed_count?: number | null
           id?: string
           version_label?: string | null
         }
