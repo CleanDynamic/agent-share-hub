@@ -13,6 +13,7 @@ import {
 import { Plus, Star, StarHalf, RefreshCw, X } from "lucide-react";
 import { PublishUpdateModal } from "@/components/PublishUpdateModal";
 import { useToast } from "@/hooks/use-toast";
+import { useDraftCount } from "@/hooks/useDraftCount";
 
 function roundedStars(avg: number, count: number): number {
   if (count === 0) return 0;
@@ -53,6 +54,7 @@ export default function MyUploads() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"content" | "projects">("content");
   const { toast } = useToast();
+  const { count: draftCount, display: draftDisplay } = useDraftCount();
   const [updateTarget, setUpdateTarget] = useState<{ id: string; title: string; version: string } | null>(null);
   const [expandedInvites, setExpandedInvites] = useState<string | null>(null);
 
@@ -128,6 +130,17 @@ export default function MyUploads() {
     <div className="py-8 sm:py-12 px-4 sm:px-6">
       <SeoHead title="My Uploads — NeoScale AI" description="Manage your uploaded content." path="/my-uploads" noIndex />
       <div className="mx-auto max-w-5xl">
+        {/* Drafts indicator */}
+        {draftDisplay && (
+          <div className="mb-4 rounded-xl border px-4 py-3 flex items-center justify-between" style={{ backgroundColor: "#1A1500", borderColor: "#BA7517" }}>
+            <p className="text-sm" style={{ color: "#EF9F27" }}>
+              {draftDisplay} draft{draftCount > 1 ? "s" : ""} in progress
+            </p>
+            <button onClick={() => navigate("/drafts")} className="text-xs hover:underline" style={{ color: "#EF9F27" }}>
+              View drafts →
+            </button>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-foreground">My uploads</h1>
           <Button size="sm" className="min-h-[44px]" asChild>

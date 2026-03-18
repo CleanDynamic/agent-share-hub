@@ -39,7 +39,7 @@ import SearchPage from "./pages/SearchPage";
 import Category from "./pages/Category";
 import LibraryPage from "./pages/Library";
 import DraftsPage from "./pages/Drafts";
-
+import PostPreviewPage from "./pages/PostPreview";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -77,6 +77,7 @@ const App = () => (
                 <Route path="/saved" element={<ProtectedRoute><Saved /></ProtectedRoute>} />
                 <Route path="/library" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
                 <Route path="/drafts" element={<ProtectedRoute><DraftsPage /></ProtectedRoute>} />
+                <Route path="/upload/preview/:draftId" element={<ProtectedRoute><PostPreviewPage /></ProtectedRoute>} />
                 <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />

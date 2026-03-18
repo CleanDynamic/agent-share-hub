@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { z } from "zod";
@@ -90,6 +90,10 @@ const Upload = () => {
   const [otherToolName, setOtherToolName] = useState("");
   const [draftMeta, setDraftMeta] = useState<{ name: string; savedAt: string } | null>(null);
   const [draftLoading, setDraftLoading] = useState(!!draftId);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId || null);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const autosaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastAutosaveRef = useRef<Date | null>(null);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -251,6 +255,113 @@ const Upload = () => {
     if (b === "Other") return -1;
     return a.localeCompare(b);
   });
+
+  // ── Save Draft Logic ──
+  const saveDraft = useCallback(async (silent = false): Promise<string | null> => {
+    const values = form.getValues();
+    // Don't create empty drafts
+    const hasContent = values.title || values.content_type || values.description || contentBlocks.some(b => b.textContent || b.file || b.imageFile);
+    if (!hasContent) return currentDraftId;
+
+    if (!silent) setSavingDraft(true);
+    try {
+      await supabase.auth.refreshSession();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const isPwyw = values.monetisation_type === "paid" && pwywFloor >= 0 && values.price_gbp === undefined;
+      const wteBlocksJsonb = wteBlocks.length > 0
+        ? wteBlocks.map((b, i) => ({
+            id: b.id, position: i + 1, block_type: b.type,
+            text_content: b.textContent || null, formatting_type: b.formatting,
+            sub_blocks: b.formatting === "sub_list" && b.subBlocks?.length > 0 ? b.subBlocks : null,
+            use_instructions: b.useInstructions?.trim() || null,
+            image_description: b.type === "image" ? b.imageDescription : null,
+          }))
+        : null;
+
+      const itemData: any = {
+        creator_id: user.id,
+        title: values.title || "Untitled draft",
+        content_type: values.content_type || "Prompt(s)",
+        description: values.description || null,
+        difficulty: values.difficulty || "Beginner",
+        ai_tools: values.ai_tools || [],
+        use_cases: values.use_cases || [],
+        use_instructions: values.use_instructions || null,
+        what_to_expect: values.what_to_expect || null,
+        what_to_expect_blocks: wteBlocksJsonb,
+        other_tool_name: isOtherSelected && otherToolName.trim() ? otherToolName.trim() : null,
+        custom_use_case_description: customUseCaseDesc.trim() || null,
+        tool_url: toolUrl.trim() || null,
+        tags: customTags,
+        monetisation_type: values.monetisation_type,
+        price_gbp: values.monetisation_type === "paid" && !isPwyw ? values.price_gbp ?? null : null,
+        donation_enabled: values.donation_enabled,
+        pwyw_enabled: isPwyw,
+        pwyw_floor_gbp: isPwyw ? pwywFloor : null,
+        is_pwyw: isPwyw,
+        status: "draft",
+        draft_saved_at: new Date().toISOString(),
+        draft_name: values.title || null,
+      };
+
+      let draftIdToUse = currentDraftId;
+
+      if (!draftIdToUse) {
+        const { data: inserted, error } = await supabase.from("content_items").insert(itemData).select("id").single();
+        if (error || !inserted) { console.error("Draft save failed:", error); return null; }
+        draftIdToUse = inserted.id;
+        setCurrentDraftId(draftIdToUse);
+      } else {
+        const { creator_id, ...updateData } = itemData;
+        await supabase.from("content_items").update(updateData).eq("id", draftIdToUse);
+      }
+
+      // Re-insert blocks: delete existing then re-insert
+      await supabase.from("content_blocks").delete().eq("content_id", draftIdToUse!);
+      for (let i = 0; i < contentBlocks.length; i++) {
+        const block = contentBlocks[i];
+        await supabase.from("content_blocks").insert({
+          content_id: draftIdToUse,
+          position: i + 1,
+          block_type: block.type === "long_text" ? "long_text" : block.type,
+          text_content: (block.type === "text" || block.type === "long_text") ? block.textContent : null,
+          formatting: (block.type === "text" || block.type === "long_text") ? { type: block.formatting } : null,
+          formatting_type: block.formatting || "paragraph",
+          file_url: (block as any).fileUrl || null,
+          file_name: block.fileName || null,
+          image_url: (block as any).imageUrl || null,
+          image_description: block.type === "image" ? block.imageDescription : null,
+          is_preview: block.isPreview ?? false,
+          use_instructions: block.useInstructions?.trim() || null,
+          sub_blocks: block.formatting === "sub_list" && block.subBlocks?.length > 0 ? block.subBlocks : null,
+        } as any);
+      }
+
+      const now = new Date().toISOString();
+      setDraftMeta({ name: values.title || "Untitled draft", savedAt: now });
+      lastAutosaveRef.current = new Date();
+
+      if (!silent) toast({ title: "Draft saved ✓" });
+      return draftIdToUse;
+    } catch (err: any) {
+      if (!silent) toast({ title: "Failed to save draft", description: err?.message, variant: "destructive" });
+      return currentDraftId;
+    } finally {
+      if (!silent) setSavingDraft(false);
+    }
+  }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast]);
+
+  // ── Autosave every 60 seconds ──
+  useEffect(() => {
+    autosaveTimer.current = setInterval(() => {
+      saveDraft(true);
+    }, 60000);
+    return () => {
+      if (autosaveTimer.current) clearInterval(autosaveTimer.current);
+    };
+  }, [saveDraft]);
 
   async function onSubmit(values: FormValues) {
     if (contentBlocks.length === 0) {
@@ -537,7 +648,9 @@ const Upload = () => {
           <div className="mb-6 rounded-xl border px-4 py-3 flex items-center justify-between gap-3" style={{ backgroundColor: "#1A1500", borderColor: "#BA7517" }}>
             <p className="text-sm" style={{ color: "#EF9F27" }}>
               Editing draft — <span className="font-semibold">{draftMeta.name}</span>
-              <span className="ml-2 opacity-70">· Last saved {formatDistanceToNow(new Date(draftMeta.savedAt), { addSuffix: true })}</span>
+              <span className="ml-2 opacity-70">· {lastAutosaveRef.current
+                ? `Autosaved ${formatDistanceToNow(lastAutosaveRef.current, { addSuffix: true })}`
+                : `Last saved ${formatDistanceToNow(new Date(draftMeta.savedAt), { addSuffix: true })}`}</span>
             </p>
             <button onClick={discardDraft} className="text-xs hover:underline shrink-0" style={{ color: "#EF9F27" }}>
               Discard draft
@@ -878,17 +991,31 @@ const Upload = () => {
             {/* 14. Dependencies */}
             <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
 
-            {/* 15. Submit */}
-            <Button type="submit" size="lg" className="w-full" disabled={submitting || splitError}>
-              {submitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Uploading…
-                </>
-              ) : (
-                "Submit for Review"
-              )}
-            </Button>
+            {/* 15. Save Draft + Preview */}
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="flex-1 h-10 rounded-full"
+                disabled={savingDraft || submitting}
+                onClick={() => saveDraft(false)}
+              >
+                {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                className="flex-1 h-10 rounded-full"
+                disabled={savingDraft || submitting}
+                onClick={async () => {
+                  const id = await saveDraft(false);
+                  if (id) navigate(`/upload/preview/${id}`);
+                }}
+              >
+                Preview Post →
+              </Button>
+            </div>
           </form>
         </Form>
         )}
