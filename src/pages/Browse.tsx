@@ -423,8 +423,6 @@ const Browse = () => {
     const mt = searchParams.get("microtag");
     if (tab === "projects") {
       setBrowseTab("projects");
-    } else if (tab === "paths") {
-      setBrowseTab("paths");
     } else if (tab === "collections") {
       setBrowseTab("collections");
     } else if (typeSlug && SLUG_TO_TYPE[typeSlug]) {
