@@ -26,10 +26,15 @@ import { VersionHistory } from "@/components/VersionHistory";
 import { ForkModal } from "@/components/ForkModal";
 import { DependencyDisplay } from "@/components/DependencyDisplay";
 import { CompatibilityBadge } from "@/components/CompatibilityBadge";
+import { PwywPriceSelector } from "@/components/PwywPriceSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const TYPE_COLORS: Record<string, string> = {
   "Prompt File": "bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/30",
