@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { sendMentionNotifications } from "@/lib/mentions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { MentionInput } from "@/components/MentionInput";
+import { MentionText } from "@/components/MentionText";
 import { ThumbsUp, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
