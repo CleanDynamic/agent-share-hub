@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { insertNotification } from "@/lib/notifications";
+import { sendMentionNotifications } from "@/lib/mentions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { MentionInput } from "@/components/MentionInput";
+import { MentionText } from "@/components/MentionText";
 import { Heart, Loader2, MessageCircle } from "lucide-react";
 
 interface Comment {
