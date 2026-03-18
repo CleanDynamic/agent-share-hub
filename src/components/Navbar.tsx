@@ -1,16 +1,9 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { Upload, Rss, Bookmark as BookmarkIcon } from "lucide-react";
+import { Upload, Bookmark as BookmarkIcon } from "lucide-react";
 import { Menu, X, LogOut, User, Bookmark, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavBadges } from "@/hooks/useNavBadges";
 
