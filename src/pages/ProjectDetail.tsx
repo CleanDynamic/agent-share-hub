@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
@@ -10,12 +10,13 @@ import { AccountGateModal } from "@/components/AccountGateModal";
 import { CommentsSection } from "@/components/CommentsSection";
 import { ChangelogTab } from "@/components/ChangelogTab";
 import { PortfolioCard } from "@/components/PortfolioCard";
+import { ExistingBlueprintSearch, type ExistingBlueprintItem } from "@/components/ExistingBlueprintSearch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Eye, User, Lock, ChevronDown, ChevronUp, CheckCircle2, Calendar,
+  ArrowLeft, Eye, User, Lock, ChevronDown, ChevronUp, CheckCircle2, Calendar, Plus,
 } from "lucide-react";
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 
