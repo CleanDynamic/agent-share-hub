@@ -30,7 +30,6 @@ import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components
 // LearningPathUploadForm removed from UI
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
 import { useMicrotagDefinitions } from "@/hooks/useMicrotags";
-
 import { ORDERED_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, ANY_DIFFICULTY_TYPES, displayContentType } from "@/lib/content-types";
 
 const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
