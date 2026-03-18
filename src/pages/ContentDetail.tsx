@@ -13,6 +13,8 @@ import { AccountGateModal } from "@/components/AccountGateModal";
 import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { StarRating } from "@/components/StarRating";
 import { CommentsSection } from "@/components/CommentsSection";
+import { ChangelogTab } from "@/components/ChangelogTab";
+import { TipsTab } from "@/components/TipsTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
 import { useToast } from "@/hooks/use-toast";
