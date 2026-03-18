@@ -247,6 +247,20 @@ const ContentDetail = () => {
     enabled: !!id,
   });
 
+  // Pending collab invites
+  const { data: pendingInvites } = useQuery({
+    queryKey: ["pending_collab_invites", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collab_invites")
+        .select("invitee_id, profiles!collab_invites_invitee_id_fkey(username, display_name)")
+        .eq("content_id", id!)
+        .eq("status", "pending");
+      return (data as any[]) ?? [];
+    },
+    enabled: !!id,
+  });
+
   const { data: hasActiveSubscription } = useQuery({
     queryKey: ["subscription_check", creator?.id],
     queryFn: async () => {
@@ -553,17 +567,13 @@ const ContentDetail = () => {
             </>
           )}
 
-          {revenueSplits && revenueSplits.length > 0 && (
+          {pendingInvites && pendingInvites.length > 0 && (
             <>
-              <span className="flex items-center gap-1">
-                Co-revenue with
-                {revenueSplits.slice(0, 1).map((s: any) => (
-                  <Link key={s.recipient_id} to={`/creator/${s.profiles?.username}`} className="text-primary hover:underline">
-                    @{s.profiles?.username}
-                  </Link>
-                ))}
-                {revenueSplits.length > 1 && <span>(+{revenueSplits.length - 1} more)</span>}
-              </span>
+              {pendingInvites.map((inv: any) => (
+                <span key={inv.invitee_id} className="italic text-muted-foreground/60">
+                  {inv.profiles?.display_name || inv.profiles?.username} (pending)
+                </span>
+              ))}
               <span className="text-muted-foreground/40">·</span>
             </>
           )}
@@ -617,7 +627,10 @@ const ContentDetail = () => {
           </p>
         )}
 
-        {/* 6. ACTION BOX — inline, full width */}
+        {/* 7. WHAT TO EXPECT — always visible, never blurred */}
+        <WhatToExpectSection item={item} />
+
+        {/* 8. ACTION BOX — inline, full width */}
         <div className="rounded-xl border border-border bg-card p-3.5 sm:p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             {/* Left: rating */}
@@ -711,7 +724,7 @@ const ContentDetail = () => {
           </div>
         )}
 
-        {/* 7. CREATED BY — inline horizontal card */}
+        {/* 9. CREATED BY — inline horizontal card */}
         {creator && (
           <div className="flex items-center gap-3 py-3.5 mb-4 border-t border-b border-border">
             <Link to={`/creator/${creator.username}`} className="shrink-0">
@@ -725,6 +738,9 @@ const ContentDetail = () => {
               </Link>
               <p className="text-xs text-muted-foreground">@{creator.username}</p>
               {creator.bio && <p className="text-[13px] text-muted-foreground line-clamp-1 mt-0.5">{creator.bio}</p>}
+              {revenueSplits && revenueSplits.length > 0 && revenueSplits.some((s: any) => s.is_contested) && (
+                <p className="text-xs text-amber-400 mt-1">Revenue split pending agreement</p>
+              )}
             </div>
             <div className="shrink-0 text-right">
               {creatorStats && (
@@ -824,28 +840,17 @@ const ContentDetail = () => {
             {/* 13. Tab content */}
             <div className="mt-0">
               {activeTab === "content" && (
-                <>
-                  <div className="py-4">
-                    <ContentBlockViewer
-                      contentId={item.id}
-                      contentTitle={item.title}
-                      monetisationType={item.monetisation_type}
-                      creatorId={item.creator_id}
-                      useInstructions={item.use_instructions}
-                      onTriggerPaywall={handleDownload}
-                      isEligible={isEligible}
-                    />
-                  </div>
-
-                  {item.what_to_expect && (
-                    <div className="mt-4">
-                      <h2 className="text-lg font-semibold text-foreground mb-3">What to Expect</h2>
-                      <div className="border border-border rounded-xl p-5 bg-card">
-                        <p className="text-sm text-muted-foreground leading-relaxed">{item.what_to_expect}</p>
-                      </div>
-                    </div>
-                  )}
-                </>
+                <div className="py-4">
+                  <ContentBlockViewer
+                    contentId={item.id}
+                    contentTitle={item.title}
+                    monetisationType={item.monetisation_type}
+                    creatorId={item.creator_id}
+                    useInstructions={item.use_instructions}
+                    onTriggerPaywall={handleDownload}
+                    isEligible={isEligible}
+                  />
+                </div>
               )}
 
               {activeTab === "changelog" && (
@@ -1087,6 +1092,96 @@ function DetailMicrotags({ contentId, itemTags }: { contentId: string; itemTags?
       </div>
     </div>
   );
+}
+
+/* ---- What to Expect Section — always visible, never blurred ---- */
+function WhatToExpectSection({ item }: { item: any }) {
+  const blocks = item.what_to_expect_blocks as any[] | null;
+  const fallbackText = item.what_to_expect as string | null;
+
+  if (!blocks?.length && !fallbackText) return null;
+
+  return (
+    <div className="mb-4">
+      <h2 className="text-base font-semibold text-foreground mb-2.5">What to Expect</h2>
+      <div
+        className="rounded-xl p-4 space-y-3"
+        style={{
+          backgroundColor: "rgba(46,196,182,0.04)",
+          borderLeft: "2px solid rgba(46,196,182,0.3)",
+        }}
+      >
+        {blocks && blocks.length > 0 ? (
+          blocks
+            .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+            .map((block: any, idx: number) => (
+              <WhatToExpectBlock key={block.id || idx} block={block} />
+            ))
+        ) : (
+          <p className="text-sm text-muted-foreground leading-relaxed">{fallbackText}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WhatToExpectBlock({ block }: { block: any }) {
+  const fmt = block.formatting_type || "paragraph";
+  const text = block.text_content || "";
+
+  if (block.block_type === "image" && block.image_url) {
+    return (
+      <div>
+        <img src={block.image_url} alt={block.image_description || ""} className="w-full rounded-lg" />
+        {block.image_description && <p className="text-xs text-muted-foreground mt-1">{block.image_description}</p>}
+      </div>
+    );
+  }
+
+  if (fmt === "sublist" || fmt === "sub_list") {
+    const subBlocks = (block.sub_blocks as string[]) || [];
+    return (
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-foreground">{text}</p>
+        {subBlocks.map((sub, i) => (
+          <p key={i} className="text-sm text-muted-foreground" style={{ paddingLeft: 24 }}>
+            <span className="text-muted-foreground/60">↳</span> {sub}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  const lines = text.split("\n").filter((l: string) => l.trim());
+
+  if (fmt === "bullets") {
+    return (
+      <ul className="space-y-1">
+        {lines.map((line: string, i: number) => (
+          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[hsl(var(--secondary))] shrink-0" />
+            {line}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  if (fmt === "numbered") {
+    return (
+      <ol className="space-y-1">
+        {lines.map((line: string, i: number) => (
+          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+            <span className="text-muted-foreground/60 shrink-0 font-medium">{i + 1}.</span>
+            {line}
+          </li>
+        ))}
+      </ol>
+    );
+  }
+
+  // paragraph
+  return <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{text}</p>;
 }
 
 export default ContentDetail;
