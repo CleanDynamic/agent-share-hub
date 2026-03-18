@@ -127,7 +127,7 @@ function ForYouTab() {
       if (contentIds.length === 0) return [];
       const { data } = await supabase
         .from("content_items")
-        .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, profiles!content_items_creator_id_fkey(display_name, username)")
+        .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, what_to_expect_blocks, what_to_expect, other_tool_name, profiles!content_items_creator_id_fkey(display_name, username)")
         .in("id", contentIds);
       return data ?? [];
     },
