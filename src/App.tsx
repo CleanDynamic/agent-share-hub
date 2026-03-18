@@ -37,7 +37,7 @@ import CollectionDetail from "./pages/CollectionDetail";
 import Analytics from "./pages/Analytics";
 import SearchPage from "./pages/SearchPage";
 import Category from "./pages/Category";
-import LibraryPage from "./pages/Library";
+
 import DraftsPage from "./pages/Drafts";
 import PostPreviewPage from "./pages/PostPreview";
 import ContentEditPage from "./pages/ContentEdit";
@@ -77,7 +77,7 @@ const App = () => (
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/saved" element={<ProtectedRoute><Saved /></ProtectedRoute>} />
-                <Route path="/library" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
+                
                 <Route path="/drafts" element={<ProtectedRoute><DraftsPage /></ProtectedRoute>} />
                 <Route path="/upload/preview/:draftId" element={<ProtectedRoute><PostPreviewPage /></ProtectedRoute>} />
                 <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />

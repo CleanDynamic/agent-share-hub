@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Home, LayoutGrid, Upload, Bookmark, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, Library, FilePenLine,
+  Home, LayoutGrid, Upload, Bookmark, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, FilePenLine,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
-import { useLibraryUpdateCount } from "@/hooks/useLibraryUpdateCount";
+
 import { useDraftCount } from "@/hooks/useDraftCount";
 
 
@@ -28,7 +28,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
   const { hasUnseenSaves, fypCount } = useNavBadges();
   const { display: notifBadge } = useUnreadNotifications();
   const { display: msgBadge } = useUnreadMessages();
-  const { display: libraryBadge } = useLibraryUpdateCount();
+  
   const { display: draftBadge } = useDraftCount();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -41,7 +41,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     { icon: Upload, label: "Upload", to: "/upload" },
     { icon: FilePenLine, label: "Drafts", to: "/drafts", authOnly: true, badge: draftBadge },
     { icon: Bookmark, label: "Saved", to: "/saved", authOnly: true },
-    { icon: Library, label: "Library", to: "/library", authOnly: true, badge: libraryBadge },
+    
     { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true, badge: msgBadge },
     { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true, badge: notifBadge },
     { icon: User, label: "My Profile", to: "/profile", authOnly: true },
