@@ -274,6 +274,13 @@ const Upload = () => {
         }
       }
 
+      // Save microtags
+      if (selectedMicrotags.length > 0) {
+        await supabase.from("content_microtags").insert(
+          selectedMicrotags.map((tag) => ({ content_id: contentId, tag }))
+        );
+      }
+
       setSuccess(true);
     } catch (err: any) {
       toast({ title: "Something went wrong", description: err?.message ?? "Please try again.", variant: "destructive" });
