@@ -38,6 +38,7 @@ export interface ContentCardProps {
   compatibility_status?: string | null;
   last_verified_at?: string | null;
   creator_id?: string;
+  last_changelog_at?: string | null;
 }
 
 function roundedStars(avg: number, count: number): number {
