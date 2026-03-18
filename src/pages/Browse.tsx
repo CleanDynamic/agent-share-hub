@@ -263,10 +263,11 @@ const Browse = () => {
   const { isLoggedIn, profile } = useAuth();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const [searchParams] = useSearchParams();
-  const [browseTab, setBrowseTab] = useState<"content" | "projects" | "paths">(() => {
+  const [browseTab, setBrowseTab] = useState<"content" | "projects" | "paths" | "collections">(() => {
     const t = searchParams.get("tab");
     if (t === "projects") return "projects";
     if (t === "paths") return "paths";
+    if (t === "collections") return "collections";
     return "content";
   });
   const [search, setSearch] = useState("");
