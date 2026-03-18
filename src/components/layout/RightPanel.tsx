@@ -204,7 +204,7 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
     // Match /category/:slug routes
     const catMatch = location.pathname.match(/^\/category\/(.+)$/);
     if (catMatch) return catMatch[1];
-    // Match /browse?tab=projects
+    // Match /browse or /category/projects
     if (location.pathname === "/browse") {
       const params = new URLSearchParams(location.search);
       if (params.get("tab") === "projects") return "projects";
