@@ -132,7 +132,7 @@ export function LearningPathUploadForm() {
         <p className="text-sm text-muted-foreground max-w-md">
           Your learning path has been submitted for review. We'll get back to you within 48 hours.
         </p>
-        <Button variant="outline" onClick={() => navigate("/browse?tab=paths")}>Browse Paths</Button>
+        <Button variant="outline" onClick={() => navigate("/browse?tab=paths")}>Discover Paths</Button>
       </div>
     );
   }
