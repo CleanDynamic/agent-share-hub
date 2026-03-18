@@ -747,22 +747,21 @@ const Upload = () => {
               </FormItem>
             )} />
 
-            {/* 5. Description (one-liner, max 120 chars) */}
+            {/* 5. Description (max 500 chars) */}
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
                 <FormLabel>Description</FormLabel>
                 <FormControl>
                   <Input
-                    value={field.value}
-                    onChange={(e) => { if (e.target.value.length <= 120) field.onChange(e.target.value); }}
+                    {...field}
                     placeholder="Turns your AI into a specialist that…"
                     className="bg-card border-border rounded-xl"
-                    maxLength={120}
+                    maxLength={500}
                   />
                 </FormControl>
                 <FormDescription>
-                  One-line description. Max 120 characters.
-                  <span className="ml-2 text-muted-foreground">{field.value.length}/120</span>
+                  Max 500 characters.
+                  <span className="ml-2 text-muted-foreground">{field.value.length}/500</span>
                 </FormDescription>
                 <FormMessage />
               </FormItem>

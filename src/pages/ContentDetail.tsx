@@ -889,26 +889,16 @@ const ContentDetail = () => {
 
         {/* Mobile sticky bar */}
         <div className="fixed bottom-0 left-0 right-0 lg:hidden border-t border-border bg-background p-4 z-30">
-          {isSub && !subscriberUnlocked ? (
-            <Button size="lg" className="w-full" disabled>
-              <Lock className="mr-2 h-4 w-4" /> Subscribers only
-            </Button>
-          ) : (
-            <div className="space-y-2">
-              <Button size="lg" className="w-full" onClick={handleDownload} disabled={downloading}>
-                {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isPaid ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
-                {subscriberUnlocked ? "Download" : label}
-              </Button>
-              {item.donation_enabled && creator && (
-                <TipSelector
-                  creatorId={creator.id}
-                  creatorDisplayName={creator.display_name || creator.username}
-                  successUrl={`${window.location.origin}/content/${item.id}?tip=success`}
-                  cancelUrl={`${window.location.origin}/content/${item.id}`}
-                />
-              )}
-            </div>
-          )}
+          <div className="space-y-2">
+            {item.donation_enabled && creator && (
+              <TipSelector
+                creatorId={creator.id}
+                creatorDisplayName={creator.display_name || creator.username}
+                successUrl={`${window.location.origin}/content/${item.id}?tip=success`}
+                cancelUrl={`${window.location.origin}/content/${item.id}`}
+              />
+            )}
+          </div>
         </div>
       </div>
 
