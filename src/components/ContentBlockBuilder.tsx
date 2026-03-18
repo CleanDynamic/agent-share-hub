@@ -425,9 +425,9 @@ export function ContentBlockBuilder({ blocks, onChange }: Props) {
 
   return (
     <div className="space-y-3">
-      <Label className="text-sm font-medium">Your Content</Label>
+      <Label className="text-sm font-medium">Your Blueprint</Label>
       <p className="text-xs text-muted-foreground -mt-1">
-        Build your content using text, file, and image blocks. Drag to reorder.
+        Build your blueprint using text, file, and image blocks. Reorder as needed.
       </p>
 
       {/* Block list */}
