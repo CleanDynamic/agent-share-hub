@@ -108,9 +108,6 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
             </Link>
           );
         })}
-
-        {/* Search — desktop only */}
-        {!collapsed && <SearchSection />}
       </nav>
 
       {/* Bottom user section */}
