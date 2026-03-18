@@ -22,14 +22,11 @@ import {
 
 const ALL = "all";
 
-const CONTENT_TYPES = [
-  "Prompt File", "Prompt Tutorial", "Agent Blueprint", "Workflow Template",
-  "Agent Stack", "Model Config Guide", "Integration Guide", "Evaluation Framework", "Failure Library",
-];
+import { ORDERED_CONTENT_TYPES, SLUG_TO_TYPE, displayContentType } from "@/lib/content-types";
+
+const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
 const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance", "Hobby", "Other"];
-
-async function fetchApprovedContent() {
   const { data, error } = await supabase
     .from("content_items")
     .select("*")
