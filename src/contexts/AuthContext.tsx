@@ -10,8 +10,11 @@ interface Profile {
   bio: string | null;
   is_admin: boolean;
   is_creator: boolean;
+  is_curator: boolean;
+  curator_application_status: string | null;
   account_type: string;
   user_interests: string[];
+  follower_count: number;
 }
 
 interface AuthState {
