@@ -304,11 +304,9 @@ const Upload = () => {
         }
       }
 
-      // Save microtags
-      if (selectedMicrotags.length > 0) {
-        await supabase.from("content_microtags").insert(
-          selectedMicrotags.map((tag) => ({ content_id: contentId, tag }))
-        );
+      // Save free-text tags to content_items.tags
+      if (customTags.length > 0) {
+        await supabase.from("content_items").update({ tags: customTags } as any).eq("id", contentId);
       }
 
       setSuccess(true);
