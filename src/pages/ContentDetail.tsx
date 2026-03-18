@@ -1094,4 +1094,94 @@ function DetailMicrotags({ contentId, itemTags }: { contentId: string; itemTags?
   );
 }
 
+/* ---- What to Expect Section — always visible, never blurred ---- */
+function WhatToExpectSection({ item }: { item: any }) {
+  const blocks = item.what_to_expect_blocks as any[] | null;
+  const fallbackText = item.what_to_expect as string | null;
+
+  if (!blocks?.length && !fallbackText) return null;
+
+  return (
+    <div className="mb-4">
+      <h2 className="text-base font-semibold text-foreground mb-2.5">What to Expect</h2>
+      <div
+        className="rounded-xl p-4 space-y-3"
+        style={{
+          backgroundColor: "rgba(46,196,182,0.04)",
+          borderLeft: "2px solid rgba(46,196,182,0.3)",
+        }}
+      >
+        {blocks && blocks.length > 0 ? (
+          blocks
+            .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+            .map((block: any, idx: number) => (
+              <WhatToExpectBlock key={block.id || idx} block={block} />
+            ))
+        ) : (
+          <p className="text-sm text-muted-foreground leading-relaxed">{fallbackText}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WhatToExpectBlock({ block }: { block: any }) {
+  const fmt = block.formatting_type || "paragraph";
+  const text = block.text_content || "";
+
+  if (block.block_type === "image" && block.image_url) {
+    return (
+      <div>
+        <img src={block.image_url} alt={block.image_description || ""} className="w-full rounded-lg" />
+        {block.image_description && <p className="text-xs text-muted-foreground mt-1">{block.image_description}</p>}
+      </div>
+    );
+  }
+
+  if (fmt === "sublist" || fmt === "sub_list") {
+    const subBlocks = (block.sub_blocks as string[]) || [];
+    return (
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-foreground">{text}</p>
+        {subBlocks.map((sub, i) => (
+          <p key={i} className="text-sm text-muted-foreground" style={{ paddingLeft: 24 }}>
+            <span className="text-muted-foreground/60">↳</span> {sub}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  const lines = text.split("\n").filter((l: string) => l.trim());
+
+  if (fmt === "bullets") {
+    return (
+      <ul className="space-y-1">
+        {lines.map((line: string, i: number) => (
+          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[hsl(var(--secondary))] shrink-0" />
+            {line}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  if (fmt === "numbered") {
+    return (
+      <ol className="space-y-1">
+        {lines.map((line: string, i: number) => (
+          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+            <span className="text-muted-foreground/60 shrink-0 font-medium">{i + 1}.</span>
+            {line}
+          </li>
+        ))}
+      </ol>
+    );
+  }
+
+  // paragraph
+  return <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{text}</p>;
+}
+
 export default ContentDetail;
