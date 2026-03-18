@@ -210,7 +210,7 @@ const ContentDetail = () => {
         .eq("status", "approved")
         .neq("id", id!)
         .order("download_count", { ascending: false })
-        .limit(3);
+        .limit(4);
       if (error) throw error;
       return data;
     },
