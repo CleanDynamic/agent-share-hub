@@ -37,7 +37,7 @@ function RecentTab() {
     queryFn: async ({ pageParam = 0 }) => {
       const { data, error } = await supabase
         .from("content_items")
-        .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, profiles!content_items_creator_id_fkey(display_name, username)")
+        .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, what_to_expect_blocks, what_to_expect, other_tool_name, profiles!content_items_creator_id_fkey(display_name, username)")
         .eq("status", "approved")
         .order("created_at", { ascending: false })
         .range(pageParam, pageParam + PAGE_SIZE - 1);
@@ -127,7 +127,7 @@ function ForYouTab() {
       if (contentIds.length === 0) return [];
       const { data } = await supabase
         .from("content_items")
-        .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, profiles!content_items_creator_id_fkey(display_name, username)")
+        .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, what_to_expect_blocks, what_to_expect, other_tool_name, profiles!content_items_creator_id_fkey(display_name, username)")
         .in("id", contentIds);
       return data ?? [];
     },
@@ -213,7 +213,7 @@ function FollowingTab() {
       if (!followIds || followIds.length === 0) return [];
       const { data, error } = await supabase
         .from("content_items")
-        .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, creator_id, profiles!content_items_creator_id_fkey(display_name, username)")
+        .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, creator_id, what_to_expect_blocks, what_to_expect, other_tool_name, profiles!content_items_creator_id_fkey(display_name, username)")
         .in("creator_id", followIds)
         .eq("status", "approved")
         .order("created_at", { ascending: false })
@@ -268,7 +268,7 @@ function TrendingTab() {
 
       const { data: week } = await supabase
         .from("content_items")
-        .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, approved_at, profiles!content_items_creator_id_fkey(display_name, username)")
+        .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, approved_at, what_to_expect_blocks, what_to_expect, other_tool_name, profiles!content_items_creator_id_fkey(display_name, username)")
         .eq("status", "approved")
         .gte("created_at", d7)
         .limit(50);
@@ -279,7 +279,7 @@ function TrendingTab() {
         const ids = pool.map(p => p.id);
         const { data: month } = await supabase
           .from("content_items")
-          .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, approved_at, profiles!content_items_creator_id_fkey(display_name, username)")
+          .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, approved_at, what_to_expect_blocks, what_to_expect, other_tool_name, profiles!content_items_creator_id_fkey(display_name, username)")
           .eq("status", "approved")
           .gte("created_at", d30)
           .limit(50);

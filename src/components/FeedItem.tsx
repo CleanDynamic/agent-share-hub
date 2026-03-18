@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Download, Eye, Star, StarHalf, MessageSquare } from "lucide-react";
+import { Download, Eye, Star, StarHalf, MessageSquare, FolderOpen } from "lucide-react";
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 
 /* ---- Helpers ---- */
@@ -58,6 +58,28 @@ export function formatNum(n: number): string {
   return String(n);
 }
 
+/* ---- What to Expect teaser extractor ---- */
+function extractWteTeaser(item: any): string | null {
+  // Try what_to_expect_blocks first
+  const blocks = item.what_to_expect_blocks as any[] | null;
+  if (blocks && Array.isArray(blocks) && blocks.length > 0) {
+    const firstText = blocks.find((b: any) => b.block_type === "text" && b.text_content);
+    if (firstText) {
+      const text = (firstText.text_content as string).trim();
+      return text.length > 80 ? text.slice(0, 77) + "…" : text;
+    }
+  }
+  // Fallback to plain text
+  const plain = item.what_to_expect as string | null;
+  if (plain) {
+    const firstSentence = plain.split(/[.!?\n]/)[0]?.trim();
+    if (firstSentence) {
+      return firstSentence.length > 80 ? firstSentence.slice(0, 77) + "…" : firstSentence;
+    }
+  }
+  return null;
+}
+
 /* ---- Tools + Use Cases Row ---- */
 function ToolsUseCasesRow({ item }: { item: any }) {
   const tools = (item.ai_tools ?? []) as string[];
@@ -95,6 +117,23 @@ function ToolsUseCasesRow({ item }: { item: any }) {
   );
 }
 
+/* ---- Project indicator ---- */
+function ProjectIndicator({ item, stop }: { item: any; stop: (e: React.MouseEvent) => void }) {
+  const navigate = useNavigate();
+  const proj = item._project as { id: string; title: string } | undefined;
+  if (!proj) return null;
+
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer truncate max-w-[160px]"
+      onClick={(e) => { stop(e); navigate(`/project/${proj.id}`); }}
+    >
+      <FolderOpen className="h-3 w-3 shrink-0" />
+      <span className="truncate">{proj.title}</span>
+    </span>
+  );
+}
+
 /* ---- Component ---- */
 
 interface FeedItemProps {
@@ -122,6 +161,9 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
 
   const isLight = context === "home";
   const showDescription = item.title.length <= 60 && !!item.description;
+
+  // WTE teaser
+  const wteTeaser = extractWteTeaser(item);
 
   return (
     <div
@@ -155,14 +197,15 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
         </div>
       </div>
 
-      {/* LINE 2 — Badges */}
-      <div className="flex gap-1.5 mt-1">
+      {/* LINE 2 — Badges + project indicator */}
+      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
         <Badge variant="outline" className={`text-[10px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
           {displayContentType(item.content_type)}
         </Badge>
         <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(item.difficulty)}`}>
           {item.difficulty}
         </Badge>
+        <ProjectIndicator item={item} stop={stop} />
       </div>
 
       {/* LINE 3 — Title */}
@@ -171,6 +214,15 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
       {/* LINE 4 — Description (hidden if long title) */}
       {showDescription && (
         <p className="text-[13px] text-muted-foreground truncate mt-0.5">{item.description}</p>
+      )}
+
+      {/* LINE 4.25 — What to Expect teaser */}
+      {wteTeaser && (
+        <p className="text-[12px] italic mt-0.5 truncate" style={{ color: "#2EC4B6" }}>
+          <Eye className="inline h-[10px] w-[10px] mr-1" style={{ verticalAlign: "middle" }} />
+          <span className="opacity-70">Expect: </span>
+          {wteTeaser}
+        </p>
       )}
 
       {/* LINE 4.5 — Tools + Use Cases row (hidden on home/light feeds) */}
