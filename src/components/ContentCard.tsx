@@ -210,9 +210,13 @@ export function ContentCard({
           >
             {content_type}
           </Badge>
-          {isSub ? (
+        {isSub ? (
             <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">
               Subscribers only
+            </Badge>
+          ) : is_pwyw ? (
+            <Badge variant="outline" className="text-[10px] font-medium bg-[#2EC4B6]/15 text-[#2EC4B6] border-[#2EC4B6]/30">
+              Pay what you want
             </Badge>
           ) : isPaid ? (
             <Badge variant="outline" className="text-[10px] font-medium bg-orange-500/15 text-orange-400 border-orange-500/30">
