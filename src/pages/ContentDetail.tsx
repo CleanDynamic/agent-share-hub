@@ -26,10 +26,15 @@ import { VersionHistory } from "@/components/VersionHistory";
 import { ForkModal } from "@/components/ForkModal";
 import { DependencyDisplay } from "@/components/DependencyDisplay";
 import { CompatibilityBadge } from "@/components/CompatibilityBadge";
+import { PwywPriceSelector } from "@/components/PwywPriceSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const TYPE_COLORS: Record<string, string> = {
   "Prompt File": "bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/30",
@@ -217,6 +222,33 @@ const ContentDetail = () => {
 
   const isSub = item?.monetisation_type === "subscription";
   const isPaid = item?.monetisation_type === "paid";
+  const isPwyw = !!(item as any)?.is_pwyw;
+
+  // Revenue splits
+  const { data: revenueSplits } = useQuery({
+    queryKey: ["revenue_splits", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("revenue_splits")
+        .select("percentage, recipient_id, profiles!revenue_splits_recipient_id_fkey(username, display_name, avatar_url)")
+        .eq("content_id", id!);
+      return (data as any[]) ?? [];
+    },
+    enabled: !!id,
+  });
+
+  // Collaborators
+  const { data: collaborators, refetch: refetchCollabs } = useQuery({
+    queryKey: ["content_collaborators", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_collaborators")
+        .select("collaborator_id, is_primary_author, profiles!content_collaborators_collaborator_id_fkey(id, username, display_name, avatar_url)")
+        .eq("content_id", id!);
+      return (data as any[]) ?? [];
+    },
+    enabled: !!id,
+  });
 
   const { data: hasActiveSubscription } = useQuery({
     queryKey: ["subscription_check", creator?.id],
@@ -432,11 +464,80 @@ const ContentDetail = () => {
         <p className="text-sm text-muted-foreground leading-relaxed mb-4">{item.description}</p>
 
         <div className="flex flex-wrap items-center gap-4 mb-2 text-sm text-muted-foreground">
+          {/* Creator byline with collaborator avatars */}
           {creator && (
-            <Link to={`/creator/${creator.username}`} className="flex items-center gap-1.5 hover:text-foreground transition-colors">
-              <User className="h-3.5 w-3.5" />
-              <span>By {creator.display_name || creator.username}</span>
-            </Link>
+            <>
+              {collaborators && collaborators.length > 1 ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex -space-x-2">
+                    {collaborators.slice(0, 4).map((c: any) => (
+                      <Link
+                        key={c.collaborator_id}
+                        to={`/creator/${c.profiles?.username}`}
+                        className="h-6 w-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[9px] font-medium text-muted-foreground overflow-hidden hover:z-10 relative"
+                      >
+                        {c.profiles?.avatar_url ? (
+                          <img src={c.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          (c.profiles?.display_name || c.profiles?.username || "?")[0].toUpperCase()
+                        )}
+                      </Link>
+                    ))}
+                  </div>
+                  <span className="text-sm">
+                    {collaborators.map((c: any, i: number) => (
+                      <span key={c.collaborator_id}>
+                        {i > 0 && ", "}
+                        <Link to={`/creator/${c.profiles?.username}`} className="hover:text-foreground transition-colors">
+                          {c.profiles?.display_name || c.profiles?.username}
+                        </Link>
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              ) : (
+                <Link to={`/creator/${creator.username}`} className="flex items-center gap-1.5 hover:text-foreground transition-colors">
+                  <User className="h-3.5 w-3.5" />
+                  <span>By {creator.display_name || creator.username}</span>
+                </Link>
+              )}
+            </>
+          )}
+
+          {/* Revenue split byline */}
+          {revenueSplits && revenueSplits.length > 0 && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              Co-revenue with
+              {revenueSplits.slice(0, 1).map((s: any) => (
+                <Link key={s.recipient_id} to={`/creator/${s.profiles?.username}`} className="text-primary hover:underline">
+                  @{s.profiles?.username}
+                </Link>
+              ))}
+              {revenueSplits.length > 1 && <span>(+{revenueSplits.length - 1} more)</span>}
+            </span>
+          )}
+
+          {/* Leave collab for non-primary collaborators */}
+          {user && collaborators?.some((c: any) => c.collaborator_id === user.id && !c.is_primary_author) && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button className="text-[11px] text-muted-foreground hover:text-destructive transition-colors">Leave collab</button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="bg-card border-border">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Leave collaboration?</AlertDialogTitle>
+                  <AlertDialogDescription>This content will no longer appear on your profile.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={async () => {
+                    await supabase.from("content_collaborators").delete().eq("collaborator_id", user.id).eq("content_id", item.id);
+                    refetchCollabs();
+                    toast({ title: "Left collaboration" });
+                  }}>Leave</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
           <div className="flex items-center gap-1">
             <Eye className="h-3.5 w-3.5" />
@@ -624,6 +725,13 @@ const ContentDetail = () => {
                     </Button>
                   )}
                 </>
+              ) : isPwyw && !hasDownloaded ? (
+                <PwywPriceSelector
+                  contentId={item.id}
+                  floorGbp={(item as any).pwyw_floor_gbp ?? 0}
+                  avgPaid={(item as any).pwyw_avg_paid_gbp ?? 0}
+                  purchaseCount={(item as any).pwyw_purchase_count ?? 0}
+                />
               ) : (
                 <Button size="lg" className="w-full" onClick={handleDownload} disabled={downloading}>
                   {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isPaid ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}

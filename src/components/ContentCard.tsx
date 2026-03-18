@@ -39,6 +39,11 @@ export interface ContentCardProps {
   last_verified_at?: string | null;
   creator_id?: string;
   last_changelog_at?: string | null;
+  is_pwyw?: boolean;
+  pwyw_avg_paid_gbp?: number;
+  pwyw_purchase_count?: number;
+  pwyw_floor_gbp?: number;
+  collaborators?: { id: string; display_name: string | null; username: string | null; avatar_url: string | null; is_primary_author: boolean }[];
 }
 
 function roundedStars(avg: number, count: number): number {
@@ -112,6 +117,11 @@ export function ContentCard({
   last_verified_at = null,
   creator_id,
   last_changelog_at = null,
+  is_pwyw = false,
+  pwyw_avg_paid_gbp = 0,
+  pwyw_purchase_count = 0,
+  pwyw_floor_gbp = 0,
+  collaborators = [],
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -200,9 +210,13 @@ export function ContentCard({
           >
             {content_type}
           </Badge>
-          {isSub ? (
+        {isSub ? (
             <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">
               Subscribers only
+            </Badge>
+          ) : is_pwyw ? (
+            <Badge variant="outline" className="text-[10px] font-medium bg-[#2EC4B6]/15 text-[#2EC4B6] border-[#2EC4B6]/30">
+              Pay what you want
             </Badge>
           ) : isPaid ? (
             <Badge variant="outline" className="text-[10px] font-medium bg-orange-500/15 text-orange-400 border-orange-500/30">
@@ -215,6 +229,33 @@ export function ContentCard({
           )}
         </div>
 
+        {/* Collaborator avatars */}
+        {collaborators.length > 1 && (
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex -space-x-2">
+              {collaborators.slice(0, 4).map((c) => (
+                <div
+                  key={c.id}
+                  className="h-5 w-5 rounded-full border-2 border-card bg-muted flex items-center justify-center text-[8px] font-medium text-muted-foreground overflow-hidden"
+                  onClick={(e) => { e.stopPropagation(); window.location.href = `/creator/${c.username}`; }}
+                >
+                  {c.avatar_url ? (
+                    <img src={c.avatar_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    (c.display_name || c.username || "?")[0].toUpperCase()
+                  )}
+                </div>
+              ))}
+            </div>
+            <span className="text-[10px] text-muted-foreground">
+              {collaborators.find(c => c.is_primary_author)?.display_name || collaborators[0]?.display_name}
+              {collaborators.length === 2
+                ? ` + ${collaborators.find(c => !c.is_primary_author)?.display_name || "1 other"}`
+                : ` + ${collaborators.length - 1} others`}
+            </span>
+          </div>
+        )}
+
         <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1 flex items-center gap-1.5">
           {title}
           {is_fork && (
@@ -224,6 +265,14 @@ export function ContentCard({
           )}
         </h3>
         <p className="text-xs text-muted-foreground leading-relaxed mb-1 flex-1">{description}</p>
+        {is_pwyw && (
+          <p className="text-[10px] text-muted-foreground mb-0.5">
+            {pwyw_purchase_count && pwyw_purchase_count > 0
+              ? `avg. £${(pwyw_avg_paid_gbp ?? 0).toFixed(2)}`
+              : "Be the first to pay"}
+            {(pwyw_floor_gbp ?? 0) > 0 && ` · min. £${(pwyw_floor_gbp ?? 0).toFixed(2)}`}
+          </p>
+        )}
         {has_preview && (
           <p className="text-[11px] font-medium mb-1" style={{ color: "#2EC4B6" }}>Preview available</p>
         )}

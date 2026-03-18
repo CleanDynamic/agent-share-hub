@@ -10,8 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Star, StarHalf, RefreshCw } from "lucide-react";
+import { Plus, Star, StarHalf, RefreshCw, X } from "lucide-react";
 import { PublishUpdateModal } from "@/components/PublishUpdateModal";
+import { useToast } from "@/hooks/use-toast";
 
 function roundedStars(avg: number, count: number): number {
   if (count === 0) return 0;
@@ -51,7 +52,29 @@ export default function MyUploads() {
   const { isLoggedIn, isCreator, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"content" | "projects">("content");
+  const { toast } = useToast();
   const [updateTarget, setUpdateTarget] = useState<{ id: string; title: string; version: string } | null>(null);
+  const [expandedInvites, setExpandedInvites] = useState<string | null>(null);
+
+  // Fetch pending invites for user's content
+  const { data: pendingInvites, refetch: refetchInvites } = useQuery({
+    queryKey: ["my_pending_invites", profile?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collab_invites")
+        .select("id, content_id, invitee_id, status, profiles!collab_invites_invitee_id_fkey(username, display_name)")
+        .eq("inviter_id", profile!.id)
+        .eq("status", "pending");
+      return (data as any[]) ?? [];
+    },
+    enabled: !!profile?.id,
+  });
+
+  async function withdrawInvite(inviteId: string) {
+    await supabase.from("collab_invites").update({ status: "withdrawn" } as any).eq("id", inviteId);
+    refetchInvites();
+    toast({ title: "Invite withdrawn" });
+  }
   useEffect(() => {
     if (!loading && !isLoggedIn) navigate("/login", { replace: true });
     if (!loading && isLoggedIn && !isCreator) navigate("/", { replace: true });
@@ -180,20 +203,48 @@ export default function MyUploads() {
                             v{(item as any).current_version || "1.0"}
                           </TableCell>
                           <TableCell className="text-right">
-                            {item.status === "approved" && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setUpdateTarget({
-                                    id: item.id,
-                                    title: item.title,
-                                    version: (item as any).current_version || "1.0",
-                                  });
-                                }}
-                                className="text-[11px] text-primary hover:underline flex items-center gap-1"
-                              >
-                                <RefreshCw className="h-3 w-3" /> Publish update
-                              </button>
+                            <div className="flex items-center justify-end gap-2">
+                              {item.status === "approved" && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setUpdateTarget({
+                                      id: item.id,
+                                      title: item.title,
+                                      version: (item as any).current_version || "1.0",
+                                    });
+                                  }}
+                                  className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                                >
+                                  <RefreshCw className="h-3 w-3" /> Publish update
+                                </button>
+                              )}
+                              {(pendingInvites ?? []).filter((inv: any) => inv.content_id === item.id).length > 0 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedInvites(expandedInvites === item.id ? null : item.id);
+                                  }}
+                                  className="text-[11px] text-amber-400 hover:underline"
+                                >
+                                  {(pendingInvites ?? []).filter((inv: any) => inv.content_id === item.id).length} pending invite{(pendingInvites ?? []).filter((inv: any) => inv.content_id === item.id).length !== 1 ? "s" : ""}
+                                </button>
+                              )}
+                            </div>
+                            {expandedInvites === item.id && (
+                              <div className="mt-2 space-y-1">
+                                {(pendingInvites ?? []).filter((inv: any) => inv.content_id === item.id).map((inv: any) => (
+                                  <div key={inv.id} className="flex items-center justify-end gap-2 text-[11px]">
+                                    <span className="text-muted-foreground">@{inv.profiles?.username || inv.profiles?.display_name}</span>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); withdrawInvite(inv.id); }}
+                                      className="text-destructive hover:underline flex items-center gap-0.5"
+                                    >
+                                      <X className="h-3 w-3" /> Withdraw
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
                             )}
                           </TableCell>
                         </TableRow>
