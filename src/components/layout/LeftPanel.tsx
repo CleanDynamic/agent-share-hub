@@ -314,10 +314,26 @@ function SearchSection() {
                     <span className="ml-auto text-xs text-muted-foreground">See all posts →</span>
                   </button>
                 ) : (
-                  <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
-                    <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">{c.content_type}</span>
-                    <span className="truncate">{c.title}</span>
-                    {c.profiles?.username && <span className="ml-auto text-xs text-muted-foreground">@{c.profiles.username}</span>}
+                  <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
+                    <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground mt-0.5">{c.content_type}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="truncate block">{c.title}</span>
+                      {(() => {
+                        const lq = query.toLowerCase();
+                        const titleMatch = c.title?.toLowerCase().includes(lq);
+                        if (titleMatch) return null;
+                        const matches: string[] = [];
+                        (c.ai_tools ?? []).forEach((t: string) => { if (t.toLowerCase().includes(lq) && matches.length < 2) matches.push(t); });
+                        (c.use_cases ?? []).forEach((u: string) => {
+                          const label = u === "Other" && c.custom_use_case_description ? c.custom_use_case_description : u;
+                          if (label.toLowerCase().includes(lq) && matches.length < 2) matches.push(label);
+                        });
+                        if (c.custom_use_case_description?.toLowerCase().includes(lq) && matches.length < 2 && !matches.includes(c.custom_use_case_description)) matches.push(c.custom_use_case_description);
+                        if (matches.length === 0) return null;
+                        return <span className="text-[10px] text-muted-foreground block truncate">Matches: {matches.join(" · ")}</span>;
+                      })()}
+                    </div>
+                    {c.profiles?.username && <span className="ml-auto text-xs text-muted-foreground shrink-0">@{c.profiles.username}</span>}
                   </button>
                 )
               ))}
