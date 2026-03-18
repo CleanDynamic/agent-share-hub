@@ -32,7 +32,7 @@ const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Cont
 async function fetchApprovedContent() {
   const { data, error } = await supabase
     .from("content_items")
-    .select("*")
+    .select("*, profiles!content_items_creator_id_fkey(display_name, username)")
     .eq("status", "approved")
     .order("created_at", { ascending: false });
   if (error) throw error;
