@@ -644,6 +644,7 @@ export type Database = {
           comment_count: number
           compatibility_status: string | null
           content_type: string
+          cover_image_url: string | null
           created_at: string
           creator_id: string
           current_version: string
@@ -685,6 +686,7 @@ export type Database = {
           comment_count?: number
           compatibility_status?: string | null
           content_type: string
+          cover_image_url?: string | null
           created_at?: string
           creator_id: string
           current_version?: string
@@ -726,6 +728,7 @@ export type Database = {
           comment_count?: number
           compatibility_status?: string | null
           content_type?: string
+          cover_image_url?: string | null
           created_at?: string
           creator_id?: string
           current_version?: string
