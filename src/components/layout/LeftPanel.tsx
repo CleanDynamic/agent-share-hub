@@ -4,7 +4,6 @@ import {
   Home, LayoutGrid, Upload, Bookmark, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, Library,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavBadges } from "@/hooks/useNavBadges";
