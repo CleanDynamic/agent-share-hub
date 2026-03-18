@@ -19,12 +19,13 @@ import {
 import { TipSelector } from "@/components/TipSelector";
 
 export default function Profile() {
-  const { isLoggedIn, profile, loading, refreshProfile } = useAuth();
+  const { isLoggedIn, profile, loading, refreshProfile, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [profileTab, setProfileTab] = useState<"content" | "library">("content");
 
   // Edit form state
   const [displayName, setDisplayName] = useState("");
