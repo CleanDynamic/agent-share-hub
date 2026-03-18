@@ -134,6 +134,18 @@ export function FeedItem({ item, rank }: FeedItemProps) {
         <p className="text-[13px] text-muted-foreground truncate mt-0.5">{item.description}</p>
       )}
 
+      {/* LINE 5 — Cover image */}
+      {item.cover_image_url && (
+        <img
+          src={item.cover_image_url}
+          alt={item.title}
+          loading="lazy"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          className="w-full rounded-xl mt-2 block object-cover"
+          style={{ maxHeight: 240 }}
+        />
+      )}
+
       {/* LINE 5 — Stats */}
       <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-0.5"><Eye className="h-3 w-3" />{formatNum(item.view_count ?? 0)}</span>

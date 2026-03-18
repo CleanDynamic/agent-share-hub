@@ -462,6 +462,18 @@ const ContentDetail = () => {
           </div>
         )}
 
+        {/* Cover image — full width above badges */}
+        {(item as any).cover_image_url && (
+          <img
+            src={(item as any).cover_image_url}
+            alt={item.title}
+            loading="eager"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            className="w-full object-cover mb-4"
+            style={{ maxHeight: 360, borderRadius: 0 }}
+          />
+        )}
+
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <Badge variant="outline" className={`text-[10px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
             {item.content_type}
