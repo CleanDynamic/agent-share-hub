@@ -127,6 +127,9 @@ export function FeedItem({ item, rank }: FeedItemProps) {
         <p className="text-[13px] text-muted-foreground truncate mt-0.5">{item.description}</p>
       )}
 
+      {/* LINE 4.5 — Tools + Use Cases row */}
+      <ToolsUseCasesRow item={item} />
+
       {/* LINE 5 — Cover image */}
       {item.cover_image_url && (
         <img
