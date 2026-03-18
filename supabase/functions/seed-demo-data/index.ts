@@ -143,38 +143,28 @@ Deno.serve(async (req) => {
     await supabase.from("profiles").update({ is_curator: true, curator_application_status: "approved" }).in("id", [users.alex, users.chen]);
 
     // ═══ STEP 3 — FOLLOWS (organic follower/following counts) ═══
-    // Build a realistic follow graph
     const followPairs: [string, string][] = [
-      // alex is popular — followed by many
-      ["priya", "alex"], ["marcus", "alex"], ["sofia", "alex"], ["jamie", "alex"],
-      ["chen", "alex"], ["isabelle", "alex"], ["sam", "alex"], ["power", "alex"],
-      ["devtest", "alex"],
-      // priya gets follows
-      ["alex", "priya"], ["marcus", "priya"], ["sofia", "priya"], ["jamie", "priya"],
-      ["chen", "priya"], ["sam", "priya"], ["power", "priya"],
-      // marcus
-      ["alex", "marcus"], ["priya", "marcus"], ["sofia", "marcus"], ["chen", "marcus"],
-      ["power", "marcus"],
-      // sofia
-      ["alex", "sofia"], ["priya", "sofia"], ["marcus", "sofia"], ["jamie", "sofia"],
-      ["isabelle", "sofia"], ["sam", "sofia"],
-      // chen
-      ["alex", "chen"], ["marcus", "chen"], ["sofia", "chen"], ["power", "chen"],
-      ["devtest", "chen"],
-      // jamie
-      ["alex", "jamie"], ["priya", "jamie"], ["chen", "jamie"],
-      // isabelle
-      ["alex", "isabelle"], ["sofia", "isabelle"], ["sam", "isabelle"],
-      // cross-follows among users
-      ["sam", "power"], ["power", "sam"],
-      ["lurker", "alex"], ["lurker", "sofia"],
-      ["newjoin", "alex"],
+      // Regular users following creators
+      ["sam", "alex"], ["sam", "isabelle"], ["sam", "sofia"],
+      ["power", "alex"], ["power", "priya"], ["power", "marcus"], ["power", "sofia"], ["power", "jamie"], ["power", "chen"], ["power", "isabelle"],
+      ["lurker", "chen"], ["lurker", "isabelle"],
+      ["newjoin", "isabelle"],
+      ["devtest", "alex"], ["devtest", "priya"], ["devtest", "marcus"], ["devtest", "sofia"], ["devtest", "jamie"], ["devtest", "chen"], ["devtest", "isabelle"],
+      // Creators following each other
+      ["alex", "chen"], ["alex", "isabelle"], ["alex", "sofia"],
+      ["priya", "jamie"], ["priya", "marcus"], ["priya", "chen"],
+      ["marcus", "chen"], ["marcus", "alex"], ["marcus", "sofia"],
+      ["sofia", "isabelle"], ["sofia", "alex"], ["sofia", "priya"],
+      ["jamie", "priya"], ["jamie", "marcus"],
+      ["chen", "alex"], ["chen", "marcus"], ["chen", "sofia"],
+      ["isabelle", "sofia"], ["isabelle", "alex"],
     ];
 
     await supabase.from("follows").insert(
       followPairs.map(([follower, following]) => ({
         follower_id: users[follower],
         following_id: users[following],
+        created_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
       }))
     );
 
