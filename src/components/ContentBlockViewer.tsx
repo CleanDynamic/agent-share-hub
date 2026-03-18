@@ -7,7 +7,7 @@ import { CommentsSection } from "@/components/CommentsSection";
 import { MentionText } from "@/components/MentionText";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Download, Loader2, Eye, MessageCircle } from "lucide-react";
+import { FileText, Download, Loader2, Eye, MessageCircle, ChevronRight, ClipboardList } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────
 
