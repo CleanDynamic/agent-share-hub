@@ -37,10 +37,10 @@ const CATEGORIES: CategoryDef[] = [
   },
   {
     slug: "agent-blueprint",
-    name: "Agent(s) Blueprint",
+    name: "Agent(s)",
     contentType: "Agent Blueprint",
     description: "Complete setup guides with exact prompts, tools, and step-by-step instructions for building AI agents.",
-    seoTitle: "Agent(s) Blueprint — Setup Guides | NeoScale AI",
+    seoTitle: "Agent(s) — Setup Guides | NeoScale AI",
     seoDescription: "Step-by-step AI blueprints with exact prompts, tools, and setup instructions.",
   },
   {

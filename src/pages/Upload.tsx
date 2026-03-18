@@ -365,7 +365,7 @@ const Upload = () => {
           >
             <FileText className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "single" ? "text-primary" : "text-muted-foreground"}`} />
             <div>
-              <p className="text-sm font-semibold text-foreground">Single content</p>
+              <p className="text-sm font-semibold text-foreground">Blueprint</p>
               <p className="text-xs text-muted-foreground mt-0.5">A prompt, tutorial, blueprint, or guide</p>
             </div>
           </button>

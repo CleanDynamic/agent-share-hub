@@ -13,7 +13,7 @@ import { ORDERED_CONTENT_TYPES, TYPE_COLORS, displayContentType } from "@/lib/co
 const CATEGORIES: { name: string; dbType: string; difficulty: string; slug: string; isProject?: boolean }[] = [
   { name: "Prompt(s)", dbType: "Prompt File", difficulty: "Beginner", slug: "prompt-file" },
   { name: "Prompt Tutorial", dbType: "Prompt Tutorial", difficulty: "Beginner", slug: "prompt-tutorial" },
-  { name: "Agent(s) Blueprint", dbType: "Agent Blueprint", difficulty: "Beginner", slug: "agent-blueprint" },
+  { name: "Agent(s)", dbType: "Agent Blueprint", difficulty: "Beginner", slug: "agent-blueprint" },
   { name: "Model Config Guide", dbType: "Model Config Guide", difficulty: "Beginner", slug: "model-config-guide" },
   { name: "Integration Guide", dbType: "Integration Guide", difficulty: "Beginner", slug: "integration-guide" },
   { name: "Workflow Template", dbType: "Workflow Template", difficulty: "Intermediate", slug: "workflow-template" },
