@@ -158,6 +158,7 @@ function PackageBanner({ project, paidCount, totalPrice, hasPackage, onUnlock, u
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { isLoggedIn, profile } = useAuth();
   const { toast } = useToast();
@@ -166,6 +167,8 @@ const ProjectDetail = () => {
   const [accountGateContentId, setAccountGateContentId] = useState("");
   const [unlocking, setUnlocking] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "blueprints" | "changelog" | "comments">("overview");
+  const [showAddDropdown, setShowAddDropdown] = useState(false);
+  const [showAddExistingSearch, setShowAddExistingSearch] = useState(false);
 
   // Fetch project
   const { data: project, isLoading, error } = useQuery({
