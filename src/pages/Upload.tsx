@@ -6,6 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, CheckCircle2, FileText, FolderOpen, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectUploadForm } from "@/components/ProjectUploadForm";
+import { RevenueSplitPicker, type RevenueSplit } from "@/components/RevenueSplitPicker";
+import { CollabInvitePicker, type CollabInvitee } from "@/components/CollabInvitePicker";
 import { useToast } from "@/hooks/use-toast";
 import { useApprovedToolNames } from "@/hooks/useApprovedTools";
 import { SeoHead } from "@/components/SeoHead";
@@ -63,7 +65,9 @@ const Upload = () => {
   const [success, setSuccess] = useState(false);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
-
+  const [revenueSplits, setRevenueSplits] = useState<RevenueSplit[]>([]);
+  const [collabInvitees, setCollabInvitees] = useState<CollabInvitee[]>([]);
+  const [pwywFloor, setPwywFloor] = useState<number>(0);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -101,6 +105,13 @@ const Upload = () => {
         return;
       }
 
+      const isPwyw = monetisationType === "paid" && pwywFloor >= 0 && form.getValues("price_gbp") === undefined;
+      // Determine if PWYW based on a separate flag
+      const actualMonetisationType = monetisationType;
+      const actualPriceGbp = monetisationType === "paid" && !isPwyw ? values.price_gbp ?? null : null;
+      const actualPwywEnabled = isPwyw;
+      const actualPwywFloor = isPwyw ? pwywFloor : null;
+
       // Insert content_items row (file_url left null — blocks hold the content now)
       const { data: insertedItem, error: insertError } = await supabase.from("content_items").insert({
         creator_id: user.id,
@@ -114,10 +125,13 @@ const Upload = () => {
         use_instructions: values.use_instructions,
         what_to_expect: values.what_to_expect,
         status: "pending",
-        monetisation_type: values.monetisation_type,
-        price_gbp: values.monetisation_type === "paid" ? values.price_gbp ?? null : null,
+        monetisation_type: actualMonetisationType,
+        price_gbp: actualPriceGbp,
         donation_enabled: values.donation_enabled,
-      }).select("id").single();
+        pwyw_enabled: actualPwywEnabled,
+        pwyw_floor_gbp: actualPwywFloor,
+        is_pwyw: actualPwywEnabled,
+      } as any).select("id").single();
 
       if (insertError || !insertedItem) {
         toast({ title: "Submission failed", description: insertError?.message ?? "Unknown error", variant: "destructive" });
@@ -134,6 +148,39 @@ const Upload = () => {
           requires_content_id: dep.content_id,
           dependency_note: dep.note || null,
         });
+      }
+
+      // Save revenue splits
+      for (const split of revenueSplits) {
+        await supabase.from("revenue_splits").insert({
+          content_id: contentId,
+          recipient_id: split.recipientId,
+          percentage: split.percentage,
+          set_by: user.id,
+        } as any);
+      }
+
+      // Save collab invites
+      for (const inv of collabInvitees) {
+        const { data: inviteData } = await supabase.from("collab_invites").insert({
+          content_id: contentId,
+          inviter_id: user.id,
+          invitee_id: inv.id,
+          status: "pending",
+        } as any).select("id").single();
+
+        // Send notification
+        await supabase.from("notifications").insert({
+          recipient_id: inv.id,
+          notification_type: "collab_invite",
+          content_id: contentId,
+          actor_id: user.id,
+          metadata: {
+            inviter_username: user.email?.split("@")[0] || "",
+            content_title: values.title,
+            invite_id: inviteData?.id,
+          },
+        } as any);
       }
 
       // Save each block
@@ -536,33 +583,23 @@ const Upload = () => {
                 <p className="text-xs text-muted-foreground mt-0.5">Optional — free by default</p>
               </div>
 
-              {/* Free / Paid toggle */}
+              {/* Free / Paid / PWYW selector */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-foreground">Free download</p>
-                    <p className="text-xs text-muted-foreground">Anyone can download for free</p>
+                {(["free", "paid"] as const).map((type) => (
+                  <div key={type} className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-foreground">{type === "free" ? "Free download" : "Paid (fixed price)"}</p>
+                      <p className="text-xs text-muted-foreground">{type === "free" ? "Anyone can download for free" : "Set a price in GBP"}</p>
+                    </div>
+                    <Switch
+                      checked={monetisationType === type && !pwywFloor && !(monetisationType === "paid" && form.getValues("price_gbp") === undefined)}
+                      onCheckedChange={(checked) => {
+                        if (checked) { form.setValue("monetisation_type", type); setPwywFloor(0); }
+                        else if (type === monetisationType) form.setValue("monetisation_type", "free");
+                      }}
+                    />
                   </div>
-                  <Switch
-                    checked={monetisationType === "free"}
-                    onCheckedChange={(checked) =>
-                      form.setValue("monetisation_type", checked ? "free" : "paid")
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-foreground">Paid download</p>
-                    <p className="text-xs text-muted-foreground">Set a price in GBP</p>
-                  </div>
-                  <Switch
-                    checked={monetisationType === "paid"}
-                    onCheckedChange={(checked) =>
-                      form.setValue("monetisation_type", checked ? "paid" : "free")
-                    }
-                  />
-                </div>
+                ))}
 
                 {monetisationType === "paid" && (
                   <FormField
@@ -573,14 +610,7 @@ const Upload = () => {
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-foreground font-medium">£</span>
                           <FormControl>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="1"
-                              placeholder="4.99"
-                              className="bg-background border-border rounded-xl w-32"
-                              {...field}
-                            />
+                            <Input type="number" step="0.01" min="1" placeholder="4.99" className="bg-background border-border rounded-xl w-32" {...field} />
                           </FormControl>
                         </div>
                         <FormMessage />
@@ -605,8 +635,16 @@ const Upload = () => {
               </div>
             </div>
 
+            {/* Revenue Splits — only for paid content */}
+            {monetisationType === "paid" && (
+              <RevenueSplitPicker splits={revenueSplits} onChange={setRevenueSplits} />
+            )}
+
             {/* Dependencies */}
             <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
+
+            {/* Co-author invites */}
+            <CollabInvitePicker invitees={collabInvitees} onChange={setCollabInvitees} />
 
             {/* Submit */}
             <Button type="submit" size="lg" className="w-full" disabled={submitting}>

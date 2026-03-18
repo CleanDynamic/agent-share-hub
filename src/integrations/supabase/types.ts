@@ -645,6 +645,7 @@ export type Database = {
           fork_of_creator_id: string | null
           has_curator_recommendation: boolean | null
           id: string
+          is_pwyw: boolean
           is_verified: boolean
           last_verified_at: string | null
           monetisation_type: string
@@ -685,6 +686,7 @@ export type Database = {
           fork_of_creator_id?: string | null
           has_curator_recommendation?: boolean | null
           id?: string
+          is_pwyw?: boolean
           is_verified?: boolean
           last_verified_at?: string | null
           monetisation_type?: string
@@ -725,6 +727,7 @@ export type Database = {
           fork_of_creator_id?: string | null
           has_curator_recommendation?: boolean | null
           id?: string
+          is_pwyw?: boolean
           is_verified?: boolean
           last_verified_at?: string | null
           monetisation_type?: string

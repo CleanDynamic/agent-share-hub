@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.check-compatibility-status]
 verify_jwt = false
+
+[functions.create-split-checkout-session]
+verify_jwt = false
+
+[functions.create-pwyw-checkout-session]
+verify_jwt = false
