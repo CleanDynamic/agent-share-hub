@@ -610,40 +610,48 @@ const Upload = () => {
               )}
             />
 
-            {/* Micro-tags */}
+            {/* Tags — free-text */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Tags — pick 3 to 5</label>
-              <p className="text-xs text-muted-foreground">Answer the questions users ask before downloading.</p>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {(microtagDefs ?? []).map((mt) => {
-                  const selected = selectedMicrotags.includes(mt.tag);
-                  const maxed = selectedMicrotags.length >= 5 && !selected;
-                  return (
-                    <button
-                      key={mt.tag}
-                      type="button"
-                      title={mt.description || undefined}
-                      disabled={maxed}
-                      onClick={() => {
-                        setMicrotagError("");
-                        setSelectedMicrotags((prev) =>
-                          selected ? prev.filter((t) => t !== mt.tag) : [...prev, mt.tag]
-                        );
-                      }}
-                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                        selected
-                          ? "bg-[hsl(18,80%,51%)]/15 text-[hsl(18,80%,51%)] border-[hsl(18,80%,51%)]/30"
-                          : maxed
-                          ? "bg-[hsl(240,14%,15%)] text-[hsl(240,7%,60%)] border-border opacity-40 pointer-events-none"
-                          : "bg-[hsl(240,14%,15%)] text-[hsl(240,7%,60%)] border-border hover:border-muted-foreground/40"
-                      }`}
-                    >
-                      {mt.tag}
-                    </button>
-                  );
-                })}
+              <label className="text-sm font-medium text-foreground">Tags (optional)</label>
+              <p className="text-xs text-muted-foreground">Add up to 5 tags to help people find your blueprint.</p>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {customTags.map((tag) => (
+                  <span key={tag} className="text-xs px-2.5 py-1 rounded-lg bg-primary/15 text-primary border border-primary/30 flex items-center gap-1.5">
+                    #{tag}
+                    <button type="button" onClick={() => setCustomTags(customTags.filter(t => t !== tag))} className="hover:text-foreground"><X className="h-3 w-3" /></button>
+                  </span>
+                ))}
               </div>
-              {microtagError && <p className="text-sm text-destructive">{microtagError}</p>}
+              {customTags.length < 5 && (
+                <div className="flex gap-2">
+                  <Input
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 30))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && tagInput.trim()) {
+                        e.preventDefault();
+                        const tag = tagInput.trim().toLowerCase();
+                        if (!customTags.includes(tag)) setCustomTags([...customTags, tag]);
+                        setTagInput("");
+                      }
+                    }}
+                    placeholder="Type a tag and press Enter"
+                    className="bg-card border-border rounded-xl text-sm flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (tagInput.trim()) {
+                        const tag = tagInput.trim().toLowerCase();
+                        if (!customTags.includes(tag)) setCustomTags([...customTags, tag]);
+                        setTagInput("");
+                      }
+                    }}
+                  >Add</Button>
+                </div>
+              )}
             </div>
 
             {/* 7. Content Block Builder */}
