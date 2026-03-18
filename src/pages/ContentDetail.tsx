@@ -792,7 +792,7 @@ const ContentDetail = () => {
         {(!isSub || subscriberUnlocked) && (
           <>
             <div className="flex gap-0 border-b border-border sticky top-0 bg-background z-20">
-              {(["content", "changelog", "tips", "comments"] as const).map((tab) => (
+              {(["changelog", "tips", "comments"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => handleTabChange(tab)}
@@ -802,7 +802,6 @@ const ContentDetail = () => {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {tab === "content" && "Blueprint"}
                   {tab === "changelog" && (
                     <>Changelog{hasLibraryUpdate && <span className="ml-1 text-primary">●</span>}</>
                   )}
@@ -814,19 +813,6 @@ const ContentDetail = () => {
 
             {/* 13. Tab content */}
             <div className="mt-0">
-              {activeTab === "content" && (
-                <div className="py-4">
-                  <ContentBlockViewer
-                    contentId={item.id}
-                    contentTitle={item.title}
-                    monetisationType={item.monetisation_type}
-                    creatorId={item.creator_id}
-                    useInstructions={item.use_instructions}
-                    onTriggerPaywall={handleDownload}
-                    isEligible={isEligible}
-                  />
-                </div>
-              )}
 
               {activeTab === "changelog" && (
                 <div className="py-4">
