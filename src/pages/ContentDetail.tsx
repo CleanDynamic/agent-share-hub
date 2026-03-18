@@ -124,7 +124,7 @@ const ContentDetail = () => {
 
   const creator = item?.profiles as { id: string; username: string; display_name: string | null; bio: string | null } | null;
 
-  // ─── View tracking + library update dismissal ──────────────────────────────────────
+  // ─── View tracking ──────────────────────────────────────
   useEffect(() => {
     if (!item || viewTracked.current) return;
     viewTracked.current = true;
@@ -146,16 +146,40 @@ const ContentDetail = () => {
         interaction_type: "viewed_block",
         interaction_meta: { title: item.title },
       } as any);
-
-      // Dismiss library update indicator
-      supabase
-        .from("user_library")
-        .update({ has_update: false, last_seen_version: item.current_version } as any)
-        .eq("user_id", user.id)
-        .eq("content_id", item.id)
-        .then(() => {});
     }
   }, [item, user]);
+
+  // Check if this item has a library update for the current user
+  const { data: hasLibraryUpdate, refetch: refetchLibraryUpdate } = useQuery({
+    queryKey: ["library_update_check", id, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_library")
+        .select("has_update")
+        .eq("user_id", user!.id)
+        .eq("content_id", id!)
+        .maybeSingle();
+      return (data as any)?.has_update === true;
+    },
+    enabled: !!user?.id && !!id,
+  });
+
+  const dismissLibraryUpdate = useCallback(async () => {
+    if (!user || !item) return;
+    await supabase
+      .from("user_library")
+      .update({ has_update: false, last_seen_version: item.current_version } as any)
+      .eq("user_id", user.id)
+      .eq("content_id", item.id);
+    refetchLibraryUpdate();
+  }, [user, item, refetchLibraryUpdate]);
+
+  function handleTabChange(tab: "content" | "changelog" | "tips" | "comments") {
+    setActiveTab(tab);
+    if (tab === "changelog" && hasLibraryUpdate) {
+      dismissLibraryUpdate();
+    }
+  }
 
   const { data: creatorStats } = useQuery({
     queryKey: ["creator_total_downloads", creator?.id],
