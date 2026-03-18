@@ -623,6 +623,49 @@ const Browse = () => {
           </Select>
         </div>
 
+        {/* Active microtag chips + More filters toggle */}
+        <div className="hidden md:flex flex-wrap items-center gap-2 mb-2">
+          {microtagFilters.map((tag) => (
+            <span key={tag} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-primary/15 text-primary border border-primary/30">
+              {tag}
+              <button onClick={() => setMicrotagFilters((prev) => prev.filter((t) => t !== tag))} className="hover:text-foreground">×</button>
+            </span>
+          ))}
+          <button
+            onClick={() => setMoreFiltersOpen(!moreFiltersOpen)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {moreFiltersOpen ? "Hide filters ▲" : "More filters ▼"}
+          </button>
+        </div>
+
+        {/* Collapsible microtag filter */}
+        {moreFiltersOpen && (
+          <div className="hidden md:block mb-4">
+            <div className="flex flex-wrap gap-1.5">
+              {(microtagDefs ?? []).map((mt) => {
+                const selected = microtagFilters.includes(mt.tag);
+                return (
+                  <button
+                    key={mt.tag}
+                    title={mt.description || undefined}
+                    onClick={() => setMicrotagFilters((prev) =>
+                      selected ? prev.filter((t) => t !== mt.tag) : [...prev, mt.tag]
+                    )}
+                    className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${
+                      selected
+                        ? "bg-primary/15 text-primary border-primary/30"
+                        : "bg-[hsl(240,14%,15%)] text-[hsl(240,7%,60%)] border-border hover:border-muted-foreground/40"
+                    }`}
+                  >
+                    {mt.tag}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Mobile filter button */}
         <div className="md:hidden mb-4">
           <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
