@@ -335,3 +335,113 @@ export default function Profile() {
     </div>
   );
 }
+
+/* ---- Curator Application Section ---- */
+function CuratorSection() {
+  const { profile, refreshProfile } = useAuth();
+  const { toast } = useToast();
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!profile) return null;
+
+  const isCurator = (profile as any).is_curator === true;
+  const appStatus = (profile as any).curator_application_status as string | null;
+  const followerCount = (profile as any).follower_count ?? 0;
+
+  if (isCurator) {
+    return (
+      <div className="border border-[#2EC4B6]/30 rounded-xl p-5 bg-[#2EC4B6]/5 mt-6">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 text-[#2EC4B6]" />
+          <p className="text-sm font-semibold text-[#2EC4B6]">You are a NeoScale Curator ✓</p>
+        </div>
+        <Link to="/notifications" className="text-xs text-muted-foreground hover:text-foreground mt-2 inline-block">
+          Manage your recommendations →
+        </Link>
+      </div>
+    );
+  }
+
+  if (appStatus === "pending") {
+    return (
+      <div className="border border-border rounded-xl p-5 bg-card mt-6">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+          <p className="text-sm font-semibold text-foreground">Become a Curator</p>
+        </div>
+        <p className="text-sm text-muted-foreground">Application under review.</p>
+      </div>
+    );
+  }
+
+  if (appStatus === "rejected") {
+    return (
+      <div className="border border-border rounded-xl p-5 bg-card mt-6 opacity-60">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+          <p className="text-sm font-semibold text-foreground">Become a Curator</p>
+        </div>
+        <p className="text-sm text-muted-foreground">Your application was not accepted at this time.</p>
+      </div>
+    );
+  }
+
+  if (followerCount < 50) {
+    return (
+      <div className="border border-border rounded-xl p-5 bg-card mt-6 opacity-50">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+          <p className="text-sm font-semibold text-foreground">Become a Curator</p>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          You need 50 followers to apply. You have {followerCount} — {50 - followerCount} more to go.
+        </p>
+      </div>
+    );
+  }
+
+  async function handleApply() {
+    if (!profile || reason.trim().length === 0) return;
+    setSubmitting(true);
+    const { error } = await supabase.from("curator_applications").insert({
+      user_id: profile.id,
+      reason: reason.trim(),
+      status: "pending",
+    } as any);
+    if (error) {
+      toast({ title: "Failed to submit", description: error.message, variant: "destructive" });
+      setSubmitting(false);
+      return;
+    }
+    await supabase.from("profiles").update({ curator_application_status: "pending" } as any).eq("id", profile.id);
+    await refreshProfile();
+    toast({ title: "Application submitted." });
+    setSubmitting(false);
+  }
+
+  return (
+    <div className="border border-border rounded-xl p-5 bg-card mt-6">
+      <div className="flex items-center gap-2 mb-2">
+        <ShieldCheck className="h-5 w-5 text-[#2EC4B6]" />
+        <p className="text-sm font-semibold text-foreground">Become a Curator</p>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        Curators write editorial recommendations on posts. Your picks appear highlighted on content pages and in the right panel — surfaced to your followers' discovery feeds.
+      </p>
+      <Textarea
+        value={reason}
+        onChange={(e) => setReason(e.target.value.slice(0, 500))}
+        placeholder="Why do you want to be a Curator?"
+        rows={3}
+        maxLength={500}
+        className="mb-1"
+      />
+      <p className="text-xs text-muted-foreground text-right mb-3">{reason.length}/500</p>
+      <Button onClick={handleApply} disabled={submitting || reason.trim().length === 0}>
+        {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+        Apply
+      </Button>
+    </div>
+  );
+}
