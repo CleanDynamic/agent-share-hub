@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/form";
 import { SubmitToolModal } from "@/components/SubmitToolModal";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
-import { LearningPathUploadForm } from "@/components/LearningPathUploadForm";
+// LearningPathUploadForm removed from UI
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
 import { useMicrotagDefinitions } from "@/hooks/useMicrotags";
 
