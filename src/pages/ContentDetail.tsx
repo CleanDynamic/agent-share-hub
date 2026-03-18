@@ -823,6 +823,18 @@ const ContentDetail = () => {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+
+              {/* Curator recommendation button */}
+              {isCurator && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs border-[#2EC4B6]/30 text-[#2EC4B6] hover:bg-[#2EC4B6]/10"
+                  onClick={() => setCuratorModalOpen(true)}
+                >
+                  <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Add your recommendation
+                </Button>
+              )}
             </div>
 
             {creator && (
