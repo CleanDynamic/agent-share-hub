@@ -27,6 +27,7 @@ import { ForkModal } from "@/components/ForkModal";
 import { DependencyDisplay } from "@/components/DependencyDisplay";
 import { CompatibilityBadge } from "@/components/CompatibilityBadge";
 import { PwywPriceSelector } from "@/components/PwywPriceSelector";
+import { MentionText } from "@/components/MentionText";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
