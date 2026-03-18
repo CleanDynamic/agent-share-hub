@@ -90,6 +90,10 @@ const Upload = () => {
   const [otherToolName, setOtherToolName] = useState("");
   const [draftMeta, setDraftMeta] = useState<{ name: string; savedAt: string } | null>(null);
   const [draftLoading, setDraftLoading] = useState(!!draftId);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId || null);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const autosaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastAutosaveRef = useRef<Date | null>(null);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
