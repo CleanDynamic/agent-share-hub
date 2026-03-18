@@ -66,7 +66,10 @@ function ToolsUseCasesRow({ item }: { item: any }) {
 
   if (tools.length === 0 && useCases.length === 0) return null;
 
-  const displayTools = tools.slice(0, 2);
+  const otherToolName = item.other_tool_name as string | null;
+  const displayTools = tools.slice(0, 2).map((t: string) =>
+    t === "Other" && otherToolName ? otherToolName : t
+  );
   const extraTools = tools.length - 2;
   const displayUseCases = useCases.slice(0, 2).map((uc: string) =>
     uc === "Other" && customDesc ? customDesc : uc
