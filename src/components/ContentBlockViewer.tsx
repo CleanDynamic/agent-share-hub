@@ -172,7 +172,7 @@ function RenderBlockContent({
       return (
         <ol className="list-decimal list-inside space-y-1">
           {(items.length > 0 ? items : text.split("\n").filter(Boolean)).map((line, i) => (
-            <li key={i} className="text-sm text-muted-foreground">{line}</li>
+            <li key={i} className="text-sm text-muted-foreground"><MentionText text={line} /></li>
           ))}
         </ol>
       );
