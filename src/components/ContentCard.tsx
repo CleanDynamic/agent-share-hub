@@ -32,6 +32,11 @@ export interface ContentCardProps {
   view_count?: number;
   is_fork?: boolean;
   has_preview?: boolean;
+  dependency_count?: number;
+  dependency_titles?: string[];
+  compatibility_status?: string | null;
+  last_verified_at?: string | null;
+  creator_id?: string;
 }
 
 function roundedStars(avg: number, count: number): number {
