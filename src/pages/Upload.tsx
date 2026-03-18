@@ -176,7 +176,7 @@ const Upload = () => {
           content_id: contentId,
           actor_id: user.id,
           metadata: {
-            inviter_username: profile?.username || "",
+            inviter_username: user.email?.split("@")[0] || "",
             content_title: values.title,
             invite_id: inviteData?.id,
           },
