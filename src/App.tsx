@@ -76,6 +76,7 @@ const App = () => (
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/saved" element={<ProtectedRoute><Saved /></ProtectedRoute>} />
                 <Route path="/library" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
+                <Route path="/drafts" element={<ProtectedRoute><DraftsPage /></ProtectedRoute>} />
                 <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />

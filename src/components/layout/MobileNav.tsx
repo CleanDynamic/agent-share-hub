@@ -181,6 +181,7 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
     { icon: Clock, label: "Recent", to: "/recent" },
     { icon: Heart, label: "For You", to: "/fyp", authOnly: true, badge: fypBadge },
     { icon: Bookmark, label: "Bookmarks", to: "/saved", authOnly: true },
+    { icon: FilePenLine, label: "Drafts", to: "/drafts", authOnly: true },
     { icon: Library, label: "Library", to: "/library", authOnly: true },
     { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true },
     { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true },
