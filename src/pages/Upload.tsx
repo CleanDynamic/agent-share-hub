@@ -381,7 +381,7 @@ const Upload = () => {
             <FolderOpen className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "project" ? "text-primary" : "text-muted-foreground"}`} />
             <div>
               <p className="text-sm font-semibold text-foreground">Project</p>
-              <p className="text-xs text-muted-foreground mt-0.5">A collection of related content</p>
+              <p className="text-xs text-muted-foreground mt-0.5">A collection of related blueprints</p>
             </div>
           </button>
         </div>

@@ -73,7 +73,7 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
   // Tabs definition
   const tabs = useMemo(() => {
     const t = [
-      { key: "posts", label: "Posts" },
+      { key: "posts", label: "Portfolio" },
       { key: "replies", label: "Replies" },
       { key: "media", label: "Media" },
       { key: "likes", label: "Likes" },
