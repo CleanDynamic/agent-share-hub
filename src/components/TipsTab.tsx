@@ -45,6 +45,13 @@ export function TipsTab({ contentId, isEligible }: Props) {
       text: text.trim(),
     });
     if (!error) {
+      // Send mention notifications
+      await sendMentionNotifications({
+        text: text.trim(),
+        actorId: user.id,
+        contentId,
+        context: "tip",
+      });
       queryClient.invalidateQueries({ queryKey: ["content_tips", contentId] });
       setText("");
       toast({ title: "Tip posted" });
