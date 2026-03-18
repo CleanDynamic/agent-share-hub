@@ -292,6 +292,7 @@ const Browse = () => {
   useEffect(() => {
     const tab = searchParams.get("tab");
     const typeSlug = searchParams.get("type");
+    const mt = searchParams.get("microtag");
     if (tab === "projects") {
       setBrowseTab("projects");
     } else if (tab === "paths") {
@@ -300,9 +301,13 @@ const Browse = () => {
       setBrowseTab("content");
       setTypeFilter(SLUG_TO_TYPE[typeSlug]);
     }
+    if (mt) {
+      setMicrotagFilters(mt.split(",").filter(Boolean));
+      setMoreFiltersOpen(true);
+    }
   }, [searchParams]);
 
-  const activeFilterCount = [typeFilter, difficultyFilter, toolFilter, useCaseFilter].filter((f) => f !== ALL).length;
+  const activeFilterCount = [typeFilter, difficultyFilter, toolFilter, useCaseFilter].filter((f) => f !== ALL).length + microtagFilters.length;
 
   const { data: fullProfile } = useQuery({
     queryKey: ["browse_profile", profile?.id],
