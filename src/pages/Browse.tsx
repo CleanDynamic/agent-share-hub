@@ -761,6 +761,7 @@ const Browse = () => {
                 avg_rating={Number((item as any).avg_rating) || 0}
                 rating_count={(item as any).rating_count ?? 0}
                 view_count={(item as any).view_count ?? 0}
+                microtags={allMicrotagsMap?.get(item.id) ?? []}
               />
             ))}
           </div>
