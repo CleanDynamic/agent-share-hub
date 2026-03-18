@@ -541,6 +541,14 @@ const ContentDetail = () => {
                 </Button>
               )}
 
+              {/* Add to Library */}
+              <AddToLibraryButton
+                contentId={item.id}
+                currentVersion={item.current_version}
+                contentTitle={item.title}
+                variant="full"
+              />
+
               {/* Bookmark + Collection buttons */}
               <div className="flex justify-center gap-2">
                 <BookmarkButton contentId={item.id} />
