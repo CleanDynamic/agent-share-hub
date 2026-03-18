@@ -279,7 +279,7 @@ function TrendingTab() {
         const ids = pool.map(p => p.id);
         const { data: month } = await supabase
           .from("content_items")
-          .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, approved_at, profiles!content_items_creator_id_fkey(display_name, username)")
+          .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, approved_at, what_to_expect_blocks, what_to_expect, other_tool_name, profiles!content_items_creator_id_fkey(display_name, username)")
           .eq("status", "approved")
           .gte("created_at", d30)
           .limit(50);
