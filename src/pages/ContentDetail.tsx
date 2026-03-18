@@ -466,7 +466,7 @@ const ContentDetail = () => {
 
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <Badge variant="outline" className={`text-[10px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
-            {item.content_type}
+            {displayContentType(item.content_type)}
           </Badge>
           <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(item.difficulty)}`}>
             {item.difficulty}
