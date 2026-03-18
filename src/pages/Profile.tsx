@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,437 +11,847 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
-import { ContentCard } from "@/components/ContentCard";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { FeedItem } from "@/components/FeedItem";
 import {
-  BadgeCheck, Download, FileText, Heart, Users, Loader2, Pencil, Camera, ExternalLink, Library, ShieldCheck,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  BadgeCheck, Download, FileText, Eye, Loader2, Camera, ExternalLink,
+  Library, ShieldCheck, Calendar, Upload, Heart, Image as ImageIcon,
+  MessageSquare, X,
 } from "lucide-react";
-import { TipSelector } from "@/components/TipSelector";
+import { FollowButton } from "@/components/FollowButton";
+import { format } from "date-fns";
 
 export default function Profile() {
   const { isLoggedIn, profile, loading, refreshProfile, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [profileTab, setProfileTab] = useState<"content" | "library">("content");
-
-  // Edit form state
-  const [displayName, setDisplayName] = useState("");
-  const [bio, setBio] = useState("");
-  const [websiteUrl, setWebsiteUrl] = useState("");
-  const [twitterHandle, setTwitterHandle] = useState("");
 
   useEffect(() => {
     if (!loading && !isLoggedIn) navigate("/login", { replace: true });
   }, [loading, isLoggedIn, navigate]);
 
-  useEffect(() => {
-    if (profile) {
-      setDisplayName(profile.display_name || "");
-      setBio(profile.bio || "");
-      setWebsiteUrl((profile as any).website_url || "");
-      setTwitterHandle((profile as any).twitter_handle || "");
-    }
-  }, [profile]);
-
-  // Fetch user's approved content
-  const { data: contentItems } = useQuery({
-    queryKey: ["my_content", profile?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("content_items")
-        .select("*")
-        .eq("creator_id", profile!.id)
-        .eq("status", "approved")
-        .order("download_count", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!profile?.id && profile?.is_creator,
-  });
-
-  const totalDownloads = contentItems?.reduce((sum, item) => sum + item.download_count, 0) ?? 0;
-
-  // Library items for the Library tab
-  const { data: libraryItems } = useQuery({
-    queryKey: ["profile_library", profile?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_library")
-        .select("id, content_id, added_at, has_update, content_items(*)")
-        .eq("user_id", profile!.id)
-        .order("added_at", { ascending: false });
-      if (error) throw error;
-      return data as any[];
-    },
-    enabled: !!profile?.id && profileTab === "library",
-  });
-
-  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !profile) return;
-    setUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `${profile.id}/avatar.${ext}`;
-    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-    if (uploadError) {
-      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
-      setUploading(false);
-      return;
-    }
-    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-    await supabase.from("profiles").update({ avatar_url: urlData.publicUrl } as any).eq("id", profile.id);
-    await refreshProfile();
-    setUploading(false);
-    toast({ title: "Avatar updated" });
-  }
-
-  async function handleSave() {
-    if (!profile) return;
-    setSaving(true);
-    const { error } = await supabase.from("profiles").update({
-      display_name: displayName.trim() || null,
-      bio: bio.trim() || null,
-      website_url: websiteUrl.trim() || null,
-      twitter_handle: twitterHandle.trim() || null,
-    } as any).eq("id", profile.id);
-    if (error) {
-      toast({ title: "Save failed", description: error.message, variant: "destructive" });
-    } else {
-      await refreshProfile();
-      setEditing(false);
-      toast({ title: "Profile updated" });
-    }
-    setSaving(false);
-  }
-
-  if (loading) {
-    return (
-      <div className="py-16 px-6 mx-auto max-w-5xl space-y-6">
-        <Skeleton className="h-10 w-64 rounded-md" />
-        <Skeleton className="h-5 w-40 rounded-md" />
-      </div>
-    );
-  }
-
+  if (loading) return <ProfileSkeleton />;
   if (!profile) return null;
 
+  return (
+    <ProfileView
+      profileData={profile as any}
+      isOwnProfile
+      currentUserId={user?.id}
+      onProfileUpdated={refreshProfile}
+    />
+  );
+}
+
+/* ======= Shared Profile View ======= */
+
+interface ProfileViewProps {
+  profileData: any;
+  isOwnProfile: boolean;
+  currentUserId?: string;
+  onProfileUpdated?: () => Promise<void>;
+}
+
+function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdated }: ProfileViewProps) {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [editOpen, setEditOpen] = useState(false);
+  const [followersOpen, setFollowersOpen] = useState(false);
+  const [followingOpen, setFollowingOpen] = useState(false);
+  const [followerDelta, setFollowerDelta] = useState(0);
+  const [activeTab, setActiveTab] = useState("posts");
+
+  const profile = profileData;
   const initials = (profile.display_name || profile.username || "?").slice(0, 2).toUpperCase();
+  const followerCount = (profile.follower_count ?? 0) + followerDelta;
+  const followingCount = profile.following_count ?? 0;
+  const joinDate = profile.joined_at || profile.created_at;
+
+  // Tabs definition
+  const tabs = useMemo(() => {
+    const t = [
+      { key: "posts", label: "Posts" },
+      { key: "replies", label: "Replies" },
+      { key: "media", label: "Media" },
+      { key: "likes", label: "Likes" },
+    ];
+    if (isOwnProfile) t.push({ key: "library", label: "Library" });
+    return t;
+  }, [isOwnProfile]);
+
+  // --- Posts tab ---
+  const { data: contentItems } = useQuery({
+    queryKey: ["profile_content", profile.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_items")
+        .select("*, profiles!content_items_creator_id_fkey(id, username, display_name, avatar_url)")
+        .eq("creator_id", profile.id)
+        .eq("status", "approved")
+        .order("approved_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!profile.id,
+  });
+
+  const totalDownloads = contentItems?.reduce((sum, i: any) => sum + (i.download_count ?? 0), 0) ?? 0;
+  const totalViews = contentItems?.reduce((sum, i: any) => sum + (i.view_count ?? 0), 0) ?? 0;
+
+  // --- Replies tab ---
+  const { data: replies } = useQuery({
+    queryKey: ["profile_replies", profile.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_comments")
+        .select("*, content_items!content_comments_content_id_fkey(id, title, content_type)")
+        .eq("user_id", profile.id)
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return data ?? [];
+    },
+    enabled: !!profile.id && activeTab === "replies",
+  });
+
+  // --- Media tab ---
+  const { data: mediaItems } = useQuery({
+    queryKey: ["profile_media", profile.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_items")
+        .select("id, title, cover_image_url")
+        .eq("creator_id", profile.id)
+        .eq("status", "approved")
+        .not("cover_image_url", "is", null)
+        .order("approved_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!profile.id && activeTab === "media",
+  });
+
+  // --- Likes tab ---
+  const { data: likedItems } = useQuery({
+    queryKey: ["profile_likes", profile.id],
+    queryFn: async () => {
+      const { data: ratings } = await supabase
+        .from("content_ratings")
+        .select("content_id, created_at")
+        .eq("user_id", profile.id)
+        .eq("rating", 5)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (!ratings || ratings.length === 0) return [];
+      const ids = ratings.map((r) => r.content_id);
+      const { data } = await supabase
+        .from("content_items")
+        .select("*, profiles!content_items_creator_id_fkey(id, username, display_name, avatar_url)")
+        .in("id", ids)
+        .eq("status", "approved");
+      // Re-order by rating date
+      const idOrder = new Map(ids.map((id, i) => [id, i]));
+      return (data ?? []).sort((a: any, b: any) => (idOrder.get(a.id) ?? 0) - (idOrder.get(b.id) ?? 0));
+    },
+    enabled: !!profile.id && activeTab === "likes",
+  });
+
+  // --- Library tab ---
+  const { data: libraryItems } = useQuery({
+    queryKey: ["profile_library", profile.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_library")
+        .select("id, content_id, added_at, has_update, content_items(*, profiles!content_items_creator_id_fkey(id, username, display_name, avatar_url))")
+        .eq("user_id", profile.id)
+        .order("added_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!profile.id && isOwnProfile && activeTab === "library",
+  });
+
+  // --- Collections tab ---
+  const { data: collections } = useQuery({
+    queryKey: ["profile_collections", profile.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collections")
+        .select("id, title, slug, description, item_count, follower_count, visibility")
+        .eq("owner_id", profile.id)
+        .eq("visibility", "public")
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!profile.id,
+  });
+
+  // Add collections tab if user has public collections
+  const allTabs = useMemo(() => {
+    const t = [...tabs];
+    if (collections && collections.length > 0) {
+      t.push({ key: "collections", label: "Collections" });
+    }
+    return t;
+  }, [tabs, collections]);
+
+  const displayName = profile.display_name || profile.username || "User";
 
   return (
-    <div className="py-12 px-6">
-      <SeoHead title="My Profile — NeoScale AI" description="Your NeoScale AI profile." path="/profile" noIndex />
-      <div className="mx-auto max-w-5xl">
-        <div className="flex flex-col lg:flex-row gap-10">
-          {/* Main */}
-          <div className="flex-1 min-w-0">
-            <div className="mb-10">
-              {/* Avatar + name */}
-              <div className="flex items-center gap-4 mb-4">
-                <div className="relative">
-                  <Avatar className="h-16 w-16">
-                    {profile.avatar_url && <AvatarImage src={profile.avatar_url} />}
-                    <AvatarFallback className="bg-primary text-primary-foreground text-lg">{initials}</AvatarFallback>
-                  </Avatar>
-                  {editing && (
-                    <label className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary flex items-center justify-center cursor-pointer">
-                      {uploading ? <Loader2 className="h-3 w-3 animate-spin text-primary-foreground" /> : <Camera className="h-3 w-3 text-primary-foreground" />}
-                      <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
-                    </label>
-                  )}
-                </div>
-                <div className="flex-1">
-                  {editing ? (
-                    <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="text-lg font-bold" />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <h1 className="text-2xl font-bold text-foreground">{profile.display_name || profile.username}</h1>
-                      {profile.is_creator && (
-                        <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">
-                          <BadgeCheck className="h-3 w-3 mr-1" /> Creator
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                  <p className="text-sm text-muted-foreground">@{profile.username}</p>
-                </div>
-                {!editing && (
-                  <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-                    <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit profile
-                  </Button>
-                )}
-              </div>
+    <div className="w-full">
+      <SeoHead
+        title={isOwnProfile ? "My Profile — NeoScale AI" : `${displayName} on NeoScale AI`}
+        description={profile.bio || `${displayName}'s profile on NeoScale AI.`}
+        path={isOwnProfile ? "/profile" : `/creator/${profile.username}`}
+        noIndex={isOwnProfile}
+      />
 
-              {/* Edit fields */}
-              {editing ? (
-                <div className="space-y-4 mt-4">
-                  <div className="space-y-1.5">
-                    <Label>Bio</Label>
-                    <Textarea value={bio} onChange={(e) => setBio(e.target.value.slice(0, 200))} rows={3} maxLength={200} />
-                    <p className="text-xs text-muted-foreground text-right">{bio.length}/200</p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Website</Label>
-                    <Input value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Twitter</Label>
-                    <Input value={twitterHandle} onChange={(e) => setTwitterHandle(e.target.value)} placeholder="@handle" />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={handleSave} disabled={saving}>
-                      {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Save
-                    </Button>
-                    <Button variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {profile.bio && <p className="text-sm text-muted-foreground leading-relaxed mt-2">{profile.bio}</p>}
-                  <div className="flex gap-4 mt-3 flex-wrap">
-                    {(profile as any).website_url && (
-                      <a href={(profile as any).website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-secondary hover:underline">
-                        <ExternalLink className="h-3 w-3" /> Website
-                      </a>
-                    )}
-                    {(profile as any).twitter_handle && (
-                      <span className="text-xs text-muted-foreground">{(profile as any).twitter_handle}</span>
-                    )}
-                  </div>
-                </>
+      {/* BANNER */}
+      <div className="relative w-full" style={{ height: 200 }}>
+        {profile.banner_url ? (
+          <img
+            src={profile.banner_url}
+            alt="Banner"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div
+            className="w-full h-full"
+            style={{
+              background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.4) 100%)",
+            }}
+          />
+        )}
+        {isOwnProfile && (
+          <label className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/40 transition-colors cursor-pointer group">
+            <Camera className="h-8 w-8 text-white/0 group-hover:text-white/80 transition-colors" />
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => handleBannerUpload(e, profile.id, toast, onProfileUpdated)}
+            />
+          </label>
+        )}
+      </div>
+
+      {/* AVATAR + ACTION BUTTON ROW */}
+      <div className="px-4 flex justify-between items-start">
+        {/* Avatar overlapping banner */}
+        <div className="relative -mt-10">
+          <Avatar className="h-20 w-20 border-4 border-background">
+            {profile.avatar_url && <AvatarImage src={profile.avatar_url} />}
+            <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">{initials}</AvatarFallback>
+          </Avatar>
+          {isOwnProfile && (
+            <label className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-primary flex items-center justify-center cursor-pointer border-2 border-background">
+              <Camera className="h-3 w-3 text-primary-foreground" />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleAvatarUpload(e, profile.id, toast, onProfileUpdated)}
+              />
+            </label>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div className="mt-3 flex items-center gap-2">
+          {isOwnProfile ? (
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+              Edit profile
+            </Button>
+          ) : (
+            <>
+              <FollowButton creatorId={profile.id} onCountChange={(d) => setFollowerDelta((prev) => prev + d)} />
+              {currentUserId && currentUserId !== profile.id && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/messages?to=${profile.id}`)}
+                >
+                  <MessageSquare className="h-3.5 w-3.5 mr-1.5" /> Message
+                </Button>
               )}
-
-              {/* Stats */}
-              {profile.is_creator && (
-                <div className="flex gap-6 mt-6">
-                  <div className="flex items-center gap-2 text-sm">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-foreground font-medium">{contentItems?.length ?? 0}</span>
-                    <span className="text-muted-foreground">published</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Download className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-foreground font-medium">{totalDownloads.toLocaleString()}</span>
-                    <span className="text-muted-foreground">downloads</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Curator Application Section */}
-            <CuratorSection />
-
-
-            {/* Tabs */}
-            <div className="flex gap-1 mb-4">
-              <button
-                onClick={() => setProfileTab("content")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  profileTab === "content" ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Content
-              </button>
-              <button
-                onClick={() => setProfileTab("library")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  profileTab === "library" ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Library className="h-3.5 w-3.5 inline mr-1" />Library
-              </button>
-            </div>
-
-            {/* Content tab */}
-            {profileTab === "content" && profile.is_creator && contentItems && contentItems.length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold text-foreground mb-4">Your content</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {contentItems.map((item) => (
-                    <ContentCard
-                      key={item.id}
-                      id={item.id}
-                      content_type={item.content_type}
-                      title={item.title}
-                      description={item.description ?? ""}
-                      difficulty={item.difficulty}
-                      ai_tools={item.ai_tools ?? []}
-                      download_count={item.download_count}
-                      monetisation_type={item.monetisation_type}
-                      price_gbp={item.price_gbp ?? undefined}
-                      creator_username={profile.username ?? undefined}
-                      avg_rating={Number((item as any).avg_rating) || 0}
-                      rating_count={(item as any).rating_count ?? 0}
-                      view_count={(item as any).view_count ?? 0}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Library tab */}
-            {profileTab === "library" && (
-              <div>
-                <h2 className="text-lg font-semibold text-foreground mb-4">Your library</h2>
-                {libraryItems && libraryItems.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {libraryItems.map((lib: any) => {
-                      const item = lib.content_items;
-                      if (!item) return null;
-                      return (
-                        <div key={lib.id} className="relative">
-                          {lib.has_update && (
-                            <div className="absolute -top-1.5 -right-1.5 z-10 h-3 w-3 rounded-full bg-primary" />
-                          )}
-                          <ContentCard
-                            id={item.id}
-                            content_type={item.content_type}
-                            title={item.title}
-                            description={item.description ?? ""}
-                            difficulty={item.difficulty}
-                            ai_tools={item.ai_tools ?? []}
-                            download_count={item.download_count}
-                            monetisation_type={item.monetisation_type}
-                            price_gbp={item.price_gbp ?? undefined}
-                            avg_rating={Number(item.avg_rating) || 0}
-                            rating_count={item.rating_count ?? 0}
-                            view_count={item.view_count ?? 0}
-                          />
-                          {lib.has_update && (
-                            <p className="text-[11px] text-primary mt-1 px-1">Updated since you saved this</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <Library className="h-10 w-10 text-muted-foreground mb-4" />
-                    <p className="text-sm text-foreground font-medium mb-1">Your library is empty.</p>
-                    <p className="text-sm text-muted-foreground mb-4">Add content using the shelf icon on any post.</p>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to="/browse">Browse content</Link>
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
+
+      {/* PROFILE INFO */}
+      <div className="px-4 mt-3">
+        {/* Line 1: Name + badges */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+          {profile.is_creator && (
+            <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">
+              <BadgeCheck className="h-3 w-3 mr-1" /> Creator
+            </Badge>
+          )}
+          {profile.is_curator && (
+            <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">
+              <ShieldCheck className="h-3 w-3 mr-1" /> Curator ✦
+            </Badge>
+          )}
+        </div>
+
+        {/* Line 2: @username */}
+        <p className="text-sm text-muted-foreground">@{profile.username}</p>
+
+        {/* Line 3: Bio */}
+        {profile.bio && (
+          <p className="text-sm text-foreground leading-relaxed mt-2">{profile.bio}</p>
+        )}
+
+        {/* Line 4: Website + Twitter */}
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
+          {profile.website_url && (
+            <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-secondary hover:underline">
+              <ExternalLink className="h-3 w-3" /> {profile.website_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+            </a>
+          )}
+          {profile.twitter_handle && (
+            <a
+              href={`https://twitter.com/${profile.twitter_handle.replace("@", "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              𝕏 @{profile.twitter_handle.replace("@", "")}
+            </a>
+          )}
+        </div>
+
+        {/* Line 5: Joined date */}
+        {joinDate && (
+          <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+            <Calendar className="h-3 w-3" />
+            <span>Joined {format(new Date(joinDate), "MMMM yyyy")}</span>
+          </div>
+        )}
+
+        {/* Line 6: Following + Followers */}
+        <div className="flex items-center gap-4 mt-2">
+          <button onClick={() => setFollowingOpen(true)} className="text-sm hover:underline">
+            <span className="font-bold text-foreground">{followingCount}</span>{" "}
+            <span className="text-muted-foreground">Following</span>
+          </button>
+          <button onClick={() => setFollowersOpen(true)} className="text-sm hover:underline">
+            <span className="font-bold text-foreground">{followerCount}</span>{" "}
+            <span className="text-muted-foreground">Followers</span>
+          </button>
+        </div>
+
+        {/* Line 7: Stats */}
+        <div className="flex items-center gap-3 mt-2 text-[13px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" /> {contentItems?.length ?? 0} posts</span>
+          <span>·</span>
+          <span className="inline-flex items-center gap-1"><Download className="h-3.5 w-3.5" /> {totalDownloads.toLocaleString()} downloads</span>
+          <span>·</span>
+          <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {totalViews.toLocaleString()} views</span>
+        </div>
+      </div>
+
+      {/* TAB BAR */}
+      <div className="mt-4 border-b border-border sticky top-0 z-10 bg-background">
+        <div className="flex">
+          {allTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 text-center py-3 text-sm font-medium transition-colors relative ${
+                activeTab === tab.key ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+              {activeTab === tab.key && (
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* TAB CONTENT */}
+      <div className="min-h-[400px]">
+        {activeTab === "posts" && (
+          <PostsTab items={contentItems ?? []} isOwnProfile={isOwnProfile} />
+        )}
+        {activeTab === "replies" && (
+          <RepliesTab replies={replies ?? []} navigate={navigate} />
+        )}
+        {activeTab === "media" && (
+          <MediaTab items={mediaItems ?? []} navigate={navigate} />
+        )}
+        {activeTab === "likes" && (
+          <LikesTab items={likedItems ?? []} />
+        )}
+        {activeTab === "library" && isOwnProfile && (
+          <LibraryTab items={libraryItems ?? []} />
+        )}
+        {activeTab === "collections" && (
+          <CollectionsTab collections={collections ?? []} navigate={navigate} />
+        )}
+      </div>
+
+      {/* Edit Profile Modal */}
+      {isOwnProfile && (
+        <EditProfileModal
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          profile={profile}
+          onSaved={onProfileUpdated}
+        />
+      )}
+
+      {/* Followers Modal */}
+      <FollowListModal
+        open={followersOpen}
+        onClose={() => setFollowersOpen(false)}
+        userId={profile.id}
+        mode="followers"
+      />
+
+      {/* Following Modal */}
+      <FollowListModal
+        open={followingOpen}
+        onClose={() => setFollowingOpen(false)}
+        userId={profile.id}
+        mode="following"
+      />
     </div>
   );
 }
 
-/* ---- Curator Application Section ---- */
-function CuratorSection() {
-  const { profile, refreshProfile } = useAuth();
+/* ======= Tab Content Components ======= */
+
+function PostsTab({ items, isOwnProfile }: { items: any[]; isOwnProfile: boolean }) {
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+        <FileText className="h-10 w-10 text-muted-foreground mb-4" />
+        <p className="text-sm text-foreground font-medium">No posts yet.</p>
+        {isOwnProfile && (
+          <Button asChild className="mt-4 bg-primary text-primary-foreground">
+            <Link to="/upload"><Upload className="h-3.5 w-3.5 mr-1.5" /> Upload your first post</Link>
+          </Button>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div>
+      {items.map((item) => (
+        <FeedItem key={item.id} item={item} />
+      ))}
+    </div>
+  );
+}
+
+function RepliesTab({ replies, navigate }: { replies: any[]; navigate: any }) {
+  if (replies.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <MessageSquare className="h-10 w-10 text-muted-foreground mb-4" />
+        <p className="text-sm text-muted-foreground">No replies yet.</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      {replies.map((reply: any) => {
+        const content = reply.content_items;
+        return (
+          <div
+            key={reply.id}
+            className="px-4 py-3 border-b border-border cursor-pointer hover:bg-[hsl(0_0%_100%/0.03)] transition-colors"
+            onClick={() => content && navigate(`/content/${content.id}`)}
+          >
+            {content && (
+              <p className="text-xs text-muted-foreground mb-1">
+                Replied to{" "}
+                <Badge variant="outline" className="text-[10px] font-medium">
+                  {content.content_type}
+                </Badge>{" "}
+                <span className="text-secondary">{content.title}</span>
+              </p>
+            )}
+            <p className="text-sm text-foreground">{reply.text}</p>
+            <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+              <span>{timeAgo(reply.created_at)}</span>
+              {reply.like_count > 0 && (
+                <span className="inline-flex items-center gap-1">
+                  <Heart className="h-3 w-3" /> {reply.like_count}
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MediaTab({ items, navigate }: { items: any[]; navigate: any }) {
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <ImageIcon className="h-10 w-10 text-muted-foreground mb-4" />
+        <p className="text-sm text-muted-foreground">No media posts yet.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-3 gap-0.5 p-0.5">
+      {items.map((item: any) => (
+        <button
+          key={item.id}
+          onClick={() => navigate(`/content/${item.id}`)}
+          className="aspect-square overflow-hidden"
+        >
+          <img
+            src={item.cover_image_url}
+            alt={item.title}
+            className="w-full h-full object-cover hover:opacity-80 transition-opacity"
+            loading="lazy"
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function LikesTab({ items }: { items: any[] }) {
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Heart className="h-10 w-10 text-muted-foreground mb-4" />
+        <p className="text-sm text-muted-foreground">No liked posts yet.</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      {items.map((item) => (
+        <FeedItem key={item.id} item={item} />
+      ))}
+    </div>
+  );
+}
+
+function LibraryTab({ items }: { items: any[] }) {
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Library className="h-10 w-10 text-muted-foreground mb-4" />
+        <p className="text-sm text-foreground font-medium mb-1">Your library is empty.</p>
+        <p className="text-sm text-muted-foreground mb-4">Add content using the shelf icon on any post.</p>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/browse">Browse content</Link>
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div>
+      {items.map((lib: any) => {
+        const item = lib.content_items;
+        if (!item) return null;
+        return (
+          <div key={lib.id} className="relative">
+            {lib.has_update && (
+              <div className="absolute top-3 right-4 z-10 h-2.5 w-2.5 rounded-full bg-primary" />
+            )}
+            <FeedItem item={item} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CollectionsTab({ collections, navigate }: { collections: any[]; navigate: any }) {
+  return (
+    <div className="p-4 space-y-3">
+      {collections.map((col: any) => (
+        <button
+          key={col.id}
+          onClick={() => navigate(`/collections/${col.slug || col.id}`)}
+          className="w-full text-left rounded-xl border border-border bg-card p-4 hover:brightness-110 transition-colors"
+        >
+          <p className="text-sm font-semibold text-foreground">{col.title}</p>
+          {col.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{col.description}</p>}
+          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+            <span>{col.item_count} items</span>
+            <span>{col.follower_count} followers</span>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ======= Edit Profile Modal ======= */
+
+function EditProfileModal({
+  open, onClose, profile, onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  profile: any;
+  onSaved?: () => Promise<void>;
+}) {
   const { toast } = useToast();
-  const [reason, setReason] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [displayName, setDisplayName] = useState(profile.display_name || "");
+  const [bio, setBio] = useState(profile.bio || "");
+  const [websiteUrl, setWebsiteUrl] = useState(profile.website_url || "");
+  const [twitterHandle, setTwitterHandle] = useState(profile.twitter_handle || "");
+  const [saving, setSaving] = useState(false);
 
-  if (!profile) return null;
-
-  const isCurator = (profile as any).is_curator === true;
-  const appStatus = (profile as any).curator_application_status as string | null;
-  const followerCount = (profile as any).follower_count ?? 0;
-
-  if (isCurator) {
-    return (
-      <div className="border border-[#2EC4B6]/30 rounded-xl p-5 bg-[#2EC4B6]/5 mt-6">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-[#2EC4B6]" />
-          <p className="text-sm font-semibold text-[#2EC4B6]">You are a NeoScale Curator ✓</p>
-        </div>
-        <Link to="/notifications" className="text-xs text-muted-foreground hover:text-foreground mt-2 inline-block">
-          Manage your recommendations →
-        </Link>
-      </div>
-    );
-  }
-
-  if (appStatus === "pending") {
-    return (
-      <div className="border border-border rounded-xl p-5 bg-card mt-6">
-        <div className="flex items-center gap-2 mb-1">
-          <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-          <p className="text-sm font-semibold text-foreground">Become a Curator</p>
-        </div>
-        <p className="text-sm text-muted-foreground">Application under review.</p>
-      </div>
-    );
-  }
-
-  if (appStatus === "rejected") {
-    return (
-      <div className="border border-border rounded-xl p-5 bg-card mt-6 opacity-60">
-        <div className="flex items-center gap-2 mb-1">
-          <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-          <p className="text-sm font-semibold text-foreground">Become a Curator</p>
-        </div>
-        <p className="text-sm text-muted-foreground">Your application was not accepted at this time.</p>
-      </div>
-    );
-  }
-
-  if (followerCount < 50) {
-    return (
-      <div className="border border-border rounded-xl p-5 bg-card mt-6 opacity-50">
-        <div className="flex items-center gap-2 mb-1">
-          <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-          <p className="text-sm font-semibold text-foreground">Become a Curator</p>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          You need 50 followers to apply. You have {followerCount} — {50 - followerCount} more to go.
-        </p>
-      </div>
-    );
-  }
-
-  async function handleApply() {
-    if (!profile || reason.trim().length === 0) return;
-    setSubmitting(true);
-    const { error } = await supabase.from("curator_applications").insert({
-      user_id: profile.id,
-      reason: reason.trim(),
-      status: "pending",
-    } as any);
-    if (error) {
-      toast({ title: "Failed to submit", description: error.message, variant: "destructive" });
-      setSubmitting(false);
-      return;
+  useEffect(() => {
+    if (open) {
+      setDisplayName(profile.display_name || "");
+      setBio(profile.bio || "");
+      setWebsiteUrl(profile.website_url || "");
+      setTwitterHandle(profile.twitter_handle || "");
     }
-    await supabase.from("profiles").update({ curator_application_status: "pending" } as any).eq("id", profile.id);
-    await refreshProfile();
-    toast({ title: "Application submitted." });
-    setSubmitting(false);
-  }
+  }, [open, profile]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        display_name: displayName.trim() || null,
+        bio: bio.trim() || null,
+        website_url: websiteUrl.trim() || null,
+        twitter_handle: twitterHandle.trim() || null,
+      } as any)
+      .eq("id", profile.id);
+    if (error) {
+      toast({ title: "Save failed", description: error.message, variant: "destructive" });
+    } else {
+      await onSaved?.();
+      toast({ title: "Profile updated" });
+      onClose();
+    }
+    setSaving(false);
+  };
 
   return (
-    <div className="border border-border rounded-xl p-5 bg-card mt-6">
-      <div className="flex items-center gap-2 mb-2">
-        <ShieldCheck className="h-5 w-5 text-[#2EC4B6]" />
-        <p className="text-sm font-semibold text-foreground">Become a Curator</p>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="bg-card border-border sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit profile</DialogTitle>
+        </DialogHeader>
+
+        {/* Banner preview */}
+        <div className="relative w-full h-24 rounded-lg overflow-hidden">
+          {profile.banner_url ? (
+            <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full" style={{ background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.4) 100%)" }} />
+          )}
+          <label className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/50 transition-colors cursor-pointer">
+            <Camera className="h-5 w-5 text-white/80" />
+            <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => handleBannerUpload(e, profile.id, toast, onSaved)} />
+          </label>
+        </div>
+
+        {/* Avatar preview */}
+        <div className="flex items-center gap-3 -mt-2">
+          <div className="relative">
+            <Avatar className="h-14 w-14">
+              {profile.avatar_url && <AvatarImage src={profile.avatar_url} />}
+              <AvatarFallback className="bg-primary text-primary-foreground text-lg font-bold">
+                {(profile.display_name || profile.username || "?").slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <label className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-primary flex items-center justify-center cursor-pointer">
+              <Camera className="h-3 w-3 text-primary-foreground" />
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAvatarUpload(e, profile.id, toast, onSaved)} />
+            </label>
+          </div>
+          <p className="text-xs text-muted-foreground">Change avatar</p>
+        </div>
+
+        <div className="space-y-4 mt-2">
+          <div className="space-y-1.5">
+            <Label>Display name</Label>
+            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value.slice(0, 50))} maxLength={50} />
+            <p className="text-xs text-muted-foreground text-right">{displayName.length}/50</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Bio</Label>
+            <Textarea value={bio} onChange={(e) => setBio(e.target.value.slice(0, 160))} rows={3} maxLength={160} />
+            <p className="text-xs text-muted-foreground text-right">{bio.length}/160</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Website</Label>
+            <Input value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Twitter / X</Label>
+            <Input value={twitterHandle} onChange={(e) => setTwitterHandle(e.target.value)} placeholder="handle" />
+          </div>
+        </div>
+
+        <div className="flex gap-2 mt-4">
+          <Button onClick={handleSave} disabled={saving} className="flex-1 bg-primary text-primary-foreground">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Save
+          </Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ======= Follow List Modal ======= */
+
+function FollowListModal({
+  open, onClose, userId, mode,
+}: {
+  open: boolean;
+  onClose: () => void;
+  userId: string;
+  mode: "followers" | "following";
+}) {
+  const { data: users } = useQuery({
+    queryKey: ["follow_list", userId, mode],
+    queryFn: async () => {
+      if (mode === "followers") {
+        const { data } = await supabase
+          .from("follows")
+          .select("follower_id, profiles!follows_follower_id_fkey(id, username, display_name, avatar_url)")
+          .eq("following_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(100);
+        return (data ?? []).map((r: any) => r.profiles).filter(Boolean);
+      } else {
+        const { data } = await supabase
+          .from("follows")
+          .select("following_id, profiles!follows_following_id_fkey(id, username, display_name, avatar_url)")
+          .eq("follower_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(100);
+        return (data ?? []).map((r: any) => r.profiles).filter(Boolean);
+      }
+    },
+    enabled: open,
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="bg-card border-border sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{mode === "followers" ? "Followers" : "Following"}</DialogTitle>
+        </DialogHeader>
+        <div className="max-h-80 overflow-y-auto space-y-1">
+          {users && users.length > 0 ? (
+            users.map((u: any) => {
+              const ini = (u.display_name || u.username || "?").slice(0, 2).toUpperCase();
+              return (
+                <Link
+                  key={u.id}
+                  to={`/creator/${u.username}`}
+                  onClick={onClose}
+                  className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-accent/60 transition-colors"
+                >
+                  <Avatar className="h-9 w-9">
+                    {u.avatar_url && <AvatarImage src={u.avatar_url} />}
+                    <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{ini}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground truncate">{u.display_name || u.username}</p>
+                    <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
+                  </div>
+                  <FollowButton creatorId={u.id} />
+                </Link>
+              );
+            })
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              {mode === "followers" ? "No followers yet." : "Not following anyone yet."}
+            </p>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ======= Helpers ======= */
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d`;
+  return `${Math.floor(days / 30)}mo`;
+}
+
+async function handleBannerUpload(
+  e: React.ChangeEvent<HTMLInputElement>,
+  userId: string,
+  toast: any,
+  onDone?: () => Promise<void>,
+) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    toast({ title: "File too large", description: "Max 5MB.", variant: "destructive" });
+    return;
+  }
+  const ext = file.name.split(".").pop();
+  const path = `${userId}/banner.${ext}`;
+  const { error } = await supabase.storage.from("profile-assets").upload(path, file, { upsert: true });
+  if (error) {
+    toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+    return;
+  }
+  const { data: urlData } = supabase.storage.from("profile-assets").getPublicUrl(path);
+  await supabase.from("profiles").update({ banner_url: urlData.publicUrl } as any).eq("id", userId);
+  await onDone?.();
+  toast({ title: "Banner updated" });
+}
+
+async function handleAvatarUpload(
+  e: React.ChangeEvent<HTMLInputElement>,
+  userId: string,
+  toast: any,
+  onDone?: () => Promise<void>,
+) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const ext = file.name.split(".").pop();
+  const path = `${userId}/avatar.${ext}`;
+  const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+  if (error) {
+    toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+    return;
+  }
+  const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+  await supabase.from("profiles").update({ avatar_url: urlData.publicUrl } as any).eq("id", userId);
+  await onDone?.();
+  toast({ title: "Avatar updated" });
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className="w-full">
+      <Skeleton className="w-full h-[200px]" />
+      <div className="px-4 mt-4 space-y-3">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-4 w-full max-w-md" />
       </div>
-      <p className="text-xs text-muted-foreground mb-3">
-        Curators write editorial recommendations on posts. Your picks appear highlighted on content pages and in the right panel — surfaced to your followers' discovery feeds.
-      </p>
-      <Textarea
-        value={reason}
-        onChange={(e) => setReason(e.target.value.slice(0, 500))}
-        placeholder="Why do you want to be a Curator?"
-        rows={3}
-        maxLength={500}
-        className="mb-1"
-      />
-      <p className="text-xs text-muted-foreground text-right mb-3">{reason.length}/500</p>
-      <Button onClick={handleApply} disabled={submitting || reason.trim().length === 0}>
-        {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-        Apply
-      </Button>
     </div>
   );
 }
