@@ -50,11 +50,24 @@ export default function SearchPage() {
     if (e.key === "Enter") runSearch(input);
   };
 
-  // Posts
+  // Posts — regular or tag search
   const { data: posts, isLoading: postsLoading } = useQuery({
     queryKey: ["search_posts", q],
     enabled: !!q,
     queryFn: async () => {
+      if (isTagSearch) {
+        // Tag search: join content_microtags
+        const { data } = await supabase
+          .from("content_microtags")
+          .select("content_id, content_items!content_microtags_content_id_fkey(*, profiles!content_items_creator_id_fkey(username))")
+          .eq("tag", q)
+          .limit(30);
+        const items = (data ?? [])
+          .map((r: any) => r.content_items)
+          .filter((i: any) => i && i.status === "approved")
+          .sort((a: any, b: any) => (b.download_count + b.view_count) - (a.download_count + a.view_count));
+        return items;
+      }
       const { data } = await supabase
         .from("content_items")
         .select("*, profiles!content_items_creator_id_fkey(username)")
