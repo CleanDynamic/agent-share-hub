@@ -204,7 +204,7 @@ const Upload = () => {
         // Load dependencies
         const { data: deps } = await supabase
           .from("content_dependencies")
-          .select("requires_content_id, dependency_note, content_items!content_dependencies_requires_content_id_fkey(title)")
+          .select("requires_content_id, dependency_note, content_items!content_dependencies_requires_content_id_fkey(title, content_type)")
           .eq("content_id", draftId);
         if (deps && deps.length > 0) {
           setDependencies(deps.map((d: any) => ({
