@@ -72,7 +72,7 @@ function FilterDropdowns({
           </SelectTrigger>
           <SelectContent className="bg-card border-border">
             <SelectItem value={ALL}>All Types</SelectItem>
-            {CONTENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            {CONTENT_TYPES.map((t) => <SelectItem key={t} value={t}>{displayContentType(t)}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
