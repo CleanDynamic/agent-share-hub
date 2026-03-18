@@ -1,56 +1,25 @@
-import { useState, useMemo } from "react";
-import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { SeoHead } from "@/components/SeoHead";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ContentCard } from "@/components/ContentCard";
-import { ProjectCard } from "@/components/ProjectCard";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-} from "@/components/ui/dialog";
-import { BadgeCheck, Download, Eye, FileText, Heart, Users, Loader2, CheckCircle2, MessageCircle } from "lucide-react";
-import { TipSelector } from "@/components/TipSelector";
-import { FollowButton } from "@/components/FollowButton";
+
+// Re-use the ProfileView from Profile.tsx — but since that's a default export with
+// internal component, we rebuild as a thin wrapper that fetches the profile data
+// and renders the same layout. We import the shared component.
+
+import ProfileViewWrapper from "./Profile";
 
 function ProfileSkeleton() {
   return (
-    <div className="py-8 sm:py-12 px-4 sm:px-6">
-      <div className="mx-auto max-w-5xl">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
-          <div className="flex-1 min-w-0 space-y-6">
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-10 w-48 rounded-md" />
-              <Skeleton className="h-5 w-28 rounded-md" />
-            </div>
-            <div className="flex gap-3">
-              <Skeleton className="h-4 w-20 rounded-md" />
-              <Skeleton className="h-4 w-24 rounded-md" />
-            </div>
-            <Skeleton className="h-16 w-full rounded-md" />
-            <Skeleton className="h-9 w-24 rounded-md" />
-            <div className="flex gap-6">
-              <Skeleton className="h-4 w-24 rounded-md" />
-              <Skeleton className="h-4 w-28 rounded-md" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-40 rounded-xl" />
-              ))}
-            </div>
-          </div>
-          <div className="hidden lg:block w-72 shrink-0 space-y-4">
-            <Skeleton className="h-32 rounded-xl" />
-            <Skeleton className="h-24 rounded-xl" />
-          </div>
-        </div>
+    <div className="w-full">
+      <Skeleton className="w-full h-[200px]" />
+      <div className="px-4 mt-4 space-y-3">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-4 w-full max-w-md" />
       </div>
     </div>
   );
@@ -58,13 +27,9 @@ function ProfileSkeleton() {
 
 const CreatorProfile = () => {
   const { username } = useParams<{ username: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { isLoggedIn, user } = useAuth();
-  const [subscribing, setSubscribing] = useState(false);
+  const { user } = useAuth();
 
-  const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
+  const { data: profile, isLoading, error } = useQuery({
     queryKey: ["creator_profile", username],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -78,167 +43,9 @@ const CreatorProfile = () => {
     enabled: !!username,
   });
 
-  // Fetch co-authored content IDs
-  const { data: collabContentIds } = useQuery({
-    queryKey: ["creator_collab_ids", profile?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("content_collaborators")
-        .select("content_id")
-        .eq("collaborator_id", profile!.id);
-      return (data ?? []).map((r) => r.content_id);
-    },
-    enabled: !!profile?.id,
-  });
+  if (isLoading) return <ProfileSkeleton />;
 
-  const { data: contentItems } = useQuery({
-    queryKey: ["creator_content", profile?.id, collabContentIds],
-    queryFn: async () => {
-      // Primary authored
-      const { data: primary, error } = await supabase
-        .from("content_items")
-        .select("*")
-        .eq("creator_id", profile!.id)
-        .eq("status", "approved")
-        .order("download_count", { ascending: false });
-      if (error) throw error;
-
-      // Co-authored (not already in primary)
-      const primaryIds = new Set((primary ?? []).map((p) => p.id));
-      const collabIds = (collabContentIds ?? []).filter((cid) => !primaryIds.has(cid));
-      let collabItems: any[] = [];
-      if (collabIds.length > 0) {
-        const { data: ci } = await supabase
-          .from("content_items")
-          .select("*")
-          .in("id", collabIds)
-          .eq("status", "approved");
-        collabItems = ci ?? [];
-      }
-
-      return [...(primary ?? []), ...collabItems];
-    },
-    enabled: !!profile?.id && collabContentIds !== undefined,
-  });
-
-  const { data: creatorProjects } = useQuery({
-    queryKey: ["creator_projects", profile?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*, profiles(id, username, display_name), project_components(id, component_type, linked_content_id, inline_content_id)")
-        .eq("creator_id", profile!.id)
-        .eq("status", "approved")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!profile?.id,
-  });
-
-  // Fetch content types for project components
-  const projContentIds = (creatorProjects ?? []).flatMap((p: any) =>
-    (p.project_components ?? []).map((c: any) => c.linked_content_id || c.inline_content_id).filter(Boolean)
-  );
-  const { data: projContentTypes } = useQuery({
-    queryKey: ["creator_proj_content_types", projContentIds.join(",")],
-    queryFn: async () => {
-      if (projContentIds.length === 0) return [];
-      const { data } = await supabase.from("content_items").select("id, content_type").in("id", projContentIds);
-      return data ?? [];
-    },
-    enabled: projContentIds.length > 0,
-  });
-
-  const { data: services } = useQuery({
-    queryKey: ["creator_services", profile?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("service_listings")
-        .select("*")
-        .eq("creator_id", profile!.id)
-        .eq("is_active", true);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!profile?.id,
-  });
-
-  const { data: subCount } = useQuery({
-    queryKey: ["creator_sub_count", profile?.id],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("subscriptions")
-        .select("*", { count: "exact", head: true })
-        .eq("creator_id", profile!.id)
-        .eq("status", "active");
-      if (error) throw error;
-      return count ?? 0;
-    },
-    enabled: !!profile?.id,
-  });
-
-  const totalDownloads = contentItems?.reduce((sum, item) => sum + item.download_count, 0) ?? 0;
-  const totalViews = contentItems?.reduce((sum, item) => sum + ((item as any).view_count ?? 0), 0) ?? 0;
-  const hasDonationContent = contentItems?.some((item) => item.donation_enabled) ?? false;
-  const hasSubscriptionPriceId = !!(profile as any)?.subscription_price_id;
-  const [followerDelta, setFollowerDelta] = useState(0);
-  const [creatorTab, setCreatorTab] = useState<"content" | "projects">("content");
-  const followerCount = ((profile as any)?.follower_count ?? 0) + followerDelta;
-
-  const [enquiryListing, setEnquiryListing] = useState<{ id: string; title: string } | null>(null);
-  const [enquirySubmitting, setEnquirySubmitting] = useState(false);
-
-  const tipSuccess = searchParams.get("tip") === "success";
-  const subscribedSuccess = searchParams.get("subscribed") === "success";
-  if (tipSuccess || subscribedSuccess) {
-    setTimeout(() => setSearchParams({}, { replace: true }), 0);
-  }
-
-  async function handleSubscribe() {
-    if (!profile) return;
-    setSubscribing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("create-subscription-session", {
-        body: {
-          creator_id: profile.id,
-          price_id: (profile as any).subscription_price_id,
-          success_url: `${window.location.origin}/creator/${profile.username}?subscribed=success`,
-          cancel_url: `${window.location.origin}/creator/${profile.username}`,
-        },
-      });
-      if (error || !data?.url) {
-        toast({ title: "Could not start subscription", description: "Please sign in and try again.", variant: "destructive" });
-      } else { window.location.href = data.url; }
-    } catch {
-      toast({ title: "Something went wrong", variant: "destructive" });
-    }
-    setSubscribing(false);
-  }
-
-  async function handleEnquiry(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!enquiryListing) return;
-    setEnquirySubmitting(true);
-    const fd = new FormData(e.currentTarget);
-    const { error } = await supabase.from("service_enquiries").insert({
-      listing_id: enquiryListing.id,
-      requester_name: fd.get("name") as string,
-      requester_email: fd.get("email") as string,
-      message: fd.get("message") as string,
-    });
-    setEnquirySubmitting(false);
-    if (error) {
-      toast({ title: "Failed to send", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Enquiry sent", description: `${displayName} will be in touch.` });
-      setEnquiryListing(null);
-    }
-  }
-
-  if (profileLoading) return <ProfileSkeleton />;
-
-  if (!profile || profileError) {
+  if (!profile || error) {
     return (
       <div className="py-20 px-6 flex flex-col items-center gap-4 text-center">
         <p className="text-sm text-muted-foreground">Creator not found.</p>
@@ -249,256 +56,426 @@ const CreatorProfile = () => {
     );
   }
 
+  // If viewing own profile, redirect logic is handled by profile page
+  const isOwnProfile = user?.id === profile.id;
+
+  return <CreatorProfileView profile={profile} isOwnProfile={isOwnProfile} currentUserId={user?.id} />;
+};
+
+export default CreatorProfile;
+
+// We need to export ProfileView from Profile.tsx. Since we can't easily,
+// let's create an inline version that uses the same pattern.
+// Actually, let's refactor: we'll create a shared component file.
+
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { FeedItem } from "@/components/FeedItem";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  BadgeCheck, Download, FileText, Eye, Loader2, Camera, ExternalLink,
+  Library, ShieldCheck, Calendar, Upload, Heart, Image as ImageIcon,
+  MessageSquare,
+} from "lucide-react";
+import { FollowButton } from "@/components/FollowButton";
+import { format } from "date-fns";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+function CreatorProfileView({ profile, isOwnProfile, currentUserId }: { profile: any; isOwnProfile: boolean; currentUserId?: string }) {
+  // This is a duplicate — we should share. But to avoid circular imports,
+  // let's just import from a shared file. For now, redirect to /profile if own.
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isOwnProfile) {
+      navigate("/profile", { replace: true });
+    }
+  }, [isOwnProfile, navigate]);
+
+  if (isOwnProfile) return null;
+
+  // For other users, render the full profile view inline
+  return <OtherProfileView profile={profile} currentUserId={currentUserId} />;
+}
+
+function OtherProfileView({ profile, currentUserId }: { profile: any; currentUserId?: string }) {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [followersOpen, setFollowersOpen] = useState(false);
+  const [followingOpen, setFollowingOpen] = useState(false);
+  const [followerDelta, setFollowerDelta] = useState(0);
+  const [activeTab, setActiveTab] = useState("posts");
+
+  const initials = (profile.display_name || profile.username || "?").slice(0, 2).toUpperCase();
+  const followerCount = (profile.follower_count ?? 0) + followerDelta;
+  const followingCount = profile.following_count ?? 0;
+  const joinDate = profile.joined_at || profile.created_at;
   const displayName = profile.display_name || profile.username || "Creator";
 
-  const bioTruncated = (profile.bio || "").slice(0, 155);
-  const itemCount = contentItems?.length ?? 0;
-  const seoDesc = `${bioTruncated}${bioTruncated ? " — " : ""}${itemCount} item${itemCount !== 1 ? "s" : ""} published on NeoScale AI.`;
-  const SITE_URL = import.meta.env.VITE_SITE_URL || "https://neoscale.ai";
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Person",
-    "name": displayName,
-    "description": profile.bio || "",
-    "url": `${SITE_URL}/creator/${profile.username}`,
-  };
+  const tabs = [
+    { key: "posts", label: "Posts" },
+    { key: "replies", label: "Replies" },
+    { key: "media", label: "Media" },
+    { key: "likes", label: "Likes" },
+  ];
+
+  // Posts
+  const { data: contentItems } = useQuery({
+    queryKey: ["profile_content", profile.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_items")
+        .select("*, profiles!content_items_creator_id_fkey(id, username, display_name, avatar_url)")
+        .eq("creator_id", profile.id)
+        .eq("status", "approved")
+        .order("approved_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!profile.id,
+  });
+
+  const totalDownloads = contentItems?.reduce((sum, i: any) => sum + (i.download_count ?? 0), 0) ?? 0;
+  const totalViews = contentItems?.reduce((sum, i: any) => sum + (i.view_count ?? 0), 0) ?? 0;
+
+  // Replies
+  const { data: replies } = useQuery({
+    queryKey: ["profile_replies", profile.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_comments")
+        .select("*, content_items!content_comments_content_id_fkey(id, title, content_type)")
+        .eq("user_id", profile.id)
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return data ?? [];
+    },
+    enabled: !!profile.id && activeTab === "replies",
+  });
+
+  // Media
+  const { data: mediaItems } = useQuery({
+    queryKey: ["profile_media", profile.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_items")
+        .select("id, title, cover_image_url")
+        .eq("creator_id", profile.id)
+        .eq("status", "approved")
+        .not("cover_image_url", "is", null)
+        .order("approved_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!profile.id && activeTab === "media",
+  });
+
+  // Likes
+  const { data: likedItems } = useQuery({
+    queryKey: ["profile_likes", profile.id],
+    queryFn: async () => {
+      const { data: ratings } = await supabase
+        .from("content_ratings")
+        .select("content_id, created_at")
+        .eq("user_id", profile.id)
+        .eq("rating", 5)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (!ratings || ratings.length === 0) return [];
+      const ids = ratings.map((r) => r.content_id);
+      const { data } = await supabase
+        .from("content_items")
+        .select("*, profiles!content_items_creator_id_fkey(id, username, display_name, avatar_url)")
+        .in("id", ids)
+        .eq("status", "approved");
+      const idOrder = new Map(ids.map((id, i) => [id, i]));
+      return (data ?? []).sort((a: any, b: any) => (idOrder.get(a.id) ?? 0) - (idOrder.get(b.id) ?? 0));
+    },
+    enabled: !!profile.id && activeTab === "likes",
+  });
+
+  // Collections
+  const { data: collections } = useQuery({
+    queryKey: ["profile_collections", profile.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collections")
+        .select("id, title, slug, description, item_count, follower_count, visibility")
+        .eq("owner_id", profile.id)
+        .eq("visibility", "public")
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!profile.id,
+  });
+
+  const allTabs = useMemo(() => {
+    const t = [...tabs];
+    if (collections && collections.length > 0) {
+      t.push({ key: "collections", label: "Collections" });
+    }
+    return t;
+  }, [collections]);
+
+  const seoDesc = `${(profile.bio || "").slice(0, 155)}${profile.bio ? " — " : ""}${contentItems?.length ?? 0} posts on NeoScale AI.`;
 
   return (
-    <div className="py-8 sm:py-12 px-4 sm:px-6">
+    <div className="w-full">
       <SeoHead
         title={`${displayName} on NeoScale AI`}
         description={seoDesc}
         path={`/creator/${profile.username}`}
         ogType="profile"
-        jsonLd={jsonLd}
       />
-      <div className="mx-auto max-w-5xl">
-        {tipSuccess && (
-          <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-            <CheckCircle2 className="h-5 w-5 shrink-0" />
-            <p className="text-sm font-medium">Thanks for supporting {displayName}.</p>
-          </div>
+
+      {/* BANNER */}
+      <div className="relative w-full" style={{ height: 200 }}>
+        {profile.banner_url ? (
+          <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full" style={{ background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.4) 100%)" }} />
         )}
-        {subscribedSuccess && (
-          <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-            <CheckCircle2 className="h-5 w-5 shrink-0" />
-            <p className="text-sm font-medium">You are now subscribed to {displayName}. Exclusive content unlocked.</p>
-          </div>
-        )}
+      </div>
 
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
-          <div className="flex-1 min-w-0">
-            <div className="mb-8 sm:mb-10">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{displayName}</h1>
-                  {profile.is_creator && (
-                    <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">
-                      <BadgeCheck className="h-3 w-3 mr-1" /> Verified Creator
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-3 mb-3">
-                <p className="text-sm text-muted-foreground">@{profile.username}</p>
-                <span className="text-xs text-muted-foreground">{followerCount} follower{followerCount !== 1 ? "s" : ""}</span>
-              </div>
-              {profile.bio && <p className="text-sm text-muted-foreground leading-relaxed mb-4">{profile.bio}</p>}
-              <div className="mb-4 sm:mb-6">
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <FollowButton creatorId={profile.id} onCountChange={(d) => setFollowerDelta((prev) => prev + d)} />
-                  {user?.id !== profile.id && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-border text-muted-foreground hover:text-foreground"
-                      onClick={() => {
-                        if (!isLoggedIn) { navigate("/login"); return; }
-                        navigate(`/messages?to=${profile.id}`);
-                      }}
-                    >
-                      <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Message
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <div className="flex gap-6">
-                <div className="flex items-center gap-2 text-sm">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-foreground font-medium">{contentItems?.length ?? 0}</span>
-                  <span className="text-muted-foreground">published</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Eye className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-foreground font-medium">{totalViews.toLocaleString()}</span>
-                  <span className="text-muted-foreground">total views</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Download className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-foreground font-medium">{totalDownloads.toLocaleString()}</span>
-                  <span className="text-muted-foreground">downloads</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile sidebar */}
-            <div className="lg:hidden mb-8 space-y-4">
-              {hasSubscriptionPriceId && (
-                <div className="border border-border rounded-xl p-5 bg-card space-y-2">
-                  <Button className="w-full min-h-[44px] bg-secondary hover:bg-secondary/90 text-secondary-foreground" onClick={handleSubscribe} disabled={subscribing}>
-                    {subscribing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
-                    Subscribe to {displayName}
-                  </Button>
-                  <p className="text-[11px] text-muted-foreground text-center">{subCount ?? 0} subscriber{subCount !== 1 ? "s" : ""}</p>
-                </div>
-              )}
-              {hasDonationContent && (
-                <div className="border border-border rounded-xl p-5 bg-card space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Support</p>
-                  <TipSelector creatorId={profile.id} creatorDisplayName={displayName} successUrl={`${window.location.origin}/creator/${profile.username}?tip=success`} cancelUrl={`${window.location.origin}/creator/${profile.username}`} />
-                </div>
-              )}
-            </div>
-
-            <div>
-              {/* Tab control */}
-              <div className="flex gap-1 mb-4">
-                <button
-                  onClick={() => setCreatorTab("content")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
-                    creatorTab === "content"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-accent text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Content
-                </button>
-                <button
-                  onClick={() => setCreatorTab("projects")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
-                    creatorTab === "projects"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-accent text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Projects
-                </button>
-              </div>
-
-              {creatorTab === "content" ? (
-                <>
-                  <h2 className="text-lg font-semibold text-foreground mb-4">Content by {displayName}</h2>
-                  {contentItems && contentItems.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {contentItems.map((item) => (
-                        <ContentCard key={item.id} id={item.id} content_type={item.content_type} title={item.title} description={item.description ?? ""} difficulty={item.difficulty} ai_tools={item.ai_tools ?? []} download_count={item.download_count} monetisation_type={item.monetisation_type} price_gbp={item.price_gbp ?? undefined} creator_username={profile.username ?? undefined} avg_rating={Number((item as any).avg_rating) || 0} rating_count={(item as any).rating_count ?? 0} view_count={(item as any).view_count ?? 0} is_fork={!!(item as any).fork_of_content_id} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground py-10 text-center">{displayName} hasn't published anything yet.</p>
-                  )}
-                </>
-              ) : (
-                <>
-                  <h2 className="text-lg font-semibold text-foreground mb-4">Projects by {displayName}</h2>
-                  {creatorProjects && creatorProjects.length > 0 ? (
-                    <div className="space-y-3">
-                      {creatorProjects.map((proj: any) => {
-                        const compIds = (proj.project_components ?? []).map((c: any) => c.linked_content_id || c.inline_content_id).filter(Boolean);
-                        const types = [...new Set(
-                          compIds.map((cid: string) => projContentTypes?.find((ci: any) => ci.id === cid)?.content_type).filter(Boolean)
-                        )] as string[];
-                        return (
-                          <ProjectCard
-                            key={proj.id}
-                            id={proj.id}
-                            title={proj.title}
-                            description={proj.description}
-                            coverImageUrl={null}
-                            creatorDisplayName={displayName}
-                            creatorUsername={profile.username ?? ""}
-                            componentTypes={types}
-                            componentCount={(proj.project_components ?? []).length}
-                            viewCount={proj.view_count}
-                          />
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground py-10 text-center">{displayName} hasn't published any projects yet.</p>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Desktop sidebar */}
-          <div className="hidden lg:block w-72 shrink-0 space-y-4">
-            {hasSubscriptionPriceId && (
-              <div className="border border-border rounded-xl p-5 bg-card space-y-2">
-                <Button className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground" onClick={handleSubscribe} disabled={subscribing}>
-                  {subscribing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
-                  Subscribe to {displayName}
-                </Button>
-                <p className="text-[11px] text-muted-foreground text-center">{subCount ?? 0} subscriber{subCount !== 1 ? "s" : ""}</p>
-              </div>
-            )}
-            {hasDonationContent && (
-              <div className="border border-border rounded-xl p-5 bg-card space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Support</p>
-                <TipSelector creatorId={profile.id} creatorDisplayName={displayName} successUrl={`${window.location.origin}/creator/${profile.username}?tip=success`} cancelUrl={`${window.location.origin}/creator/${profile.username}`} />
-              </div>
-            )}
-            {services && services.length > 0 && (
-              <div className="border border-border rounded-xl p-5 bg-card space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Work with {displayName}</h3>
-                {services.map((svc) => (
-                  <div key={svc.id} className="space-y-2 border-t border-border pt-3 first:border-0 first:pt-0">
-                    <p className="text-sm font-medium text-foreground">{svc.title}</p>
-                    {svc.description && <p className="text-xs text-muted-foreground leading-relaxed">{svc.description}</p>}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-primary">£{Number(svc.price_gbp ?? 0).toFixed(2)}</span>
-                      <Button size="sm" variant="outline" className="text-xs h-7 border-secondary text-secondary hover:bg-secondary/10" onClick={() => setEnquiryListing({ id: svc.id, title: svc.title })}>
-                        Enquire
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+      {/* AVATAR + ACTION */}
+      <div className="px-4 flex justify-between items-start">
+        <div className="relative -mt-10">
+          <Avatar className="h-20 w-20 border-4 border-background">
+            {profile.avatar_url && <AvatarImage src={profile.avatar_url} />}
+            <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">{initials}</AvatarFallback>
+          </Avatar>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <FollowButton creatorId={profile.id} onCountChange={(d) => setFollowerDelta((prev) => prev + d)} />
+          {currentUserId && currentUserId !== profile.id && (
+            <Button variant="outline" size="sm" onClick={() => navigate(`/messages?to=${profile.id}`)}>
+              <MessageSquare className="h-3.5 w-3.5 mr-1.5" /> Message
+            </Button>
+          )}
         </div>
       </div>
 
-      <Dialog open={!!enquiryListing} onOpenChange={(open) => !open && setEnquiryListing(null)}>
-        <DialogContent className="bg-card border-border sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Work with {displayName}</DialogTitle>
-            <DialogDescription>Send a commission enquiry for "{enquiryListing?.title}".</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleEnquiry} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Your name</Label>
-              <Input id="name" name="name" required className="bg-background border-border rounded-xl" />
+      {/* INFO */}
+      <div className="px-4 mt-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+          {profile.is_creator && (
+            <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">
+              <BadgeCheck className="h-3 w-3 mr-1" /> Creator
+            </Badge>
+          )}
+          {profile.is_curator && (
+            <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">
+              <ShieldCheck className="h-3 w-3 mr-1" /> Curator ✦
+            </Badge>
+          )}
+        </div>
+        <p className="text-sm text-muted-foreground">@{profile.username}</p>
+        {profile.bio && <p className="text-sm text-foreground leading-relaxed mt-2">{profile.bio}</p>}
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
+          {profile.website_url && (
+            <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-secondary hover:underline">
+              <ExternalLink className="h-3 w-3" /> {profile.website_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+            </a>
+          )}
+          {profile.twitter_handle && (
+            <a href={`https://twitter.com/${profile.twitter_handle.replace("@", "")}`} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground">
+              𝕏 @{profile.twitter_handle.replace("@", "")}
+            </a>
+          )}
+        </div>
+        {joinDate && (
+          <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+            <Calendar className="h-3 w-3" />
+            <span>Joined {format(new Date(joinDate), "MMMM yyyy")}</span>
+          </div>
+        )}
+        <div className="flex items-center gap-4 mt-2">
+          <button onClick={() => setFollowingOpen(true)} className="text-sm hover:underline">
+            <span className="font-bold text-foreground">{followingCount}</span>{" "}
+            <span className="text-muted-foreground">Following</span>
+          </button>
+          <button onClick={() => setFollowersOpen(true)} className="text-sm hover:underline">
+            <span className="font-bold text-foreground">{followerCount}</span>{" "}
+            <span className="text-muted-foreground">Followers</span>
+          </button>
+        </div>
+        <div className="flex items-center gap-3 mt-2 text-[13px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" /> {contentItems?.length ?? 0} posts</span>
+          <span>·</span>
+          <span className="inline-flex items-center gap-1"><Download className="h-3.5 w-3.5" /> {totalDownloads.toLocaleString()} downloads</span>
+          <span>·</span>
+          <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {totalViews.toLocaleString()} views</span>
+        </div>
+      </div>
+
+      {/* TAB BAR */}
+      <div className="mt-4 border-b border-border sticky top-0 z-10 bg-background">
+        <div className="flex">
+          {allTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 text-center py-3 text-sm font-medium transition-colors relative ${
+                activeTab === tab.key ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+              {activeTab === tab.key && (
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* TAB CONTENT */}
+      <div className="min-h-[400px]">
+        {activeTab === "posts" && (
+          contentItems && contentItems.length > 0 ? (
+            <div>{contentItems.map((item: any) => <FeedItem key={item.id} item={item} />)}</div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <FileText className="h-10 w-10 text-muted-foreground mb-4" />
+              <p className="text-sm text-muted-foreground">{displayName} hasn't published anything yet.</p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Your email</Label>
-              <Input id="email" name="email" type="email" required className="bg-background border-border rounded-xl" />
+          )
+        )}
+        {activeTab === "replies" && (
+          replies && replies.length > 0 ? (
+            <div>
+              {replies.map((reply: any) => {
+                const content = reply.content_items;
+                return (
+                  <div key={reply.id} className="px-4 py-3 border-b border-border cursor-pointer hover:bg-[hsl(0_0%_100%/0.03)] transition-colors" onClick={() => content && navigate(`/content/${content.id}`)}>
+                    {content && (
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Replied to <Badge variant="outline" className="text-[10px] font-medium">{content.content_type}</Badge>{" "}
+                        <span className="text-secondary">{content.title}</span>
+                      </p>
+                    )}
+                    <p className="text-sm text-foreground">{reply.text}</p>
+                    <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                      <span>{timeAgo(reply.created_at)}</span>
+                      {reply.like_count > 0 && <span className="inline-flex items-center gap-1"><Heart className="h-3 w-3" /> {reply.like_count}</span>}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
-              <Textarea id="message" name="message" rows={4} required placeholder="Describe what you need and any relevant details" className="bg-background border-border rounded-xl" />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <MessageSquare className="h-10 w-10 text-muted-foreground mb-4" />
+              <p className="text-sm text-muted-foreground">No replies yet.</p>
             </div>
-            <Button type="submit" className="w-full" disabled={enquirySubmitting}>
-              {enquirySubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Send Enquiry
-            </Button>
-            <p className="text-[11px] text-muted-foreground text-center">Your message will be sent directly to {displayName}.</p>
-          </form>
-        </DialogContent>
-      </Dialog>
+          )
+        )}
+        {activeTab === "media" && (
+          mediaItems && mediaItems.length > 0 ? (
+            <div className="grid grid-cols-3 gap-0.5 p-0.5">
+              {mediaItems.map((item: any) => (
+                <button key={item.id} onClick={() => navigate(`/content/${item.id}`)} className="aspect-square overflow-hidden">
+                  <img src={item.cover_image_url} alt={item.title} className="w-full h-full object-cover hover:opacity-80 transition-opacity" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <ImageIcon className="h-10 w-10 text-muted-foreground mb-4" />
+              <p className="text-sm text-muted-foreground">No media posts yet.</p>
+            </div>
+          )
+        )}
+        {activeTab === "likes" && (
+          likedItems && likedItems.length > 0 ? (
+            <div>{likedItems.map((item: any) => <FeedItem key={item.id} item={item} />)}</div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Heart className="h-10 w-10 text-muted-foreground mb-4" />
+              <p className="text-sm text-muted-foreground">No liked posts yet.</p>
+            </div>
+          )
+        )}
+        {activeTab === "collections" && collections && (
+          <div className="p-4 space-y-3">
+            {collections.map((col: any) => (
+              <button key={col.id} onClick={() => navigate(`/collections/${col.slug || col.id}`)} className="w-full text-left rounded-xl border border-border bg-card p-4 hover:brightness-110 transition-colors">
+                <p className="text-sm font-semibold text-foreground">{col.title}</p>
+                {col.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{col.description}</p>}
+                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                  <span>{col.item_count} items</span>
+                  <span>{col.follower_count} followers</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Followers Modal */}
+      <FollowListModal open={followersOpen} onClose={() => setFollowersOpen(false)} userId={profile.id} mode="followers" />
+      <FollowListModal open={followingOpen} onClose={() => setFollowingOpen(false)} userId={profile.id} mode="following" />
     </div>
   );
-};
+}
 
-export default CreatorProfile;
+function FollowListModal({ open, onClose, userId, mode }: { open: boolean; onClose: () => void; userId: string; mode: "followers" | "following" }) {
+  const { data: users } = useQuery({
+    queryKey: ["follow_list", userId, mode],
+    queryFn: async () => {
+      if (mode === "followers") {
+        const { data } = await supabase.from("follows").select("follower_id, profiles!follows_follower_id_fkey(id, username, display_name, avatar_url)").eq("following_id", userId).order("created_at", { ascending: false }).limit(100);
+        return (data ?? []).map((r: any) => r.profiles).filter(Boolean);
+      } else {
+        const { data } = await supabase.from("follows").select("following_id, profiles!follows_following_id_fkey(id, username, display_name, avatar_url)").eq("follower_id", userId).order("created_at", { ascending: false }).limit(100);
+        return (data ?? []).map((r: any) => r.profiles).filter(Boolean);
+      }
+    },
+    enabled: open,
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="bg-card border-border sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{mode === "followers" ? "Followers" : "Following"}</DialogTitle>
+        </DialogHeader>
+        <div className="max-h-80 overflow-y-auto space-y-1">
+          {users && users.length > 0 ? users.map((u: any) => (
+            <Link key={u.id} to={`/creator/${u.username}`} onClick={onClose} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-accent/60 transition-colors">
+              <Avatar className="h-9 w-9">
+                {u.avatar_url && <AvatarImage src={u.avatar_url} />}
+                <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{(u.display_name || u.username || "?").slice(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground truncate">{u.display_name || u.username}</p>
+                <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
+              </div>
+              <FollowButton creatorId={u.id} />
+            </Link>
+          )) : (
+            <p className="text-sm text-muted-foreground text-center py-8">{mode === "followers" ? "No followers yet." : "Not following anyone yet."}</p>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d`;
+  return `${Math.floor(days / 30)}mo`;
+}
