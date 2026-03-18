@@ -48,6 +48,7 @@ export interface ContentCardProps {
   collaborators?: { id: string; display_name: string | null; username: string | null; avatar_url: string | null; is_primary_author: boolean }[];
   has_curator_recommendation?: boolean;
   microtags?: string[];
+  other_tool_name?: string | null;
 }
 
 function roundedStars(avg: number, count: number): number {
