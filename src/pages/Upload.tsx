@@ -114,6 +114,8 @@ const Upload = () => {
     setSubmitting(true);
 
     try {
+      // Refresh session to prevent RLS errors
+      await supabase.auth.refreshSession();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({ title: "Sign in required", description: "Please sign in before uploading.", variant: "destructive" });
