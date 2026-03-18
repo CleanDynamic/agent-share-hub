@@ -22,6 +22,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2, Eye, GitFork, ExternalLink } from "lucide-react";
 import { VersionHistory } from "@/components/VersionHistory";
 import { ForkModal } from "@/components/ForkModal";
+import { DependencyDisplay } from "@/components/DependencyDisplay";
+import { CompatibilityBadge } from "@/components/CompatibilityBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -460,6 +462,18 @@ const ContentDetail = () => {
                 </div>
               </div>
             )}
+
+            {/* Dependencies */}
+            <DependencyDisplay contentId={item.id} />
+
+            {/* Compatibility status */}
+            <CompatibilityBadge
+              contentId={item.id}
+              creatorId={item.creator_id}
+              compatibilityStatus={(item as any).compatibility_status}
+              lastVerifiedAt={(item as any).last_verified_at}
+              variant="detail"
+            />
 
             {isSub && !subscriberUnlocked && creator && (
               <div className="border border-border rounded-xl p-5 bg-card">

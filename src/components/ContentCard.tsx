@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Lock, Loader2, Eye, Star, StarHalf, GitFork } from "lucide-react";
+import { Download, Lock, Loader2, Eye, Star, StarHalf, GitFork, Link2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CompatibilityBadge } from "@/components/CompatibilityBadge";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +32,11 @@ export interface ContentCardProps {
   view_count?: number;
   is_fork?: boolean;
   has_preview?: boolean;
+  dependency_count?: number;
+  dependency_titles?: string[];
+  compatibility_status?: string | null;
+  last_verified_at?: string | null;
+  creator_id?: string;
 }
 
 function roundedStars(avg: number, count: number): number {
@@ -97,6 +104,11 @@ export function ContentCard({
   view_count = 0,
   is_fork = false,
   has_preview = false,
+  dependency_count = 0,
+  dependency_titles = [],
+  compatibility_status = null,
+  last_verified_at = null,
+  creator_id,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -222,7 +234,7 @@ export function ContentCard({
           ))}
         </div>
 
-        {/* Rating */}
+        {/* Rating + status indicators */}
         <div className="flex items-center gap-1.5 mb-3">
           {rating_count > 0 ? (
             <>
@@ -231,6 +243,33 @@ export function ContentCard({
             </>
           ) : (
             <span className="text-[10px] text-muted-foreground">No ratings</span>
+          )}
+        </div>
+
+        {/* Deps + Compatibility indicators */}
+        <div className="flex items-center gap-2 mb-3">
+          {dependency_count > 0 && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground cursor-default" onClick={e => e.stopPropagation()}>
+                    <Link2 className="h-2.5 w-2.5" /> Deps: {dependency_count}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-xs">{dependency_titles.join(", ") || "Has dependencies"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {compatibility_status && compatibility_status !== "unverified" && (
+            <CompatibilityBadge
+              contentId={id}
+              creatorId={creator_id ?? ""}
+              compatibilityStatus={compatibility_status}
+              lastVerifiedAt={last_verified_at}
+              variant="card"
+            />
           )}
         </div>
 

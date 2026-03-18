@@ -25,6 +25,7 @@ import {
 import { SubmitToolModal } from "@/components/SubmitToolModal";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
 import { LearningPathUploadForm } from "@/components/LearningPathUploadForm";
+import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
 
 const CONTENT_TYPES = [
   "Prompt File", "Prompt Tutorial", "Agent Blueprint", "Workflow Template",
@@ -61,6 +62,7 @@ const Upload = () => {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
+  const [dependencies, setDependencies] = useState<Dependency[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -124,6 +126,15 @@ const Upload = () => {
       }
 
       const contentId = insertedItem.id;
+
+      // Save dependencies
+      for (const dep of dependencies) {
+        await supabase.from("content_dependencies").insert({
+          content_id: contentId,
+          requires_content_id: dep.content_id,
+          dependency_note: dep.note || null,
+        });
+      }
 
       // Save each block
       for (let i = 0; i < contentBlocks.length; i++) {
@@ -224,7 +235,7 @@ const Upload = () => {
         </p>
         <div className="flex gap-3 mt-4">
           <Button variant="outline" onClick={() => navigate("/browse")}>Browse Content</Button>
-          <Button variant="outline" onClick={() => { setSuccess(false); form.reset(); setContentBlocks([emptyBlock("text")]); }}>Upload Another</Button>
+          <Button variant="outline" onClick={() => { setSuccess(false); form.reset(); setContentBlocks([emptyBlock("text")]); setDependencies([]); }}>Upload Another</Button>
         </div>
       </div>
     );
@@ -593,6 +604,9 @@ const Upload = () => {
                 </div>
               </div>
             </div>
+
+            {/* Dependencies */}
+            <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
 
             {/* Submit */}
             <Button type="submit" size="lg" className="w-full" disabled={submitting}>
