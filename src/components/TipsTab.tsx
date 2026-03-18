@@ -100,7 +100,7 @@ export function TipsTab({ contentId, isEligible }: Props) {
         <div className="space-y-3">
           {tips.map((tip: any) => (
             <div key={tip.id} className="border border-border rounded-lg p-3 bg-card">
-              <p className="text-sm text-foreground mb-2">{tip.text}</p>
+              <MentionText text={tip.text} className="text-sm text-foreground mb-2" />
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-muted-foreground">
                   {(tip.profiles as any)?.display_name || (tip.profiles as any)?.username || "User"} · {formatDistanceToNow(new Date(tip.created_at), { addSuffix: true })}

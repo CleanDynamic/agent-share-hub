@@ -299,13 +299,12 @@ export function CommentsSection({
         </p>
       ) : (
         <div className="space-y-2">
-          <Textarea
+          <MentionInput
             value={newText}
-            onChange={(e) => setNewText(e.target.value.slice(0, 500))}
+            onChange={(v) => setNewText(v.slice(0, 500))}
             placeholder="Add a comment..."
             rows={compact ? 2 : 3}
             maxLength={500}
-            className="bg-background border-border rounded-xl text-sm resize-none"
           />
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-muted-foreground">{newText.length}/500</span>
