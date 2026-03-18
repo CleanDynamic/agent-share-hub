@@ -648,7 +648,9 @@ const Upload = () => {
           <div className="mb-6 rounded-xl border px-4 py-3 flex items-center justify-between gap-3" style={{ backgroundColor: "#1A1500", borderColor: "#BA7517" }}>
             <p className="text-sm" style={{ color: "#EF9F27" }}>
               Editing draft — <span className="font-semibold">{draftMeta.name}</span>
-              <span className="ml-2 opacity-70">· Last saved {formatDistanceToNow(new Date(draftMeta.savedAt), { addSuffix: true })}</span>
+              <span className="ml-2 opacity-70">· {lastAutosaveRef.current
+                ? `Autosaved ${formatDistanceToNow(lastAutosaveRef.current, { addSuffix: true })}`
+                : `Last saved ${formatDistanceToNow(new Date(draftMeta.savedAt), { addSuffix: true })}`}</span>
             </p>
             <button onClick={discardDraft} className="text-xs hover:underline shrink-0" style={{ color: "#EF9F27" }}>
               Discard draft
