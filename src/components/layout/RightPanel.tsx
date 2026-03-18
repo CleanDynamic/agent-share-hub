@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ const CATEGORIES: { name: string; dbType: string; difficulty: string; slug: stri
   { name: "Evaluation Framework", dbType: "Evaluation Framework", difficulty: "Intermediate", slug: "evaluation-framework" },
   { name: "Agent Stack", dbType: "Agent Stack", difficulty: "Advanced", slug: "agent-stack" },
   { name: "Failure Library", dbType: "Failure Library", difficulty: "Any", slug: "failure-library" },
-  { name: "Projects", dbType: "", difficulty: "", slug: "projects", isProject: true },
+  { name: "Projects", dbType: "", difficulty: "Any", slug: "projects", isProject: true },
   { name: "AI Tools (LLMs)", dbType: "AI Tools (LLMs)", difficulty: "Any", slug: "ai-tools-llms" },
 ];
 
@@ -197,19 +197,46 @@ function SearchSection() {
 
 /* ---- Section 1: Category Directory ---- */
 function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
+  const location = useLocation();
+
+  // Determine active slug from URL
+  const getActiveSlug = (): string | null => {
+    const match = location.pathname.match(/^\/category\/(.+)$/);
+    if (match) return match[1];
+    const params = new URLSearchParams(location.search);
+    if (location.pathname === "/browse" && params.get("tab") === "projects") return "projects";
+    return null;
+  };
+  const activeSlug = getActiveSlug();
+
   return (
     <div className="grid grid-cols-2 gap-2">
       {CATEGORIES.map((cat, i) => {
         const isLast = i === CATEGORIES.length - 1;
         const isAITools = cat.dbType === "AI Tools (LLMs)";
+        const isActive = activeSlug === cat.slug;
+
+        const handleClick = () => {
+          if (isActive) {
+            // Deactivate — go to browse with no filter
+            navigate("/browse");
+          } else if (cat.isProject) {
+            navigate("/browse?tab=projects");
+          } else {
+            navigate(`/category/${cat.slug}`);
+          }
+        };
+
         return (
           <button
             key={cat.slug}
-            onClick={() => navigate(`/category/${cat.slug}`)}
+            onClick={handleClick}
             className={`text-left rounded-xl p-3.5 transition-colors hover:brightness-110 ${isLast ? "col-span-2" : ""}`}
             style={{
-              background: "#111118",
-              border: `1px solid ${cat.isProject ? "#2EC4B6" : isAITools ? "#7C3AED" : "#1E1E2A"}`,
+              background: isActive ? "rgba(232, 87, 26, 0.08)" : "#111118",
+              border: isActive
+                ? "2px solid #E8571A"
+                : `1px solid ${cat.isProject ? "#2EC4B6" : isAITools ? "#7C3AED" : "#1E1E2A"}`,
             }}
           >
             <p className="text-sm font-bold text-foreground leading-tight">{cat.name}</p>

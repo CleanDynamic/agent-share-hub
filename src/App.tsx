@@ -33,7 +33,7 @@ import NotFound from "./pages/NotFound";
 import NotificationsPage from "./pages/Notifications";
 import MessagesPage from "./pages/Messages";
 import CollectionDetail from "./pages/CollectionDetail";
-import LearningPathDetail from "./pages/LearningPathDetail";
+// LearningPathDetail removed from UI
 import Analytics from "./pages/Analytics";
 import SearchPage from "./pages/SearchPage";
 import Category from "./pages/Category";
@@ -65,7 +65,7 @@ const App = () => (
                 <Route path="/project/:id" element={<ProjectDetail />} />
                 <Route path="/creator/:username" element={<CreatorProfile />} />
                 <Route path="/collections/:slug" element={<CollectionDetail />} />
-                <Route path="/path/:id" element={<LearningPathDetail />} />
+                {/* /path/:id route removed */}
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
                 <Route path="/signup" element={<Signup />} />
