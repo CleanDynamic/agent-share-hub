@@ -38,6 +38,7 @@ import Analytics from "./pages/Analytics";
 import SearchPage from "./pages/SearchPage";
 import Category from "./pages/Category";
 import LibraryPage from "./pages/Library";
+import DraftsPage from "./pages/Drafts";
 
 const queryClient = new QueryClient();
 
