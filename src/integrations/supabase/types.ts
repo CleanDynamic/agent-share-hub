@@ -710,6 +710,8 @@ export type Database = {
           difficulty: string
           donation_enabled: boolean
           download_count: number
+          draft_name: string | null
+          draft_saved_at: string | null
           embedding: string | null
           file_url: string | null
           fork_count: number
@@ -757,6 +759,8 @@ export type Database = {
           difficulty: string
           donation_enabled?: boolean
           download_count?: number
+          draft_name?: string | null
+          draft_saved_at?: string | null
           embedding?: string | null
           file_url?: string | null
           fork_count?: number
@@ -804,6 +808,8 @@ export type Database = {
           difficulty?: string
           donation_enabled?: boolean
           download_count?: number
+          draft_name?: string | null
+          draft_saved_at?: string | null
           embedding?: string | null
           file_url?: string | null
           fork_count?: number
@@ -1247,6 +1253,35 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      draft_autosave_log: {
+        Row: {
+          content_id: string
+          field_changed: string | null
+          id: string
+          saved_at: string
+        }
+        Insert: {
+          content_id: string
+          field_changed?: string | null
+          id?: string
+          saved_at?: string
+        }
+        Update: {
+          content_id?: string
+          field_changed?: string | null
+          id?: string
+          saved_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draft_autosave_log_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
         ]
