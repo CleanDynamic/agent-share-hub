@@ -338,10 +338,43 @@ const ProjectDetail = () => {
 
         <p className="text-sm text-muted-foreground leading-relaxed mb-4">{project.description}</p>
 
-        <div className="flex items-center gap-1 text-sm text-muted-foreground mb-6">
-          <Eye className="h-3.5 w-3.5" />
-          {project.view_count} view{project.view_count !== 1 ? "s" : ""}
+        <div className="flex items-center gap-3 text-sm text-muted-foreground mb-6">
+          <span className="flex items-center gap-1">
+            <Eye className="h-3.5 w-3.5" />
+            {project.view_count} view{project.view_count !== 1 ? "s" : ""}
+          </span>
+          <span>·</span>
+          <span>{(components ?? []).length} components</span>
+          {companionCollection && (
+            <>
+              <span>·</span>
+              <Link to={`/collections/${companionCollection.slug}`} className="text-[#2EC4B6] hover:underline">
+                Full Stack Collection →
+              </Link>
+            </>
+          )}
         </div>
+
+        {/* Companion collection banner */}
+        {!companionCollection && isCreator && !companionDismissed && (
+          <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-[#2EC4B6]/10 border border-[#2EC4B6]/20 mb-6">
+            <Info className="h-4 w-4 text-[#2EC4B6] mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs text-[#2EC4B6] mb-2">Create a collection to accompany this project — share your full stack with readers.</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-[#2EC4B6] text-[#2EC4B6] hover:bg-[#2EC4B6]/10 text-xs"
+                  onClick={() => setCompanionModalOpen(true)}
+                >
+                  Create collection
+                </Button>
+                <button onClick={() => setCompanionDismissed(true)} className="text-xs text-muted-foreground hover:text-foreground">Dismiss</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Package pricing banner */}
         {(project as any).package_price_enabled && paidComponents.length > 0 && (
