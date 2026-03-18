@@ -10,6 +10,7 @@ import { AccountGateModal } from "@/components/AccountGateModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AddToCollectionModal } from "@/components/AddToCollectionModal";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, Eye, User, Info, Lock, ChevronDown, ChevronUp, ExternalLink, CheckCircle2,
