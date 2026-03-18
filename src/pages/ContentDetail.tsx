@@ -222,6 +222,33 @@ const ContentDetail = () => {
 
   const isSub = item?.monetisation_type === "subscription";
   const isPaid = item?.monetisation_type === "paid";
+  const isPwyw = !!(item as any)?.is_pwyw;
+
+  // Revenue splits
+  const { data: revenueSplits } = useQuery({
+    queryKey: ["revenue_splits", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("revenue_splits")
+        .select("percentage, recipient_id, profiles!revenue_splits_recipient_id_fkey(username, display_name, avatar_url)")
+        .eq("content_id", id!);
+      return (data as any[]) ?? [];
+    },
+    enabled: !!id,
+  });
+
+  // Collaborators
+  const { data: collaborators, refetch: refetchCollabs } = useQuery({
+    queryKey: ["content_collaborators", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_collaborators")
+        .select("collaborator_id, is_primary_author, profiles!content_collaborators_collaborator_id_fkey(id, username, display_name, avatar_url)")
+        .eq("content_id", id!);
+      return (data as any[]) ?? [];
+    },
+    enabled: !!id,
+  });
 
   const { data: hasActiveSubscription } = useQuery({
     queryKey: ["subscription_check", creator?.id],
