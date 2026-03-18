@@ -347,7 +347,7 @@ const Upload = () => {
         </div>
 
         {/* Upload type selector */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
           <button
             type="button"
             onClick={() => setUploadType("single")}
@@ -378,26 +378,9 @@ const Upload = () => {
               <p className="text-xs text-muted-foreground mt-0.5">A collection of related content</p>
             </div>
           </button>
-          <button
-            type="button"
-            onClick={() => setUploadType("path")}
-            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${
-              uploadType === "path"
-                ? "border-primary bg-primary/5"
-                : "border-border bg-card hover:border-muted-foreground/40"
-            }`}
-          >
-            <GraduationCap className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "path" ? "text-primary" : "text-muted-foreground"}`} />
-            <div>
-              <p className="text-sm font-semibold text-foreground">Learning Path</p>
-              <p className="text-xs text-muted-foreground mt-0.5">A guided sequence through existing posts</p>
-            </div>
-          </button>
         </div>
 
-        {uploadType === "path" ? (
-          <LearningPathUploadForm />
-        ) : uploadType === "project" ? (
+        {uploadType === "project" ? (
           <ProjectUploadForm />
         ) : (
         <Form {...form}>
