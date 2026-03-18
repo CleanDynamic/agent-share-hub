@@ -107,10 +107,13 @@ const ProjectDetail = () => {
   const [searchParams] = useSearchParams();
   const { isLoggedIn, profile } = useAuth();
   const { toast } = useToast();
+  const qc = useQueryClient();
   const [expandedComponents, setExpandedComponents] = useState<Record<string, boolean>>({});
   const [accountGateOpen, setAccountGateOpen] = useState(false);
   const [accountGateContentId, setAccountGateContentId] = useState("");
   const [unlocking, setUnlocking] = useState(false);
+  const [companionModalOpen, setCompanionModalOpen] = useState(false);
+  const [companionDismissed, setCompanionDismissed] = useState(false);
 
   // Fetch project
   const { data: project, isLoading, error } = useQuery({
