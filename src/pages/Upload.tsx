@@ -991,17 +991,31 @@ const Upload = () => {
             {/* 14. Dependencies */}
             <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
 
-            {/* 15. Submit */}
-            <Button type="submit" size="lg" className="w-full" disabled={submitting || splitError}>
-              {submitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Uploading…
-                </>
-              ) : (
-                "Submit for Review"
-              )}
-            </Button>
+            {/* 15. Save Draft + Preview */}
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="flex-1 h-10 rounded-full"
+                disabled={savingDraft || submitting}
+                onClick={() => saveDraft(false)}
+              >
+                {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                className="flex-1 h-10 rounded-full"
+                disabled={savingDraft || submitting}
+                onClick={async () => {
+                  const id = await saveDraft(false);
+                  if (id) navigate(`/upload/preview/${id}`);
+                }}
+              >
+                Preview Post →
+              </Button>
+            </div>
           </form>
         </Form>
         )}
