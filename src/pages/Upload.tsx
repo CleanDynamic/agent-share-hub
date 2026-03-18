@@ -213,86 +213,8 @@ const Upload = () => {
 
       const contentId = insertedItem.id;
 
-      if (isAIToolsType && toolUrl.trim()) {
-        await supabase.from("content_items").update({ tool_url: toolUrl.trim() } as any).eq("id", contentId);
-      }
-
-      if (customUseCaseDesc.trim() && values.use_cases.includes("Other")) {
-        await supabase.from("content_items").update({ custom_use_case_description: customUseCaseDesc.trim() } as any).eq("id", contentId);
-      }
-
-      // Upload WTE images
-      if (wteBlocks.length > 0) {
-        const updatedWte = [...(wteBlocksJsonb ?? [])];
-        for (let i = 0; i < wteBlocks.length; i++) {
-          const wb = wteBlocks[i];
-          if (wb.type === "image" && wb.imageFile) {
-            const path = `${contentId}/wte/${i + 1}/${wb.imageFile.name}`;
-            const { error } = await supabase.storage.from("content-files").upload(path, wb.imageFile);
-            if (!error && updatedWte[i]) {
-              (updatedWte[i] as any).image_url = path;
-            }
-          }
-        }
-        await supabase.from("content_items").update({ what_to_expect_blocks: updatedWte } as any).eq("id", contentId);
-      }
-
-      if (coverImageFile) {
-        const coverPath = `covers/${contentId}/${coverImageFile.name}`;
-        const { error: coverErr } = await supabase.storage.from("content-files").upload(coverPath, coverImageFile);
-        if (!coverErr) {
-          const { data: urlData } = supabase.storage.from("content-files").getPublicUrl(coverPath);
-          if (urlData?.publicUrl) {
-            await supabase.from("content_items").update({ cover_image_url: urlData.publicUrl } as any).eq("id", contentId);
-          }
-        }
-      }
-
-      for (const dep of dependencies) {
-        await supabase.from("content_dependencies").insert({
-          content_id: contentId,
-          requires_content_id: dep.content_id,
-          dependency_note: dep.note || null,
-        });
-      }
-
-      // Save revenue splits (inline)
-      for (const split of inlineSplits) {
-        if (showRevenueSplit && split.percentage > 0) {
-          await supabase.from("revenue_splits").insert({
-            content_id: contentId,
-            recipient_id: split.userId,
-            percentage: split.percentage,
-            set_by: user.id,
-          } as any);
-        }
-      }
-
-      // Save collab invites
-      for (const inv of collabInvitees) {
-        const splitForInv = inlineSplits.find((s) => s.userId === inv.id);
-        const { data: inviteData } = await supabase.from("collab_invites").insert({
-          content_id: contentId,
-          inviter_id: user.id,
-          invitee_id: inv.id,
-          status: "pending",
-        } as any).select("id").single();
-
-        await supabase.from("notifications").insert({
-          recipient_id: inv.id,
-          notification_type: "collab_invite",
-          content_id: contentId,
-          actor_id: user.id,
-          metadata: {
-            inviter_username: user.email?.split("@")[0] || "",
-            content_title: values.title,
-            invite_id: inviteData?.id,
-            split_percentage: splitForInv?.percentage ?? null,
-          },
-        } as any);
-      }
-
-      // Save each block
+      // ── Insert content_blocks + variations IMMEDIATELY after content_items ──
+      // Prevents RLS failures from stale auth tokens during later async work.
       for (let i = 0; i < contentBlocks.length; i++) {
         const block = contentBlocks[i];
         const position = i + 1;
@@ -337,7 +259,6 @@ const Upload = () => {
 
         if (blockError || !insertedBlock) throw new Error(blockError?.message ?? "Block insert failed");
 
-        // Save variations
         for (let vi = 0; vi < block.variations.length; vi++) {
           const v = block.variations[vi];
           let vFileUrl: string | null = null;
@@ -372,6 +293,83 @@ const Upload = () => {
             position: vi + 1,
           });
         }
+      }
+
+      // ── Remaining metadata updates (safe to run after blocks are saved) ──
+      if (isAIToolsType && toolUrl.trim()) {
+        await supabase.from("content_items").update({ tool_url: toolUrl.trim() } as any).eq("id", contentId);
+      }
+
+      if (customUseCaseDesc.trim() && values.use_cases.includes("Other")) {
+        await supabase.from("content_items").update({ custom_use_case_description: customUseCaseDesc.trim() } as any).eq("id", contentId);
+      }
+
+      if (wteBlocks.length > 0) {
+        const updatedWte = [...(wteBlocksJsonb ?? [])];
+        for (let i = 0; i < wteBlocks.length; i++) {
+          const wb = wteBlocks[i];
+          if (wb.type === "image" && wb.imageFile) {
+            const path = `${contentId}/wte/${i + 1}/${wb.imageFile.name}`;
+            const { error } = await supabase.storage.from("content-files").upload(path, wb.imageFile);
+            if (!error && updatedWte[i]) {
+              (updatedWte[i] as any).image_url = path;
+            }
+          }
+        }
+        await supabase.from("content_items").update({ what_to_expect_blocks: updatedWte } as any).eq("id", contentId);
+      }
+
+      if (coverImageFile) {
+        const coverPath = `covers/${contentId}/${coverImageFile.name}`;
+        const { error: coverErr } = await supabase.storage.from("content-files").upload(coverPath, coverImageFile);
+        if (!coverErr) {
+          const { data: urlData } = supabase.storage.from("content-files").getPublicUrl(coverPath);
+          if (urlData?.publicUrl) {
+            await supabase.from("content_items").update({ cover_image_url: urlData.publicUrl } as any).eq("id", contentId);
+          }
+        }
+      }
+
+      for (const dep of dependencies) {
+        await supabase.from("content_dependencies").insert({
+          content_id: contentId,
+          requires_content_id: dep.content_id,
+          dependency_note: dep.note || null,
+        });
+      }
+
+      for (const split of inlineSplits) {
+        if (showRevenueSplit && split.percentage > 0) {
+          await supabase.from("revenue_splits").insert({
+            content_id: contentId,
+            recipient_id: split.userId,
+            percentage: split.percentage,
+            set_by: user.id,
+          } as any);
+        }
+      }
+
+      for (const inv of collabInvitees) {
+        const splitForInv = inlineSplits.find((s) => s.userId === inv.id);
+        const { data: inviteData } = await supabase.from("collab_invites").insert({
+          content_id: contentId,
+          inviter_id: user.id,
+          invitee_id: inv.id,
+          status: "pending",
+        } as any).select("id").single();
+
+        await supabase.from("notifications").insert({
+          recipient_id: inv.id,
+          notification_type: "collab_invite",
+          content_id: contentId,
+          actor_id: user.id,
+          metadata: {
+            inviter_username: user.email?.split("@")[0] || "",
+            content_title: values.title,
+            invite_id: inviteData?.id,
+            split_percentage: splitForInv?.percentage ?? null,
+          },
+        } as any);
       }
 
       // Save free-text tags
