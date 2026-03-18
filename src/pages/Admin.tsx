@@ -715,6 +715,11 @@ const Admin = () => {
               </div>
             )}
           </TabsContent>
+
+          {/* ── Curators ── */}
+          <TabsContent value="curators" className="space-y-6">
+            <CuratorsTab />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
