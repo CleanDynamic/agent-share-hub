@@ -233,7 +233,7 @@ export default function Profile() {
 
             {/* Curator Application Section */}
             <CuratorSection />
-          </div>
+
 
             {/* Tabs */}
             <div className="flex gap-1 mb-4">
