@@ -9,7 +9,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Globe, Lock, Users, ChevronUp, ChevronDown, Trash2 } from "lucide-react";
+import { ArrowLeft, Globe, Lock, Eye, Users, ChevronUp, ChevronDown, Trash2, Copy, Info, Library, Loader2 } from "lucide-react";
 import { insertNotification } from "@/lib/notifications";
 
 export default function CollectionDetail() {
@@ -19,6 +19,7 @@ export default function CollectionDetail() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [followLoading, setFollowLoading] = useState(false);
+  const [addingAll, setAddingAll] = useState(false);
 
   const { data: collection, isLoading } = useQuery({
     queryKey: ["collection_by_slug", slug],
@@ -36,6 +37,7 @@ export default function CollectionDetail() {
 
   const owner = collection?.profiles as any;
   const isOwner = profile?.id === collection?.owner_id;
+  const visibility = (collection as any)?.visibility ?? (collection?.is_public ? "public" : "private");
 
   const { data: items, isLoading: itemsLoading } = useQuery({
     queryKey: ["collection_items", collection?.id],
@@ -64,6 +66,50 @@ export default function CollectionDetail() {
     },
     enabled: !!collection?.id && !!profile?.id,
   });
+
+  // Check which items are already in user's library
+  const contentIds = (items ?? []).map((ci: any) => ci.content_id).filter(Boolean);
+  const { data: librarySet, refetch: refetchLibrary } = useQuery({
+    queryKey: ["collection_library_check", collection?.id, profile?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_library")
+        .select("content_id")
+        .eq("user_id", profile!.id)
+        .in("content_id", contentIds);
+      return new Set((data ?? []).map((r: any) => r.content_id));
+    },
+    enabled: !!profile?.id && contentIds.length > 0,
+  });
+
+  const allInLibrary = contentIds.length > 0 && librarySet && contentIds.every((id: string) => librarySet.has(id));
+
+  async function handleAddAllToLibrary() {
+    if (!isLoggedIn) {
+      navigate("/signup");
+      return;
+    }
+    if (!profile || contentIds.length === 0) return;
+    setAddingAll(true);
+    let added = 0;
+    let alreadyPresent = 0;
+    for (const cid of contentIds) {
+      if (librarySet?.has(cid)) {
+        alreadyPresent++;
+        continue;
+      }
+      const { error } = await supabase
+        .from("user_library")
+        .insert({ user_id: profile.id, content_id: cid } as any)
+        .select()
+        .maybeSingle();
+      if (!error) added++;
+      else alreadyPresent++;
+    }
+    toast({ title: `Added ${added} to your library.${alreadyPresent > 0 ? ` ${alreadyPresent} were already saved.` : ""}` });
+    refetchLibrary();
+    setAddingAll(false);
+  }
 
   async function toggleFollow() {
     if (!collection || !profile) return;
@@ -116,6 +162,11 @@ export default function CollectionDetail() {
     navigate("/saved");
   }
 
+  function copyLink() {
+    navigator.clipboard.writeText(`${window.location.origin}/collections/${slug}`);
+    toast({ title: "Link copied to clipboard" });
+  }
+
   if (isLoading) {
     return (
       <div className="py-12 px-6 mx-auto max-w-5xl space-y-4">
@@ -135,7 +186,7 @@ export default function CollectionDetail() {
     );
   }
 
-  if (!collection.is_public && !isOwner) {
+  if (visibility === "private" && !isOwner) {
     return (
       <div className="py-20 px-6 text-center">
         <Lock className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
@@ -152,6 +203,23 @@ export default function CollectionDetail() {
           <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back
         </Link>
 
+        {/* Unlisted info banner (owner only) */}
+        {visibility === "unlisted" && isOwner && (
+          <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-[#2EC4B6]/10 border border-[#2EC4B6]/20 mb-6">
+            <Info className="h-4 w-4 text-[#2EC4B6] mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs text-[#2EC4B6] mb-1.5">This collection is unlisted. Share the direct link:</p>
+              <button
+                onClick={copyLink}
+                className="inline-flex items-center gap-1.5 text-xs text-[#2EC4B6] hover:text-[#2EC4B6]/80 transition-colors"
+              >
+                <Copy className="h-3 w-3" />
+                {window.location.origin}/collections/{slug}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8">
           {owner && (
@@ -165,13 +233,15 @@ export default function CollectionDetail() {
             <span>{collection.item_count} items</span>
             <span>·</span>
             <span>{collection.follower_count} followers</span>
-            {collection.is_public ? (
+            {visibility === "public" ? (
               <Badge variant="outline" className="text-[10px]"><Globe className="h-3 w-3 mr-1" />Public</Badge>
+            ) : visibility === "unlisted" ? (
+              <Badge variant="outline" className="text-[10px] bg-muted/50"><Eye className="h-3 w-3 mr-1" />Unlisted</Badge>
             ) : (
               <Badge variant="outline" className="text-[10px]"><Lock className="h-3 w-3 mr-1" />Private</Badge>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {!isOwner && isLoggedIn && (
               <Button
                 variant={isFollowing ? "default" : "outline"}
@@ -182,6 +252,26 @@ export default function CollectionDetail() {
               >
                 <Users className="mr-1.5 h-3.5 w-3.5" />
                 {isFollowing ? "Following" : "Follow collection"}
+              </Button>
+            )}
+            {/* Add all to library */}
+            {contentIds.length > 0 && (
+              <Button
+                size="sm"
+                onClick={handleAddAllToLibrary}
+                disabled={addingAll || !!allInLibrary}
+                className={allInLibrary
+                  ? "bg-[#2EC4B6] hover:bg-[#2EC4B6]/90 text-white cursor-default"
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                }
+              >
+                {addingAll ? (
+                  <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Adding...</>
+                ) : allInLibrary ? (
+                  <>All in your library ✓</>
+                ) : (
+                  <><Library className="mr-1.5 h-3.5 w-3.5" />Add all to library ({contentIds.length} items)</>
+                )}
               </Button>
             )}
             {isOwner && (

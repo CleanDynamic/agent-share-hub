@@ -8,9 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bookmark, Folder, LayoutGrid, Globe, Lock, Users, Plus } from "lucide-react";
+import { Bookmark, Folder, LayoutGrid, Globe, Lock, Eye, Users, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
-import { AddToCollectionModal } from "@/components/AddToCollectionModal";
 
 function CardSkeleton() {
   return (
@@ -27,6 +26,17 @@ function CardSkeleton() {
       </div>
     </div>
   );
+}
+
+function VisibilityBadge({ visibility, isPublic }: { visibility?: string; isPublic?: boolean }) {
+  const vis = visibility ?? (isPublic ? "public" : "private");
+  if (vis === "public") {
+    return <Badge variant="outline" className="text-[10px] ml-2 shrink-0 bg-[#2EC4B6]/15 text-[#2EC4B6] border-[#2EC4B6]/30"><Globe className="h-3 w-3 mr-0.5" />Public</Badge>;
+  }
+  if (vis === "unlisted") {
+    return <Badge variant="outline" className="text-[10px] ml-2 shrink-0 bg-muted/50 text-muted-foreground border-border"><Eye className="h-3 w-3 mr-0.5" />Unlisted</Badge>;
+  }
+  return <Badge variant="outline" className="text-[10px] ml-2 shrink-0 bg-amber-500/15 text-amber-400 border-amber-500/30"><Lock className="h-3 w-3 mr-0.5" />Private</Badge>;
 }
 
 export default function Saved() {
@@ -63,7 +73,6 @@ export default function Saved() {
     enabled: !!profile?.id,
   });
 
-  // Fetch content types for project components
   const projContentIds = (savedProjects ?? []).flatMap((s: any) => {
     const proj = s.projects as any;
     if (!proj) return [];
@@ -79,13 +88,12 @@ export default function Saved() {
     enabled: projContentIds.length > 0,
   });
 
-  // Collections queries
   const { data: myCollections, isLoading: colLoading } = useQuery({
     queryKey: ["my_collections", profile?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collections")
-        .select("id, title, description, item_count, is_public, follower_count, slug")
+        .select("id, title, description, item_count, is_public, visibility, follower_count, slug")
         .eq("owner_id", profile!.id)
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -99,7 +107,7 @@ export default function Saved() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collection_follows")
-        .select("collection_id, collections(id, title, description, item_count, is_public, follower_count, slug, profiles!collections_owner_id_fkey(display_name, username))")
+        .select("collection_id, collections(id, title, description, item_count, is_public, visibility, follower_count, slug, profiles!collections_owner_id_fkey(display_name, username))")
         .eq("follower_id", profile!.id)
         .order("followed_at", { ascending: false });
       if (error) throw error;
@@ -114,32 +122,18 @@ export default function Saved() {
       <div className="mx-auto max-w-5xl">
         <h1 className="text-2xl font-bold text-foreground mb-4">Saved</h1>
 
-        {/* Tabs */}
         <div className="flex gap-1 mb-6">
-          <button
-            onClick={() => setTab("content")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
-              tab === "content" ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Saved content
-          </button>
-          <button
-            onClick={() => setTab("projects")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
-              tab === "projects" ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Saved projects
-          </button>
-          <button
-            onClick={() => setTab("collections")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
-              tab === "collections" ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Collections
-          </button>
+          {(["content", "projects", "collections"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                tab === t ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t === "content" ? "Saved content" : t === "projects" ? "Saved projects" : "Collections"}
+            </button>
+          ))}
         </div>
 
         {tab === "content" && (
@@ -243,7 +237,6 @@ export default function Saved() {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* My collections */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-sm font-semibold text-foreground">My collections</h2>
@@ -258,11 +251,7 @@ export default function Saved() {
                         >
                           <div className="flex items-start justify-between mb-1">
                             <h3 className="text-sm font-semibold text-foreground truncate">{col.title}</h3>
-                            {col.is_public ? (
-                              <Badge variant="outline" className="text-[10px] ml-2 shrink-0"><Globe className="h-3 w-3 mr-0.5" />Public</Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-[10px] ml-2 shrink-0"><Lock className="h-3 w-3 mr-0.5" />Private</Badge>
-                            )}
+                            <VisibilityBadge visibility={(col as any).visibility} isPublic={col.is_public} />
                           </div>
                           {col.description && <p className="text-xs text-muted-foreground line-clamp-1 mb-2">{col.description}</p>}
                           <div className="flex gap-3 text-[10px] text-muted-foreground">
@@ -281,7 +270,6 @@ export default function Saved() {
                   )}
                 </div>
 
-                {/* Followed collections */}
                 {(followedCollections ?? []).length > 0 && (
                   <div>
                     <h2 className="text-sm font-semibold text-foreground mb-3">Collections you follow</h2>
