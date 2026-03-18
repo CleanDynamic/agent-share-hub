@@ -810,7 +810,7 @@ const ContentDetail = () => {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {tab === "content" && "Content"}
+                  {tab === "content" && "Blueprint"}
                   {tab === "changelog" && (
                     <>Changelog{hasLibraryUpdate && <span className="ml-1 text-primary">●</span>}</>
                   )}
