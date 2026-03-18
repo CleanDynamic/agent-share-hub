@@ -127,6 +127,7 @@ export function ContentCard({
   pwyw_floor_gbp = 0,
   collaborators = [],
   has_curator_recommendation = false,
+  microtags: microtagsProp,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
