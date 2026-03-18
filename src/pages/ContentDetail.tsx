@@ -630,7 +630,23 @@ const ContentDetail = () => {
         {/* 7. WHAT TO EXPECT — always visible, never blurred */}
         <WhatToExpectSection item={item} />
 
-        {/* 8. ACTION BOX — inline, full width */}
+        {/* 8. BLUEPRINT — inline, always visible */}
+        {(!isSub || subscriberUnlocked) && (
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-foreground mb-3">Blueprint:</h2>
+            <ContentBlockViewer
+              contentId={item.id}
+              contentTitle={item.title}
+              monetisationType={item.monetisation_type}
+              creatorId={item.creator_id}
+              useInstructions={item.use_instructions}
+              onTriggerPaywall={handleDownload}
+              isEligible={isEligible}
+            />
+          </div>
+        )}
+
+        {/* 9. ACTION BOX — inline, full width */}
         <div className="rounded-xl border border-border bg-card p-3.5 sm:p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             {/* Left: rating */}
