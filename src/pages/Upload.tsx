@@ -455,7 +455,7 @@ const Upload = () => {
                     </FormControl>
                     <SelectContent className="bg-card border-border">
                       {CONTENT_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                        <SelectItem key={t} value={t}>{displayContentType(t)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
