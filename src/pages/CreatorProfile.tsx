@@ -304,7 +304,9 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
       <div className="min-h-[400px]">
         {activeTab === "posts" && (
           contentItems && contentItems.length > 0 ? (
-            <div>{contentItems.map((item: any) => <FeedItem key={item.id} item={item} />)}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+              {contentItems.map((item: any) => <PortfolioCard key={item.id} item={item} />)}
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <FileText className="h-10 w-10 text-muted-foreground mb-4" />

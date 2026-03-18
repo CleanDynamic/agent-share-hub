@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { FeedItem } from "@/components/FeedItem";
+import { PortfolioCard } from "@/components/PortfolioCard";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
