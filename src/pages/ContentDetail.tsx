@@ -422,7 +422,7 @@ const ContentDetail = () => {
       <div className="py-20 px-6 flex flex-col items-center gap-4 text-center">
         <p className="text-sm text-muted-foreground">This blueprint doesn't exist or has been removed.</p>
         <Button variant="outline" size="sm" asChild>
-          <Link to="/browse"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Browse</Link>
+          <Link to="/browse"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Discover</Link>
         </Button>
       </div>
     );
