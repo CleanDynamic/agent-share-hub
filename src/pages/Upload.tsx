@@ -92,6 +92,16 @@ const Upload = () => {
     },
   });
 
+  const watchedContentType = form.watch("content_type");
+  const isAIToolsType = watchedContentType === "AI Tools (LLMs)";
+
+  // Auto-set difficulty for AI Tools (LLMs)
+  useEffect(() => {
+    if (isAIToolsType) {
+      form.setValue("difficulty", "Any");
+    }
+  }, [isAIToolsType, form]);
+
   const monetisationType = form.watch("monetisation_type");
 
   // (file handling now done inside ContentBlockBuilder)
