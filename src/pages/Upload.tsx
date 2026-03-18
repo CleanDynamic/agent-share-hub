@@ -25,6 +25,7 @@ import {
 import { SubmitToolModal } from "@/components/SubmitToolModal";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
 import { LearningPathUploadForm } from "@/components/LearningPathUploadForm";
+import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
 
 const CONTENT_TYPES = [
   "Prompt File", "Prompt Tutorial", "Agent Blueprint", "Workflow Template",
