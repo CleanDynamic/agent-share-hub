@@ -41,7 +41,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     { icon: Upload, label: "Upload", to: "/upload" },
     { icon: FilePenLine, label: "Drafts", to: "/drafts", authOnly: true, badge: draftBadge },
     { icon: Bookmark, label: "Saved", to: "/saved", authOnly: true },
-    { icon: Library, label: "Library", to: "/library", authOnly: true, badge: libraryBadge },
+    
     { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true, badge: msgBadge },
     { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true, badge: notifBadge },
     { icon: User, label: "My Profile", to: "/profile", authOnly: true },
