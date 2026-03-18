@@ -247,6 +247,20 @@ const ContentDetail = () => {
     enabled: !!id,
   });
 
+  // Pending collab invites
+  const { data: pendingInvites } = useQuery({
+    queryKey: ["pending_collab_invites", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collab_invites")
+        .select("invitee_id, profiles!collab_invites_invitee_id_fkey(username, display_name)")
+        .eq("content_id", id!)
+        .eq("status", "pending");
+      return (data as any[]) ?? [];
+    },
+    enabled: !!id,
+  });
+
   const { data: hasActiveSubscription } = useQuery({
     queryKey: ["subscription_check", creator?.id],
     queryFn: async () => {
