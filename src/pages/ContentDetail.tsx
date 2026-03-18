@@ -567,17 +567,13 @@ const ContentDetail = () => {
             </>
           )}
 
-          {revenueSplits && revenueSplits.length > 0 && (
+          {pendingInvites && pendingInvites.length > 0 && (
             <>
-              <span className="flex items-center gap-1">
-                Co-revenue with
-                {revenueSplits.slice(0, 1).map((s: any) => (
-                  <Link key={s.recipient_id} to={`/creator/${s.profiles?.username}`} className="text-primary hover:underline">
-                    @{s.profiles?.username}
-                  </Link>
-                ))}
-                {revenueSplits.length > 1 && <span>(+{revenueSplits.length - 1} more)</span>}
-              </span>
+              {pendingInvites.map((inv: any) => (
+                <span key={inv.invitee_id} className="italic text-muted-foreground/60">
+                  {inv.profiles?.display_name || inv.profiles?.username} (pending)
+                </span>
+              ))}
               <span className="text-muted-foreground/40">·</span>
             </>
           )}
