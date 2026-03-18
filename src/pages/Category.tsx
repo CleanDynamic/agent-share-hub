@@ -21,10 +21,10 @@ interface CategoryDef {
 const CATEGORIES: CategoryDef[] = [
   {
     slug: "prompt-file",
-    name: "Prompt Files",
+    name: "Prompt(s)",
     contentType: "Prompt File",
     description: "Ready-made prompts you can paste directly into any AI tool to get specialist results instantly.",
-    seoTitle: "Prompt Files — Download AI Prompts | NeoScale AI",
+    seoTitle: "Prompts — Download AI Prompts | NeoScale AI",
     seoDescription: "Download ready-made prompts for ChatGPT, Claude, Gemini and any AI. Paste in and your AI becomes a specialist instantly. Free to download.",
   },
   {
