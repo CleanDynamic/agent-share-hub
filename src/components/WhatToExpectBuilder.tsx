@@ -270,7 +270,7 @@ export function WhatToExpectBuilder({ blocks, onChange, maxBlocks = 3, label, he
         </div>
       )}
       {blocks.length >= MAX_BLOCKS && (
-        <p className="text-xs text-muted-foreground">Maximum 3 blocks for What to Expect.</p>
+        <p className="text-xs text-muted-foreground">Maximum {MAX_BLOCKS} blocks for What to Expect.</p>
       )}
     </div>
   );
