@@ -140,6 +140,18 @@ export function ContentCard({
   const isSub = monetisation_type === "subscription";
   const label = getDownloadLabel(content_type, monetisation_type, price_gbp);
 
+  // Fetch microtags if not provided as prop
+  const { data: fetchedTags } = useQuery({
+    queryKey: ["content_microtags_card", id],
+    queryFn: async () => {
+      const { data } = await supabase.from("content_microtags").select("tag").eq("content_id", id);
+      return (data ?? []).map((r: any) => r.tag);
+    },
+    enabled: microtagsProp === undefined,
+    staleTime: 5 * 60 * 1000,
+  });
+  const microtags = microtagsProp ?? fetchedTags ?? [];
+
   async function doDownload() {
     setDownloading(true);
     const result = await triggerDownload(id, file_url ?? null);
