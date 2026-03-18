@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, X } from "lucide-react";
+import { Search, X, Hash } from "lucide-react";
 
 const STORAGE_KEY = "neoscale_recent_searches";
 const MAX_RECENT = 5;
