@@ -57,6 +57,9 @@ export function RightPanel() {
       {/* Position 2.5 — Curator Picks */}
       <CuratorPicksSection navigate={navigate} />
 
+      {/* Position 2.75 — Featured Collections */}
+      <FeaturedCollectionsSection navigate={navigate} />
+
       {/* Position 3 — Category Directory */}
       <CategoryDirectory navigate={navigate} />
 
