@@ -841,28 +841,17 @@ const ContentDetail = () => {
             {/* 13. Tab content */}
             <div className="mt-0">
               {activeTab === "content" && (
-                <>
-                  <div className="py-4">
-                    <ContentBlockViewer
-                      contentId={item.id}
-                      contentTitle={item.title}
-                      monetisationType={item.monetisation_type}
-                      creatorId={item.creator_id}
-                      useInstructions={item.use_instructions}
-                      onTriggerPaywall={handleDownload}
-                      isEligible={isEligible}
-                    />
-                  </div>
-
-                  {item.what_to_expect && (
-                    <div className="mt-4">
-                      <h2 className="text-lg font-semibold text-foreground mb-3">What to Expect</h2>
-                      <div className="border border-border rounded-xl p-5 bg-card">
-                        <p className="text-sm text-muted-foreground leading-relaxed">{item.what_to_expect}</p>
-                      </div>
-                    </div>
-                  )}
-                </>
+                <div className="py-4">
+                  <ContentBlockViewer
+                    contentId={item.id}
+                    contentTitle={item.title}
+                    monetisationType={item.monetisation_type}
+                    creatorId={item.creator_id}
+                    useInstructions={item.use_instructions}
+                    onTriggerPaywall={handleDownload}
+                    isEligible={isEligible}
+                  />
+                </div>
               )}
 
               {activeTab === "changelog" && (
