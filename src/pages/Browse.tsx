@@ -886,9 +886,12 @@ const Browse = () => {
                       )}
                       {useCasesArr.length > 0 && (
                         <div className="flex flex-wrap gap-1">
-                          {useCasesArr.slice(0, 3).map((u) => (
-                            <span key={u} className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">{u}</span>
-                          ))}
+                          {useCasesArr.slice(0, 3).map((u, i) => {
+                            const label = u === "Other" && (item as any).custom_use_case_description ? (item as any).custom_use_case_description : u;
+                            return (
+                              <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">{label}</span>
+                            );
+                          })}
                           {useCasesArr.length > 3 && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">+{useCasesArr.length - 3} more</span>}
                         </div>
                       )}
