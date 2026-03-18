@@ -106,7 +106,7 @@ const ContentDetail = () => {
   const [curatorModalOpen, setCuratorModalOpen] = useState(false);
   const [curatorText, setCuratorText] = useState("");
   const [curatorSubmitting, setCuratorSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"content" | "changelog" | "tips" | "comments">("content");
+  const [activeTab, setActiveTab] = useState<"content" | "changelog" | "tips" | "comments">("changelog");
   const viewTracked = useRef(false);
 
   const { data: item, isLoading, error } = useQuery({
