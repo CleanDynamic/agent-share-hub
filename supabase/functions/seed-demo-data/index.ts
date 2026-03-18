@@ -335,260 +335,357 @@ Deno.serve(async (req) => {
     );
     await supabase.from("content_microtags").insert(microtagInserts);
 
-    // ═══ STEP 5 — VIEWS ═══
-    const viewPairs: [string, string][] = [
-      // c1 (Email Rewriter) gets lots of views
-      ["alex", "c1"], ["priya", "c1"], ["marcus", "c1"], ["sofia", "c1"], ["jamie", "c1"],
-      ["chen", "c1"], ["sam", "c1"], ["power", "c1"], ["lurker", "c1"], ["devtest", "c1"],
-      // c2 (Weekly Report Generator) popular
-      ["priya", "c2"], ["marcus", "c2"], ["sofia", "c2"], ["sam", "c2"], ["power", "c2"],
-      ["lurker", "c2"], ["isabelle", "c2"], ["newjoin", "c2"],
-      // c5 (Connect ChatGPT to Gmail) popular
-      ["alex", "c5"], ["marcus", "c5"], ["sofia", "c5"], ["jamie", "c5"], ["power", "c5"],
-      ["sam", "c5"], ["devtest", "c5"],
-      // spread across others
-      ["sam", "c3"], ["power", "c3"], ["devtest", "c3"], ["priya", "c3"],
-      ["power", "c4"], ["sam", "c4"], ["devtest", "c4"],
-      ["power", "c6"], ["chen", "c6"], ["marcus", "c6"],
-      ["sam", "c7"], ["isabelle", "c7"], ["newjoin", "c7"], ["power", "c7"],
-      ["power", "c8"], ["alex", "c8"], ["sofia", "c8"],
-      ["power", "c9"], ["priya", "c9"],
-      ["power", "c10"], ["alex", "c10"],
-      ["sam", "c11"], ["priya", "c11"], ["isabelle", "c11"], ["newjoin", "c11"],
-      ["sam", "c12"], ["marcus", "c12"], ["isabelle", "c12"],
-      ["sam", "c13"], ["power", "c13"], ["isabelle", "c13"],
-      ["power", "c14"], ["priya", "c14"], ["chen", "c14"],
-      ["sam", "c14"], ["lurker", "c14"], ["newjoin", "c14"],
-      ["power", "c15"], ["sam", "c15"],
-      ["power", "c16"], ["alex", "c16"], ["marcus", "c16"],
-      ["power", "c17"], ["alex", "c17"],
-      ["sam", "c17"], ["newjoin", "c17"],
-      ["power", "c18"], ["priya", "c18"],
-    ];
+    // ═══ STEP 5 — VIEWS (content_views + view_count) ═══
+    const viewData: Record<string, string[]> = {
+      c1: ["power","sam","lurker","newjoin","devtest","priya","marcus","sofia"],
+      c2: ["power","devtest","jamie","sam","alex"],
+      c3: ["power","sam","devtest","sofia","isabelle","chen"],
+      c4: ["power","sam","lurker","newjoin","devtest","marcus","jamie","isabelle","chen"],
+      c5: ["power","sam","newjoin","devtest","isabelle","priya"],
+      c6: ["power","devtest","alex","marcus","priya"],
+      c7: ["power","sam","lurker","newjoin","devtest","alex","marcus","priya","sofia","chen"],
+      c8: ["power","sam","lurker","newjoin","devtest","priya","sofia","jamie","chen"],
+      c9: ["power","devtest","alex","sofia"],
+      c10: ["power","sam","devtest","sofia","isabelle","priya","chen"],
+      c11: ["power","sam","lurker","newjoin","devtest","alex","marcus","jamie","chen"],
+      c12: ["power","devtest","alex","marcus","sofia","priya"],
+      c13: ["power","sam","newjoin","devtest","sofia","isabelle"],
+      c14: ["power","sam","lurker","newjoin","devtest","marcus","sofia","chen"],
+      c15: ["power","devtest","alex","priya","sofia"],
+      c16: ["power","sam","lurker","newjoin","devtest","priya","marcus","jamie"],
+      c17: ["power","sam","lurker","devtest","alex","sofia","chen"],
+      c18: ["power","devtest","sam","marcus","priya","sofia","jamie"],
+    };
 
-    await supabase.from("content_views").insert(
-      viewPairs.map(([u, c]) => ({ user_id: users[u], content_id: contentMap[c] }))
-    );
-
-    // Update view_count from actual rows
-    const viewCounts: Record<string, number> = {};
-    for (const [, c] of viewPairs) {
-      viewCounts[c] = (viewCounts[c] || 0) + 1;
+    const viewInserts: any[] = [];
+    for (const [cKey, viewers] of Object.entries(viewData)) {
+      for (const u of viewers) {
+        viewInserts.push({ user_id: users[u], content_id: contentMap[cKey], viewed_at: daysAgo(Math.floor(Math.random() * 25) + 1) });
+      }
     }
-    await Promise.all(
-      Object.entries(viewCounts).map(([key, count]) =>
-        supabase.from("content_items").update({ view_count: count }).eq("id", contentMap[key])
-      )
-    );
+    await supabase.from("content_views").insert(viewInserts);
 
-    // ═══ STEP 6 — DOWNLOADS ═══
-    const downloadPairs: [string, string][] = [
-      ["priya", "c1"], ["marcus", "c1"], ["sam", "c1"], ["power", "c1"],
-      ["sofia", "c1"], ["chen", "c1"], ["devtest", "c1"],
-      ["sam", "c2"], ["power", "c2"], ["sofia", "c2"], ["lurker", "c2"], ["isabelle", "c2"],
-      ["power", "c3"], ["sam", "c3"], ["devtest", "c3"],
-      ["power", "c4"], ["sam", "c4"],
-      ["alex", "c5"], ["marcus", "c5"], ["power", "c5"], ["sam", "c5"], ["devtest", "c5"],
-      ["power", "c6"], ["chen", "c6"],
-      ["sam", "c7"], ["newjoin", "c7"], ["power", "c7"],
-      ["power", "c8"], ["alex", "c8"],
-      ["power", "c9"],
-      ["power", "c10"],
-      ["sam", "c11"], ["isabelle", "c11"], ["newjoin", "c11"],
-      ["sam", "c12"], ["marcus", "c12"],
-      ["sam", "c13"], ["power", "c13"],
-      ["power", "c14"], ["priya", "c14"],
-      ["sam", "c14"], ["newjoin", "c14"],
-      ["power", "c15"],
-      ["power", "c16"], ["alex", "c16"],
-      ["power", "c17"],
-      ["sam", "c17"], ["newjoin", "c17"],
-      ["power", "c18"],
-    ];
+    // ═══ STEP 6 — DOWNLOADS (downloads + download_count + user_interactions) ═══
+    const dlData: Record<string, string[]> = {
+      c1: ["power","sam","newjoin","devtest","priya"],
+      c2: ["power","devtest"],
+      c3: ["power","sam","devtest","sofia"],
+      c4: ["power","sam","newjoin","devtest","marcus","isabelle"],
+      c5: ["power","sam","devtest","isabelle"],
+      c6: ["power","devtest","alex"],
+      c7: ["power","sam","newjoin","devtest","alex","priya"],
+      c8: ["power","sam","newjoin","lurker","devtest","priya","jamie"],
+      c9: ["power"],
+      c10: ["power","sam","devtest","isabelle","priya"],
+      c11: ["power","sam","newjoin","devtest","alex","jamie"],
+      c12: ["power","devtest","alex","marcus"],
+      c13: ["power","sam","devtest","sofia"],
+      c14: ["power","sam","lurker","newjoin","devtest","marcus","chen"],
+      c15: ["power","devtest"],
+      c16: ["power","sam","lurker","newjoin","devtest","priya","jamie"],
+      c17: ["power","sam","devtest","alex"],
+      c18: ["power","devtest","sam","sofia","jamie"],
+    };
 
-    await supabase.from("downloads").insert(
-      downloadPairs.map(([u, c]) => ({ user_id: users[u], content_id: contentMap[c] }))
-    );
+    const dlInserts: any[] = [];
+    const dlInteractions: any[] = [];
+    const contentTitles: Record<string, string> = {};
+    for (const cd of contentDefs) { contentTitles[cd.key] = cd.title; }
 
-    // Update download_count from actual rows
-    const dlCounts: Record<string, number> = {};
-    for (const [, c] of downloadPairs) {
-      dlCounts[c] = (dlCounts[c] || 0) + 1;
+    for (const [cKey, downloaders] of Object.entries(dlData)) {
+      for (const u of downloaders) {
+        const ts = daysAgo(Math.floor(Math.random() * 20) + 1);
+        dlInserts.push({ user_id: users[u], content_id: contentMap[cKey], downloaded_at: ts });
+        dlInteractions.push({ user_id: users[u], content_id: contentMap[cKey], interaction_type: "downloaded", interaction_meta: { content_title: contentTitles[cKey] }, created_at: ts });
+      }
     }
-    await Promise.all(
-      Object.entries(dlCounts).map(([key, count]) =>
-        supabase.from("content_items").update({ download_count: count }).eq("id", contentMap[key])
-      )
-    );
+    await supabase.from("downloads").insert(dlInserts);
+    await supabase.from("user_interactions").insert(dlInteractions);
 
-    // ═══ STEP 7 — RATINGS ═══
-    const ratings: [string, string, number][] = [
-      ["priya", "c1", 5], ["marcus", "c1", 4], ["sam", "c1", 5], ["power", "c1", 4], ["chen", "c1", 5],
-      ["sam", "c2", 4], ["power", "c2", 5], ["sofia", "c2", 4],
-      ["power", "c3", 4], ["sam", "c3", 3],
-      ["power", "c5", 5], ["marcus", "c5", 4], ["sam", "c5", 4],
-      ["power", "c6", 5], ["chen", "c6", 4],
-      ["sam", "c7", 5], ["newjoin", "c7", 4],
-      ["power", "c8", 5], ["alex", "c8", 4],
-      ["power", "c9", 4],
-      ["sam", "c11", 4], ["isabelle", "c11", 5],
-      ["sam", "c12", 4],
-      ["power", "c14", 5],
-      ["sam", "c14", 5], ["newjoin", "c14", 4],
-      ["power", "c16", 5], ["alex", "c16", 5],
-      ["sam", "c17", 4],
+    // ═══ STEP 7 — RATINGS (content_ratings + user_interactions) ═══
+    const ratingData: [string, string, number][] = [
+      ["power","c1",5],["sam","c1",4],["devtest","c1",5],["priya","c1",4],
+      ["power","c2",4],["devtest","c2",5],
+      ["power","c3",5],["sam","c3",4],["devtest","c3",4],["sofia","c3",5],
+      ["power","c4",5],["sam","c4",5],["newjoin","c4",4],["devtest","c4",5],["marcus","c4",4],["isabelle","c4",5],
+      ["power","c5",4],["sam","c5",5],["devtest","c5",4],["isabelle","c5",5],
+      ["power","c6",4],["devtest","c6",5],["alex","c6",5],
+      ["power","c7",5],["sam","c7",5],["newjoin","c7",4],["devtest","c7",5],["alex","c7",4],["priya","c7",5],
+      ["power","c8",5],["sam","c8",5],["newjoin","c8",5],["lurker","c8",4],["devtest","c8",5],["priya","c8",4],["jamie","c8",5],
+      ["power","c9",5],
+      ["power","c10",4],["sam","c10",4],["devtest","c10",5],["isabelle","c10",5],["priya","c10",4],
+      ["power","c11",5],["sam","c11",5],["newjoin","c11",4],["devtest","c11",5],["alex","c11",5],["jamie","c11",4],
+      ["power","c12",4],["devtest","c12",5],["alex","c12",5],["marcus","c12",4],
+      ["power","c13",4],["sam","c13",5],["devtest","c13",4],["sofia","c13",5],
+      ["power","c14",5],["sam","c14",5],["lurker","c14",5],["newjoin","c14",4],["devtest","c14",5],["marcus","c14",4],["chen","c14",5],
+      ["power","c15",4],["devtest","c15",5],
+      ["power","c16",5],["sam","c16",5],["lurker","c16",4],["newjoin","c16",5],["devtest","c16",5],["priya","c16",4],["jamie","c16",5],
+      ["power","c17",5],["sam","c17",5],["devtest","c17",5],["alex","c17",5],
+      ["power","c18",4],["devtest","c18",5],["sam","c18",4],["sofia","c18",5],["jamie","c18",4],
     ];
 
-    await supabase.from("content_ratings").insert(
-      ratings.map(([u, c, r]) => ({ user_id: users[u], content_id: contentMap[c], rating: r }))
-    );
-
-    // Update avg_rating and rating_count from actual rows
-    const ratingAgg: Record<string, { sum: number; count: number }> = {};
-    for (const [, c, r] of ratings) {
-      if (!ratingAgg[c]) ratingAgg[c] = { sum: 0, count: 0 };
-      ratingAgg[c].sum += r;
-      ratingAgg[c].count += 1;
+    const ratingInserts: any[] = [];
+    const ratingInteractions: any[] = [];
+    for (const [u, c, r] of ratingData) {
+      const ts = daysAgo(Math.floor(Math.random() * 20) + 1);
+      ratingInserts.push({ user_id: users[u], content_id: contentMap[c], rating: r, created_at: ts, updated_at: ts });
+      ratingInteractions.push({ user_id: users[u], content_id: contentMap[c], interaction_type: "rated", interaction_meta: { rating: r, content_title: contentTitles[c] }, created_at: ts });
     }
-    await Promise.all(
-      Object.entries(ratingAgg).map(([key, { sum, count }]) =>
-        supabase.from("content_items").update({
-          avg_rating: Math.round((sum / count) * 100) / 100,
-          rating_count: count,
-          star_rating: Math.round((sum / count) * 100) / 100,
-        }).eq("id", contentMap[key])
-      )
-    );
+    await supabase.from("content_ratings").insert(ratingInserts);
+    await supabase.from("user_interactions").insert(ratingInteractions);
 
-    // ═══ STEP 8 — COMMENTS ═══
-    const comments: [string, string, string][] = [
-      ["sam", "c1", "Used this for my freelance outreach emails. Got 3 replies in the first week."],
-      ["power", "c1", "Works well but you need to tweak the tone for B2B vs B2C."],
-      ["priya", "c1", "Solid prompt. I integrated it into my Zapier workflow."],
-      ["power", "c2", "The weekly report format is clean. Saves me 30 minutes every Monday."],
-      ["sam", "c2", "Simple and effective. Saved me an hour every week."],
-      ["power", "c5", "This is exactly what I needed. Set it up in 20 minutes."],
-      ["sam", "c7", "This happened to me too! The over-apologising thing is so real."],
-      ["newjoin", "c7", "This was my first download on the platform. Very helpful."],
-      ["power", "c8", "Honest comparison. Most guides just pick a favourite."],
-      ["alex", "c8", "Great overview. Would love to see Gemini 2.0 added."],
-      ["sam", "c11", "The voice sample trick is genius. My blog posts sound like me again."],
-      ["marcus", "c12", "I use this every time I build a new prompt. Essential tool."],
-      ["sam", "c14", "This is the guide I needed when I started. Bookmarked."],
-      ["newjoin", "c14", "Thank you for writing this without jargon."],
+    // ═══ STEP 8 — COMMENTS (content_comments + user_interactions) ═══
+    const commentData: { u: string; c: string; text: string; daysAgo: number }[] = [
+      // Post 1
+      { u:"sam", c:"c1", text:"Been using this every day for two weeks. The one thing I changed is adding 'keep it under 100 words' at the end. Game changer.", daysAgo:20 },
+      { u:"power", c:"c1", text:"Works perfectly in Claude too, not just ChatGPT. The prompt is clean enough to transfer across models without any changes.", daysAgo:18 },
+      { u:"priya", c:"c1", text:"Great starting point. I added a line asking it to flag if any information seems missing and now it prompts me when my draft is vague.", daysAgo:12 },
+      // Post 3
+      { u:"sofia", c:"c3", text:"Used this for client research yesterday. The part where it flags contested claims is genuinely useful — saved me from publishing something inaccurate.", daysAgo:10 },
+      { u:"devtest", c:"c3", text:"Testing comment functionality. The prompt works as described.", daysAgo:8 },
+      // Post 4
+      { u:"sam", c:"c4", text:"This is literally the only AI tutorial that made sense to me. I have read about ten others and they all assume I know things I do not know.", daysAgo:15 },
+      { u:"isabelle", c:"c4", text:"Sending this to every small business owner I know. The before/after comparison at the end is worth the whole article.", daysAgo:14 },
+      { u:"newjoin", c:"c4", text:"Just tried the four elements method on my first ever prompt. The output was completely different. Thank you.", daysAgo:6 },
+      { u:"power", c:"c4", text:"Solid fundamentals. For anyone who has been using AI for a while this is revision not revelation but the examples are the best I have seen.", daysAgo:5 },
+      // Post 7
+      { u:"alex", c:"c7", text:"This exact failure happened to me too. The word 'empathetic' is a trap in any customer service prompt — I should write a follow-up post about the other words to avoid.", daysAgo:4 },
+      { u:"power", c:"c7", text:"Five star post. Short, specific, immediately actionable. This is what the Failure Library should be.", daysAgo:3 },
+      { u:"sam", c:"c7", text:"I run a small online shop and this is exactly the problem I had. Did not know how to explain it until now.", daysAgo:2 },
+      // Post 8
+      { u:"newjoin", c:"c8", text:"This is genuinely the clearest explanation of the difference I have found. Bookmarking this permanently.", daysAgo:7 },
+      { u:"lurker", c:"c8", text:"Good.", daysAgo:5 },
+      { u:"priya", c:"c8", text:"The Google Workspace point for Gemini is underrated. For anyone living in Google Docs and Gmail, Gemini is the obvious choice and nobody talks about it.", daysAgo:4 },
+      // Post 11
+      { u:"alex", c:"c11", text:"The fix you found — writing the first paragraph yourself and handing the rest to AI — is exactly right. Voice is the one thing AI cannot reproduce from a description. You have to show it.", daysAgo:2 },
+      { u:"marcus", c:"c11", text:"I ran into the same problem. The continuation issue (AI building on its own outputs rather than yours) is genuinely underreported. Good catch.", daysAgo:1 },
+      // Post 14
+      { u:"sam", c:"c14", text:"The three role prompts at the end are worth this entire post. Copied them immediately.", daysAgo:12 },
+      { u:"chen", c:"c14", text:"Tested all three role examples across ChatGPT, Claude, and Gemini. Performance improvement was consistent across all three. This technique is model-agnostic which is exactly what it needs to be for this platform.", daysAgo:10 },
+      { u:"power", c:"c14", text:"Isabelle consistently writes the most accessible content on here. This is the kind of thing that actually converts someone from occasional AI user to daily AI user.", daysAgo:8 },
+      { u:"marcus", c:"c14", text:"I would add one more: for brainstorming try 'You are a creative director with 15 years experience and no filter — share every idea including the ones that seem ridiculous.' The uninhibited role unlocks ideas the assistant-framing suppresses.", daysAgo:3 },
+      // Post 17
+      { u:"sofia", c:"c17", text:"I needed to read this today. I have been slowly handing more of my newsletter to AI and I noticed my open rate dropping. This explains exactly why.", daysAgo:0.83 },
+      { u:"devtest", c:"c17", text:"Testing comment on new post.", daysAgo:0.75 },
     ];
 
-    const commentInserts = comments.map(([u, c, text]) => ({
-      user_id: users[u], content_id: contentMap[c], text,
+    const commentInserts = commentData.map((cd) => ({
+      user_id: users[cd.u], content_id: contentMap[cd.c], text: cd.text, created_at: daysAgo(cd.daysAgo),
     }));
-    await supabase.from("content_comments").insert(commentInserts);
+    const { data: insertedComments } = await supabase.from("content_comments").insert(commentInserts).select("id, user_id, content_id, text");
 
-    // comment_count is updated by trigger, but let's set it from actual rows
-    const commentCounts: Record<string, number> = {};
-    for (const [, c] of comments) {
-      commentCounts[c] = (commentCounts[c] || 0) + 1;
+    // user_interactions for comments
+    const commentInteractions = commentData.map((cd) => ({
+      user_id: users[cd.u], content_id: contentMap[cd.c], interaction_type: "commented", interaction_meta: { content_title: contentTitles[cd.c] }, created_at: daysAgo(cd.daysAgo),
+    }));
+    await supabase.from("user_interactions").insert(commentInteractions);
+
+    // ═══ STEP 9 — COMMENT LIKES (comment_likes + like_count) ═══
+    // Build a lookup: find comment by user+content combo
+    const commentLookup: Record<string, string> = {};
+    if (insertedComments) {
+      for (const ic of insertedComments) {
+        // Map by matching user_id and content_id and text prefix
+        const matchIdx = commentData.findIndex((cd) =>
+          users[cd.u] === ic.user_id && contentMap[cd.c] === ic.content_id && ic.text === cd.text
+        );
+        if (matchIdx >= 0) {
+          commentLookup[`${commentData[matchIdx].u}_${commentData[matchIdx].c}`] = ic.id;
+        }
+      }
     }
-    await Promise.all(
-      Object.entries(commentCounts).map(([key, count]) =>
-        supabase.from("content_items").update({ comment_count: count }).eq("id", contentMap[key])
-      )
-    );
 
-    // ═══ STEP 9 — VERIFICATIONS ═══
-    const verifications: [string, string, string][] = [
-      ["priya", "c1", "ChatGPT"], ["marcus", "c1", "ChatGPT"], ["sam", "c1", "ChatGPT"],
-      ["power", "c1", "ChatGPT"], ["chen", "c1", "ChatGPT"],
-      ["sam", "c2", "ChatGPT"], ["power", "c2", "Zapier"], ["sofia", "c2", "ChatGPT"],
-      ["power", "c5", "Zapier"], ["marcus", "c5", "Zapier"],
-      ["power", "c8", "ChatGPT"], ["alex", "c8", "Claude"],
-      ["sam", "c11", "ChatGPT"], ["isabelle", "c11", "ChatGPT"],
-      ["sam", "c14", "ChatGPT"], ["newjoin", "c14", "ChatGPT"],
+    const commentLikesDef: { commentKey: string; likers: string[] }[] = [
+      { commentKey: "sam_c1", likers: ["power","devtest","priya"] },
+      { commentKey: "power_c1", likers: ["sam","devtest"] },
+      { commentKey: "sofia_c3", likers: ["power","devtest","marcus"] },
+      { commentKey: "sam_c4", likers: ["power","newjoin","isabelle","marcus","sofia","devtest"] },
+      { commentKey: "isabelle_c4", likers: ["sam","power","newjoin","devtest","marcus"] },
+      { commentKey: "power_c7", likers: ["sam","alex","devtest","priya","sofia"] },
+      { commentKey: "alex_c7", likers: ["power","sam","priya","marcus","devtest"] },
+      { commentKey: "priya_c8", likers: ["power","sam","newjoin","devtest","jamie"] },
+      { commentKey: "newjoin_c8", likers: ["power","sam","devtest"] },
+      { commentKey: "alex_c11", likers: ["power","sam","marcus","devtest","priya","sofia"] },
+      { commentKey: "sam_c14", likers: ["power","newjoin","devtest","isabelle","sofia"] },
+      { commentKey: "chen_c14", likers: ["power","devtest","alex","marcus","priya"] },
+      { commentKey: "power_c14", likers: ["sam","newjoin","devtest","marcus"] },
+      { commentKey: "marcus_c14", likers: ["power","devtest","alex","chen","sofia"] },
+      { commentKey: "sofia_c17", likers: ["power","sam","devtest","alex","marcus"] },
+    ];
+
+    const clInserts: any[] = [];
+    const clCounts: Record<string, number> = {};
+    for (const def of commentLikesDef) {
+      const commentId = commentLookup[def.commentKey];
+      if (!commentId) continue;
+      clCounts[commentId] = def.likers.length;
+      for (const liker of def.likers) {
+        clInserts.push({ comment_id: commentId, user_id: users[liker] });
+      }
+    }
+    if (clInserts.length > 0) {
+      await supabase.from("comment_likes").insert(clInserts);
+      // Update like_count on comments
+      await Promise.all(
+        Object.entries(clCounts).map(([cid, count]) =>
+          supabase.from("content_comments").update({ like_count: count }).eq("id", cid)
+        )
+      );
+    }
+
+    // ═══ STEP 10 — TIPS (content_tips + tip_upvotes) ═══
+    const tipsDef: { u: string; c: string; tool: string | null; text: string; upvoters: string[] }[] = [
+      { u:"devtest", c:"c1", tool:"Claude", text:"In Claude, if you add 'Preserve any specific facts or numbers from the original' it stops the rewrite from accidentally dropping key information like prices or dates.", upvoters:["power","sam","priya","marcus"] },
+      { u:"power", c:"c4", tool:null, text:"The Format element is the most underrated of the four. Specifying 'three bullet points' vs 'a numbered list' vs 'a paragraph' produces completely different outputs even with the same content instruction.", upvoters:["sam","newjoin","devtest","isabelle","marcus","sofia"] },
+      { u:"alex", c:"c7", tool:"ChatGPT", text:"In ChatGPT I also added: 'Before responding, classify the message as: question / complaint / compliment / other. Then respond appropriately for that type.' This completely eliminated the wrong-tone responses.", upvoters:["power","sam","priya","devtest","isabelle","marcus"] },
+      { u:"chen", c:"c8", tool:null, text:"One more practical difference: Claude is significantly better at maintaining a persona or character consistently across a long conversation. ChatGPT drifts more. If you are building a custom assistant that needs to stay in character — use Claude.", upvoters:["power","devtest","alex","marcus","priya","sofia","jamie"] },
+      { u:"marcus", c:"c14", tool:null, text:"Stacking roles makes this even more powerful: 'You are a copywriter who specialises in local food businesses AND who writes in a casual weekend-newspaper style.' Specificity compounds.", upvoters:["power","sam","devtest","isabelle","sofia","newjoin"] },
+    ];
+
+    for (const tip of tipsDef) {
+      const { data: insertedTip } = await supabase.from("content_tips").insert({
+        user_id: users[tip.u], content_id: contentMap[tip.c], text: tip.text,
+        ai_tool_context: tip.tool, upvote_count: tip.upvoters.length,
+      }).select("id").single();
+
+      if (insertedTip) {
+        await supabase.from("tip_upvotes").insert(
+          tip.upvoters.map((v) => ({ tip_id: insertedTip.id, user_id: users[v] }))
+        );
+      }
+    }
+
+    // ═══ STEP 11 — VERIFICATIONS (content_verifications) ═══
+    const verificationData: [string, string, string][] = [
+      // Post 4 — 6 verifications → is_verified = true
+      ["power","c4","ChatGPT"],["sam","c4","ChatGPT"],["devtest","c4","Claude"],["isabelle","c4","ChatGPT"],["marcus","c4","Gemini"],["sofia","c4","ChatGPT"],
+      // Post 8 — 6 verifications → is_verified = true
+      ["power","c8","ChatGPT"],["sam","c8","ChatGPT"],["lurker","c8","ChatGPT"],["newjoin","c8","ChatGPT"],["devtest","c8","Claude"],["priya","c8","Zapier"],
+      // Post 14 — 7 verifications → is_verified = true
+      ["power","c14","ChatGPT"],["sam","c14","ChatGPT"],["devtest","c14","Claude"],["lurker","c14","ChatGPT"],["marcus","c14","Gemini"],["chen","c14","Claude"],["newjoin","c14","ChatGPT"],
+      // Post 1 — 4 verifications → is_verified = false
+      ["power","c1","ChatGPT"],["sam","c1","ChatGPT"],["priya","c1","ChatGPT"],["devtest","c1","Claude"],
+      // Post 7 — 5 verifications → is_verified = true
+      ["power","c7","ChatGPT"],["sam","c7","ChatGPT"],["alex","c7","Claude"],["priya","c7","ChatGPT"],["devtest","c7","Claude"],
     ];
 
     await supabase.from("content_verifications").insert(
-      verifications.map(([u, c, tool]) => ({
+      verificationData.map(([u, c, tool]) => ({
         user_id: users[u], content_id: contentMap[c], ai_tool_used: tool,
       }))
     );
 
-    // Update verification counts
-    const verifCounts: Record<string, number> = {};
-    for (const [, c] of verifications) {
-      verifCounts[c] = (verifCounts[c] || 0) + 1;
+    // ═══ STEP 12 — LIBRARY SAVES (user_library) ═══
+    const libraryData: Record<string, string[]> = {
+      power: ["c1","c2","c3","c4","c5","c6","c7","c8","c9","c10","c11","c12","c13","c14","c15","c16","c17","c18"],
+      sam: ["c1","c4","c5","c7","c8","c10","c13","c14","c16","c17"],
+      devtest: ["c1","c3","c4","c7","c8","c14","c16"],
+      lurker: ["c8","c14","c16"],
+      newjoin: ["c4","c8","c14"],
+      priya: ["c1","c6","c12","c15"],
+      marcus: ["c4","c6","c12","c18"],
+      sofia: ["c4","c7","c11","c13","c14"],
+      chen: ["c4","c6","c12","c18"],
+      jamie: ["c2","c5","c8","c16","c18"],
+      alex: ["c6","c7","c11","c12","c17"],
+      isabelle: ["c4","c6","c10","c14"],
+    };
+
+    const libInserts: any[] = [];
+    for (const [u, cKeys] of Object.entries(libraryData)) {
+      for (const c of cKeys) {
+        const ver = contentDefs.find((cd) => cd.key === c)?.current_version || "1.0";
+        libInserts.push({ user_id: users[u], content_id: contentMap[c], last_seen_version: ver, has_update: false });
+      }
     }
-    await Promise.all(
-      Object.entries(verifCounts).map(([key, count]) =>
-        supabase.from("content_items").update({
-          verification_count: count,
-          is_verified: count >= 5,
-        }).eq("id", contentMap[key])
-      )
+    await supabase.from("user_library").insert(libInserts);
+
+    // ═══ STEP 13 — BOOKMARKS (user_saves) ═══
+    const bookmarkData: [string, string][] = [
+      ["sam","c7"],["sam","c14"],
+      ["power","c4"],["power","c7"],["power","c17"],
+      ["newjoin","c4"],["newjoin","c8"],
+      ["devtest","c1"],["devtest","c4"],
+    ];
+    await supabase.from("user_saves").insert(
+      bookmarkData.map(([u, c]) => ({ user_id: users[u], content_id: contentMap[c] }))
     );
 
-    // ═══ STEP 10 — COLLECTIONS ═══
+    // user_interactions for bookmarks
+    await supabase.from("user_interactions").insert(
+      bookmarkData.map(([u, c]) => ({
+        user_id: users[u], content_id: contentMap[c], interaction_type: "bookmark",
+        interaction_meta: { content_title: contentTitles[c] },
+      }))
+    );
+
+    // ═══ STEP 14 — CURATOR RECOMMENDATIONS ═══
+    const { data: alexCurator } = await supabase.from("curators").select("id").eq("user_id", users.alex).single();
+    const { data: chenCurator } = await supabase.from("curators").select("id").eq("user_id", users.chen).single();
+
+    if (alexCurator && chenCurator) {
+      await supabase.from("curator_recommendations").insert([
+        { curator_id: alexCurator.id, content_id: contentMap.c4, recommendation_text: "The clearest beginner prompt tutorial I have read. Sofia explains the four-element method better than any paid course I have seen. This should be the first thing anyone reads on this platform.", is_active: true },
+        { curator_id: alexCurator.id, content_id: contentMap.c14, recommendation_text: "Isabelle writes for the people who actually need this platform. If you run a business and think AI is not for you, read this post first. The role prompting technique alone is worth the 5 minutes.", is_active: true },
+        { curator_id: chenCurator.id, content_id: contentMap.c7, recommendation_text: "The best Failure Library post currently on NeoScale AI. Specific failure, specific fix, immediately applicable to anyone building customer-facing AI. This is the standard all Failure posts should aim for.", is_active: true },
+        { curator_id: chenCurator.id, content_id: contentMap.c18, recommendation_text: "Marcus runs the comparison I have been meaning to write for months. The decision framework in the final section is exactly right. Bookmarked this permanently.", is_active: true },
+      ]);
+
+      // Trigger sets has_curator_recommendation but let's ensure it
+      await Promise.all(
+        [contentMap.c4, contentMap.c14, contentMap.c7, contentMap.c18].map((id) =>
+          supabase.from("content_items").update({ has_curator_recommendation: true }).eq("id", id)
+        )
+      );
+    }
+
+    // ═══ STEP 15 — COLLECTIONS ═══
     const collectionDefs = [
-      { owner: "alex", title: "Best Prompts for Beginners", description: "My curated starter pack for anyone new to prompt engineering.", visibility: "public", items: ["c1", "c10", "c13", "c16", "c4"] },
-      { owner: "priya", title: "Automation Essentials", description: "Everything you need to start automating with AI.", visibility: "public", items: ["c2", "c5", "c9", "c15"] },
-      { owner: "power", title: "My Favourites", description: "The content I keep coming back to.", visibility: "public", items: ["c1", "c5", "c8", "c12", "c14"] },
-      { owner: "sofia", title: "Content Creator Toolkit", description: "AI tools and prompts for content creators.", visibility: "public", items: ["c4", "c9", "c11", "c13"] },
-      { owner: "chen", title: "Research & Testing", description: "Resources for serious AI testing.", visibility: "unlisted", items: ["c6", "c12", "c15", "c18"] },
+      { owner: "power", title: "The Complete Beginner Starter Pack", description: "Everything I wish I had when I first started using AI. All free, all tested.", visibility: "public", slug: "beginner-starter-pack-power", items: ["c8","c4","c14","c1","c16","c10"] },
+      { owner: "sofia", title: "My Content Creation Stack", description: "The posts I actually use for my newsletter and social media workflow.", visibility: "public", slug: "content-creation-stack-sofia", items: ["c4","c11","c13","c17"] },
+      { owner: "devtest", title: "Test Collection", description: "Testing the collections feature.", visibility: "private", slug: "test-collection-devtest", items: ["c1","c4"] },
     ];
 
+    const collectionIds: Record<string, string> = {};
     for (const col of collectionDefs) {
-      const slug = col.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
       const { data: inserted } = await supabase.from("collections").insert({
-        owner_id: users[col.owner],
-        title: col.title,
-        description: col.description,
-        visibility: col.visibility,
-        is_public: col.visibility === "public",
-        slug,
-        item_count: col.items.length,
+        owner_id: users[col.owner], title: col.title, description: col.description,
+        visibility: col.visibility, is_public: col.visibility === "public",
+        slug: col.slug, item_count: col.items.length,
       }).select("id").single();
 
       if (inserted) {
+        collectionIds[col.title] = inserted.id;
         await supabase.from("collection_items").insert(
           col.items.map((cKey, idx) => ({
-            collection_id: inserted.id,
-            content_id: contentMap[cKey],
-            added_by: users[col.owner],
-            position: idx,
+            collection_id: inserted.id, content_id: contentMap[cKey],
+            added_by: users[col.owner], position: idx,
           }))
         );
       }
     }
 
-    // ═══ STEP 11 — COLLECTION FOLLOWS ═══
-    const { data: allCollections } = await supabase.from("collections").select("id, title, owner_id");
-    const colByTitle = (t: string) => allCollections?.find((c: any) => c.title === t)?.id;
-
-    const colFollows: [string, string][] = [
-      ["sam", "Best Prompts for Beginners"],
-      ["power", "Best Prompts for Beginners"],
-      ["newjoin", "Best Prompts for Beginners"],
-      ["lurker", "Best Prompts for Beginners"],
-      ["power", "Automation Essentials"],
-      ["jamie", "Automation Essentials"],
-      ["sam", "Automation Essentials"],
-      ["alex", "Content Creator Toolkit"],
-      ["sam", "Content Creator Toolkit"],
-      ["power", "My Favourites"],
+    // Collection follows
+    const colFollowsDef: [string, string][] = [
+      ["sam","The Complete Beginner Starter Pack"],
+      ["newjoin","The Complete Beginner Starter Pack"],
+      ["lurker","The Complete Beginner Starter Pack"],
+      ["power","My Content Creation Stack"],
+      ["devtest","My Content Creation Stack"],
+      ["marcus","My Content Creation Stack"],
     ];
 
-    const colFollowInserts = colFollows
-      .filter(([, title]) => colByTitle(title))
-      .map(([u, title]) => ({
-        follower_id: users[u],
-        collection_id: colByTitle(title)!,
-      }));
+    const colFollowInserts = colFollowsDef
+      .filter(([, title]) => collectionIds[title])
+      .map(([u, title]) => ({ follower_id: users[u], collection_id: collectionIds[title] }));
     if (colFollowInserts.length > 0) {
       await supabase.from("collection_follows").insert(colFollowInserts);
     }
 
     // Update follower_count on collections
     const colFollowCounts: Record<string, number> = {};
-    for (const [, title] of colFollows) {
-      const cid = colByTitle(title);
+    for (const [, title] of colFollowsDef) {
+      const cid = collectionIds[title];
       if (cid) colFollowCounts[cid] = (colFollowCounts[cid] || 0) + 1;
     }
     await Promise.all(
@@ -597,77 +694,110 @@ Deno.serve(async (req) => {
       )
     );
 
-    // ═══ STEP 12 — CURATOR RECOMMENDATIONS ═══
-    const { data: alexCurator } = await supabase.from("curators").select("id").eq("user_id", users.alex).single();
-    const { data: chenCurator } = await supabase.from("curators").select("id").eq("user_id", users.chen).single();
+    // ═══ STEP 16 — CHANGELOG ENTRIES ═══
+    await supabase.from("content_changelogs").insert([
+      { content_id: contentMap.c1, created_by: users.alex, version_label: "v1.2", change_note: "Added instruction to preserve specific numbers and dates after user tip in comments. Thanks @devtest.", created_at: daysAgo(15) },
+      { content_id: contentMap.c4, created_by: users.sofia, version_label: "v1.1", change_note: "Added a third worked example in the Format section after feedback that one example was not enough.", created_at: daysAgo(10) },
+      { content_id: contentMap.c12, created_by: users.chen, version_label: "v2.1", change_note: "Updated scoring dimensions after testing 200+ outputs. Added Completeness as a fifth dimension — it was the most common gap in earlier versions.", created_at: daysAgo(5) },
+    ]);
 
-    if (alexCurator && chenCurator) {
-      await supabase.from("curator_recommendations").insert([
-        { curator_id: alexCurator.id, content_id: contentMap.c5, recommendation_text: "Jamie's Gmail integration guide is the real deal. I've recommended it to three clients already." },
-        { curator_id: alexCurator.id, content_id: contentMap.c14, recommendation_text: "If you're not technical, start here. Isabelle writes like a normal human being." },
-        { curator_id: chenCurator.id, content_id: contentMap.c18, recommendation_text: "Marcus did the Claude vs ChatGPT comparison I was too lazy to write. Thorough and fair." },
-        { curator_id: chenCurator.id, content_id: contentMap.c1, recommendation_text: "Battle-tested email rewriter prompt. I verified it across ChatGPT and Claude — works on both." },
-      ]);
+    // ═══ STEP 17 — NOTIFICATIONS ═══
+    const notifInserts = [
+      // For alex
+      { recipient_id: users.alex, notification_type: "new_follower", actor_id: users.sam, created_at: daysAgo(25), is_read: false },
+      { recipient_id: users.alex, notification_type: "new_follower", actor_id: users.power, created_at: daysAgo(22), is_read: false },
+      { recipient_id: users.alex, notification_type: "new_download", actor_id: users.power, content_id: contentMap.c1, created_at: daysAgo(20), is_read: false },
+      { recipient_id: users.alex, notification_type: "new_download", actor_id: users.sam, content_id: contentMap.c1, created_at: daysAgo(19), is_read: false },
+      { recipient_id: users.alex, notification_type: "new_rating", actor_id: users.power, content_id: contentMap.c1, metadata: { rating: 5 }, created_at: daysAgo(20), is_read: false },
+      { recipient_id: users.alex, notification_type: "curator_approved", created_at: daysAgo(30), is_read: false },
+      // For sofia
+      { recipient_id: users.sofia, notification_type: "new_follower", actor_id: users.power, created_at: daysAgo(25), is_read: false },
+      { recipient_id: users.sofia, notification_type: "new_comment", actor_id: users.sam, content_id: contentMap.c4, created_at: daysAgo(15), is_read: false },
+      { recipient_id: users.sofia, notification_type: "new_comment", actor_id: users.isabelle, content_id: contentMap.c4, created_at: daysAgo(14), is_read: false },
+      { recipient_id: users.sofia, notification_type: "new_rating", actor_id: users.power, content_id: contentMap.c4, metadata: { rating: 5 }, created_at: daysAgo(20), is_read: false },
+      { recipient_id: users.sofia, notification_type: "content_approved", content_id: contentMap.c4, created_at: daysAgo(21), is_read: false },
+      // For isabelle
+      { recipient_id: users.isabelle, notification_type: "new_comment", actor_id: users.sam, content_id: contentMap.c14, created_at: daysAgo(12), is_read: false },
+      { recipient_id: users.isabelle, notification_type: "new_comment", actor_id: users.chen, content_id: contentMap.c14, created_at: daysAgo(10), is_read: false },
+      { recipient_id: users.isabelle, notification_type: "new_follower", actor_id: users.sam, created_at: daysAgo(20), is_read: false },
+      { recipient_id: users.isabelle, notification_type: "new_follower", actor_id: users.power, created_at: daysAgo(22), is_read: false },
+      { recipient_id: users.isabelle, notification_type: "new_follower", actor_id: users.newjoin, created_at: daysAgo(15), is_read: false },
+      // For chen
+      { recipient_id: users.chen, notification_type: "curator_approved", created_at: daysAgo(28), is_read: false },
+      { recipient_id: users.chen, notification_type: "new_comment", actor_id: users.priya, content_id: contentMap.c8, created_at: daysAgo(4), is_read: false },
+      { recipient_id: users.chen, notification_type: "new_follower", actor_id: users.power, created_at: daysAgo(22), is_read: false },
+    ];
+    await supabase.from("notifications").insert(notifInserts);
 
-      // Update has_curator_recommendation
-      await Promise.all(
-        [contentMap.c5, contentMap.c14, contentMap.c18, contentMap.c1].map((id) =>
-          supabase.from("content_items").update({ has_curator_recommendation: true }).eq("id", id)
-        )
-      );
+    // ═══ STEP 18 — FINAL RECALCULATION ═══
+    // Recalculate all profile follower/following counts
+    const allUserKeys = Object.keys(users);
+    await Promise.all(allUserKeys.map(async (key) => {
+      const uid = users[key];
+      const { count: fwerCount } = await supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", uid);
+      const { count: fwingCount } = await supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", uid);
+      await supabase.from("profiles").update({ follower_count: fwerCount || 0, following_count: fwingCount || 0 }).eq("id", uid);
+    }));
+
+    // Recalculate all content item counts
+    const allContentKeys = contentDefs.map((c) => c.key);
+    await Promise.all(allContentKeys.map(async (key) => {
+      const cid = contentMap[key];
+      const { count: dlCount } = await supabase.from("downloads").select("*", { count: "exact", head: true }).eq("content_id", cid);
+      const { count: vwCount } = await supabase.from("content_views").select("*", { count: "exact", head: true }).eq("content_id", cid);
+      const { count: cmCount } = await supabase.from("content_comments").select("*", { count: "exact", head: true }).eq("content_id", cid).eq("is_deleted", false);
+      const { count: rtCount } = await supabase.from("content_ratings").select("*", { count: "exact", head: true }).eq("content_id", cid);
+      const { data: avgData } = await supabase.from("content_ratings").select("rating").eq("content_id", cid);
+      const avg = avgData && avgData.length > 0 ? avgData.reduce((s: number, r: any) => s + r.rating, 0) / avgData.length : 0;
+      const { count: vrCount } = await supabase.from("content_verifications").select("*", { count: "exact", head: true }).eq("content_id", cid);
+      await supabase.from("content_items").update({
+        download_count: dlCount || 0,
+        view_count: vwCount || 0,
+        comment_count: cmCount || 0,
+        rating_count: rtCount || 0,
+        avg_rating: Math.round(avg * 100) / 100,
+        star_rating: Math.round(avg * 100) / 100,
+        verification_count: vrCount || 0,
+        is_verified: (vrCount || 0) >= 5,
+      }).eq("id", cid);
+    }));
+
+    // Recalculate collection counts
+    for (const [, colId] of Object.entries(collectionIds)) {
+      const { count: icCount } = await supabase.from("collection_items").select("*", { count: "exact", head: true }).eq("collection_id", colId);
+      const { count: fcCount } = await supabase.from("collection_follows").select("*", { count: "exact", head: true }).eq("collection_id", colId);
+      await supabase.from("collections").update({ item_count: icCount || 0, follower_count: fcCount || 0 }).eq("id", colId);
     }
 
-    // ═══ STEP 13 — USER INTERACTIONS (FYP data) ═══
-    const interactions: [string, string, string][] = [
-      ["sam", "c1", "download"], ["sam", "c4", "download"], ["sam", "c7", "download"],
-      ["sam", "c11", "download"], ["sam", "c14", "download"],
-      ["power", "c1", "download"], ["power", "c3", "download"], ["power", "c5", "download"],
-      ["power", "c8", "download"], ["power", "c16", "download"],
-      ["power", "c1", "bookmark"], ["power", "c5", "bookmark"], ["power", "c8", "bookmark"],
-      ["sam", "c1", "bookmark"], ["sam", "c14", "bookmark"],
-      ["newjoin", "c7", "download"], ["newjoin", "c14", "download"],
-      ["lurker", "c1", "view"], ["lurker", "c2", "view"],
-    ];
-
-    await supabase.from("user_interactions").insert(
-      interactions.map(([u, c, type]) => ({
-        user_id: users[u],
-        content_id: contentMap[c],
-        interaction_type: type,
-      }))
-    );
-
-    // ═══ STEP 14 — TIPS ═══
-    const tips: [string, string, string][] = [
-      ["power", "c1", "Add 'Reply as if you are the recipient's colleague' to the prompt for better tone."],
-      ["sam", "c5", "You can use Webhooks by Zapier instead of the Gmail trigger for faster processing."],
-      ["chen", "c18", "Try adding 'Think step by step' to both models for fairer comparison."],
-      ["isabelle", "c14", "I printed this guide and stuck it on my wall. That helpful."],
-    ];
-
-    await supabase.from("content_tips").insert(
-      tips.map(([u, c, text]) => ({
-        user_id: users[u], content_id: contentMap[c], text,
-      }))
-    );
-
-    // ═══ STEP 15 — LIBRARY ENTRIES ═══
-    const libraryPairs: [string, string][] = [
-      ["sam", "c1"], ["sam", "c4"], ["sam", "c7"], ["sam", "c11"], ["sam", "c14"], ["sam", "c17"],
-      ["power", "c1"], ["power", "c5"], ["power", "c8"], ["power", "c9"], ["power", "c16"],
-      ["newjoin", "c7"], ["newjoin", "c14"],
-      ["lurker", "c1"],
-      ["devtest", "c1"], ["devtest", "c5"],
-    ];
-
-    await supabase.from("user_library").insert(
-      libraryPairs.map(([u, c]) => ({
-        user_id: users[u], content_id: contentMap[c],
-      }))
-    );
+    // Count totals for response
+    const totalBlocks = allBlocks.length;
+    const totalFollows = followPairs.length;
+    const totalDownloads = dlInserts.length;
+    const totalRatings = ratingData.length;
+    const totalComments = commentData.length;
+    const totalCommentLikes = clInserts.length;
+    const totalTips = tipsDef.length;
+    const totalVerifications = verificationData.length;
+    const totalLibrary = libInserts.length;
+    const totalNotifications = notifInserts.length;
 
     return new Response(
-      JSON.stringify({ message: "Demo data seeded successfully", users: Object.keys(users).length, content: contentDefs.length }),
+      JSON.stringify({
+        users_created: 12,
+        content_items: 18,
+        content_blocks: totalBlocks,
+        follows: totalFollows,
+        downloads: totalDownloads,
+        ratings: totalRatings,
+        comments: totalComments,
+        comment_likes: totalCommentLikes,
+        tips: totalTips,
+        verifications: totalVerifications,
+        library_saves: totalLibrary,
+        collections: 3,
+        notifications: totalNotifications,
+        status: "Seed complete",
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
