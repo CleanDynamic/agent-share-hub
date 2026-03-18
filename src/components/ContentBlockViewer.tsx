@@ -561,11 +561,10 @@ export function ContentBlockViewer({
                       <div className="absolute inset-0 flex items-center justify-center">
                         <Button
                           onClick={() => handleViewClick(block.id)}
-                          className="gap-2 rounded-full px-6 text-sm font-medium text-white"
-                          style={{ backgroundColor: "#2EC4B6" }}
+                          className="gap-2 rounded-full px-5 h-8 text-[13px] font-medium text-white bg-secondary hover:bg-secondary/90"
                         >
-                          <Eye className="h-4 w-4" />
-                          View
+                          <Eye className="h-3.5 w-3.5" />
+                          Reveal
                         </Button>
                       </div>
                     )}
