@@ -1,18 +1,16 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Home, Search, LayoutGrid, Clock, Heart, Upload, Info,
-  Bookmark, User, MoreHorizontal, LogOut, Settings, Bell, MessageCircle, BarChart3, Library,
+  Home, LayoutGrid, Upload, Bookmark, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, Library,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useLibraryUpdateCount } from "@/hooks/useLibraryUpdateCount";
-import { supabase } from "@/integrations/supabase/client";
+
 
 interface NavItem {
   icon: React.ElementType;
@@ -110,9 +108,6 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
             </Link>
           );
         })}
-
-        {/* Search — desktop only */}
-        {!collapsed && <SearchSection />}
       </nav>
 
       {/* Bottom user section */}
@@ -167,190 +162,6 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-/* ---- Inline Search ---- */
-function SearchSection() {
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
-  const [users, setUsers] = useState<any[]>([]);
-  const [content, setContent] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const doSearch = useCallback(async (q: string) => {
-    if (q.length < 2) { setUsers([]); setContent([]); return; }
-    setLoading(true);
-
-    if (q.startsWith("#")) {
-      // Tag search mode
-      setUsers([]);
-      const tagQ = q;
-      const { data } = await supabase
-        .from("content_microtags")
-        .select("tag, content_id, content_items!content_microtags_content_id_fkey(id, title, content_type, profiles!content_items_creator_id_fkey(username))")
-        .ilike("tag", `%${tagQ}%`)
-        .limit(10);
-      // Group: unique tags + top 3 items
-      const tagSet = new Set<string>();
-      const items: any[] = [];
-      (data ?? []).forEach((r: any) => {
-        tagSet.add(r.tag);
-        if (r.content_items && r.content_items.status !== "pending" && items.length < 3) {
-          items.push(r.content_items);
-        }
-      });
-      // Store tags as special "user" entries for display
-      setUsers([]); // clear users
-      setContent([
-        ...Array.from(tagSet).slice(0, 3).map((t) => ({ _isTag: true, tag: t, id: t })),
-        ...items,
-      ]);
-      setLoading(false);
-      return;
-    }
-
-    const [uRes, cRes] = await Promise.all([
-      supabase.from("profiles").select("id, username, display_name, avatar_url").or(`display_name.ilike.%${q}%,username.ilike.%${q}%`).limit(5),
-      supabase.from("content_items")
-        .select("id, title, content_type, ai_tools, use_cases, custom_use_case_description, creator_id, profiles!content_items_creator_id_fkey(username)")
-        .eq("status", "approved")
-        .or(`title.ilike.%${q}%,description.ilike.%${q}%,content_type.ilike.%${q}%,what_to_expect.ilike.%${q}%,custom_use_case_description.ilike.%${q}%`)
-        .limit(10),
-    ]);
-    // Also filter by ai_tools/use_cases client-side for array fields
-    let contentResults = cRes.data ?? [];
-    // If the query didn't match title/desc, check arrays
-    const lowerQ = q.toLowerCase();
-    contentResults = contentResults.filter((c: any) => {
-      if (c.title?.toLowerCase().includes(lowerQ)) return true;
-      if ((c as any).description?.toLowerCase().includes(lowerQ)) return true;
-      if (c.content_type?.toLowerCase().includes(lowerQ)) return true;
-      if ((c as any).what_to_expect?.toLowerCase().includes(lowerQ)) return true;
-      if ((c as any).custom_use_case_description?.toLowerCase().includes(lowerQ)) return true;
-      if ((c.ai_tools ?? []).some((t: string) => t.toLowerCase().includes(lowerQ))) return true;
-      if ((c.use_cases ?? []).some((u: string) => u.toLowerCase().includes(lowerQ))) return true;
-      return false;
-    }).slice(0, 5);
-    setUsers(uRes.data ?? []);
-    setContent(contentResults);
-    setLoading(false);
-  }, []);
-
-  const handleChange = (val: string) => {
-    setQuery(val);
-    setOpen(val.length >= 2);
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(val), 300);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && query.trim().length >= 1) {
-      setOpen(false);
-      setQuery("");
-      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-    }
-  };
-
-  const go = (path: string) => { setOpen(false); setQuery(""); navigate(path); };
-
-  const noResults = !loading && users.length === 0 && content.length === 0 && query.length >= 2;
-
-  return (
-    <div className="relative mt-4 px-1" ref={wrapperRef}>
-      <p className="mb-1.5 text-xs font-medium text-muted-foreground px-2">Search</p>
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => handleChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={() => query.length >= 2 && setOpen(true)}
-          placeholder="Search users or content..."
-          className="h-10 bg-card border-border pl-9 text-sm"
-        />
-      </div>
-      {open && (
-        <div className="absolute left-1 right-1 top-full z-50 mt-1 max-h-80 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
-          {loading && <p className="p-3 text-xs text-muted-foreground">Searching…</p>}
-          {noResults && <p className="p-3 text-xs text-muted-foreground">No results for "{query}"</p>}
-          {users.length > 0 && (
-            <div className="p-2">
-              <p className="px-2 pb-1 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">Users</p>
-              {users.map((u: any) => (
-                <button key={u.id} onClick={() => go(`/creator/${u.username}`)} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
-                  <Avatar className="h-6 w-6">
-                    {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                    <AvatarFallback className="text-[10px] bg-primary text-primary-foreground">{(u.display_name || u.username || "?").slice(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <span className="truncate">{u.display_name || u.username}</span>
-                  {u.username && <span className="text-xs text-muted-foreground">@{u.username}</span>}
-                </button>
-              ))}
-            </div>
-          )}
-          {content.length > 0 && (
-            <div className="p-2 border-t border-border">
-              <p className="px-2 pb-1 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
-                {query.startsWith("#") ? "Tags" : "Content"}
-              </p>
-              {content.map((c: any) => (
-                c._isTag ? (
-                  <button key={c.tag} onClick={() => go(`/search?q=${encodeURIComponent(c.tag)}`)} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
-                    <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">#</span>
-                    <span className="truncate font-semibold">{c.tag}</span>
-                    <span className="ml-auto text-xs text-muted-foreground">See all posts →</span>
-                  </button>
-                ) : (
-                  <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
-                    <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground mt-0.5">{c.content_type}</span>
-                    <div className="flex-1 min-w-0">
-                      <span className="truncate block">{c.title}</span>
-                      {(() => {
-                        const lq = query.toLowerCase();
-                        const titleMatch = c.title?.toLowerCase().includes(lq);
-                        if (titleMatch) return null;
-                        const matches: string[] = [];
-                        (c.ai_tools ?? []).forEach((t: string) => { if (t.toLowerCase().includes(lq) && matches.length < 2) matches.push(t); });
-                        (c.use_cases ?? []).forEach((u: string) => {
-                          const label = u === "Other" && c.custom_use_case_description ? c.custom_use_case_description : u;
-                          if (label.toLowerCase().includes(lq) && matches.length < 2) matches.push(label);
-                        });
-                        if (c.custom_use_case_description?.toLowerCase().includes(lq) && matches.length < 2 && !matches.includes(c.custom_use_case_description)) matches.push(c.custom_use_case_description);
-                        if (matches.length === 0) return null;
-                        return <span className="text-[10px] text-muted-foreground block truncate">Matches: {matches.join(" · ")}</span>;
-                      })()}
-                    </div>
-                    {c.profiles?.username && <span className="ml-auto text-xs text-muted-foreground shrink-0">@{c.profiles.username}</span>}
-                  </button>
-                )
-              ))}
-            </div>
-          )}
-          {query.length >= 2 && !loading && (
-            <div className="p-2 border-t border-border">
-              <button
-                onClick={() => go(`/search?q=${encodeURIComponent(query.trim())}`)}
-                className="w-full text-center text-xs text-primary hover:underline py-1.5"
-              >
-                See all results for "{query}"
-              </button>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
