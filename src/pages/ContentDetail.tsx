@@ -519,51 +519,92 @@ const ContentDetail = () => {
               </div>
             )}
 
+            {/* Tab strip */}
             {(!isSub || subscriberUnlocked) && (
-              <ContentBlockViewer
-                contentId={item.id}
-                contentTitle={item.title}
-                monetisationType={item.monetisation_type}
-                creatorId={item.creator_id}
-                useInstructions={item.use_instructions}
-                onTriggerPaywall={handleDownload}
-                isEligible={isEligible}
-              />
-            )}
-
-            {item.what_to_expect && (!isSub || subscriberUnlocked) && (
-              <div>
-                <h2 className="text-lg font-semibold text-foreground mb-3">What to Expect</h2>
-                <div className="border border-border rounded-xl p-5 bg-card">
-                  <p className="text-sm text-muted-foreground leading-relaxed">{item.what_to_expect}</p>
-                </div>
-              </div>
-            )}
-
-            {item.use_cases && item.use_cases.length > 0 && (
-              <div>
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Use Cases</h3>
-                <div className="flex flex-wrap gap-2">
-                  {item.use_cases.map((uc) => (
-                    <span key={uc} className="text-xs px-2 py-1 rounded-lg border border-border text-muted-foreground">{uc}</span>
+              <>
+                <div className="flex gap-0 border-b border-border mb-4">
+                  {(["content", "changelog", "tips", "comments"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => handleTabChange(tab)}
+                      className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                        activeTab === tab
+                          ? "text-foreground border-b-2 border-primary -mb-px"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {tab === "content" && "Content"}
+                      {tab === "changelog" && (
+                        <>Changelog{hasLibraryUpdate && <span className="ml-1 text-[#E8571A]">●</span>}</>
+                      )}
+                      {tab === "tips" && "Tips"}
+                      {tab === "comments" && `Comments (${(item as any).comment_count ?? 0})`}
+                    </button>
                   ))}
                 </div>
-              </div>
-            )}
 
-            {/* Comments section */}
-            {(!isSub || subscriberUnlocked) && (
-              <CommentsSection
-                contentId={item.id}
-                contentTitle={item.title}
-                commentCount={(item as any).comment_count ?? 0}
-                isEligible={isEligible}
-              />
-            )}
+                {/* Tab content */}
+                {activeTab === "content" && (
+                  <>
+                    <ContentBlockViewer
+                      contentId={item.id}
+                      contentTitle={item.title}
+                      monetisationType={item.monetisation_type}
+                      creatorId={item.creator_id}
+                      useInstructions={item.use_instructions}
+                      onTriggerPaywall={handleDownload}
+                      isEligible={isEligible}
+                    />
 
-            {/* Version History */}
-            {(!isSub || subscriberUnlocked) && (
-              <VersionHistory contentId={item.id} currentVersion={item.current_version} />
+                    {item.what_to_expect && (
+                      <div className="mt-6">
+                        <h2 className="text-lg font-semibold text-foreground mb-3">What to Expect</h2>
+                        <div className="border border-border rounded-xl p-5 bg-card">
+                          <p className="text-sm text-muted-foreground leading-relaxed">{item.what_to_expect}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {item.use_cases && item.use_cases.length > 0 && (
+                      <div className="mt-4">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Use Cases</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {item.use_cases.map((uc) => (
+                            <span key={uc} className="text-xs px-2 py-1 rounded-lg border border-border text-muted-foreground">{uc}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Version History */}
+                    <div className="mt-6">
+                      <VersionHistory contentId={item.id} currentVersion={item.current_version} />
+                    </div>
+                  </>
+                )}
+
+                {activeTab === "changelog" && (
+                  <ChangelogTab
+                    contentId={item.id}
+                    contentTitle={item.title}
+                    creatorId={item.creator_id}
+                    currentVersion={item.current_version}
+                  />
+                )}
+
+                {activeTab === "tips" && (
+                  <TipsTab contentId={item.id} isEligible={isEligible} />
+                )}
+
+                {activeTab === "comments" && (
+                  <CommentsSection
+                    contentId={item.id}
+                    contentTitle={item.title}
+                    commentCount={(item as any).comment_count ?? 0}
+                    isEligible={isEligible}
+                  />
+                )}
+              </>
             )}
           </div>
 
