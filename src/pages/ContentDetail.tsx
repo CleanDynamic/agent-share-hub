@@ -87,6 +87,8 @@ function DetailSkeleton() {
 
 const ContentDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { isLoggedIn, user, profile } = useAuth();
