@@ -40,6 +40,7 @@ import Category from "./pages/Category";
 import LibraryPage from "./pages/Library";
 import DraftsPage from "./pages/Drafts";
 import PostPreviewPage from "./pages/PostPreview";
+import ContentEditPage from "./pages/ContentEdit";
 const queryClient = new QueryClient();
 
 const App = () => (
