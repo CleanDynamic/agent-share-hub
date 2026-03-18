@@ -429,7 +429,7 @@ const ContentDetail = () => {
   };
 
   return (
-    <div className="py-8 sm:py-12 px-4 sm:px-6 pb-24 lg:pb-12">
+    <div className="py-6 sm:py-10 px-4 sm:px-6 pb-24 lg:pb-12">
       <SeoHead
         title={`${item.title} — NeoScale AI`}
         description={item.description || `${item.content_type} for ${(item.ai_tools ?? []).join(", ") || "any AI tool"}`}
@@ -437,6 +437,7 @@ const ContentDetail = () => {
         jsonLd={jsonLd}
       />
       <div className="mx-auto max-w-4xl">
+        {/* Back button */}
         {(() => {
           const state = location.state as { from?: string; name?: string } | null;
           let backLabel = "Back";
@@ -448,7 +449,7 @@ const ContentDetail = () => {
           return (
             <button
               onClick={() => navigate(-1)}
-              className="inline-flex items-center text-[13px] text-[#9999AA] hover:text-foreground mb-4 transition-colors duration-100 cursor-pointer"
+              className="inline-flex items-center text-[13px] text-muted-foreground hover:text-foreground mb-3 transition-colors duration-100 cursor-pointer"
             >
               <ArrowLeft className="mr-1 h-3.5 w-3.5" /> {backLabel}
             </button>
@@ -456,55 +457,62 @@ const ContentDetail = () => {
         })()}
 
         {paymentSuccess && (
-          <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+          <div className="flex items-center gap-3 p-4 mb-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
             <CheckCircle2 className="h-5 w-5 shrink-0" />
             <p className="text-sm font-medium">Payment successful. Your download is ready.</p>
           </div>
         )}
         {tipSuccess && (
-          <div className="flex items-center gap-3 p-4 mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+          <div className="flex items-center gap-3 p-4 mb-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
             <CheckCircle2 className="h-5 w-5 shrink-0" />
             <p className="text-sm font-medium">Thanks for supporting the creator.</p>
           </div>
         )}
 
-        {/* Cover image — full width above badges */}
+        {/* 1. Cover image */}
         {(item as any).cover_image_url && (
           <img
             src={(item as any).cover_image_url}
             alt={item.title}
             loading="eager"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-            className="w-full object-cover mb-4"
-            style={{ maxHeight: 360, borderRadius: 0 }}
+            className="w-full object-cover rounded-xl mb-4"
+            style={{ maxHeight: 360 }}
           />
         )}
 
-        <div className="flex flex-wrap items-center gap-2 mb-3">
+        {/* 2. Badges */}
+        <div className="flex flex-wrap items-center gap-2 mb-2.5">
           <Badge variant="outline" className={`text-[10px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
             {displayContentType(item.content_type)}
           </Badge>
           <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(item.difficulty)}`}>
             {item.difficulty}
           </Badge>
+          {item.is_verified && (
+            <Badge variant="outline" className="text-[10px] font-medium bg-emerald-500/15 text-emerald-400 border-emerald-500/30">✓ Verified</Badge>
+          )}
           {!isPaid && !isSub && (
             <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">Free</Badge>
           )}
           {isPaid && (
-            <Badge variant="outline" className="text-[10px] font-medium bg-primary/15 text-primary border-primary/30">
-              £{(item.price_gbp ?? 0).toFixed(2)}
-            </Badge>
+            <Badge variant="outline" className="text-[10px] font-medium bg-primary/15 text-primary border-primary/30">£{(item.price_gbp ?? 0).toFixed(2)}</Badge>
           )}
           {isSub && (
             <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">Subscribers only</Badge>
           )}
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{item.title}</h1>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-4"><MentionText text={item.description || ""} /></p>
+        {/* 3. Title */}
+        <h1 className="text-[26px] font-bold text-foreground leading-[1.25] mb-2">{item.title}</h1>
 
-        <div className="flex flex-wrap items-center gap-4 mb-2 text-sm text-muted-foreground">
-          {/* Creator byline with collaborator avatars */}
+        {/* 4. Description */}
+        {item.description && (
+          <p className="text-[15px] text-muted-foreground leading-relaxed mb-3"><MentionText text={item.description} /></p>
+        )}
+
+        {/* 5. Meta row */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4 text-[13px] text-muted-foreground">
           {creator && (
             <>
               {collaborators && collaborators.length > 1 ? (
@@ -514,7 +522,7 @@ const ContentDetail = () => {
                       <Link
                         key={c.collaborator_id}
                         to={`/creator/${c.profiles?.username}`}
-                        className="h-6 w-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[9px] font-medium text-muted-foreground overflow-hidden hover:z-10 relative"
+                        className="h-5 w-5 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[8px] font-medium text-muted-foreground overflow-hidden hover:z-10 relative"
                       >
                         {c.profiles?.avatar_url ? (
                           <img src={c.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
@@ -524,7 +532,7 @@ const ContentDetail = () => {
                       </Link>
                     ))}
                   </div>
-                  <span className="text-sm">
+                  <span>
                     {collaborators.map((c: any, i: number) => (
                       <span key={c.collaborator_id}>
                         {i > 0 && ", "}
@@ -536,69 +544,66 @@ const ContentDetail = () => {
                   </span>
                 </div>
               ) : (
-                <Link to={`/creator/${creator.username}`} className="flex items-center gap-1.5 hover:text-foreground transition-colors">
-                  <User className="h-3.5 w-3.5" />
+                <Link to={`/creator/${creator.username}`} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                  <User className="h-3 w-3" />
                   <span>By {creator.display_name || creator.username}</span>
                 </Link>
               )}
+              <span className="text-muted-foreground/40">·</span>
             </>
           )}
 
-          {/* Revenue split byline */}
           {revenueSplits && revenueSplits.length > 0 && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              Co-revenue with
-              {revenueSplits.slice(0, 1).map((s: any) => (
-                <Link key={s.recipient_id} to={`/creator/${s.profiles?.username}`} className="text-primary hover:underline">
-                  @{s.profiles?.username}
-                </Link>
-              ))}
-              {revenueSplits.length > 1 && <span>(+{revenueSplits.length - 1} more)</span>}
-            </span>
+            <>
+              <span className="flex items-center gap-1">
+                Co-revenue with
+                {revenueSplits.slice(0, 1).map((s: any) => (
+                  <Link key={s.recipient_id} to={`/creator/${s.profiles?.username}`} className="text-primary hover:underline">
+                    @{s.profiles?.username}
+                  </Link>
+                ))}
+                {revenueSplits.length > 1 && <span>(+{revenueSplits.length - 1} more)</span>}
+              </span>
+              <span className="text-muted-foreground/40">·</span>
+            </>
           )}
 
-          {/* Leave collab for non-primary collaborators */}
-          {user && collaborators?.some((c: any) => c.collaborator_id === user.id && !c.is_primary_author) && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <button className="text-[11px] text-muted-foreground hover:text-destructive transition-colors">Leave collab</button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="bg-card border-border">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Leave collaboration?</AlertDialogTitle>
-                  <AlertDialogDescription>This content will no longer appear on your profile.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={async () => {
-                    await supabase.from("content_collaborators").delete().eq("collaborator_id", user.id).eq("content_id", item.id);
-                    refetchCollabs();
-                    toast({ title: "Left collaboration" });
-                  }}>Leave</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-          <div className="flex items-center gap-1">
-            <Eye className="h-3.5 w-3.5" />
-            <span>{viewCount.toLocaleString()} views</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Download className="h-3.5 w-3.5" />
-            <span>{count.toLocaleString()} downloads</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5" />
-            <span>{formatDate(item.approved_at ?? item.created_at)}</span>
-          </div>
+          <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{viewCount.toLocaleString()} views</span>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="flex items-center gap-1"><Download className="h-3 w-3" />{count.toLocaleString()} downloads</span>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDate(item.approved_at ?? item.created_at)}</span>
           {(item as any).fork_count > 0 && (
-            <button
-              onClick={() => setForksModalOpen(true)}
-              className="flex items-center gap-1 hover:text-foreground transition-colors"
-            >
-              <GitFork className="h-3.5 w-3.5" />
-              <span>{(item as any).fork_count} fork{(item as any).fork_count !== 1 ? "s" : ""}</span>
-            </button>
+            <>
+              <span className="text-muted-foreground/40">·</span>
+              <button onClick={() => setForksModalOpen(true)} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                <GitFork className="h-3 w-3" />{(item as any).fork_count} fork{(item as any).fork_count !== 1 ? "s" : ""}
+              </button>
+            </>
+          )}
+          {user && collaborators?.some((c: any) => c.collaborator_id === user.id && !c.is_primary_author) && (
+            <>
+              <span className="text-muted-foreground/40">·</span>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="text-[11px] text-muted-foreground hover:text-destructive transition-colors">Leave collab</button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-card border-border">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Leave collaboration?</AlertDialogTitle>
+                    <AlertDialogDescription>This content will no longer appear on your profile.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={async () => {
+                      await supabase.from("content_collaborators").delete().eq("collaborator_id", user.id).eq("content_id", item.id);
+                      refetchCollabs();
+                      toast({ title: "Left collaboration" });
+                    }}>Leave</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
           )}
         </div>
 
@@ -607,169 +612,35 @@ const ContentDetail = () => {
           <p className="text-xs text-muted-foreground mb-4 flex items-center gap-1">
             <ExternalLink className="h-3 w-3" />
             Forked from{" "}
-            <Link to={`/creator/${forkOrigin.profiles?.username}`} className="mention-link">
-              @{forkOrigin.profiles?.username}
-            </Link>'s{" "}
-            <Link to={`/content/${forkOrigin.id}`} className="text-primary hover:underline">
-              {forkOrigin.title}
-            </Link>
+            <Link to={`/creator/${forkOrigin.profiles?.username}`} className="mention-link">@{forkOrigin.profiles?.username}</Link>'s{" "}
+            <Link to={`/content/${forkOrigin.id}`} className="text-primary hover:underline">{forkOrigin.title}</Link>
           </p>
         )}
 
-        <div className="mb-8" />
+        {/* 6. ACTION BOX — inline, full width */}
+        <div className="rounded-xl border border-border bg-card p-3.5 sm:p-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            {/* Left: rating */}
+            <div className="flex-shrink-0">
+              <StarRating
+                contentId={item.id}
+                contentTitle={item.title}
+                avgRating={Number((item as any).avg_rating) || 0}
+                ratingCount={(item as any).rating_count ?? 0}
+                isEligible={isEligible}
+              />
+            </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            {item.ai_tools && item.ai_tools.length > 0 && (
-              <div>
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Works with</h3>
-                <div className="flex flex-wrap gap-2">
-                  {item.ai_tools.map((tool) => (
-                    <span key={tool} className="text-xs px-2 py-1 rounded-lg bg-accent text-muted-foreground">{tool}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Micro-tags */}
-            <DetailMicrotags contentId={item.id} />
-
-            {/* Dependencies */}
-            <DependencyDisplay contentId={item.id} />
-
-            {/* Compatibility status */}
-            <CompatibilityBadge
-              contentId={item.id}
-              creatorId={item.creator_id}
-              compatibilityStatus={(item as any).compatibility_status}
-              lastVerifiedAt={(item as any).last_verified_at}
-              variant="detail"
-            />
-
-            {isSub && !subscriberUnlocked && creator && (
-              <div className="border border-border rounded-xl p-5 bg-card">
-                <div className="flex items-center gap-3 mb-3">
-                  <Lock className="h-5 w-5 text-muted-foreground" />
-                  <p className="text-sm font-medium text-foreground">Subscriber-only content</p>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  This content is for subscribers of {creator.display_name || creator.username}.
-                </p>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to={`/creator/${creator.username}`}>
-                    <Users className="mr-2 h-3.5 w-3.5" /> Subscribe to unlock
-                  </Link>
-                </Button>
-              </div>
-            )}
-
-            {/* Tab strip */}
-            {(!isSub || subscriberUnlocked) && (
-              <>
-                <div className="flex gap-0 border-b border-border mb-4">
-                  {(["content", "changelog", "tips", "comments"] as const).map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => handleTabChange(tab)}
-                      className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-                        activeTab === tab
-                          ? "text-foreground border-b-2 border-primary -mb-px"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {tab === "content" && "Content"}
-                      {tab === "changelog" && (
-                        <>Changelog{hasLibraryUpdate && <span className="ml-1 text-[#E8571A]">●</span>}</>
-                      )}
-                      {tab === "tips" && "Tips"}
-                      {tab === "comments" && `Comments (${(item as any).comment_count ?? 0})`}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Tab content */}
-                {activeTab === "content" && (
-                  <>
-                    <ContentBlockViewer
-                      contentId={item.id}
-                      contentTitle={item.title}
-                      monetisationType={item.monetisation_type}
-                      creatorId={item.creator_id}
-                      useInstructions={item.use_instructions}
-                      onTriggerPaywall={handleDownload}
-                      isEligible={isEligible}
-                    />
-
-                    {item.what_to_expect && (
-                      <div className="mt-6">
-                        <h2 className="text-lg font-semibold text-foreground mb-3">What to Expect</h2>
-                        <div className="border border-border rounded-xl p-5 bg-card">
-                          <p className="text-sm text-muted-foreground leading-relaxed">{item.what_to_expect}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {item.use_cases && item.use_cases.length > 0 && (
-                      <div className="mt-4">
-                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Use Cases</h3>
-                        <div className="flex flex-wrap gap-2">
-                          {item.use_cases.map((uc) => (
-                            <span key={uc} className="text-xs px-2 py-1 rounded-lg border border-border text-muted-foreground">{uc}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Version History */}
-                    <div className="mt-6">
-                      <VersionHistory contentId={item.id} currentVersion={item.current_version} />
-                    </div>
-                  </>
-                )}
-
-                {activeTab === "changelog" && (
-                  <ChangelogTab
-                    contentId={item.id}
-                    contentTitle={item.title}
-                    creatorId={item.creator_id}
-                    currentVersion={item.current_version}
-                  />
-                )}
-
-                {activeTab === "tips" && (
-                  <TipsTab contentId={item.id} isEligible={isEligible} />
-                )}
-
-                {activeTab === "comments" && (
-                  <CommentsSection
-                    contentId={item.id}
-                    contentTitle={item.title}
-                    commentCount={(item as any).comment_count ?? 0}
-                    isEligible={isEligible}
-                  />
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="hidden lg:block space-y-4">
-            {/* Curator Picks card — premium placement above download */}
-            {curatorRecs && curatorRecs.length > 0 && (
-              <CuratorPicksCard recs={curatorRecs} />
-            )}
-
-            <div className="border border-border rounded-xl p-5 bg-card space-y-3">
+            {/* Right: action buttons */}
+            <div className="flex flex-wrap items-center gap-2">
               {isSub && !subscriberUnlocked ? (
                 <>
-                  <Button size="lg" className="w-full" disabled>
-                    <Lock className="mr-2 h-4 w-4" /> Subscribers only
+                  <Button size="sm" disabled className="rounded-full h-9">
+                    <Lock className="mr-1.5 h-3.5 w-3.5" /> Subscribers only
                   </Button>
                   {creator && (
-                    <Button variant="outline" size="sm" className="w-full border-secondary text-secondary hover:bg-secondary/10" asChild>
-                      <Link to={`/creator/${creator.username}`}>
-                        <Users className="mr-2 h-3.5 w-3.5" /> Subscribe to unlock
-                      </Link>
+                    <Button variant="outline" size="sm" className="rounded-full h-9 border-secondary text-secondary hover:bg-secondary/10" asChild>
+                      <Link to={`/creator/${creator.username}`}><Users className="mr-1.5 h-3.5 w-3.5" /> Subscribe</Link>
                     </Button>
                   )}
                 </>
@@ -781,136 +652,273 @@ const ContentDetail = () => {
                   purchaseCount={(item as any).pwyw_purchase_count ?? 0}
                 />
               ) : (
-                <Button size="lg" className="w-full" onClick={handleDownload} disabled={downloading}>
-                  {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isPaid ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
+                <Button size="sm" className="rounded-full h-9" onClick={handleDownload} disabled={downloading}>
+                  {downloading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : isPaid ? <Lock className="mr-1.5 h-3.5 w-3.5" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
                   {subscriberUnlocked ? "Download" : label}
                 </Button>
               )}
 
-              {/* Add to Library */}
-              <AddToLibraryButton
-                contentId={item.id}
-                currentVersion={item.current_version}
-                contentTitle={item.title}
-                variant="full"
-              />
-
-              {/* Bookmark + Collection buttons */}
-              <div className="flex justify-center gap-2">
-                <BookmarkButton contentId={item.id} />
-                <AddToCollectionButton contentId={item.id} contentTitle={item.title} />
-              </div>
-              {isPaid && (
-                <p className="text-[11px] text-muted-foreground text-center">£{(item.price_gbp ?? 0).toFixed(2)} — one-time payment</p>
-              )}
-
-              {/* Star Rating — below download button, above creator card */}
-              <div className="pt-2 border-t border-border">
-                <StarRating
-                  contentId={item.id}
-                  contentTitle={item.title}
-                  avgRating={Number((item as any).avg_rating) || 0}
-                  ratingCount={(item as any).rating_count ?? 0}
-                  isEligible={isEligible}
-                />
-              </div>
-
-              {item.donation_enabled && creator && (
-                <TipSelector
-                  creatorId={creator.id}
-                  creatorDisplayName={creator.display_name || creator.username}
-                  successUrl={`${window.location.origin}/content/${item.id}?tip=success`}
-                  cancelUrl={`${window.location.origin}/content/${item.id}`}
-                />
-              )}
-
-              {/* Fork button */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full text-xs text-muted-foreground border-border hover:text-foreground"
-                      onClick={() => {
-                        if (!isLoggedIn) { window.location.href = "/signup"; return; }
-                        setForkModalOpen(true);
-                      }}
-                    >
-                      <GitFork className="h-3.5 w-3.5 mr-1" /> Fork this ↗
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Clone to your drafts and make it your own</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Curator recommendation button */}
-              {isCurator && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs border-[#2EC4B6]/30 text-[#2EC4B6] hover:bg-[#2EC4B6]/10"
-                  onClick={() => setCuratorModalOpen(true)}
-                >
-                  <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Add your recommendation
-                </Button>
-            )}
-
-            {/* Related content — compact rows */}
-            {related && related.length > 0 && (
-              <div className="border border-border rounded-xl p-4 bg-card">
-                <p className="text-[15px] font-semibold text-foreground mb-3">Related</p>
-                <div className="space-y-2.5">
-                  {related.slice(0, 4).map((r) => {
-                    const accent = TYPE_COLORS[r.content_type]?.match(/text-\[([^\]]+)\]/)?.[1] || "#9999AA";
-                    return (
-                      <Link
-                        key={r.id}
-                        to={`/content/${r.id}`}
-                        state={{ from: "related" }}
-                        className="flex items-center gap-3 group"
-                      >
-                        <div className="w-[52px] h-[52px] rounded-md shrink-0 overflow-hidden">
-                          {(r as any).cover_image_url ? (
-                            <img src={(r as any).cover_image_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-accent/50">
-                              <span className="text-lg font-bold text-muted-foreground">{r.content_type[0]}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-semibold text-foreground leading-tight line-clamp-2 group-hover:text-primary transition-colors">{r.title}</p>
-                          <Badge variant="outline" className={`text-[9px] font-medium mt-1 ${difficultyColor(r.difficulty)}`}>{r.difficulty}</Badge>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+              <AddToLibraryButton contentId={item.id} currentVersion={item.current_version} contentTitle={item.title} variant="icon" />
+              <BookmarkButton contentId={item.id} />
+              <AddToCollectionButton contentId={item.id} contentTitle={item.title} />
+            </div>
           </div>
 
-            {creator && (
-              <Link
-                to={`/creator/${creator.username}`}
-                className="block border border-border rounded-xl p-5 bg-card hover:border-primary/30 transition-colors"
+          {/* Secondary links row */}
+          <div className="flex flex-wrap items-center gap-4 mt-3 pt-3 border-t border-border">
+            {isPaid && (
+              <span className="text-[11px] text-muted-foreground">£{(item.price_gbp ?? 0).toFixed(2)} — one-time payment</span>
+            )}
+            {item.donation_enabled && creator && (
+              <TipSelector
+                creatorId={creator.id}
+                creatorDisplayName={creator.display_name || creator.username}
+                successUrl={`${window.location.origin}/content/${item.id}?tip=success`}
+                cancelUrl={`${window.location.origin}/content/${item.id}`}
+              />
+            )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="text-[13px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                    onClick={() => {
+                      if (!isLoggedIn) { window.location.href = "/signup"; return; }
+                      setForkModalOpen(true);
+                    }}
+                  >
+                    <GitFork className="h-3.5 w-3.5" /> Fork this ↗
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent><p>Clone to your drafts and make it your own</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            {isCurator && (
+              <button
+                className="text-[13px] text-[hsl(var(--secondary))] hover:underline flex items-center gap-1"
+                onClick={() => setCuratorModalOpen(true)}
               >
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Created by</p>
-                <p className="text-sm font-semibold text-foreground">{creator.display_name || creator.username}</p>
-                {creator.bio && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{creator.bio}</p>}
-                {creatorStats && (
-                  <div className="flex gap-3 mt-3 text-xs text-muted-foreground">
-                    <span>{creatorStats.totalItems} published</span>
-                    <span>{creatorStats.totalDownloads.toLocaleString()} downloads</span>
-                  </div>
-                )}
-              </Link>
+                <ShieldCheck className="h-3.5 w-3.5" /> Add recommendation
+              </button>
             )}
           </div>
         </div>
+
+        {/* Curator Picks — inline */}
+        {curatorRecs && curatorRecs.length > 0 && (
+          <div className="mb-4">
+            <CuratorPicksCard recs={curatorRecs} />
+          </div>
+        )}
+
+        {/* 7. CREATED BY — inline horizontal card */}
+        {creator && (
+          <div className="flex items-center gap-3 py-3.5 mb-4 border-t border-b border-border">
+            <Link to={`/creator/${creator.username}`} className="shrink-0">
+              <div className="h-11 w-11 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground overflow-hidden">
+                {(creator.display_name || creator.username || "?")[0].toUpperCase()}
+              </div>
+            </Link>
+            <div className="flex-1 min-w-0">
+              <Link to={`/creator/${creator.username}`} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
+                {creator.display_name || creator.username}
+              </Link>
+              <p className="text-xs text-muted-foreground">@{creator.username}</p>
+              {creator.bio && <p className="text-[13px] text-muted-foreground line-clamp-1 mt-0.5">{creator.bio}</p>}
+            </div>
+            <div className="shrink-0 text-right">
+              {creatorStats && (
+                <p className="text-[11px] text-muted-foreground mb-1">{creatorStats.totalItems} published · {creatorStats.totalDownloads.toLocaleString()} downloads</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 8. Works With */}
+        {item.ai_tools && item.ai_tools.length > 0 && (
+          <div className="mb-3">
+            <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Works with</h3>
+            <div className="flex flex-wrap gap-2">
+              {item.ai_tools.map((tool) => (
+                <span key={tool} className="text-xs px-2 py-1 rounded-lg bg-accent text-muted-foreground">{tool}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 9. Use Cases — moved above tabs */}
+        {item.use_cases && item.use_cases.length > 0 && (
+          <div className="mb-3">
+            <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Use Cases</h3>
+            <div className="flex flex-wrap gap-2">
+              {item.use_cases.map((uc) => (
+                <span key={uc} className="text-xs px-2 py-1 rounded-lg border border-border text-muted-foreground">{uc}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 10. Tags */}
+        <div className="mb-3">
+          <DetailMicrotags contentId={item.id} />
+        </div>
+
+        {/* Dependencies */}
+        <DependencyDisplay contentId={item.id} />
+
+        {/* Compatibility */}
+        <CompatibilityBadge
+          contentId={item.id}
+          creatorId={item.creator_id}
+          compatibilityStatus={(item as any).compatibility_status}
+          lastVerifiedAt={(item as any).last_verified_at}
+          variant="detail"
+        />
+
+        {/* 11. Version History compact row */}
+        <div className="mb-5">
+          <VersionHistory contentId={item.id} currentVersion={item.current_version} />
+        </div>
+
+        {/* Subscriber gate */}
+        {isSub && !subscriberUnlocked && creator && (
+          <div className="border border-border rounded-xl p-5 bg-card mb-4">
+            <div className="flex items-center gap-3 mb-3">
+              <Lock className="h-5 w-5 text-muted-foreground" />
+              <p className="text-sm font-medium text-foreground">Subscriber-only content</p>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              This content is for subscribers of {creator.display_name || creator.username}.
+            </p>
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/creator/${creator.username}`}><Users className="mr-2 h-3.5 w-3.5" /> Subscribe to unlock</Link>
+            </Button>
+          </div>
+        )}
+
+        {/* 12. Tab strip */}
+        {(!isSub || subscriberUnlocked) && (
+          <>
+            <div className="flex gap-0 border-b border-border sticky top-0 bg-background z-20">
+              {(["content", "changelog", "tips", "comments"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => handleTabChange(tab)}
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                    activeTab === tab
+                      ? "text-foreground border-b-2 border-primary -mb-px"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tab === "content" && "Content"}
+                  {tab === "changelog" && (
+                    <>Changelog{hasLibraryUpdate && <span className="ml-1 text-primary">●</span>}</>
+                  )}
+                  {tab === "tips" && "Tips"}
+                  {tab === "comments" && `Comments (${(item as any).comment_count ?? 0})`}
+                </button>
+              ))}
+            </div>
+
+            {/* 13. Tab content */}
+            <div className="mt-0">
+              {activeTab === "content" && (
+                <>
+                  <div className="py-4">
+                    <ContentBlockViewer
+                      contentId={item.id}
+                      contentTitle={item.title}
+                      monetisationType={item.monetisation_type}
+                      creatorId={item.creator_id}
+                      useInstructions={item.use_instructions}
+                      onTriggerPaywall={handleDownload}
+                      isEligible={isEligible}
+                    />
+                  </div>
+
+                  {item.what_to_expect && (
+                    <div className="mt-4">
+                      <h2 className="text-lg font-semibold text-foreground mb-3">What to Expect</h2>
+                      <div className="border border-border rounded-xl p-5 bg-card">
+                        <p className="text-sm text-muted-foreground leading-relaxed">{item.what_to_expect}</p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {activeTab === "changelog" && (
+                <div className="py-4">
+                  <ChangelogTab
+                    contentId={item.id}
+                    contentTitle={item.title}
+                    creatorId={item.creator_id}
+                    currentVersion={item.current_version}
+                  />
+                </div>
+              )}
+
+              {activeTab === "tips" && (
+                <div className="py-4">
+                  <TipsTab contentId={item.id} isEligible={isEligible} />
+                </div>
+              )}
+
+              {activeTab === "comments" && (
+                <div className="py-4">
+                  <CommentsSection
+                    contentId={item.id}
+                    contentTitle={item.title}
+                    commentCount={(item as any).comment_count ?? 0}
+                    isEligible={isEligible}
+                  />
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* 14. Related Content — horizontal scroll at bottom */}
+        {related && related.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-base font-semibold text-foreground mb-3">Related</h2>
+            <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+              {related.slice(0, 4).map((r) => {
+                const accent = TYPE_COLORS[r.content_type]?.match(/text-\[([^\]]+)\]/)?.[1] || "#9999AA";
+                return (
+                  <Link
+                    key={r.id}
+                    to={`/content/${r.id}`}
+                    state={{ from: "related" }}
+                    className="w-[200px] flex-shrink-0 rounded-[10px] border border-border bg-card overflow-hidden hover:border-primary/30 transition-colors group"
+                  >
+                    <div className="h-[90px] w-full overflow-hidden">
+                      {(r as any).cover_image_url ? (
+                        <img src={(r as any).cover_image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-accent/50">
+                          <span className="text-2xl font-bold text-muted-foreground">{r.content_type[0]}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2.5">
+                      <div className="flex gap-1 mb-1">
+                        <Badge variant="outline" className={`text-[9px] font-medium ${TYPE_COLORS[r.content_type] ?? ""}`}>
+                          {displayContentType(r.content_type)}
+                        </Badge>
+                        <Badge variant="outline" className={`text-[9px] font-medium ${difficultyColor(r.difficulty)}`}>
+                          {r.difficulty}
+                        </Badge>
+                      </div>
+                      <p className="text-[13px] font-semibold text-foreground leading-tight line-clamp-2 group-hover:text-primary transition-colors">{r.title}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1"><Eye className="h-3 w-3" />{(r.view_count ?? 0).toLocaleString()}</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Mobile sticky bar */}
         <div className="fixed bottom-0 left-0 right-0 lg:hidden border-t border-border bg-background p-4 z-30">
@@ -935,8 +943,6 @@ const ContentDetail = () => {
             </div>
           )}
         </div>
-
-        {/* Related content moved to sidebar */}
       </div>
 
       <GuestDownloadModal
