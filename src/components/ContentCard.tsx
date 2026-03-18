@@ -246,6 +246,33 @@ export function ContentCard({
           )}
         </div>
 
+        {/* Deps + Compatibility indicators */}
+        <div className="flex items-center gap-2 mb-3">
+          {dependency_count > 0 && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground cursor-default" onClick={e => e.stopPropagation()}>
+                    <Link2 className="h-2.5 w-2.5" /> Deps: {dependency_count}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-xs">{dependency_titles.join(", ") || "Has dependencies"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {compatibility_status && compatibility_status !== "unverified" && (
+            <CompatibilityBadge
+              contentId={id}
+              creatorId={creator_id ?? ""}
+              compatibilityStatus={compatibility_status}
+              lastVerifiedAt={last_verified_at}
+              variant="card"
+            />
+          )}
+        </div>
+
         {/* Bottom */}
         <div className="flex items-center justify-between pt-3 border-t border-border">
           <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(difficulty)}`}>

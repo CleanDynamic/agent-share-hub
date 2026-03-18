@@ -463,6 +463,18 @@ const ContentDetail = () => {
               </div>
             )}
 
+            {/* Dependencies */}
+            <DependencyDisplay contentId={item.id} />
+
+            {/* Compatibility status */}
+            <CompatibilityBadge
+              contentId={item.id}
+              creatorId={item.creator_id}
+              compatibilityStatus={(item as any).compatibility_status}
+              lastVerifiedAt={(item as any).last_verified_at}
+              variant="detail"
+            />
+
             {isSub && !subscriberUnlocked && creator && (
               <div className="border border-border rounded-xl p-5 bg-card">
                 <div className="flex items-center gap-3 mb-3">

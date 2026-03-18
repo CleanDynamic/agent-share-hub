@@ -605,6 +605,9 @@ const Upload = () => {
               </div>
             </div>
 
+            {/* Dependencies */}
+            <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
+
             {/* Submit */}
             <Button type="submit" size="lg" className="w-full" disabled={submitting}>
               {submitting ? (
