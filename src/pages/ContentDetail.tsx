@@ -1025,4 +1025,32 @@ function CuratorPicksCard({ recs }: { recs: any[] }) {
   );
 }
 
+function DetailMicrotags({ contentId }: { contentId: string }) {
+  const navigate = useNavigate();
+  const { data: tags } = useQuery({
+    queryKey: ["content_microtags_detail", contentId],
+    queryFn: async () => {
+      const { data } = await supabase.from("content_microtags").select("tag").eq("content_id", contentId);
+      return (data ?? []).map((r: any) => r.tag);
+    },
+  });
+  if (!tags || tags.length === 0) return null;
+  return (
+    <div>
+      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Tags</h3>
+      <div className="flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            onClick={() => navigate(`/browse?microtag=${encodeURIComponent(tag)}`)}
+            className="text-[11px] px-2 py-1 rounded-lg bg-[hsl(240,14%,15%)] text-[hsl(240,7%,60%)] cursor-pointer hover:text-foreground transition-colors"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default ContentDetail;
