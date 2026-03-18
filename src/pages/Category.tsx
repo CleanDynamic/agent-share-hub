@@ -113,9 +113,22 @@ export default function Category() {
 
   // Content items query
   const { data: items, isLoading: itemsLoading } = useQuery({
-    queryKey: ["category_content", slug, limit],
+    queryKey: ["category_content", slug, limit, microtagParam],
     enabled: !!cat && !cat.isProject,
     queryFn: async () => {
+      if (microtagParam) {
+        // Filter by microtag: join content_microtags
+        const { data } = await supabase
+          .from("content_microtags")
+          .select("content_id, content_items!content_microtags_content_id_fkey(*, profiles!content_items_creator_id_fkey(username))")
+          .eq("tag", microtagParam)
+          .limit(limit);
+        return (data ?? [])
+          .map((r: any) => r.content_items)
+          .filter((i: any) => i && i.status === "approved" && i.content_type === cat!.contentType)
+          .sort((a: any, b: any) => b.download_count - a.download_count)
+          .slice(0, limit);
+      }
       const { data } = await supabase
         .from("content_items")
         .select("*, profiles!content_items_creator_id_fkey(username)")

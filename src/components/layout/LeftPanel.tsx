@@ -288,13 +288,23 @@ function SearchSection() {
           )}
           {content.length > 0 && (
             <div className="p-2 border-t border-border">
-              <p className="px-2 pb-1 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">Content</p>
+              <p className="px-2 pb-1 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
+                {query.startsWith("#") ? "Tags" : "Content"}
+              </p>
               {content.map((c: any) => (
-                <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
-                  <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">{c.content_type}</span>
-                  <span className="truncate">{c.title}</span>
-                  {c.profiles?.username && <span className="ml-auto text-xs text-muted-foreground">@{c.profiles.username}</span>}
-                </button>
+                c._isTag ? (
+                  <button key={c.tag} onClick={() => go(`/search?q=${encodeURIComponent(c.tag)}`)} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
+                    <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">#</span>
+                    <span className="truncate font-semibold">{c.tag}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">See all posts →</span>
+                  </button>
+                ) : (
+                  <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
+                    <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">{c.content_type}</span>
+                    <span className="truncate">{c.title}</span>
+                    {c.profiles?.username && <span className="ml-auto text-xs text-muted-foreground">@{c.profiles.username}</span>}
+                  </button>
+                )
               ))}
             </div>
           )}
