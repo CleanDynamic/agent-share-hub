@@ -64,6 +64,21 @@ export default function Profile() {
 
   const totalDownloads = contentItems?.reduce((sum, item) => sum + item.download_count, 0) ?? 0;
 
+  // Library items for the Library tab
+  const { data: libraryItems } = useQuery({
+    queryKey: ["profile_library", profile?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_library")
+        .select("id, content_id, added_at, has_update, content_items(*)")
+        .eq("user_id", profile!.id)
+        .order("added_at", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!profile?.id && profileTab === "library",
+  });
+
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !profile) return;
