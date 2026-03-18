@@ -494,7 +494,9 @@ const Browse = () => {
           </button>
         </div>
 
-        {browseTab === "paths" ? (
+        {browseTab === "collections" ? (
+          <BrowseCollections />
+        ) : browseTab === "paths" ? (
           <BrowseLearningPaths userId={profile?.id} />
         ) : browseTab === "projects" ? (
           <>
