@@ -147,11 +147,10 @@ function RenderBlockContent({
       return (
         <div className="max-w-prose" style={{ lineHeight: 1.8 }}>
           {paragraphs.map((p, i) => {
-            // Check if it's a heading (starts with # or formatting says heading)
             if (p.startsWith("# ") || (formatting?.type === "heading" && i === 0)) {
               return <h3 key={i} className="text-lg font-bold text-foreground mt-4 mb-2">{p.replace(/^#\s*/, "")}</h3>;
             }
-            return <p key={i} className="text-sm text-muted-foreground mb-[1.2em] whitespace-pre-wrap">{p}</p>;
+            return <p key={i} className="text-sm text-muted-foreground mb-[1.2em] whitespace-pre-wrap"><MentionText text={p} /></p>;
           })}
         </div>
       );
