@@ -12,16 +12,22 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Loader2, Lock, Globe } from "lucide-react";
+import { Plus, Loader2, Lock, Globe, Eye } from "lucide-react";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contentId: string;
   contentTitle?: string;
+  /** Pre-populate for companion collection creation */
+  prefill?: {
+    title: string;
+    description: string;
+    visibility: "private" | "unlisted" | "public";
+    contentIds: string[];
+    projectId?: string;
+  };
 }
 
 function slugify(title: string, username: string): string {
@@ -32,14 +38,20 @@ function slugify(title: string, username: string): string {
     .slice(0, 100);
 }
 
-export function AddToCollectionModal({ open, onOpenChange, contentId, contentTitle }: Props) {
+const VISIBILITY_OPTIONS = [
+  { value: "private", label: "Private", desc: "Only you can see this", icon: Lock },
+  { value: "unlisted", label: "Unlisted", desc: "Anyone with the link can view it", icon: Eye },
+  { value: "public", label: "Public", desc: "Appears on your profile and in Browse", icon: Globe },
+] as const;
+
+export function AddToCollectionModal({ open, onOpenChange, contentId, contentTitle, prefill }: Props) {
   const { profile } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [showCreate, setShowCreate] = useState(false);
-  const [title, setTitle] = useState("");
-  const [desc, setDesc] = useState("");
-  const [isPublic, setIsPublic] = useState(true);
+  const [showCreate, setShowCreate] = useState(!!prefill);
+  const [title, setTitle] = useState(prefill?.title ?? "");
+  const [desc, setDesc] = useState(prefill?.description ?? "");
+  const [visibility, setVisibility] = useState<"private" | "unlisted" | "public">(prefill?.visibility ?? "private");
   const [creating, setCreating] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
 
@@ -48,7 +60,7 @@ export function AddToCollectionModal({ open, onOpenChange, contentId, contentTit
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collections")
-        .select("id, title, item_count, is_public")
+        .select("id, title, item_count, is_public, visibility")
         .eq("owner_id", profile!.id)
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -98,14 +110,14 @@ export function AddToCollectionModal({ open, onOpenChange, contentId, contentTit
           .update({ item_count: position, updated_at: new Date().toISOString() })
           .eq("id", collectionId);
 
-        // FYP interaction for public collections
-        if (col?.is_public) {
+        const colVisibility = (col as any)?.visibility ?? (col?.is_public ? "public" : "private");
+        if (colVisibility === "public") {
           supabase.from("user_interactions").insert({
             user_id: profile.id,
             content_id: contentId,
             interaction_type: "added_to_collection",
             interaction_meta: {
-              collection_title: col.title,
+              collection_title: col?.title,
               content_title: contentTitle ?? "",
             },
           } as any);
@@ -123,17 +135,20 @@ export function AddToCollectionModal({ open, onOpenChange, contentId, contentTit
     if (!profile || !title.trim()) return;
     setCreating(true);
     const slug = slugify(title.trim(), profile.username ?? profile.id.slice(0, 8));
+    const itemIds = prefill?.contentIds ?? [contentId];
     const { data: col, error } = await supabase
       .from("collections")
       .insert({
         owner_id: profile.id,
         title: title.trim(),
         description: desc.trim() || null,
-        is_public: isPublic,
+        is_public: visibility === "public",
+        visibility,
         slug,
-        item_count: 1,
-      })
-      .select("id, title, item_count, is_public")
+        item_count: itemIds.length,
+        ...(prefill?.projectId ? { project_id: prefill.projectId } : {}),
+      } as any)
+      .select("id, title, item_count, is_public, slug")
       .single();
 
     if (error) {
@@ -142,15 +157,16 @@ export function AddToCollectionModal({ open, onOpenChange, contentId, contentTit
       return;
     }
 
-    // Add current content
-    await supabase.from("collection_items").insert({
+    // Add content items
+    const inserts = itemIds.map((cid, i) => ({
       collection_id: col.id,
-      content_id: contentId,
+      content_id: cid,
       added_by: profile.id,
-      position: 1,
-    });
+      position: i + 1,
+    }));
+    await supabase.from("collection_items").insert(inserts);
 
-    if (isPublic) {
+    if (visibility === "public") {
       supabase.from("user_interactions").insert({
         user_id: profile.id,
         content_id: contentId,
@@ -158,64 +174,76 @@ export function AddToCollectionModal({ open, onOpenChange, contentId, contentTit
         interaction_meta: {
           collection_title: col.title,
           content_title: contentTitle ?? "",
+          ...(prefill?.projectId ? { is_project_companion: true } : {}),
         },
       } as any);
     }
 
     qc.invalidateQueries({ queryKey: ["my_collections"] });
     qc.invalidateQueries({ queryKey: ["collection_memberships", contentId] });
+    if (prefill?.projectId) {
+      qc.invalidateQueries({ queryKey: ["companion_collection", prefill.projectId] });
+    }
     setTitle("");
     setDesc("");
-    setIsPublic(true);
+    setVisibility("private");
     setShowCreate(false);
     setCreating(false);
-    toast({ title: `Added to "${col.title}"` });
+    onOpenChange(false);
+    toast({ title: `Created "${col.title}"` });
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle className="text-base">Add to collection</DialogTitle>
+          <DialogTitle className="text-base">{prefill ? "Create companion collection" : "Add to collection"}</DialogTitle>
         </DialogHeader>
 
-        {isLoading ? (
-          <div className="flex justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <div className="space-y-1 max-h-60 overflow-y-auto">
-            {(collections ?? []).map((col) => {
-              const inCol = memberships?.has(col.id) ?? false;
-              return (
-                <label
-                  key={col.id}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                >
-                  <Checkbox
-                    checked={inCol}
-                    disabled={toggling === col.id}
-                    onCheckedChange={() => toggleCollection(col.id, inCol)}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{col.title}</p>
-                    <p className="text-[10px] text-muted-foreground">{col.item_count} items</p>
-                  </div>
-                  {col.is_public ? (
-                    <Globe className="h-3 w-3 text-muted-foreground shrink-0" />
-                  ) : (
-                    <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
-                  )}
-                </label>
-              );
-            })}
-            {(collections ?? []).length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">No collections yet</p>
+        {!prefill && (
+          <>
+            {isLoading ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="space-y-1 max-h-60 overflow-y-auto">
+                {(collections ?? []).map((col) => {
+                  const inCol = memberships?.has(col.id) ?? false;
+                  const colVis = (col as any)?.visibility ?? (col.is_public ? "public" : "private");
+                  return (
+                    <label
+                      key={col.id}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                    >
+                      <Checkbox
+                        checked={inCol}
+                        disabled={toggling === col.id}
+                        onCheckedChange={() => toggleCollection(col.id, inCol)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{col.title}</p>
+                        <p className="text-[10px] text-muted-foreground">{col.item_count} items</p>
+                      </div>
+                      {colVis === "public" ? (
+                        <Globe className="h-3 w-3 text-muted-foreground shrink-0" />
+                      ) : colVis === "unlisted" ? (
+                        <Eye className="h-3 w-3 text-muted-foreground shrink-0" />
+                      ) : (
+                        <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
+                      )}
+                    </label>
+                  );
+                })}
+                {(collections ?? []).length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">No collections yet</p>
+                )}
+              </div>
             )}
-          </div>
+          </>
         )}
 
-        {!showCreate ? (
+        {!showCreate && !prefill ? (
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-1.5 text-sm text-primary hover:underline mt-2"
@@ -236,9 +264,30 @@ export function AddToCollectionModal({ open, onOpenChange, contentId, contentTit
               placeholder="Description (optional)"
               className="h-9 text-sm"
             />
-            <div className="flex items-center gap-2">
-              <Switch checked={isPublic} onCheckedChange={setIsPublic} id="col-public" />
-              <Label htmlFor="col-public" className="text-sm">{isPublic ? "Public" : "Private"}</Label>
+            {/* Three-way visibility selector */}
+            <div className="space-y-1.5">
+              {VISIBILITY_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                const selected = visibility === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setVisibility(opt.value)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border text-left transition-colors ${
+                      selected
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border bg-card text-muted-foreground hover:border-muted-foreground/40"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">{opt.label}</p>
+                      <p className="text-[10px] text-muted-foreground">{opt.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
             <Button
               size="sm"
@@ -247,7 +296,7 @@ export function AddToCollectionModal({ open, onOpenChange, contentId, contentTit
               onClick={handleCreate}
             >
               {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
-              Create & add
+              {prefill ? "Create collection" : "Create & add"}
             </Button>
           </div>
         )}

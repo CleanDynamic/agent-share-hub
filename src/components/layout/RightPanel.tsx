@@ -57,6 +57,9 @@ export function RightPanel() {
       {/* Position 2.5 — Curator Picks */}
       <CuratorPicksSection navigate={navigate} />
 
+      {/* Position 2.75 — Featured Collections */}
+      <FeaturedCollectionsSection navigate={navigate} />
+
       {/* Position 3 — Category Directory */}
       <CategoryDirectory navigate={navigate} />
 
@@ -287,6 +290,52 @@ function CuratorPicksSection({ navigate }: { navigate: ReturnType<typeof useNavi
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/* ---- Section: Featured Collections ---- */
+function FeaturedCollectionsSection({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
+  const { data: collections } = useQuery({
+    queryKey: ["right_panel_featured_collections"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collections")
+        .select("slug, title, item_count, follower_count, profiles!collections_owner_id_fkey(display_name, username)")
+        .eq("is_public", true)
+        .gte("item_count", 3)
+        .order("follower_count", { ascending: false })
+        .limit(3);
+      return data ?? [];
+    },
+    staleTime: 120_000,
+  });
+
+  if (!collections || collections.length === 0) return null;
+
+  return (
+    <div>
+      <p className="text-base font-medium text-foreground mb-3">Featured Collections</p>
+      <div className="space-y-0.5">
+        {collections.map((col: any) => {
+          const owner = col.profiles;
+          return (
+            <button
+              key={col.slug}
+              onClick={() => navigate(`/collections/${col.slug}`)}
+              className="flex flex-col w-full text-left rounded-lg px-2 py-2 transition-colors hover:bg-accent/60"
+              style={{ minHeight: 56 }}
+            >
+              <span className="text-[13px] font-bold text-foreground truncate">{col.title}</span>
+              <span className="text-[11px] text-muted-foreground">by @{owner?.username || "unknown"}</span>
+              <span className="text-[11px] text-muted-foreground">{col.item_count} items · {col.follower_count} followers</span>
+            </button>
+          );
+        })}
+      </div>
+      <Link to="/browse?tab=collections" className="text-[11px] text-muted-foreground hover:text-foreground transition-colors mt-1.5 inline-block">
+        Browse all →
+      </Link>
     </div>
   );
 }
