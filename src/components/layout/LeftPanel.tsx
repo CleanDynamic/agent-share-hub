@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Home, LayoutGrid, Upload, Bookmark, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, Library, FilePenLine,
+  Home, LayoutGrid, Upload, Bookmark, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, FilePenLine,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
