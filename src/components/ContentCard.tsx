@@ -104,6 +104,11 @@ export function ContentCard({
   view_count = 0,
   is_fork = false,
   has_preview = false,
+  dependency_count = 0,
+  dependency_titles = [],
+  compatibility_status = null,
+  last_verified_at = null,
+  creator_id,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
