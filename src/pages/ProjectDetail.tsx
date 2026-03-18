@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
@@ -10,12 +10,13 @@ import { AccountGateModal } from "@/components/AccountGateModal";
 import { CommentsSection } from "@/components/CommentsSection";
 import { ChangelogTab } from "@/components/ChangelogTab";
 import { PortfolioCard } from "@/components/PortfolioCard";
+import { ExistingBlueprintSearch, type ExistingBlueprintItem } from "@/components/ExistingBlueprintSearch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Eye, User, Lock, ChevronDown, ChevronUp, CheckCircle2, Calendar,
+  ArrowLeft, Eye, User, Lock, ChevronDown, ChevronUp, CheckCircle2, Calendar, Plus,
 } from "lucide-react";
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 
@@ -157,6 +158,7 @@ function PackageBanner({ project, paidCount, totalPrice, hasPackage, onUnlock, u
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { isLoggedIn, profile } = useAuth();
   const { toast } = useToast();
@@ -165,6 +167,8 @@ const ProjectDetail = () => {
   const [accountGateContentId, setAccountGateContentId] = useState("");
   const [unlocking, setUnlocking] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "blueprints" | "changelog" | "comments">("overview");
+  const [showAddDropdown, setShowAddDropdown] = useState(false);
+  const [showAddExistingSearch, setShowAddExistingSearch] = useState(false);
 
   // Fetch project
   const { data: project, isLoading, error } = useQuery({
@@ -247,11 +251,36 @@ const ProjectDetail = () => {
   }, [project?.cover_image_url]);
 
   const creator = project?.profiles as { id: string; username: string; display_name: string | null } | null;
+  const isProjectOwner = !!profile?.id && project?.creator_id === profile.id;
   const paidComponents = (contentItems ?? []).filter((c) => c.monetisation_type === "paid");
   const totalIndividualPrice = paidComponents.reduce((sum, c) => sum + Number(c.price_gbp ?? 0), 0);
   const projectDifficulty = computeDifficulty(contentItems ?? []);
+  const existingLinkedIds = contentIds;
 
   const toggleExpand = (compId: string) => setExpandedComponents((p) => ({ ...p, [compId]: !p[compId] }));
+
+  const handleAddExistingBlueprint = async (item: ExistingBlueprintItem) => {
+    if (!id) return;
+    const nextPosition = (components ?? []).length + 1;
+    const { error } = await supabase.from("project_components").insert({
+      project_id: id,
+      position: nextPosition,
+      component_type: "linked",
+      linked_content_id: item.id,
+      show_on_browse: false,
+      component_label: null,
+      component_note: null,
+    });
+    if (error) {
+      toast({ title: "Failed to add blueprint", description: error.message, variant: "destructive" });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["project_components", id] });
+    queryClient.invalidateQueries({ queryKey: ["project_content_items"] });
+    setShowAddExistingSearch(false);
+    setShowAddDropdown(false);
+    toast({ title: "Blueprint added to project" });
+  };
 
   const handlePaywall = (contentId: string) => {
     if (!isLoggedIn) { setAccountGateContentId(contentId); setAccountGateOpen(true); return; }
@@ -481,6 +510,38 @@ const ProjectDetail = () => {
                     );
                   })}
                 </div>
+
+                {/* Creator: Add blueprint */}
+                {isProjectOwner && (
+                  <div className="mt-6 relative">
+                    {showAddExistingSearch ? (
+                      <ExistingBlueprintSearch
+                        excludeIds={existingLinkedIds}
+                        onSelect={handleAddExistingBlueprint}
+                        onClose={() => { setShowAddExistingSearch(false); setShowAddDropdown(false); }}
+                      />
+                    ) : showAddDropdown ? (
+                      <div className="flex gap-3">
+                        <Button type="button" variant="outline" size="sm"
+                          className="flex-1 gap-1.5 border-secondary text-secondary hover:bg-secondary/10"
+                          onClick={() => navigate("/upload")}>
+                          <Plus className="h-3.5 w-3.5" /> New blueprint
+                        </Button>
+                        <Button type="button" variant="outline" size="sm"
+                          className="flex-1 gap-1.5 border-secondary text-secondary hover:bg-secondary/10"
+                          onClick={() => setShowAddExistingSearch(true)}>
+                          <Plus className="h-3.5 w-3.5" /> Add existing
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button type="button" variant="outline" size="sm"
+                        className="gap-1.5 border-secondary text-secondary hover:bg-secondary/10"
+                        onClick={() => setShowAddDropdown(true)}>
+                        <Plus className="h-3.5 w-3.5" /> Add blueprint
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

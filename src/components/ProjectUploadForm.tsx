@@ -7,6 +7,7 @@ import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components
 import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { CollabInvitePicker, type CollabInvitee } from "@/components/CollabInvitePicker";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
+import { ExistingBlueprintSearch, type ExistingBlueprintItem } from "@/components/ExistingBlueprintSearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import {
   Loader2, CheckCircle2, ChevronUp, ChevronDown, Trash2, Plus,
-  ImagePlus, GripVertical, X,
+  ImagePlus, GripVertical, X, Link2Off, ExternalLink,
 } from "lucide-react";
 import { ORDERED_CONTENT_TYPES, displayContentType } from "@/lib/content-types";
 
@@ -32,6 +33,7 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 interface BlueprintSlot {
   id: string;
+  kind: "inline";
   stepLabel: string;
   title: string;
   contentType: string;
@@ -49,6 +51,25 @@ interface BlueprintSlot {
   collapsed: boolean;
 }
 
+interface LinkedBlueprintSlot {
+  id: string;
+  kind: "linked";
+  contentId: string;
+  title: string;
+  contentType: string;
+  description: string | null;
+  difficulty: string;
+  aiTools: string[] | null;
+  otherToolName: string | null;
+  monetisationType: string;
+  priceGbp: number | null;
+  stepLabel: string;
+  stepNote: string;
+  collapsed: boolean;
+}
+
+type AnySlot = BlueprintSlot | LinkedBlueprintSlot;
+
 interface InlineSplit {
   userId: string;
   username: string;
@@ -62,6 +83,7 @@ const slotUid = () => `slot_${Date.now()}_${++_slotUid}`;
 
 const emptySlot = (): BlueprintSlot => ({
   id: slotUid(),
+  kind: "inline",
   stepLabel: "",
   title: "",
   contentType: "",
@@ -79,7 +101,7 @@ const emptySlot = (): BlueprintSlot => ({
   collapsed: false,
 });
 
-function computeProjectDifficulty(slots: BlueprintSlot[]): string {
+function computeProjectDifficulty(slots: AnySlot[]): string {
   const diffs = slots.map((s) => s.difficulty).filter(Boolean);
   if (diffs.length === 0) return "—";
   if (diffs.some((d) => d === "Advanced")) return "Advanced";
@@ -132,7 +154,7 @@ async function uploadBlocks(contentId: string, blocks: ContentBlock[]) {
   }
 }
 
-// ─── Blueprint Slot Card ────────────────────────────────────
+// ─── Inline Blueprint Slot Card ────────────────────────────────────
 
 function BlueprintSlotCard({
   slot,
@@ -163,7 +185,7 @@ function BlueprintSlotCard({
 
   if (slot.collapsed) {
     return (
-      <div className="border border-border rounded-xl bg-card overflow-hidden">
+      <div className="border border-border rounded-xl bg-card overflow-hidden" style={{ borderLeftWidth: 2, borderLeftColor: "#E8571A" }}>
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-sm font-bold text-primary">{index + 1}</span>
@@ -183,12 +205,13 @@ function BlueprintSlotCard({
   }
 
   return (
-    <div className="border border-border rounded-xl bg-card overflow-hidden">
+    <div className="border border-border rounded-xl bg-card overflow-hidden" style={{ borderLeftWidth: 2, borderLeftColor: "#E8571A" }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border">
         <div className="flex items-center gap-2">
           <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
           <span className="text-sm font-bold" style={{ color: "#E8571A" }}>Blueprint {index + 1}</span>
+          <span className="text-[10px] text-muted-foreground">New</span>
         </div>
         <div className="flex items-center gap-1">
           <button type="button" onClick={() => onMove(-1)} disabled={index === 0} className="p-1 rounded hover:bg-muted disabled:opacity-30 text-muted-foreground"><ChevronUp className="h-4 w-4" /></button>
@@ -341,6 +364,123 @@ function BlueprintSlotCard({
   );
 }
 
+// ─── Linked Blueprint Slot Card ─────────────────────────────
+
+function LinkedBlueprintSlotCard({
+  slot,
+  index,
+  total,
+  onChange,
+  onMove,
+  onRemove,
+}: {
+  slot: LinkedBlueprintSlot;
+  index: number;
+  total: number;
+  onChange: (patch: Partial<LinkedBlueprintSlot>) => void;
+  onMove: (dir: -1 | 1) => void;
+  onRemove: () => void;
+}) {
+  const toolPills = (slot.aiTools ?? []).slice(0, 3).map((t) =>
+    t === "Other" && slot.otherToolName ? slot.otherToolName : t
+  );
+
+  if (slot.collapsed) {
+    return (
+      <div className="border border-border rounded-xl bg-card overflow-hidden" style={{ borderLeftWidth: 2, borderLeftColor: "#2EC4B6" }}>
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-bold" style={{ color: "#2EC4B6" }}>{index + 1}</span>
+            <span className="text-sm text-foreground truncate">{slot.title}</span>
+            <Badge variant="outline" className="text-[10px] shrink-0">{displayContentType(slot.contentType)}</Badge>
+          </div>
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => onMove(-1)} disabled={index === 0} className="p-1 rounded hover:bg-muted disabled:opacity-30 text-muted-foreground"><ChevronUp className="h-4 w-4" /></button>
+            <button type="button" onClick={() => onMove(1)} disabled={index === total - 1} className="p-1 rounded hover:bg-muted disabled:opacity-30 text-muted-foreground"><ChevronDown className="h-4 w-4" /></button>
+            <button type="button" onClick={() => onChange({ collapsed: false })} className="p-1 rounded hover:bg-muted text-muted-foreground text-xs px-2">Expand</button>
+            <button type="button" onClick={onRemove} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Link2Off className="h-4 w-4" /></button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-border rounded-xl bg-card overflow-hidden" style={{ borderLeftWidth: 2, borderLeftColor: "#2EC4B6" }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border">
+        <div className="flex items-center gap-2">
+          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+          <span className="text-sm font-bold" style={{ color: "#2EC4B6" }}>{index + 1}</span>
+          <span className="text-[10px] text-muted-foreground">Existing Blueprint</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={() => onMove(-1)} disabled={index === 0} className="p-1 rounded hover:bg-muted disabled:opacity-30 text-muted-foreground"><ChevronUp className="h-4 w-4" /></button>
+          <button type="button" onClick={() => onMove(1)} disabled={index === total - 1} className="p-1 rounded hover:bg-muted disabled:opacity-30 text-muted-foreground"><ChevronDown className="h-4 w-4" /></button>
+          <button type="button" onClick={() => onChange({ collapsed: true })} className="text-xs text-muted-foreground hover:text-foreground px-2">Collapse</button>
+          <button type="button" onClick={onRemove} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Remove from project"><Link2Off className="h-4 w-4" /></button>
+          <button type="button" onClick={onRemove} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Remove"><X className="h-4 w-4" /></button>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* Read-only summary */}
+        <div className="flex gap-3">
+          <div className="h-[60px] w-[60px] rounded-lg bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground shrink-0">
+            {displayContentType(slot.contentType).slice(0, 2).toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex flex-wrap gap-1">
+              <Badge variant="outline" className="text-[10px]">{displayContentType(slot.contentType)}</Badge>
+              <Badge variant="outline" className="text-[10px]">{slot.difficulty}</Badge>
+            </div>
+            <p className="text-sm font-semibold text-foreground">{slot.title}</p>
+            {slot.description && <p className="text-[13px] text-muted-foreground truncate">{slot.description}</p>}
+            {toolPills.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {toolPills.map((t) => (
+                  <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-accent text-muted-foreground">{t}</span>
+                ))}
+              </div>
+            )}
+            <a href={`/content/${slot.contentId}`} target="_blank" rel="noopener noreferrer"
+              className="text-[11px] text-primary hover:underline inline-flex items-center gap-1 mt-1">
+              View post <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        </div>
+
+        {/* Editable fields */}
+        <div className="space-y-1.5">
+          <Label className="text-xs">Step label (optional)</Label>
+          <Input value={slot.stepLabel} onChange={(e) => onChange({ stepLabel: e.target.value })}
+            placeholder="What does this blueprint do in the project?"
+            className="bg-background border-border rounded-xl text-sm" />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs">Step note (optional, max 120 chars)</Label>
+          <Input value={slot.stepNote} onChange={(e) => { if (e.target.value.length <= 120) onChange({ stepNote: e.target.value }); }}
+            placeholder="Context for readers"
+            className="bg-background border-border rounded-xl text-sm" maxLength={120} />
+        </div>
+
+        {/* Read-only monetisation */}
+        <div className="border border-border rounded-lg p-3">
+          <div className="flex items-center gap-2">
+            {slot.monetisationType === "paid" ? (
+              <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px]">£{Number(slot.priceGbp ?? 0).toFixed(2)}</Badge>
+            ) : (
+              <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">Free</Badge>
+            )}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1.5">Pricing set on original post — manage there.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main component ─────────────────────────────────────────
 
 export function ProjectUploadForm() {
@@ -353,7 +493,7 @@ export function ProjectUploadForm() {
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [wteBlocks, setWteBlocks] = useState<WteBlock[]>([]);
-  const [slots, setSlots] = useState<BlueprintSlot[]>([emptySlot()]);
+  const [slots, setSlots] = useState<AnySlot[]>([emptySlot()]);
   const [packageEnabled, setPackageEnabled] = useState(false);
   const [packagePrice, setPackagePrice] = useState<number | undefined>(undefined);
   const [collabInvitees, setCollabInvitees] = useState<CollabInvitee[]>([]);
@@ -361,8 +501,9 @@ export function ProjectUploadForm() {
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showExistingSearch, setShowExistingSearch] = useState(false);
 
-  const hasPaidSlots = slots.some((s) => s.monetisationType === "paid");
+  const hasPaidSlots = slots.some((s) => s.kind === "inline" ? s.monetisationType === "paid" : s.monetisationType === "paid");
   const showRevenueSplit = (hasPaidSlots || packageEnabled) && collabInvitees.length > 0;
   const totalSplitPct = inlineSplits.reduce((s, x) => s + (x.percentage || 0), 0);
   const keepPct = 100 - totalSplitPct;
@@ -377,9 +518,15 @@ export function ProjectUploadForm() {
     });
   }, [collabInvitees]);
 
-  const individualTotal = slots.reduce((sum, s) => sum + (s.monetisationType === "paid" ? (s.priceGbp ?? 0) : 0), 0);
+  const individualTotal = slots.reduce((sum, s) => {
+    if (s.kind === "inline") return sum + (s.monetisationType === "paid" ? (s.priceGbp ?? 0) : 0);
+    return sum + (s.monetisationType === "paid" ? Number(s.priceGbp ?? 0) : 0);
+  }, 0);
   const saving = packagePrice ? individualTotal - packagePrice : 0;
   const projectDifficulty = computeProjectDifficulty(slots);
+
+  // IDs of linked content to exclude from search
+  const linkedContentIds = slots.filter((s) => s.kind === "linked").map((s) => (s as LinkedBlueprintSlot).contentId);
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -389,9 +536,9 @@ export function ProjectUploadForm() {
     setCoverPreview(URL.createObjectURL(f));
   };
 
-  const updateSlot = (index: number, patch: Partial<BlueprintSlot>) => {
+  const updateSlot = (index: number, patch: Partial<AnySlot>) => {
     const next = [...slots];
-    next[index] = { ...next[index], ...patch };
+    next[index] = { ...next[index], ...patch } as AnySlot;
     setSlots(next);
   };
 
@@ -408,6 +555,27 @@ export function ProjectUploadForm() {
     setSlots(slots.filter((_, i) => i !== index));
   };
 
+  const addExistingBlueprint = (item: ExistingBlueprintItem) => {
+    const linked: LinkedBlueprintSlot = {
+      id: slotUid(),
+      kind: "linked",
+      contentId: item.id,
+      title: item.title,
+      contentType: item.content_type,
+      description: item.description,
+      difficulty: item.difficulty,
+      aiTools: item.ai_tools,
+      otherToolName: item.other_tool_name,
+      monetisationType: item.monetisation_type,
+      priceGbp: item.price_gbp,
+      stepLabel: "",
+      stepNote: "",
+      collapsed: false,
+    };
+    setSlots([...slots, linked]);
+    setShowExistingSearch(false);
+  };
+
   // ─── Submit ─────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -416,10 +584,12 @@ export function ProjectUploadForm() {
     if (slots.length === 0) { toast({ title: "Add at least one blueprint", variant: "destructive" }); return; }
     for (let i = 0; i < slots.length; i++) {
       const s = slots[i];
-      if (!s.title.trim()) { toast({ title: `Blueprint ${i + 1}: title required`, variant: "destructive" }); return; }
-      if (!s.contentType) { toast({ title: `Blueprint ${i + 1}: content type required`, variant: "destructive" }); return; }
-      if (!s.difficulty) { toast({ title: `Blueprint ${i + 1}: difficulty required`, variant: "destructive" }); return; }
-      if (s.blocks.length === 0) { toast({ title: `Blueprint ${i + 1}: add content blocks`, variant: "destructive" }); return; }
+      if (s.kind === "inline") {
+        if (!s.title.trim()) { toast({ title: `Blueprint ${i + 1}: title required`, variant: "destructive" }); return; }
+        if (!s.contentType) { toast({ title: `Blueprint ${i + 1}: content type required`, variant: "destructive" }); return; }
+        if (!s.difficulty) { toast({ title: `Blueprint ${i + 1}: difficulty required`, variant: "destructive" }); return; }
+        if (s.blocks.length === 0) { toast({ title: `Blueprint ${i + 1}: add content blocks`, variant: "destructive" }); return; }
+      }
     }
 
     setSubmitting(true);
@@ -464,68 +634,77 @@ export function ProjectUploadForm() {
 
       if (projError || !project) throw new Error(projError?.message ?? "Project insert failed");
 
-      // Save WTE blocks to project (via what_to_expect_blocks — stored on first content item or project)
-      // Since projects table doesn't have what_to_expect_blocks, we'll use the first content_item
-      // Actually we should store it. For now we skip — the detail page reads from project row.
-
-      // Process each blueprint slot
+      // Process each slot
       for (let i = 0; i < slots.length; i++) {
         const slot = slots[i];
         const position = i + 1;
 
-        // WTE blocks for this slot
-        const slotWteJsonb = slot.wteBlocks.length > 0 ? slot.wteBlocks.map((b, j) => ({
-          id: b.id, position: j + 1, block_type: b.type,
-          text_content: b.textContent || null, formatting_type: b.formatting,
-          sub_blocks: b.formatting === "sub_list" && b.subBlocks?.length > 0 ? b.subBlocks : null,
-          use_instructions: b.useInstructions?.trim() || null,
-          image_description: b.type === "image" ? b.imageDescription : null,
-        })) : null;
+        if (slot.kind === "linked") {
+          // Link existing content item
+          await supabase.from("project_components").insert({
+            project_id: project.id,
+            position,
+            component_type: "linked",
+            linked_content_id: slot.contentId,
+            show_on_browse: false,
+            component_label: slot.stepLabel || null,
+            component_note: slot.stepNote || null,
+          });
+        } else {
+          // Create new inline content item
+          const slotWteJsonb = slot.wteBlocks.length > 0 ? slot.wteBlocks.map((b, j) => ({
+            id: b.id, position: j + 1, block_type: b.type,
+            text_content: b.textContent || null, formatting_type: b.formatting,
+            sub_blocks: b.formatting === "sub_list" && b.subBlocks?.length > 0 ? b.subBlocks : null,
+            use_instructions: b.useInstructions?.trim() || null,
+            image_description: b.type === "image" ? b.imageDescription : null,
+          })) : null;
 
-        const { data: contentItem, error: ciError } = await supabase
-          .from("content_items")
-          .insert({
-            creator_id: user.id,
-            title: slot.title.trim(),
-            content_type: slot.contentType,
-            description: slot.description.trim() || null,
-            difficulty: slot.difficulty,
-            ai_tools: slot.aiTools,
-            use_cases: slot.useCases,
-            tags: slot.tags,
-            file_url: null,
-            use_instructions: null,
-            what_to_expect: null,
-            what_to_expect_blocks: slotWteJsonb,
-            other_tool_name: slot.aiTools.includes("Other") && slot.otherToolName.trim() ? slot.otherToolName.trim() : null,
-            status: "pending",
-            monetisation_type: slot.monetisationType,
-            price_gbp: slot.monetisationType === "paid" ? slot.priceGbp ?? null : null,
-            donation_enabled: false,
-          } as any)
-          .select("id")
-          .single();
+          const { data: contentItem, error: ciError } = await supabase
+            .from("content_items")
+            .insert({
+              creator_id: user.id,
+              title: slot.title.trim(),
+              content_type: slot.contentType,
+              description: slot.description.trim() || null,
+              difficulty: slot.difficulty,
+              ai_tools: slot.aiTools,
+              use_cases: slot.useCases,
+              tags: slot.tags,
+              file_url: null,
+              use_instructions: null,
+              what_to_expect: null,
+              what_to_expect_blocks: slotWteJsonb,
+              other_tool_name: slot.aiTools.includes("Other") && slot.otherToolName.trim() ? slot.otherToolName.trim() : null,
+              status: "pending",
+              monetisation_type: slot.monetisationType,
+              price_gbp: slot.monetisationType === "paid" ? slot.priceGbp ?? null : null,
+              donation_enabled: false,
+            } as any)
+            .select("id")
+            .single();
 
-        if (ciError || !contentItem) throw new Error(ciError?.message ?? `Blueprint ${position} insert failed`);
+          if (ciError || !contentItem) throw new Error(ciError?.message ?? `Blueprint ${position} insert failed`);
 
-        await uploadBlocks(contentItem.id, slot.blocks);
+          await uploadBlocks(contentItem.id, slot.blocks);
 
-        await supabase.from("project_components").insert({
-          project_id: project.id,
-          position,
-          component_type: "inline",
-          inline_content_id: contentItem.id,
-          show_on_browse: false,
-          component_label: slot.stepLabel || null,
-          component_note: slot.description || null,
-        });
+          await supabase.from("project_components").insert({
+            project_id: project.id,
+            position,
+            component_type: "inline",
+            inline_content_id: contentItem.id,
+            show_on_browse: false,
+            component_label: slot.stepLabel || null,
+            component_note: slot.description || null,
+          });
+        }
       }
 
       // Co-author invites & revenue splits
       for (const inv of collabInvitees) {
         const splitForInv = inlineSplits.find((s) => s.userId === inv.id);
         const { data: inviteData } = await supabase.from("collab_invites").insert({
-          content_id: project.id, // project-level
+          content_id: project.id,
           inviter_id: user.id,
           invitee_id: inv.id,
           status: "pending",
@@ -552,7 +731,7 @@ export function ProjectUploadForm() {
       // Dependencies
       for (const dep of dependencies) {
         await supabase.from("content_dependencies").insert({
-          content_id: project.id, // project-level dep
+          content_id: project.id,
           requires_content_id: dep.content_id,
           dependency_note: dep.note || null,
         } as any);
@@ -627,28 +806,59 @@ export function ProjectUploadForm() {
         <div>
           <h3 className="text-base font-bold text-foreground">Your Blueprints</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Add the blueprints that make up this project. Each blueprint is a step.</p>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            <span className="inline-block w-2 h-2 rounded-sm mr-1" style={{ backgroundColor: "#E8571A" }} /> New blueprint
+            {" "}
+            <span className="inline-block w-2 h-2 rounded-sm mr-1 ml-2" style={{ backgroundColor: "#2EC4B6" }} /> Existing blueprint
+          </p>
         </div>
 
         <div className="space-y-4">
-          {slots.map((slot, index) => (
-            <BlueprintSlotCard
-              key={slot.id}
-              slot={slot}
-              index={index}
-              total={slots.length}
-              onChange={(patch) => updateSlot(index, patch)}
-              onMove={(dir) => moveSlot(index, dir)}
-              onDelete={() => deleteSlot(index)}
-              aiTools={AI_TOOLS ?? []}
-            />
-          ))}
+          {slots.map((slot, index) =>
+            slot.kind === "linked" ? (
+              <LinkedBlueprintSlotCard
+                key={slot.id}
+                slot={slot}
+                index={index}
+                total={slots.length}
+                onChange={(patch) => updateSlot(index, patch)}
+                onMove={(dir) => moveSlot(index, dir)}
+                onRemove={() => deleteSlot(index)}
+              />
+            ) : (
+              <BlueprintSlotCard
+                key={slot.id}
+                slot={slot}
+                index={index}
+                total={slots.length}
+                onChange={(patch) => updateSlot(index, patch)}
+                onMove={(dir) => moveSlot(index, dir)}
+                onDelete={() => deleteSlot(index)}
+                aiTools={AI_TOOLS ?? []}
+              />
+            )
+          )}
         </div>
 
-        {slots.length < 20 && (
-          <Button type="button" variant="outline" size="sm" onClick={() => setSlots([...slots, emptySlot()])}
-            className="gap-1.5 border-primary text-primary hover:bg-primary/10">
-            <Plus className="h-3.5 w-3.5" /> Add Blueprint
-          </Button>
+        {showExistingSearch && (
+          <ExistingBlueprintSearch
+            excludeIds={linkedContentIds}
+            onSelect={addExistingBlueprint}
+            onClose={() => setShowExistingSearch(false)}
+          />
+        )}
+
+        {slots.length < 20 && !showExistingSearch && (
+          <div className="flex gap-3">
+            <Button type="button" variant="outline" size="sm" onClick={() => setSlots([...slots, emptySlot()])}
+              className="gap-1.5 flex-1 border-secondary text-secondary hover:bg-secondary/10">
+              <Plus className="h-3.5 w-3.5" /> New Blueprint
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => setShowExistingSearch(true)}
+              className="gap-1.5 flex-1 border-secondary text-secondary hover:bg-secondary/10">
+              <Plus className="h-3.5 w-3.5" /> Add Existing Blueprint
+            </Button>
+          </div>
         )}
         {slots.length >= 20 && <p className="text-xs text-muted-foreground">Maximum 20 blueprints per project.</p>}
       </div>
