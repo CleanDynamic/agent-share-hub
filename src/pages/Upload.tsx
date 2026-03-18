@@ -68,13 +68,12 @@ const Upload = () => {
   const [revenueSplits, setRevenueSplits] = useState<RevenueSplit[]>([]);
   const [collabInvitees, setCollabInvitees] = useState<CollabInvitee[]>([]);
   const [pwywFloor, setPwywFloor] = useState<number>(0);
-  const [selectedMicrotags, setSelectedMicrotags] = useState<string[]>([]);
-  const [microtagError, setMicrotagError] = useState("");
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   const [toolUrl, setToolUrl] = useState("");
   const [customUseCaseDesc, setCustomUseCaseDesc] = useState("");
-  const { data: microtagDefs } = useMicrotagDefinitions();
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
