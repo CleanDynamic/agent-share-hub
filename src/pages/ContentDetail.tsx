@@ -98,7 +98,7 @@ const ContentDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn, user, profile } = useAuth();
   const [downloading, setDownloading] = useState(false);
   const [localCount, setLocalCount] = useState<number | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -110,6 +110,9 @@ const ContentDetail = () => {
   const [accountGateMode, setAccountGateMode] = useState<"purchase" | "subscription">("purchase");
   const [forkModalOpen, setForkModalOpen] = useState(false);
   const [forksModalOpen, setForksModalOpen] = useState(false);
+  const [curatorModalOpen, setCuratorModalOpen] = useState(false);
+  const [curatorText, setCuratorText] = useState("");
+  const [curatorSubmitting, setCuratorSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<"content" | "changelog" | "tips" | "comments">("content");
   const viewTracked = useRef(false);
 
