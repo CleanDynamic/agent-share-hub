@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,13 +13,15 @@ import { AccountGateModal } from "@/components/AccountGateModal";
 import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { StarRating } from "@/components/StarRating";
 import { CommentsSection } from "@/components/CommentsSection";
+import { ChangelogTab } from "@/components/ChangelogTab";
+import { TipsTab } from "@/components/TipsTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2, Eye, GitFork, ExternalLink } from "lucide-react";
+import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2, Eye, GitFork, ExternalLink, Clock } from "lucide-react";
 import { VersionHistory } from "@/components/VersionHistory";
 import { ForkModal } from "@/components/ForkModal";
 import { DependencyDisplay } from "@/components/DependencyDisplay";
@@ -102,6 +104,7 @@ const ContentDetail = () => {
   const [accountGateMode, setAccountGateMode] = useState<"purchase" | "subscription">("purchase");
   const [forkModalOpen, setForkModalOpen] = useState(false);
   const [forksModalOpen, setForksModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"content" | "changelog" | "tips" | "comments">("content");
   const viewTracked = useRef(false);
 
   const { data: item, isLoading, error } = useQuery({
@@ -121,7 +124,7 @@ const ContentDetail = () => {
 
   const creator = item?.profiles as { id: string; username: string; display_name: string | null; bio: string | null } | null;
 
-  // ─── View tracking + library update dismissal ──────────────────────────────────────
+  // ─── View tracking ──────────────────────────────────────
   useEffect(() => {
     if (!item || viewTracked.current) return;
     viewTracked.current = true;
@@ -143,16 +146,40 @@ const ContentDetail = () => {
         interaction_type: "viewed_block",
         interaction_meta: { title: item.title },
       } as any);
-
-      // Dismiss library update indicator
-      supabase
-        .from("user_library")
-        .update({ has_update: false, last_seen_version: item.current_version } as any)
-        .eq("user_id", user.id)
-        .eq("content_id", item.id)
-        .then(() => {});
     }
   }, [item, user]);
+
+  // Check if this item has a library update for the current user
+  const { data: hasLibraryUpdate, refetch: refetchLibraryUpdate } = useQuery({
+    queryKey: ["library_update_check", id, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_library")
+        .select("has_update")
+        .eq("user_id", user!.id)
+        .eq("content_id", id!)
+        .maybeSingle();
+      return (data as any)?.has_update === true;
+    },
+    enabled: !!user?.id && !!id,
+  });
+
+  const dismissLibraryUpdate = useCallback(async () => {
+    if (!user || !item) return;
+    await supabase
+      .from("user_library")
+      .update({ has_update: false, last_seen_version: item.current_version } as any)
+      .eq("user_id", user.id)
+      .eq("content_id", item.id);
+    refetchLibraryUpdate();
+  }, [user, item, refetchLibraryUpdate]);
+
+  function handleTabChange(tab: "content" | "changelog" | "tips" | "comments") {
+    setActiveTab(tab);
+    if (tab === "changelog" && hasLibraryUpdate) {
+      dismissLibraryUpdate();
+    }
+  }
 
   const { data: creatorStats } = useQuery({
     queryKey: ["creator_total_downloads", creator?.id],
@@ -492,51 +519,92 @@ const ContentDetail = () => {
               </div>
             )}
 
+            {/* Tab strip */}
             {(!isSub || subscriberUnlocked) && (
-              <ContentBlockViewer
-                contentId={item.id}
-                contentTitle={item.title}
-                monetisationType={item.monetisation_type}
-                creatorId={item.creator_id}
-                useInstructions={item.use_instructions}
-                onTriggerPaywall={handleDownload}
-                isEligible={isEligible}
-              />
-            )}
-
-            {item.what_to_expect && (!isSub || subscriberUnlocked) && (
-              <div>
-                <h2 className="text-lg font-semibold text-foreground mb-3">What to Expect</h2>
-                <div className="border border-border rounded-xl p-5 bg-card">
-                  <p className="text-sm text-muted-foreground leading-relaxed">{item.what_to_expect}</p>
-                </div>
-              </div>
-            )}
-
-            {item.use_cases && item.use_cases.length > 0 && (
-              <div>
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Use Cases</h3>
-                <div className="flex flex-wrap gap-2">
-                  {item.use_cases.map((uc) => (
-                    <span key={uc} className="text-xs px-2 py-1 rounded-lg border border-border text-muted-foreground">{uc}</span>
+              <>
+                <div className="flex gap-0 border-b border-border mb-4">
+                  {(["content", "changelog", "tips", "comments"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => handleTabChange(tab)}
+                      className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                        activeTab === tab
+                          ? "text-foreground border-b-2 border-primary -mb-px"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {tab === "content" && "Content"}
+                      {tab === "changelog" && (
+                        <>Changelog{hasLibraryUpdate && <span className="ml-1 text-[#E8571A]">●</span>}</>
+                      )}
+                      {tab === "tips" && "Tips"}
+                      {tab === "comments" && `Comments (${(item as any).comment_count ?? 0})`}
+                    </button>
                   ))}
                 </div>
-              </div>
-            )}
 
-            {/* Comments section */}
-            {(!isSub || subscriberUnlocked) && (
-              <CommentsSection
-                contentId={item.id}
-                contentTitle={item.title}
-                commentCount={(item as any).comment_count ?? 0}
-                isEligible={isEligible}
-              />
-            )}
+                {/* Tab content */}
+                {activeTab === "content" && (
+                  <>
+                    <ContentBlockViewer
+                      contentId={item.id}
+                      contentTitle={item.title}
+                      monetisationType={item.monetisation_type}
+                      creatorId={item.creator_id}
+                      useInstructions={item.use_instructions}
+                      onTriggerPaywall={handleDownload}
+                      isEligible={isEligible}
+                    />
 
-            {/* Version History */}
-            {(!isSub || subscriberUnlocked) && (
-              <VersionHistory contentId={item.id} currentVersion={item.current_version} />
+                    {item.what_to_expect && (
+                      <div className="mt-6">
+                        <h2 className="text-lg font-semibold text-foreground mb-3">What to Expect</h2>
+                        <div className="border border-border rounded-xl p-5 bg-card">
+                          <p className="text-sm text-muted-foreground leading-relaxed">{item.what_to_expect}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {item.use_cases && item.use_cases.length > 0 && (
+                      <div className="mt-4">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Use Cases</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {item.use_cases.map((uc) => (
+                            <span key={uc} className="text-xs px-2 py-1 rounded-lg border border-border text-muted-foreground">{uc}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Version History */}
+                    <div className="mt-6">
+                      <VersionHistory contentId={item.id} currentVersion={item.current_version} />
+                    </div>
+                  </>
+                )}
+
+                {activeTab === "changelog" && (
+                  <ChangelogTab
+                    contentId={item.id}
+                    contentTitle={item.title}
+                    creatorId={item.creator_id}
+                    currentVersion={item.current_version}
+                  />
+                )}
+
+                {activeTab === "tips" && (
+                  <TipsTab contentId={item.id} isEligible={isEligible} />
+                )}
+
+                {activeTab === "comments" && (
+                  <CommentsSection
+                    contentId={item.id}
+                    contentTitle={item.title}
+                    commentCount={(item as any).comment_count ?? 0}
+                    isEligible={isEligible}
+                  />
+                )}
+              </>
             )}
           </div>
 

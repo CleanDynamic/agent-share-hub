@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Lock, Loader2, Eye, Star, StarHalf, GitFork, Link2 } from "lucide-react";
+import { Download, Lock, Loader2, Eye, Star, StarHalf, GitFork, Link2, Clock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CompatibilityBadge } from "@/components/CompatibilityBadge";
+import { formatDistanceToNow } from "date-fns";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +38,7 @@ export interface ContentCardProps {
   compatibility_status?: string | null;
   last_verified_at?: string | null;
   creator_id?: string;
+  last_changelog_at?: string | null;
 }
 
 function roundedStars(avg: number, count: number): number {
@@ -109,6 +111,7 @@ export function ContentCard({
   compatibility_status = null,
   last_verified_at = null,
   creator_id,
+  last_changelog_at = null,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -222,7 +225,13 @@ export function ContentCard({
         </h3>
         <p className="text-xs text-muted-foreground leading-relaxed mb-1 flex-1">{description}</p>
         {has_preview && (
-          <p className="text-[11px] font-medium mb-3" style={{ color: "#2EC4B6" }}>Preview available</p>
+          <p className="text-[11px] font-medium mb-1" style={{ color: "#2EC4B6" }}>Preview available</p>
+        )}
+        {last_changelog_at && (
+          <p className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1">
+            <Clock className="h-2.5 w-2.5" />
+            Updated {formatDistanceToNow(new Date(last_changelog_at), { addSuffix: true })}
+          </p>
         )}
 
         {/* AI tools */}
