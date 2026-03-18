@@ -29,6 +29,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
   const { hasUnseenSaves, fypCount } = useNavBadges();
   const { display: notifBadge } = useUnreadNotifications();
   const { display: msgBadge } = useUnreadMessages();
+  const { display: libraryBadge } = useLibraryUpdateCount();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
