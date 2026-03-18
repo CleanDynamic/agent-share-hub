@@ -613,6 +613,9 @@ const ContentDetail = () => {
               </div>
             )}
 
+            {/* Micro-tags */}
+            <DetailMicrotags contentId={item.id} />
+
             {/* Dependencies */}
             <DependencyDisplay contentId={item.id} />
 

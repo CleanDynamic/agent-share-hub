@@ -302,13 +302,31 @@ export function ContentCard({
         )}
 
         {/* AI tools */}
-        <div className="flex flex-wrap gap-1 mb-3">
+        <div className="flex flex-wrap gap-1 mb-1.5">
           {ai_tools.map((tool) => (
             <span key={tool} className="text-[10px] px-1.5 py-0.5 rounded-md bg-accent text-muted-foreground">
               {tool}
             </span>
           ))}
         </div>
+
+        {/* Micro-tags */}
+        {microtags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-3">
+            {microtags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                onClick={(e) => { e.stopPropagation(); navigate(`/browse?microtag=${encodeURIComponent(tag)}`); }}
+                className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,15%)] text-[hsl(240,7%,60%)] cursor-pointer hover:text-foreground transition-colors"
+              >
+                {tag}
+              </span>
+            ))}
+            {microtags.length > 3 && (
+              <span className="text-[10px] px-1.5 py-0.5 text-muted-foreground">+{microtags.length - 3} more</span>
+            )}
+          </div>
+        )}
 
         {/* Rating + status indicators */}
         <div className="flex items-center gap-1.5 mb-3">
