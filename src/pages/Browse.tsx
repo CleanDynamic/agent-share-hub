@@ -531,7 +531,10 @@ const Browse = () => {
         const inDesc = (item.description ?? "").toLowerCase().includes(q);
         const inType = item.content_type.toLowerCase().includes(q);
         const inUseCases = (item.use_cases ?? []).some((u) => u.toLowerCase().includes(q));
-        if (!inTitle && !inDesc && !inType && !inUseCases) return false;
+        const inTools = (item.ai_tools ?? []).some((t: string) => t.toLowerCase().includes(q));
+        const inWhatToExpect = ((item as any).what_to_expect ?? "").toLowerCase().includes(q);
+        const inCustomUseCase = ((item as any).custom_use_case_description ?? "").toLowerCase().includes(q);
+        if (!inTitle && !inDesc && !inType && !inUseCases && !inTools && !inWhatToExpect && !inCustomUseCase) return false;
       }
       if (typeFilter !== ALL && item.content_type !== typeFilter) return false;
       if (difficultyFilter !== ALL && item.difficulty !== difficultyFilter) return false;
@@ -886,9 +889,12 @@ const Browse = () => {
                       )}
                       {useCasesArr.length > 0 && (
                         <div className="flex flex-wrap gap-1">
-                          {useCasesArr.slice(0, 3).map((u) => (
-                            <span key={u} className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">{u}</span>
-                          ))}
+                          {useCasesArr.slice(0, 3).map((u, i) => {
+                            const label = u === "Other" && (item as any).custom_use_case_description ? (item as any).custom_use_case_description : u;
+                            return (
+                              <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">{label}</span>
+                            );
+                          })}
                           {useCasesArr.length > 3 && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">+{useCasesArr.length - 3} more</span>}
                         </div>
                       )}

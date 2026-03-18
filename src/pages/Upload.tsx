@@ -74,6 +74,7 @@ const Upload = () => {
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   const [toolUrl, setToolUrl] = useState("");
+  const [customUseCaseDesc, setCustomUseCaseDesc] = useState("");
   const { data: microtagDefs } = useMicrotagDefinitions();
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -166,6 +167,11 @@ const Upload = () => {
       // Save tool_url if AI Tools type
       if (isAIToolsType && toolUrl.trim()) {
         await supabase.from("content_items").update({ tool_url: toolUrl.trim() } as any).eq("id", contentId);
+      }
+
+      // Save custom use case description
+      if (customUseCaseDesc.trim() && values.use_cases.includes("Other")) {
+        await supabase.from("content_items").update({ custom_use_case_description: customUseCaseDesc.trim() } as any).eq("id", contentId);
       }
 
       // Upload cover image if selected
@@ -589,6 +595,22 @@ const Upload = () => {
                       );
                     })}
                   </div>
+                  {field.value.includes("Other") && (
+                    <div className="mt-2">
+                      <Label className="text-xs text-muted-foreground">Describe your use case (optional)</Label>
+                      <div className="relative mt-1">
+                        <Input
+                          value={customUseCaseDesc}
+                          onChange={(e) => setCustomUseCaseDesc(e.target.value.slice(0, 50))}
+                          placeholder="e.g. Legal research, Recipe planning..."
+                          className="h-9 text-sm bg-card border-border pr-14"
+                          maxLength={50}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{customUseCaseDesc.length} / 50</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">This appears on your post in the feed. It's still categorised as 'Other' in filters.</p>
+                    </div>
+                  )}
                   <FormDescription>Select all that apply. This helps people find your content.</FormDescription>
                   <FormMessage />
                 </FormItem>

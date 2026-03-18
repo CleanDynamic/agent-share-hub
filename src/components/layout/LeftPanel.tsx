@@ -224,10 +224,28 @@ function SearchSection() {
 
     const [uRes, cRes] = await Promise.all([
       supabase.from("profiles").select("id, username, display_name, avatar_url").or(`display_name.ilike.%${q}%,username.ilike.%${q}%`).limit(5),
-      supabase.from("content_items").select("id, title, content_type, creator_id, profiles!content_items_creator_id_fkey(username)").ilike("title", `%${q}%`).eq("status", "approved").limit(5),
+      supabase.from("content_items")
+        .select("id, title, content_type, ai_tools, use_cases, custom_use_case_description, creator_id, profiles!content_items_creator_id_fkey(username)")
+        .eq("status", "approved")
+        .or(`title.ilike.%${q}%,description.ilike.%${q}%,content_type.ilike.%${q}%,what_to_expect.ilike.%${q}%,custom_use_case_description.ilike.%${q}%`)
+        .limit(10),
     ]);
+    // Also filter by ai_tools/use_cases client-side for array fields
+    let contentResults = cRes.data ?? [];
+    // If the query didn't match title/desc, check arrays
+    const lowerQ = q.toLowerCase();
+    contentResults = contentResults.filter((c: any) => {
+      if (c.title?.toLowerCase().includes(lowerQ)) return true;
+      if ((c as any).description?.toLowerCase().includes(lowerQ)) return true;
+      if (c.content_type?.toLowerCase().includes(lowerQ)) return true;
+      if ((c as any).what_to_expect?.toLowerCase().includes(lowerQ)) return true;
+      if ((c as any).custom_use_case_description?.toLowerCase().includes(lowerQ)) return true;
+      if ((c.ai_tools ?? []).some((t: string) => t.toLowerCase().includes(lowerQ))) return true;
+      if ((c.use_cases ?? []).some((u: string) => u.toLowerCase().includes(lowerQ))) return true;
+      return false;
+    }).slice(0, 5);
     setUsers(uRes.data ?? []);
-    setContent(cRes.data ?? []);
+    setContent(contentResults);
     setLoading(false);
   }, []);
 
@@ -296,10 +314,26 @@ function SearchSection() {
                     <span className="ml-auto text-xs text-muted-foreground">See all posts →</span>
                   </button>
                 ) : (
-                  <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
-                    <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">{c.content_type}</span>
-                    <span className="truncate">{c.title}</span>
-                    {c.profiles?.username && <span className="ml-auto text-xs text-muted-foreground">@{c.profiles.username}</span>}
+                  <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
+                    <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground mt-0.5">{c.content_type}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="truncate block">{c.title}</span>
+                      {(() => {
+                        const lq = query.toLowerCase();
+                        const titleMatch = c.title?.toLowerCase().includes(lq);
+                        if (titleMatch) return null;
+                        const matches: string[] = [];
+                        (c.ai_tools ?? []).forEach((t: string) => { if (t.toLowerCase().includes(lq) && matches.length < 2) matches.push(t); });
+                        (c.use_cases ?? []).forEach((u: string) => {
+                          const label = u === "Other" && c.custom_use_case_description ? c.custom_use_case_description : u;
+                          if (label.toLowerCase().includes(lq) && matches.length < 2) matches.push(label);
+                        });
+                        if (c.custom_use_case_description?.toLowerCase().includes(lq) && matches.length < 2 && !matches.includes(c.custom_use_case_description)) matches.push(c.custom_use_case_description);
+                        if (matches.length === 0) return null;
+                        return <span className="text-[10px] text-muted-foreground block truncate">Matches: {matches.join(" · ")}</span>;
+                      })()}
+                    </div>
+                    {c.profiles?.username && <span className="ml-auto text-xs text-muted-foreground shrink-0">@{c.profiles.username}</span>}
                   </button>
                 )
               ))}

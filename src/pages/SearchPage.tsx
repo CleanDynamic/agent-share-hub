@@ -72,10 +72,22 @@ export default function SearchPage() {
         .from("content_items")
         .select("*, profiles!content_items_creator_id_fkey(username)")
         .eq("status", "approved")
-        .or(`title.ilike.%${q}%,description.ilike.%${q}%,content_type.ilike.%${q}%`)
+        .or(`title.ilike.%${q}%,description.ilike.%${q}%,content_type.ilike.%${q}%,what_to_expect.ilike.%${q}%,custom_use_case_description.ilike.%${q}%`)
         .order("download_count", { ascending: false })
-        .limit(30);
-      return data || [];
+        .limit(50);
+      // Also include items matching ai_tools/use_cases arrays (client-side filter)
+      const lowerQ = q.toLowerCase();
+      const results = (data || []).filter((item: any) => {
+        if (item.title?.toLowerCase().includes(lowerQ)) return true;
+        if (item.description?.toLowerCase().includes(lowerQ)) return true;
+        if (item.content_type?.toLowerCase().includes(lowerQ)) return true;
+        if (item.what_to_expect?.toLowerCase().includes(lowerQ)) return true;
+        if (item.custom_use_case_description?.toLowerCase().includes(lowerQ)) return true;
+        if ((item.ai_tools ?? []).some((t: string) => t.toLowerCase().includes(lowerQ))) return true;
+        if ((item.use_cases ?? []).some((u: string) => u.toLowerCase().includes(lowerQ))) return true;
+        return false;
+      }).slice(0, 30);
+      return results;
     },
   });
 

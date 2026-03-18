@@ -58,6 +58,40 @@ export function formatNum(n: number): string {
   return String(n);
 }
 
+/* ---- Tools + Use Cases Row ---- */
+function ToolsUseCasesRow({ item }: { item: any }) {
+  const tools = (item.ai_tools ?? []) as string[];
+  const useCases = (item.use_cases ?? []) as string[];
+  const customDesc = item.custom_use_case_description as string | null;
+
+  if (tools.length === 0 && useCases.length === 0) return null;
+
+  const displayTools = tools.slice(0, 2);
+  const extraTools = tools.length - 2;
+  const displayUseCases = useCases.slice(0, 2).map((uc: string) =>
+    uc === "Other" && customDesc ? customDesc : uc
+  );
+  const extraUseCases = useCases.length - 2;
+
+  const pillClass = "text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]";
+
+  return (
+    <div className="flex items-center flex-wrap gap-1 mt-1">
+      {displayTools.map((t) => (
+        <span key={t} className={pillClass}>{t}</span>
+      ))}
+      {extraTools > 0 && <span className={pillClass}>+{extraTools} more</span>}
+      {displayTools.length > 0 && displayUseCases.length > 0 && (
+        <span className="text-[10px] text-muted-foreground/40">·</span>
+      )}
+      {displayUseCases.map((u, i) => (
+        <span key={i} className={pillClass}>{u}</span>
+      ))}
+      {extraUseCases > 0 && <span className={pillClass}>+{extraUseCases} more</span>}
+    </div>
+  );
+}
+
 /* ---- Component ---- */
 
 interface FeedItemProps {
@@ -126,6 +160,9 @@ export function FeedItem({ item, rank }: FeedItemProps) {
       {item.description && (
         <p className="text-[13px] text-muted-foreground truncate mt-0.5">{item.description}</p>
       )}
+
+      {/* LINE 4.5 — Tools + Use Cases row */}
+      <ToolsUseCasesRow item={item} />
 
       {/* LINE 5 — Cover image */}
       {item.cover_image_url && (

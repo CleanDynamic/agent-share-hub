@@ -648,6 +648,7 @@ export type Database = {
           created_at: string
           creator_id: string
           current_version: string
+          custom_use_case_description: string | null
           description: string | null
           difficulty: string
           donation_enabled: boolean
@@ -691,6 +692,7 @@ export type Database = {
           created_at?: string
           creator_id: string
           current_version?: string
+          custom_use_case_description?: string | null
           description?: string | null
           difficulty: string
           donation_enabled?: boolean
@@ -734,6 +736,7 @@ export type Database = {
           created_at?: string
           creator_id?: string
           current_version?: string
+          custom_use_case_description?: string | null
           description?: string | null
           difficulty?: string
           donation_enabled?: boolean
