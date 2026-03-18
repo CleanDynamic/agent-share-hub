@@ -44,6 +44,7 @@ export interface ContentCardProps {
   pwyw_purchase_count?: number;
   pwyw_floor_gbp?: number;
   collaborators?: { id: string; display_name: string | null; username: string | null; avatar_url: string | null; is_primary_author: boolean }[];
+  has_curator_recommendation?: boolean;
 }
 
 function roundedStars(avg: number, count: number): number {
@@ -122,6 +123,7 @@ export function ContentCard({
   pwyw_purchase_count = 0,
   pwyw_floor_gbp = 0,
   collaborators = [],
+  has_curator_recommendation = false,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -328,6 +330,11 @@ export function ContentCard({
               lastVerifiedAt={last_verified_at}
               variant="card"
             />
+          )}
+          {has_curator_recommendation && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-[#2EC4B6]/15 text-[#2EC4B6] border border-[#2EC4B6]/30 font-medium">
+              Curated ✓
+            </span>
           )}
         </div>
 

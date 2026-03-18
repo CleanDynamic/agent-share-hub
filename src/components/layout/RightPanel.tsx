@@ -54,6 +54,9 @@ export function RightPanel() {
       {/* Position 2 — Trending */}
       <TrendingSection navigate={navigate} />
 
+      {/* Position 2.5 — Curator Picks */}
+      <CuratorPicksSection navigate={navigate} />
+
       {/* Position 3 — Category Directory */}
       <CategoryDirectory navigate={navigate} />
 
@@ -207,6 +210,80 @@ function WhoToFollow({ userId }: { userId: string }) {
               </div>
               <FollowButton creatorId={creator.id} />
             </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ---- Section: Curator Picks ---- */
+function CuratorPicksSection({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
+  const { data: picks } = useQuery({
+    queryKey: ["right_panel_curator_picks"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("curator_recommendations")
+        .select("id, recommendation_text, created_at, content_id, curators!curator_recommendations_curator_id_fkey(id, is_active, user_id, profiles:user_id(username, display_name, avatar_url, follower_count))")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (!data) return [];
+      // Filter to active curators and join content
+      const active = (data as any[]).filter((r) => r.curators?.is_active === true);
+      if (active.length === 0) return [];
+      const contentIds = active.map((r) => r.content_id);
+      const { data: items } = await supabase
+        .from("content_items")
+        .select("id, title, content_type, status")
+        .in("id", contentIds)
+        .eq("status", "approved");
+      const itemMap = Object.fromEntries((items ?? []).map((i) => [i.id, i]));
+      return active
+        .filter((r) => itemMap[r.content_id])
+        .map((r) => ({ ...r, content: itemMap[r.content_id] }))
+        .slice(0, 3);
+    },
+    staleTime: 120_000,
+  });
+
+  if (!picks || picks.length === 0) return null;
+
+  const TYPE_COLORS: Record<string, string> = {
+    "Prompt File": "bg-[#E8571A]/15 text-[#E8571A]",
+    "Prompt Tutorial": "bg-[#2EC4B6]/15 text-[#2EC4B6]",
+    "Agent Blueprint": "bg-purple-500/15 text-purple-400",
+    "Workflow Template": "bg-blue-500/15 text-blue-400",
+    "Agent Stack": "bg-red-500/15 text-red-400",
+  };
+
+  return (
+    <div>
+      <p className="text-base font-medium text-foreground mb-3">Curator Picks</p>
+      <div className="space-y-2">
+        {picks.map((pick: any) => {
+          const curator = pick.curators?.profiles;
+          const initials = (curator?.display_name || curator?.username || "?").slice(0, 2).toUpperCase();
+          return (
+            <button
+              key={pick.id}
+              onClick={() => navigate(`/content/${pick.content_id}`)}
+              className="w-full text-left rounded-lg px-2 py-2 transition-colors hover:bg-accent/60"
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${TYPE_COLORS[pick.content?.content_type] || "bg-muted text-muted-foreground"}`}>
+                  {pick.content?.content_type}
+                </span>
+                <span className="flex-1 truncate text-[13px] font-bold text-foreground">{pick.content?.title}</span>
+              </div>
+              <p className="text-xs text-foreground italic truncate leading-relaxed">{pick.recommendation_text?.slice(0, 70)}{pick.recommendation_text?.length > 70 ? "…" : ""}</p>
+              <div className="flex items-center gap-1.5 mt-1">
+                <div className="h-[18px] w-[18px] rounded-full bg-primary flex items-center justify-center text-primary-foreground text-[8px] font-medium shrink-0 overflow-hidden">
+                  {curator?.avatar_url ? <img src={curator.avatar_url} alt="" className="h-full w-full object-cover" /> : initials}
+                </div>
+                <span className="text-[11px] text-muted-foreground">by @{curator?.username}</span>
+              </div>
+            </button>
           );
         })}
       </div>

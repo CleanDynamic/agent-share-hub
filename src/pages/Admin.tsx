@@ -374,6 +374,7 @@ const Admin = () => {
             <TabsTrigger value="tools">AI Tools</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="paths">Learning Paths</TabsTrigger>
+            <TabsTrigger value="curators">Curators</TabsTrigger>
           </TabsList>
 
           {/* ── Content approval queue ── */}
@@ -714,6 +715,11 @@ const Admin = () => {
               </div>
             )}
           </TabsContent>
+
+          {/* ── Curators ── */}
+          <TabsContent value="curators" className="space-y-6">
+            <CuratorsTab />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
@@ -800,6 +806,164 @@ function ToolCard({
         </div>
       )}
     </div>
+  );
+}
+
+
+/* ---- Curators Tab ---- */
+function CuratorsTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: pendingApps, isLoading: appsLoading } = useQuery({
+    queryKey: ["admin_curator_apps_pending"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("curator_applications")
+        .select("*, profiles:user_id(id, username, display_name, avatar_url, follower_count)")
+        .eq("status", "pending")
+        .order("applied_at", { ascending: true });
+      if (error) throw error;
+      return (data as any[]) ?? [];
+    },
+  });
+
+  const { data: activeCurators, isLoading: curatorsLoading } = useQuery({
+    queryKey: ["admin_active_curators"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("curators")
+        .select("*, profiles:user_id(id, username, display_name, follower_count)")
+        .eq("is_active", true);
+      if (error) throw error;
+      return (data as any[]) ?? [];
+    },
+  });
+
+  const { data: recCounts } = useQuery({
+    queryKey: ["admin_curator_rec_counts"],
+    queryFn: async () => {
+      const { data } = await supabase.from("curator_recommendations").select("curator_id").eq("is_active", true);
+      const counts: Record<string, number> = {};
+      (data ?? []).forEach((r: any) => { counts[r.curator_id] = (counts[r.curator_id] || 0) + 1; });
+      return counts;
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (app: any) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("curator_applications").update({ status: "approved" } as any).eq("id", app.id);
+      await supabase.from("curators").insert({ user_id: app.user_id, approved_by: user?.id ?? null } as any);
+      await supabase.from("profiles").update({ is_curator: true, curator_application_status: "approved" } as any).eq("id", app.user_id);
+      insertNotification({
+        recipient_id: app.user_id,
+        actor_id: null,
+        notification_type: "curator_approved",
+        metadata: { message: "You are now a NeoScale Curator. Start recommending content." },
+      });
+    },
+    onSuccess: (_d, app) => {
+      queryClient.invalidateQueries({ queryKey: ["admin_curator_apps_pending"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_active_curators"] });
+      toast({ title: `Approved — ${app.profiles?.display_name || app.profiles?.username} is now a Curator.` });
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async (app: any) => {
+      await supabase.from("curator_applications").update({ status: "rejected" } as any).eq("id", app.id);
+      await supabase.from("profiles").update({ curator_application_status: "rejected" } as any).eq("id", app.user_id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_curator_apps_pending"] });
+      toast({ title: "Application rejected." });
+    },
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: async (curator: any) => {
+      await supabase.from("curators").update({ is_active: false } as any).eq("id", curator.id);
+      await supabase.from("profiles").update({ is_curator: false } as any).eq("id", curator.user_id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_active_curators"] });
+      toast({ title: "Curator deactivated." });
+    },
+  });
+
+  return (
+    <>
+      <h2 className="text-lg font-semibold text-foreground">Pending Applications</h2>
+      {appsLoading ? (
+        <div className="space-y-3"><Skeleton className="h-20 w-full rounded-xl" /></div>
+      ) : !pendingApps || pendingApps.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-6 text-center">No pending curator applications.</p>
+      ) : (
+        <div className="space-y-3">
+          {pendingApps.map((app: any) => {
+            const p = app.profiles;
+            const initials = (p?.display_name || p?.username || "?").slice(0, 2).toUpperCase();
+            return (
+              <div key={app.id} className="border border-border rounded-xl p-4 bg-card flex flex-col sm:flex-row sm:items-start gap-4">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-medium shrink-0 overflow-hidden">
+                    {p?.avatar_url ? <img src={p.avatar_url} alt="" className="h-full w-full object-cover" /> : initials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">{p?.display_name || p?.username}</p>
+                    <p className="text-xs text-muted-foreground">@{p?.username} · {p?.follower_count ?? 0} followers · applied {app.applied_at ? new Date(app.applied_at).toLocaleDateString() : ""}</p>
+                    <p className="text-xs text-muted-foreground mt-2 whitespace-pre-wrap">{app.reason}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8" onClick={() => approveMutation.mutate(app)} disabled={approveMutation.isPending}>
+                    {approveMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />} Approve
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs h-8 border-destructive text-destructive hover:bg-destructive/10" onClick={() => rejectMutation.mutate(app)} disabled={rejectMutation.isPending}>
+                    {rejectMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3 mr-1" />} Reject
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <h2 className="text-lg font-semibold text-foreground mt-8">Active Curators</h2>
+      {curatorsLoading ? (
+        <Skeleton className="h-20 w-full rounded-xl" />
+      ) : !activeCurators || activeCurators.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-6 text-center">No active curators.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left">
+                <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Curator</th>
+                <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Followers</th>
+                <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Recommendations</th>
+                <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Joined</th>
+                <th className="py-2 px-3 text-xs text-muted-foreground font-medium"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeCurators.map((c: any) => (
+                <tr key={c.id} className="border-b border-border">
+                  <td className="py-2.5 px-3 text-foreground font-medium">{c.profiles?.display_name || c.profiles?.username} <span className="text-xs text-muted-foreground">@{c.profiles?.username}</span></td>
+                  <td className="py-2.5 px-3 text-muted-foreground">{c.profiles?.follower_count ?? 0}</td>
+                  <td className="py-2.5 px-3 text-muted-foreground">{recCounts?.[c.id] ?? 0}</td>
+                  <td className="py-2.5 px-3 text-muted-foreground">{c.approved_at ? new Date(c.approved_at).toLocaleDateString() : "—"}</td>
+                  <td className="py-2.5 px-3">
+                    <Button size="sm" variant="outline" className="text-xs h-7 border-destructive text-destructive hover:bg-destructive/10" onClick={() => deactivateMutation.mutate(c)} disabled={deactivateMutation.isPending}>Deactivate</Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
   );
 }
 
