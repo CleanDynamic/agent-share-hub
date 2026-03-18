@@ -117,6 +117,11 @@ export function ContentCard({
   last_verified_at = null,
   creator_id,
   last_changelog_at = null,
+  is_pwyw = false,
+  pwyw_avg_paid_gbp = 0,
+  pwyw_purchase_count = 0,
+  pwyw_floor_gbp = 0,
+  collaborators = [],
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
