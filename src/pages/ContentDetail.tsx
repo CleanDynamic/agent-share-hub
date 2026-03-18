@@ -954,8 +954,71 @@ const ContentDetail = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Curator recommendation modal */}
+      <Dialog open={curatorModalOpen} onOpenChange={setCuratorModalOpen}>
+        <DialogContent className="bg-card border-border sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Write a recommendation</DialogTitle>
+            <DialogDescription>Appears as a highlighted quote on this post page.</DialogDescription>
+          </DialogHeader>
+          <Textarea value={curatorText} onChange={(e) => setCuratorText(e.target.value.slice(0, 300))} placeholder="Why do you recommend this?" rows={4} maxLength={300} />
+          <p className="text-xs text-muted-foreground text-right">{curatorText.length}/300</p>
+          <Button onClick={async () => {
+            if (!user || !item || curatorText.trim().length === 0) return;
+            setCuratorSubmitting(true);
+            const { data: curatorRow } = await supabase.from("curators").select("id").eq("user_id", user.id).maybeSingle();
+            if (!curatorRow) { setCuratorSubmitting(false); return; }
+            await supabase.from("curator_recommendations").insert({ curator_id: curatorRow.id, content_id: item.id, recommendation_text: curatorText.trim() } as any);
+            await supabase.from("user_interactions" as any).insert({ user_id: user.id, content_id: item.id, interaction_type: "curated", interaction_meta: { content_title: item.title, recommendation_excerpt: curatorText.trim().slice(0, 80) } } as any);
+            refetchCuratorRecs();
+            setCuratorModalOpen(false);
+            setCuratorText("");
+            setCuratorSubmitting(false);
+            toast({ title: "Recommendation published." });
+          }} disabled={curatorSubmitting || curatorText.trim().length === 0}>
+            {curatorSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            Publish
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
+
+/* ---- Curator Picks Card for sidebar ---- */
+function CuratorPicksCard({ recs }: { recs: any[] }) {
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll ? recs : recs.slice(0, 2);
+  return (
+    <div className="border border-border rounded-xl p-5 bg-card space-y-3">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Curator Picks</p>
+      {visible.map((rec: any) => {
+        const curator = rec.curators?.profiles;
+        const initials = (curator?.display_name || curator?.username || "?").slice(0, 2).toUpperCase();
+        return (
+          <div key={rec.id} className="border-l-[3px] border-[#2EC4B6] pl-3">
+            <p className="text-sm text-foreground italic leading-relaxed">{rec.recommendation_text}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-[10px] font-medium shrink-0 overflow-hidden">
+                {curator?.avatar_url ? <img src={curator.avatar_url} alt="" className="h-full w-full object-cover" /> : initials}
+              </div>
+              <div>
+                <Link to={`/creator/${curator?.username}`} className="text-xs font-medium text-foreground hover:text-primary transition-colors">
+                  {curator?.display_name || curator?.username}
+                </Link>
+                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md bg-[#2EC4B6]/15 text-[#2EC4B6] border border-[#2EC4B6]/30 font-medium">Curator</span>
+                <p className="text-[11px] text-muted-foreground">{curator?.follower_count ?? 0} followers</p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {recs.length > 2 && !showAll && (
+        <button onClick={() => setShowAll(true)} className="text-xs text-primary hover:underline">See more</button>
+      )}
+    </div>
+  );
+}
 
 export default ContentDetail;

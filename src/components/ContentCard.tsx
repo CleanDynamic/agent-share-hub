@@ -331,6 +331,11 @@ export function ContentCard({
               variant="card"
             />
           )}
+          {has_curator_recommendation && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-[#2EC4B6]/15 text-[#2EC4B6] border border-[#2EC4B6]/30 font-medium">
+              Curated ✓
+            </span>
+          )}
         </div>
 
         {/* Bottom */}
