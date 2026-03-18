@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useLibraryUpdateCount } from "@/hooks/useLibraryUpdateCount";
 import { supabase } from "@/integrations/supabase/client";
 
 interface NavItem {
