@@ -281,6 +281,12 @@ const Browse = () => {
   const [matchInterests, setMatchInterests] = useState(false);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [microtagFilters, setMicrotagFilters] = useState<string[]>(() => {
+    const mt = searchParams.get("microtag");
+    return mt ? mt.split(",").filter(Boolean) : [];
+  });
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
+  const { data: microtagDefs } = useMicrotagDefinitions();
 
   // React to query param changes from right panel navigation
   useEffect(() => {
