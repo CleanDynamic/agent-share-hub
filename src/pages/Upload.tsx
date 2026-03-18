@@ -110,11 +110,6 @@ const Upload = () => {
       toast({ title: "Add content", description: "Please add at least one content block.", variant: "destructive" });
       return;
     }
-    if (selectedMicrotags.length < 3) {
-      setMicrotagError("Please select at least 3 tags");
-      return;
-    }
-    setMicrotagError("");
 
     setSubmitting(true);
 
