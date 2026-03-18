@@ -105,6 +105,13 @@ const Upload = () => {
         return;
       }
 
+      const isPwyw = monetisationType === "paid" && pwywFloor >= 0 && form.getValues("price_gbp") === undefined;
+      // Determine if PWYW based on a separate flag
+      const actualMonetisationType = monetisationType;
+      const actualPriceGbp = monetisationType === "paid" && !isPwyw ? values.price_gbp ?? null : null;
+      const actualPwywEnabled = isPwyw;
+      const actualPwywFloor = isPwyw ? pwywFloor : null;
+
       // Insert content_items row (file_url left null — blocks hold the content now)
       const { data: insertedItem, error: insertError } = await supabase.from("content_items").insert({
         creator_id: user.id,
@@ -118,10 +125,13 @@ const Upload = () => {
         use_instructions: values.use_instructions,
         what_to_expect: values.what_to_expect,
         status: "pending",
-        monetisation_type: values.monetisation_type,
-        price_gbp: values.monetisation_type === "paid" ? values.price_gbp ?? null : null,
+        monetisation_type: actualMonetisationType,
+        price_gbp: actualPriceGbp,
         donation_enabled: values.donation_enabled,
-      }).select("id").single();
+        pwyw_enabled: actualPwywEnabled,
+        pwyw_floor_gbp: actualPwywFloor,
+        is_pwyw: actualPwywEnabled,
+      } as any).select("id").single();
 
       if (insertError || !insertedItem) {
         toast({ title: "Submission failed", description: insertError?.message ?? "Unknown error", variant: "destructive" });
