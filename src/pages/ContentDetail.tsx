@@ -106,7 +106,7 @@ const ContentDetail = () => {
   const [curatorModalOpen, setCuratorModalOpen] = useState(false);
   const [curatorText, setCuratorText] = useState("");
   const [curatorSubmitting, setCuratorSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"content" | "changelog" | "tips" | "comments">("content");
+  const [activeTab, setActiveTab] = useState<"content" | "changelog" | "tips" | "comments">("changelog");
   const viewTracked = useRef(false);
 
   const { data: item, isLoading, error } = useQuery({
@@ -630,7 +630,23 @@ const ContentDetail = () => {
         {/* 7. WHAT TO EXPECT — always visible, never blurred */}
         <WhatToExpectSection item={item} />
 
-        {/* 8. ACTION BOX — inline, full width */}
+        {/* 8. BLUEPRINT — inline, always visible */}
+        {(!isSub || subscriberUnlocked) && (
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-foreground mb-3">Blueprint:</h2>
+            <ContentBlockViewer
+              contentId={item.id}
+              contentTitle={item.title}
+              monetisationType={item.monetisation_type}
+              creatorId={item.creator_id}
+              useInstructions={item.use_instructions}
+              onTriggerPaywall={handleDownload}
+              isEligible={isEligible}
+            />
+          </div>
+        )}
+
+        {/* 9. ACTION BOX — inline, full width */}
         <div className="rounded-xl border border-border bg-card p-3.5 sm:p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             {/* Left: rating */}
@@ -646,31 +662,6 @@ const ContentDetail = () => {
 
             {/* Right: action buttons */}
             <div className="flex flex-wrap items-center gap-2">
-              {isSub && !subscriberUnlocked ? (
-                <>
-                  <Button size="sm" disabled className="rounded-full h-9">
-                    <Lock className="mr-1.5 h-3.5 w-3.5" /> Subscribers only
-                  </Button>
-                  {creator && (
-                    <Button variant="outline" size="sm" className="rounded-full h-9 border-secondary text-secondary hover:bg-secondary/10" asChild>
-                      <Link to={`/creator/${creator.username}`}><Users className="mr-1.5 h-3.5 w-3.5" /> Subscribe</Link>
-                    </Button>
-                  )}
-                </>
-              ) : isPwyw && !hasDownloaded ? (
-                <PwywPriceSelector
-                  contentId={item.id}
-                  floorGbp={(item as any).pwyw_floor_gbp ?? 0}
-                  avgPaid={(item as any).pwyw_avg_paid_gbp ?? 0}
-                  purchaseCount={(item as any).pwyw_purchase_count ?? 0}
-                />
-              ) : (
-                <Button size="sm" className="rounded-full h-9" onClick={handleDownload} disabled={downloading}>
-                  {downloading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : isPaid ? <Lock className="mr-1.5 h-3.5 w-3.5" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-                  {subscriberUnlocked ? "Download" : label}
-                </Button>
-              )}
-
               <AddToLibraryButton contentId={item.id} currentVersion={item.current_version} contentTitle={item.title} variant="icon" />
               <BookmarkButton contentId={item.id} />
               <AddToCollectionButton contentId={item.id} contentTitle={item.title} />
@@ -817,7 +808,7 @@ const ContentDetail = () => {
         {(!isSub || subscriberUnlocked) && (
           <>
             <div className="flex gap-0 border-b border-border sticky top-0 bg-background z-20">
-              {(["content", "changelog", "tips", "comments"] as const).map((tab) => (
+              {(["changelog", "tips", "comments"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => handleTabChange(tab)}
@@ -827,7 +818,6 @@ const ContentDetail = () => {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {tab === "content" && "Blueprint"}
                   {tab === "changelog" && (
                     <>Changelog{hasLibraryUpdate && <span className="ml-1 text-primary">●</span>}</>
                   )}
@@ -839,19 +829,6 @@ const ContentDetail = () => {
 
             {/* 13. Tab content */}
             <div className="mt-0">
-              {activeTab === "content" && (
-                <div className="py-4">
-                  <ContentBlockViewer
-                    contentId={item.id}
-                    contentTitle={item.title}
-                    monetisationType={item.monetisation_type}
-                    creatorId={item.creator_id}
-                    useInstructions={item.use_instructions}
-                    onTriggerPaywall={handleDownload}
-                    isEligible={isEligible}
-                  />
-                </div>
-              )}
 
               {activeTab === "changelog" && (
                 <div className="py-4">
@@ -928,26 +905,16 @@ const ContentDetail = () => {
 
         {/* Mobile sticky bar */}
         <div className="fixed bottom-0 left-0 right-0 lg:hidden border-t border-border bg-background p-4 z-30">
-          {isSub && !subscriberUnlocked ? (
-            <Button size="lg" className="w-full" disabled>
-              <Lock className="mr-2 h-4 w-4" /> Subscribers only
-            </Button>
-          ) : (
-            <div className="space-y-2">
-              <Button size="lg" className="w-full" onClick={handleDownload} disabled={downloading}>
-                {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isPaid ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
-                {subscriberUnlocked ? "Download" : label}
-              </Button>
-              {item.donation_enabled && creator && (
-                <TipSelector
-                  creatorId={creator.id}
-                  creatorDisplayName={creator.display_name || creator.username}
-                  successUrl={`${window.location.origin}/content/${item.id}?tip=success`}
-                  cancelUrl={`${window.location.origin}/content/${item.id}`}
-                />
-              )}
-            </div>
-          )}
+          <div className="space-y-2">
+            {item.donation_enabled && creator && (
+              <TipSelector
+                creatorId={creator.id}
+                creatorDisplayName={creator.display_name || creator.username}
+                successUrl={`${window.location.origin}/content/${item.id}?tip=success`}
+                cancelUrl={`${window.location.origin}/content/${item.id}`}
+              />
+            )}
+          </div>
         </div>
       </div>
 
