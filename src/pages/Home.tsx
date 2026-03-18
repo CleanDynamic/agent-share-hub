@@ -4,188 +4,12 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
-import { BookmarkButton } from "@/components/BookmarkButton";
-import { Badge } from "@/components/ui/badge";
+import { FeedItem, timeAgo } from "@/components/FeedItem";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Download, Eye, Star, StarHalf, Loader2, MessageSquare, Upload, Search as SearchIcon,
-} from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Download, Loader2, Upload, Search as SearchIcon } from "lucide-react";
 
-/* ---- shared helpers ---- */
 const PAGE_SIZE = 20;
-
-const TYPE_COLORS: Record<string, string> = {
-  "Prompt File": "bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/30",
-  "Prompt Tutorial": "bg-[#2EC4B6]/15 text-[#2EC4B6] border-[#2EC4B6]/30",
-  "Agent Blueprint": "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  "Workflow Template": "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  "Agent Stack": "bg-red-500/15 text-red-400 border-red-500/30",
-  "Model Config Guide": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  "Integration Guide": "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  "Evaluation Framework": "bg-pink-500/15 text-pink-400 border-pink-500/30",
-  "Failure Library": "bg-muted text-muted-foreground border-border",
-};
-
-function difficultyColor(level: string) {
-  switch (level) {
-    case "Beginner": return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
-    case "Intermediate": return "bg-amber-500/15 text-amber-400 border-amber-500/30";
-    case "Advanced": return "bg-red-500/15 text-red-400 border-red-500/30";
-    default: return "bg-muted text-muted-foreground border-border";
-  }
-}
-
-function roundedStars(avg: number, count: number): number {
-  if (count === 0) return 0;
-  if (avg >= 4.5) return 5;
-  if (avg >= 4.1) return 4.5;
-  if (avg >= 3.5) return 4;
-  if (avg >= 3.1) return 3.5;
-  if (avg >= 2.5) return 3;
-  if (avg >= 2.1) return 2.5;
-  if (avg >= 1.5) return 2;
-  if (avg >= 1.1) return 1.5;
-  return 1;
-}
-
-function MiniStars({ value }: { value: number }) {
-  const stars = [];
-  for (let i = 1; i <= 5; i++) {
-    if (i <= Math.floor(value)) stars.push(<Star key={i} className="h-3 w-3 fill-primary text-primary" />);
-    else if (i - 0.5 === value) stars.push(<StarHalf key={i} className="h-3 w-3 fill-primary text-primary" />);
-    else stars.push(<Star key={i} className="h-3 w-3 text-muted-foreground/30" />);
-  }
-  return <div className="flex gap-0.5">{stars}</div>;
-}
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
-  const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d`;
-  return `${Math.floor(days / 30)}mo`;
-}
-
-function formatNum(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(n);
-}
-
-/* ---- Feed Item Component ---- */
-function FeedItem({ item, rank }: { item: any; rank?: number }) {
-  const profile = item.profiles as any;
-  const starVal = roundedStars(Number(item.avg_rating) || 0, item.rating_count ?? 0);
-  const initials = (profile?.display_name || profile?.username || "?").slice(0, 2).toUpperCase();
-
-  return (
-    <div className="px-4 py-3 border-b border-border">
-      {/* Top line */}
-      <div className="flex items-center gap-2 mb-1.5">
-        {rank != null && (
-          <span className="text-lg font-bold text-primary w-7 shrink-0">{String(rank).padStart(2, "0")}</span>
-        )}
-        <Link to={`/creator/${profile?.username}`}>
-          <Avatar className="h-8 w-8 shrink-0">
-            <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
-          </Avatar>
-        </Link>
-        <Link to={`/creator/${profile?.username}`} className="text-sm font-semibold text-foreground hover:underline truncate">
-          {profile?.display_name || profile?.username || "Unknown"}
-        </Link>
-        <span className="text-[13px] text-muted-foreground truncate">@{profile?.username}</span>
-        <span className="text-muted-foreground">·</span>
-        <span className="text-[13px] text-muted-foreground shrink-0">{timeAgo(item.created_at)}</span>
-        <div className="ml-auto shrink-0">
-          <BookmarkButton contentId={item.id} />
-        </div>
-      </div>
-
-      {/* Badges */}
-      <div className="flex gap-1.5 mb-1">
-        <Badge variant="outline" className={`text-[10px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
-          {item.content_type}
-        </Badge>
-        <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(item.difficulty)}`}>
-          {item.difficulty}
-        </Badge>
-      </div>
-
-      {/* Title */}
-      <p className="text-base font-bold text-foreground leading-snug">{item.title}</p>
-
-      {/* Description */}
-      {item.description && (
-        <p className="text-sm text-muted-foreground truncate mt-0.5">{item.description}</p>
-      )}
-
-      {/* Stats + action */}
-      <div className="flex items-center justify-between mt-2">
-        <div className="flex items-center gap-3 text-[12px] text-muted-foreground">
-          <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" />{formatNum(item.view_count ?? 0)}</span>
-          <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5" />{formatNum(item.download_count)}</span>
-          {(item.rating_count ?? 0) > 0 ? <MiniStars value={starVal} /> : null}
-          <span className="flex items-center gap-1"><MessageSquare className="h-3.5 w-3.5" />{item.comment_count ?? 0}</span>
-        </div>
-        <Button variant="outline" size="sm" className="border-secondary text-secondary hover:bg-secondary/10 text-xs h-7" asChild>
-          <Link to={`/content/${item.id}`}>View</Link>
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/* ---- Trending Feed Item (uses highest stat) ---- */
-function TrendingFeedItem({ item, rank }: { item: any; rank: number }) {
-  const profile = item.profiles as any;
-  const initials = (profile?.display_name || profile?.username || "?").slice(0, 2).toUpperCase();
-  const views = item.view_count ?? 0;
-  const downloads = item.download_count ?? 0;
-  const highestStat = views >= downloads ? `${formatNum(views)} views` : `${formatNum(downloads)} downloads`;
-
-  return (
-    <div className="px-4 py-3 border-b border-border">
-      <div className="flex items-center gap-2 mb-1.5">
-        <span className="text-lg font-bold text-primary w-7 shrink-0">{String(rank).padStart(2, "0")}</span>
-        <Link to={`/creator/${profile?.username}`}>
-          <Avatar className="h-8 w-8 shrink-0">
-            <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
-          </Avatar>
-        </Link>
-        <Link to={`/creator/${profile?.username}`} className="text-sm font-semibold text-foreground hover:underline truncate">
-          {profile?.display_name || profile?.username || "Unknown"}
-        </Link>
-        <span className="text-[13px] text-muted-foreground truncate">@{profile?.username}</span>
-        <div className="ml-auto shrink-0">
-          <BookmarkButton contentId={item.id} />
-        </div>
-      </div>
-
-      <div className="flex gap-1.5 mb-1">
-        <Badge variant="outline" className={`text-[10px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
-          {item.content_type}
-        </Badge>
-        <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(item.difficulty)}`}>
-          {item.difficulty}
-        </Badge>
-      </div>
-
-      <p className="text-base font-bold text-foreground leading-snug">{item.title}</p>
-      {item.description && <p className="text-sm text-muted-foreground truncate mt-0.5">{item.description}</p>}
-
-      <div className="flex items-center justify-between mt-2">
-        <span className="text-xs text-muted-foreground">{highestStat}</span>
-        <Button variant="outline" size="sm" className="border-secondary text-secondary hover:bg-secondary/10 text-xs h-7" asChild>
-          <Link to={`/content/${item.id}`}>View</Link>
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 /* ---- Sign-in prompt ---- */
 function SignInPrompt() {
@@ -228,7 +52,6 @@ function RecentTab() {
 
   return (
     <div>
-      {/* Live indicator */}
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
         <span className="relative flex h-[6px] w-[6px]">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
@@ -238,7 +61,7 @@ function RecentTab() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-0">{[1,2,3,4,5].map(n => <div key={n} className="h-32 animate-pulse bg-card/30 border-b border-border" />)}</div>
+        <div className="space-y-0">{[1,2,3,4,5].map(n => <div key={n} className="h-24 animate-pulse bg-card/30 border-b border-border" />)}</div>
       ) : items.length === 0 ? (
         <p className="text-sm text-muted-foreground py-16 text-center">No content yet.</p>
       ) : (
@@ -256,7 +79,7 @@ function RecentTab() {
   );
 }
 
-/* ---- Tab: For You (reuses FYP logic inline to avoid importing the page) ---- */
+/* ---- Tab: For You ---- */
 function ForYouTab() {
   const { isLoggedIn, user } = useAuth();
   if (!isLoggedIn) return <SignInPrompt />;
@@ -289,7 +112,6 @@ function ForYouTab() {
     enabled: !!followIds && followIds.length > 0,
   });
 
-  // Deduplicate by user_id+content_id, keep most recent
   const rawItems = data?.pages.flat() ?? [];
   const seen = new Map<string, any>();
   for (const item of rawItems) {
@@ -298,7 +120,6 @@ function ForYouTab() {
   }
   const dedupedInteractions = Array.from(seen.values());
 
-  // Fetch content for interactions
   const contentIds = [...new Set(dedupedInteractions.map(i => i.content_id))];
   const { data: contentItems } = useQuery({
     queryKey: ["fyp_content_home", contentIds.join(",")],
@@ -327,7 +148,7 @@ function ForYouTab() {
   return (
     <div>
       {isLoading ? (
-        <div className="space-y-0">{[1,2,3,4,5].map(n => <div key={n} className="h-32 animate-pulse bg-card/30 border-b border-border" />)}</div>
+        <div className="space-y-0">{[1,2,3,4,5].map(n => <div key={n} className="h-24 animate-pulse bg-card/30 border-b border-border" />)}</div>
       ) : dedupedInteractions.length === 0 ? (
         <p className="text-sm text-muted-foreground py-16 text-center">No recent activity from people you follow.</p>
       ) : (
@@ -342,7 +163,7 @@ function ForYouTab() {
             : "saved";
 
           return (
-            <div key={interaction.id} className="border-b border-border">
+            <div key={interaction.id}>
               <div className="px-4 pt-3 pb-1 flex items-center gap-2 text-xs text-muted-foreground">
                 <Link to={`/creator/${actorProfile?.username}`}>
                   <Avatar className="h-5 w-5">
@@ -419,7 +240,7 @@ function FollowingTab() {
   return (
     <div>
       {isLoading ? (
-        <div className="space-y-0">{[1,2,3,4,5].map(n => <div key={n} className="h-32 animate-pulse bg-card/30 border-b border-border" />)}</div>
+        <div className="space-y-0">{[1,2,3,4,5].map(n => <div key={n} className="h-24 animate-pulse bg-card/30 border-b border-border" />)}</div>
       ) : items.length === 0 ? (
         <p className="text-sm text-muted-foreground py-16 text-center">No posts from people you follow yet.</p>
       ) : (
@@ -482,11 +303,11 @@ function TrendingTab() {
   return (
     <div>
       {isLoading ? (
-        <div className="space-y-0">{[1,2,3,4,5].map(n => <div key={n} className="h-32 animate-pulse bg-card/30 border-b border-border" />)}</div>
+        <div className="space-y-0">{[1,2,3,4,5].map(n => <div key={n} className="h-24 animate-pulse bg-card/30 border-b border-border" />)}</div>
       ) : !items || items.length === 0 ? (
         <p className="text-sm text-muted-foreground py-16 text-center">No trending content yet.</p>
       ) : (
-        items.map((item: any, i: number) => <TrendingFeedItem key={item.id} item={item} rank={i + 1} />)
+        items.map((item: any, i: number) => <FeedItem key={item.id} item={item} rank={i + 1} />)
       )}
     </div>
   );
@@ -536,7 +357,6 @@ const Home = () => {
         path="/"
       />
 
-      {/* Compose area (logged-in only) */}
       {isLoggedIn && (
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
           <Avatar className="h-10 w-10 shrink-0">
@@ -555,10 +375,8 @@ const Home = () => {
         </div>
       )}
 
-      {/* How It Works (guests only, scrolls away above sticky tabs) */}
       {!isLoggedIn && <HowItWorks />}
 
-      {/* Tab bar (sticky) */}
       <div className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="flex">
           {TABS.map((tab) => (
@@ -578,7 +396,6 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Tab content */}
       {activeTab === "Recent" && <RecentTab />}
       {activeTab === "For You" && <ForYouTab />}
       {activeTab === "Following" && <FollowingTab />}
