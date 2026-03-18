@@ -121,6 +121,106 @@ const Upload = () => {
     if (!isOtherSelected) setOtherToolName("");
   }, [isOtherSelected]);
 
+  // ── Load draft when ?draft= is present ──
+  useEffect(() => {
+    if (!draftId) return;
+    setDraftLoading(true);
+    (async () => {
+      try {
+        const { data: item } = await supabase
+          .from("content_items")
+          .select("*")
+          .eq("id", draftId)
+          .eq("status", "draft")
+          .single();
+        if (!item) { setDraftLoading(false); return; }
+
+        // Set form fields
+        form.setValue("title", item.title || "");
+        form.setValue("content_type", item.content_type || "");
+        form.setValue("description", (item as any).description || "");
+        form.setValue("difficulty", item.difficulty || "");
+        form.setValue("ai_tools", (item as any).ai_tools || []);
+        form.setValue("use_cases", (item as any).use_cases || []);
+        form.setValue("use_instructions", (item as any).use_instructions || "");
+        form.setValue("what_to_expect", (item as any).what_to_expect || "");
+        form.setValue("monetisation_type", (item as any).monetisation_type || "free");
+        form.setValue("donation_enabled", (item as any).donation_enabled || false);
+        if ((item as any).price_gbp) form.setValue("price_gbp", Number((item as any).price_gbp));
+        if ((item as any).other_tool_name) setOtherToolName((item as any).other_tool_name);
+        if ((item as any).custom_use_case_description) setCustomUseCaseDesc((item as any).custom_use_case_description);
+        if ((item as any).tool_url) setToolUrl((item as any).tool_url);
+        if ((item as any).tags?.length > 0) setCustomTags((item as any).tags);
+        if ((item as any).cover_image_url) setCoverImagePreview((item as any).cover_image_url);
+        if ((item as any).pwyw_floor_gbp) setPwywFloor(Number((item as any).pwyw_floor_gbp));
+
+        // WTE blocks
+        if ((item as any).what_to_expect_blocks) {
+          const wteData = (item as any).what_to_expect_blocks as any[];
+          setWteBlocks(wteData.map((b: any) => ({
+            id: b.id || crypto.randomUUID(),
+            type: b.block_type || "text",
+            textContent: b.text_content || "",
+            formatting: b.formatting_type || "paragraph",
+            subBlocks: b.sub_blocks || [],
+            useInstructions: b.use_instructions || "",
+            imageFile: null,
+            imageDescription: b.image_description || "",
+          })));
+        }
+
+        // Set draft meta for banner
+        setDraftMeta({
+          name: (item as any).draft_name || item.title || "Untitled draft",
+          savedAt: (item as any).draft_saved_at || item.created_at,
+        });
+
+        // Load content blocks
+        const { data: blocks } = await supabase
+          .from("content_blocks")
+          .select("*")
+          .eq("content_id", draftId)
+          .order("position", { ascending: true });
+
+        if (blocks && blocks.length > 0) {
+          setContentBlocks(blocks.map((b: any) => ({
+            id: b.id,
+            type: b.block_type === "long_text" ? "long_text" : b.block_type,
+            textContent: b.text_content || "",
+            formatting: b.formatting?.type || b.formatting_type || "paragraph",
+            subBlocks: b.sub_blocks || [],
+            useInstructions: b.use_instructions || "",
+            file: null,
+            fileName: b.file_name || "",
+            fileUrl: b.file_url || "",
+            imageFile: null,
+            imageUrl: b.image_url || "",
+            imageDescription: b.image_description || "",
+            isPreview: b.is_preview || false,
+            variations: [],
+          })));
+        }
+
+        // Load dependencies
+        const { data: deps } = await supabase
+          .from("content_dependencies")
+          .select("requires_content_id, dependency_note, content_items!content_dependencies_requires_content_id_fkey(title)")
+          .eq("content_id", draftId);
+        if (deps && deps.length > 0) {
+          setDependencies(deps.map((d: any) => ({
+            content_id: d.requires_content_id,
+            title: d.content_items?.title || "",
+            note: d.dependency_note || "",
+          })));
+        }
+      } catch (err) {
+        console.error("Failed to load draft:", err);
+      } finally {
+        setDraftLoading(false);
+      }
+    })();
+  }, [draftId]);
+
   const monetisationType = form.watch("monetisation_type");
   const showRevenueSplit = (monetisationType === "paid" || pwywFloor > 0) && collabInvitees.length > 0;
 
