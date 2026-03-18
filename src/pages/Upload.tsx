@@ -163,6 +163,11 @@ const Upload = () => {
 
       const contentId = insertedItem.id;
 
+      // Save tool_url if AI Tools type
+      if (isAIToolsType && toolUrl.trim()) {
+        await supabase.from("content_items").update({ tool_url: toolUrl.trim() } as any).eq("id", contentId);
+      }
+
       // Upload cover image if selected
       if (coverImageFile) {
         const coverPath = `covers/${contentId}/${coverImageFile.name}`;
