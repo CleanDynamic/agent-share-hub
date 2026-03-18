@@ -235,7 +235,7 @@ const Upload = () => {
         </p>
         <div className="flex gap-3 mt-4">
           <Button variant="outline" onClick={() => navigate("/browse")}>Browse Content</Button>
-          <Button variant="outline" onClick={() => { setSuccess(false); form.reset(); setContentBlocks([emptyBlock("text")]); }}>Upload Another</Button>
+          <Button variant="outline" onClick={() => { setSuccess(false); form.reset(); setContentBlocks([emptyBlock("text")]); setDependencies([]); }}>Upload Another</Button>
         </div>
       </div>
     );
