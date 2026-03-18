@@ -303,23 +303,28 @@ export default function PostPreviewPage() {
         )}
 
         {/* Blueprint blocks */}
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 space-y-4 relative group">
           <h3 className="text-sm font-semibold text-foreground">Blueprint</h3>
           {blocks && blocks.length > 0 ? (
-            blocks.map((block: any, i: number) => (
-              <div key={block.id} className="relative group">
-                <div className="rounded-xl border border-border bg-card p-4">
-                  <span className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <div className="space-y-3">
+              {blocks.map((block: any) => (
+                <div key={block.id} className="relative rounded-xl border border-border bg-card p-4">
+                  <span className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/20 z-10">
                     Preview — visible after unlock when live
                   </span>
-                  <ContentBlockViewer block={block} index={i} isEligible={true} />
+                  <div className="text-sm text-foreground whitespace-pre-wrap">
+                    {block.text_content || (block.file_name && <span className="text-muted-foreground italic">File: {block.file_name}</span>) || <span className="text-muted-foreground italic">Empty block</span>}
+                  </div>
+                  {block.use_instructions && (
+                    <p className="text-xs text-muted-foreground mt-2 italic">💡 {block.use_instructions}</p>
+                  )}
                 </div>
-                <EditHint section={`block-${block.id}`} draftId={draftId!} />
-              </div>
-            ))
+              ))}
+            </div>
           ) : (
             <p className="text-xs text-muted-foreground italic">No content blocks yet.</p>
           )}
+          <EditHint section="blocks" draftId={draftId!} />
         </div>
 
         {/* Related Content */}
