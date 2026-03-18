@@ -164,14 +164,14 @@ const TextEditor = ({
   return (
     <div>
       <FormatBar active={formatting} onChange={onFormatChange} />
-      <Textarea
+      <MentionInput
         value={value}
-        onChange={(e) => {
-          if (e.target.value.length <= TEXT_MAX) onTextChange(e.target.value);
+        onChange={(v) => {
+          if (v.length <= TEXT_MAX) onTextChange(v);
         }}
         rows={4}
         placeholder="Enter your content…"
-        className="bg-background border-border rounded-xl text-sm"
+        maxLength={TEXT_MAX}
       />
       <div className="flex items-center justify-between mt-1">
         <span className={`text-xs ${len >= 450 ? "text-destructive" : "text-muted-foreground"}`}>
