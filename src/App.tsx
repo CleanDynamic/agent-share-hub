@@ -39,7 +39,7 @@ import SearchPage from "./pages/SearchPage";
 import Category from "./pages/Category";
 import LibraryPage from "./pages/Library";
 import DraftsPage from "./pages/Drafts";
-
+import PostPreviewPage from "./pages/PostPreview";
 const queryClient = new QueryClient();
 
 const App = () => (
