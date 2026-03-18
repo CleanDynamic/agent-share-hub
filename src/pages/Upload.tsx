@@ -394,13 +394,15 @@ const Upload = () => {
     return (
       <div className="py-20 px-6 flex flex-col items-center justify-center text-center gap-4">
         <CheckCircle2 className="h-12 w-12 text-secondary" />
-        <h2 className="text-xl font-bold text-foreground">Submission Received</h2>
+        <h2 className="text-xl font-bold text-foreground">Your post is live!</h2>
         <p className="text-sm text-muted-foreground max-w-md">
-          Your submission has been received. We will review it and get back to you within 48 hours.
+          Your blueprint has been published and is now visible in the feed.
         </p>
         <div className="flex gap-3 mt-4">
-          <Button variant="outline" onClick={() => navigate("/browse")}>Browse Blueprints</Button>
-          <Button variant="outline" onClick={() => { setSuccess(false); form.reset(); setContentBlocks([emptyBlock("text")]); setWteBlocks([]); setDependencies([]); setCoverImageFile(null); setCoverImagePreview(null); }}>Upload Another</Button>
+          {insertedContentId && (
+            <Button onClick={() => navigate(`/content/${insertedContentId}`)}>View Post</Button>
+          )}
+          <Button variant="outline" onClick={() => { setSuccess(false); setInsertedContentId(null); form.reset(); setContentBlocks([emptyBlock("text")]); setWteBlocks([]); setDependencies([]); setCoverImageFile(null); setCoverImagePreview(null); }}>Upload Another</Button>
         </div>
       </div>
     );
