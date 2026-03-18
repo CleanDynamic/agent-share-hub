@@ -29,6 +29,7 @@ import { SubmitToolModal } from "@/components/SubmitToolModal";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
 import { LearningPathUploadForm } from "@/components/LearningPathUploadForm";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
+import { useMicrotagDefinitions } from "@/hooks/useMicrotags";
 
 const CONTENT_TYPES = [
   "Prompt File", "Prompt Tutorial", "Agent Blueprint", "Workflow Template",
