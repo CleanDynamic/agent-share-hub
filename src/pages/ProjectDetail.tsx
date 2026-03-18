@@ -176,12 +176,12 @@ const ProjectDetail = () => {
   const { data: companionCollection } = useQuery({
     queryKey: ["companion_collection", id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase
         .from("collections")
-        .select("id, title, slug")
-        .eq("project_id" as any, id!)
+        .select("id, title, slug") as any)
+        .eq("project_id", id!)
         .maybeSingle();
-      return data;
+      return data as { id: string; title: string; slug: string } | null;
     },
     enabled: !!id,
   });
