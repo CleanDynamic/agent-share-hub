@@ -14,7 +14,7 @@ export default function Login() {
   const { isLoggedIn } = useAuth();
   const redirect = searchParams.get("redirect") || "/browse";
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
@@ -29,15 +29,30 @@ export default function Login() {
     setError("");
     setSubmitting(true);
     try {
+      let emailToUse = identifier.trim();
+
+      // If input doesn't look like an email, resolve username → email via RPC
+      if (!emailToUse.includes("@")) {
+        const { data: emailData, error: rpcError } = await supabase
+          .rpc("get_email_by_username", { _username: emailToUse });
+
+        if (rpcError || !emailData) {
+          setError("No account found with that username.");
+          setSubmitting(false);
+          return;
+        }
+        emailToUse = emailData as string;
+      }
+
       const { error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: emailToUse,
         password,
       });
       if (authError) {
         if (authError.message.includes("Email not confirmed")) {
           setError("Please check your email and click the confirmation link before signing in.");
         } else {
-          setError("Incorrect email or password.");
+          setError("Incorrect email/username or password.");
         }
       } else {
         navigate(redirect);
