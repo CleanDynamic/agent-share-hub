@@ -1,0 +1,1 @@
+ALTER TABLE content_items ADD COLUMN IF NOT EXISTS tool_url text;
