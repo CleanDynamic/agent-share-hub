@@ -1,32 +1,23 @@
 import { useState, useEffect } from "react";
-import { useParams, Link, useSearchParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
 import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { AccountGateModal } from "@/components/AccountGateModal";
+import { CommentsSection } from "@/components/CommentsSection";
+import { ChangelogTab } from "@/components/ChangelogTab";
+import { PortfolioCard } from "@/components/PortfolioCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AddToCollectionModal } from "@/components/AddToCollectionModal";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Eye, User, Info, Lock, ChevronDown, ChevronUp, ExternalLink, CheckCircle2,
+  ArrowLeft, Eye, User, Lock, ChevronDown, ChevronUp, CheckCircle2, Calendar,
 } from "lucide-react";
-
-const TYPE_COLORS: Record<string, string> = {
-  "Prompt File": "bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/30",
-  "Prompt Tutorial": "bg-[#2EC4B6]/15 text-[#2EC4B6] border-[#2EC4B6]/30",
-  "Agent Blueprint": "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  "Workflow Template": "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  "Agent Stack": "bg-red-500/15 text-red-400 border-red-500/30",
-  "Model Config Guide": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  "Integration Guide": "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  "Evaluation Framework": "bg-pink-500/15 text-pink-400 border-pink-500/30",
-  "Failure Library": "bg-muted text-muted-foreground border-border",
-};
+import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 
 function difficultyColor(level: string) {
   switch (level) {
@@ -37,83 +28,143 @@ function difficultyColor(level: string) {
   }
 }
 
-/* ── Package Pricing Banner ─────────────────────────────── */
-function PackageBanner({
-  project,
-  paidComponentCount,
-  totalIndividualPrice,
-  hasPackage,
-  isLoggedIn,
-  onUnlock,
-  unlocking,
-}: {
-  project: any;
-  paidComponentCount: number;
-  totalIndividualPrice: number;
-  hasPackage: boolean;
-  isLoggedIn: boolean;
-  onUnlock: () => void;
-  unlocking: boolean;
-}) {
-  const packagePrice = Number(project.package_price_gbp ?? 0);
-  const saving = totalIndividualPrice - packagePrice;
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
 
-  if (hasPackage) {
-    return (
-      <div className="rounded-xl border border-emerald-500/40 bg-[#111118] p-5 mb-8">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-          <span className="text-sm font-semibold text-emerald-400">You own this project ✓</span>
-        </div>
-        <p className="text-xs text-muted-foreground mt-1">All components unlocked</p>
-      </div>
-    );
-  }
+function computeDifficulty(items: any[]): string {
+  const diffs = items.map((i) => i.difficulty).filter(Boolean);
+  if (diffs.length === 0) return "Any";
+  if (diffs.some((d: string) => d === "Advanced")) return "Advanced";
+  if (diffs.every((d: string) => d === "Beginner")) return "Beginner";
+  return "Intermediate";
+}
 
+/* ── What to Expect Section ─────────────────────────────── */
+function WhatToExpectSection({ blocks, fallbackText }: { blocks: any[] | null; fallbackText: string | null }) {
+  if (!blocks?.length && !fallbackText) return null;
   return (
-    <div className="rounded-xl border border-[#E8571A] bg-[#111118] p-5 mb-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <Lock className="h-6 w-6 text-[#E8571A] mt-0.5 shrink-0" />
-          <div>
-            <p className="text-base font-semibold text-foreground">
-              Unlock everything — £{packagePrice.toFixed(2)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Get instant access to all {paidComponentCount} paid component{paidComponentCount !== 1 ? "s" : ""} in one purchase.
-              {saving > 0 && (
-                <> Save <span className="text-emerald-400 font-medium">£{saving.toFixed(2)}</span> vs buying individually.</>
-              )}
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-1.5 shrink-0">
-          <Button
-            onClick={onUnlock}
-            disabled={unlocking}
-            className="bg-[#E8571A] hover:bg-[#E8571A]/90 text-white font-semibold"
-          >
-            {unlocking ? "Redirecting…" : "Unlock full project"}
-          </Button>
-          <p className="text-[10px] text-muted-foreground">Or unlock components individually below.</p>
-        </div>
+    <div className="mb-4">
+      <h2 className="text-base font-semibold text-foreground mb-2.5">What to Expect</h2>
+      <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "rgba(46,196,182,0.04)", borderLeft: "2px solid rgba(46,196,182,0.3)" }}>
+        {blocks && blocks.length > 0 ? (
+          blocks.sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)).map((block: any, idx: number) => (
+            <WteBlock key={block.id || idx} block={block} />
+          ))
+        ) : (
+          <p className="text-sm text-muted-foreground leading-relaxed">{fallbackText}</p>
+        )}
       </div>
     </div>
   );
 }
 
+function WteBlock({ block }: { block: any }) {
+  const fmt = block.formatting_type || "paragraph";
+  const text = block.text_content || "";
+
+  if (block.block_type === "image" && block.image_url) {
+    return (
+      <div>
+        <img src={block.image_url} alt={block.image_description || ""} className="w-full rounded-lg" />
+        {block.image_description && <p className="text-xs text-muted-foreground mt-1">{block.image_description}</p>}
+      </div>
+    );
+  }
+
+  if (fmt === "sublist" || fmt === "sub_list") {
+    const subBlocks = (block.sub_blocks as string[]) || [];
+    return (
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-foreground">{text}</p>
+        {subBlocks.map((sub: string, i: number) => (
+          <p key={i} className="text-sm text-muted-foreground" style={{ paddingLeft: 24 }}>
+            <span className="text-muted-foreground/60">↳</span> {sub}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  const lines = text.split("\n").filter((l: string) => l.trim());
+  if (fmt === "bullets") {
+    return (
+      <ul className="space-y-1">
+        {lines.map((line: string, i: number) => (
+          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[hsl(var(--secondary))] shrink-0" /> {line}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  if (fmt === "numbered") {
+    return (
+      <ol className="space-y-1">
+        {lines.map((line: string, i: number) => (
+          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+            <span className="text-muted-foreground/60 shrink-0 font-medium">{i + 1}.</span> {line}
+          </li>
+        ))}
+      </ol>
+    );
+  }
+  return <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{text}</p>;
+}
+
+/* ── Package Pricing Banner ─────────────────────────────── */
+function PackageBanner({ project, paidCount, totalPrice, hasPackage, onUnlock, unlocking }: {
+  project: any; paidCount: number; totalPrice: number; hasPackage: boolean; onUnlock: () => void; unlocking: boolean;
+}) {
+  const pkgPrice = Number(project.package_price_gbp ?? 0);
+  const saving = totalPrice - pkgPrice;
+
+  if (hasPackage) {
+    return (
+      <div className="rounded-xl border border-emerald-500/40 bg-card p-5 mb-4">
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+          <span className="text-sm font-semibold text-emerald-400">You own this project ✓</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">All blueprints unlocked</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-primary bg-card p-5 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <Lock className="h-6 w-6 text-primary mt-0.5 shrink-0" />
+          <div>
+            <p className="text-base font-semibold text-foreground">Unlock everything — £{pkgPrice.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Get instant access to all {paidCount} paid blueprint{paidCount !== 1 ? "s" : ""}.
+              {saving > 0 && <> Save <span className="text-emerald-400 font-medium">£{saving.toFixed(2)}</span> vs buying individually.</>}
+            </p>
+          </div>
+        </div>
+        <Button onClick={onUnlock} disabled={unlocking} className="shrink-0">
+          {unlocking ? "Redirecting…" : "Unlock full project"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main component ─────────────────────────────────────────
+
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isLoggedIn, profile } = useAuth();
   const { toast } = useToast();
-  const qc = useQueryClient();
   const [expandedComponents, setExpandedComponents] = useState<Record<string, boolean>>({});
   const [accountGateOpen, setAccountGateOpen] = useState(false);
   const [accountGateContentId, setAccountGateContentId] = useState("");
   const [unlocking, setUnlocking] = useState(false);
-  const [companionModalOpen, setCompanionModalOpen] = useState(false);
-  const [companionDismissed, setCompanionDismissed] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "blueprints" | "changelog" | "comments">("overview");
 
   // Fetch project
   const { data: project, isLoading, error } = useQuery({
@@ -131,7 +182,6 @@ const ProjectDetail = () => {
     enabled: !!id,
   });
 
-  // Increment view count
   useEffect(() => {
     if (project?.id) {
       supabase.rpc("increment_project_view_count", { _project_id: project.id });
@@ -153,72 +203,37 @@ const ProjectDetail = () => {
     enabled: !!id,
   });
 
-  // Fetch content items for all components
-  const contentIds = (components ?? [])
-    .map((c) => c.linked_content_id || c.inline_content_id)
-    .filter(Boolean) as string[];
+  const contentIds = (components ?? []).map((c) => c.linked_content_id || c.inline_content_id).filter(Boolean) as string[];
 
   const { data: contentItems } = useQuery({
     queryKey: ["project_content_items", contentIds.join(",")],
     queryFn: async () => {
       if (contentIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from("content_items")
-        .select("*")
-        .in("id", contentIds);
+      const { data, error } = await supabase.from("content_items").select("*").in("id", contentIds);
       if (error) throw error;
       return data ?? [];
     },
     enabled: contentIds.length > 0,
   });
 
-  // Companion collection
-  const { data: companionCollection } = useQuery({
-    queryKey: ["companion_collection", id],
-    queryFn: async () => {
-      const { data } = await (supabase
-        .from("collections")
-        .select("id, title, slug") as any)
-        .eq("project_id", id!)
-        .maybeSingle();
-      return data as { id: string; title: string; slug: string } | null;
-    },
-    enabled: !!id,
-  });
-
-  const isCreator = profile?.id === project?.creator_id;
-
-  // Check if user owns project package
+  // Package purchase check
   const { data: packagePurchase, refetch: refetchPurchase } = useQuery({
     queryKey: ["project_package_purchase", id, profile?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("project_package_purchases")
-        .select("id")
-        .eq("project_id", id!)
-        .eq("user_id", profile!.id)
-        .maybeSingle();
+      const { data } = await supabase.from("project_package_purchases").select("id").eq("project_id", id!).eq("user_id", profile!.id).maybeSingle();
       return data;
     },
     enabled: !!id && !!profile?.id,
   });
-
   const hasPackage = !!packagePurchase;
 
-  // Verify payment on success redirect
+  // Verify payment
   useEffect(() => {
-    const packageStatus = searchParams.get("package");
+    const pkgStatus = searchParams.get("package");
     const sessionId = searchParams.get("session_id");
-    if (packageStatus === "success" && id && profile?.id) {
-      // Verify and record the purchase
-      supabase.functions
-        .invoke("verify-project-package", {
-          body: { session_id: sessionId, project_id: id },
-        })
-        .then(() => {
-          refetchPurchase();
-          toast({ title: "Purchase complete!", description: "All components are now unlocked." });
-        });
+    if (pkgStatus === "success" && id && profile?.id) {
+      supabase.functions.invoke("verify-project-package", { body: { session_id: sessionId, project_id: id } })
+        .then(() => { refetchPurchase(); toast({ title: "Purchase complete!", description: "All blueprints are now unlocked." }); });
     }
   }, [searchParams, id, profile?.id]);
 
@@ -226,56 +241,36 @@ const ProjectDetail = () => {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   useEffect(() => {
     if (project?.cover_image_url) {
-      supabase.storage
-        .from("content-files")
-        .createSignedUrl(project.cover_image_url, 600)
-        .then(({ data }) => {
-          if (data?.signedUrl) setCoverUrl(data.signedUrl);
-        });
+      supabase.storage.from("content-files").createSignedUrl(project.cover_image_url, 600)
+        .then(({ data }) => { if (data?.signedUrl) setCoverUrl(data.signedUrl); });
     }
   }, [project?.cover_image_url]);
 
   const creator = project?.profiles as { id: string; username: string; display_name: string | null } | null;
+  const paidComponents = (contentItems ?? []).filter((c) => c.monetisation_type === "paid");
+  const totalIndividualPrice = paidComponents.reduce((sum, c) => sum + Number(c.price_gbp ?? 0), 0);
+  const projectDifficulty = computeDifficulty(contentItems ?? []);
 
-  const toggleExpand = (compId: string) => {
-    setExpandedComponents((p) => ({ ...p, [compId]: !p[compId] }));
-  };
+  const toggleExpand = (compId: string) => setExpandedComponents((p) => ({ ...p, [compId]: !p[compId] }));
 
   const handlePaywall = (contentId: string) => {
-    if (!isLoggedIn) {
-      setAccountGateContentId(contentId);
-      setAccountGateOpen(true);
-      return;
-    }
+    if (!isLoggedIn) { setAccountGateContentId(contentId); setAccountGateOpen(true); return; }
     window.location.href = `/content/${contentId}`;
   };
 
   const handleUnlockPackage = async () => {
-    if (!isLoggedIn) {
-      window.location.href = `/signup?after_purchase=project:${id}`;
-      return;
-    }
+    if (!isLoggedIn) { window.location.href = `/signup?after_purchase=project:${id}`; return; }
     setUnlocking(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-project-package-session", {
-        body: {
-          project_id: id,
-          success_url: `${window.location.origin}/project/${id}?package=success`,
-          cancel_url: `${window.location.origin}/project/${id}`,
-        },
+        body: { project_id: id, success_url: `${window.location.origin}/project/${id}?package=success`, cancel_url: `${window.location.origin}/project/${id}` },
       });
-      if (error || data?.error) throw new Error(data?.error || "Failed to create session");
+      if (error || data?.error) throw new Error(data?.error || "Failed");
       if (data?.url) window.location.href = data.url;
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setUnlocking(false);
-    }
+    } finally { setUnlocking(false); }
   };
-
-  // Calculate package pricing info
-  const paidComponents = (contentItems ?? []).filter((c) => c.monetisation_type === "paid");
-  const totalIndividualPrice = paidComponents.reduce((sum, c) => sum + Number(c.price_gbp ?? 0), 0);
 
   if (isLoading) {
     return (
@@ -302,267 +297,233 @@ const ProjectDetail = () => {
   }
 
   return (
-    <div className="py-8 sm:py-12 px-4 sm:px-6">
-      <SeoHead
-        title={`${project.title} — NeoScale AI`}
-        description={project.description}
-        path={`/project/${project.id}`}
-      />
+    <div className="py-6 sm:py-10 px-4 sm:px-6">
+      <SeoHead title={`${project.title} — NeoScale AI`} description={project.description} path={`/project/${project.id}`} />
       <div className="mx-auto max-w-4xl">
-        <Link to="/browse" className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground mb-6 transition-colors">
-          <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to Browse
-        </Link>
+        {/* 1. Back button */}
+        <button onClick={() => navigate(-1)} className="inline-flex items-center text-[13px] text-muted-foreground hover:text-foreground mb-3 transition-colors cursor-pointer">
+          <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back
+        </button>
 
-        {/* Cover image */}
+        {/* 2. Cover image */}
         {coverUrl && (
-          <div className="mb-6 rounded-xl overflow-hidden">
-            <img src={coverUrl} alt={project.title} className="w-full max-h-[300px] object-cover" />
-          </div>
+          <img src={coverUrl} alt={project.title} loading="eager" className="w-full object-cover rounded-xl mb-4" style={{ maxHeight: 360 }} />
         )}
 
-        {/* Header */}
-        <div className="flex items-start justify-between mb-2">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{project.title}</h1>
-          <BookmarkButton contentId={project.id} projectId={project.id} />
-        </div>
-
-        {creator && (
-          <Link
-            to={`/creator/${creator.username}`}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
-          >
-            <User className="h-3.5 w-3.5" />
-            By {creator.display_name || creator.username}
-          </Link>
-        )}
-
-        <p className="text-sm text-muted-foreground leading-relaxed mb-4">{project.description}</p>
-
-        <div className="flex items-center gap-3 text-sm text-muted-foreground mb-6">
-          <span className="flex items-center gap-1">
-            <Eye className="h-3.5 w-3.5" />
-            {project.view_count} view{project.view_count !== 1 ? "s" : ""}
-          </span>
-          <span>·</span>
-          <span>{(components ?? []).length} components</span>
-          {companionCollection && (
-            <>
-              <span>·</span>
-              <Link to={`/collections/${companionCollection.slug}`} className="text-[#2EC4B6] hover:underline">
-                Full Stack Collection →
-              </Link>
-            </>
+        {/* 3. Badges */}
+        <div className="flex flex-wrap items-center gap-2 mb-2.5">
+          <Badge variant="outline" className="text-[10px] font-medium bg-blue-500/15 text-blue-400 border-blue-500/30">Project</Badge>
+          <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(projectDifficulty)}`}>{projectDifficulty}</Badge>
+          {(project as any).package_price_enabled && (
+            <Badge variant="outline" className="text-[10px] font-medium bg-primary/15 text-primary border-primary/30">
+              £{Number((project as any).package_price_gbp ?? 0).toFixed(2)} package
+            </Badge>
           )}
         </div>
 
-        {/* Companion collection banner */}
-        {!companionCollection && isCreator && !companionDismissed && (
-          <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-[#2EC4B6]/10 border border-[#2EC4B6]/20 mb-6">
-            <Info className="h-4 w-4 text-[#2EC4B6] mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <p className="text-xs text-[#2EC4B6] mb-2">Create a collection to accompany this project — share your full stack with readers.</p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-[#2EC4B6] text-[#2EC4B6] hover:bg-[#2EC4B6]/10 text-xs"
-                  onClick={() => setCompanionModalOpen(true)}
-                >
-                  Create collection
-                </Button>
-                <button onClick={() => setCompanionDismissed(true)} className="text-xs text-muted-foreground hover:text-foreground">Dismiss</button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* 4. Title */}
+        <h1 className="text-[26px] font-bold text-foreground leading-[1.25] mb-2">{project.title}</h1>
 
-        {/* Package pricing banner */}
+        {/* 5. Description */}
+        <p className="text-[15px] text-muted-foreground leading-relaxed mb-3">{project.description}</p>
+
+        {/* 6. Meta row */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4 text-[13px] text-muted-foreground">
+          {creator && (
+            <>
+              <Link to={`/creator/${creator.username}`} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                <User className="h-3 w-3" />
+                <span>By {creator.display_name || creator.username}</span>
+              </Link>
+              <span className="text-muted-foreground/40">·</span>
+            </>
+          )}
+          <span>{(components ?? []).length} blueprint{(components ?? []).length !== 1 ? "s" : ""}</span>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{project.view_count} views</span>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDate(project.approved_at ?? project.created_at)}</span>
+        </div>
+
+        {/* 7. What to Expect */}
+        <WhatToExpectSection blocks={(project as any).what_to_expect_blocks} fallbackText={null} />
+
+        {/* 8. Action box — package CTA */}
         {(project as any).package_price_enabled && paidComponents.length > 0 && (
           <PackageBanner
             project={project}
-            paidComponentCount={paidComponents.length}
-            totalIndividualPrice={totalIndividualPrice}
+            paidCount={paidComponents.length}
+            totalPrice={totalIndividualPrice}
             hasPackage={hasPackage}
-            isLoggedIn={isLoggedIn}
             onUnlock={handleUnlockPackage}
             unlocking={unlocking}
           />
         )}
 
-        {/* Info banner */}
-        <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-[#2EC4B6]/10 border border-[#2EC4B6]/20 mb-8">
-          <Info className="h-4 w-4 text-[#2EC4B6] mt-0.5 shrink-0" />
-          <p className="text-xs text-[#2EC4B6]">
-            This project is always free to view. Some components may require payment to unlock.
-          </p>
+        {/* 9. Created By card */}
+        {creator && (
+          <div className="flex items-center gap-3 py-3.5 mb-4 border-t border-b border-border">
+            <Link to={`/creator/${creator.username}`} className="shrink-0">
+              <div className="h-11 w-11 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground overflow-hidden">
+                {(creator.display_name || creator.username || "?")[0].toUpperCase()}
+              </div>
+            </Link>
+            <div className="flex-1 min-w-0">
+              <Link to={`/creator/${creator.username}`} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
+                {creator.display_name || creator.username}
+              </Link>
+              <p className="text-xs text-muted-foreground">@{creator.username}</p>
+            </div>
+          </div>
+        )}
+
+        {/* 10. Tab strip */}
+        <div className="flex gap-0 border-b border-border sticky top-0 bg-background z-20 mb-0">
+          {(["overview", "blueprints", "changelog", "comments"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                activeTab === tab ? "text-foreground border-b-2 border-primary -mb-px" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab === "overview" && "Overview"}
+              {tab === "blueprints" && "Blueprints"}
+              {tab === "changelog" && "Changelog"}
+              {tab === "comments" && "Comments"}
+            </button>
+          ))}
         </div>
 
-        {/* Timeline */}
-        <h2 className="text-lg font-semibold text-foreground mb-4">Project Components</h2>
+        {/* Tab content */}
+        <div className="mt-0">
+          {/* Overview tab */}
+          {activeTab === "overview" && (
+            <div className="py-4">
+              {/* Blueprint timeline */}
+              <h3 className="text-base font-semibold text-foreground mb-4">Blueprint Steps</h3>
+              <div className="relative pl-8">
+                {(components ?? []).length > 0 && (
+                  <div className="absolute left-[15px] top-4 bottom-4 w-[2px]" style={{ backgroundColor: "hsl(var(--secondary))" }} />
+                )}
+                <div className="space-y-4">
+                  {(components ?? []).map((comp) => {
+                    const contentId = comp.linked_content_id || comp.inline_content_id;
+                    const content = contentItems?.find((c) => c.id === contentId);
+                    if (!content) return null;
 
-        <div className="relative pl-8">
-          {(components ?? []).length > 0 && (
-            <div
-              className="absolute left-[15px] top-4 bottom-4 w-[2px]"
-              style={{ backgroundColor: "#2EC4B6" }}
-            />
+                    const isPaid = content.monetisation_type === "paid";
+                    const isFree = content.monetisation_type === "free" || content.monetisation_type === "donation";
+                    const isExpanded = !!expandedComponents[comp.id];
+                    const unlockedViaPackage = isPaid && hasPackage;
+
+                    return (
+                      <div key={comp.id} className="relative">
+                        <div className="absolute -left-8 top-4 w-[30px] h-[30px] rounded-full flex items-center justify-center text-xs font-bold text-white z-10" style={{ backgroundColor: "hsl(var(--primary))" }}>
+                          {comp.position}
+                        </div>
+
+                        <div className="border border-border rounded-xl bg-card overflow-hidden">
+                          {/* Clickable header */}
+                          <button
+                            type="button"
+                            onClick={() => toggleExpand(comp.id)}
+                            className="w-full text-left p-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
+                          >
+                            <div className="min-w-0 flex-1">
+                              {comp.component_label && <p className="text-xs text-muted-foreground mb-0.5">{comp.component_label}</p>}
+                              <p className="text-sm font-semibold text-foreground">{content.title}</p>
+                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                <Badge variant="outline" className={`text-[10px] ${difficultyColor(content.difficulty)}`}>{content.difficulty}</Badge>
+                                {isPaid && !unlockedViaPackage && (
+                                  <Badge variant="outline" className="text-[10px] bg-primary/15 text-primary border-primary/30">£{Number(content.price_gbp ?? 0).toFixed(2)}</Badge>
+                                )}
+                                {(isFree || unlockedViaPackage) && (
+                                  <Badge variant="outline" className="text-[10px] bg-secondary/15 text-secondary border-secondary/30">{unlockedViaPackage ? "Unlocked" : "Free"}</Badge>
+                                )}
+                              </div>
+                            </div>
+                            {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
+                          </button>
+
+                          {/* Expanded inline */}
+                          {isExpanded && (
+                            <div className="border-t border-border p-5 space-y-4">
+                              {content.description && <p className="text-xs text-muted-foreground">{content.description}</p>}
+
+                              {/* Blueprint's What to Expect */}
+                              {(content as any).what_to_expect_blocks && (
+                                <WhatToExpectSection blocks={(content as any).what_to_expect_blocks} fallbackText={(content as any).what_to_expect} />
+                              )}
+
+                              {/* Content blocks (blurred/reveal as normal) */}
+                              {(isFree || unlockedViaPackage) ? (
+                                <ContentBlockViewer
+                                  contentId={content.id}
+                                  monetisationType={unlockedViaPackage ? "free" : content.monetisation_type}
+                                  creatorId={content.creator_id}
+                                  useInstructions={content.use_instructions}
+                                  onTriggerPaywall={() => handlePaywall(content.id)}
+                                />
+                              ) : isPaid ? (
+                                <div className="text-center py-6">
+                                  <Lock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                                  <p className="text-sm text-muted-foreground mb-3">This blueprint requires payment to unlock.</p>
+                                  <Button size="sm" onClick={() => handlePaywall(content.id)}>
+                                    Unlock — £{Number(content.price_gbp ?? 0).toFixed(2)}
+                                  </Button>
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           )}
 
-          <div className="space-y-4">
-            {(components ?? []).map((comp, index) => {
-              const contentId = comp.linked_content_id || comp.inline_content_id;
-              const content = contentItems?.find((c) => c.id === contentId);
-              if (!content) return null;
+          {/* Blueprints tab — grid */}
+          {activeTab === "blueprints" && (
+            <div className="py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {(contentItems ?? []).map((item) => (
+                  <PortfolioCard key={item.id} item={item as any} />
+                ))}
+              </div>
+              {(!contentItems || contentItems.length === 0) && (
+                <p className="text-sm text-muted-foreground text-center py-8">No blueprints yet.</p>
+              )}
+            </div>
+          )}
 
-              const isPaid = content.monetisation_type === "paid";
-              const isFree = content.monetisation_type === "free" || content.monetisation_type === "donation";
-              const isExpanded = !!expandedComponents[comp.id];
-              const isExclusiveInline = comp.component_type === "inline" && !comp.show_on_browse;
-              const unlockedViaPackage = isPaid && hasPackage;
+          {/* Changelog tab */}
+          {activeTab === "changelog" && (
+            <div className="py-4">
+              {contentIds.length > 0 ? (
+                <ChangelogTab contentId={contentIds[0]} contentTitle={project.title} creatorId={project.creator_id} currentVersion="1.0" />
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">No changelog entries.</p>
+              )}
+            </div>
+          )}
 
-              return (
-                <div key={comp.id} className="relative">
-                  {/* Position circle */}
-                  <div
-                    className="absolute -left-8 top-4 w-[30px] h-[30px] rounded-full flex items-center justify-center text-xs font-bold text-white z-10"
-                    style={{ backgroundColor: "#E8571A" }}
-                  >
-                    {comp.position}
-                  </div>
-
-                  <div className="border border-[#1E1E2A] rounded-xl bg-[#111118] overflow-hidden">
-                    <div className="p-5 space-y-3">
-                      {/* Label */}
-                      {comp.component_label && (
-                        <p className="text-sm font-semibold text-foreground">{comp.component_label}</p>
-                      )}
-                      {comp.component_note && (
-                        <p className="text-xs text-muted-foreground">{comp.component_note}</p>
-                      )}
-
-                      {/* Package unlock label */}
-                      {unlockedViaPackage && (
-                        <p className="text-[11px] text-[#2EC4B6]">Included in your purchase</p>
-                      )}
-
-                      {/* Badges */}
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="outline" className={`text-[10px] ${TYPE_COLORS[content.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
-                          {content.content_type}
-                        </Badge>
-                        <Badge variant="outline" className={`text-[10px] ${difficultyColor(content.difficulty)}`}>
-                          {content.difficulty}
-                        </Badge>
-                        {isPaid && !unlockedViaPackage && (
-                          <Badge variant="outline" className="text-[10px] bg-primary/15 text-primary border-primary/30">
-                            £{Number(content.price_gbp ?? 0).toFixed(2)}
-                          </Badge>
-                        )}
-                        {(isFree || unlockedViaPackage) && (
-                          <Badge variant="outline" className="text-[10px] bg-secondary/15 text-secondary border-secondary/30">
-                            {unlockedViaPackage ? "Unlocked" : "Free"}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* AI Tools */}
-                      {content.ai_tools && content.ai_tools.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {content.ai_tools.map((tool: string) => (
-                            <span key={tool} className="text-[10px] px-2 py-0.5 rounded-md bg-accent text-muted-foreground">{tool}</span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Description */}
-                      {content.description && (
-                        <p className="text-xs text-muted-foreground">{content.description}</p>
-                      )}
-
-                      {/* Action area */}
-                      <div className="pt-2 border-t border-border space-y-2">
-                        {(isFree || unlockedViaPackage) ? (
-                          <Button
-                            size="sm"
-                            onClick={() => toggleExpand(comp.id)}
-                            className="gap-1.5 text-xs"
-                            style={{ backgroundColor: "#2EC4B6" }}
-                          >
-                            {isExpanded ? (
-                              <><ChevronUp className="h-3.5 w-3.5" /> Collapse</>
-                            ) : (
-                              <><Eye className="h-3.5 w-3.5" /> View</>
-                            )}
-                          </Button>
-                        ) : isPaid ? (
-                          <Button
-                            size="sm"
-                            onClick={() => handlePaywall(content.id)}
-                            className="gap-1.5 text-xs"
-                          >
-                            <Lock className="h-3.5 w-3.5" />
-                            Unlock — £{Number(content.price_gbp ?? 0).toFixed(2)}
-                          </Button>
-                        ) : null}
-
-                        {/* View full post link */}
-                        {isExclusiveInline ? (
-                          <p className="text-[10px] text-muted-foreground">
-                            This content is exclusive to this project
-                          </p>
-                        ) : (
-                          <Link
-                            to={`/content/${content.id}`}
-                            className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
-                          >
-                            View full post <ExternalLink className="h-3 w-3" />
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Expanded ContentBlockViewer */}
-                    {isExpanded && (isFree || unlockedViaPackage) && (
-                      <div className="border-t border-border p-5">
-                        <ContentBlockViewer
-                          contentId={content.id}
-                          monetisationType={unlockedViaPackage ? "free" : content.monetisation_type}
-                          creatorId={content.creator_id}
-                          useInstructions={content.use_instructions}
-                          onTriggerPaywall={() => handlePaywall(content.id)}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {/* Comments tab */}
+          {activeTab === "comments" && (
+            <div className="py-4">
+              {contentIds.length > 0 ? (
+                <CommentsSection contentId={contentIds[0]} contentTitle={project.title} commentCount={0} isEligible={isLoggedIn} />
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">No comments yet.</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      <AccountGateModal
-        open={accountGateOpen}
-        onOpenChange={setAccountGateOpen}
-        contentId={accountGateContentId}
-        mode="purchase"
-      />
-
-      {companionModalOpen && project && (
-        <AddToCollectionModal
-          open={companionModalOpen}
-          onOpenChange={setCompanionModalOpen}
-          contentId={contentIds[0] ?? ""}
-          contentTitle={project.title}
-          prefill={{
-            title: `${project.title} — Full Stack`,
-            description: `The complete posts used in ${project.title}.`,
-            visibility: "public",
-            contentIds: contentIds,
-            projectId: project.id,
-          }}
-        />
-      )}
+      <AccountGateModal open={accountGateOpen} onOpenChange={setAccountGateOpen} contentId={accountGateContentId} mode="purchase" />
     </div>
   );
 };

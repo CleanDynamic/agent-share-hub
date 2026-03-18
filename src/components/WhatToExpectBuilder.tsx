@@ -27,6 +27,9 @@ export interface WteBlock {
 interface Props {
   blocks: WteBlock[];
   onChange: (blocks: WteBlock[]) => void;
+  maxBlocks?: number;
+  label?: string;
+  helper?: string;
 }
 
 let _uid = 0;
@@ -36,7 +39,6 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ".jpg,.jpeg,.png,.webp";
 const DESC_MAX = 300;
 const USE_INSTR_MAX = 500;
-const MAX_BLOCKS = 3;
 
 export const emptyWteBlock = (type: "text" | "image"): WteBlock => ({
   id: uid(),
@@ -134,7 +136,9 @@ const UseInstructionsToggle = ({ value, onChange }: { value: string; onChange: (
 
 // ─── Main component ──────────────────────────────────────────
 
-export function WhatToExpectBuilder({ blocks, onChange }: Props) {
+export function WhatToExpectBuilder({ blocks, onChange, maxBlocks = 3, label, helper }: Props) {
+  const MAX_BLOCKS = maxBlocks;
+
   const update = (index: number, patch: Partial<WteBlock>) => {
     const next = [...blocks];
     next[index] = { ...next[index], ...patch };
@@ -158,8 +162,8 @@ export function WhatToExpectBuilder({ blocks, onChange }: Props) {
 
   return (
     <div className="space-y-3">
-      <Label className="text-sm font-medium">What to Expect (optional)</Label>
-      <p className="text-xs text-muted-foreground -mt-1">Show users what good output looks like before they download.</p>
+      <Label className="text-sm font-medium">{label || "What to Expect (optional)"}</Label>
+      <p className="text-xs text-muted-foreground -mt-1">{helper || "Show users what good output looks like before they download."}</p>
 
       <div className="space-y-3">
         {blocks.map((block, index) => (
@@ -266,7 +270,7 @@ export function WhatToExpectBuilder({ blocks, onChange }: Props) {
         </div>
       )}
       {blocks.length >= MAX_BLOCKS && (
-        <p className="text-xs text-muted-foreground">Maximum 3 blocks for What to Expect.</p>
+        <p className="text-xs text-muted-foreground">Maximum {MAX_BLOCKS} blocks for What to Expect.</p>
       )}
     </div>
   );
