@@ -531,7 +531,10 @@ const Browse = () => {
         const inDesc = (item.description ?? "").toLowerCase().includes(q);
         const inType = item.content_type.toLowerCase().includes(q);
         const inUseCases = (item.use_cases ?? []).some((u) => u.toLowerCase().includes(q));
-        if (!inTitle && !inDesc && !inType && !inUseCases) return false;
+        const inTools = (item.ai_tools ?? []).some((t: string) => t.toLowerCase().includes(q));
+        const inWhatToExpect = ((item as any).what_to_expect ?? "").toLowerCase().includes(q);
+        const inCustomUseCase = ((item as any).custom_use_case_description ?? "").toLowerCase().includes(q);
+        if (!inTitle && !inDesc && !inType && !inUseCases && !inTools && !inWhatToExpect && !inCustomUseCase) return false;
       }
       if (typeFilter !== ALL && item.content_type !== typeFilter) return false;
       if (difficultyFilter !== ALL && item.difficulty !== difficultyFilter) return false;
