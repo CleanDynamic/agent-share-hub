@@ -245,7 +245,7 @@ function SearchSection() {
       return false;
     }).slice(0, 5);
     setUsers(uRes.data ?? []);
-    setContent(cRes.data ?? []);
+    setContent(contentResults);
     setLoading(false);
   }, []);
 
