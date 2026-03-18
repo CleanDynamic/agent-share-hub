@@ -39,6 +39,11 @@ export interface ContentCardProps {
   last_verified_at?: string | null;
   creator_id?: string;
   last_changelog_at?: string | null;
+  is_pwyw?: boolean;
+  pwyw_avg_paid_gbp?: number;
+  pwyw_purchase_count?: number;
+  pwyw_floor_gbp?: number;
+  collaborators?: { id: string; display_name: string | null; username: string | null; avatar_url: string | null; is_primary_author: boolean }[];
 }
 
 function roundedStars(avg: number, count: number): number {
