@@ -337,13 +337,13 @@ Deno.serve(async (req) => {
 
     // ═══ STEP 5 — VIEWS ═══
     const viewPairs: [string, string][] = [
-      // c1 gets lots of views
+      // c1 (Email Rewriter) gets lots of views
       ["alex", "c1"], ["priya", "c1"], ["marcus", "c1"], ["sofia", "c1"], ["jamie", "c1"],
       ["chen", "c1"], ["sam", "c1"], ["power", "c1"], ["lurker", "c1"], ["devtest", "c1"],
-      // c2 popular
+      // c2 (Weekly Report Generator) popular
       ["priya", "c2"], ["marcus", "c2"], ["sofia", "c2"], ["sam", "c2"], ["power", "c2"],
       ["lurker", "c2"], ["isabelle", "c2"], ["newjoin", "c2"],
-      // c5 popular
+      // c5 (Connect ChatGPT to Gmail) popular
       ["alex", "c5"], ["marcus", "c5"], ["sofia", "c5"], ["jamie", "c5"], ["power", "c5"],
       ["sam", "c5"], ["devtest", "c5"],
       // spread across others
@@ -358,12 +358,12 @@ Deno.serve(async (req) => {
       ["sam", "c12"], ["marcus", "c12"], ["isabelle", "c12"],
       ["sam", "c13"], ["power", "c13"], ["isabelle", "c13"],
       ["power", "c14"], ["priya", "c14"], ["chen", "c14"],
+      ["sam", "c14"], ["lurker", "c14"], ["newjoin", "c14"],
       ["power", "c15"], ["sam", "c15"],
       ["power", "c16"], ["alex", "c16"], ["marcus", "c16"],
       ["power", "c17"], ["alex", "c17"],
+      ["sam", "c17"], ["newjoin", "c17"],
       ["power", "c18"], ["priya", "c18"],
-      ["sam", "c19"], ["lurker", "c19"], ["newjoin", "c19"], ["power", "c19"],
-      ["sam", "c20"], ["isabelle", "c20"], ["newjoin", "c20"],
     ];
 
     await supabase.from("content_views").insert(
@@ -398,12 +398,12 @@ Deno.serve(async (req) => {
       ["sam", "c12"], ["marcus", "c12"],
       ["sam", "c13"], ["power", "c13"],
       ["power", "c14"], ["priya", "c14"],
+      ["sam", "c14"], ["newjoin", "c14"],
       ["power", "c15"],
       ["power", "c16"], ["alex", "c16"],
       ["power", "c17"],
+      ["sam", "c17"], ["newjoin", "c17"],
       ["power", "c18"],
-      ["sam", "c19"], ["newjoin", "c19"], ["power", "c19"],
-      ["sam", "c20"], ["newjoin", "c20"],
     ];
 
     await supabase.from("downloads").insert(
@@ -434,9 +434,9 @@ Deno.serve(async (req) => {
       ["sam", "c11", 4], ["isabelle", "c11", 5],
       ["sam", "c12", 4],
       ["power", "c14", 5],
+      ["sam", "c14", 5], ["newjoin", "c14", 4],
       ["power", "c16", 5], ["alex", "c16", 5],
-      ["sam", "c19", 5], ["newjoin", "c19", 4], ["power", "c19", 4],
-      ["sam", "c20", 4],
+      ["sam", "c17", 4],
     ];
 
     await supabase.from("content_ratings").insert(
@@ -462,20 +462,20 @@ Deno.serve(async (req) => {
 
     // ═══ STEP 8 — COMMENTS ═══
     const comments: [string, string, string][] = [
-      ["sam", "c1", "Used this for my freelance outreach. Got 3 replies in the first week."],
+      ["sam", "c1", "Used this for my freelance outreach emails. Got 3 replies in the first week."],
       ["power", "c1", "Works well but you need to tweak the tone for B2B vs B2C."],
       ["priya", "c1", "Solid prompt. I integrated it into my Zapier workflow."],
-      ["power", "c2", "The LinkedIn captions are way better than the Instagram ones. Needs work on IG."],
+      ["power", "c2", "The weekly report format is clean. Saves me 30 minutes every Monday."],
       ["sam", "c2", "Simple and effective. Saved me an hour every week."],
       ["power", "c5", "This is exactly what I needed. Set it up in 20 minutes."],
-      ["sam", "c7", "Finally a guide that doesn't assume I know what an API is."],
+      ["sam", "c7", "This happened to me too! The over-apologising thing is so real."],
       ["newjoin", "c7", "This was my first download on the platform. Very helpful."],
-      ["power", "c8", "Interesting comparison. Claude won on the research tasks in my testing too."],
-      ["alex", "c8", "Great methodology. Would love to see Gemini 2.0 added."],
-      ["sam", "c11", "I've been using this calendar for 3 months straight. Game changer."],
-      ["marcus", "c12", "Refreshing to see someone post their failures. More of this."],
-      ["sam", "c19", "This is the guide I needed when I started. Bookmarked."],
-      ["newjoin", "c19", "Thank you for writing this without jargon."],
+      ["power", "c8", "Honest comparison. Most guides just pick a favourite."],
+      ["alex", "c8", "Great overview. Would love to see Gemini 2.0 added."],
+      ["sam", "c11", "The voice sample trick is genius. My blog posts sound like me again."],
+      ["marcus", "c12", "I use this every time I build a new prompt. Essential tool."],
+      ["sam", "c14", "This is the guide I needed when I started. Bookmarked."],
+      ["newjoin", "c14", "Thank you for writing this without jargon."],
     ];
 
     const commentInserts = comments.map(([u, c, text]) => ({
@@ -498,11 +498,11 @@ Deno.serve(async (req) => {
     const verifications: [string, string, string][] = [
       ["priya", "c1", "ChatGPT"], ["marcus", "c1", "ChatGPT"], ["sam", "c1", "ChatGPT"],
       ["power", "c1", "ChatGPT"], ["chen", "c1", "ChatGPT"],
-      ["sam", "c2", "ChatGPT"], ["power", "c2", "Claude"], ["sofia", "c2", "ChatGPT"],
+      ["sam", "c2", "ChatGPT"], ["power", "c2", "Zapier"], ["sofia", "c2", "ChatGPT"],
       ["power", "c5", "Zapier"], ["marcus", "c5", "Zapier"],
-      ["power", "c8", "Claude"], ["alex", "c8", "Claude"],
+      ["power", "c8", "ChatGPT"], ["alex", "c8", "Claude"],
       ["sam", "c11", "ChatGPT"], ["isabelle", "c11", "ChatGPT"],
-      ["sam", "c19", "ChatGPT"], ["newjoin", "c19", "ChatGPT"],
+      ["sam", "c14", "ChatGPT"], ["newjoin", "c14", "ChatGPT"],
     ];
 
     await supabase.from("content_verifications").insert(
@@ -527,11 +527,11 @@ Deno.serve(async (req) => {
 
     // ═══ STEP 10 — COLLECTIONS ═══
     const collectionDefs = [
-      { owner: "alex", title: "Best Prompts for Beginners", description: "My curated starter pack for anyone new to prompt engineering.", visibility: "public", items: ["c1", "c2", "c11", "c13", "c20"] },
-      { owner: "priya", title: "Automation Essentials", description: "Everything you need to start automating with AI.", visibility: "public", items: ["c5", "c6", "c7", "c14"] },
-      { owner: "power", title: "My Favourites", description: "The content I keep coming back to.", visibility: "public", items: ["c1", "c5", "c8", "c16", "c19"] },
-      { owner: "sofia", title: "Content Creator Toolkit", description: "AI tools and prompts for content creators.", visibility: "public", items: ["c2", "c11", "c13", "c4"] },
-      { owner: "chen", title: "Research & Testing", description: "Resources for serious AI testing.", visibility: "unlisted", items: ["c8", "c16", "c17", "c18"] },
+      { owner: "alex", title: "Best Prompts for Beginners", description: "My curated starter pack for anyone new to prompt engineering.", visibility: "public", items: ["c1", "c10", "c13", "c16", "c4"] },
+      { owner: "priya", title: "Automation Essentials", description: "Everything you need to start automating with AI.", visibility: "public", items: ["c2", "c5", "c9", "c15"] },
+      { owner: "power", title: "My Favourites", description: "The content I keep coming back to.", visibility: "public", items: ["c1", "c5", "c8", "c12", "c14"] },
+      { owner: "sofia", title: "Content Creator Toolkit", description: "AI tools and prompts for content creators.", visibility: "public", items: ["c4", "c9", "c11", "c13"] },
+      { owner: "chen", title: "Research & Testing", description: "Resources for serious AI testing.", visibility: "unlisted", items: ["c6", "c12", "c15", "c18"] },
     ];
 
     for (const col of collectionDefs) {
@@ -559,7 +559,6 @@ Deno.serve(async (req) => {
     }
 
     // ═══ STEP 11 — COLLECTION FOLLOWS ═══
-    // Fetch collections to get IDs
     const { data: allCollections } = await supabase.from("collections").select("id, title, owner_id");
     const colByTitle = (t: string) => allCollections?.find((c: any) => c.title === t)?.id;
 
@@ -604,15 +603,15 @@ Deno.serve(async (req) => {
 
     if (alexCurator && chenCurator) {
       await supabase.from("curator_recommendations").insert([
-        { curator_id: alexCurator.id, content_id: contentMap.c5, recommendation_text: "Priya's automation setup is the real deal. I've recommended it to three clients already." },
-        { curator_id: alexCurator.id, content_id: contentMap.c19, recommendation_text: "If you're not technical, start here. Isabelle writes like a normal human being." },
-        { curator_id: chenCurator.id, content_id: contentMap.c8, recommendation_text: "Marcus did the comparison I was too lazy to write. Thorough and fair." },
-        { curator_id: chenCurator.id, content_id: contentMap.c1, recommendation_text: "Battle-tested cold email prompt. I verified it across ChatGPT and Claude — works on both." },
+        { curator_id: alexCurator.id, content_id: contentMap.c5, recommendation_text: "Jamie's Gmail integration guide is the real deal. I've recommended it to three clients already." },
+        { curator_id: alexCurator.id, content_id: contentMap.c14, recommendation_text: "If you're not technical, start here. Isabelle writes like a normal human being." },
+        { curator_id: chenCurator.id, content_id: contentMap.c18, recommendation_text: "Marcus did the Claude vs ChatGPT comparison I was too lazy to write. Thorough and fair." },
+        { curator_id: chenCurator.id, content_id: contentMap.c1, recommendation_text: "Battle-tested email rewriter prompt. I verified it across ChatGPT and Claude — works on both." },
       ]);
 
       // Update has_curator_recommendation
       await Promise.all(
-        [contentMap.c5, contentMap.c19, contentMap.c8, contentMap.c1].map((id) =>
+        [contentMap.c5, contentMap.c14, contentMap.c18, contentMap.c1].map((id) =>
           supabase.from("content_items").update({ has_curator_recommendation: true }).eq("id", id)
         )
       );
@@ -620,13 +619,13 @@ Deno.serve(async (req) => {
 
     // ═══ STEP 13 — USER INTERACTIONS (FYP data) ═══
     const interactions: [string, string, string][] = [
-      ["sam", "c1", "download"], ["sam", "c2", "download"], ["sam", "c7", "download"],
-      ["sam", "c11", "download"], ["sam", "c19", "download"],
+      ["sam", "c1", "download"], ["sam", "c4", "download"], ["sam", "c7", "download"],
+      ["sam", "c11", "download"], ["sam", "c14", "download"],
       ["power", "c1", "download"], ["power", "c3", "download"], ["power", "c5", "download"],
       ["power", "c8", "download"], ["power", "c16", "download"],
       ["power", "c1", "bookmark"], ["power", "c5", "bookmark"], ["power", "c8", "bookmark"],
-      ["sam", "c1", "bookmark"], ["sam", "c19", "bookmark"],
-      ["newjoin", "c7", "download"], ["newjoin", "c19", "download"],
+      ["sam", "c1", "bookmark"], ["sam", "c14", "bookmark"],
+      ["newjoin", "c7", "download"], ["newjoin", "c14", "download"],
       ["lurker", "c1", "view"], ["lurker", "c2", "view"],
     ];
 
@@ -642,8 +641,8 @@ Deno.serve(async (req) => {
     const tips: [string, string, string][] = [
       ["power", "c1", "Add 'Reply as if you are the recipient's colleague' to the prompt for better tone."],
       ["sam", "c5", "You can use Webhooks by Zapier instead of the Gmail trigger for faster processing."],
-      ["chen", "c8", "Try adding 'Think step by step' to both models for fairer comparison."],
-      ["isabelle", "c19", "I printed this guide and stuck it on my wall. That helpful."],
+      ["chen", "c18", "Try adding 'Think step by step' to both models for fairer comparison."],
+      ["isabelle", "c14", "I printed this guide and stuck it on my wall. That helpful."],
     ];
 
     await supabase.from("content_tips").insert(
@@ -654,9 +653,9 @@ Deno.serve(async (req) => {
 
     // ═══ STEP 15 — LIBRARY ENTRIES ═══
     const libraryPairs: [string, string][] = [
-      ["sam", "c1"], ["sam", "c2"], ["sam", "c7"], ["sam", "c11"], ["sam", "c19"], ["sam", "c20"],
+      ["sam", "c1"], ["sam", "c4"], ["sam", "c7"], ["sam", "c11"], ["sam", "c14"], ["sam", "c17"],
       ["power", "c1"], ["power", "c5"], ["power", "c8"], ["power", "c9"], ["power", "c16"],
-      ["newjoin", "c7"], ["newjoin", "c19"],
+      ["newjoin", "c7"], ["newjoin", "c14"],
       ["lurker", "c1"],
       ["devtest", "c1"], ["devtest", "c5"],
     ];
