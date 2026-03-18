@@ -7,7 +7,10 @@ interface Profile {
   username: string | null;
   display_name: string | null;
   avatar_url: string | null;
+  banner_url: string | null;
   bio: string | null;
+  website_url: string | null;
+  twitter_handle: string | null;
   is_admin: boolean;
   is_creator: boolean;
   is_curator: boolean;
@@ -15,6 +18,8 @@ interface Profile {
   account_type: string;
   user_interests: string[];
   follower_count: number;
+  following_count: number;
+  joined_at: string;
 }
 
 interface AuthState {
@@ -39,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url, bio, is_admin, is_creator, is_curator, curator_application_status, account_type, user_interests, follower_count")
+      .select("id, username, display_name, avatar_url, banner_url, bio, website_url, twitter_handle, is_admin, is_creator, is_curator, curator_application_status, account_type, user_interests, follower_count, following_count, joined_at")
       .eq("id", userId)
       .maybeSingle();
     setProfile(data as Profile | null);
