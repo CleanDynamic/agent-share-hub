@@ -856,8 +856,42 @@ const ContentDetail = () => {
                 >
                   <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Add your recommendation
                 </Button>
-              )}
-            </div>
+            )}
+
+            {/* Related content — compact rows */}
+            {related && related.length > 0 && (
+              <div className="border border-border rounded-xl p-4 bg-card">
+                <p className="text-[15px] font-semibold text-foreground mb-3">Related</p>
+                <div className="space-y-2.5">
+                  {related.slice(0, 4).map((r) => {
+                    const accent = TYPE_COLORS[r.content_type]?.match(/text-\[([^\]]+)\]/)?.[1] || "#9999AA";
+                    return (
+                      <Link
+                        key={r.id}
+                        to={`/content/${r.id}`}
+                        state={{ from: "related" }}
+                        className="flex items-center gap-3 group"
+                      >
+                        <div className="w-[52px] h-[52px] rounded-md shrink-0 overflow-hidden">
+                          {(r as any).cover_image_url ? (
+                            <img src={(r as any).cover_image_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-accent/50">
+                              <span className="text-lg font-bold text-muted-foreground">{r.content_type[0]}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13px] font-semibold text-foreground leading-tight line-clamp-2 group-hover:text-primary transition-colors">{r.title}</p>
+                          <Badge variant="outline" className={`text-[9px] font-medium mt-1 ${difficultyColor(r.difficulty)}`}>{r.difficulty}</Badge>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
 
             {creator && (
               <Link
