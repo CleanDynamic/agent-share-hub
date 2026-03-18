@@ -27,6 +27,9 @@ export interface WteBlock {
 interface Props {
   blocks: WteBlock[];
   onChange: (blocks: WteBlock[]) => void;
+  maxBlocks?: number;
+  label?: string;
+  helper?: string;
 }
 
 let _uid = 0;
@@ -36,7 +39,6 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ".jpg,.jpeg,.png,.webp";
 const DESC_MAX = 300;
 const USE_INSTR_MAX = 500;
-const MAX_BLOCKS = 3;
 
 export const emptyWteBlock = (type: "text" | "image"): WteBlock => ({
   id: uid(),
