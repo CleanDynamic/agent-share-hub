@@ -224,8 +224,26 @@ function SearchSection() {
 
     const [uRes, cRes] = await Promise.all([
       supabase.from("profiles").select("id, username, display_name, avatar_url").or(`display_name.ilike.%${q}%,username.ilike.%${q}%`).limit(5),
-      supabase.from("content_items").select("id, title, content_type, creator_id, profiles!content_items_creator_id_fkey(username)").ilike("title", `%${q}%`).eq("status", "approved").limit(5),
+      supabase.from("content_items")
+        .select("id, title, content_type, ai_tools, use_cases, custom_use_case_description, creator_id, profiles!content_items_creator_id_fkey(username)")
+        .eq("status", "approved")
+        .or(`title.ilike.%${q}%,description.ilike.%${q}%,content_type.ilike.%${q}%,what_to_expect.ilike.%${q}%,custom_use_case_description.ilike.%${q}%`)
+        .limit(10),
     ]);
+    // Also filter by ai_tools/use_cases client-side for array fields
+    let contentResults = cRes.data ?? [];
+    // If the query didn't match title/desc, check arrays
+    const lowerQ = q.toLowerCase();
+    contentResults = contentResults.filter((c: any) => {
+      if (c.title?.toLowerCase().includes(lowerQ)) return true;
+      if ((c as any).description?.toLowerCase().includes(lowerQ)) return true;
+      if (c.content_type?.toLowerCase().includes(lowerQ)) return true;
+      if ((c as any).what_to_expect?.toLowerCase().includes(lowerQ)) return true;
+      if ((c as any).custom_use_case_description?.toLowerCase().includes(lowerQ)) return true;
+      if ((c.ai_tools ?? []).some((t: string) => t.toLowerCase().includes(lowerQ))) return true;
+      if ((c.use_cases ?? []).some((u: string) => u.toLowerCase().includes(lowerQ))) return true;
+      return false;
+    }).slice(0, 5);
     setUsers(uRes.data ?? []);
     setContent(cRes.data ?? []);
     setLoading(false);
