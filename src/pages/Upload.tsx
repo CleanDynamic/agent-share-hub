@@ -30,7 +30,6 @@ import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components
 // LearningPathUploadForm removed from UI
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
 import { useMicrotagDefinitions } from "@/hooks/useMicrotags";
-
 import { ORDERED_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, ANY_DIFFICULTY_TYPES, displayContentType } from "@/lib/content-types";
 
 const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
@@ -42,12 +41,12 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const schema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
   content_type: z.string().min(1, "Select a content type"),
-  description: z.string().trim().min(1, "Description is required").max(120, "Max 120 characters"),
+  description: z.string().trim().min(1, "Description is required").max(500, "Max 500 characters"),
   difficulty: z.string().min(1, "Select a difficulty level"),
   ai_tools: z.array(z.string()).min(1, "Select at least one AI tool"),
   use_cases: z.array(z.string()),
-  use_instructions: z.string().trim().min(1, "Instructions are required").max(5000),
-  what_to_expect: z.string().trim().min(1, "This field is required").max(2000),
+  use_instructions: z.string().trim().max(5000).optional().or(z.literal("")),
+  what_to_expect: z.string().trim().max(2000).optional().or(z.literal("")),
   monetisation_type: z.enum(["free", "paid", "donation"]),
   price_gbp: z.coerce.number().min(1, "Minimum price is £1").optional(),
   donation_enabled: z.boolean(),
@@ -69,13 +68,12 @@ const Upload = () => {
   const [revenueSplits, setRevenueSplits] = useState<RevenueSplit[]>([]);
   const [collabInvitees, setCollabInvitees] = useState<CollabInvitee[]>([]);
   const [pwywFloor, setPwywFloor] = useState<number>(0);
-  const [selectedMicrotags, setSelectedMicrotags] = useState<string[]>([]);
-  const [microtagError, setMicrotagError] = useState("");
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   const [toolUrl, setToolUrl] = useState("");
   const [customUseCaseDesc, setCustomUseCaseDesc] = useState("");
-  const { data: microtagDefs } = useMicrotagDefinitions();
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -112,15 +110,12 @@ const Upload = () => {
       toast({ title: "Add content", description: "Please add at least one content block.", variant: "destructive" });
       return;
     }
-    if (selectedMicrotags.length < 3) {
-      setMicrotagError("Please select at least 3 tags");
-      return;
-    }
-    setMicrotagError("");
 
     setSubmitting(true);
 
     try {
+      // Refresh session to prevent RLS errors
+      await supabase.auth.refreshSession();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({ title: "Sign in required", description: "Please sign in before uploading.", variant: "destructive" });
@@ -309,11 +304,9 @@ const Upload = () => {
         }
       }
 
-      // Save microtags
-      if (selectedMicrotags.length > 0) {
-        await supabase.from("content_microtags").insert(
-          selectedMicrotags.map((tag) => ({ content_id: contentId, tag }))
-        );
+      // Save free-text tags to content_items.tags
+      if (customTags.length > 0) {
+        await supabase.from("content_items").update({ tags: customTags } as any).eq("id", contentId);
       }
 
       setSuccess(true);
@@ -333,7 +326,7 @@ const Upload = () => {
           Your submission has been received. We will review it and get back to you within 48 hours.
         </p>
         <div className="flex gap-3 mt-4">
-          <Button variant="outline" onClick={() => navigate("/browse")}>Browse Content</Button>
+          <Button variant="outline" onClick={() => navigate("/browse")}>Browse Blueprints</Button>
           <Button variant="outline" onClick={() => { setSuccess(false); form.reset(); setContentBlocks([emptyBlock("text")]); setDependencies([]); setCoverImageFile(null); setCoverImagePreview(null); }}>Upload Another</Button>
         </div>
       </div>
@@ -476,19 +469,19 @@ const Upload = () => {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>One-line description</FormLabel>
+                  <FormLabel>Description</FormLabel>
                   <FormControl>
                     <MentionInput
                       value={field.value}
                       onChange={field.onChange}
                       placeholder="Turns your AI into a specialist that…"
-                      maxLength={120}
-                      rows={1}
+                      maxLength={500}
+                      rows={3}
                     />
                   </FormControl>
                   <FormDescription>
-                    Describe what it does in plain English. Start with a verb. Max 120 characters. Use @username to mention creators.
-                    <span className="ml-2 text-muted-foreground">{field.value.length}/120</span>
+                    Describe what it does in plain English. Max 500 characters. Use @username to mention creators.
+                    <span className="ml-2 text-muted-foreground">{field.value.length}/500</span>
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -617,75 +610,83 @@ const Upload = () => {
               )}
             />
 
-            {/* Micro-tags */}
+            {/* Tags — free-text */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Tags — pick 3 to 5</label>
-              <p className="text-xs text-muted-foreground">Answer the questions users ask before downloading.</p>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {(microtagDefs ?? []).map((mt) => {
-                  const selected = selectedMicrotags.includes(mt.tag);
-                  const maxed = selectedMicrotags.length >= 5 && !selected;
-                  return (
-                    <button
-                      key={mt.tag}
-                      type="button"
-                      title={mt.description || undefined}
-                      disabled={maxed}
-                      onClick={() => {
-                        setMicrotagError("");
-                        setSelectedMicrotags((prev) =>
-                          selected ? prev.filter((t) => t !== mt.tag) : [...prev, mt.tag]
-                        );
-                      }}
-                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                        selected
-                          ? "bg-[hsl(18,80%,51%)]/15 text-[hsl(18,80%,51%)] border-[hsl(18,80%,51%)]/30"
-                          : maxed
-                          ? "bg-[hsl(240,14%,15%)] text-[hsl(240,7%,60%)] border-border opacity-40 pointer-events-none"
-                          : "bg-[hsl(240,14%,15%)] text-[hsl(240,7%,60%)] border-border hover:border-muted-foreground/40"
-                      }`}
-                    >
-                      {mt.tag}
-                    </button>
-                  );
-                })}
+              <label className="text-sm font-medium text-foreground">Tags (optional)</label>
+              <p className="text-xs text-muted-foreground">Add up to 5 tags to help people find your blueprint.</p>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {customTags.map((tag) => (
+                  <span key={tag} className="text-xs px-2.5 py-1 rounded-lg bg-primary/15 text-primary border border-primary/30 flex items-center gap-1.5">
+                    #{tag}
+                    <button type="button" onClick={() => setCustomTags(customTags.filter(t => t !== tag))} className="hover:text-foreground"><X className="h-3 w-3" /></button>
+                  </span>
+                ))}
               </div>
-              {microtagError && <p className="text-sm text-destructive">{microtagError}</p>}
+              {customTags.length < 5 && (
+                <div className="flex gap-2">
+                  <Input
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 30))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && tagInput.trim()) {
+                        e.preventDefault();
+                        const tag = tagInput.trim().toLowerCase();
+                        if (!customTags.includes(tag)) setCustomTags([...customTags, tag]);
+                        setTagInput("");
+                      }
+                    }}
+                    placeholder="Type a tag and press Enter"
+                    className="bg-card border-border rounded-xl text-sm flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (tagInput.trim()) {
+                        const tag = tagInput.trim().toLowerCase();
+                        if (!customTags.includes(tag)) setCustomTags([...customTags, tag]);
+                        setTagInput("");
+                      }
+                    }}
+                  >Add</Button>
+                </div>
+              )}
             </div>
 
             {/* 7. Content Block Builder */}
             <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} />
 
-            {/* 8. Use Instructions */}
+            {/* 8. Use Instructions (optional) */}
             <FormField
               control={form.control}
               name="use_instructions"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Use Instructions</FormLabel>
+                  <FormLabel>Use Instructions (optional)</FormLabel>
                   <FormControl>
                     <Textarea
-                      rows={5}
+                      rows={4}
                       placeholder={"1. Open ChatGPT.\n2. Paste the file content into the message box.\n3. Type your first instruction."}
                       className="bg-card border-border rounded-xl"
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    Number each step. Write as if explaining to someone who has never used AI.
+                    Optional. Number each step if you want to guide users.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* 9. What to expect */}
+            {/* 9. What to expect (optional) */}
             <FormField
               control={form.control}
               name="what_to_expect"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>What to Expect</FormLabel>
+                  <FormLabel>What to Expect (optional)</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={3}
@@ -695,7 +696,7 @@ const Upload = () => {
                     />
                   </FormControl>
                   <FormDescription>
-                    Describe what a good output looks like so the user knows it worked.
+                    Optional. Describe what a good output looks like.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

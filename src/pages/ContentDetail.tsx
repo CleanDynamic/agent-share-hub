@@ -406,7 +406,7 @@ const ContentDetail = () => {
   if (!item || error) {
     return (
       <div className="py-20 px-6 flex flex-col items-center gap-4 text-center">
-        <p className="text-sm text-muted-foreground">This content doesn't exist or has been removed.</p>
+        <p className="text-sm text-muted-foreground">This blueprint doesn't exist or has been removed.</p>
         <Button variant="outline" size="sm" asChild>
           <Link to="/browse"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Browse</Link>
         </Button>
@@ -760,7 +760,7 @@ const ContentDetail = () => {
 
         {/* 10. Tags */}
         <div className="mb-3">
-          <DetailMicrotags contentId={item.id} />
+          <DetailMicrotags contentId={item.id} itemTags={(item as any).tags} />
         </div>
 
         {/* Dependencies */}
@@ -810,7 +810,7 @@ const ContentDetail = () => {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {tab === "content" && "Content"}
+                  {tab === "content" && "Blueprint"}
                   {tab === "changelog" && (
                     <>Changelog{hasLibraryUpdate && <span className="ml-1 text-primary">●</span>}</>
                   )}
@@ -1058,27 +1058,29 @@ function CuratorPicksCard({ recs }: { recs: any[] }) {
   );
 }
 
-function DetailMicrotags({ contentId }: { contentId: string }) {
+function DetailMicrotags({ contentId, itemTags }: { contentId: string; itemTags?: string[] }) {
   const navigate = useNavigate();
-  const { data: tags } = useQuery({
+  // Show item-level tags (new free-text tags) + legacy microtags
+  const { data: microTags } = useQuery({
     queryKey: ["content_microtags_detail", contentId],
     queryFn: async () => {
       const { data } = await supabase.from("content_microtags").select("tag").eq("content_id", contentId);
       return (data ?? []).map((r: any) => r.tag);
     },
   });
-  if (!tags || tags.length === 0) return null;
+  const allTags = [...(itemTags ?? []), ...(microTags ?? [])];
+  if (allTags.length === 0) return null;
   return (
     <div>
       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Tags</h3>
       <div className="flex flex-wrap gap-2">
-        {tags.map((tag) => (
+        {allTags.map((tag) => (
           <span
             key={tag}
-            onClick={() => navigate(`/browse?microtag=${encodeURIComponent(tag)}`)}
+            onClick={() => navigate(`/browse?tag=${encodeURIComponent(tag)}`)}
             className="text-[11px] px-2 py-1 rounded-lg bg-[hsl(240,14%,15%)] text-[hsl(240,7%,60%)] cursor-pointer hover:text-foreground transition-colors"
           >
-            {tag}
+            #{tag}
           </span>
         ))}
       </div>
