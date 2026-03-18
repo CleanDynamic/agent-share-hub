@@ -231,6 +231,10 @@ export default function Profile() {
               )}
             </div>
 
+            {/* Curator Application Section */}
+            <CuratorSection />
+          </div>
+
             {/* Tabs */}
             <div className="flex gap-1 mb-4">
               <button
