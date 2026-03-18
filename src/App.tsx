@@ -64,6 +64,7 @@ const App = () => (
                 <Route path="/upload" element={<Upload />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/content/:id" element={<ContentDetail />} />
+                <Route path="/content/:id/edit" element={<ProtectedRoute requireCreator><ContentEditPage /></ProtectedRoute>} />
                 <Route path="/project/:id" element={<ProjectDetail />} />
                 <Route path="/creator/:username" element={<CreatorProfile />} />
                 <Route path="/collections/:slug" element={<CollectionDetail />} />
