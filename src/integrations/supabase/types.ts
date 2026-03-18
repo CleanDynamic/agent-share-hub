@@ -2083,6 +2083,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_email_by_username: { Args: { _username: string }; Returns: string }
       increment_content_view_count: {
         Args: { _content_id: string }
         Returns: undefined

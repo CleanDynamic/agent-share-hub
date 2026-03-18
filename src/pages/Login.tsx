@@ -14,7 +14,7 @@ export default function Login() {
   const { isLoggedIn } = useAuth();
   const redirect = searchParams.get("redirect") || "/browse";
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
@@ -29,15 +29,30 @@ export default function Login() {
     setError("");
     setSubmitting(true);
     try {
+      let emailToUse = identifier.trim();
+
+      // If input doesn't look like an email, resolve username → email via RPC
+      if (!emailToUse.includes("@")) {
+        const { data: emailData, error: rpcError } = await supabase
+          .rpc("get_email_by_username" as any, { _username: emailToUse });
+
+        if (rpcError || !emailData) {
+          setError("No account found with that username.");
+          setSubmitting(false);
+          return;
+        }
+        emailToUse = emailData as unknown as string;
+      }
+
       const { error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: emailToUse,
         password,
       });
       if (authError) {
         if (authError.message.includes("Email not confirmed")) {
           setError("Please check your email and click the confirmation link before signing in.");
         } else {
-          setError("Incorrect email or password.");
+          setError("Incorrect email/username or password.");
         }
       } else {
         navigate(redirect);
@@ -50,12 +65,23 @@ export default function Login() {
   };
 
   const handleForgotPassword = async () => {
-    if (!email.trim()) {
-      setError("Enter your email first.");
+    const val = identifier.trim();
+    if (!val) {
+      setError("Enter your email or username first.");
       return;
     }
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      let emailForReset = val;
+      if (!val.includes("@")) {
+        const { data: emailData } = await supabase
+          .rpc("get_email_by_username", { _username: val } as any);
+        if (!emailData) {
+          setError("No account found with that username.");
+          return;
+        }
+        emailForReset = emailData as unknown as string;
+      }
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(emailForReset, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (resetError) throw resetError;
@@ -73,8 +99,8 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} required />
+            <Label htmlFor="identifier">Email or username</Label>
+            <Input id="identifier" type="text" value={identifier} onChange={(e) => { setIdentifier(e.target.value); setError(""); }} required />
           </div>
 
           <div className="space-y-1.5">
