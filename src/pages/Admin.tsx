@@ -437,7 +437,7 @@ const Admin = () => {
         </div>
 
         {/* Seed demo data */}
-        <SeedDemoButton />
+        <SeedButtonRow />
 
         <Tabs defaultValue="content" className="space-y-6">
           <TabsList className="bg-card border border-border">
