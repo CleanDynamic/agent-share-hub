@@ -512,10 +512,39 @@ const Upload = () => {
     );
   }
 
+  if (draftLoading) {
+    return (
+      <div className="py-20 px-6 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  async function discardDraft() {
+    if (!draftId) return;
+    await supabase.from("content_blocks").delete().eq("content_id", draftId);
+    await supabase.from("content_items").delete().eq("id", draftId);
+    navigate("/upload", { replace: true });
+    window.location.reload();
+  }
+
   return (
     <div className="py-10 px-6">
       <SeoHead title="Upload — NeoScale AI" description="Share your AI assistants, blueprints and workflows with the community." path="/upload" />
       <div className="mx-auto max-w-2xl">
+        {/* Draft banner */}
+        {draftMeta && (
+          <div className="mb-6 rounded-xl border px-4 py-3 flex items-center justify-between gap-3" style={{ backgroundColor: "#1A1500", borderColor: "#BA7517" }}>
+            <p className="text-sm" style={{ color: "#EF9F27" }}>
+              Editing draft — <span className="font-semibold">{draftMeta.name}</span>
+              <span className="ml-2 opacity-70">· Last saved {formatDistanceToNow(new Date(draftMeta.savedAt), { addSuffix: true })}</span>
+            </p>
+            <button onClick={discardDraft} className="text-xs hover:underline shrink-0" style={{ color: "#EF9F27" }}>
+              Discard draft
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground">Share Your Work</h1>
