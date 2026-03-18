@@ -679,23 +679,23 @@ const Browse = () => {
           </>
         ) : (
         <>
-        {/* Search */}
-        <div className="relative mb-4">
+        {/* Search — full width, first element */}
+        <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="What do you want your AI to do?"
+            placeholder="Search posts..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-12 bg-card border-border text-foreground placeholder:text-muted-foreground rounded-xl"
+            className="pl-10 h-10 bg-card border-border text-foreground placeholder:text-muted-foreground rounded-xl"
           />
         </div>
 
         {/* Personalised toggle */}
         {isLoggedIn && fullProfile && (((fullProfile as any).user_interests ?? []).length > 0 || ((fullProfile as any).user_ai_tools ?? []).length > 0) && (
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-3">
             <button
               onClick={() => setMatchInterests(false)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] ${
                 !matchInterests ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -703,7 +703,7 @@ const Browse = () => {
             </button>
             <button
               onClick={() => setMatchInterests(true)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] ${
                 matchInterests ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -713,14 +713,14 @@ const Browse = () => {
         )}
 
         {/* Desktop filters */}
-        <div className="hidden md:flex gap-3 overflow-x-auto pb-2 mb-4 scrollbar-hide">
+        <div className="hidden md:flex gap-3 overflow-x-auto pb-2 mb-3 scrollbar-hide">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="min-w-[160px] bg-card border-border rounded-xl h-9 text-xs">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
               <SelectItem value={ALL}>All Types</SelectItem>
-              {CONTENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              {CONTENT_TYPES.map((t) => <SelectItem key={t} value={t}>{displayContentType(t)}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
@@ -752,7 +752,7 @@ const Browse = () => {
           </Select>
         </div>
 
-        {/* Active microtag chips + More filters toggle */}
+        {/* Microtag chips + More filters */}
         <div className="hidden md:flex flex-wrap items-center gap-2 mb-2">
           {microtagFilters.map((tag) => (
             <span key={tag} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-primary/15 text-primary border border-primary/30">
@@ -768,9 +768,8 @@ const Browse = () => {
           </button>
         </div>
 
-        {/* Collapsible microtag filter */}
         {moreFiltersOpen && (
-          <div className="hidden md:block mb-4">
+          <div className="hidden md:block mb-3">
             <div className="flex flex-wrap gap-1.5">
               {(microtagDefs ?? []).map((mt) => {
                 const selected = microtagFilters.includes(mt.tag);
@@ -796,7 +795,7 @@ const Browse = () => {
         )}
 
         {/* Mobile filter button */}
-        <div className="md:hidden mb-4">
+        <div className="md:hidden mb-3">
           <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" className="min-h-[44px] border-secondary text-secondary">
@@ -839,24 +838,20 @@ const Browse = () => {
           </Sheet>
         </div>
 
-        {/* Submit a tool link */}
-        <div className="mb-4">
-          <button
-            onClick={() => setSubmitToolOpen(true)}
-            className="text-xs text-primary hover:underline"
-          >
+        {/* Submit tool link */}
+        <div className="mb-3">
+          <button onClick={() => setSubmitToolOpen(true)} className="text-xs text-primary/80 hover:underline">
             Don't see your AI tool? Submit it →
           </button>
         </div>
 
         {/* Results count */}
         {!isLoading && !error && (
-          <p className="text-xs text-muted-foreground mb-4">
+          <p className="text-xs text-muted-foreground mb-2">
             Showing {filtered.length} result{filtered.length !== 1 ? "s" : ""}
           </p>
         )}
 
-        {/* Error state */}
         {error && (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <p className="text-sm text-muted-foreground text-center">Something went wrong loading content. Please try again.</p>
@@ -864,67 +859,63 @@ const Browse = () => {
           </div>
         )}
 
-        {/* Loading */}
         {isLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 12 }).map((_, i) => <CardSkeleton key={i} />)}
+          <div className="space-y-0">
+            {Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)}
           </div>
         )}
 
-        {/* Grid */}
+        {/* Single-column feed */}
         {!isLoading && !error && filtered.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((item) => (
-              <ContentCard
-                key={item.id}
-                id={item.id}
-                content_type={item.content_type}
-                title={item.title}
-                description={item.description ?? ""}
-                difficulty={item.difficulty}
-                ai_tools={item.ai_tools ?? []}
-                download_count={item.download_count}
-                monetisation_type={item.monetisation_type}
-                price_gbp={item.price_gbp ?? undefined}
-                file_url={item.file_url}
-                avg_rating={Number((item as any).avg_rating) || 0}
-                rating_count={(item as any).rating_count ?? 0}
-                view_count={(item as any).view_count ?? 0}
-                microtags={allMicrotagsMap?.get(item.id) ?? []}
-              />
-            ))}
+          <div className="border-t border-border">
+            {filtered.map((item) => {
+              const toolsArr = (item.ai_tools ?? []) as string[];
+              const useCasesArr = (item.use_cases ?? []) as string[];
+              return (
+                <div key={item.id}>
+                  <FeedItem item={item} />
+                  {(toolsArr.length > 0 || useCasesArr.length > 0) && (
+                    <div className="px-4 pb-2 -mt-1 border-b border-border">
+                      {toolsArr.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-[2px]">
+                          {toolsArr.slice(0, 4).map((t) => (
+                            <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">{t}</span>
+                          ))}
+                          {toolsArr.length > 4 && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">+{toolsArr.length - 4} more</span>}
+                        </div>
+                      )}
+                      {useCasesArr.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {useCasesArr.slice(0, 3).map((u) => (
+                            <span key={u} className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">{u}</span>
+                          ))}
+                          {useCasesArr.length > 3 && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">+{useCasesArr.length - 3} more</span>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {/* Empty states */}
         {!isLoading && !error && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             {matchInterests && hasFilters ? (
               <>
-                <p className="text-sm text-muted-foreground text-center max-w-md">
-                  Nothing matches your interests yet. We'll add more content soon — or browse everything.
-                </p>
-                <Button variant="outline" size="sm" onClick={() => { setMatchInterests(false); clearFilters(); }}>
-                  Show all content
-                </Button>
+                <p className="text-sm text-muted-foreground text-center max-w-md">Nothing matches your interests yet.</p>
+                <Button variant="outline" size="sm" onClick={() => { setMatchInterests(false); clearFilters(); }}>Show all content</Button>
               </>
             ) : hasFilters ? (
               <>
-                <p className="text-sm text-muted-foreground text-center max-w-md">
-                  Nothing matches those filters. Try removing one or clearing them all.
-                </p>
-                <Button variant="outline" size="sm" onClick={clearFilters}>
-                  Clear all filters
-                </Button>
+                <p className="text-sm text-muted-foreground text-center max-w-md">Nothing matches those filters.</p>
+                <Button variant="outline" size="sm" onClick={clearFilters}>Clear all filters</Button>
               </>
             ) : (
               <>
-                <p className="text-sm text-muted-foreground text-center max-w-md">
-                  Nothing here yet — be the first to share something.
-                </p>
-                <Button size="sm" asChild>
-                  <Link to="/upload">Upload your work</Link>
-                </Button>
+                <p className="text-sm text-muted-foreground text-center max-w-md">Nothing here yet — be the first to share something.</p>
+                <Button size="sm" asChild><Link to="/upload">Upload your work</Link></Button>
               </>
             )}
           </div>
