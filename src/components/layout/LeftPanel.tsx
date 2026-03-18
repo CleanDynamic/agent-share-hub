@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Home, LayoutGrid, Upload, Bookmark, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, Library,
+  Home, LayoutGrid, Upload, Bookmark, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, Library, FilePenLine,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useNavBadges } from "@/hooks/useNavBadges";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useLibraryUpdateCount } from "@/hooks/useLibraryUpdateCount";
+import { useDraftCount } from "@/hooks/useDraftCount";
 
 
 interface NavItem {
@@ -28,6 +29,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
   const { display: notifBadge } = useUnreadNotifications();
   const { display: msgBadge } = useUnreadMessages();
   const { display: libraryBadge } = useLibraryUpdateCount();
+  const { display: draftBadge } = useDraftCount();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +39,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     { icon: Home, label: "Home", to: "/" },
     { icon: LayoutGrid, label: "Browse", to: "/browse" },
     { icon: Upload, label: "Upload", to: "/upload" },
+    { icon: FilePenLine, label: "Drafts", to: "/drafts", authOnly: true, badge: draftBadge },
     { icon: Bookmark, label: "Saved", to: "/saved", authOnly: true },
     { icon: Library, label: "Library", to: "/library", authOnly: true, badge: libraryBadge },
     { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true, badge: msgBadge },
@@ -98,7 +101,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
               <item.icon className="h-[22px] w-[22px] shrink-0" />
               {!collapsed && <span>{item.label}</span>}
               {item.badge && (
-                <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground`}>
+                <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full ${item.to === "/drafts" ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"} px-1.5 text-[11px] font-bold`}>
                   {item.badge}
                 </span>
               )}

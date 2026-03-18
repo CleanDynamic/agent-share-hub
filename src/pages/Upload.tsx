@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -65,6 +66,8 @@ interface InlineSplit {
 
 const Upload = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const draftId = searchParams.get("draft");
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const [uploadType, setUploadType] = useState<"single" | "project">("single");
@@ -85,6 +88,8 @@ const Upload = () => {
   const [toolUrl, setToolUrl] = useState("");
   const [customUseCaseDesc, setCustomUseCaseDesc] = useState("");
   const [otherToolName, setOtherToolName] = useState("");
+  const [draftMeta, setDraftMeta] = useState<{ name: string; savedAt: string } | null>(null);
+  const [draftLoading, setDraftLoading] = useState(!!draftId);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -115,6 +120,107 @@ const Upload = () => {
   useEffect(() => {
     if (!isOtherSelected) setOtherToolName("");
   }, [isOtherSelected]);
+
+  // ── Load draft when ?draft= is present ──
+  useEffect(() => {
+    if (!draftId) return;
+    setDraftLoading(true);
+    (async () => {
+      try {
+        const { data: item } = await supabase
+          .from("content_items")
+          .select("*")
+          .eq("id", draftId)
+          .eq("status", "draft")
+          .single();
+        if (!item) { setDraftLoading(false); return; }
+
+        // Set form fields
+        form.setValue("title", item.title || "");
+        form.setValue("content_type", item.content_type || "");
+        form.setValue("description", (item as any).description || "");
+        form.setValue("difficulty", item.difficulty || "");
+        form.setValue("ai_tools", (item as any).ai_tools || []);
+        form.setValue("use_cases", (item as any).use_cases || []);
+        form.setValue("use_instructions", (item as any).use_instructions || "");
+        form.setValue("what_to_expect", (item as any).what_to_expect || "");
+        form.setValue("monetisation_type", (item as any).monetisation_type || "free");
+        form.setValue("donation_enabled", (item as any).donation_enabled || false);
+        if ((item as any).price_gbp) form.setValue("price_gbp", Number((item as any).price_gbp));
+        if ((item as any).other_tool_name) setOtherToolName((item as any).other_tool_name);
+        if ((item as any).custom_use_case_description) setCustomUseCaseDesc((item as any).custom_use_case_description);
+        if ((item as any).tool_url) setToolUrl((item as any).tool_url);
+        if ((item as any).tags?.length > 0) setCustomTags((item as any).tags);
+        if ((item as any).cover_image_url) setCoverImagePreview((item as any).cover_image_url);
+        if ((item as any).pwyw_floor_gbp) setPwywFloor(Number((item as any).pwyw_floor_gbp));
+
+        // WTE blocks
+        if ((item as any).what_to_expect_blocks) {
+          const wteData = (item as any).what_to_expect_blocks as any[];
+          setWteBlocks(wteData.map((b: any) => ({
+            id: b.id || crypto.randomUUID(),
+            type: b.block_type || "text",
+            textContent: b.text_content || "",
+            formatting: b.formatting_type || "paragraph",
+            subBlocks: b.sub_blocks || [],
+            useInstructions: b.use_instructions || "",
+            imageFile: null,
+            imageDescription: b.image_description || "",
+          })));
+        }
+
+        // Set draft meta for banner
+        setDraftMeta({
+          name: (item as any).draft_name || item.title || "Untitled draft",
+          savedAt: (item as any).draft_saved_at || item.created_at,
+        });
+
+        // Load content blocks
+        const { data: blocks } = await supabase
+          .from("content_blocks")
+          .select("*")
+          .eq("content_id", draftId)
+          .order("position", { ascending: true });
+
+        if (blocks && blocks.length > 0) {
+          setContentBlocks(blocks.map((b: any) => ({
+            id: b.id,
+            type: b.block_type === "long_text" ? "long_text" : b.block_type,
+            textContent: b.text_content || "",
+            formatting: b.formatting?.type || b.formatting_type || "paragraph",
+            subBlocks: b.sub_blocks || [],
+            useInstructions: b.use_instructions || "",
+            file: null,
+            fileName: b.file_name || "",
+            fileUrl: b.file_url || "",
+            imageFile: null,
+            imageUrl: b.image_url || "",
+            imageDescription: b.image_description || "",
+            isPreview: b.is_preview || false,
+            variations: [],
+          })));
+        }
+
+        // Load dependencies
+        const { data: deps } = await supabase
+          .from("content_dependencies")
+          .select("requires_content_id, dependency_note, content_items!content_dependencies_requires_content_id_fkey(title, content_type)")
+          .eq("content_id", draftId);
+        if (deps && deps.length > 0) {
+          setDependencies(deps.map((d: any) => ({
+            content_id: d.requires_content_id,
+            title: d.content_items?.title || "",
+            content_type: d.content_items?.content_type || "",
+            note: d.dependency_note || "",
+          })));
+        }
+      } catch (err) {
+        console.error("Failed to load draft:", err);
+      } finally {
+        setDraftLoading(false);
+      }
+    })();
+  }, [draftId]);
 
   const monetisationType = form.watch("monetisation_type");
   const showRevenueSplit = (monetisationType === "paid" || pwywFloor > 0) && collabInvitees.length > 0;
@@ -406,10 +512,39 @@ const Upload = () => {
     );
   }
 
+  if (draftLoading) {
+    return (
+      <div className="py-20 px-6 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  async function discardDraft() {
+    if (!draftId) return;
+    await supabase.from("content_blocks").delete().eq("content_id", draftId);
+    await supabase.from("content_items").delete().eq("id", draftId);
+    navigate("/upload", { replace: true });
+    window.location.reload();
+  }
+
   return (
     <div className="py-10 px-6">
       <SeoHead title="Upload — NeoScale AI" description="Share your AI assistants, blueprints and workflows with the community." path="/upload" />
       <div className="mx-auto max-w-2xl">
+        {/* Draft banner */}
+        {draftMeta && (
+          <div className="mb-6 rounded-xl border px-4 py-3 flex items-center justify-between gap-3" style={{ backgroundColor: "#1A1500", borderColor: "#BA7517" }}>
+            <p className="text-sm" style={{ color: "#EF9F27" }}>
+              Editing draft — <span className="font-semibold">{draftMeta.name}</span>
+              <span className="ml-2 opacity-70">· Last saved {formatDistanceToNow(new Date(draftMeta.savedAt), { addSuffix: true })}</span>
+            </p>
+            <button onClick={discardDraft} className="text-xs hover:underline shrink-0" style={{ color: "#EF9F27" }}>
+              Discard draft
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground">Share Your Work</h1>
