@@ -469,19 +469,19 @@ const Upload = () => {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>One-line description</FormLabel>
+                  <FormLabel>Description</FormLabel>
                   <FormControl>
                     <MentionInput
                       value={field.value}
                       onChange={field.onChange}
                       placeholder="Turns your AI into a specialist that…"
-                      maxLength={120}
-                      rows={1}
+                      maxLength={500}
+                      rows={3}
                     />
                   </FormControl>
                   <FormDescription>
-                    Describe what it does in plain English. Start with a verb. Max 120 characters. Use @username to mention creators.
-                    <span className="ml-2 text-muted-foreground">{field.value.length}/120</span>
+                    Describe what it does in plain English. Max 500 characters. Use @username to mention creators.
+                    <span className="ml-2 text-muted-foreground">{field.value.length}/500</span>
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
