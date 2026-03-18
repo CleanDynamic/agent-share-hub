@@ -234,7 +234,7 @@ export function ContentCard({
           ))}
         </div>
 
-        {/* Rating */}
+        {/* Rating + status indicators */}
         <div className="flex items-center gap-1.5 mb-3">
           {rating_count > 0 ? (
             <>
