@@ -415,9 +415,14 @@ const Browse = () => {
         const matchesTool = (item.ai_tools ?? []).some((t: string) => tools.includes(t));
         if (!matchesInterest && !matchesTool) return false;
       }
+      // Microtag filter (AND logic)
+      if (microtagFilters.length > 0 && allMicrotagsMap) {
+        const itemTags = allMicrotagsMap.get(item.id) ?? [];
+        if (!microtagFilters.every((mt) => itemTags.includes(mt))) return false;
+      }
       return true;
     });
-  }, [items, search, typeFilter, difficultyFilter, toolFilter, useCaseFilter, matchInterests, fullProfile]);
+  }, [items, search, typeFilter, difficultyFilter, toolFilter, useCaseFilter, matchInterests, fullProfile, microtagFilters, allMicrotagsMap]);
 
   function clearFilters() {
     setSearch("");
@@ -426,6 +431,7 @@ const Browse = () => {
     setToolFilter(ALL);
     setUseCaseFilter(ALL);
     setMatchInterests(false);
+    setMicrotagFilters([]);
   }
 
   const filterProps = {
