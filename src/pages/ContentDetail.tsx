@@ -646,31 +646,6 @@ const ContentDetail = () => {
 
             {/* Right: action buttons */}
             <div className="flex flex-wrap items-center gap-2">
-              {isSub && !subscriberUnlocked ? (
-                <>
-                  <Button size="sm" disabled className="rounded-full h-9">
-                    <Lock className="mr-1.5 h-3.5 w-3.5" /> Subscribers only
-                  </Button>
-                  {creator && (
-                    <Button variant="outline" size="sm" className="rounded-full h-9 border-secondary text-secondary hover:bg-secondary/10" asChild>
-                      <Link to={`/creator/${creator.username}`}><Users className="mr-1.5 h-3.5 w-3.5" /> Subscribe</Link>
-                    </Button>
-                  )}
-                </>
-              ) : isPwyw && !hasDownloaded ? (
-                <PwywPriceSelector
-                  contentId={item.id}
-                  floorGbp={(item as any).pwyw_floor_gbp ?? 0}
-                  avgPaid={(item as any).pwyw_avg_paid_gbp ?? 0}
-                  purchaseCount={(item as any).pwyw_purchase_count ?? 0}
-                />
-              ) : (
-                <Button size="sm" className="rounded-full h-9" onClick={handleDownload} disabled={downloading}>
-                  {downloading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : isPaid ? <Lock className="mr-1.5 h-3.5 w-3.5" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-                  {subscriberUnlocked ? "Download" : label}
-                </Button>
-              )}
-
               <AddToLibraryButton contentId={item.id} currentVersion={item.current_version} contentTitle={item.title} variant="icon" />
               <BookmarkButton contentId={item.id} />
               <AddToCollectionButton contentId={item.id} contentTitle={item.title} />
