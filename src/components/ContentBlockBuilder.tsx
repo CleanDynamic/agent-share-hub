@@ -550,12 +550,11 @@ export function ContentBlockBuilder({ blocks, onChange }: Props) {
                     {block.type === "long_text" && (
                       <div>
                         <FormatBar active={block.formatting} onChange={(f) => update(index, { formatting: f })} showHeading />
-                        <Textarea
+                        <MentionInput
                           value={block.textContent}
-                          onChange={(e) => update(index, { textContent: e.target.value })}
+                          onChange={(v) => update(index, { textContent: v })}
                           rows={10}
                           placeholder="Write your article content… Use # at the start of a line for headings."
-                          className="bg-background border-border rounded-xl text-sm"
                         />
                         <p className="text-xs text-muted-foreground mt-1">No character limit. Use # prefix for headings.</p>
                       </div>
