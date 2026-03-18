@@ -251,11 +251,36 @@ const ProjectDetail = () => {
   }, [project?.cover_image_url]);
 
   const creator = project?.profiles as { id: string; username: string; display_name: string | null } | null;
+  const isProjectOwner = !!profile?.id && project?.creator_id === profile.id;
   const paidComponents = (contentItems ?? []).filter((c) => c.monetisation_type === "paid");
   const totalIndividualPrice = paidComponents.reduce((sum, c) => sum + Number(c.price_gbp ?? 0), 0);
   const projectDifficulty = computeDifficulty(contentItems ?? []);
+  const existingLinkedIds = contentIds;
 
   const toggleExpand = (compId: string) => setExpandedComponents((p) => ({ ...p, [compId]: !p[compId] }));
+
+  const handleAddExistingBlueprint = async (item: ExistingBlueprintItem) => {
+    if (!id) return;
+    const nextPosition = (components ?? []).length + 1;
+    const { error } = await supabase.from("project_components").insert({
+      project_id: id,
+      position: nextPosition,
+      component_type: "linked",
+      linked_content_id: item.id,
+      show_on_browse: false,
+      component_label: null,
+      component_note: null,
+    });
+    if (error) {
+      toast({ title: "Failed to add blueprint", description: error.message, variant: "destructive" });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["project_components", id] });
+    queryClient.invalidateQueries({ queryKey: ["project_content_items"] });
+    setShowAddExistingSearch(false);
+    setShowAddDropdown(false);
+    toast({ title: "Blueprint added to project" });
+  };
 
   const handlePaywall = (contentId: string) => {
     if (!isLoggedIn) { setAccountGateContentId(contentId); setAccountGateOpen(true); return; }
