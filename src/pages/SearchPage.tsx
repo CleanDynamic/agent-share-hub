@@ -32,6 +32,7 @@ export default function SearchPage() {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const isTagSearch = q.startsWith("#");
 
   useEffect(() => { setInput(q); }, [q]);
   useEffect(() => { if (!q) inputRef.current?.focus(); }, [q]);
