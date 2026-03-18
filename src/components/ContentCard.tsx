@@ -111,6 +111,7 @@ export function ContentCard({
   compatibility_status = null,
   last_verified_at = null,
   creator_id,
+  last_changelog_at = null,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
