@@ -227,7 +227,7 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
           if (isActive) {
             navigate("/browse");
           } else if (cat.isProject) {
-            navigate("/browse?tab=projects");
+            navigate("/category/projects");
           } else {
             navigate(`/category/${cat.slug}`);
           }
