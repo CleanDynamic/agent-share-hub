@@ -72,6 +72,8 @@ const Upload = () => {
   const [pwywFloor, setPwywFloor] = useState<number>(0);
   const [selectedMicrotags, setSelectedMicrotags] = useState<string[]>([]);
   const [microtagError, setMicrotagError] = useState("");
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   const { data: microtagDefs } = useMicrotagDefinitions();
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
