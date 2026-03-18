@@ -31,11 +31,10 @@ import { LearningPathUploadForm } from "@/components/LearningPathUploadForm";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
 import { useMicrotagDefinitions } from "@/hooks/useMicrotags";
 
-const CONTENT_TYPES = [
-  "Prompt File", "Prompt Tutorial", "Agent Blueprint", "Workflow Template",
-  "Agent Stack", "Model Config Guide", "Integration Guide", "Evaluation Framework", "Failure Library",
-];
-const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
+import { ORDERED_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, ANY_DIFFICULTY_TYPES, displayContentType } from "@/lib/content-types";
+
+const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
+const DIFFICULTIES = [...DIFF_LIST, "Any"];
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance", "Hobby", "Other"];
 const ACCEPTED_TYPES = [".txt", ".md", ".json", ".pdf"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
