@@ -545,6 +545,42 @@ const Upload = () => {
               )}
             />
 
+            {/* Micro-tags */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Tags — pick 3 to 5</label>
+              <p className="text-xs text-muted-foreground">Answer the questions users ask before downloading.</p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {(microtagDefs ?? []).map((mt) => {
+                  const selected = selectedMicrotags.includes(mt.tag);
+                  const maxed = selectedMicrotags.length >= 5 && !selected;
+                  return (
+                    <button
+                      key={mt.tag}
+                      type="button"
+                      title={mt.description || undefined}
+                      disabled={maxed}
+                      onClick={() => {
+                        setMicrotagError("");
+                        setSelectedMicrotags((prev) =>
+                          selected ? prev.filter((t) => t !== mt.tag) : [...prev, mt.tag]
+                        );
+                      }}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                        selected
+                          ? "bg-[hsl(18,80%,51%)]/15 text-[hsl(18,80%,51%)] border-[hsl(18,80%,51%)]/30"
+                          : maxed
+                          ? "bg-[hsl(240,14%,15%)] text-[hsl(240,7%,60%)] border-border opacity-40 pointer-events-none"
+                          : "bg-[hsl(240,14%,15%)] text-[hsl(240,7%,60%)] border-border hover:border-muted-foreground/40"
+                      }`}
+                    >
+                      {mt.tag}
+                    </button>
+                  );
+                })}
+              </div>
+              {microtagError && <p className="text-sm text-destructive">{microtagError}</p>}
+            </div>
+
             {/* 7. Content Block Builder */}
             <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} />
 
