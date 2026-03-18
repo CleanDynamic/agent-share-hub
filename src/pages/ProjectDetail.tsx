@@ -547,6 +547,22 @@ const ProjectDetail = () => {
         contentId={accountGateContentId}
         mode="purchase"
       />
+
+      {companionModalOpen && project && (
+        <AddToCollectionModal
+          open={companionModalOpen}
+          onOpenChange={setCompanionModalOpen}
+          contentId={contentIds[0] ?? ""}
+          contentTitle={project.title}
+          prefill={{
+            title: `${project.title} — Full Stack`,
+            description: `The complete posts used in ${project.title}.`,
+            visibility: "public",
+            contentIds: contentIds,
+            projectId: project.id,
+          }}
+        />
+      )}
     </div>
   );
 };
