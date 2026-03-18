@@ -574,8 +574,27 @@ export function ContentBlockViewer({
                     )}
 
                     {/* Block-level comments toggle */}
-                    {isUnblurred && (
-                      <div className="mt-3 pt-3 border-t border-border">
+                     {isUnblurred && (
+                      <div className="mt-3 pt-3 border-t border-border space-y-2">
+                        {/* Per-block use instructions */}
+                        {block.use_instructions && (
+                          <div>
+                            <button
+                              onClick={() => setBlockInstrOpen((p) => ({ ...p, [block.id]: !p[block.id] }))}
+                              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <ClipboardList className="h-3 w-3" />
+                              <ChevronRight className={`h-3 w-3 transition-transform ${blockInstrOpen[block.id] ? "rotate-90" : ""}`} />
+                              📋 How to use this step
+                            </button>
+                            {blockInstrOpen[block.id] && (
+                              <p className="text-sm text-muted-foreground italic mt-2 ml-5 whitespace-pre-wrap">
+                                {block.use_instructions}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {/* Block-level comments toggle */}
                         <button
                           onClick={() => setBlockCommentsOpen((p) => ({ ...p, [block.id]: !p[block.id] }))}
                           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -596,7 +615,7 @@ export function ContentBlockViewer({
                           </div>
                         )}
                       </div>
-                    )}
+                     )}
                   </div>
                 </div>
               </div>
