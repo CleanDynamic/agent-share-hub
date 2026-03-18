@@ -7,7 +7,10 @@ interface Profile {
   username: string | null;
   display_name: string | null;
   avatar_url: string | null;
+  banner_url: string | null;
   bio: string | null;
+  website_url: string | null;
+  twitter_handle: string | null;
   is_admin: boolean;
   is_creator: boolean;
   is_curator: boolean;
@@ -15,6 +18,8 @@ interface Profile {
   account_type: string;
   user_interests: string[];
   follower_count: number;
+  following_count: number;
+  joined_at: string;
 }
 
 interface AuthState {
