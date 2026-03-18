@@ -367,6 +367,9 @@ const Admin = () => {
           </div>
         </div>
 
+        {/* Seed demo data */}
+        <SeedDemoButton />
+
         <Tabs defaultValue="content" className="space-y-6">
           <TabsList className="bg-card border border-border">
             <TabsTrigger value="content">Content Queue</TabsTrigger>
