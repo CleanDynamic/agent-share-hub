@@ -17,6 +17,9 @@ interface BlockRow {
   block_type: string;
   text_content: string | null;
   formatting: any;
+  formatting_type: string | null;
+  sub_blocks: string[] | null;
+  use_instructions: string | null;
   file_url: string | null;
   file_name: string | null;
   file_size_bytes: number | null;
