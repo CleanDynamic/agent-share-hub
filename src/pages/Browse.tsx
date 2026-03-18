@@ -27,6 +27,8 @@ import { ORDERED_CONTENT_TYPES, SLUG_TO_TYPE, displayContentType } from "@/lib/c
 const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
 const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance", "Hobby", "Other"];
+
+async function fetchApprovedContent() {
   const { data, error } = await supabase
     .from("content_items")
     .select("*")
