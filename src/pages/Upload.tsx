@@ -210,6 +210,7 @@ const Upload = () => {
           setDependencies(deps.map((d: any) => ({
             content_id: d.requires_content_id,
             title: d.content_items?.title || "",
+            content_type: d.content_items?.content_type || "",
             note: d.dependency_note || "",
           })));
         }
