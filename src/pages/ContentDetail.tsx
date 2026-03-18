@@ -422,7 +422,7 @@ const ContentDetail = () => {
       <div className="py-20 px-6 flex flex-col items-center gap-4 text-center">
         <p className="text-sm text-muted-foreground">This blueprint doesn't exist or has been removed.</p>
         <Button variant="outline" size="sm" asChild>
-          <Link to="/browse"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Browse</Link>
+          <Link to="/browse"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Discover</Link>
         </Button>
       </div>
     );
@@ -455,7 +455,7 @@ const ContentDetail = () => {
         {(() => {
           const state = location.state as { from?: string; name?: string } | null;
           let backLabel = "Back";
-          if (state?.from === "browse") backLabel = "Back to Browse";
+          if (state?.from === "browse") backLabel = "Back to Discover";
           else if (state?.from === "feed") backLabel = "Back to Feed";
           else if (state?.from === "profile" && state.name) backLabel = `Back to ${state.name}`;
           else if (state?.from === "category" && state.name) backLabel = `Back to ${state.name}`;

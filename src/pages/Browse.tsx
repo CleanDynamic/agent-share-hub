@@ -574,7 +574,7 @@ const Browse = () => {
   return (
     <div className="py-10 px-4 sm:px-6">
       <SeoHead
-        title="Browse AI Assistants — NeoScale AI"
+        title="Discover AI Blueprints — NeoScale AI"
         description="Find ready-made AI setups for any task. Filter by type, difficulty, and the AI tools you already use. Free to download."
         path="/browse"
       />
@@ -589,7 +589,7 @@ const Browse = () => {
                 : "bg-accent text-muted-foreground hover:text-foreground"
             }`}
           >
-            Content
+             Blueprints
           </button>
           <button
             onClick={() => setBrowseTab("projects")}

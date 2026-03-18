@@ -181,7 +181,7 @@ export default function CollectionDetail() {
     return (
       <div className="py-20 px-6 text-center">
         <p className="text-sm text-muted-foreground mb-4">Collection not found.</p>
-        <Button variant="outline" size="sm" asChild><Link to="/browse"><ArrowLeft className="mr-2 h-4 w-4" />Browse</Link></Button>
+        <Button variant="outline" size="sm" asChild><Link to="/browse"><ArrowLeft className="mr-2 h-4 w-4" />Discover</Link></Button>
       </div>
     );
   }

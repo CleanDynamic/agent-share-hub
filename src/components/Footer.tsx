@@ -15,7 +15,7 @@ export function Footer() {
         {/* Right */}
         <div className="flex items-center gap-5">
           <Link to="/browse" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-            Browse
+            Discover
           </Link>
           <Link to="/upload" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
             Upload

@@ -4,9 +4,12 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SeoHead } from "@/components/SeoHead";
 import { FeedItem } from "@/components/FeedItem";
+import { ProjectCard } from "@/components/ProjectCard";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Upload } from "lucide-react";
 import { SLUG_TO_TYPE, displayContentType } from "@/lib/content-types";
+import { useQuery } from "@tanstack/react-query";
 
 /* ---- Category definitions ---- */
 interface CategoryDef {
@@ -16,6 +19,7 @@ interface CategoryDef {
   description: string;
   seoTitle: string;
   seoDescription: string;
+  isProject?: boolean;
 }
 
 const CATEGORIES: CategoryDef[] = [
@@ -99,11 +103,93 @@ const CATEGORIES: CategoryDef[] = [
     seoTitle: "AI Tools & LLMs — Discover AI Models | NeoScale AI",
     seoDescription: "Explore AI tools, LLMs, and platforms. Community reviews and guides.",
   },
+  {
+    slug: "projects",
+    name: "Projects",
+    contentType: "",
+    description: "Complete collections of blueprints — multi-step AI systems built to work together.",
+    seoTitle: "Projects — AI Blueprint Collections | NeoScale AI",
+    seoDescription: "Complete collections of blueprints. Multi-step AI systems built to work together.",
+    isProject: true,
+  },
 ];
 
 const PAGE_SIZE = 20;
 const TABS = ["Popular", "Recent"] as const;
 type Tab = typeof TABS[number];
+
+/* ---- Projects feed ---- */
+function ProjectsFeed({ activeTab }: { activeTab: Tab }) {
+  const { data: projects, isLoading } = useQuery({
+    queryKey: ["category_projects", activeTab],
+    queryFn: async () => {
+      const orderCol = activeTab === "Popular" ? "view_count" : "created_at";
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*, profiles(id, username, display_name), project_components(id, component_type, linked_content_id, inline_content_id)")
+        .eq("status", "approved")
+        .order(orderCol, { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const projContentIds = (projects ?? []).flatMap((p: any) =>
+    (p.project_components ?? []).map((c: any) => c.linked_content_id || c.inline_content_id).filter(Boolean)
+  );
+  const { data: projContentTypes } = useQuery({
+    queryKey: ["category_proj_content_types", projContentIds.join(",")],
+    queryFn: async () => {
+      if (projContentIds.length === 0) return [];
+      const { data } = await supabase.from("content_items").select("id, content_type").in("id", projContentIds);
+      return data ?? [];
+    },
+    enabled: projContentIds.length > 0,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 px-4 pt-4">
+        {[1, 2, 3, 4].map((n) => <Skeleton key={n} className="h-28 w-full rounded-xl" />)}
+      </div>
+    );
+  }
+
+  if (!projects || projects.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
+        <p className="text-sm text-muted-foreground">No projects published yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 px-4 pt-4">
+      {projects.map((proj: any) => {
+        const creator = proj.profiles as any;
+        const compIds = (proj.project_components ?? []).map((c: any) => c.linked_content_id || c.inline_content_id).filter(Boolean);
+        const types = [...new Set(
+          compIds.map((cid: string) => projContentTypes?.find((ci: any) => ci.id === cid)?.content_type).filter(Boolean)
+        )] as string[];
+        return (
+          <ProjectCard
+            key={proj.id}
+            id={proj.id}
+            title={proj.title}
+            description={proj.description}
+            coverImageUrl={proj.cover_image_url}
+            creatorDisplayName={creator?.display_name || creator?.username || "Unknown"}
+            creatorUsername={creator?.username ?? ""}
+            componentTypes={types}
+            componentCount={(proj.project_components ?? []).length}
+            viewCount={proj.view_count}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 export default function Category() {
   const { slug } = useParams<{ slug: string }>();
@@ -114,7 +200,7 @@ export default function Category() {
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
     queryKey: ["category_feed", slug, activeTab],
-    enabled: !!cat,
+    enabled: !!cat && !cat.isProject,
     queryFn: async ({ pageParam = 0 }) => {
       const query = supabase
         .from("content_items")
@@ -125,7 +211,6 @@ export default function Category() {
       if (activeTab === "Recent") {
         query.order("approved_at", { ascending: false });
       } else {
-        // Popular: fetch a larger pool and sort by trending score client-side
         query.order("created_at", { ascending: false });
       }
 
@@ -133,7 +218,6 @@ export default function Category() {
       if (error) throw error;
 
       if (activeTab === "Popular") {
-        // Apply time-decayed trending score
         const scored = (rows ?? []).map((item: any) => {
           const hoursOld = (Date.now() - new Date(item.approved_at || item.created_at).getTime()) / 3600000;
           const score = (item.download_count * 1.5 + item.view_count + item.rating_count * 2 + (item.comment_count || 0) * 1.2)
@@ -153,7 +237,7 @@ export default function Category() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <h1 className="text-2xl font-bold mb-4">Category not found</h1>
-        <Link to="/browse" className="text-primary hover:underline">Back to Browse</Link>
+        <Link to="/browse" className="text-primary hover:underline">Back to Discover</Link>
       </div>
     );
   }
@@ -190,35 +274,42 @@ export default function Category() {
         </div>
       </div>
 
-      {/* Feed */}
-      {isLoading ? (
-        <div className="space-y-0">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <div key={n} className="h-24 animate-pulse bg-card/30 border-b border-border" />
-          ))}
-        </div>
-      ) : items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
-          <p className="text-sm text-muted-foreground">No {cat.name.toLowerCase()} posts yet.</p>
-          <p className="text-xs text-muted-foreground">Be the first to share one.</p>
-          <Button size="sm" onClick={() => navigate("/upload")}>
-            <Upload className="h-4 w-4 mr-1.5" />Upload
-          </Button>
-        </div>
+      {/* Projects feed */}
+      {cat.isProject ? (
+        <ProjectsFeed activeTab={activeTab} />
       ) : (
-        <div>
-          {items.map((item: any) => (
-            <FeedItem key={item.id} item={item} context="category" navState={{ from: "category", name: cat.name }} />
-          ))}
-        </div>
-      )}
+        <>
+          {/* Content feed */}
+          {isLoading ? (
+            <div className="space-y-0">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <div key={n} className="h-24 animate-pulse bg-card/30 border-b border-border" />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
+              <p className="text-sm text-muted-foreground">No {cat.name.toLowerCase()} posts yet.</p>
+              <p className="text-xs text-muted-foreground">Be the first to share one.</p>
+              <Button size="sm" onClick={() => navigate("/upload")}>
+                <Upload className="h-4 w-4 mr-1.5" />Upload
+              </Button>
+            </div>
+          ) : (
+            <div>
+              {items.map((item: any) => (
+                <FeedItem key={item.id} item={item} context="category" navState={{ from: "category", name: cat.name }} />
+              ))}
+            </div>
+          )}
 
-      {hasNextPage && (
-        <div className="flex justify-center py-6">
-          <Button variant="outline" size="sm" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
-            {isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Load more
-          </Button>
-        </div>
+          {hasNextPage && (
+            <div className="flex justify-center py-6">
+              <Button variant="outline" size="sm" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+                {isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Load more
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </>
   );

@@ -247,7 +247,7 @@ export default function Saved() {
                 tab === t ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "content" ? "Content" : t === "projects" ? "Projects" : "Folders"}
+              {t === "content" ? "Blueprints" : t === "projects" ? "Projects" : "Folders"}
               {t === "folders" && (myFolders?.length ?? 0) > 0 && (
                 <span className="ml-1.5 text-xs opacity-70">({myFolders!.length})</span>
               )}

@@ -159,7 +159,7 @@ export default function Onboarding() {
             <div>
               <h1 className="text-2xl font-bold text-foreground">You're all set 🎉</h1>
               <p className="text-sm text-muted-foreground mt-2">
-                Your Browse page is now personalised to show content matching your interests.
+                Your Discover page is now personalised to show content matching your interests.
               </p>
             </div>
             <Button onClick={finishUser} className="w-full">Start browsing</Button>
