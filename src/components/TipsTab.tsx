@@ -79,12 +79,11 @@ export function TipsTab({ contentId, isEligible }: Props) {
     <div className="space-y-4">
       {isEligible && (
         <div className="space-y-2">
-          <Textarea
+          <MentionInput
             placeholder="Share a tip or gotcha about this content..."
             value={text}
-            onChange={e => setText(e.target.value)}
+            onChange={setText}
             rows={2}
-            className="bg-card border-border rounded-xl text-sm"
           />
           <Button size="sm" onClick={handlePost} disabled={!text.trim() || posting} className="text-xs">
             {posting ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
