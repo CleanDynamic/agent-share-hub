@@ -660,28 +660,7 @@ const Upload = () => {
             {/* 7. Content Block Builder */}
             <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} />
 
-            {/* 8. Use Instructions (optional) */}
-            <FormField
-              control={form.control}
-              name="use_instructions"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Use Instructions (optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      rows={4}
-                      placeholder={"1. Open ChatGPT.\n2. Paste the file content into the message box.\n3. Type your first instruction."}
-                      className="bg-card border-border rounded-xl"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Optional. Number each step if you want to guide users.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Use instructions are now per-block inside ContentBlockBuilder */}
 
             {/* 9. What to expect (optional) */}
             <FormField
