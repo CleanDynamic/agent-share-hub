@@ -34,14 +34,14 @@ export default function Login() {
       // If input doesn't look like an email, resolve username → email via RPC
       if (!emailToUse.includes("@")) {
         const { data: emailData, error: rpcError } = await supabase
-          .rpc("get_email_by_username", { _username: emailToUse });
+          .rpc("get_email_by_username" as any, { _username: emailToUse });
 
         if (rpcError || !emailData) {
           setError("No account found with that username.");
           setSubmitting(false);
           return;
         }
-        emailToUse = emailData as string;
+        emailToUse = emailData as unknown as string;
       }
 
       const { error: authError } = await supabase.auth.signInWithPassword({
