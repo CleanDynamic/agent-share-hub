@@ -127,6 +127,15 @@ const Upload = () => {
 
       const contentId = insertedItem.id;
 
+      // Save dependencies
+      for (const dep of dependencies) {
+        await supabase.from("content_dependencies").insert({
+          content_id: contentId,
+          requires_content_id: dep.content_id,
+          dependency_note: dep.note || null,
+        });
+      }
+
       // Save each block
       for (let i = 0; i < contentBlocks.length; i++) {
         const block = contentBlocks[i];
