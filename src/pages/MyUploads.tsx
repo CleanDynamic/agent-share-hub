@@ -13,6 +13,7 @@ import {
 import { Plus, Star, StarHalf, RefreshCw, X } from "lucide-react";
 import { PublishUpdateModal } from "@/components/PublishUpdateModal";
 import { useToast } from "@/hooks/use-toast";
+import { useDraftCount } from "@/hooks/useDraftCount";
 
 function roundedStars(avg: number, count: number): number {
   if (count === 0) return 0;
