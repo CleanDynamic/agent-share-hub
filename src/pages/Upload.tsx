@@ -169,6 +169,11 @@ const Upload = () => {
         await supabase.from("content_items").update({ tool_url: toolUrl.trim() } as any).eq("id", contentId);
       }
 
+      // Save custom use case description
+      if (customUseCaseDesc.trim() && values.use_cases.includes("Other")) {
+        await supabase.from("content_items").update({ custom_use_case_description: customUseCaseDesc.trim() } as any).eq("id", contentId);
+      }
+
       // Upload cover image if selected
       if (coverImageFile) {
         const coverPath = `covers/${contentId}/${coverImageFile.name}`;
