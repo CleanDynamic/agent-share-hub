@@ -33,7 +33,7 @@ import NotFound from "./pages/NotFound";
 import NotificationsPage from "./pages/Notifications";
 import MessagesPage from "./pages/Messages";
 import CollectionDetail from "./pages/CollectionDetail";
-import LearningPathDetail from "./pages/LearningPathDetail";
+// LearningPathDetail removed from UI
 import Analytics from "./pages/Analytics";
 import SearchPage from "./pages/SearchPage";
 import Category from "./pages/Category";
