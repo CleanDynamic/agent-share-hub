@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { FeedItem } from "@/components/FeedItem";
+import { PortfolioCard } from "@/components/PortfolioCard";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -441,9 +442,9 @@ function PostsTab({ items, isOwnProfile }: { items: any[]; isOwnProfile: boolean
     );
   }
   return (
-    <div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
       {items.map((item) => (
-        <FeedItem key={item.id} item={item} />
+        <PortfolioCard key={item.id} item={item} />
       ))}
     </div>
   );
