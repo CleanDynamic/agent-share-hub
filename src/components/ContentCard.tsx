@@ -296,7 +296,7 @@ export function ContentCard({
         {/* AI tools */}
         <div className="flex flex-wrap gap-1 mb-1.5">
           {ai_tools.map((tool) => {
-            const label = tool === "Other" && (item as any)?.other_tool_name ? (item as any).other_tool_name : tool;
+            const label = tool === "Other" && other_tool_name ? other_tool_name : tool;
             return (
               <span key={tool} className="text-[10px] px-1.5 py-0.5 rounded-md bg-accent text-muted-foreground">
                 {label}
