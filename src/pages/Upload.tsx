@@ -73,6 +73,7 @@ const Upload = () => {
   const [microtagError, setMicrotagError] = useState("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  const [toolUrl, setToolUrl] = useState("");
   const { data: microtagDefs } = useMicrotagDefinitions();
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
