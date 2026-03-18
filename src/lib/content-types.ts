@@ -7,6 +7,7 @@
 /** Map DB content_type to display label */
 export function displayContentType(dbType: string): string {
   if (dbType === "Prompt File") return "Prompt(s)";
+  if (dbType === "Agent Blueprint") return "Agent(s) Blueprint";
   return dbType;
 }
 
