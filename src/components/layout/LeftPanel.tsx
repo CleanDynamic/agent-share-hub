@@ -196,6 +196,35 @@ function SearchSection() {
   const doSearch = useCallback(async (q: string) => {
     if (q.length < 2) { setUsers([]); setContent([]); return; }
     setLoading(true);
+
+    if (q.startsWith("#")) {
+      // Tag search mode
+      setUsers([]);
+      const tagQ = q;
+      const { data } = await supabase
+        .from("content_microtags")
+        .select("tag, content_id, content_items!content_microtags_content_id_fkey(id, title, content_type, profiles!content_items_creator_id_fkey(username))")
+        .ilike("tag", `%${tagQ}%`)
+        .limit(10);
+      // Group: unique tags + top 3 items
+      const tagSet = new Set<string>();
+      const items: any[] = [];
+      (data ?? []).forEach((r: any) => {
+        tagSet.add(r.tag);
+        if (r.content_items && r.content_items.status !== "pending" && items.length < 3) {
+          items.push(r.content_items);
+        }
+      });
+      // Store tags as special "user" entries for display
+      setUsers([]); // clear users
+      setContent([
+        ...Array.from(tagSet).slice(0, 3).map((t) => ({ _isTag: true, tag: t, id: t })),
+        ...items,
+      ]);
+      setLoading(false);
+      return;
+    }
+
     const [uRes, cRes] = await Promise.all([
       supabase.from("profiles").select("id, username, display_name, avatar_url").or(`display_name.ilike.%${q}%,username.ilike.%${q}%`).limit(5),
       supabase.from("content_items").select("id, title, content_type, creator_id, profiles!content_items_creator_id_fkey(username)").ilike("title", `%${q}%`).eq("status", "approved").limit(5),
