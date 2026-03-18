@@ -172,6 +172,22 @@ const ProjectDetail = () => {
     enabled: contentIds.length > 0,
   });
 
+  // Companion collection
+  const { data: companionCollection } = useQuery({
+    queryKey: ["companion_collection", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collections")
+        .select("id, title, slug")
+        .eq("project_id" as any, id!)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const isCreator = profile?.id === project?.creator_id;
+
   // Check if user owns project package
   const { data: packagePurchase, refetch: refetchPurchase } = useQuery({
     queryKey: ["project_package_purchase", id, profile?.id],
