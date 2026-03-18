@@ -732,6 +732,11 @@ const ContentDetail = () => {
 
           {/* Sidebar */}
           <div className="hidden lg:block space-y-4">
+            {/* Curator Picks card — premium placement above download */}
+            {curatorRecs && curatorRecs.length > 0 && (
+              <CuratorPicksCard recs={curatorRecs} />
+            )}
+
             <div className="border border-border rounded-xl p-5 bg-card space-y-3">
               {isSub && !subscriberUnlocked ? (
                 <>
