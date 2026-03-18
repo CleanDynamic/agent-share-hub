@@ -672,6 +672,7 @@ export type Database = {
           rating_count: number
           star_rating: number
           status: string
+          tags: string[]
           title: string
           tool_url: string | null
           use_cases: string[] | null
@@ -716,6 +717,7 @@ export type Database = {
           rating_count?: number
           star_rating?: number
           status?: string
+          tags?: string[]
           title: string
           tool_url?: string | null
           use_cases?: string[] | null
@@ -760,6 +762,7 @@ export type Database = {
           rating_count?: number
           star_rating?: number
           status?: string
+          tags?: string[]
           title?: string
           tool_url?: string | null
           use_cases?: string[] | null
