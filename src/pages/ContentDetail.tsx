@@ -725,6 +725,13 @@ const ContentDetail = () => {
                     </Button>
                   )}
                 </>
+              ) : isPwyw && !hasDownloaded ? (
+                <PwywPriceSelector
+                  contentId={item.id}
+                  floorGbp={(item as any).pwyw_floor_gbp ?? 0}
+                  avgPaid={(item as any).pwyw_avg_paid_gbp ?? 0}
+                  purchaseCount={(item as any).pwyw_purchase_count ?? 0}
+                />
               ) : (
                 <Button size="lg" className="w-full" onClick={handleDownload} disabled={downloading}>
                   {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isPaid ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}

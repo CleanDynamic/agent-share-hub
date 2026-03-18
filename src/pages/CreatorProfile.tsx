@@ -78,19 +78,47 @@ const CreatorProfile = () => {
     enabled: !!username,
   });
 
-  const { data: contentItems } = useQuery({
-    queryKey: ["creator_content", profile?.id],
+  // Fetch co-authored content IDs
+  const { data: collabContentIds } = useQuery({
+    queryKey: ["creator_collab_ids", profile?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
+        .from("content_collaborators")
+        .select("content_id")
+        .eq("collaborator_id", profile!.id);
+      return (data ?? []).map((r) => r.content_id);
+    },
+    enabled: !!profile?.id,
+  });
+
+  const { data: contentItems } = useQuery({
+    queryKey: ["creator_content", profile?.id, collabContentIds],
+    queryFn: async () => {
+      // Primary authored
+      const { data: primary, error } = await supabase
         .from("content_items")
         .select("*")
         .eq("creator_id", profile!.id)
         .eq("status", "approved")
         .order("download_count", { ascending: false });
       if (error) throw error;
-      return data;
+
+      // Co-authored (not already in primary)
+      const primaryIds = new Set((primary ?? []).map((p) => p.id));
+      const collabIds = (collabContentIds ?? []).filter((cid) => !primaryIds.has(cid));
+      let collabItems: any[] = [];
+      if (collabIds.length > 0) {
+        const { data: ci } = await supabase
+          .from("content_items")
+          .select("*")
+          .in("id", collabIds)
+          .eq("status", "approved");
+        collabItems = ci ?? [];
+      }
+
+      return [...(primary ?? []), ...collabItems];
     },
-    enabled: !!profile?.id,
+    enabled: !!profile?.id && collabContentIds !== undefined,
   });
 
   const { data: creatorProjects } = useQuery({

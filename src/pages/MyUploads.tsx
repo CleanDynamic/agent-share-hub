@@ -203,20 +203,48 @@ export default function MyUploads() {
                             v{(item as any).current_version || "1.0"}
                           </TableCell>
                           <TableCell className="text-right">
-                            {item.status === "approved" && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setUpdateTarget({
-                                    id: item.id,
-                                    title: item.title,
-                                    version: (item as any).current_version || "1.0",
-                                  });
-                                }}
-                                className="text-[11px] text-primary hover:underline flex items-center gap-1"
-                              >
-                                <RefreshCw className="h-3 w-3" /> Publish update
-                              </button>
+                            <div className="flex items-center justify-end gap-2">
+                              {item.status === "approved" && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setUpdateTarget({
+                                      id: item.id,
+                                      title: item.title,
+                                      version: (item as any).current_version || "1.0",
+                                    });
+                                  }}
+                                  className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                                >
+                                  <RefreshCw className="h-3 w-3" /> Publish update
+                                </button>
+                              )}
+                              {(pendingInvites ?? []).filter((inv: any) => inv.content_id === item.id).length > 0 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedInvites(expandedInvites === item.id ? null : item.id);
+                                  }}
+                                  className="text-[11px] text-amber-400 hover:underline"
+                                >
+                                  {(pendingInvites ?? []).filter((inv: any) => inv.content_id === item.id).length} pending invite{(pendingInvites ?? []).filter((inv: any) => inv.content_id === item.id).length !== 1 ? "s" : ""}
+                                </button>
+                              )}
+                            </div>
+                            {expandedInvites === item.id && (
+                              <div className="mt-2 space-y-1">
+                                {(pendingInvites ?? []).filter((inv: any) => inv.content_id === item.id).map((inv: any) => (
+                                  <div key={inv.id} className="flex items-center justify-end gap-2 text-[11px]">
+                                    <span className="text-muted-foreground">@{inv.profiles?.username || inv.profiles?.display_name}</span>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); withdrawInvite(inv.id); }}
+                                      className="text-destructive hover:underline flex items-center gap-0.5"
+                                    >
+                                      <X className="h-3 w-3" /> Withdraw
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
                             )}
                           </TableCell>
                         </TableRow>
