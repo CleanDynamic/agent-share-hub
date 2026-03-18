@@ -38,10 +38,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
   const navItems: NavItem[] = [
     { icon: Home, label: "Home", to: "/" },
     { icon: LayoutGrid, label: "Browse", to: "/browse" },
-    { icon: Clock, label: "Recent", to: "/recent" },
-    { icon: Heart, label: "For You", to: "/fyp", authOnly: true, badge: fypBadge },
     { icon: Upload, label: "Upload", to: "/upload" },
-    { icon: Info, label: "About", to: "/about" },
     { icon: Bookmark, label: "Saved", to: "/saved", authOnly: true },
     { icon: Library, label: "Library", to: "/library", authOnly: true, badge: libraryBadge },
     { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true, badge: msgBadge },

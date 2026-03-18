@@ -216,7 +216,7 @@ export function ContentCard({
             variant="outline"
             className={`text-[10px] font-medium ${TYPE_COLORS[content_type] ?? TYPE_COLORS["Failure Library"]}`}
           >
-            {content_type}
+            {displayContentType(content_type)}
           </Badge>
         {isSub ? (
             <Badge variant="outline" className="text-[10px] font-medium bg-secondary/15 text-secondary border-secondary/30">

@@ -3,20 +3,11 @@ import { BookmarkButton } from "@/components/BookmarkButton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Download, Eye, Star, StarHalf, MessageSquare } from "lucide-react";
+import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 
 /* ---- Helpers ---- */
 
-export const TYPE_COLORS: Record<string, string> = {
-  "Prompt File": "bg-[#E8571A]/20 text-[#E8571A] border-[#E8571A]/25",
-  "Prompt Tutorial": "bg-[#2EC4B6]/20 text-[#2EC4B6] border-[#2EC4B6]/25",
-  "Agent Blueprint": "bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/25",
-  "Workflow Template": "bg-[#2563EB]/20 text-[#3B82F6] border-[#2563EB]/25",
-  "Agent Stack": "bg-[#DC2626]/20 text-[#EF4444] border-[#DC2626]/25",
-  "Model Config Guide": "bg-[#16A34A]/20 text-[#22C55E] border-[#16A34A]/25",
-  "Integration Guide": "bg-[#D97706]/20 text-[#F59E0B] border-[#D97706]/25",
-  "Evaluation Framework": "bg-[#DB2777]/20 text-[#EC4899] border-[#DB2777]/25",
-  "Failure Library": "bg-[#374151]/20 text-[#9CA3AF] border-[#374151]/25",
-};
+export { TYPE_COLORS };
 
 export function difficultyColor(level: string) {
   switch (level) {
@@ -121,7 +112,7 @@ export function FeedItem({ item, rank }: FeedItemProps) {
       {/* LINE 2 — Badges */}
       <div className="flex gap-1.5 mt-1">
         <Badge variant="outline" className={`text-[10px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
-          {item.content_type}
+          {displayContentType(item.content_type)}
         </Badge>
         <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(item.difficulty)}`}>
           {item.difficulty}
