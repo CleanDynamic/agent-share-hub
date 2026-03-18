@@ -902,32 +902,7 @@ const ContentDetail = () => {
           )}
         </div>
 
-        {/* Related content */}
-        {related && related.length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Related Content</h2>
-            <div className="flex gap-4 overflow-x-auto pb-2 lg:grid lg:grid-cols-3 lg:overflow-visible scrollbar-hide">
-              {related.map((r) => (
-                <div key={r.id} className="min-w-[280px] lg:min-w-0">
-                  <ContentCard
-                    id={r.id}
-                    content_type={r.content_type}
-                    title={r.title}
-                    description={r.description ?? ""}
-                    difficulty={r.difficulty}
-                    ai_tools={r.ai_tools ?? []}
-                    download_count={r.download_count}
-                    monetisation_type={r.monetisation_type}
-                    price_gbp={r.price_gbp ?? undefined}
-                    avg_rating={Number((r as any).avg_rating) || 0}
-                    rating_count={(r as any).rating_count ?? 0}
-                    view_count={(r as any).view_count ?? 0}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Related content moved to sidebar */}
       </div>
 
       <GuestDownloadModal
