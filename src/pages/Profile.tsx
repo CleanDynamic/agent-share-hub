@@ -441,9 +441,9 @@ function PostsTab({ items, isOwnProfile }: { items: any[]; isOwnProfile: boolean
     );
   }
   return (
-    <div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
       {items.map((item) => (
-        <FeedItem key={item.id} item={item} />
+        <PortfolioCard key={item.id} item={item} />
       ))}
     </div>
   );
