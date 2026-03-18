@@ -7,15 +7,15 @@ import { Download, Eye, Star, StarHalf, MessageSquare } from "lucide-react";
 /* ---- Helpers ---- */
 
 export const TYPE_COLORS: Record<string, string> = {
-  "Prompt File": "bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/30",
-  "Prompt Tutorial": "bg-[#2EC4B6]/15 text-[#2EC4B6] border-[#2EC4B6]/30",
-  "Agent Blueprint": "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  "Workflow Template": "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  "Agent Stack": "bg-red-500/15 text-red-400 border-red-500/30",
-  "Model Config Guide": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  "Integration Guide": "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  "Evaluation Framework": "bg-pink-500/15 text-pink-400 border-pink-500/30",
-  "Failure Library": "bg-muted text-muted-foreground border-border",
+  "Prompt File": "bg-[#E8571A]/20 text-[#E8571A] border-[#E8571A]/25",
+  "Prompt Tutorial": "bg-[#2EC4B6]/20 text-[#2EC4B6] border-[#2EC4B6]/25",
+  "Agent Blueprint": "bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/25",
+  "Workflow Template": "bg-[#2563EB]/20 text-[#3B82F6] border-[#2563EB]/25",
+  "Agent Stack": "bg-[#DC2626]/20 text-[#EF4444] border-[#DC2626]/25",
+  "Model Config Guide": "bg-[#16A34A]/20 text-[#22C55E] border-[#16A34A]/25",
+  "Integration Guide": "bg-[#D97706]/20 text-[#F59E0B] border-[#D97706]/25",
+  "Evaluation Framework": "bg-[#DB2777]/20 text-[#EC4899] border-[#DB2777]/25",
+  "Failure Library": "bg-[#374151]/20 text-[#9CA3AF] border-[#374151]/25",
 };
 
 export function difficultyColor(level: string) {
@@ -43,11 +43,11 @@ export function roundedStars(avg: number, count: number): number {
 function MiniStars({ value }: { value: number }) {
   const stars = [];
   for (let i = 1; i <= 5; i++) {
-    if (i <= Math.floor(value)) stars.push(<Star key={i} className="h-2.5 w-2.5 fill-primary text-primary" />);
-    else if (i - 0.5 === value) stars.push(<StarHalf key={i} className="h-2.5 w-2.5 fill-primary text-primary" />);
-    else stars.push(<Star key={i} className="h-2.5 w-2.5 text-muted-foreground/30" />);
+    if (i <= Math.floor(value)) stars.push(<Star key={i} className="h-[10px] w-[10px] fill-primary text-primary" />);
+    else if (i - 0.5 === value) stars.push(<StarHalf key={i} className="h-[10px] w-[10px] fill-primary text-primary" />);
+    else stars.push(<Star key={i} className="h-[10px] w-[10px] text-muted-foreground/30" />);
   }
-  return <span className="inline-flex gap-0.5">{stars}</span>;
+  return <span className="inline-flex items-center gap-0.5">{stars}</span>;
 }
 
 export function timeAgo(dateStr: string): string {
@@ -89,12 +89,14 @@ export function FeedItem({ item, rank }: FeedItemProps) {
   return (
     <div
       onClick={handleCardClick}
-      className="px-4 py-3 border-b border-border cursor-pointer transition-colors duration-150 hover:bg-[hsl(0_0%_100%/0.03)]"
+      className="px-4 py-3 border-b border-border cursor-pointer transition-colors duration-150 hover:bg-[hsl(0_0%_100%/0.03)] m-0"
     >
       {/* LINE 1 — Header row */}
       <div className="flex items-center gap-2" style={{ height: 36 }}>
         {rank != null && (
-          <span className="text-lg font-bold text-primary w-7 shrink-0">{String(rank).padStart(2, "0")}</span>
+          <span className="text-[18px] font-bold text-primary shrink-0" style={{ minWidth: 32 }}>
+            {String(rank).padStart(2, "0")}
+          </span>
         )}
         <Link to={`/creator/${profile?.username}`} onClick={stop}>
           <Avatar className="h-9 w-9 shrink-0">
@@ -146,19 +148,19 @@ export function FeedItem({ item, rank }: FeedItemProps) {
         />
       )}
 
-      {/* LINE 5 — Stats */}
-      <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-0.5"><Eye className="h-3 w-3" />{formatNum(item.view_count ?? 0)}</span>
-        <span>·</span>
-        <span className="inline-flex items-center gap-0.5"><Download className="h-3 w-3" />{formatNum(item.download_count ?? 0)}</span>
+      {/* LINE 6 — Stats */}
+      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-nowrap overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+        <span className="inline-flex items-center gap-[3px] shrink-0"><Eye className="h-3 w-3" />{formatNum(item.view_count ?? 0)}</span>
+        <span className="text-[#444450] shrink-0">·</span>
+        <span className="inline-flex items-center gap-[3px] shrink-0"><Download className="h-3 w-3" />{formatNum(item.download_count ?? 0)}</span>
         {(item.rating_count ?? 0) > 0 && (
           <>
-            <span>·</span>
+            <span className="text-[#444450] shrink-0">·</span>
             <MiniStars value={starVal} />
           </>
         )}
-        <span>·</span>
-        <span className="inline-flex items-center gap-0.5"><MessageSquare className="h-3 w-3" />{item.comment_count ?? 0}</span>
+        <span className="text-[#444450] shrink-0">·</span>
+        <span className="inline-flex items-center gap-[3px] shrink-0"><MessageSquare className="h-3 w-3" />{item.comment_count ?? 0}</span>
       </div>
     </div>
   );

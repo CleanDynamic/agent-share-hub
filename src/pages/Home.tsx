@@ -358,18 +358,18 @@ const Home = () => {
       />
 
       {isLoggedIn && (
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
-          <Avatar className="h-10 w-10 shrink-0">
+        <div className="flex items-center gap-3" style={{ height: 52, padding: "10px 16px" }}>
+          <Avatar className="h-9 w-9 shrink-0">
             {profile?.avatar_url && <img src={profile.avatar_url} className="h-full w-full rounded-full object-cover" />}
-            <AvatarFallback className="bg-primary text-primary-foreground text-sm">{initials}</AvatarFallback>
+            <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
           </Avatar>
           <button
             onClick={() => navigate("/upload")}
-            className="flex-1 h-10 rounded-full bg-card border border-border px-4 text-left text-sm text-muted-foreground hover:border-primary/40 transition-colors"
+            className="flex-1 h-9 rounded-full bg-[#111118] border border-border px-4 text-left text-sm text-muted-foreground hover:border-primary/40 transition-colors"
           >
             Share something...
           </button>
-          <button onClick={() => navigate("/upload")} className="p-2 text-primary hover:text-primary/80 transition-colors">
+          <button onClick={() => navigate("/upload")} className="p-1.5 text-primary hover:text-primary/80 transition-colors">
             <Upload className="h-5 w-5" />
           </button>
         </div>
@@ -377,19 +377,19 @@ const Home = () => {
 
       {!isLoggedIn && <HowItWorks />}
 
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="flex">
+      <div className="sticky top-0 z-10 bg-background border-b border-border" style={{ height: 48, backdropFilter: "none" }}>
+        <div className="flex h-full">
           {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 text-center py-3.5 text-[15px] font-medium transition-colors relative ${
+              className={`flex-1 text-center text-[14px] font-medium transition-colors relative h-full ${
                 activeTab === tab ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {tab}
               {activeTab === tab && (
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full" />
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[2px] bg-primary" />
               )}
             </button>
           ))}
