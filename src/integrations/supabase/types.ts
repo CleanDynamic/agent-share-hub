@@ -321,9 +321,11 @@ export type Database = {
           is_public: boolean
           item_count: number
           owner_id: string
+          project_id: string | null
           slug: string | null
           title: string
           updated_at: string
+          visibility: string | null
         }
         Insert: {
           created_at?: string
@@ -333,9 +335,11 @@ export type Database = {
           is_public?: boolean
           item_count?: number
           owner_id: string
+          project_id?: string | null
           slug?: string | null
           title: string
           updated_at?: string
+          visibility?: string | null
         }
         Update: {
           created_at?: string
@@ -345,9 +349,11 @@ export type Database = {
           is_public?: boolean
           item_count?: number
           owner_id?: string
+          project_id?: string | null
           slug?: string | null
           title?: string
           updated_at?: string
+          visibility?: string | null
         }
         Relationships: [
           {
@@ -355,6 +361,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collections_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
