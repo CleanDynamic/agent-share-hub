@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, X } from "lucide-react";
+import { Search, X, Hash } from "lucide-react";
 
 const STORAGE_KEY = "neoscale_recent_searches";
 const MAX_RECENT = 5;
@@ -32,6 +32,7 @@ export default function SearchPage() {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const isTagSearch = q.startsWith("#");
 
   useEffect(() => { setInput(q); }, [q]);
   useEffect(() => { if (!q) inputRef.current?.focus(); }, [q]);
@@ -49,11 +50,24 @@ export default function SearchPage() {
     if (e.key === "Enter") runSearch(input);
   };
 
-  // Posts
+  // Posts — regular or tag search
   const { data: posts, isLoading: postsLoading } = useQuery({
     queryKey: ["search_posts", q],
     enabled: !!q,
     queryFn: async () => {
+      if (isTagSearch) {
+        // Tag search: join content_microtags
+        const { data } = await supabase
+          .from("content_microtags")
+          .select("content_id, content_items!content_microtags_content_id_fkey(*, profiles!content_items_creator_id_fkey(username))")
+          .eq("tag", q)
+          .limit(30);
+        const items = (data ?? [])
+          .map((r: any) => r.content_items)
+          .filter((i: any) => i && i.status === "approved")
+          .sort((a: any, b: any) => (b.download_count + b.view_count) - (a.download_count + a.view_count));
+        return items;
+      }
       const { data } = await supabase
         .from("content_items")
         .select("*, profiles!content_items_creator_id_fkey(username)")
@@ -178,6 +192,13 @@ export default function SearchPage() {
 
             {/* Posts tab */}
             <TabsContent value="posts">
+              {isTagSearch && postCount > 0 && (
+                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-[#2EC4B6]/10 border border-[#2EC4B6]/30 text-[#2EC4B6] text-sm">
+                  <Hash className="h-4 w-4 shrink-0" />
+                  <span>Showing posts tagged <strong>{q}</strong></span>
+                  <button onClick={() => setParams({})} className="ml-auto hover:text-foreground">×</button>
+                </div>
+              )}
               {postsLoading ? (
                 <div className="grid gap-4 sm:grid-cols-2">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-44 rounded-xl" />)}</div>
               ) : postCount === 0 ? (

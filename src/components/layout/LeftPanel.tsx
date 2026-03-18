@@ -196,6 +196,35 @@ function SearchSection() {
   const doSearch = useCallback(async (q: string) => {
     if (q.length < 2) { setUsers([]); setContent([]); return; }
     setLoading(true);
+
+    if (q.startsWith("#")) {
+      // Tag search mode
+      setUsers([]);
+      const tagQ = q;
+      const { data } = await supabase
+        .from("content_microtags")
+        .select("tag, content_id, content_items!content_microtags_content_id_fkey(id, title, content_type, profiles!content_items_creator_id_fkey(username))")
+        .ilike("tag", `%${tagQ}%`)
+        .limit(10);
+      // Group: unique tags + top 3 items
+      const tagSet = new Set<string>();
+      const items: any[] = [];
+      (data ?? []).forEach((r: any) => {
+        tagSet.add(r.tag);
+        if (r.content_items && r.content_items.status !== "pending" && items.length < 3) {
+          items.push(r.content_items);
+        }
+      });
+      // Store tags as special "user" entries for display
+      setUsers([]); // clear users
+      setContent([
+        ...Array.from(tagSet).slice(0, 3).map((t) => ({ _isTag: true, tag: t, id: t })),
+        ...items,
+      ]);
+      setLoading(false);
+      return;
+    }
+
     const [uRes, cRes] = await Promise.all([
       supabase.from("profiles").select("id, username, display_name, avatar_url").or(`display_name.ilike.%${q}%,username.ilike.%${q}%`).limit(5),
       supabase.from("content_items").select("id, title, content_type, creator_id, profiles!content_items_creator_id_fkey(username)").ilike("title", `%${q}%`).eq("status", "approved").limit(5),
@@ -259,13 +288,23 @@ function SearchSection() {
           )}
           {content.length > 0 && (
             <div className="p-2 border-t border-border">
-              <p className="px-2 pb-1 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">Content</p>
+              <p className="px-2 pb-1 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
+                {query.startsWith("#") ? "Tags" : "Content"}
+              </p>
               {content.map((c: any) => (
-                <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
-                  <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">{c.content_type}</span>
-                  <span className="truncate">{c.title}</span>
-                  {c.profiles?.username && <span className="ml-auto text-xs text-muted-foreground">@{c.profiles.username}</span>}
-                </button>
+                c._isTag ? (
+                  <button key={c.tag} onClick={() => go(`/search?q=${encodeURIComponent(c.tag)}`)} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
+                    <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">#</span>
+                    <span className="truncate font-semibold">{c.tag}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">See all posts →</span>
+                  </button>
+                ) : (
+                  <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
+                    <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">{c.content_type}</span>
+                    <span className="truncate">{c.title}</span>
+                    {c.profiles?.username && <span className="ml-auto text-xs text-muted-foreground">@{c.profiles.username}</span>}
+                  </button>
+                )
               ))}
             </div>
           )}

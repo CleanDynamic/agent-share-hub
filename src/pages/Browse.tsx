@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useApprovedToolNames } from "@/hooks/useApprovedTools";
+import { useMicrotagDefinitions } from "@/hooks/useMicrotags";
 import { SubmitToolModal } from "@/components/SubmitToolModal";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
@@ -280,11 +281,18 @@ const Browse = () => {
   const [matchInterests, setMatchInterests] = useState(false);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [microtagFilters, setMicrotagFilters] = useState<string[]>(() => {
+    const mt = searchParams.get("microtag");
+    return mt ? mt.split(",").filter(Boolean) : [];
+  });
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
+  const { data: microtagDefs } = useMicrotagDefinitions();
 
   // React to query param changes from right panel navigation
   useEffect(() => {
     const tab = searchParams.get("tab");
     const typeSlug = searchParams.get("type");
+    const mt = searchParams.get("microtag");
     if (tab === "projects") {
       setBrowseTab("projects");
     } else if (tab === "paths") {
@@ -293,9 +301,13 @@ const Browse = () => {
       setBrowseTab("content");
       setTypeFilter(SLUG_TO_TYPE[typeSlug]);
     }
+    if (mt) {
+      setMicrotagFilters(mt.split(",").filter(Boolean));
+      setMoreFiltersOpen(true);
+    }
   }, [searchParams]);
 
-  const activeFilterCount = [typeFilter, difficultyFilter, toolFilter, useCaseFilter].filter((f) => f !== ALL).length;
+  const activeFilterCount = [typeFilter, difficultyFilter, toolFilter, useCaseFilter].filter((f) => f !== ALL).length + microtagFilters.length;
 
   const { data: fullProfile } = useQuery({
     queryKey: ["browse_profile", profile?.id],
@@ -313,6 +325,29 @@ const Browse = () => {
   const { data: items, isLoading, error } = useQuery({
     queryKey: ["content_items_approved"],
     queryFn: fetchApprovedContent,
+  });
+
+  // Fetch all microtags for browse items (for filtering)
+  const itemIds = (items ?? []).map((i) => i.id);
+  const { data: allMicrotagsMap } = useQuery({
+    queryKey: ["browse_microtags", itemIds.length],
+    queryFn: async () => {
+      if (itemIds.length === 0) return new Map<string, string[]>();
+      // Fetch in batches if needed (supabase limit 1000)
+      const { data } = await supabase
+        .from("content_microtags")
+        .select("content_id, tag")
+        .in("content_id", itemIds.slice(0, 500));
+      const map = new Map<string, string[]>();
+      (data ?? []).forEach((r: any) => {
+        const arr = map.get(r.content_id) ?? [];
+        arr.push(r.tag);
+        map.set(r.content_id, arr);
+      });
+      return map;
+    },
+    enabled: itemIds.length > 0,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Projects query
@@ -356,7 +391,7 @@ const Browse = () => {
     );
   }, [projects, projectSearch]);
 
-  const hasFilters = search || typeFilter !== ALL || difficultyFilter !== ALL || toolFilter !== ALL || useCaseFilter !== ALL;
+  const hasFilters = search || typeFilter !== ALL || difficultyFilter !== ALL || toolFilter !== ALL || useCaseFilter !== ALL || microtagFilters.length > 0;
 
   const filtered = useMemo(() => {
     if (!items) return [];
@@ -380,9 +415,14 @@ const Browse = () => {
         const matchesTool = (item.ai_tools ?? []).some((t: string) => tools.includes(t));
         if (!matchesInterest && !matchesTool) return false;
       }
+      // Microtag filter (AND logic)
+      if (microtagFilters.length > 0 && allMicrotagsMap) {
+        const itemTags = allMicrotagsMap.get(item.id) ?? [];
+        if (!microtagFilters.every((mt) => itemTags.includes(mt))) return false;
+      }
       return true;
     });
-  }, [items, search, typeFilter, difficultyFilter, toolFilter, useCaseFilter, matchInterests, fullProfile]);
+  }, [items, search, typeFilter, difficultyFilter, toolFilter, useCaseFilter, matchInterests, fullProfile, microtagFilters, allMicrotagsMap]);
 
   function clearFilters() {
     setSearch("");
@@ -391,6 +431,7 @@ const Browse = () => {
     setToolFilter(ALL);
     setUseCaseFilter(ALL);
     setMatchInterests(false);
+    setMicrotagFilters([]);
   }
 
   const filterProps = {
@@ -582,6 +623,49 @@ const Browse = () => {
           </Select>
         </div>
 
+        {/* Active microtag chips + More filters toggle */}
+        <div className="hidden md:flex flex-wrap items-center gap-2 mb-2">
+          {microtagFilters.map((tag) => (
+            <span key={tag} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-primary/15 text-primary border border-primary/30">
+              {tag}
+              <button onClick={() => setMicrotagFilters((prev) => prev.filter((t) => t !== tag))} className="hover:text-foreground">×</button>
+            </span>
+          ))}
+          <button
+            onClick={() => setMoreFiltersOpen(!moreFiltersOpen)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {moreFiltersOpen ? "Hide filters ▲" : "More filters ▼"}
+          </button>
+        </div>
+
+        {/* Collapsible microtag filter */}
+        {moreFiltersOpen && (
+          <div className="hidden md:block mb-4">
+            <div className="flex flex-wrap gap-1.5">
+              {(microtagDefs ?? []).map((mt) => {
+                const selected = microtagFilters.includes(mt.tag);
+                return (
+                  <button
+                    key={mt.tag}
+                    title={mt.description || undefined}
+                    onClick={() => setMicrotagFilters((prev) =>
+                      selected ? prev.filter((t) => t !== mt.tag) : [...prev, mt.tag]
+                    )}
+                    className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${
+                      selected
+                        ? "bg-primary/15 text-primary border-primary/30"
+                        : "bg-[hsl(240,14%,15%)] text-[hsl(240,7%,60%)] border-border hover:border-muted-foreground/40"
+                    }`}
+                  >
+                    {mt.tag}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Mobile filter button */}
         <div className="md:hidden mb-4">
           <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
@@ -677,6 +761,7 @@ const Browse = () => {
                 avg_rating={Number((item as any).avg_rating) || 0}
                 rating_count={(item as any).rating_count ?? 0}
                 view_count={(item as any).view_count ?? 0}
+                microtags={allMicrotagsMap?.get(item.id) ?? []}
               />
             ))}
           </div>

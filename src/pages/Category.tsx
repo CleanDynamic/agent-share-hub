@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SeoHead } from "@/components/SeoHead";
@@ -106,14 +106,29 @@ const PAGE_SIZE = 24;
 
 export default function Category() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const microtagParam = searchParams.get("microtag") || "";
   const [limit, setLimit] = useState(PAGE_SIZE);
   const cat = CATEGORIES.find((c) => c.slug === slug);
 
   // Content items query
   const { data: items, isLoading: itemsLoading } = useQuery({
-    queryKey: ["category_content", slug, limit],
+    queryKey: ["category_content", slug, limit, microtagParam],
     enabled: !!cat && !cat.isProject,
     queryFn: async () => {
+      if (microtagParam) {
+        // Filter by microtag: join content_microtags
+        const { data } = await supabase
+          .from("content_microtags")
+          .select("content_id, content_items!content_microtags_content_id_fkey(*, profiles!content_items_creator_id_fkey(username))")
+          .eq("tag", microtagParam)
+          .limit(limit);
+        return (data ?? [])
+          .map((r: any) => r.content_items)
+          .filter((i: any) => i && i.status === "approved" && i.content_type === cat!.contentType)
+          .sort((a: any, b: any) => b.download_count - a.download_count)
+          .slice(0, limit);
+      }
       const { data } = await supabase
         .from("content_items")
         .select("*, profiles!content_items_creator_id_fkey(username)")

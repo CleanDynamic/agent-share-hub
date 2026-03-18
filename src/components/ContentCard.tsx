@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download, Lock, Loader2, Eye, Star, StarHalf, GitFork, Link2, Clock } from "lucide-react";
@@ -45,6 +46,7 @@ export interface ContentCardProps {
   pwyw_floor_gbp?: number;
   collaborators?: { id: string; display_name: string | null; username: string | null; avatar_url: string | null; is_primary_author: boolean }[];
   has_curator_recommendation?: boolean;
+  microtags?: string[];
 }
 
 function roundedStars(avg: number, count: number): number {
@@ -124,6 +126,7 @@ export function ContentCard({
   pwyw_floor_gbp = 0,
   collaborators = [],
   has_curator_recommendation = false,
+  microtags: microtagsProp,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -135,6 +138,18 @@ export function ContentCard({
   const isPaid = monetisation_type === "paid";
   const isSub = monetisation_type === "subscription";
   const label = getDownloadLabel(content_type, monetisation_type, price_gbp);
+
+  // Fetch microtags if not provided as prop
+  const { data: fetchedTags } = useQuery({
+    queryKey: ["content_microtags_card", id],
+    queryFn: async () => {
+      const { data } = await supabase.from("content_microtags").select("tag").eq("content_id", id);
+      return (data ?? []).map((r: any) => r.tag);
+    },
+    enabled: microtagsProp === undefined,
+    staleTime: 5 * 60 * 1000,
+  });
+  const microtags = microtagsProp ?? fetchedTags ?? [];
 
   async function doDownload() {
     setDownloading(true);
@@ -286,13 +301,31 @@ export function ContentCard({
         )}
 
         {/* AI tools */}
-        <div className="flex flex-wrap gap-1 mb-3">
+        <div className="flex flex-wrap gap-1 mb-1.5">
           {ai_tools.map((tool) => (
             <span key={tool} className="text-[10px] px-1.5 py-0.5 rounded-md bg-accent text-muted-foreground">
               {tool}
             </span>
           ))}
         </div>
+
+        {/* Micro-tags */}
+        {microtags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-3">
+            {microtags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                onClick={(e) => { e.stopPropagation(); navigate(`/browse?microtag=${encodeURIComponent(tag)}`); }}
+                className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,15%)] text-[hsl(240,7%,60%)] cursor-pointer hover:text-foreground transition-colors"
+              >
+                {tag}
+              </span>
+            ))}
+            {microtags.length > 3 && (
+              <span className="text-[10px] px-1.5 py-0.5 text-muted-foreground">+{microtags.length - 3} more</span>
+            )}
+          </div>
+        )}
 
         {/* Rating + status indicators */}
         <div className="flex items-center gap-1.5 mb-3">
