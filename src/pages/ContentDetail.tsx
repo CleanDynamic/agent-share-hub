@@ -724,7 +724,7 @@ const ContentDetail = () => {
           </div>
         )}
 
-        {/* 7. CREATED BY — inline horizontal card */}
+        {/* 9. CREATED BY — inline horizontal card */}
         {creator && (
           <div className="flex items-center gap-3 py-3.5 mb-4 border-t border-b border-border">
             <Link to={`/creator/${creator.username}`} className="shrink-0">
@@ -738,6 +738,9 @@ const ContentDetail = () => {
               </Link>
               <p className="text-xs text-muted-foreground">@{creator.username}</p>
               {creator.bio && <p className="text-[13px] text-muted-foreground line-clamp-1 mt-0.5">{creator.bio}</p>}
+              {revenueSplits && revenueSplits.length > 0 && revenueSplits.some((s: any) => s.is_contested) && (
+                <p className="text-xs text-amber-400 mt-1">Revenue split pending agreement</p>
+              )}
             </div>
             <div className="shrink-0 text-right">
               {creatorStats && (
