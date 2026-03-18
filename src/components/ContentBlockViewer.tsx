@@ -7,7 +7,7 @@ import { CommentsSection } from "@/components/CommentsSection";
 import { MentionText } from "@/components/MentionText";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Download, Loader2, Eye, MessageCircle } from "lucide-react";
+import { FileText, Download, Loader2, Eye, MessageCircle, ChevronRight, ClipboardList } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -17,6 +17,9 @@ interface BlockRow {
   block_type: string;
   text_content: string | null;
   formatting: any;
+  formatting_type: string | null;
+  sub_blocks: string[] | null;
+  use_instructions: string | null;
   file_url: string | null;
   file_name: string | null;
   file_size_bytes: number | null;
@@ -103,6 +106,8 @@ function RenderBlockContent({
   type,
   textContent,
   formatting,
+  formattingType,
+  subBlocks,
   fileUrl,
   fileName,
   fileSizeBytes,
@@ -113,6 +118,8 @@ function RenderBlockContent({
   type: string;
   textContent: string | null;
   formatting: any;
+  formattingType: string | null;
+  subBlocks: string[] | null;
   fileUrl: string | null;
   fileName: string | null;
   fileSizeBytes: number | null;
@@ -136,7 +143,7 @@ function RenderBlockContent({
   }, [type, imageUrl]);
 
   if (type === "text" || type === "long_text") {
-    const fmt = formatting?.type ?? "paragraph";
+    const fmt = formattingType ?? formatting?.type ?? "paragraph";
     const items: string[] = formatting?.items ?? [];
     const text = textContent ?? "";
     const isLong = type === "long_text";
@@ -178,30 +185,22 @@ function RenderBlockContent({
       );
     }
     if (fmt === "sub_list") {
-      const entries = items.length > 0 ? items : text.split("\n").filter(Boolean);
+      const parentLabel = text;
+      const subs: string[] = Array.isArray(subBlocks) ? subBlocks : [];
       return (
-        <ol className="list-decimal list-inside space-y-2">
-          {entries.map((entry: any, i: number) => {
-            if (typeof entry === "string") {
-              return <li key={i} className="text-sm text-muted-foreground">{entry}</li>;
-            }
-            return (
-              <li key={i} className="text-sm text-muted-foreground">
-                {entry.text}
-                {entry.sub && (
-                  <ul className="ml-6 mt-1 space-y-0.5">
-                    {entry.sub.map((s: string, si: number) => (
-                      <li key={si} className="text-sm text-muted-foreground list-none">
-                        <span className="text-muted-foreground/60 mr-1">{i + 1}{String.fromCharCode(97 + si)}.</span>
-                        {s}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-        </ol>
+        <div className="space-y-1">
+          <p className="text-sm text-foreground font-medium"><MentionText text={parentLabel} /></p>
+          {subs.length > 0 && (
+            <div className="ml-6 space-y-0.5">
+              {subs.map((s, si) => (
+                <p key={si} className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground/60 mr-1.5">↳</span>
+                  {s}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
       );
     }
     return <p className="text-sm text-muted-foreground whitespace-pre-wrap"><MentionText text={text} /></p>;
@@ -349,6 +348,7 @@ export function ContentBlockViewer({
   // Active variation tab per block
   const [activeTab, setActiveTab] = useState<Record<string, string>>({});
   const [blockCommentsOpen, setBlockCommentsOpen] = useState<Record<string, boolean>>({});
+  const [blockInstrOpen, setBlockInstrOpen] = useState<Record<string, boolean>>({});
 
   const insertAdImpression = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -529,11 +529,13 @@ export function ContentBlockViewer({
                       className={isUnblurred ? "" : "blur-[6px] pointer-events-none select-none"}
                       style={{ transition: "filter 0.3s ease" }}
                     >
-                      {showingVariation ? (
+                     {showingVariation ? (
                         <RenderBlockContent
                           type={showingVariation.variation_type}
                           textContent={showingVariation.text_content}
                           formatting={showingVariation.formatting}
+                          formattingType={null}
+                          subBlocks={null}
                           fileUrl={showingVariation.file_url}
                           fileName={showingVariation.file_name}
                           fileSizeBytes={null}
@@ -546,6 +548,8 @@ export function ContentBlockViewer({
                           type={block.block_type}
                           textContent={block.text_content}
                           formatting={block.formatting}
+                          formattingType={block.formatting_type}
+                          subBlocks={block.sub_blocks}
                           fileUrl={block.file_url}
                           fileName={block.file_name}
                           fileSizeBytes={block.file_size_bytes}
@@ -570,8 +574,27 @@ export function ContentBlockViewer({
                     )}
 
                     {/* Block-level comments toggle */}
-                    {isUnblurred && (
-                      <div className="mt-3 pt-3 border-t border-border">
+                     {isUnblurred && (
+                      <div className="mt-3 pt-3 border-t border-border space-y-2">
+                        {/* Per-block use instructions */}
+                        {block.use_instructions && (
+                          <div>
+                            <button
+                              onClick={() => setBlockInstrOpen((p) => ({ ...p, [block.id]: !p[block.id] }))}
+                              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <ClipboardList className="h-3 w-3" />
+                              <ChevronRight className={`h-3 w-3 transition-transform ${blockInstrOpen[block.id] ? "rotate-90" : ""}`} />
+                              📋 How to use this step
+                            </button>
+                            {blockInstrOpen[block.id] && (
+                              <p className="text-sm text-muted-foreground italic mt-2 ml-5 whitespace-pre-wrap">
+                                {block.use_instructions}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {/* Block-level comments toggle */}
                         <button
                           onClick={() => setBlockCommentsOpen((p) => ({ ...p, [block.id]: !p[block.id] }))}
                           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -592,7 +615,7 @@ export function ContentBlockViewer({
                           </div>
                         )}
                       </div>
-                    )}
+                     )}
                   </div>
                 </div>
               </div>
