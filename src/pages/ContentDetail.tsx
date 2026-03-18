@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { AddToCollectionButton } from "@/components/AddToCollectionButton";
+import { AddToLibraryButton } from "@/components/AddToLibraryButton";
 import { ContentCard } from "@/components/ContentCard";
 import { TipSelector } from "@/components/TipSelector";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
@@ -118,7 +119,7 @@ const ContentDetail = () => {
 
   const creator = item?.profiles as { id: string; username: string; display_name: string | null; bio: string | null } | null;
 
-  // ─── View tracking ──────────────────────────────────────
+  // ─── View tracking + library update dismissal ──────────────────────────────────────
   useEffect(() => {
     if (!item || viewTracked.current) return;
     viewTracked.current = true;
@@ -140,6 +141,14 @@ const ContentDetail = () => {
         interaction_type: "viewed_block",
         interaction_meta: { title: item.title },
       } as any);
+
+      // Dismiss library update indicator
+      supabase
+        .from("user_library")
+        .update({ has_update: false, last_seen_version: item.current_version } as any)
+        .eq("user_id", user.id)
+        .eq("content_id", item.id)
+        .then(() => {});
     }
   }, [item, user]);
 
@@ -539,6 +548,14 @@ const ContentDetail = () => {
                   {subscriberUnlocked ? "Download" : label}
                 </Button>
               )}
+
+              {/* Add to Library */}
+              <AddToLibraryButton
+                contentId={item.id}
+                currentVersion={item.current_version}
+                contentTitle={item.title}
+                variant="full"
+              />
 
               {/* Bookmark + Collection buttons */}
               <div className="flex justify-center gap-2">
