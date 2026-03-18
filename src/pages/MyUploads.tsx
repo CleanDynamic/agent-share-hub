@@ -52,7 +52,29 @@ export default function MyUploads() {
   const { isLoggedIn, isCreator, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"content" | "projects">("content");
+  const { toast } = useToast();
   const [updateTarget, setUpdateTarget] = useState<{ id: string; title: string; version: string } | null>(null);
+  const [expandedInvites, setExpandedInvites] = useState<string | null>(null);
+
+  // Fetch pending invites for user's content
+  const { data: pendingInvites, refetch: refetchInvites } = useQuery({
+    queryKey: ["my_pending_invites", profile?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collab_invites")
+        .select("id, content_id, invitee_id, status, profiles!collab_invites_invitee_id_fkey(username, display_name)")
+        .eq("inviter_id", profile!.id)
+        .eq("status", "pending");
+      return (data as any[]) ?? [];
+    },
+    enabled: !!profile?.id,
+  });
+
+  async function withdrawInvite(inviteId: string) {
+    await supabase.from("collab_invites").update({ status: "withdrawn" } as any).eq("id", inviteId);
+    refetchInvites();
+    toast({ title: "Invite withdrawn" });
+  }
   useEffect(() => {
     if (!loading && !isLoggedIn) navigate("/login", { replace: true });
     if (!loading && isLoggedIn && !isCreator) navigate("/", { replace: true });
