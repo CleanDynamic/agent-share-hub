@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, CheckCircle2, FileText, FolderOpen, GraduationCap, ImagePlus, X } from "lucide-react";
+import { Loader2, CheckCircle2, FileText, FolderOpen, ImagePlus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectUploadForm } from "@/components/ProjectUploadForm";
 import { RevenueSplitPicker, type RevenueSplit } from "@/components/RevenueSplitPicker";
