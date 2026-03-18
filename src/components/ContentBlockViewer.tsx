@@ -157,7 +157,7 @@ function RenderBlockContent({
     }
 
     if (fmt === "paragraph") {
-      return <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{text}</p>;
+      return <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap"><MentionText text={text} /></p>;
     }
     if (fmt === "bullets") {
       return (
