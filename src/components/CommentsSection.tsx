@@ -263,7 +263,7 @@ export function CommentsSection({
                   </span>
                   <span className="text-[10px] text-muted-foreground">{timeAgo(c.created_at)}</span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-0.5">{c.text}</p>
+                <MentionText text={c.text} className="text-sm text-muted-foreground mt-0.5" />
                 <button
                   onClick={() => toggleLike(c.id)}
                   className="flex items-center gap-1 mt-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
