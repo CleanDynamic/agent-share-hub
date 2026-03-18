@@ -327,6 +327,29 @@ const Browse = () => {
     queryFn: fetchApprovedContent,
   });
 
+  // Fetch all microtags for browse items (for filtering)
+  const itemIds = (items ?? []).map((i) => i.id);
+  const { data: allMicrotagsMap } = useQuery({
+    queryKey: ["browse_microtags", itemIds.length],
+    queryFn: async () => {
+      if (itemIds.length === 0) return new Map<string, string[]>();
+      // Fetch in batches if needed (supabase limit 1000)
+      const { data } = await supabase
+        .from("content_microtags")
+        .select("content_id, tag")
+        .in("content_id", itemIds.slice(0, 500));
+      const map = new Map<string, string[]>();
+      (data ?? []).forEach((r: any) => {
+        const arr = map.get(r.content_id) ?? [];
+        arr.push(r.tag);
+        map.set(r.content_id, arr);
+      });
+      return map;
+    },
+    enabled: itemIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Projects query
   const { data: projects, isLoading: projectsLoading } = useQuery({
     queryKey: ["projects_approved"],
