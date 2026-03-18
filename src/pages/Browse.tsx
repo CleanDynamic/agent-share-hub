@@ -621,8 +621,7 @@ const Browse = () => {
 
         {browseTab === "collections" ? (
           <BrowseCollections />
-        ) : browseTab === "paths" ? (
-          <BrowseLearningPaths userId={profile?.id} />
+        ) : browseTab === "projects" ? (
         ) : browseTab === "projects" ? (
           <>
             {/* Project search */}
