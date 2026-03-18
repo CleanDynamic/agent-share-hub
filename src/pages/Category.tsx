@@ -106,6 +106,8 @@ const PAGE_SIZE = 24;
 
 export default function Category() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const microtagParam = searchParams.get("microtag") || "";
   const [limit, setLimit] = useState(PAGE_SIZE);
   const cat = CATEGORIES.find((c) => c.slug === slug);
 
