@@ -70,6 +70,9 @@ const Upload = () => {
   const [revenueSplits, setRevenueSplits] = useState<RevenueSplit[]>([]);
   const [collabInvitees, setCollabInvitees] = useState<CollabInvitee[]>([]);
   const [pwywFloor, setPwywFloor] = useState<number>(0);
+  const [selectedMicrotags, setSelectedMicrotags] = useState<string[]>([]);
+  const [microtagError, setMicrotagError] = useState("");
+  const { data: microtagDefs } = useMicrotagDefinitions();
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
