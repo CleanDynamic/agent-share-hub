@@ -233,18 +233,38 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
           }
         };
 
+        const accentBorders: Record<string, string> = {
+          "prompt-file": "rgba(232, 87, 26, 0.7)",
+          "prompt-tutorial": "rgba(46, 196, 182, 0.7)",
+          "agent-blueprint": "rgba(124, 58, 237, 0.7)",
+          "model-config-guide": "rgba(22, 163, 74, 0.7)",
+          "integration-guide": "rgba(217, 119, 6, 0.7)",
+          "workflow-template": "rgba(37, 99, 235, 0.7)",
+          "evaluation-framework": "rgba(219, 39, 119, 0.7)",
+          "agent-stack": "rgba(220, 38, 38, 0.7)",
+          "failure-library": "rgba(75, 85, 99, 0.7)",
+          "projects": "rgba(46, 196, 182, 0.7)",
+          "ai-tools-llms": "rgba(167, 139, 250, 0.7)",
+        };
+        const activeBorder = accentBorders[cat.slug] ?? "rgba(232, 87, 26, 0.7)";
+
         return (
           <button
             key={cat.slug}
             onClick={handleClick}
-            className={`text-left rounded-xl transition-colors hover:brightness-110 ${isLast ? "col-span-2" : ""}`}
+            className={`text-left rounded-xl cursor-pointer transition-all duration-150 ${isLast ? "col-span-2" : ""} ${
+              isActive ? "" : "hover:bg-[rgba(255,255,255,0.04)]"
+            }`}
             style={{
-              background: isActive ? "rgba(232, 87, 26, 0.08)" : "#111118",
+              background: isActive ? "rgba(255, 255, 255, 0.04)" : "#111118",
               border: isActive
-                ? "2px solid #E8571A"
-                : `1px solid ${cat.isProject ? "#2EC4B6" : isAITools ? "#7C3AED" : "#1E1E2A"}`,
-              padding: isActive ? "calc(0.875rem - 1px) calc(0.875rem - 1px)" : "0.875rem",
+                ? `1.5px solid ${activeBorder}`
+                : "1px solid rgba(255, 255, 255, 0.10)",
+              padding: isActive ? "calc(0.875rem - 0.5px)" : "0.875rem",
+              ...(isActive ? {} : {}),
             }}
+            onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.30)"; }}
+            onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.10)"; }}
           >
             <p className="text-sm font-bold text-foreground leading-tight">{cat.name}</p>
             {cat.difficulty && (
