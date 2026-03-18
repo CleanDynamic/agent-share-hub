@@ -204,7 +204,7 @@ function RenderBlockContent({
         </ol>
       );
     }
-    return <p className="text-sm text-muted-foreground whitespace-pre-wrap">{text}</p>;
+    return <p className="text-sm text-muted-foreground whitespace-pre-wrap"><MentionText text={text} /></p>;
   }
 
   if (type === "file") {

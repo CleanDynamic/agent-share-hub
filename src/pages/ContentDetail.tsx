@@ -568,8 +568,8 @@ const ContentDetail = () => {
           <p className="text-xs text-muted-foreground mb-4 flex items-center gap-1">
             <ExternalLink className="h-3 w-3" />
             Forked from{" "}
-            <Link to={`/creator/${forkOrigin.profiles?.username}`} className="text-primary hover:underline">
-              {forkOrigin.profiles?.display_name || forkOrigin.profiles?.username}
+            <Link to={`/creator/${forkOrigin.profiles?.username}`} className="mention-link">
+              @{forkOrigin.profiles?.username}
             </Link>'s{" "}
             <Link to={`/content/${forkOrigin.id}`} className="text-primary hover:underline">
               {forkOrigin.title}
