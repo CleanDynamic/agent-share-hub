@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2, Eye, GitFork, ExternalLink } from "lucide-react";
+import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2, Eye, GitFork, ExternalLink, Clock } from "lucide-react";
 import { VersionHistory } from "@/components/VersionHistory";
 import { ForkModal } from "@/components/ForkModal";
 import { DependencyDisplay } from "@/components/DependencyDisplay";
