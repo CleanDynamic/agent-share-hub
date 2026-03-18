@@ -150,6 +150,39 @@ const Upload = () => {
         });
       }
 
+      // Save revenue splits
+      for (const split of revenueSplits) {
+        await supabase.from("revenue_splits").insert({
+          content_id: contentId,
+          recipient_id: split.recipientId,
+          percentage: split.percentage,
+          set_by: user.id,
+        } as any);
+      }
+
+      // Save collab invites
+      for (const inv of collabInvitees) {
+        const { data: inviteData } = await supabase.from("collab_invites").insert({
+          content_id: contentId,
+          inviter_id: user.id,
+          invitee_id: inv.id,
+          status: "pending",
+        } as any).select("id").single();
+
+        // Send notification
+        await supabase.from("notifications").insert({
+          recipient_id: inv.id,
+          notification_type: "collab_invite",
+          content_id: contentId,
+          actor_id: user.id,
+          metadata: {
+            inviter_username: profile?.username || "",
+            content_title: values.title,
+            invite_id: inviteData?.id,
+          },
+        } as any);
+      }
+
       // Save each block
       for (let i = 0; i < contentBlocks.length; i++) {
         const block = contentBlocks[i];
