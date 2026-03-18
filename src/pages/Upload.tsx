@@ -153,6 +153,18 @@ const Upload = () => {
 
       const contentId = insertedItem.id;
 
+      // Upload cover image if selected
+      if (coverImageFile) {
+        const coverPath = `covers/${contentId}/${coverImageFile.name}`;
+        const { error: coverErr } = await supabase.storage.from("content-files").upload(coverPath, coverImageFile);
+        if (!coverErr) {
+          const { data: urlData } = supabase.storage.from("content-files").getPublicUrl(coverPath);
+          if (urlData?.publicUrl) {
+            await supabase.from("content_items").update({ cover_image_url: urlData.publicUrl } as any).eq("id", contentId);
+          }
+        }
+      }
+
       // Save dependencies
       for (const dep of dependencies) {
         await supabase.from("content_dependencies").insert({
