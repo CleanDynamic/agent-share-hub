@@ -185,30 +185,22 @@ function RenderBlockContent({
       );
     }
     if (fmt === "sub_list") {
-      const entries = items.length > 0 ? items : text.split("\n").filter(Boolean);
+      const parentLabel = text;
+      const subs: string[] = Array.isArray(subBlocks) ? subBlocks : [];
       return (
-        <ol className="list-decimal list-inside space-y-2">
-          {entries.map((entry: any, i: number) => {
-            if (typeof entry === "string") {
-              return <li key={i} className="text-sm text-muted-foreground">{entry}</li>;
-            }
-            return (
-              <li key={i} className="text-sm text-muted-foreground">
-                {entry.text}
-                {entry.sub && (
-                  <ul className="ml-6 mt-1 space-y-0.5">
-                    {entry.sub.map((s: string, si: number) => (
-                      <li key={si} className="text-sm text-muted-foreground list-none">
-                        <span className="text-muted-foreground/60 mr-1">{i + 1}{String.fromCharCode(97 + si)}.</span>
-                        {s}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-        </ol>
+        <div className="space-y-1">
+          <p className="text-sm text-foreground font-medium"><MentionText text={parentLabel} /></p>
+          {subs.length > 0 && (
+            <div className="ml-6 space-y-0.5">
+              {subs.map((s, si) => (
+                <p key={si} className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground/60 mr-1.5">↳</span>
+                  {s}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
       );
     }
     return <p className="text-sm text-muted-foreground whitespace-pre-wrap"><MentionText text={text} /></p>;
