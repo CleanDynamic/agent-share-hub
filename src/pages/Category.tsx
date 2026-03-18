@@ -100,6 +100,14 @@ const CATEGORIES: CategoryDef[] = [
     seoDescription: "Complete AI project bundles combining prompts, automations, and guides into ready-to-use packages.",
     isProject: true,
   },
+  {
+    slug: "ai-tools-llms",
+    name: "AI Tools (LLMs)",
+    contentType: "AI Tools (LLMs)",
+    description: "Discover and share AI tools, models, and platforms. Reviews, guides, and commentary from the community.",
+    seoTitle: "AI Tools & LLMs — Discover AI Models | NeoScale AI",
+    seoDescription: "Explore AI tools, LLMs, and platforms. Community reviews and guides for ChatGPT, Claude, Gemini, and more.",
+  },
 ];
 
 const PAGE_SIZE = 24;
