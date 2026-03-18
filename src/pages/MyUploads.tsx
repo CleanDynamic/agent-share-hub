@@ -54,6 +54,7 @@ export default function MyUploads() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"content" | "projects">("content");
   const { toast } = useToast();
+  const { count: draftCount, display: draftDisplay } = useDraftCount();
   const [updateTarget, setUpdateTarget] = useState<{ id: string; title: string; version: string } | null>(null);
   const [expandedInvites, setExpandedInvites] = useState<string | null>(null);
 
