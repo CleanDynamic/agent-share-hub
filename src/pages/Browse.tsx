@@ -779,8 +779,8 @@ const Browse = () => {
           ))}
         </div>
 
-        {/* ROW 2.5: Time period pills */}
-        <div className="flex gap-1.5 mb-3 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
+        {/* ROW 3: Time period pills */}
+        <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
           {TIME_PERIOD_OPTIONS.map((opt) => (
             <button
               key={opt.value}
