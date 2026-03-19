@@ -85,32 +85,36 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 space-y-0.5 px-2">
-        {visibleItems.map((item) => {
+      <nav className="flex-1 px-2">
+        {visibleItems.map((item, idx) => {
           const isActive = location.pathname === item.to;
           return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={`relative flex items-center gap-3 rounded-lg transition-colors ${
-                collapsed ? "justify-center px-0" : "px-3"
-              } h-12 text-sm ${
-                isActive
-                  ? "text-primary font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
-              }`}
-            >
-              <item.icon className="h-[22px] w-[22px] shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-              {item.badge && (
-                <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full ${item.to === "/drafts" ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"} px-1.5 text-[11px] font-bold`}>
-                  {item.badge}
-                </span>
+            <div key={item.to}>
+              {item.divider && idx > 0 && (
+                <div className="my-2 border-t" style={{ borderColor: "#1E1E2A" }} />
               )}
-              {item.to === "/library" && hasUnseenSaves && !item.badge && (
-                <span className={`${collapsed ? "absolute top-1 right-1" : "ml-auto"} h-2 w-2 rounded-full bg-primary`} />
-              )}
-            </Link>
+              <Link
+                to={item.to}
+                className={`relative flex items-center gap-3 rounded-lg transition-colors ${
+                  collapsed ? "justify-center px-0" : "px-3"
+                } h-12 text-sm ${
+                  isActive
+                    ? "text-primary font-semibold border-l-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                }`}
+              >
+                <item.icon className={`h-[22px] w-[22px] shrink-0 transition-colors ${!isActive ? "group-hover:text-primary/60" : ""}`} />
+                {!collapsed && <span>{item.label}</span>}
+                {item.badge && (
+                  <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full ${item.to === "/drafts" ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"} px-1.5 text-[11px] font-bold`}>
+                    {item.badge}
+                  </span>
+                )}
+                {item.to === "/library" && hasUnseenSaves && !item.badge && (
+                  <span className={`${collapsed ? "absolute top-1 right-1" : "ml-auto"} h-2 w-2 rounded-full bg-primary`} />
+                )}
+              </Link>
+            </div>
           );
         })}
       </nav>
