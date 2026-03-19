@@ -244,25 +244,29 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
           )}
 
           {/* Nav items */}
-          <nav className="flex-1 space-y-0.5">
-            {navItems.map((item) => {
+          <nav className="flex-1">
+            {navItems.map((item, idx) => {
               const isActive = location.pathname === item.to;
               return (
-                <button
-                  key={item.to}
-                  onClick={() => handleNav(item.to)}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 h-12 text-sm transition-colors ${
-                    isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
-                  }`}
-                >
-                  <item.icon className="h-[22px] w-[22px] shrink-0" />
-                  <span>{item.label}</span>
-                  {item.badge && (
-                    <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">
-                      {item.badge}
-                    </span>
+                <div key={item.to}>
+                  {item.divider && idx > 0 && (
+                    <div className="my-2 border-t" style={{ borderColor: "#1E1E2A" }} />
                   )}
-                </button>
+                  <button
+                    onClick={() => handleNav(item.to)}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 h-12 text-sm transition-colors ${
+                      isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                    }`}
+                  >
+                    <item.icon className="h-[22px] w-[22px] shrink-0" />
+                    <span>{item.label}</span>
+                    {item.badge && (
+                      <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                </div>
               );
             })}
 
