@@ -547,7 +547,7 @@ const Browse = () => {
 
   const filtered = useMemo(() => {
     if (!items) return [];
-    return items.filter((item) => {
+    const base = items.filter((item) => {
       const q = search.toLowerCase();
       if (q) {
         const inTitle = item.title.toLowerCase().includes(q);
