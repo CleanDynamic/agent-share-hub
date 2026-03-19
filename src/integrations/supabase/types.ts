@@ -1251,6 +1251,233 @@ export type Database = {
           },
         ]
       }
+      dm_messages: {
+        Row: {
+          delivered_at: string | null
+          id: string
+          image_url: string | null
+          is_liked: boolean | null
+          is_unsent: boolean | null
+          message_type: string
+          read_at: string | null
+          reply_to_message_id: string | null
+          sender_id: string
+          sent_at: string | null
+          shared_content_id: string | null
+          text_content: string | null
+          thread_id: string
+          voice_duration_seconds: number | null
+          voice_url: string | null
+        }
+        Insert: {
+          delivered_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_liked?: boolean | null
+          is_unsent?: boolean | null
+          message_type?: string
+          read_at?: string | null
+          reply_to_message_id?: string | null
+          sender_id: string
+          sent_at?: string | null
+          shared_content_id?: string | null
+          text_content?: string | null
+          thread_id: string
+          voice_duration_seconds?: number | null
+          voice_url?: string | null
+        }
+        Update: {
+          delivered_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_liked?: boolean | null
+          is_unsent?: boolean | null
+          message_type?: string
+          read_at?: string | null
+          reply_to_message_id?: string | null
+          sender_id?: string
+          sent_at?: string | null
+          shared_content_id?: string | null
+          text_content?: string | null
+          thread_id?: string
+          voice_duration_seconds?: number | null
+          voice_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "dm_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_messages_shared_content_id_fkey"
+            columns: ["shared_content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "dm_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dm_presence: {
+        Row: {
+          is_online: boolean | null
+          last_seen_at: string | null
+          user_id: string
+        }
+        Insert: {
+          is_online?: boolean | null
+          last_seen_at?: string | null
+          user_id: string
+        }
+        Update: {
+          is_online?: boolean | null
+          last_seen_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_presence_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dm_reactions: {
+        Row: {
+          emoji: string
+          id: string
+          message_id: string
+          reacted_at: string | null
+          user_id: string
+        }
+        Insert: {
+          emoji: string
+          id?: string
+          message_id: string
+          reacted_at?: string | null
+          user_id: string
+        }
+        Update: {
+          emoji?: string
+          id?: string
+          message_id?: string
+          reacted_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "dm_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dm_threads: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_deleted_a: boolean | null
+          is_deleted_b: boolean | null
+          is_muted_a: boolean | null
+          is_muted_b: boolean | null
+          is_pinned_a: boolean | null
+          is_pinned_b: boolean | null
+          last_message_at: string | null
+          last_message_preview: string | null
+          last_message_sender_id: string | null
+          participant_a: string
+          participant_b: string
+          request_status: string | null
+          unread_count_a: number | null
+          unread_count_b: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_deleted_a?: boolean | null
+          is_deleted_b?: boolean | null
+          is_muted_a?: boolean | null
+          is_muted_b?: boolean | null
+          is_pinned_a?: boolean | null
+          is_pinned_b?: boolean | null
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          last_message_sender_id?: string | null
+          participant_a: string
+          participant_b: string
+          request_status?: string | null
+          unread_count_a?: number | null
+          unread_count_b?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_deleted_a?: boolean | null
+          is_deleted_b?: boolean | null
+          is_muted_a?: boolean | null
+          is_muted_b?: boolean | null
+          is_pinned_a?: boolean | null
+          is_pinned_b?: boolean | null
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          last_message_sender_id?: string | null
+          participant_a?: string
+          participant_b?: string
+          request_status?: string | null
+          unread_count_a?: number | null
+          unread_count_b?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_threads_last_message_sender_id_fkey"
+            columns: ["last_message_sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_threads_participant_a_fkey"
+            columns: ["participant_a"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_threads_participant_b_fkey"
+            columns: ["participant_b"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       downloads: {
         Row: {
           content_id: string
@@ -1518,61 +1745,6 @@ export type Database = {
           {
             foreignKeyName: "library_folders_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      messages: {
-        Row: {
-          id: string
-          is_read: boolean
-          recipient_id: string
-          reply_to_enquiry_id: string | null
-          sender_id: string
-          sent_at: string
-          text: string
-          thread_id: string
-        }
-        Insert: {
-          id?: string
-          is_read?: boolean
-          recipient_id: string
-          reply_to_enquiry_id?: string | null
-          sender_id: string
-          sent_at?: string
-          text: string
-          thread_id: string
-        }
-        Update: {
-          id?: string
-          is_read?: boolean
-          recipient_id?: string
-          reply_to_enquiry_id?: string | null
-          sender_id?: string
-          sent_at?: string
-          text?: string
-          thread_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_reply_to_enquiry_id_fkey"
-            columns: ["reply_to_enquiry_id"]
-            isOneToOne: false
-            referencedRelation: "service_enquiries"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_sender_id_fkey"
-            columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
