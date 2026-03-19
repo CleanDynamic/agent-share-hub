@@ -400,7 +400,7 @@ function HowItWorks() {
 }
 
 /* ---- Main Home Page ---- */
-const TABS = ["Recent", "For You", "Following", "Trending"] as const;
+const TABS = ["For You", "Following", "Trending", "Recent"] as const;
 type Tab = typeof TABS[number];
 
 const Home = () => {
