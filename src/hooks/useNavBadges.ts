@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-const LS_KEY_SAVED = "neoscale_last_saved_visit";
+const LS_KEY_LIBRARY = "neoscale_last_library_visit";
 const LS_KEY_FYP = "neoscale_last_fyp_visit";
 
 export function useNavBadges() {
@@ -12,10 +12,10 @@ export function useNavBadges() {
   const [hasUnseenSaves, setHasUnseenSaves] = useState(false);
   const [fypCount, setFypCount] = useState(0);
 
-  // Mark /saved visited
+  // Mark /library visited
   useEffect(() => {
-    if (location.pathname === "/saved" && isLoggedIn) {
-      localStorage.setItem(LS_KEY_SAVED, new Date().toISOString());
+    if ((location.pathname === "/library" || location.pathname === "/saved") && isLoggedIn) {
+      localStorage.setItem(LS_KEY_LIBRARY, new Date().toISOString());
       setHasUnseenSaves(false);
     }
   }, [location.pathname, isLoggedIn]);
@@ -28,26 +28,25 @@ export function useNavBadges() {
     }
   }, [location.pathname, isLoggedIn]);
 
-  // Check unseen saves
+  // Check unseen library additions
   useEffect(() => {
     if (!isLoggedIn || !user) return;
-    const lastVisit = localStorage.getItem(LS_KEY_SAVED);
+    const lastVisit = localStorage.getItem(LS_KEY_LIBRARY);
 
-    const query = supabase
-      .from("user_saves")
-      .select("saved_at")
+    supabase
+      .from("user_library")
+      .select("added_at")
       .eq("user_id", user.id)
-      .order("saved_at", { ascending: false })
-      .limit(1);
-
-    query.then(({ data }) => {
-      if (data && data.length > 0) {
-        const mostRecent = data[0].saved_at;
-        if (!lastVisit || new Date(mostRecent) > new Date(lastVisit)) {
-          setHasUnseenSaves(true);
+      .order("added_at", { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const mostRecent = data[0].added_at;
+          if (mostRecent && (!lastVisit || new Date(mostRecent) > new Date(lastVisit))) {
+            setHasUnseenSaves(true);
+          }
         }
-      }
-    });
+      });
   }, [isLoggedIn, user]);
 
   // Check FYP activity count
@@ -55,7 +54,6 @@ export function useNavBadges() {
     if (!isLoggedIn || !user) return;
     const lastVisit = localStorage.getItem(LS_KEY_FYP) || "1970-01-01T00:00:00Z";
 
-    // Get followed user IDs first
     supabase
       .from("follows")
       .select("following_id")
