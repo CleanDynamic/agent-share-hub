@@ -21,23 +21,40 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days / 30)}mo`;
 }
 
-function makeThreadId(a: string, b: string): string {
-  return a < b ? `${a}-${b}` : `${b}-${a}`;
+/** Ensure participant_a < participant_b for the CHECK constraint */
+function orderParticipants(a: string, b: string): [string, string] {
+  return a < b ? [a, b] : [b, a];
 }
 
-function getOtherId(threadId: string, myId: string): string {
-  const [a, b] = threadId.split("-");
-  return a === myId ? b : a;
+interface ThreadRow {
+  id: string;
+  participant_a: string;
+  participant_b: string;
+  last_message_at: string;
+  last_message_preview: string | null;
+  last_message_sender_id: string | null;
+  unread_count_a: number;
+  unread_count_b: number;
+  is_pinned_a: boolean;
+  is_pinned_b: boolean;
+  is_muted_a: boolean;
+  is_muted_b: boolean;
+  is_deleted_a: boolean;
+  is_deleted_b: boolean;
+  request_status: string;
 }
 
 interface Thread {
-  thread_id: string;
+  id: string;
   other_id: string;
   other_display_name: string;
   other_username: string;
+  other_avatar_url: string | null;
   last_message: string;
   last_sent_at: string;
   has_unread: boolean;
+  is_pinned: boolean;
+  is_muted: boolean;
 }
 
 const MessagesPage = () => {
@@ -45,87 +62,93 @@ const MessagesPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const selectedThread = searchParams.get("thread");
-  const recipientParam = searchParams.get("to"); // pre-fill new thread
+  const selectedThreadId = searchParams.get("thread");
+  const recipientParam = searchParams.get("to");
   const enquiryRef = searchParams.get("enquiry_title");
   const [newMsg, setNewMsg] = useState("");
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [mobileShowThread, setMobileShowThread] = useState(!!selectedThread || !!recipientParam);
+  const [mobileShowThread, setMobileShowThread] = useState(!!selectedThreadId || !!recipientParam);
 
   // Fetch threads
   const { data: threads, isLoading: threadsLoading } = useQuery({
-    queryKey: ["message_threads", user?.id],
+    queryKey: ["dm_threads", user?.id],
     queryFn: async () => {
-      // Get all messages involving this user
       const { data, error } = await supabase
-        .from("messages" as any)
-        .select("thread_id, sender_id, recipient_id, text, sent_at, is_read")
-        .or(`sender_id.eq.${user!.id},recipient_id.eq.${user!.id}`)
-        .order("sent_at", { ascending: false });
+        .from("dm_threads")
+        .select("*")
+        .order("last_message_at", { ascending: false });
       if (error) throw error;
 
-      // Group by thread_id, take latest message per thread
-      const threadMap = new Map<string, any>();
-      for (const msg of (data as any[])) {
-        if (!threadMap.has(msg.thread_id)) {
-          threadMap.set(msg.thread_id, msg);
-        }
-      }
-
-      // Check unread per thread
-      const unreadThreads = new Set<string>();
-      for (const msg of (data as any[])) {
-        if (msg.recipient_id === user!.id && !msg.is_read) {
-          unreadThreads.add(msg.thread_id);
-        }
-      }
-
-      // Get other user profiles
-      const otherIds = [...new Set(
-        [...threadMap.values()].map((m) => getOtherId(m.thread_id, user!.id))
-      )];
+      const rows = (data ?? []) as ThreadRow[];
+      const otherIds = rows.map((t) =>
+        t.participant_a === user!.id ? t.participant_b : t.participant_a
+      );
 
       let profileMap = new Map<string, any>();
       if (otherIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, username, display_name")
+          .select("id, username, display_name, avatar_url")
           .in("id", otherIds);
         (profiles ?? []).forEach((p: any) => profileMap.set(p.id, p));
       }
 
-      const result: Thread[] = [...threadMap.entries()].map(([tid, msg]) => {
-        const otherId = getOtherId(tid, user!.id);
-        const other = profileMap.get(otherId);
-        return {
-          thread_id: tid,
-          other_id: otherId,
-          other_display_name: other?.display_name || other?.username || "User",
-          other_username: other?.username || "",
-          last_message: msg.text,
-          last_sent_at: msg.sent_at,
-          has_unread: unreadThreads.has(tid),
-        };
-      });
+      const result: Thread[] = rows
+        .filter((t) => {
+          // Hide soft-deleted threads for this user
+          const isA = t.participant_a === user!.id;
+          return isA ? !t.is_deleted_a : !t.is_deleted_b;
+        })
+        .map((t) => {
+          const isA = t.participant_a === user!.id;
+          const otherId = isA ? t.participant_b : t.participant_a;
+          const other = profileMap.get(otherId);
+          return {
+            id: t.id,
+            other_id: otherId,
+            other_display_name: other?.display_name || other?.username || "User",
+            other_username: other?.username || "",
+            other_avatar_url: other?.avatar_url || null,
+            last_message: t.last_message_preview || "",
+            last_sent_at: t.last_message_at,
+            has_unread: (isA ? t.unread_count_a : t.unread_count_b) > 0,
+            is_pinned: isA ? t.is_pinned_a : t.is_pinned_b,
+            is_muted: isA ? t.is_muted_a : t.is_muted_b,
+          };
+        });
 
-      return result.sort((a, b) => new Date(b.last_sent_at).getTime() - new Date(a.last_sent_at).getTime());
+      // Pinned first, then by date
+      return result.sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+        return new Date(b.last_sent_at).getTime() - new Date(a.last_sent_at).getTime();
+      });
     },
     enabled: !!user,
   });
 
-  // If recipientParam, compute the thread_id
-  const computedThreadId = recipientParam && user
-    ? makeThreadId(user.id, recipientParam)
-    : selectedThread;
+  // When opening via ?to=recipientId, find or prepare thread
+  const { data: recipientThread } = useQuery({
+    queryKey: ["dm_thread_for_recipient", recipientParam, user?.id],
+    queryFn: async () => {
+      const [pA, pB] = orderParticipants(user!.id, recipientParam!);
+      const { data } = await supabase
+        .from("dm_threads")
+        .select("id")
+        .eq("participant_a", pA)
+        .eq("participant_b", pB)
+        .maybeSingle();
+      return data?.id || null;
+    },
+    enabled: !!recipientParam && !!user,
+  });
 
-  // Fetch recipient profile when starting new thread
   const { data: recipientProfile } = useQuery({
     queryKey: ["msg_recipient_profile", recipientParam],
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("id, username, display_name")
+        .select("id, username, display_name, avatar_url")
         .eq("id", recipientParam!)
         .maybeSingle();
       return data;
@@ -133,49 +156,84 @@ const MessagesPage = () => {
     enabled: !!recipientParam,
   });
 
+  const activeThreadId = selectedThreadId || recipientThread || null;
+
   // Fetch messages for selected thread
   const { data: messages, isLoading: messagesLoading } = useQuery({
-    queryKey: ["thread_messages", computedThreadId],
+    queryKey: ["dm_messages", activeThreadId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("messages" as any)
+        .from("dm_messages")
         .select("*")
-        .eq("thread_id", computedThreadId!)
+        .eq("thread_id", activeThreadId!)
+        .eq("is_unsent", false)
         .order("sent_at", { ascending: true });
       if (error) throw error;
       return data as any[];
     },
-    enabled: !!computedThreadId,
+    enabled: !!activeThreadId,
     refetchInterval: 5000,
   });
 
   // Mark as read when opening thread
   useEffect(() => {
-    if (!computedThreadId || !user) return;
-    supabase
-      .from("messages" as any)
-      .update({ is_read: true } as any)
-      .eq("thread_id", computedThreadId)
-      .eq("recipient_id", user.id)
-      .eq("is_read", false)
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ["message_threads"] });
-      });
-  }, [computedThreadId, user, queryClient]);
+    if (!activeThreadId || !user) return;
+    // Reset unread count for this user on the thread
+    const resetUnread = async () => {
+      // First determine if user is participant_a or _b
+      const { data: thread } = await supabase
+        .from("dm_threads")
+        .select("participant_a")
+        .eq("id", activeThreadId)
+        .maybeSingle();
+      if (!thread) return;
+      const isA = thread.participant_a === user.id;
+      await supabase
+        .from("dm_threads")
+        .update(isA ? { unread_count_a: 0 } : { unread_count_b: 0 })
+        .eq("id", activeThreadId);
+      // Mark individual messages as read
+      await supabase
+        .from("dm_messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("thread_id", activeThreadId)
+        .neq("sender_id", user.id)
+        .is("read_at", null);
+      queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
+    };
+    resetUnread();
+  }, [activeThreadId, user, queryClient]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Realtime subscription for new messages
+  useEffect(() => {
+    if (!activeThreadId) return;
+    const channel = supabase
+      .channel(`dm-${activeThreadId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "dm_messages", filter: `thread_id=eq.${activeThreadId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["dm_messages", activeThreadId] });
+          queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [activeThreadId, queryClient]);
+
   // Get other user info for thread header
   const getOtherProfile = useCallback(() => {
     if (recipientParam && recipientProfile) return recipientProfile;
-    if (!computedThreadId || !threads) return null;
-    const thread = threads.find((t) => t.thread_id === computedThreadId);
-    if (thread) return { id: thread.other_id, display_name: thread.other_display_name, username: thread.other_username };
+    if (!activeThreadId || !threads) return null;
+    const thread = threads.find((t) => t.id === activeThreadId);
+    if (thread) return { id: thread.other_id, display_name: thread.other_display_name, username: thread.other_username, avatar_url: thread.other_avatar_url };
     return null;
-  }, [computedThreadId, threads, recipientParam, recipientProfile]);
+  }, [activeThreadId, threads, recipientParam, recipientProfile]);
 
   const otherUser = getOtherProfile();
 
@@ -195,30 +253,51 @@ const MessagesPage = () => {
     if (!recipientId) return;
 
     setSending(true);
-    const threadId = makeThreadId(user.id, recipientId);
     const msgText = newMsg.trim();
-
-    // Check if this is a reply to enquiry (first message in new thread)
     const isFirstMessage = !messages || messages.length === 0;
     const enquiryTitle = isFirstMessage && enquiryRef ? enquiryRef : null;
+    const finalText = enquiryTitle ? `Re: your enquiry about '${enquiryTitle}'\n\n${msgText}` : msgText;
 
-    const insertData: any = {
+    let threadId = activeThreadId;
+
+    // Create thread if it doesn't exist
+    if (!threadId) {
+      const [pA, pB] = orderParticipants(user.id, recipientId);
+      const { data: newThread, error: threadErr } = await supabase
+        .from("dm_threads")
+        .insert({ participant_a: pA, participant_b: pB })
+        .select("id")
+        .single();
+      if (threadErr || !newThread) {
+        // Thread might already exist (race condition)
+        const { data: existing } = await supabase
+          .from("dm_threads")
+          .select("id")
+          .eq("participant_a", pA)
+          .eq("participant_b", pB)
+          .single();
+        threadId = existing?.id;
+      } else {
+        threadId = newThread.id;
+      }
+    }
+
+    if (!threadId) { setSending(false); return; }
+
+    const { error } = await supabase.from("dm_messages").insert({
       thread_id: threadId,
       sender_id: user.id,
-      recipient_id: recipientId,
-      text: enquiryTitle ? `Re: your enquiry about '${enquiryTitle}'\n\n${msgText}` : msgText,
-    };
-
-    const { error } = await supabase.from("messages" as any).insert(insertData as any);
+      message_type: "text",
+      text_content: finalText,
+    });
 
     if (!error) {
       setNewMsg("");
-      // If we were on "to" param, switch to thread view
       if (recipientParam) {
         setSearchParams({ thread: threadId });
       }
-      queryClient.invalidateQueries({ queryKey: ["thread_messages", threadId] });
-      queryClient.invalidateQueries({ queryKey: ["message_threads"] });
+      queryClient.invalidateQueries({ queryKey: ["dm_messages", threadId] });
+      queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
     }
     setSending(false);
   };
@@ -248,10 +327,10 @@ const MessagesPage = () => {
         ) : (
           threads.map((t) => (
             <button
-              key={t.thread_id}
-              onClick={() => selectThread(t.thread_id)}
+              key={t.id}
+              onClick={() => selectThread(t.id)}
               className={`flex items-center gap-3 w-full px-4 py-3 text-left transition-colors hover:bg-accent/40 border-b border-border ${
-                computedThreadId === t.thread_id ? "bg-accent/30" : ""
+                activeThreadId === t.id ? "bg-accent/30" : ""
               }`}
             >
               <Avatar className="h-10 w-10 shrink-0">
@@ -321,7 +400,7 @@ const MessagesPage = () => {
                       : "bg-card text-foreground rounded-[16px_16px_16px_4px] border border-border"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                  <p className="whitespace-pre-wrap break-words">{msg.text_content}</p>
                   <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                     {timeAgo(msg.sent_at)}
                   </p>
@@ -363,7 +442,7 @@ const MessagesPage = () => {
     </div>
   );
 
-  const showThreadView = computedThreadId || recipientParam;
+  const showThreadView = activeThreadId || recipientParam;
 
   return (
     <div className="h-[calc(100vh-56px)] lg:h-[calc(100vh-0px)] flex flex-col">
