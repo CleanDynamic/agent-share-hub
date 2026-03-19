@@ -937,27 +937,54 @@ const Upload = () => {
               </FormItem>
             )} />
 
-            {/* 9. AI Tools Required (Other always last) */}
+            {/* 9. AI Tools Required — grouped by category */}
             <FormField control={form.control} name="ai_tools" render={() => (
               <FormItem>
                 <FormLabel>AI Tools Required</FormLabel>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
-                  {sortedTools.map((tool) => (
-                    <FormField key={tool} control={form.control} name="ai_tools" render={({ field }) => (
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value?.includes(tool)}
-                            onCheckedChange={(checked) => {
-                              field.onChange(checked ? [...(field.value ?? []), tool] : (field.value ?? []).filter((v) => v !== tool));
-                            }}
-                          />
-                        </FormControl>
-                        <Label className="text-xs text-foreground font-normal cursor-pointer">{tool}</Label>
-                      </FormItem>
-                    )} />
-                  ))}
-                </div>
+                {toolGroups.length > 0 ? (
+                  <div className="space-y-4 mt-2">
+                    {toolGroups.map((group) => (
+                      <div key={group.category}>
+                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.label}</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          {group.tools.map((tool) => (
+                            <FormField key={tool.name} control={form.control} name="ai_tools" render={({ field }) => (
+                              <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(tool.name)}
+                                    onCheckedChange={(checked) => {
+                                      field.onChange(checked ? [...(field.value ?? []), tool.name] : (field.value ?? []).filter((v) => v !== tool.name));
+                                    }}
+                                  />
+                                </FormControl>
+                                <Label className="text-xs text-foreground font-normal cursor-pointer">{tool.name}</Label>
+                              </FormItem>
+                            )} />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+                    {sortedTools.map((tool) => (
+                      <FormField key={tool} control={form.control} name="ai_tools" render={({ field }) => (
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(tool)}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked ? [...(field.value ?? []), tool] : (field.value ?? []).filter((v) => v !== tool));
+                              }}
+                            />
+                          </FormControl>
+                          <Label className="text-xs text-foreground font-normal cursor-pointer">{tool}</Label>
+                        </FormItem>
+                      )} />
+                    ))}
+                  </div>
+                )}
                 {/* Other tool name input */}
                 {isOtherSelected && (
                   <div className="mt-2">
