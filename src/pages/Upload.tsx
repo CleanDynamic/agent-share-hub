@@ -523,8 +523,18 @@ const Upload = () => {
       }
 
       // ── Remaining metadata updates (safe to run after blocks are saved) ──
-      if (isAIToolsType && toolUrl.trim()) {
-        await supabase.from("content_items").update({ tool_url: toolUrl.trim() } as any).eq("id", contentId);
+      const metaUpdates: any = {};
+      if (isAIToolsType && toolUrl.trim()) metaUpdates.tool_url = toolUrl.trim();
+      if (isAIToolsType && toolSubtype) metaUpdates.tool_subtype = toolSubtype;
+      if (isAIToolsType && toolSubtype === "local") {
+        if (modelParameters) metaUpdates.model_parameters = modelParameters;
+        if (modelBaseArchitecture.trim()) metaUpdates.model_base_architecture = modelBaseArchitecture.trim();
+        if (modelFormat) metaUpdates.model_format = modelFormat;
+        if (modelLicense.trim()) metaUpdates.model_license = modelLicense.trim();
+        if (modelRunWith.length > 0) metaUpdates.model_run_with = modelRunWith;
+      }
+      if (Object.keys(metaUpdates).length > 0) {
+        await supabase.from("content_items").update(metaUpdates).eq("id", contentId);
       }
 
       if (customUseCaseDesc.trim() && values.use_cases.includes("Other")) {
