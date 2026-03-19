@@ -147,16 +147,9 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
 /* ---- Slide-in Left Panel ---- */
 function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { isLoggedIn, profile, user, signOut } = useAuth();
-  const { fypCount } = useNavBadges();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const initials = profile?.display_name
-    ? profile.display_name.slice(0, 2).toUpperCase()
-    : profile?.username?.slice(0, 2).toUpperCase() ?? "?";
-
-  const fypBadge = fypCount > 9 ? "9+" : fypCount > 0 ? String(fypCount) : null;
 
   const handleNav = (path: string) => { onClose(); navigate(path); };
   const handleSignOut = async () => { onClose(); await signOut(); navigate("/"); };
