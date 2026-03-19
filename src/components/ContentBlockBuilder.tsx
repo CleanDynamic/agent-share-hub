@@ -761,12 +761,19 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                       </div>
                     )}
                     {block.type === "file" && (
-                      <FilePicker
-                        file={block.file}
-                        fileName={block.fileName}
-                        fileSize={block.fileSize}
-                        onFileChange={(f) => update(index, { file: f, fileName: f?.name, fileSize: f?.size })}
-                      />
+                      <>
+                        <FilePicker
+                          file={block.file}
+                          fileName={block.fileName}
+                          fileSize={block.fileSize}
+                          onFileChange={(f) => update(index, { file: f, fileName: f?.name, fileSize: f?.size })}
+                        />
+                        {/* External file URL toggle */}
+                        <ExternalFileSection
+                          externalFileUrl={block.externalFileUrl ?? ""}
+                          onChange={(url) => update(index, { externalFileUrl: url })}
+                        />
+                      </>
                     )}
                     {block.type === "image" && (
                       <ImagePicker
@@ -777,6 +784,12 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                         onDescriptionChange={(v) => update(index, { imageDescription: v })}
                       />
                     )}
+
+                    {/* GitHub URL — available on all block types */}
+                    <GitHubUrlField
+                      githubUrl={block.githubUrl ?? ""}
+                      onChange={(url) => update(index, { githubUrl: url })}
+                    />
                   </>
                 ) : (
                   (() => {
