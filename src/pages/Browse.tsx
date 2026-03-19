@@ -443,7 +443,7 @@ const Browse = () => {
     }
     // recent
     return base.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [projects, search, sizeFilter, containsFilters, projectContentItems, sortMode]);
+  }, [projects, search, sizeFilter, containsFilters, projectContentItems, sortMode, timePeriod]);
 
   // ─── COLLECTIONS data ─────────────────────────────────────
 
