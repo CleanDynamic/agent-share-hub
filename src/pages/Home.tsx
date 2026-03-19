@@ -13,7 +13,7 @@ import { Download, Loader2, Upload, Search as SearchIcon } from "lucide-react";
 
 const PAGE_SIZE = 20;
 
-type FeedEntry = { _feedType: "blueprint" | "collection" | "project"; _sortDate: number; [key: string]: any };
+
 
 function renderFeedEntry(entry: any) {
   if (entry._feedType === "collection") return <CollectionFeedCard key={`col-${entry.id}`} item={entry} />;
