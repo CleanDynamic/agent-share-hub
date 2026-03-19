@@ -582,8 +582,39 @@ export function ContentBlockViewer({
                       )}
                     </div>
 
-                    {/* View button overlay — not shown for preview blocks */}
-                    {!isUnblurred && !isPreview && (
+                    {/* External file download button */}
+                    {isUnblurred && block.external_file_url && (
+                      <div className="mt-3 px-1">
+                        <a
+                          href={block.external_file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors hover:bg-accent/60"
+                          style={{ borderColor: "#2EC4B6", color: "#2EC4B6" }}
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Download from {detectHostName(block.external_file_url)} →
+                        </a>
+                      </div>
+                    )}
+
+                    {/* GitHub pill */}
+                    {isUnblurred && block.github_url && (
+                      <div className="mt-2 px-1">
+                        <a
+                          href={block.github_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm transition-colors hover:underline"
+                          style={{ color: "#2EC4B6" }}
+                        >
+                          🐙 View on GitHub →
+                        </a>
+                      </div>
+                    )}
+
+                    {/* View button overlay — not shown for preview blocks or blogs */}
+                    {!isUnblurred && !isPreview && !isBlog && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <Button
                           onClick={() => handleViewClick(block.id)}
