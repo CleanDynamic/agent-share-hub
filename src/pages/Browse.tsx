@@ -157,7 +157,7 @@ const Browse = () => {
   const browseTab = (readParam("tab", "blueprints") as BrowseTab);
   const sortMode = readParam("sort", "recent") as AnySort;
   const search = readParam("q", "");
-  const matchInterests = readParam("for", "") === "me";
+  
 
   // Blueprint filters
   const typeFilters = readParamList("type");
