@@ -441,6 +441,7 @@ export function MobileNav() {
           </button>
         )}
       </nav>
+      )}
 
       {/* Overlays */}
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
