@@ -491,6 +491,8 @@ const Upload = () => {
           is_preview: block.isPreview ?? false,
           use_instructions: block.useInstructions?.trim() || null,
           sub_blocks: block.formatting === "sub_list" && block.subBlocks?.length > 0 ? block.subBlocks : null,
+          external_file_url: block.externalFileUrl?.trim() || null,
+          github_url: block.githubUrl?.trim() || null,
         } as any).select("id").single();
 
         if (blockError || !insertedBlock) throw new Error(blockError?.message ?? "Block insert failed");
