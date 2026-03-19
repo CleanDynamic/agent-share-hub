@@ -103,6 +103,23 @@ function AdModal({
   );
 }
 
+// ─── External host detection ────────────────────────────────
+
+function detectHostName(url: string): string {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    if (hostname.includes("drive.google.com")) return "Google Drive";
+    if (hostname.includes("dropbox.com")) return "Dropbox";
+    if (hostname.includes("mega.nz")) return "Mega";
+    if (hostname.includes("onedrive.live.com")) return "OneDrive";
+    if (hostname.includes("wetransfer.com")) return "WeTransfer";
+    if (hostname.includes("github.com")) return "GitHub";
+    return "External host";
+  } catch {
+    return "External host";
+  }
+}
+
 // ─── Block content renderer ─────────────────────────────────
 
 function RenderBlockContent({
