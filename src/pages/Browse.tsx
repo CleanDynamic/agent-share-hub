@@ -170,6 +170,9 @@ const Browse = () => {
   const sizeFilter = readParam("size", "");
   const containsFilters = readParamList("contains");
 
+  // Time period (all tabs)
+  const timePeriod = readParam("period", "") as TimePeriod;
+
   // Setter that updates URL params
   const setParam = useCallback((key: string, value: string) => {
     const sp = new URLSearchParams(searchParams);
