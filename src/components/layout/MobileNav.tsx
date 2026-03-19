@@ -2,13 +2,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, Search, Upload, User, X, LayoutGrid,
-  Heart, Library, Info, Settings, UserPlus, MoreHorizontal, LogOut, Bell, MessageCircle, MoreVertical, BarChart3, FilePenLine,
+  Library, Info, UserPlus, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, FilePenLine,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavBadges } from "@/hooks/useNavBadges";
+
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { supabase } from "@/integrations/supabase/client";
@@ -147,7 +147,6 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
 /* ---- Slide-in Left Panel ---- */
 function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { isLoggedIn, profile, user, signOut } = useAuth();
-  const { fypCount } = useNavBadges();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -155,8 +154,6 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
   const initials = profile?.display_name
     ? profile.display_name.slice(0, 2).toUpperCase()
     : profile?.username?.slice(0, 2).toUpperCase() ?? "?";
-
-  const fypBadge = fypCount > 9 ? "9+" : fypCount > 0 ? String(fypCount) : null;
 
   const handleNav = (path: string) => { onClose(); navigate(path); };
   const handleSignOut = async () => { onClose(); await signOut(); navigate("/"); };
@@ -175,20 +172,24 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
     });
   }, [user?.id]);
 
-  const navItems = [
+  type MobileNavItem = { icon: any; label: string; to: string; authOnly?: boolean; badge?: string | null; divider?: boolean };
+  const navItems: MobileNavItem[] = [
+    // Identity
     { icon: User, label: "Profile", to: "/profile", authOnly: true },
+    // Discovery
+    { icon: Home, label: "Home", to: "/", divider: true },
     { icon: LayoutGrid, label: "Discover", to: "/browse" },
-    
-    { icon: Heart, label: "For You", to: "/fyp", authOnly: true, badge: fypBadge },
     { icon: Library, label: "Library", to: "/library", authOnly: true },
+    // Creation
+    { icon: Upload, label: "Upload", to: "/upload", divider: true },
     { icon: FilePenLine, label: "Drafts", to: "/drafts", authOnly: true },
-    
-    { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true },
+    // Communication
+    { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true, divider: true },
     { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true },
-    { icon: Upload, label: "Upload", to: "/upload" },
-    ...(isLoggedIn && profile?.is_creator ? [{ icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true }] : []),
-    { icon: Info, label: "About", to: "/about" },
-  ].filter((item) => !item.authOnly || isLoggedIn);
+    // Account
+    ...(isLoggedIn && profile?.is_creator ? [{ icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true, divider: true } as MobileNavItem] : []),
+    { icon: Info, label: "About", to: "/about", divider: !(isLoggedIn && profile?.is_creator) },
+  ].filter((item) => (!item.authOnly || isLoggedIn));
 
   return (
     <>
@@ -239,35 +240,31 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
           )}
 
           {/* Nav items */}
-          <nav className="flex-1 space-y-0.5">
-            {navItems.map((item) => {
+          <nav className="flex-1">
+            {navItems.map((item, idx) => {
               const isActive = location.pathname === item.to;
               return (
-                <button
-                  key={item.to}
-                  onClick={() => handleNav(item.to)}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 h-12 text-sm transition-colors ${
-                    isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
-                  }`}
-                >
-                  <item.icon className="h-[22px] w-[22px] shrink-0" />
-                  <span>{item.label}</span>
-                  {item.badge && (
-                    <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">
-                      {item.badge}
-                    </span>
+                <div key={item.to}>
+                  {item.divider && idx > 0 && (
+                    <div className="my-2 border-t" style={{ borderColor: "#1E1E2A" }} />
                   )}
-                </button>
+                  <button
+                    onClick={() => handleNav(item.to)}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 h-12 text-sm transition-colors ${
+                      isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                    }`}
+                  >
+                    <item.icon className="h-[22px] w-[22px] shrink-0" />
+                    <span>{item.label}</span>
+                    {item.badge && (
+                      <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                </div>
               );
             })}
-
-            <div className="border-t border-border my-3" />
-            <button onClick={() => handleNav("/about")} className="flex w-full items-center gap-3 rounded-lg px-3 h-10 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/60">
-              <Settings className="h-5 w-5" /> Settings and privacy
-            </button>
-            <button onClick={() => handleNav("/about")} className="flex w-full items-center gap-3 rounded-lg px-3 h-10 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/60">
-              <Info className="h-5 w-5" /> Help
-            </button>
           </nav>
 
           {/* Sign out at bottom */}
