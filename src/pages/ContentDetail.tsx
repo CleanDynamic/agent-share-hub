@@ -12,6 +12,7 @@ import { GuestDownloadModal } from "@/components/GuestDownloadModal";
 import { AccountGateModal } from "@/components/AccountGateModal";
 import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { StarRating } from "@/components/StarRating";
+import { RatingDisplay } from "@/components/RatingDisplay";
 import { CommentsSection } from "@/components/CommentsSection";
 import { ChangelogTab } from "@/components/ChangelogTab";
 import { TipsTab } from "@/components/TipsTab";
