@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SeoHead } from "@/components/SeoHead";
 import { Link, useSearchParams } from "react-router-dom";
-import { Search, SlidersHorizontal, Clock, Users } from "lucide-react";
+import { Search, SlidersHorizontal, Clock, Users, Flame, Sparkles } from "lucide-react";
 import { FeedItem } from "@/components/FeedItem";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
