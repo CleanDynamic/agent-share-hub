@@ -912,18 +912,37 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
 
       {/* Add block buttons */}
       <div className="flex flex-wrap gap-2 pt-1">
-        <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" /> Text
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" /> Long Text
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => addBlock("file")} className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" /> File
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => addBlock("image")} className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" /> Image
-        </Button>
+        {contentType === "Blog" ? (
+          <>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Long Text
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Text
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("image")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Image
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("file")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> File
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Text
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Long Text
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("file")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> File
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("image")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Image
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
