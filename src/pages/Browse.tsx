@@ -250,25 +250,7 @@ const Browse = () => {
     setSearchParams(sp, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  // ─── Profile data for "For me" ───────────────────────────
 
-  const { data: fullProfile } = useQuery({
-    queryKey: ["browse_profile", profile?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("user_interests, user_ai_tools")
-        .eq("id", profile!.id)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!profile?.id && isLoggedIn,
-  });
-
-  const hasInterests = isLoggedIn && fullProfile && (
-    ((fullProfile as any).user_interests ?? []).length > 0 ||
-    ((fullProfile as any).user_ai_tools ?? []).length > 0
-  );
 
   // ─── BLUEPRINTS data ─────────────────────────────────────
 
