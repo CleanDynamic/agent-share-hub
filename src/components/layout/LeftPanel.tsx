@@ -118,7 +118,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
       </nav>
 
       {/* Bottom user section */}
-      <div className="mt-auto border-t border-border px-3 py-3">
+      <div className="mt-auto px-3 py-3" style={{ borderTop: "1px solid #1E1E2A" }}>
         {isLoggedIn ? (
           <div className="relative" ref={menuRef}>
             <button
