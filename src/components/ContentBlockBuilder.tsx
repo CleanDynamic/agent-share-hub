@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import {
   Type, Paperclip, ImageIcon, ChevronUp, ChevronDown, Trash2, Plus,
   List, ListOrdered, AlignLeft, ListTree, FileText, Heading, ChevronRight, X,
+  Github, Cloud,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -14,7 +15,7 @@ import { MentionInput } from "@/components/MentionInput";
 // ─── Types ───────────────────────────────────────────────────
 
 export type FormattingType = "paragraph" | "bullets" | "numbers" | "sub_list";
-export type BlockType = "text" | "long_text" | "file" | "image";
+export type BlockType = "text" | "long_text" | "file" | "image" | "github" | "large_file";
 
 export interface BlockVariation {
   id: string;
@@ -46,7 +47,13 @@ export interface ContentBlock {
   variations: BlockVariation[];
   isPreview: boolean;
   externalFileUrl?: string;
-  githubUrl?: string;
+  // GitHub block fields
+  githubDescription?: string;
+  // Large File block fields
+  largeFilePlatform?: string;
+  largeFileCustomPlatform?: string;
+  largeFileDescription?: string;
+  largeFileSizeHint?: string;
 }
 
 interface Props {
@@ -101,44 +108,29 @@ export const emptyBlock = (type: BlockType): ContentBlock => ({
   variations: [],
   isPreview: false,
   externalFileUrl: "",
-  githubUrl: "",
+  githubDescription: "",
+  largeFilePlatform: "",
+  largeFileCustomPlatform: "",
+  largeFileDescription: "",
+  largeFileSizeHint: "",
 });
 
 // ─── Formatting helpers ─────────────────────────────────────
 
-/** Strip bullet/number prefixes from raw text */
 function stripPrefixes(text: string): string {
-  return text
-    .split("\n")
-    .map((line) => line.replace(/^(?:•\s?|\d+\.\s?)/, ""))
-    .join("\n");
+  return text.split("\n").map((line) => line.replace(/^(?:•\s?|\d+\.\s?)/, "")).join("\n");
 }
 
-/** Add bullet prefixes for display */
 function addBulletPrefixes(text: string): string {
   if (!text) return "";
-  return text
-    .split("\n")
-    .map((line) => {
-      const stripped = line.replace(/^•\s?/, "");
-      return `• ${stripped}`;
-    })
-    .join("\n");
+  return text.split("\n").map((line) => `• ${line.replace(/^•\s?/, "")}`).join("\n");
 }
 
-/** Add number prefixes for display */
 function addNumberPrefixes(text: string): string {
   if (!text) return "";
-  return text
-    .split("\n")
-    .map((line, i) => {
-      const stripped = line.replace(/^\d+\.\s?/, "");
-      return `${i + 1}. ${stripped}`;
-    })
-    .join("\n");
+  return text.split("\n").map((line, i) => `${i + 1}. ${line.replace(/^\d+\.\s?/, "")}`).join("\n");
 }
 
-/** Convert raw text to display text based on formatting */
 function toDisplay(text: string, fmt: FormattingType): string {
   if (fmt === "bullets") return addBulletPrefixes(text);
   if (fmt === "numbers") return addNumberPrefixes(text);
@@ -155,42 +147,25 @@ const FORMATS: { value: FormattingType; icon: typeof AlignLeft; label: string }[
 ];
 
 const FormatBar = ({
-  active,
-  onChange,
-  showHeading = false,
+  active, onChange, showHeading = false,
 }: {
-  active: FormattingType;
-  onChange: (f: FormattingType) => void;
-  showHeading?: boolean;
+  active: FormattingType; onChange: (f: FormattingType) => void; showHeading?: boolean;
 }) => (
   <div className="flex gap-1 mb-2">
     {FORMATS.map((f) => {
       const Icon = f.icon;
       const isActive = active === f.value;
       return (
-        <button
-          key={f.value}
-          type="button"
-          onClick={() => onChange(f.value)}
-          title={f.label}
-          className={`p-1.5 rounded-md text-xs flex items-center gap-1 transition-colors ${
-            isActive
-              ? "bg-primary text-primary-foreground font-medium"
-              : "text-muted-foreground hover:bg-muted"
-          }`}
-        >
+        <button key={f.value} type="button" onClick={() => onChange(f.value)} title={f.label}
+          className={`p-1.5 rounded-md text-xs flex items-center gap-1 transition-colors ${isActive ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-muted"}`}>
           <Icon className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">{f.label}</span>
         </button>
       );
     })}
     {showHeading && (
-      <button
-        type="button"
-        onClick={() => onChange("paragraph")}
-        title="Use # at the start of a line for headings"
-        className="p-1.5 rounded-md text-xs flex items-center gap-1 text-muted-foreground hover:bg-muted"
-      >
+      <button type="button" onClick={() => onChange("paragraph")} title="Use # at the start of a line for headings"
+        className="p-1.5 rounded-md text-xs flex items-center gap-1 text-muted-foreground hover:bg-muted">
         <Heading className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Heading (# prefix)</span>
       </button>
@@ -201,64 +176,28 @@ const FormatBar = ({
 // ─── Sub-list editor ─────────────────────────────────────────
 
 const SubListEditor = ({
-  parentText,
-  subBlocks,
-  onParentChange,
-  onSubBlocksChange,
+  parentText, subBlocks, onParentChange, onSubBlocksChange,
 }: {
-  parentText: string;
-  subBlocks: string[];
-  onParentChange: (v: string) => void;
-  onSubBlocksChange: (v: string[]) => void;
+  parentText: string; subBlocks: string[]; onParentChange: (v: string) => void; onSubBlocksChange: (v: string[]) => void;
 }) => {
-  const updateSub = (i: number, val: string) => {
-    const next = [...subBlocks];
-    next[i] = val;
-    onSubBlocksChange(next);
-  };
+  const updateSub = (i: number, val: string) => { const next = [...subBlocks]; next[i] = val; onSubBlocksChange(next); };
   const addSub = () => onSubBlocksChange([...subBlocks, ""]);
-  const removeSub = (i: number) => {
-    if (subBlocks.length <= 1) return;
-    onSubBlocksChange(subBlocks.filter((_, idx) => idx !== i));
-  };
+  const removeSub = (i: number) => { if (subBlocks.length <= 1) return; onSubBlocksChange(subBlocks.filter((_, idx) => idx !== i)); };
 
   return (
     <div className="space-y-2">
-      <Input
-        value={parentText}
-        onChange={(e) => onParentChange(e.target.value)}
-        placeholder="Parent item label..."
-        className="bg-background border-border rounded-xl text-sm font-medium"
-        maxLength={TEXT_MAX}
-      />
+      <Input value={parentText} onChange={(e) => onParentChange(e.target.value)} placeholder="Parent item label..." className="bg-background border-border rounded-xl text-sm font-medium" maxLength={TEXT_MAX} />
       <div className="space-y-1.5 ml-6">
         {subBlocks.map((sub, i) => (
           <div key={i} className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground w-4 flex-shrink-0">↳</span>
-            <Input
-              value={sub}
-              onChange={(e) => updateSub(i, e.target.value)}
-              placeholder={`Sub-item ${i + 1}...`}
-              className="bg-background border-border rounded-lg text-sm flex-1"
-              maxLength={200}
-            />
-            <button
-              type="button"
-              onClick={() => removeSub(i)}
-              disabled={subBlocks.length <= 1}
-              className="p-1 text-muted-foreground hover:text-destructive disabled:opacity-30"
-            >
+            <Input value={sub} onChange={(e) => updateSub(i, e.target.value)} placeholder={`Sub-item ${i + 1}...`} className="bg-background border-border rounded-lg text-sm flex-1" maxLength={200} />
+            <button type="button" onClick={() => removeSub(i)} disabled={subBlocks.length <= 1} className="p-1 text-muted-foreground hover:text-destructive disabled:opacity-30">
               <X className="h-3 w-3" />
             </button>
           </div>
         ))}
-        <button
-          type="button"
-          onClick={addSub}
-          className="text-xs text-primary hover:underline ml-6"
-        >
-          + Add sub-item
-        </button>
+        <button type="button" onClick={addSub} className="text-xs text-primary hover:underline ml-6">+ Add sub-item</button>
       </div>
     </div>
   );
@@ -267,21 +206,11 @@ const SubListEditor = ({
 // ─── Text editor ─────────────────────────────────────────────
 
 const TextEditor = ({
-  value,
-  formatting,
-  subBlocks,
-  onTextChange,
-  onFormatChange,
-  onSubBlocksChange,
+  value, formatting, subBlocks, onTextChange, onFormatChange, onSubBlocksChange,
 }: {
-  value: string;
-  formatting: FormattingType;
-  subBlocks: string[];
-  onTextChange: (v: string) => void;
-  onFormatChange: (f: FormattingType) => void;
-  onSubBlocksChange: (v: string[]) => void;
+  value: string; formatting: FormattingType; subBlocks: string[];
+  onTextChange: (v: string) => void; onFormatChange: (f: FormattingType) => void; onSubBlocksChange: (v: string[]) => void;
 }) => {
-  // For bullets/numbered, display text has prefixes
   const displayValue = toDisplay(value, formatting);
   const len = value.length;
   const atLimit = len >= TEXT_MAX;
@@ -302,59 +231,33 @@ const TextEditor = ({
       const stripped = stripPrefixes(newRaw);
       if (stripped.length <= TEXT_MAX) {
         onTextChange(stripped);
-        // Set cursor after React re-render
         setTimeout(() => {
           const newDisplay = toDisplay(stripped, formatting);
           const newLines = before.split("\n").length;
           let cursorPos = 0;
           const lines = newDisplay.split("\n");
-          for (let i = 0; i < newLines && i < lines.length; i++) {
-            cursorPos += lines[i].length + 1;
-          }
+          for (let i = 0; i < newLines && i < lines.length; i++) cursorPos += lines[i].length + 1;
           ta.setSelectionRange(cursorPos, cursorPos);
         }, 0);
       }
     }
   };
 
-  const placeholder =
-    formatting === "bullets"
-      ? "• First item\n• Second item..."
-      : formatting === "numbers"
-      ? "1. First step\n2. Second step..."
-      : "Enter your content…";
+  const placeholder = formatting === "bullets" ? "• First item\n• Second item..." : formatting === "numbers" ? "1. First step\n2. Second step..." : "Enter your content…";
 
   return (
     <div>
       <FormatBar active={formatting} onChange={onFormatChange} />
       {formatting === "sub_list" ? (
-        <SubListEditor
-          parentText={value}
-          subBlocks={subBlocks}
-          onParentChange={onTextChange}
-          onSubBlocksChange={onSubBlocksChange}
-        />
+        <SubListEditor parentText={value} subBlocks={subBlocks} onParentChange={onTextChange} onSubBlocksChange={onSubBlocksChange} />
       ) : (
         <>
-          <textarea
-            value={displayValue}
-            onChange={(e) => handleDisplayChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={4}
-            placeholder={placeholder}
-            maxLength={TEXT_MAX + 200} /* extra room for prefixes */
-            className="flex min-h-[80px] w-full rounded-xl border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 leading-relaxed"
-          />
+          <textarea value={displayValue} onChange={(e) => handleDisplayChange(e.target.value)} onKeyDown={handleKeyDown} rows={4} placeholder={placeholder} maxLength={TEXT_MAX + 200}
+            className="flex min-h-[80px] w-full rounded-xl border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 leading-relaxed" />
           <div className="flex items-center justify-between mt-1">
-            <span className={`text-xs ${len >= 450 ? "text-destructive" : "text-muted-foreground"}`}>
-              {len} / {TEXT_MAX}
-            </span>
+            <span className={`text-xs ${len >= 450 ? "text-destructive" : "text-muted-foreground"}`}>{len} / {TEXT_MAX}</span>
           </div>
-          {atLimit && (
-            <p className="text-xs text-amber-600 mt-1">
-              Limit reached. Add another text block to continue, or upload a file for longer content.
-            </p>
-          )}
+          {atLimit && <p className="text-xs text-amber-600 mt-1">Limit reached. Add another text block to continue, or upload a file for longer content.</p>}
         </>
       )}
     </div>
@@ -363,30 +266,16 @@ const TextEditor = ({
 
 // ─── File picker ─────────────────────────────────────────────
 
-const FilePicker = ({
-  file,
-  fileName,
-  fileSize,
-  onFileChange,
-}: {
-  file: File | null;
-  fileName?: string;
-  fileSize?: number;
-  onFileChange: (f: File | null) => void;
+const FilePicker = ({ file, fileName, fileSize, onFileChange }: {
+  file: File | null; fileName?: string; fileSize?: number; onFileChange: (f: File | null) => void;
 }) => {
   const displayName = file?.name ?? fileName;
   const displaySize = file?.size ?? fileSize;
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (f.size > MAX_FILE_SIZE) {
-      alert("File must be under 10 MB.");
-      return;
-    }
+    const f = e.target.files?.[0]; if (!f) return;
+    if (f.size > MAX_FILE_SIZE) { alert("File must be under 10 MB."); return; }
     onFileChange(f);
   };
-
   return (
     <div>
       {displayName ? (
@@ -394,14 +283,9 @@ const FilePicker = ({
           <Paperclip className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm text-foreground truncate">{displayName}</p>
-            {displaySize != null && (
-              <p className="text-xs text-muted-foreground">{(displaySize / 1024).toFixed(1)} KB</p>
-            )}
+            {displaySize != null && <p className="text-xs text-muted-foreground">{(displaySize / 1024).toFixed(1)} KB</p>}
           </div>
-          <label className="text-xs text-primary hover:underline cursor-pointer">
-            Replace
-            <input type="file" accept={ACCEPTED_FILE_TYPES} onChange={handleChange} className="hidden" />
-          </label>
+          <label className="text-xs text-primary hover:underline cursor-pointer">Replace<input type="file" accept={ACCEPTED_FILE_TYPES} onChange={handleChange} className="hidden" /></label>
         </div>
       ) : (
         <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-border rounded-xl bg-card cursor-pointer hover:border-primary/40 transition-colors">
@@ -416,40 +300,23 @@ const FilePicker = ({
 
 // ─── Image picker ────────────────────────────────────────────
 
-const ImagePicker = ({
-  imageFile,
-  imagePreview,
-  imageDescription,
-  onImageChange,
-  onDescriptionChange,
-}: {
-  imageFile: File | null;
-  imagePreview?: string;
-  imageDescription: string;
-  onImageChange: (f: File | null, preview?: string) => void;
-  onDescriptionChange: (v: string) => void;
+const ImagePicker = ({ imageFile, imagePreview, imageDescription, onImageChange, onDescriptionChange }: {
+  imageFile: File | null; imagePreview?: string; imageDescription: string;
+  onImageChange: (f: File | null, preview?: string) => void; onDescriptionChange: (v: string) => void;
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (f.size > MAX_IMAGE_SIZE) {
-      alert("Image must be under 5 MB.");
-      return;
-    }
+    const f = e.target.files?.[0]; if (!f) return;
+    if (f.size > MAX_IMAGE_SIZE) { alert("Image must be under 5 MB."); return; }
     const reader = new FileReader();
     reader.onload = () => onImageChange(f, reader.result as string);
     reader.readAsDataURL(f);
   };
-
   return (
     <div className="space-y-3">
       {imagePreview ? (
         <div className="space-y-2">
           <img src={imagePreview} alt="Preview" className="max-h-[120px] rounded-lg object-contain" />
-          <label className="text-xs text-primary hover:underline cursor-pointer">
-            Replace image
-            <input type="file" accept={ACCEPTED_IMAGE_TYPES} onChange={handleChange} className="hidden" />
-          </label>
+          <label className="text-xs text-primary hover:underline cursor-pointer">Replace image<input type="file" accept={ACCEPTED_IMAGE_TYPES} onChange={handleChange} className="hidden" /></label>
         </div>
       ) : (
         <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-border rounded-xl bg-card cursor-pointer hover:border-primary/40 transition-colors">
@@ -458,16 +325,142 @@ const ImagePicker = ({
           <input type="file" accept={ACCEPTED_IMAGE_TYPES} onChange={handleChange} className="hidden" />
         </label>
       )}
-      <Input
-        value={imageDescription}
-        onChange={(e) => {
-          if (e.target.value.length <= DESC_MAX) onDescriptionChange(e.target.value);
-        }}
-        placeholder="Describe what this image shows"
-        className="bg-background border-border rounded-xl text-sm"
-        maxLength={DESC_MAX}
-      />
+      <Input value={imageDescription} onChange={(e) => { if (e.target.value.length <= DESC_MAX) onDescriptionChange(e.target.value); }} placeholder="Describe what this image shows" className="bg-background border-border rounded-xl text-sm" maxLength={DESC_MAX} />
       <span className="text-xs text-muted-foreground">{imageDescription.length} / {DESC_MAX}</span>
+    </div>
+  );
+};
+
+// ─── GitHub block editor ─────────────────────────────────────
+
+const GitHubBlockEditor = ({ textContent, githubDescription, onUrlChange, onDescChange }: {
+  textContent: string; githubDescription: string;
+  onUrlChange: (v: string) => void; onDescChange: (v: string) => void;
+}) => {
+  const isValid = !textContent || textContent.startsWith("https://github.com/");
+  const showDesc = textContent && isValid;
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-[13px] text-muted-foreground">Repository URL</Label>
+        <Input
+          value={textContent}
+          onChange={(e) => onUrlChange(e.target.value)}
+          placeholder="https://github.com/username/repository"
+          className="bg-background border-border rounded-lg text-sm mt-1"
+        />
+        {textContent && !isValid && (
+          <p className="text-xs text-destructive mt-1">Must start with https://github.com/</p>
+        )}
+      </div>
+      {showDesc && (
+        <div>
+          <Label className="text-[13px] text-muted-foreground">What's in this repo?</Label>
+          <Input
+            value={githubDescription}
+            onChange={(e) => { if (e.target.value.length <= 100) onDescChange(e.target.value); }}
+            placeholder="e.g. The full Zapier automation JSON files"
+            className="bg-background border-border rounded-lg text-sm mt-1"
+            maxLength={100}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Large File block editor ─────────────────────────────────
+
+const HOSTING_PLATFORMS = ["Google Drive", "Dropbox", "Mega", "OneDrive", "WeTransfer", "Other"];
+
+const PLATFORM_PLACEHOLDERS: Record<string, string> = {
+  "Google Drive": "https://drive.google.com/file/d/...",
+  "Dropbox": "https://www.dropbox.com/s/...",
+  "Mega": "https://mega.nz/file/...",
+  "OneDrive": "https://1drv.ms/...",
+  "WeTransfer": "https://wetransfer.com/downloads/...",
+  "Other": "https://...",
+};
+
+const LargeFileBlockEditor = ({
+  textContent, platform, customPlatform, description, sizeHint,
+  onUrlChange, onPlatformChange, onCustomPlatformChange, onDescChange, onSizeHintChange,
+}: {
+  textContent: string; platform: string; customPlatform: string; description: string; sizeHint: string;
+  onUrlChange: (v: string) => void; onPlatformChange: (v: string) => void;
+  onCustomPlatformChange: (v: string) => void; onDescChange: (v: string) => void; onSizeHintChange: (v: string) => void;
+}) => {
+  const isValidUrl = !textContent || textContent.startsWith("https://");
+
+  return (
+    <div className="space-y-4">
+      {/* Platform selection */}
+      <div>
+        <Label className="text-[13px] text-muted-foreground">Where is the file hosted?</Label>
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {HOSTING_PLATFORMS.map((p) => (
+            <button
+              key={p} type="button"
+              onClick={() => onPlatformChange(p)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                platform === p
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+        {platform === "Other" && (
+          <Input
+            value={customPlatform}
+            onChange={(e) => { if (e.target.value.length <= 30) onCustomPlatformChange(e.target.value); }}
+            placeholder="Platform name..."
+            className="bg-background border-border rounded-lg text-sm mt-2"
+            maxLength={30}
+          />
+        )}
+      </div>
+
+      {/* File URL */}
+      <div>
+        <Label className="text-[13px] text-muted-foreground">Direct link to the file</Label>
+        <Input
+          value={textContent}
+          onChange={(e) => onUrlChange(e.target.value)}
+          placeholder={PLATFORM_PLACEHOLDERS[platform] || "https://..."}
+          className="bg-background border-border rounded-lg text-sm mt-1"
+        />
+        {textContent && !isValidUrl && (
+          <p className="text-xs text-destructive mt-1">Must start with https://</p>
+        )}
+      </div>
+
+      {/* Description */}
+      <div>
+        <Label className="text-[13px] text-muted-foreground">What is this file?</Label>
+        <Input
+          value={description}
+          onChange={(e) => { if (e.target.value.length <= 120) onDescChange(e.target.value); }}
+          placeholder="e.g. The complete n8n workflow JSON — 2.3MB"
+          className="bg-background border-border rounded-lg text-sm mt-1"
+          maxLength={120}
+        />
+      </div>
+
+      {/* Size hint */}
+      <div>
+        <Label className="text-[13px] text-muted-foreground">Approximate file size</Label>
+        <Input
+          value={sizeHint}
+          onChange={(e) => { if (e.target.value.length <= 20) onSizeHintChange(e.target.value); }}
+          placeholder="e.g. 4.2MB, ~50MB"
+          className="bg-background border-border rounded-lg text-sm mt-1 max-w-[200px]"
+          maxLength={20}
+        />
+      </div>
     </div>
   );
 };
@@ -478,6 +471,8 @@ const BlockTypeIcon = ({ type }: { type: BlockType }) => {
   if (type === "text") return <Type className="h-4 w-4" />;
   if (type === "long_text") return <FileText className="h-4 w-4" />;
   if (type === "file") return <Paperclip className="h-4 w-4" />;
+  if (type === "github") return <Github className="h-4 w-4" />;
+  if (type === "large_file") return <Cloud className="h-4 w-4" />;
   return <ImageIcon className="h-4 w-4" />;
 };
 
@@ -486,52 +481,28 @@ const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   long_text: "Article",
   file: "File",
   image: "Image",
+  github: "GitHub",
+  large_file: "Large File",
 };
 
 // ─── Per-block use instructions toggle ──────────────────────
 
-const UseInstructionsToggle = ({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) => {
+const UseInstructionsToggle = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
   const [open, setOpen] = useState(!!value);
-
   const handleToggle = () => {
-    if (open && value) {
-      if (!confirm("Clear instructions?")) return;
-      onChange("");
-    }
+    if (open && value) { if (!confirm("Clear instructions?")) return; onChange(""); }
     setOpen(!open);
   };
-
   return (
     <div className="mt-3 pt-3 border-t border-border">
-      <button
-        type="button"
-        onClick={handleToggle}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
+      <button type="button" onClick={handleToggle} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
         <ChevronRight className={`h-3 w-3 transition-transform ${open ? "rotate-90" : ""}`} />
         Use instructions for this step
       </button>
       {open && (
         <div className="mt-2">
-          <Textarea
-            value={value}
-            onChange={(e) => {
-              if (e.target.value.length <= USE_INSTR_MAX) onChange(e.target.value);
-            }}
-            rows={3}
-            placeholder="Optional: tell users how to use this step. e.g. 'Copy everything below and paste into ChatGPT'"
-            maxLength={USE_INSTR_MAX}
-            className="bg-muted/50 border-border rounded-lg text-sm"
-          />
-          <span className={`text-xs mt-1 block ${value.length >= 450 ? "text-destructive" : "text-muted-foreground"}`}>
-            {value.length} / {USE_INSTR_MAX}
-          </span>
+          <Textarea value={value} onChange={(e) => { if (e.target.value.length <= USE_INSTR_MAX) onChange(e.target.value); }} rows={3} placeholder="Optional: tell users how to use this step. e.g. 'Copy everything below and paste into ChatGPT'" maxLength={USE_INSTR_MAX} className="bg-muted/50 border-border rounded-lg text-sm" />
+          <span className={`text-xs mt-1 block ${value.length >= 450 ? "text-destructive" : "text-muted-foreground"}`}>{value.length} / {USE_INSTR_MAX}</span>
         </div>
       )}
     </div>
@@ -540,111 +511,30 @@ const UseInstructionsToggle = ({
 
 // ─── Variation renderer ─────────────────────────────────────
 
-const VariationEditor = ({
-  variation,
-  onUpdate,
-}: {
-  variation: BlockVariation;
-  onUpdate: (v: Partial<BlockVariation>) => void;
-}) => {
+const VariationEditor = ({ variation, onUpdate }: { variation: BlockVariation; onUpdate: (v: Partial<BlockVariation>) => void }) => {
   if (variation.type === "text") {
-    return (
-      <TextEditor
-        value={variation.textContent}
-        formatting={variation.formatting}
-        subBlocks={[]}
-        onTextChange={(v) => onUpdate({ textContent: v })}
-        onFormatChange={(f) => onUpdate({ formatting: f })}
-        onSubBlocksChange={() => {}}
-      />
-    );
+    return <TextEditor value={variation.textContent} formatting={variation.formatting} subBlocks={[]} onTextChange={(v) => onUpdate({ textContent: v })} onFormatChange={(f) => onUpdate({ formatting: f })} onSubBlocksChange={() => {}} />;
   }
   if (variation.type === "file") {
-    return (
-      <FilePicker
-        file={variation.file}
-        fileName={variation.fileName}
-        onFileChange={(f) => onUpdate({ file: f, fileName: f?.name })}
-      />
-    );
+    return <FilePicker file={variation.file} fileName={variation.fileName} onFileChange={(f) => onUpdate({ file: f, fileName: f?.name })} />;
   }
-  return (
-    <ImagePicker
-      imageFile={variation.imageFile}
-      imagePreview={variation.imagePreview}
-      imageDescription={variation.imageDescription}
-      onImageChange={(f, preview) => onUpdate({ imageFile: f, imagePreview: preview })}
-      onDescriptionChange={(v) => onUpdate({ imageDescription: v })}
-    />
-  );
+  return <ImagePicker imageFile={variation.imageFile} imagePreview={variation.imagePreview} imageDescription={variation.imageDescription} onImageChange={(f, preview) => onUpdate({ imageFile: f, imagePreview: preview })} onDescriptionChange={(v) => onUpdate({ imageDescription: v })} />;
 };
 
 // ─── External file URL section ──────────────────────────────
 
-const ExternalFileSection = ({
-  externalFileUrl,
-  onChange,
-}: {
-  externalFileUrl: string;
-  onChange: (url: string) => void;
-}) => {
+const ExternalFileSection = ({ externalFileUrl, onChange }: { externalFileUrl: string; onChange: (url: string) => void }) => {
   const [open, setOpen] = useState(!!externalFileUrl);
-
   return (
     <div className="mt-3">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
+      <button type="button" onClick={() => setOpen(!open)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
         {open ? "▲ Hide external link" : "File too large? Link to an external host instead ↓"}
       </button>
       {open && (
         <div className="mt-2 space-y-2">
           <Label className="text-xs">File download URL</Label>
-          <Input
-            value={externalFileUrl}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="https://drive.google.com/... or https://dropbox.com/..."
-            className="bg-background border-border rounded-xl text-sm"
-          />
-          <p className="text-[10px] text-muted-foreground">
-            Google Drive, Dropbox, Mega, OneDrive, WeTransfer etc. Link must be directly accessible.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ─── GitHub URL field ───────────────────────────────────────
-
-const GitHubUrlField = ({
-  githubUrl,
-  onChange,
-}: {
-  githubUrl: string;
-  onChange: (url: string) => void;
-}) => {
-  const [open, setOpen] = useState(!!githubUrl);
-
-  return (
-    <div className="mt-3">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-      >
-        🐙 {open ? "Hide GitHub link" : "GitHub repository (optional)"}
-      </button>
-      {open && (
-        <div className="mt-2">
-          <Input
-            value={githubUrl}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="https://github.com/username/repository"
-            className="bg-background border-border rounded-xl text-sm"
-          />
+          <Input value={externalFileUrl} onChange={(e) => onChange(e.target.value)} placeholder="https://drive.google.com/... or https://dropbox.com/..." className="bg-background border-border rounded-xl text-sm" />
+          <p className="text-[10px] text-muted-foreground">Google Drive, Dropbox, Mega, OneDrive, WeTransfer etc. Link must be directly accessible.</p>
         </div>
       )}
     </div>
@@ -673,22 +563,15 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
     onChange(next);
   };
 
-  const deleteBlock = (index: number) => {
-    onChange(blocks.filter((_, i) => i !== index));
-  };
+  const deleteBlock = (index: number) => onChange(blocks.filter((_, i) => i !== index));
 
-  const addBlock = (type: BlockType) => {
-    onChange([...blocks, emptyBlock(type)]);
-  };
+  const addBlock = (type: BlockType) => onChange([...blocks, emptyBlock(type)]);
 
   const addVariation = (blockIndex: number) => {
     const block = blocks[blockIndex];
     const label = nextLabel(block.variations);
     const next = [...blocks];
-    next[blockIndex] = {
-      ...block,
-      variations: [...block.variations, emptyVariation(label, block.type)],
-    };
+    next[blockIndex] = { ...block, variations: [...block.variations, emptyVariation(label, block.type)] };
     onChange(next);
     setActiveVariationTab((prev) => ({ ...prev, [block.id]: label }));
   };
@@ -710,11 +593,13 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
     const activeTab = activeVariationTab[block.id];
     if (activeTab) {
       const removed = blocks[blockIndex].variations.find((v) => v.id === varId);
-      if (removed && removed.label === activeTab) {
-        setActiveVariationTab((prev) => ({ ...prev, [block.id]: "A" }));
-      }
+      if (removed && removed.label === activeTab) setActiveVariationTab((prev) => ({ ...prev, [block.id]: "A" }));
     }
   };
+
+  // Determine if block type supports preview toggle & variations
+  const supportsPreview = (type: BlockType) => type !== "github";
+  const supportsVariations = (type: BlockType) => type !== "github" && type !== "large_file";
 
   return (
     <div className="space-y-3">
@@ -743,7 +628,7 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                   {block.isPreview && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2EC4B6]/15 text-[#2EC4B6] font-medium">Preview</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  {(() => {
+                  {supportsPreview(block.type) && (() => {
                     const previewCount = blocks.filter((b) => b.isPreview).length;
                     const canToggle = block.isPreview || previewCount < 2;
                     return (
@@ -751,56 +636,29 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                         <TooltipTrigger asChild>
                           <div className="flex items-center gap-1.5">
                             <span className="text-[10px] text-muted-foreground">Free preview</span>
-                            <Switch
-                              checked={block.isPreview}
-                              disabled={!canToggle}
-                              onCheckedChange={(checked) => update(index, { isPreview: checked })}
-                              className="scale-75"
-                            />
+                            <Switch checked={block.isPreview} disabled={!canToggle} onCheckedChange={(checked) => update(index, { isPreview: checked })} className="scale-75" />
                           </div>
                         </TooltipTrigger>
                         {!canToggle && <TooltipContent>Maximum 2 preview blocks</TooltipContent>}
                       </Tooltip>
                     );
                   })()}
-                  <button type="button" onClick={() => moveBlock(index, -1)} disabled={index === 0} className="p-1 rounded hover:bg-muted disabled:opacity-30 text-muted-foreground">
-                    <ChevronUp className="h-4 w-4" />
-                  </button>
-                  <button type="button" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} className="p-1 rounded hover:bg-muted disabled:opacity-30 text-muted-foreground">
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
-                  <button type="button" onClick={() => deleteBlock(index)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <button type="button" onClick={() => moveBlock(index, -1)} disabled={index === 0} className="p-1 rounded hover:bg-muted disabled:opacity-30 text-muted-foreground"><ChevronUp className="h-4 w-4" /></button>
+                  <button type="button" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1} className="p-1 rounded hover:bg-muted disabled:opacity-30 text-muted-foreground"><ChevronDown className="h-4 w-4" /></button>
+                  <button type="button" onClick={() => deleteBlock(index)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
                 </div>
               </div>
 
               {/* Variation tabs */}
               {hasVariations && (
                 <div className="flex gap-1 px-4 pt-3">
-                  <button
-                    type="button"
-                    onClick={() => setActiveVariationTab((p) => ({ ...p, [block.id]: "A" }))}
-                    className={`text-xs px-3 py-1 rounded-md transition-colors ${
-                      showingMain ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    A
-                  </button>
+                  <button type="button" onClick={() => setActiveVariationTab((p) => ({ ...p, [block.id]: "A" }))}
+                    className={`text-xs px-3 py-1 rounded-md transition-colors ${showingMain ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-muted"}`}>A</button>
                   {block.variations.map((v) => (
                     <div key={v.id} className="flex items-center gap-0.5">
-                      <button
-                        type="button"
-                        onClick={() => setActiveVariationTab((p) => ({ ...p, [block.id]: v.label }))}
-                        className={`text-xs px-3 py-1 rounded-md transition-colors ${
-                          activeTab === v.label ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-muted"
-                        }`}
-                      >
-                        {v.label}
-                      </button>
-                      <button type="button" onClick={() => deleteVariation(index, v.id)} className="text-muted-foreground hover:text-destructive p-0.5" title={`Delete variation ${v.label}`}>
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                      <button type="button" onClick={() => setActiveVariationTab((p) => ({ ...p, [block.id]: v.label }))}
+                        className={`text-xs px-3 py-1 rounded-md transition-colors ${activeTab === v.label ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-muted"}`}>{v.label}</button>
+                      <button type="button" onClick={() => deleteVariation(index, v.id)} className="text-muted-foreground hover:text-destructive p-0.5" title={`Delete variation ${v.label}`}><Trash2 className="h-3 w-3" /></button>
                     </div>
                   ))}
                 </div>
@@ -811,57 +669,48 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                 {showingMain ? (
                   <>
                     {block.type === "text" && (
-                      <TextEditor
-                        value={block.textContent}
-                        formatting={block.formatting}
-                        subBlocks={block.subBlocks}
-                        onTextChange={(v) => update(index, { textContent: v })}
-                        onFormatChange={(f) => update(index, { formatting: f })}
-                        onSubBlocksChange={(s) => update(index, { subBlocks: s })}
-                      />
+                      <TextEditor value={block.textContent} formatting={block.formatting} subBlocks={block.subBlocks}
+                        onTextChange={(v) => update(index, { textContent: v })} onFormatChange={(f) => update(index, { formatting: f })} onSubBlocksChange={(s) => update(index, { subBlocks: s })} />
                     )}
                     {block.type === "long_text" && (
                       <div>
                         <FormatBar active={block.formatting} onChange={(f) => update(index, { formatting: f })} showHeading />
-                        <MentionInput
-                          value={block.textContent}
-                          onChange={(v) => update(index, { textContent: v })}
-                          rows={10}
-                          placeholder="Write your article content… Use # at the start of a line for headings."
-                        />
+                        <MentionInput value={block.textContent} onChange={(v) => update(index, { textContent: v })} rows={10} placeholder="Write your article content… Use # at the start of a line for headings." />
                         <p className="text-xs text-muted-foreground mt-1">No character limit. Use # prefix for headings.</p>
                       </div>
                     )}
                     {block.type === "file" && (
                       <>
-                        <FilePicker
-                          file={block.file}
-                          fileName={block.fileName}
-                          fileSize={block.fileSize}
-                          onFileChange={(f) => update(index, { file: f, fileName: f?.name, fileSize: f?.size })}
-                        />
-                        {/* External file URL toggle */}
-                        <ExternalFileSection
-                          externalFileUrl={block.externalFileUrl ?? ""}
-                          onChange={(url) => update(index, { externalFileUrl: url })}
-                        />
+                        <FilePicker file={block.file} fileName={block.fileName} fileSize={block.fileSize} onFileChange={(f) => update(index, { file: f, fileName: f?.name, fileSize: f?.size })} />
+                        <ExternalFileSection externalFileUrl={block.externalFileUrl ?? ""} onChange={(url) => update(index, { externalFileUrl: url })} />
                       </>
                     )}
                     {block.type === "image" && (
-                      <ImagePicker
-                        imageFile={block.imageFile}
-                        imagePreview={block.imagePreview}
-                        imageDescription={block.imageDescription}
-                        onImageChange={(f, preview) => update(index, { imageFile: f, imagePreview: preview })}
-                        onDescriptionChange={(v) => update(index, { imageDescription: v })}
+                      <ImagePicker imageFile={block.imageFile} imagePreview={block.imagePreview} imageDescription={block.imageDescription}
+                        onImageChange={(f, preview) => update(index, { imageFile: f, imagePreview: preview })} onDescriptionChange={(v) => update(index, { imageDescription: v })} />
+                    )}
+                    {block.type === "github" && (
+                      <GitHubBlockEditor
+                        textContent={block.textContent}
+                        githubDescription={block.githubDescription ?? ""}
+                        onUrlChange={(v) => update(index, { textContent: v })}
+                        onDescChange={(v) => update(index, { githubDescription: v })}
                       />
                     )}
-
-                    {/* GitHub URL — available on all block types */}
-                    <GitHubUrlField
-                      githubUrl={block.githubUrl ?? ""}
-                      onChange={(url) => update(index, { githubUrl: url })}
-                    />
+                    {block.type === "large_file" && (
+                      <LargeFileBlockEditor
+                        textContent={block.textContent}
+                        platform={block.largeFilePlatform ?? ""}
+                        customPlatform={block.largeFileCustomPlatform ?? ""}
+                        description={block.largeFileDescription ?? ""}
+                        sizeHint={block.largeFileSizeHint ?? ""}
+                        onUrlChange={(v) => update(index, { textContent: v })}
+                        onPlatformChange={(v) => update(index, { largeFilePlatform: v })}
+                        onCustomPlatformChange={(v) => update(index, { largeFileCustomPlatform: v })}
+                        onDescChange={(v) => update(index, { largeFileDescription: v })}
+                        onSizeHintChange={(v) => update(index, { largeFileSizeHint: v })}
+                      />
+                    )}
                   </>
                 ) : (
                   (() => {
@@ -872,16 +721,8 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                         <p className="text-xs text-muted-foreground mb-2 font-medium">Variation {variation.label}</p>
                         <div className="flex gap-1 mb-3">
                           {(["text", "file", "image"] as BlockType[]).map((t) => (
-                            <button
-                              key={t}
-                              type="button"
-                              onClick={() => updateVariation(index, variation.id, { type: t })}
-                              className={`text-xs px-2.5 py-1 rounded-md capitalize transition-colors ${
-                                variation.type === t ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"
-                              }`}
-                            >
-                              {t}
-                            </button>
+                            <button key={t} type="button" onClick={() => updateVariation(index, variation.id, { type: t })}
+                              className={`text-xs px-2.5 py-1 rounded-md capitalize transition-colors ${variation.type === t ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"}`}>{t}</button>
                           ))}
                         </div>
                         <VariationEditor variation={variation} onUpdate={(patch) => updateVariation(index, variation.id, patch)} />
@@ -893,18 +734,15 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
 
               {/* Per-block use instructions */}
               <div className="px-4 pb-3">
-                <UseInstructionsToggle
-                  value={block.useInstructions}
-                  onChange={(v) => update(index, { useInstructions: v })}
-                />
+                <UseInstructionsToggle value={block.useInstructions} onChange={(v) => update(index, { useInstructions: v })} />
               </div>
 
               {/* Add variation link */}
-              <div className="px-4 pb-3">
-                <button type="button" onClick={() => addVariation(index)} className="text-xs text-muted-foreground hover:text-primary transition-colors">
-                  · · · + Add variation
-                </button>
-              </div>
+              {supportsVariations(block.type) && (
+                <div className="px-4 pb-3">
+                  <button type="button" onClick={() => addVariation(index)} className="text-xs text-muted-foreground hover:text-primary transition-colors">· · · + Add variation</button>
+                </div>
+              )}
             </div>
           );
         })}
@@ -914,33 +752,21 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
       <div className="flex flex-wrap gap-2 pt-1">
         {contentType === "Blog" ? (
           <>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" /> Long Text
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" /> Text
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("image")} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" /> Image
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("file")} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" /> File
-            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Long Text</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Text</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("image")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Image</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("file")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> File</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("github")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> GitHub</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("large_file")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Large File</Button>
           </>
         ) : (
           <>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" /> Text
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" /> Long Text
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("file")} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" /> File
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("image")} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" /> Image
-            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Text</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Long Text</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("file")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> File</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("image")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Image</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("github")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> GitHub</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("large_file")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Large File</Button>
           </>
         )}
       </div>

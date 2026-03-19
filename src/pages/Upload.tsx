@@ -476,11 +476,28 @@ const Upload = () => {
           imageUrl = path;
         }
 
+        // Build sub_blocks based on block type
+        let subBlocksData: any = null;
+        if (block.formatting === "sub_list" && block.subBlocks?.length > 0) {
+          subBlocksData = block.subBlocks;
+        } else if (block.type === "github") {
+          subBlocksData = [{ description: block.githubDescription?.trim() || "" }];
+        } else if (block.type === "large_file") {
+          subBlocksData = [{
+            platform: block.largeFilePlatform || "",
+            custom_platform: block.largeFileCustomPlatform?.trim() || null,
+            description: block.largeFileDescription?.trim() || "",
+            file_size_hint: block.largeFileSizeHint?.trim() || "",
+          }];
+        }
+
         const { data: insertedBlock, error: blockError } = await supabase.from("content_blocks").insert({
           content_id: contentId,
           position,
-          block_type: block.type === "long_text" ? "long_text" : block.type,
-          text_content: (block.type === "text" || block.type === "long_text") ? block.textContent : null,
+          block_type: block.type,
+          text_content: (block.type === "text" || block.type === "long_text") ? block.textContent
+            : (block.type === "github" || block.type === "large_file") ? block.textContent
+            : null,
           formatting: (block.type === "text" || block.type === "long_text") ? { type: block.formatting } : null,
           formatting_type: block.formatting || "paragraph",
           file_url: fileUrl,
@@ -488,11 +505,11 @@ const Upload = () => {
           file_size_bytes: fileSizeBytes,
           image_url: imageUrl,
           image_description: block.type === "image" ? block.imageDescription : null,
-          is_preview: block.isPreview ?? false,
+          is_preview: block.type === "github" ? false : (block.isPreview ?? false),
           use_instructions: block.useInstructions?.trim() || null,
-          sub_blocks: block.formatting === "sub_list" && block.subBlocks?.length > 0 ? block.subBlocks : null,
+          sub_blocks: subBlocksData,
           external_file_url: block.externalFileUrl?.trim() || null,
-          github_url: block.githubUrl?.trim() || null,
+          github_url: null,
         } as any).select("id").single();
 
         if (blockError || !insertedBlock) throw new Error(blockError?.message ?? "Block insert failed");
