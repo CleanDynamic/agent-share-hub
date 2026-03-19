@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Download, Eye, Star, StarHalf, MessageSquare, FolderOpen } from "lucide-react";
+import { Download, Eye, Star, StarHalf, MessageSquare, FolderOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
+import { FeedItemExpanded } from "@/components/FeedItemExpanded";
 
 /* ---- Helpers ---- */
 
@@ -147,6 +149,7 @@ interface FeedItemProps {
 
 export function FeedItem({ item, rank, context = "home", navState }: FeedItemProps) {
   const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
   const profile = item.profiles as any;
   const starVal = roundedStars(Number(item.avg_rating) || 0, item.rating_count ?? 0);
   const initials = (profile?.display_name || profile?.username || "?").slice(0, 2).toUpperCase();
@@ -254,22 +257,55 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
         />
       )}
 
-      {/* LINE 6 — Stats */}
-      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-nowrap overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-        <span className="inline-flex items-center gap-[3px] shrink-0"><Eye className="h-3 w-3" />{formatNum(item.view_count ?? 0)}</span>
-        <span className="text-[#444450] shrink-0">·</span>
-        <span className="inline-flex items-center gap-[3px] shrink-0"><Download className="h-3 w-3" />{formatNum(item.download_count ?? 0)}</span>
-        {(item.rating_count ?? 0) > 0 && (
-          <>
-            <span className="text-[#444450] shrink-0">·</span>
-            <MiniStars value={starVal} />
-          </>
-        )}
-        {!isLight && (
-          <>
-            <span className="text-[#444450] shrink-0">·</span>
-            <span className="inline-flex items-center gap-[3px] shrink-0"><MessageSquare className="h-3 w-3" />{item.comment_count ?? 0}</span>
-          </>
+      {/* LINE 6 — Stats + Show More */}
+      {(() => {
+        // Don't show expand for AI Tools or types without blueprint blocks
+        const canExpand = item.content_type !== "AI Tools (LLMs)";
+        return (
+          <div className="flex items-center justify-between mt-2">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-nowrap overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+              <span className="inline-flex items-center gap-[3px] shrink-0"><Eye className="h-3 w-3" />{formatNum(item.view_count ?? 0)}</span>
+              <span className="text-[#444450] shrink-0">·</span>
+              <span className="inline-flex items-center gap-[3px] shrink-0"><Download className="h-3 w-3" />{formatNum(item.download_count ?? 0)}</span>
+              {(item.rating_count ?? 0) > 0 && (
+                <>
+                  <span className="text-[#444450] shrink-0">·</span>
+                  <MiniStars value={starVal} />
+                </>
+              )}
+              {!isLight && (
+                <>
+                  <span className="text-[#444450] shrink-0">·</span>
+                  <span className="inline-flex items-center gap-[3px] shrink-0"><MessageSquare className="h-3 w-3" />{item.comment_count ?? 0}</span>
+                </>
+              )}
+            </div>
+            {canExpand && (
+              <button
+                onClick={(e) => { stop(e); setExpanded(!expanded); }}
+                className="inline-flex items-center gap-1 shrink-0 ml-2 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {expanded ? "Show less" : "Show more"}
+                {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </button>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Expanded panel */}
+      <div
+        className="overflow-hidden transition-all duration-200 ease-in-out"
+        style={{ maxHeight: expanded ? 500 : 0, opacity: expanded ? 1 : 0 }}
+      >
+        {expanded && (
+          <div className="mt-2 pt-2 border-t border-border">
+            <FeedItemExpanded
+              contentId={item.id}
+              whatToExpect={item.what_to_expect ?? null}
+              whatToExpectBlocks={item.what_to_expect_blocks as any[] | null}
+            />
+          </div>
         )}
       </div>
     </div>

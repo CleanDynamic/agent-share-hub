@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SeoHead } from "@/components/SeoHead";
 import { Link, useSearchParams } from "react-router-dom";
-import { Search, SlidersHorizontal, Clock, Users } from "lucide-react";
+import { Search, SlidersHorizontal, Clock, Users, Flame, Sparkles } from "lucide-react";
 import { FeedItem } from "@/components/FeedItem";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -388,15 +388,38 @@ function BrowseCollections() {
   );
 }
 
+type SortMode = "recent" | "popular" | "rising";
+
+function sortContent(items: any[], sort: SortMode): any[] {
+  const now = Date.now();
+  const scored = items.map((item) => {
+    const hoursOld = (now - new Date(item.approved_at || item.created_at).getTime()) / 3600000;
+    let score = 0;
+    if (sort === "popular") {
+      score = (item.download_count * 1.5 + item.view_count + item.rating_count * 2 + item.comment_count * 1.2) / Math.pow(hoursOld + 2, 1.5);
+    } else if (sort === "rising") {
+      score = (item.download_count + item.view_count + item.rating_count + item.comment_count) / Math.pow(hoursOld + 1, 0.8);
+    }
+    return { ...item, _sort_score: score };
+  });
+  if (sort === "recent") return scored.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return scored.sort((a, b) => b._sort_score - a._sort_score);
+}
+
 const Browse = () => {
   const { isLoggedIn, profile } = useAuth();
   const { data: AI_TOOLS } = useApprovedToolNames();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [browseTab, setBrowseTab] = useState<"content" | "projects" | "collections">(() => {
     const t = searchParams.get("tab");
     if (t === "projects") return "projects";
     if (t === "collections") return "collections";
     return "content";
+  });
+  const [sortMode, setSortMode] = useState<SortMode>(() => {
+    const s = searchParams.get("sort");
+    if (s === "popular" || s === "rising") return s;
+    return "recent";
   });
   const [search, setSearch] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
@@ -524,7 +547,7 @@ const Browse = () => {
 
   const filtered = useMemo(() => {
     if (!items) return [];
-    return items.filter((item) => {
+    const base = items.filter((item) => {
       const q = search.toLowerCase();
       if (q) {
         const inTitle = item.title.toLowerCase().includes(q);
@@ -554,7 +577,20 @@ const Browse = () => {
       }
       return true;
     });
-  }, [items, search, typeFilter, difficultyFilter, toolFilter, useCaseFilter, matchInterests, fullProfile, microtagFilters, allMicrotagsMap]);
+
+    // Apply sort
+    if (sortMode === "rising") {
+      const sevenDaysAgo = Date.now() - 7 * 86400000;
+      const thirtyDaysAgo = Date.now() - 30 * 86400000;
+      let risingItems = base.filter((i) => new Date(i.approved_at || i.created_at).getTime() > sevenDaysAgo);
+      if (risingItems.length < 10) {
+        risingItems = base.filter((i) => new Date(i.approved_at || i.created_at).getTime() > thirtyDaysAgo);
+      }
+      return sortContent(risingItems, "rising");
+    }
+
+    return sortContent(base, sortMode);
+  }, [items, search, typeFilter, difficultyFilter, toolFilter, useCaseFilter, matchInterests, fullProfile, microtagFilters, allMicrotagsMap, sortMode]);
 
   function clearFilters() {
     setSearch("");
@@ -714,6 +750,32 @@ const Browse = () => {
             </button>
           </div>
         )}
+
+        {/* Sort pills */}
+        <div className="flex gap-1 mb-3">
+          {([
+            { value: "recent" as SortMode, label: "🕐 Recent" },
+            { value: "popular" as SortMode, label: "🔥 Popular" },
+            { value: "rising" as SortMode, label: "✨ Rising" },
+          ]).map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => {
+                setSortMode(opt.value);
+                const sp = new URLSearchParams(searchParams);
+                sp.set("sort", opt.value);
+                setSearchParams(sp, { replace: true });
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] ${
+                sortMode === opt.value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-accent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
 
         {/* Desktop filters */}
         <div className="hidden md:flex gap-3 overflow-x-auto pb-2 mb-3 scrollbar-hide">
