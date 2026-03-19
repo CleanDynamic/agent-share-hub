@@ -205,15 +205,16 @@ const Browse = () => {
   // ─── Active filter count ─────────────────────────────────
 
   const activeFilterCount = useMemo(() => {
+    const tp = timePeriod ? 1 : 0;
     if (browseTab === "blueprints") {
-      return typeFilters.length + (difficultyFilter ? 1 : 0) + toolFilters.length + useCaseFilters.length + microtagFilters.length;
+      return typeFilters.length + (difficultyFilter ? 1 : 0) + toolFilters.length + useCaseFilters.length + microtagFilters.length + tp;
     }
     if (browseTab === "projects") {
-      return containsFilters.length + (sizeFilter ? 1 : 0) + (difficultyFilter ? 1 : 0);
+      return containsFilters.length + (sizeFilter ? 1 : 0) + (difficultyFilter ? 1 : 0) + tp;
     }
     // collections
-    return containsFilters.length + (sizeFilter ? 1 : 0);
-  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter]);
+    return containsFilters.length + (sizeFilter ? 1 : 0) + tp;
+  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter, timePeriod]);
 
   // Active filter chips
   const activeChips = useMemo(() => {
