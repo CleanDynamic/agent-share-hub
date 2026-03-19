@@ -219,6 +219,7 @@ const Browse = () => {
   // Active filter chips
   const activeChips = useMemo(() => {
     const chips: { label: string; key: string; value: string }[] = [];
+    if (timePeriod) chips.push({ label: PERIOD_LABELS[timePeriod] || timePeriod, key: "period", value: timePeriod });
     if (browseTab === "blueprints") {
       typeFilters.forEach((t) => chips.push({ label: displayContentType(SLUG_TO_TYPE[t] || t), key: "type", value: t }));
       if (difficultyFilter) chips.push({ label: difficultyFilter, key: "difficulty", value: difficultyFilter });
@@ -234,7 +235,7 @@ const Browse = () => {
       if (sizeFilter) chips.push({ label: sizeFilter, key: "size", value: sizeFilter });
     }
     return chips;
-  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter]);
+  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter, timePeriod]);
 
   const removeChip = useCallback((chip: { key: string; value: string }) => {
     if (chip.key === "difficulty" || chip.key === "size") {
