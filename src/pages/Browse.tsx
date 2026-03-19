@@ -577,7 +577,20 @@ const Browse = () => {
       }
       return true;
     });
-  }, [items, search, typeFilter, difficultyFilter, toolFilter, useCaseFilter, matchInterests, fullProfile, microtagFilters, allMicrotagsMap]);
+
+    // Apply sort
+    if (sortMode === "rising") {
+      const sevenDaysAgo = Date.now() - 7 * 86400000;
+      const thirtyDaysAgo = Date.now() - 30 * 86400000;
+      let risingItems = base.filter((i) => new Date(i.approved_at || i.created_at).getTime() > sevenDaysAgo);
+      if (risingItems.length < 10) {
+        risingItems = base.filter((i) => new Date(i.approved_at || i.created_at).getTime() > thirtyDaysAgo);
+      }
+      return sortContent(risingItems, "rising");
+    }
+
+    return sortContent(base, sortMode);
+  }, [items, search, typeFilter, difficultyFilter, toolFilter, useCaseFilter, matchInterests, fullProfile, microtagFilters, allMicrotagsMap, sortMode]);
 
   function clearFilters() {
     setSearch("");
