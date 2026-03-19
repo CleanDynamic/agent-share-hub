@@ -353,7 +353,7 @@ const Browse = () => {
     }
     // recent
     return base.sort((a, b) => new Date(b.approved_at || b.created_at).getTime() - new Date(a.approved_at || a.created_at).getTime());
-  }, [items, search, typeFilters, difficultyFilter, toolFilters, useCaseFilters, matchInterests, fullProfile, microtagFilters, allMicrotagsMap, sortMode, timePeriod]);
+  }, [items, search, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, allMicrotagsMap, sortMode, timePeriod]);
 
   // ─── PROJECTS data ────────────────────────────────────────
 
