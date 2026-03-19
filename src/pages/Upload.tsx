@@ -87,6 +87,12 @@ const Upload = () => {
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   const [toolUrl, setToolUrl] = useState("");
+  const [toolSubtype, setToolSubtype] = useState<"api" | "local" | "">("");
+  const [modelParameters, setModelParameters] = useState("");
+  const [modelBaseArchitecture, setModelBaseArchitecture] = useState("");
+  const [modelFormat, setModelFormat] = useState("");
+  const [modelLicense, setModelLicense] = useState("");
+  const [modelRunWith, setModelRunWith] = useState<string[]>([]);
   const [customUseCaseDesc, setCustomUseCaseDesc] = useState("");
   const [otherToolName, setOtherToolName] = useState("");
   const [draftMeta, setDraftMeta] = useState<{ name: string; savedAt: string } | null>(null);
