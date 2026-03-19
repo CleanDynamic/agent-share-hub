@@ -218,8 +218,7 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
 
   return (
     <div className="grid grid-cols-2 gap-2">
-      {CATEGORIES.map((cat, i) => {
-        const isLast = i === CATEGORIES.length - 1;
+      {CATEGORIES.map((cat) => {
         const isAITools = cat.dbType === "AI Tools (LLMs)";
 
         // Strict equality — only highlight when slug explicitly matches
