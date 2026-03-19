@@ -100,6 +100,8 @@ export const emptyBlock = (type: BlockType): ContentBlock => ({
   imageDescription: "",
   variations: [],
   isPreview: false,
+  externalFileUrl: "",
+  githubUrl: "",
 });
 
 // ─── Formatting helpers ─────────────────────────────────────
