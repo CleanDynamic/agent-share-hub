@@ -725,6 +725,11 @@ export type Database = {
           is_pwyw: boolean
           is_verified: boolean
           last_verified_at: string | null
+          model_base_architecture: string | null
+          model_format: string | null
+          model_license: string | null
+          model_parameters: string | null
+          model_run_with: string[] | null
           monetisation_type: string
           other_tool_name: string | null
           price_gbp: number | null
@@ -737,6 +742,7 @@ export type Database = {
           status: string
           tags: string[]
           title: string
+          tool_subtype: string | null
           tool_url: string | null
           use_cases: string[] | null
           use_instructions: string | null
@@ -774,6 +780,11 @@ export type Database = {
           is_pwyw?: boolean
           is_verified?: boolean
           last_verified_at?: string | null
+          model_base_architecture?: string | null
+          model_format?: string | null
+          model_license?: string | null
+          model_parameters?: string | null
+          model_run_with?: string[] | null
           monetisation_type?: string
           other_tool_name?: string | null
           price_gbp?: number | null
@@ -786,6 +797,7 @@ export type Database = {
           status?: string
           tags?: string[]
           title: string
+          tool_subtype?: string | null
           tool_url?: string | null
           use_cases?: string[] | null
           use_instructions?: string | null
@@ -823,6 +835,11 @@ export type Database = {
           is_pwyw?: boolean
           is_verified?: boolean
           last_verified_at?: string | null
+          model_base_architecture?: string | null
+          model_format?: string | null
+          model_license?: string | null
+          model_parameters?: string | null
+          model_run_with?: string[] | null
           monetisation_type?: string
           other_tool_name?: string | null
           price_gbp?: number | null
@@ -835,6 +852,7 @@ export type Database = {
           status?: string
           tags?: string[]
           title?: string
+          tool_subtype?: string | null
           tool_url?: string | null
           use_cases?: string[] | null
           use_instructions?: string | null
