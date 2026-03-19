@@ -581,7 +581,7 @@ const VariationEditor = ({
 
 // ─── Main component ──────────────────────────────────────────
 
-export function ContentBlockBuilder({ blocks, onChange }: Props) {
+export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
   const [activeVariationTab, setActiveVariationTab] = useState<Record<string, string>>({});
 
   const update = useCallback(
