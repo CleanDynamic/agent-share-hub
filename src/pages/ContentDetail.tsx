@@ -12,6 +12,7 @@ import { GuestDownloadModal } from "@/components/GuestDownloadModal";
 import { AccountGateModal } from "@/components/AccountGateModal";
 import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { StarRating } from "@/components/StarRating";
+import { RatingDisplay } from "@/components/RatingDisplay";
 import { CommentsSection } from "@/components/CommentsSection";
 import { ChangelogTab } from "@/components/ChangelogTab";
 import { TipsTab } from "@/components/TipsTab";
@@ -519,6 +520,14 @@ const ContentDetail = () => {
 
         {/* 3. Title */}
         <h1 className="text-[26px] font-bold text-foreground leading-[1.25] mb-2">{item.title}</h1>
+
+        {/* 3.5 Rating display (read-only, hidden for blogs) */}
+        {item.content_type !== "Blog" && (
+          <RatingDisplay
+            avgRating={Number((item as any).avg_rating) || 0}
+            ratingCount={(item as any).rating_count ?? 0}
+          />
+        )}
 
         {/* 4. Description */}
         {item.description && (
