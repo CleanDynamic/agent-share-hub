@@ -754,6 +754,41 @@ const ContentDetail = () => {
           </div>
         )}
 
+        {/* 8b. Model specs for local AI Tools */}
+        {item.content_type === "AI Tools (LLMs)" && (item as any).tool_subtype === "local" && (
+          <div className="mb-3 space-y-2">
+            {((item as any).model_parameters || (item as any).model_base_architecture || (item as any).model_format || (item as any).model_license) && (
+              <div>
+                <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Model Specs</h3>
+                <div className="flex flex-wrap gap-2">
+                  {(item as any).model_parameters && (
+                    <span className="text-xs px-2 py-1 rounded-lg bg-accent text-muted-foreground">{(item as any).model_parameters} params</span>
+                  )}
+                  {(item as any).model_base_architecture && (
+                    <span className="text-xs px-2 py-1 rounded-lg bg-accent text-muted-foreground">{(item as any).model_base_architecture}</span>
+                  )}
+                  {(item as any).model_format && (
+                    <span className="text-xs px-2 py-1 rounded-lg bg-accent text-muted-foreground">{(item as any).model_format}</span>
+                  )}
+                  {(item as any).model_license && (
+                    <span className="text-xs px-2 py-1 rounded-lg bg-accent text-muted-foreground">{(item as any).model_license}</span>
+                  )}
+                </div>
+              </div>
+            )}
+            {(item as any).model_run_with && (item as any).model_run_with.length > 0 && (
+              <div>
+                <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Runs On</h3>
+                <div className="flex flex-wrap gap-2">
+                  {((item as any).model_run_with as string[]).map((p) => (
+                    <span key={p} className="text-xs px-2 py-1 rounded-lg bg-accent text-muted-foreground">{p}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* 9. Use Cases — moved above tabs */}
         {item.use_cases && item.use_cases.length > 0 && (
           <div className="mb-3">

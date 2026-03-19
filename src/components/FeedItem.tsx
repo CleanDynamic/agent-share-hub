@@ -205,6 +205,20 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
         <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(item.difficulty)}`}>
           {item.difficulty}
         </Badge>
+        {/* AI Tools subtype indicator */}
+        {item.content_type === "AI Tools (LLMs)" && (item as any).tool_subtype === "local" && (
+          <>
+            <span className="text-[10px] text-muted-foreground/60">🖥️ Local</span>
+            {(item as any).model_parameters && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">
+                {(item as any).model_parameters}
+              </span>
+            )}
+          </>
+        )}
+        {item.content_type === "AI Tools (LLMs)" && (item as any).tool_subtype === "api" && (
+          <span className="text-[10px] text-muted-foreground/60">🌐 API</span>
+        )}
         <ProjectIndicator item={item} stop={stop} />
       </div>
 
