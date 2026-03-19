@@ -26,15 +26,13 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { isLoggedIn, profile, signOut } = useAuth();
-  const { hasUnseenSaves, fypCount } = useNavBadges();
+  const { hasUnseenSaves } = useNavBadges();
   const { display: notifBadge } = useUnreadNotifications();
   const { display: msgBadge } = useUnreadMessages();
   
   const { display: draftBadge } = useDraftCount();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  const fypBadge = fypCount > 9 ? "9+" : fypCount > 0 ? String(fypCount) : null;
 
   const navItems: NavItem[] = [
     // Identity
