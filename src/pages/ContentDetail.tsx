@@ -646,6 +646,19 @@ const ContentDetail = () => {
           </div>
         )}
 
+        {/* 9a. Local model CTA */}
+        {item.content_type === "AI Tools (LLMs)" && (item as any).tool_subtype === "local" && (item as any).tool_url && (
+          <div className="rounded-xl border border-border bg-card p-4 mb-3">
+            <Button
+              className="w-full bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/90 text-secondary-foreground"
+              onClick={() => window.open((item as any).tool_url, "_blank")}
+            >
+              <ExternalLink className="mr-2 h-4 w-4" /> View Model →
+            </Button>
+            <p className="text-xs text-muted-foreground text-center mt-2">The blueprint below explains how to run this locally</p>
+          </div>
+        )}
+
         {/* 9. ACTION BOX — inline, full width */}
         <div className="rounded-xl border border-border bg-card p-3.5 sm:p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
