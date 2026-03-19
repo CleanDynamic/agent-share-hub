@@ -187,10 +187,9 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
     { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true, divider: true },
     { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true },
     // Account
-    ...(isLoggedIn && profile?.is_creator ? [{ icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true, divider: true } as MobileNavItem] : [{ divider: true } as MobileNavItem]),
-    ...(!isLoggedIn || !profile?.is_creator ? [{ icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true } as MobileNavItem] : []),
-    { icon: Info, label: "About", to: "/about" },
-  ].filter((item) => (!item.authOnly || isLoggedIn) && item.label);
+    ...(isLoggedIn && profile?.is_creator ? [{ icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true, divider: true } as MobileNavItem] : []),
+    { icon: Info, label: "About", to: "/about", divider: !(isLoggedIn && profile?.is_creator) },
+  ].filter((item) => (!item.authOnly || isLoggedIn));
 
   return (
     <>
