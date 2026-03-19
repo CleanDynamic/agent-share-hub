@@ -388,15 +388,38 @@ function BrowseCollections() {
   );
 }
 
+type SortMode = "recent" | "popular" | "rising";
+
+function sortContent(items: any[], sort: SortMode): any[] {
+  const now = Date.now();
+  const scored = items.map((item) => {
+    const hoursOld = (now - new Date(item.approved_at || item.created_at).getTime()) / 3600000;
+    let score = 0;
+    if (sort === "popular") {
+      score = (item.download_count * 1.5 + item.view_count + item.rating_count * 2 + item.comment_count * 1.2) / Math.pow(hoursOld + 2, 1.5);
+    } else if (sort === "rising") {
+      score = (item.download_count + item.view_count + item.rating_count + item.comment_count) / Math.pow(hoursOld + 1, 0.8);
+    }
+    return { ...item, _sort_score: score };
+  });
+  if (sort === "recent") return scored.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return scored.sort((a, b) => b._sort_score - a._sort_score);
+}
+
 const Browse = () => {
   const { isLoggedIn, profile } = useAuth();
   const { data: AI_TOOLS } = useApprovedToolNames();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [browseTab, setBrowseTab] = useState<"content" | "projects" | "collections">(() => {
     const t = searchParams.get("tab");
     if (t === "projects") return "projects";
     if (t === "collections") return "collections";
     return "content";
+  });
+  const [sortMode, setSortMode] = useState<SortMode>(() => {
+    const s = searchParams.get("sort");
+    if (s === "popular" || s === "rising") return s;
+    return "recent";
   });
   const [search, setSearch] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
