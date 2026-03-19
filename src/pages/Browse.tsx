@@ -157,7 +157,7 @@ const Browse = () => {
   const browseTab = (readParam("tab", "blueprints") as BrowseTab);
   const sortMode = readParam("sort", "recent") as AnySort;
   const search = readParam("q", "");
-  const matchInterests = readParam("for", "") === "me";
+  
 
   // Blueprint filters
   const typeFilters = readParamList("type");
@@ -200,7 +200,6 @@ const Browse = () => {
 
   const setSort = useCallback((sort: string) => setParam("sort", sort), [setParam]);
   const setSearch = useCallback((q: string) => setParam("q", q), [setParam]);
-  const setForMe = useCallback((v: boolean) => setParam("for", v ? "me" : ""), [setParam]);
 
   // ─── Active filter count ─────────────────────────────────
 
@@ -251,25 +250,7 @@ const Browse = () => {
     setSearchParams(sp, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  // ─── Profile data for "For me" ───────────────────────────
 
-  const { data: fullProfile } = useQuery({
-    queryKey: ["browse_profile", profile?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("user_interests, user_ai_tools")
-        .eq("id", profile!.id)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!profile?.id && isLoggedIn,
-  });
-
-  const hasInterests = isLoggedIn && fullProfile && (
-    ((fullProfile as any).user_interests ?? []).length > 0 ||
-    ((fullProfile as any).user_ai_tools ?? []).length > 0
-  );
 
   // ─── BLUEPRINTS data ─────────────────────────────────────
 
@@ -319,13 +300,6 @@ const Browse = () => {
       if (difficultyFilter && item.difficulty !== difficultyFilter) return false;
       if (toolFilters.length > 0 && !toolFilters.some((t) => (item.ai_tools ?? []).includes(t))) return false;
       if (useCaseFilters.length > 0 && !useCaseFilters.some((u) => (item.use_cases ?? []).includes(u))) return false;
-      if (matchInterests && fullProfile) {
-        const interests = (fullProfile as any).user_interests ?? [];
-        const tools = (fullProfile as any).user_ai_tools ?? [];
-        const matchesInterest = (item.use_cases ?? []).some((u: string) => interests.includes(u));
-        const matchesTool = (item.ai_tools ?? []).some((t: string) => tools.includes(t));
-        if (!matchesInterest && !matchesTool) return false;
-      }
       if (microtagFilters.length > 0 && allMicrotagsMap) {
         const itemTags = allMicrotagsMap.get(item.id) ?? [];
         if (!microtagFilters.every((mt) => itemTags.includes(mt))) return false;
@@ -360,7 +334,7 @@ const Browse = () => {
     }
     // recent
     return base.sort((a, b) => new Date(b.approved_at || b.created_at).getTime() - new Date(a.approved_at || a.created_at).getTime());
-  }, [items, search, typeFilters, difficultyFilter, toolFilters, useCaseFilters, matchInterests, fullProfile, microtagFilters, allMicrotagsMap, sortMode, timePeriod]);
+  }, [items, search, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, allMicrotagsMap, sortMode, timePeriod]);
 
   // ─── PROJECTS data ────────────────────────────────────────
 
@@ -760,7 +734,7 @@ const Browse = () => {
         {/* ─── UNIFIED CONTROL BAR ─────────────────────────── */}
 
         {/* ROW 1: Search */}
-        <div className="relative mb-3">
+        <div className="relative mb-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={searchPlaceholder}
@@ -770,27 +744,17 @@ const Browse = () => {
           />
         </div>
 
-        {/* ROW 2: Interest toggle + Sort pills */}
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex gap-1">
-            {hasInterests && (
-              <>
-                <Pill active={!matchInterests} onClick={() => setForMe(false)}>All</Pill>
-                <Pill active={matchInterests} onClick={() => setForMe(true)}>For me</Pill>
-              </>
-            )}
-          </div>
-          <div className="flex gap-1">
-            {sortOptions.map((opt) => (
-              <Pill key={opt.value} active={sortMode === opt.value} onClick={() => setSort(opt.value)}>
-                {opt.label}
-              </Pill>
-            ))}
-          </div>
+        {/* ROW 2: Sort pills */}
+        <div className="flex gap-1 mb-2">
+          {sortOptions.map((opt) => (
+            <Pill key={opt.value} active={sortMode === opt.value} onClick={() => setSort(opt.value)}>
+              {opt.label}
+            </Pill>
+          ))}
         </div>
 
-        {/* ROW 2.5: Time period pills */}
-        <div className="flex gap-1.5 mb-3 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
+        {/* ROW 3: Time period pills */}
+        <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
           {TIME_PERIOD_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -806,7 +770,7 @@ const Browse = () => {
           ))}
         </div>
 
-        {/* ROW 3: Filters button + result count */}
+        {/* ROW 4: Filters button + result count */}
         <div className="flex items-center justify-between mb-2">
           <div className="relative">
             <Button
@@ -924,7 +888,7 @@ const Browse = () => {
                 })}
               </div>
             ) : (
-              <EmptyState search={search} hasFilters={activeFilterCount > 0 || matchInterests} onClear={clearAllFilters} />
+              <EmptyState search={search} hasFilters={activeFilterCount > 0} onClear={clearAllFilters} />
             )}
           </>
         )}
