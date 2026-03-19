@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProjectUploadForm } from "@/components/ProjectUploadForm";
 import { CollabInvitePicker, type CollabInvitee } from "@/components/CollabInvitePicker";
 import { useToast } from "@/hooks/use-toast";
-import { useApprovedToolNames } from "@/hooks/useApprovedTools";
+import { useApprovedToolNames, useGroupedApprovedTools } from "@/hooks/useApprovedTools";
 import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
