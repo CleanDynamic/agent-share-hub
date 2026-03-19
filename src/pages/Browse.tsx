@@ -770,7 +770,7 @@ const Browse = () => {
           ))}
         </div>
 
-        {/* ROW 3: Filters button + result count */}
+        {/* ROW 4: Filters button + result count */}
         <div className="flex items-center justify-between mb-2">
           <div className="relative">
             <Button
