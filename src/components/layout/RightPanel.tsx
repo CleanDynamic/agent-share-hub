@@ -255,7 +255,7 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
           <button
             key={cat.slug}
             onClick={handleClick}
-            className={`text-left rounded-xl cursor-pointer transition-all duration-150 ${isLast ? "col-span-2" : ""} ${
+            className={`text-left rounded-xl cursor-pointer transition-all duration-150 ${
               isActive ? "" : "hover:bg-[rgba(255,255,255,0.04)]"
             }`}
             style={{
