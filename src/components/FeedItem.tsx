@@ -3,9 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Download, Eye, Star, StarHalf, MessageSquare, FolderOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { Download, Eye, Star, StarHalf, MessageSquare, FolderOpen, ChevronDown, ChevronUp, Send as SendIcon } from "lucide-react";
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { FeedItemExpanded } from "@/components/FeedItemExpanded";
+import { ShareToDMModal } from "@/components/dm/ShareToDMModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 /* ---- Helpers ---- */
 
@@ -149,7 +151,9 @@ interface FeedItemProps {
 
 export function FeedItem({ item, rank, context = "home", navState }: FeedItemProps) {
   const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
   const [expanded, setExpanded] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const profile = item.profiles as any;
   const starVal = roundedStars(Number(item.avg_rating) || 0, item.rating_count ?? 0);
   const initials = (profile?.display_name || profile?.username || "?").slice(0, 2).toUpperCase();
@@ -279,6 +283,17 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
                   <span className="inline-flex items-center gap-[3px] shrink-0"><MessageSquare className="h-3 w-3" />{item.comment_count ?? 0}</span>
                 </>
               )}
+              {isLoggedIn && (
+                <>
+                  <span className="text-[#444450] shrink-0">·</span>
+                  <button
+                    onClick={(e) => { stop(e); setShareOpen(true); }}
+                    className="inline-flex items-center gap-[3px] shrink-0 hover:text-foreground transition-colors"
+                  >
+                    <SendIcon className="h-3 w-3" />
+                  </button>
+                </>
+              )}
             </div>
             {canExpand && (
               <button
@@ -308,6 +323,16 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
           </div>
         )}
       </div>
+
+      {/* Share to DM modal */}
+      {shareOpen && (
+        <ShareToDMModal
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          contentId={item.id}
+          contentTitle={item.title}
+        />
+      )}
     </div>
   );
 }
