@@ -283,6 +283,17 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
                   <span className="inline-flex items-center gap-[3px] shrink-0"><MessageSquare className="h-3 w-3" />{item.comment_count ?? 0}</span>
                 </>
               )}
+              {isLoggedIn && (
+                <>
+                  <span className="text-[#444450] shrink-0">·</span>
+                  <button
+                    onClick={(e) => { stop(e); setShareOpen(true); }}
+                    className="inline-flex items-center gap-[3px] shrink-0 hover:text-foreground transition-colors"
+                  >
+                    <SendIcon className="h-3 w-3" />
+                  </button>
+                </>
+              )}
             </div>
             {canExpand && (
               <button
