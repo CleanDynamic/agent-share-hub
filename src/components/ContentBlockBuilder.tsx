@@ -45,6 +45,8 @@ export interface ContentBlock {
   imageDescription: string;
   variations: BlockVariation[];
   isPreview: boolean;
+  externalFileUrl?: string;
+  githubUrl?: string;
 }
 
 interface Props {
