@@ -939,7 +939,8 @@ const Upload = () => {
               return <p className="text-xs text-muted-foreground">Estimated read time: ~{mins} min</p>;
             })()}
 
-            {/* 8. Difficulty */}
+            {/* 8. Difficulty — hidden for Blog */}
+            {!isBlogType && (
             <FormField control={form.control} name="difficulty" render={({ field }) => (
               <FormItem>
                 <FormLabel>Difficulty</FormLabel>
@@ -947,6 +948,15 @@ const Upload = () => {
                   <FormControl>
                     <SelectTrigger className="bg-card border-border rounded-xl"><SelectValue placeholder="Select difficulty" /></SelectTrigger>
                   </FormControl>
+                  <SelectContent className="bg-card border-border">
+                    {DIFFICULTIES.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <FormDescription>Beginner = anyone can use this immediately. Advanced = multiple tools required.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+            )}
                   <SelectContent className="bg-card border-border">
                     {DIFFICULTIES.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                   </SelectContent>
