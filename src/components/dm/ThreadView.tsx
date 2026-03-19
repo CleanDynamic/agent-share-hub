@@ -724,9 +724,6 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button className="p-1.5 text-muted-foreground/50 cursor-not-allowed">
-            <Video className="h-5 w-5" />
-          </button>
           <button
             onClick={() => setInfoOpen(!infoOpen)}
             className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
