@@ -521,6 +521,14 @@ const ContentDetail = () => {
         {/* 3. Title */}
         <h1 className="text-[26px] font-bold text-foreground leading-[1.25] mb-2">{item.title}</h1>
 
+        {/* 3.5 Rating display (read-only, hidden for blogs) */}
+        {item.content_type !== "Blog" && (
+          <RatingDisplay
+            avgRating={Number((item as any).avg_rating) || 0}
+            ratingCount={(item as any).rating_count ?? 0}
+          />
+        )}
+
         {/* 4. Description */}
         {item.description && (
           <p className="text-[15px] text-muted-foreground leading-relaxed mb-3"><MentionText text={item.description} /></p>
