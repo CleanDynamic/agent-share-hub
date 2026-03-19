@@ -20,8 +20,10 @@ const CATEGORIES: { name: string; dbType: string; difficulty: string; slug: stri
   { name: "Evaluation Framework", dbType: "Evaluation Framework", difficulty: "Intermediate", slug: "evaluation-framework" },
   { name: "Agent Stack", dbType: "Agent Stack", difficulty: "Advanced", slug: "agent-stack" },
   { name: "Failure Library", dbType: "Failure Library", difficulty: "Any", slug: "failure-library" },
+  { name: "Blog", dbType: "Blog", difficulty: "Any", slug: "blog" },
   { name: "Projects", dbType: "", difficulty: "Any", slug: "projects", isProject: true },
   { name: "AI Tools (LLMs)", dbType: "AI Tools (LLMs)", difficulty: "Any", slug: "ai-tools-llms" },
+  { name: "Install Guide", dbType: "AI Agent Install Guide", difficulty: "Any", slug: "install-guide" },
 ];
 
 const diffColor: Record<string, string> = {
