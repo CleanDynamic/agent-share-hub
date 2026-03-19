@@ -200,7 +200,6 @@ const Browse = () => {
 
   const setSort = useCallback((sort: string) => setParam("sort", sort), [setParam]);
   const setSearch = useCallback((q: string) => setParam("q", q), [setParam]);
-  const setForMe = useCallback((v: boolean) => setParam("for", v ? "me" : ""), [setParam]);
 
   // ─── Active filter count ─────────────────────────────────
 
