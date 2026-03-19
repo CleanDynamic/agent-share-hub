@@ -40,7 +40,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     { icon: LayoutGrid, label: "Discover", to: "/browse" },
     { icon: Upload, label: "Upload", to: "/upload" },
     { icon: FilePenLine, label: "Drafts", to: "/drafts", authOnly: true, badge: draftBadge },
-    { icon: Bookmark, label: "Saved", to: "/saved", authOnly: true },
+    { icon: Library, label: "Library", to: "/library", authOnly: true },
     
     { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true, badge: msgBadge },
     { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true, badge: notifBadge },

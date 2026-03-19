@@ -67,7 +67,7 @@ export function DependencyDisplay({ contentId }: Props) {
                       <span className="flex items-center gap-0.5 text-[10px] text-amber-400">
                         <AlertTriangle className="h-3 w-3" /> Not saved
                       </span>
-                      <AddToLibraryButton contentId={item.id} contentTitle={item.title} currentVersion={item.current_version} />
+                      <BookmarkButton contentId={item.id} />
                     </>
                   )}
                 </div>
