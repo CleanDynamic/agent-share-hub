@@ -3,7 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Download, Eye, Star, StarHalf, MessageSquare, FolderOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { Download, Eye, Star, StarHalf, MessageSquare, FolderOpen, ChevronDown, ChevronUp, Send as SendIcon } from "lucide-react";
+import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
+import { FeedItemExpanded } from "@/components/FeedItemExpanded";
+import { ShareToDMModal } from "@/components/dm/ShareToDMModal";
+import { useAuth } from "@/contexts/AuthContext";
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { FeedItemExpanded } from "@/components/FeedItemExpanded";
 
