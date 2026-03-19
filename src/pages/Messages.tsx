@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { ThreadView } from "@/components/dm/ThreadView";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 /* ═══════════════════ Helpers ═══════════════════ */
 
@@ -334,6 +335,7 @@ const MessagesPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { count: totalUnread } = useUnreadMessages();
   const selectedThreadId = searchParams.get("thread");
   const recipientParam = searchParams.get("to");
   const enquiryRef = searchParams.get("enquiry_title");
@@ -345,6 +347,13 @@ const MessagesPage = () => {
   const [threadSearch, setThreadSearch] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
   const isMobileView = typeof window !== "undefined" && window.innerWidth < 1024;
+
+  // Browser tab title with unread count
+  useEffect(() => {
+    const title = totalUnread > 0 ? `(${totalUnread > 9 ? "9+" : totalUnread}) Messages — NeoScale AI` : "Messages — NeoScale AI";
+    document.title = title;
+    return () => { document.title = "NeoScale AI"; };
+  }, [totalUnread]);
 
   // Fetch all threads
   const { data: allThreads, isLoading: threadsLoading } = useQuery({
@@ -685,6 +694,29 @@ const MessagesPage = () => {
     }
   };
 
+  /* ═══════════ Pull to Refresh ═══════════ */
+  const [pullRefreshing, setPullRefreshing] = useState(false);
+  const pullStartY = useRef(0);
+  const [pullDelta, setPullDelta] = useState(0);
+
+  const handlePullTouchStart = (e: React.TouchEvent) => {
+    pullStartY.current = e.touches[0].clientY;
+  };
+  const handlePullTouchMove = (e: React.TouchEvent) => {
+    const el = e.currentTarget;
+    if (el.scrollTop > 0) return;
+    const delta = Math.max(0, Math.min(80, e.touches[0].clientY - pullStartY.current));
+    setPullDelta(delta);
+  };
+  const handlePullTouchEnd = async () => {
+    if (pullDelta >= 60 && !pullRefreshing) {
+      setPullRefreshing(true);
+      await queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
+      setPullRefreshing(false);
+    }
+    setPullDelta(0);
+  };
+
   /* ═══════════ Thread List ═══════════ */
   const ThreadList = () => (
     <div className="h-full flex flex-col" style={{ width: isMobileView ? "100%" : 360 }}>
@@ -751,8 +783,18 @@ const MessagesPage = () => {
         </button>
       </div>
 
-      {/* Thread list */}
-      <div className="flex-1 overflow-y-auto">
+      <div
+        className="flex-1 overflow-y-auto"
+        onTouchStart={isMobileView ? handlePullTouchStart : undefined}
+        onTouchMove={isMobileView ? handlePullTouchMove : undefined}
+        onTouchEnd={isMobileView ? handlePullTouchEnd : undefined}
+      >
+        {/* Pull to refresh indicator */}
+        {pullDelta > 0 && (
+          <div className="flex justify-center py-2" style={{ height: pullDelta }}>
+            <Loader2 className={`h-4 w-4 text-muted-foreground ${pullDelta >= 60 ? "animate-spin" : ""}`} />
+          </div>
+        )}
         {activeTab === "requests" && threads.length > 0 && (
           <p className="text-xs text-muted-foreground px-4 py-3">
             These are message requests from people you don't follow.

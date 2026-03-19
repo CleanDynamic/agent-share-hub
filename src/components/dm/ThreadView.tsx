@@ -4,16 +4,41 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, ArrowLeft, Video, Info, X } from "lucide-react";
+import { Loader2, ArrowLeft, Video, Info, X, ChevronDown } from "lucide-react";
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { motion, PanInfo } from "framer-motion";
 import { MessageInputBar } from "./MessageInputBar";
 import { displayContentType } from "@/lib/content-types";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const initials = (name: string) => (name || "?").slice(0, 2).toUpperCase();
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "😡", "🔥"];
+
+/* ═══════ Notification sound via Web Audio API ═══════ */
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    osc.type = "sine";
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.2);
+  } catch {
+    // Audio not available
+  }
+}
+
+function haptic(ms: number) {
+  try { navigator?.vibrate?.(ms); } catch {}
+}
 
 /* ═══════ Date helpers ═══════ */
 function formatMessageTime(dateStr: string): string {
@@ -33,15 +58,16 @@ function dateSeparatorLabel(dateStr: string): string {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function presenceLabel(isOnline: boolean, lastSeenAt: string | null): string {
+function presenceLabel(isOnline: boolean | null, lastSeenAt: string | null): string {
   if (isOnline) return "Active now";
   if (!lastSeenAt) return "";
   const diff = Date.now() - new Date(lastSeenAt).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days > 7) return ""; // Don't show old presence
   const mins = Math.floor(diff / 60000);
   if (mins < 60) return `Active ${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `Active ${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
   return `Active ${days}d ago`;
 }
 
@@ -169,7 +195,6 @@ function ReactionPills({
   const queryClient = useQueryClient();
   if (!reactions || reactions.length === 0) return null;
 
-  // Group reactions by emoji
   const emojiMap = new Map<string, { count: number; hasMe: boolean }>();
   reactions.forEach((r) => {
     const e = emojiMap.get(r.emoji) || { count: 0, hasMe: false };
@@ -179,6 +204,7 @@ function ReactionPills({
   });
 
   const toggleReaction = async (emoji: string) => {
+    haptic(5);
     const entry = emojiMap.get(emoji);
     if (entry?.hasMe) {
       await supabase.from("dm_reactions").delete().eq("message_id", messageId).eq("user_id", userId);
@@ -206,6 +232,80 @@ function ReactionPills({
   );
 }
 
+/* ═══════ Swipeable Message Bubble (mobile swipe-to-reply) ═══════ */
+function SwipeableMessage({
+  children,
+  onSwipeReply,
+  isMobile,
+}: {
+  children: React.ReactNode;
+  onSwipeReply: () => void;
+  isMobile: boolean;
+}) {
+  if (!isMobile) return <>{children}</>;
+
+  const handleDragEnd = (_: any, info: PanInfo) => {
+    if (info.offset.x > 40) {
+      onSwipeReply();
+      haptic(10);
+    }
+  };
+
+  return (
+    <div className="relative overflow-hidden">
+      {/* Reply icon behind */}
+      <div className="absolute inset-y-0 left-0 flex items-center pl-2 text-muted-foreground">
+        <span className="text-sm">↩</span>
+      </div>
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: 0, right: 60 }}
+        dragElastic={0.1}
+        onDragEnd={handleDragEnd}
+        className="relative"
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
+}
+
+/* ═══════ Image Lightbox ═══════ */
+function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
+  const [scale, setScale] = useState(1);
+  const startY = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) startY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const endY = e.changedTouches[0]?.clientY ?? 0;
+    if (endY - startY.current > 80) onClose(); // Swipe down to dismiss
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+      onClick={onClose}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      <button className="absolute top-4 right-4 text-white/80 hover:text-white z-10">
+        <X className="h-8 w-8" />
+      </button>
+      <img
+        src={src}
+        alt=""
+        className="max-w-[90vw] max-h-[90vh] object-contain select-none"
+        style={{ transform: `scale(${scale})`, transition: "transform 0.15s" }}
+        onClick={(e) => e.stopPropagation()}
+        onDoubleClick={() => setScale(s => s === 1 ? 2 : 1)}
+      />
+    </div>
+  );
+}
+
 /* ═══════ Thread View ═══════ */
 
 interface ThreadViewProps {
@@ -224,6 +324,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [replyTo, setReplyTo] = useState<any>(null);
@@ -231,8 +332,10 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [messageOffset, setMessageOffset] = useState(0);
-  const [activeReactionMsgId, setActiveReactionMsgId] = useState<string | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [showNewMsgButton, setShowNewMsgButton] = useState(false);
+  const prevMsgCountRef = useRef(0);
+  const isInitialLoadRef = useRef(true);
   const displayName = otherUser.display_name || otherUser.username || "User";
 
   // Fetch presence
@@ -266,7 +369,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
     enabled: !!threadId,
   });
 
-  // Fetch reactions for messages in view
+  // Fetch reactions
   const messageIds = useMemo(() => (messages ?? []).map((m: any) => m.id), [messages]);
   const { data: allReactions } = useQuery({
     queryKey: ["dm_reactions", threadId, messageIds],
@@ -317,39 +420,81 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
     resetUnread();
   }, [threadId, user, queryClient]);
 
-  // Scroll to bottom on load / new messages
+  // Scroll to bottom — instant on initial load, smooth on new messages
   useEffect(() => {
-    if (messageOffset === 0) {
+    if (!messages) return;
+    const msgCount = messages.length;
+    const isNew = msgCount > prevMsgCountRef.current && prevMsgCountRef.current > 0;
+    prevMsgCountRef.current = msgCount;
+
+    if (isInitialLoadRef.current) {
+      // Instant scroll on mount
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+      isInitialLoadRef.current = false;
+      return;
+    }
+
+    if (messageOffset !== 0) return; // Don't auto-scroll when loading older
+
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+
+    if (isNew && isNearBottom) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    } else if (isNew && !isNearBottom) {
+      setShowNewMsgButton(true);
     }
   }, [messages, messageOffset]);
 
-  // Realtime
+  // Realtime — play sound on incoming messages
   useEffect(() => {
-    if (!threadId) return;
+    if (!threadId || !user) return;
     const channel = supabase
       .channel(`dm-view-${threadId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "dm_messages", filter: `thread_id=eq.${threadId}` }, () => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "dm_messages", filter: `thread_id=eq.${threadId}` }, (payload) => {
         queryClient.invalidateQueries({ queryKey: ["dm_messages", threadId] });
         queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
+        // Play sound for messages from other user
+        const newMsg = payload.new as any;
+        if (newMsg?.sender_id && newMsg.sender_id !== user.id) {
+          playNotificationSound();
+          // Mark as read immediately
+          supabase.from("dm_messages").update({ read_at: new Date().toISOString() }).eq("id", newMsg.id);
+        }
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "dm_reactions" }, () => {
         queryClient.invalidateQueries({ queryKey: ["dm_reactions"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [threadId, queryClient]);
+  }, [threadId, user, queryClient]);
 
   // Load older messages on scroll to top
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el || loadingOlder) return;
+    // Hide new message button if near bottom
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 100) {
+      setShowNewMsgButton(false);
+    }
     if (el.scrollTop < 50 && messages && messages.length >= 50) {
+      const prevScrollHeight = el.scrollHeight;
       setLoadingOlder(true);
       setMessageOffset((prev) => prev + 50);
-      setTimeout(() => setLoadingOlder(false), 500);
+      // Maintain scroll position after loading older
+      requestAnimationFrame(() => {
+        const newScrollHeight = el.scrollHeight;
+        el.scrollTop = newScrollHeight - prevScrollHeight;
+        setLoadingOlder(false);
+      });
     }
   }, [loadingOlder, messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setShowNewMsgButton(false);
+  };
 
   // Find last sent message for seen receipt
   const lastSentMsg = useMemo(() => {
@@ -360,7 +505,6 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
     return null;
   }, [messages, user]);
 
-  // Reply to message reference
   const replyToRef = useCallback((messageId: string) => {
     if (!messages) return null;
     return messages.find((m: any) => m.id === messageId) || null;
@@ -368,6 +512,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
 
   const handleReaction = async (messageId: string, emoji: string) => {
     if (!user) return;
+    haptic(5);
     const existing = (allReactions ?? []).find((r: any) => r.message_id === messageId && r.user_id === user.id);
     if (existing && existing.emoji === emoji) {
       await supabase.from("dm_reactions").delete().eq("id", existing.id);
@@ -378,7 +523,6 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
       );
     }
     queryClient.invalidateQueries({ queryKey: ["dm_reactions"] });
-    setActiveReactionMsgId(null);
   };
 
   const handleUnsend = async (messageId: string) => {
@@ -395,20 +539,11 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
   const renderMessage = (msg: any, idx: number, allMsgs: any[]) => {
     const isMine = msg.sender_id === user?.id;
     const prevMsg = idx > 0 ? allMsgs[idx - 1] : null;
-    const nextMsg = idx < allMsgs.length - 1 ? allMsgs[idx + 1] : null;
 
-    // Date separator
     const showDate = !prevMsg || dateSeparatorLabel(msg.sent_at) !== dateSeparatorLabel(prevMsg.sent_at);
-
-    // Avatar: show for received messages that are first in consecutive sequence
     const showAvatar = !isMine && (!prevMsg || prevMsg.sender_id !== msg.sender_id || showDate);
-
-    // Is last sent message (for seen receipt)
     const isLastSent = lastSentMsg?.id === msg.id;
-
-    // Reply reference
     const repliedMsg = msg.reply_to_message_id ? replyToRef(msg.reply_to_message_id) : null;
-
     const reactions = reactionsByMessage.get(msg.id) || [];
     const showingTimestamp = showTimestampId === msg.id;
 
@@ -472,9 +607,8 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
       </>
     );
 
-    return (
+    const bubble = (
       <div key={msg.id}>
-        {/* Date separator */}
         {showDate && (
           <div className="flex justify-center my-4">
             <span className="text-[12px] text-muted-foreground bg-background px-3 py-1 rounded-full">
@@ -483,9 +617,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
           </div>
         )}
 
-        {/* Message row */}
         <div className={`flex ${isMine ? "justify-end" : "justify-start"} mb-0.5 group`}>
-          {/* Avatar space for received */}
           {!isMine && (
             <div className="w-7 shrink-0 mr-1.5 self-end">
               {showAvatar && (
@@ -500,28 +632,22 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
           )}
 
           <div className="max-w-[75%] relative">
-            {/* Reply quote */}
             {repliedMsg && (
               <div className="mb-1 pl-2 border-l-2 border-muted-foreground/30 text-[12px] text-muted-foreground truncate max-w-full">
                 ↩ {repliedMsg.sender_id === user?.id ? "You" : displayName}: {repliedMsg.text_content?.slice(0, 60) || "Media"}
               </div>
             )}
 
-            {/* Bubble with context menu */}
             <ContextMenu>
               <ContextMenuTrigger>
                 <div
                   className={`${bubbleClasses()} ${bubbleRadius} ${paddingClass} cursor-pointer`}
                   onClick={() => setShowTimestampId(showingTimestamp ? null : msg.id)}
-                  onTouchStart={() => {
-                    // Long press for reaction picker on mobile handled by context menu
-                  }}
                 >
                   {bubbleContent()}
                 </div>
               </ContextMenuTrigger>
               <ContextMenuContent className="bg-card/95 backdrop-blur-md border-border">
-                {/* Reaction picker */}
                 <div className="flex gap-1 px-2 py-1.5 border-b border-border">
                   {QUICK_REACTIONS.map((emoji) => (
                     <button
@@ -537,7 +663,6 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
               </ContextMenuContent>
             </ContextMenu>
 
-            {/* Reactions */}
             <ReactionPills
               messageId={msg.id}
               reactions={reactions}
@@ -545,14 +670,12 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
               userId={user?.id ?? ""}
             />
 
-            {/* Timestamp on tap */}
             {showingTimestamp && (
               <p className={`text-[10px] text-muted-foreground mt-0.5 ${isMine ? "text-right" : "text-left"}`}>
                 {formatMessageTime(msg.sent_at)}
               </p>
             )}
 
-            {/* Seen receipt — tiny avatar below last sent message */}
             {isLastSent && msg.read_at && (
               <div className="flex justify-end mt-0.5">
                 <Avatar className="h-3.5 w-3.5">
@@ -566,6 +689,16 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
           </div>
         </div>
       </div>
+    );
+
+    return (
+      <SwipeableMessage
+        key={msg.id}
+        onSwipeReply={() => setReplyTo(msg)}
+        isMobile={isMobile}
+      >
+        {bubble}
+      </SwipeableMessage>
     );
   };
 
@@ -584,7 +717,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
         </Avatar>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-foreground truncate">{displayName}</p>
-          {presence && (
+          {presence && presenceLabel(presence.is_online, presence.last_seen_at) && (
             <p className={`text-[12px] ${presence.is_online ? "text-[#22C55E]" : "text-muted-foreground"}`}>
               {presenceLabel(presence.is_online, presence.last_seen_at)}
             </p>
@@ -603,7 +736,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
         </div>
       </div>
 
-      {/* Info panel overlay */}
+      {/* Info panel */}
       {infoOpen && (
         <div className="border-b border-border bg-card p-4 shrink-0">
           <div className="flex items-center gap-3 mb-3">
@@ -629,7 +762,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 py-4"
+        className="flex-1 overflow-y-auto px-4 py-4 relative"
       >
         {loadingOlder && (
           <div className="flex justify-center py-3">
@@ -650,6 +783,16 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
         <div ref={messagesEndRef} />
       </div>
 
+      {/* New message floating button */}
+      {showNewMsgButton && (
+        <button
+          onClick={scrollToBottom}
+          className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-lg"
+        >
+          New message <ChevronDown className="h-3 w-3" />
+        </button>
+      )}
+
       {/* Reply preview bar */}
       {replyTo && (
         <div className="flex items-center gap-2 px-3 py-2 border-t border-border bg-[#111118] shrink-0">
@@ -662,28 +805,23 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
         </div>
       )}
 
-      {/* Input bar */}
-      <MessageInputBar
-        threadId={threadId}
-        otherDisplayName={displayName}
-        replyToId={replyTo?.id || null}
-        onClearReply={() => setReplyTo(null)}
-        onMessageSent={() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-        }}
-      />
+      {/* Input bar with safe area */}
+      <div style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <MessageInputBar
+          threadId={threadId}
+          otherDisplayName={displayName}
+          replyToId={replyTo?.id || null}
+          onClearReply={() => setReplyTo(null)}
+          onMessageSent={() => {
+            haptic(10);
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+          }}
+        />
+      </div>
 
       {/* Image lightbox */}
       {imagePreview && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-          onClick={() => setImagePreview(null)}
-        >
-          <button className="absolute top-4 right-4 text-white/80 hover:text-white">
-            <X className="h-8 w-8" />
-          </button>
-          <img src={imagePreview} alt="" className="max-w-[90vw] max-h-[90vh] object-contain" />
-        </div>
+        <ImageLightbox src={imagePreview} onClose={() => setImagePreview(null)} />
       )}
     </div>
   );

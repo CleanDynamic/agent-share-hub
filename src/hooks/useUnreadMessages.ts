@@ -9,23 +9,28 @@ export function useUnreadMessages() {
   const refresh = useCallback(async () => {
     if (!isLoggedIn || !user) { setCount(0); return; }
 
-    // Sum unread counts from dm_threads where user is a participant
     const { data, error } = await supabase
       .from("dm_threads")
-      .select("participant_a, unread_count_a, unread_count_b")
+      .select("participant_a, unread_count_a, unread_count_b, is_deleted_a, is_deleted_b, request_status")
       .or(`participant_a.eq.${user.id},participant_b.eq.${user.id}`);
 
     if (error || !data) { setCount(0); return; }
 
     let total = 0;
     for (const t of data as any[]) {
-      total += t.participant_a === user.id ? (t.unread_count_a ?? 0) : (t.unread_count_b ?? 0);
+      const isA = t.participant_a === user.id;
+      // Only count accepted, non-deleted threads
+      if (t.request_status !== "accepted") continue;
+      if (isA && t.is_deleted_a) continue;
+      if (!isA && t.is_deleted_b) continue;
+      total += isA ? (t.unread_count_a ?? 0) : (t.unread_count_b ?? 0);
     }
     setCount(total);
   }, [isLoggedIn, user]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  // Refresh on window focus
   useEffect(() => {
     const handler = () => refresh();
     window.addEventListener("focus", handler);
