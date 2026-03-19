@@ -265,8 +265,6 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
                 </div>
               );
             })}
-
-            <div className="border-t border-border my-3" />
           </nav>
 
           {/* Sign out at bottom */}
