@@ -507,6 +507,8 @@ const Browse = () => {
         if (!dbTypes.some((dt) => types.includes(dt))) return false;
       }
 
+      if (timePeriod && !isWithinPeriod(col.created_at, timePeriod)) return false;
+
       return true;
     });
 
