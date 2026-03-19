@@ -646,9 +646,11 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
 
   return (
     <div className="space-y-3">
-      <Label className="text-sm font-medium">Your Blueprint</Label>
+      <Label className="text-sm font-medium">{contentType === "Blog" ? "Your Blog Post" : "Your Blueprint"}</Label>
       <p className="text-xs text-muted-foreground -mt-1">
-        Build your blueprint using text, file, and image blocks. Reorder as needed.
+        {contentType === "Blog"
+          ? "Write your blog post using text, image, and file blocks."
+          : "Build your blueprint using text, file, and image blocks. Reorder as needed."}
       </p>
 
       {/* Block list */}
