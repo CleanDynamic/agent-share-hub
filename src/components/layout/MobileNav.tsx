@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Home, Search, Upload, Clock, User, X, LayoutGrid,
-  Heart, Bookmark, Info, Settings, UserPlus, MoreHorizontal, LogOut, Bell, MessageCircle, MoreVertical, BarChart3, FilePenLine,
+  Home, Search, Upload, User, X, LayoutGrid,
+  Heart, Library, Info, Settings, UserPlus, MoreHorizontal, LogOut, Bell, MessageCircle, MoreVertical, BarChart3, FilePenLine,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -180,7 +180,7 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
     { icon: LayoutGrid, label: "Discover", to: "/browse" },
     
     { icon: Heart, label: "For You", to: "/fyp", authOnly: true, badge: fypBadge },
-    { icon: Bookmark, label: "Bookmarks", to: "/saved", authOnly: true },
+    { icon: Library, label: "Library", to: "/library", authOnly: true },
     { icon: FilePenLine, label: "Drafts", to: "/drafts", authOnly: true },
     
     { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true },

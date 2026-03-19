@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Home, LayoutGrid, Upload, Bookmark, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, FilePenLine,
+  Home, LayoutGrid, Upload, Library, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, FilePenLine,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     { icon: LayoutGrid, label: "Discover", to: "/browse" },
     { icon: Upload, label: "Upload", to: "/upload" },
     { icon: FilePenLine, label: "Drafts", to: "/drafts", authOnly: true, badge: draftBadge },
-    { icon: Bookmark, label: "Saved", to: "/saved", authOnly: true },
+    { icon: Library, label: "Library", to: "/library", authOnly: true },
     
     { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true, badge: msgBadge },
     { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true, badge: notifBadge },
@@ -105,7 +105,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                   {item.badge}
                 </span>
               )}
-              {item.to === "/saved" && hasUnseenSaves && !item.badge && (
+              {item.to === "/library" && hasUnseenSaves && !item.badge && (
                 <span className={`${collapsed ? "absolute top-1 right-1" : "ml-auto"} h-2 w-2 rounded-full bg-primary`} />
               )}
             </Link>

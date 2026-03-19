@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
-import { AddToLibraryButton } from "@/components/AddToLibraryButton";
+import { BookmarkButton } from "@/components/BookmarkButton";
 import { CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
 
 import { TYPE_COLORS } from "@/lib/content-types";
@@ -67,7 +67,7 @@ export function DependencyDisplay({ contentId }: Props) {
                       <span className="flex items-center gap-0.5 text-[10px] text-amber-400">
                         <AlertTriangle className="h-3 w-3" /> Not saved
                       </span>
-                      <AddToLibraryButton contentId={item.id} contentTitle={item.title} currentVersion={item.current_version} />
+                      <BookmarkButton contentId={item.id} />
                     </>
                   )}
                 </div>

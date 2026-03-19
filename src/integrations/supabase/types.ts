@@ -1486,6 +1486,44 @@ export type Database = {
           },
         ]
       }
+      library_folders: {
+        Row: {
+          created_at: string
+          emoji: string | null
+          id: string
+          item_count: number
+          name: string
+          position: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          item_count?: number
+          name: string
+          position?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          item_count?: number
+          name?: string
+          position?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_folders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           id: string
@@ -2131,25 +2169,31 @@ export type Database = {
         Row: {
           added_at: string | null
           content_id: string
+          folder_id: string | null
           has_update: boolean | null
           id: string
           last_seen_version: string | null
+          project_id: string | null
           user_id: string
         }
         Insert: {
           added_at?: string | null
           content_id: string
+          folder_id?: string | null
           has_update?: boolean | null
           id?: string
           last_seen_version?: string | null
+          project_id?: string | null
           user_id: string
         }
         Update: {
           added_at?: string | null
           content_id?: string
+          folder_id?: string | null
           has_update?: boolean | null
           id?: string
           last_seen_version?: string | null
+          project_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -2158,6 +2202,20 @@ export type Database = {
             columns: ["content_id"]
             isOneToOne: false
             referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_library_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "library_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_library_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {

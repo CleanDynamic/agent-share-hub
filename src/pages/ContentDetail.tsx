@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { AddToCollectionButton } from "@/components/AddToCollectionButton";
-import { AddToLibraryButton } from "@/components/AddToLibraryButton";
 
 import { TipSelector } from "@/components/TipSelector";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
@@ -684,7 +683,6 @@ const ContentDetail = () => {
 
             {/* Right: action buttons */}
             <div className="flex flex-wrap items-center gap-2">
-              <AddToLibraryButton contentId={item.id} currentVersion={item.current_version} contentTitle={item.title} variant="icon" />
               <BookmarkButton contentId={item.id} />
               <AddToCollectionButton contentId={item.id} contentTitle={item.title} />
             </div>

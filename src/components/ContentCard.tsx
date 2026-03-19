@@ -13,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { AddToCollectionButton } from "@/components/AddToCollectionButton";
-import { AddToLibraryButton } from "@/components/AddToLibraryButton";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
 import { AccountGateModal } from "@/components/AccountGateModal";
 import { useAuth } from "@/contexts/AuthContext";
@@ -206,11 +205,10 @@ export function ContentCard({
         onClick={() => navigate(`/content/${id}`)}
         className="relative w-full text-left border border-border rounded-xl p-5 bg-card hover:border-primary/40 transition-colors flex flex-col group cursor-pointer"
       >
-        {/* Actions — library + bookmark + collection */}
+        {/* Actions — bookmark + collection */}
         <div className="absolute top-2 right-2 z-10 flex items-center gap-0.5 min-h-[44px]">
-          <AddToLibraryButton contentId={id} contentTitle={title} />
-          <AddToCollectionButton contentId={id} contentTitle={title} />
           <BookmarkButton contentId={id} />
+          <AddToCollectionButton contentId={id} contentTitle={title} />
         </div>
         {/* Top row */}
         <div className="flex items-start justify-between mb-3 pr-6">
