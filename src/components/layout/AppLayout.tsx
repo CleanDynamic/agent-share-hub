@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { LeftPanel } from "./LeftPanel";
 import { RightPanel } from "./RightPanel";
 import { MobileNav } from "./MobileNav";
@@ -8,12 +8,14 @@ import { useIsTablet } from "@/hooks/use-tablet";
 export function AppLayout() {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
+  const location = useLocation();
+  const isMessagesRoute = location.pathname === "/messages";
 
   if (isMobile) {
     return (
       <div className="min-h-screen bg-background">
         <MobileNav />
-        <main className="overflow-y-auto" style={{ paddingTop: 56, paddingBottom: "calc(56px + env(safe-area-inset-bottom))" }}>
+        <main className="overflow-y-auto" style={{ paddingTop: 56, paddingBottom: isMessagesRoute ? 0 : "calc(56px + env(safe-area-inset-bottom))" }}>
           <Outlet />
         </main>
       </div>
@@ -21,6 +23,7 @@ export function AppLayout() {
   }
 
   const collapsed = isTablet;
+  const hideRightPanel = isTablet || isMessagesRoute;
 
   return (
     <div className="flex h-screen w-full justify-center bg-background">
@@ -32,11 +35,17 @@ export function AppLayout() {
           <LeftPanel collapsed={collapsed} />
         </aside>
 
-        <main className="flex-1 overflow-y-auto" style={{ maxWidth: isTablet ? undefined : 600, margin: isTablet ? undefined : "0 auto" }}>
+        <main
+          className="flex-1 overflow-y-auto"
+          style={{
+            maxWidth: isMessagesRoute ? undefined : (isTablet ? undefined : 600),
+            margin: isMessagesRoute ? undefined : (isTablet ? undefined : "0 auto"),
+          }}
+        >
           <Outlet />
         </main>
 
-        {!isTablet && (
+        {!hideRightPanel && (
           <aside className="h-screen shrink-0 overflow-y-auto border-l border-border" style={{ width: 350 }}>
             <RightPanel />
           </aside>
