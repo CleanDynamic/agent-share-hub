@@ -907,7 +907,7 @@ const Browse = () => {
                 })}
               </div>
             ) : (
-              <EmptyState search={search} hasFilters={activeFilterCount > 0 || matchInterests} onClear={clearAllFilters} />
+              <EmptyState search={search} hasFilters={activeFilterCount > 0} onClear={clearAllFilters} />
             )}
           </>
         )}
