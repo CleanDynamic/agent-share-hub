@@ -788,6 +788,23 @@ const Browse = () => {
           </div>
         </div>
 
+        {/* ROW 2.5: Time period pills */}
+        <div className="flex gap-1.5 mb-3 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
+          {TIME_PERIOD_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setParam("period", opt.value)}
+              className={`px-2.5 h-7 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
+                timePeriod === opt.value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-accent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         {/* ROW 3: Filters button + result count */}
         <div className="flex items-center justify-between mb-2">
           <div className="relative">
