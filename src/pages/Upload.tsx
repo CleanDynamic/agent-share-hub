@@ -927,7 +927,17 @@ const Upload = () => {
             {!isBlogType && <WhatToExpectBuilder blocks={wteBlocks} onChange={setWteBlocks} />}
 
             {/* 7. Your Blueprint (content block builder) */}
-            <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} />
+            <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} contentType={watchedContentType} />
+
+            {/* Blog: estimated read time */}
+            {isBlogType && (() => {
+              const wordCount = contentBlocks.reduce((sum, b) => {
+                if (b.type === "text" || b.type === "long_text") return sum + (b.textContent?.split(/\s+/).filter(Boolean).length ?? 0);
+                return sum;
+              }, 0);
+              const mins = Math.max(1, Math.round(wordCount / 200));
+              return <p className="text-xs text-muted-foreground">Estimated read time: ~{mins} min</p>;
+            })()}
 
             {/* 8. Difficulty */}
             <FormField control={form.control} name="difficulty" render={({ field }) => (
