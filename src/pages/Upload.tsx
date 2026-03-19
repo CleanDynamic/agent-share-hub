@@ -957,16 +957,9 @@ const Upload = () => {
               </FormItem>
             )} />
             )}
-                  <SelectContent className="bg-card border-border">
-                    {DIFFICULTIES.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <FormDescription>Beginner = anyone can use this immediately. Advanced = multiple tools required.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
 
-            {/* 9. AI Tools Required — grouped by category */}
+            {/* 9. AI Tools Required — hidden for Blog */}
+            {!isBlogType && (
             <FormField control={form.control} name="ai_tools" render={() => (
               <FormItem>
                 <FormLabel>AI Tools Required</FormLabel>
