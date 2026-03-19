@@ -15,7 +15,7 @@ const PAGE_SIZE = 20;
 
 type FeedEntry = { _feedType: "blueprint" | "collection" | "project"; _sortDate: number; [key: string]: any };
 
-function renderFeedEntry(entry: FeedEntry) {
+function renderFeedEntry(entry: any) {
   if (entry._feedType === "collection") return <CollectionFeedCard key={`col-${entry.id}`} item={entry} />;
   if (entry._feedType === "project") return <ProjectFeedCard key={`proj-${entry.id}`} item={entry} />;
   return <FeedItem key={entry.id} item={entry} />;
