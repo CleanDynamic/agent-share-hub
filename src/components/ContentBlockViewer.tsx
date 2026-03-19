@@ -174,12 +174,12 @@ function RenderBlockContent({
     if (isLong) {
       const paragraphs = text.split("\n\n").filter(Boolean);
       return (
-        <div className="max-w-prose" style={{ lineHeight: 1.8 }}>
+        <div className="max-w-full" style={{ lineHeight: isBlogContent ? 1.85 : 1.8 }}>
           {paragraphs.map((p, i) => {
             if (p.startsWith("# ") || (formatting?.type === "heading" && i === 0)) {
-              return <h3 key={i} className="text-lg font-bold text-foreground mt-4 mb-2">{p.replace(/^#\s*/, "")}</h3>;
+              return <h3 key={i} className={`font-bold text-foreground mt-4 mb-2 ${isBlogContent ? "text-xl" : "text-lg"}`}>{p.replace(/^#\s*/, "")}</h3>;
             }
-            return <p key={i} className="text-sm text-muted-foreground mb-[1.2em] whitespace-pre-wrap"><MentionText text={p} /></p>;
+            return <p key={i} className={`text-muted-foreground whitespace-pre-wrap ${isBlogContent ? "text-base mb-[1.4em]" : "text-sm mb-[1.2em]"}`}><MentionText text={p} /></p>;
           })}
         </div>
       );
