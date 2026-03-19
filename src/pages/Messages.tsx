@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { ThreadView } from "@/components/dm/ThreadView";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 /* ═══════════════════ Helpers ═══════════════════ */
 
