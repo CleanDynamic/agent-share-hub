@@ -335,6 +335,7 @@ const MessagesPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { count: totalUnread } = useUnreadMessages();
   const selectedThreadId = searchParams.get("thread");
   const recipientParam = searchParams.get("to");
   const enquiryRef = searchParams.get("enquiry_title");
@@ -346,6 +347,13 @@ const MessagesPage = () => {
   const [threadSearch, setThreadSearch] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
   const isMobileView = typeof window !== "undefined" && window.innerWidth < 1024;
+
+  // Browser tab title with unread count
+  useEffect(() => {
+    const title = totalUnread > 0 ? `(${totalUnread > 9 ? "9+" : totalUnread}) Messages — NeoScale AI` : "Messages — NeoScale AI";
+    document.title = title;
+    return () => { document.title = "NeoScale AI"; };
+  }, [totalUnread]);
 
   // Fetch all threads
   const { data: allThreads, isLoading: threadsLoading } = useQuery({
