@@ -33,6 +33,33 @@ type ProjectSort = "recent" | "most-stars" | "rising";
 type CollectionSort = "recent" | "most-stars" | "largest";
 type AnySort = BlueprintSort | ProjectSort | CollectionSort;
 
+type TimePeriod = "1h" | "24h" | "7d" | "1m" | "3m" | "";
+const TIME_PERIOD_OPTIONS: { value: TimePeriod; label: string }[] = [
+  { value: "1h", label: "1 hour" },
+  { value: "24h", label: "24 hours" },
+  { value: "7d", label: "7 days" },
+  { value: "1m", label: "1 month" },
+  { value: "3m", label: "3 months" },
+  { value: "", label: "Any time" },
+];
+const PERIOD_MS: Record<string, number> = {
+  "1h": 3600000,
+  "24h": 86400000,
+  "7d": 7 * 86400000,
+  "1m": 30 * 86400000,
+  "3m": 90 * 86400000,
+};
+const PERIOD_LABELS: Record<string, string> = {
+  "1h": "1 hour", "24h": "24 hours", "7d": "7 days", "1m": "1 month", "3m": "3 months",
+};
+
+function isWithinPeriod(dateStr: string | null, period: string): boolean {
+  if (!period || !dateStr) return true;
+  const ms = PERIOD_MS[period];
+  if (!ms) return true;
+  return Date.now() - new Date(dateStr).getTime() <= ms;
+}
+
 // Slug helpers
 const TYPE_TO_SLUG: Record<string, string> = {};
 Object.entries(SLUG_TO_TYPE).forEach(([slug, type]) => { TYPE_TO_SLUG[type] = slug; });
@@ -143,6 +170,9 @@ const Browse = () => {
   const sizeFilter = readParam("size", "");
   const containsFilters = readParamList("contains");
 
+  // Time period (all tabs)
+  const timePeriod = readParam("period", "") as TimePeriod;
+
   // Setter that updates URL params
   const setParam = useCallback((key: string, value: string) => {
     const sp = new URLSearchParams(searchParams);
@@ -175,19 +205,21 @@ const Browse = () => {
   // ─── Active filter count ─────────────────────────────────
 
   const activeFilterCount = useMemo(() => {
+    const tp = timePeriod ? 1 : 0;
     if (browseTab === "blueprints") {
-      return typeFilters.length + (difficultyFilter ? 1 : 0) + toolFilters.length + useCaseFilters.length + microtagFilters.length;
+      return typeFilters.length + (difficultyFilter ? 1 : 0) + toolFilters.length + useCaseFilters.length + microtagFilters.length + tp;
     }
     if (browseTab === "projects") {
-      return containsFilters.length + (sizeFilter ? 1 : 0) + (difficultyFilter ? 1 : 0);
+      return containsFilters.length + (sizeFilter ? 1 : 0) + (difficultyFilter ? 1 : 0) + tp;
     }
     // collections
-    return containsFilters.length + (sizeFilter ? 1 : 0);
-  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter]);
+    return containsFilters.length + (sizeFilter ? 1 : 0) + tp;
+  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter, timePeriod]);
 
   // Active filter chips
   const activeChips = useMemo(() => {
     const chips: { label: string; key: string; value: string }[] = [];
+    if (timePeriod) chips.push({ label: PERIOD_LABELS[timePeriod] || timePeriod, key: "period", value: timePeriod });
     if (browseTab === "blueprints") {
       typeFilters.forEach((t) => chips.push({ label: displayContentType(SLUG_TO_TYPE[t] || t), key: "type", value: t }));
       if (difficultyFilter) chips.push({ label: difficultyFilter, key: "difficulty", value: difficultyFilter });
@@ -203,10 +235,10 @@ const Browse = () => {
       if (sizeFilter) chips.push({ label: sizeFilter, key: "size", value: sizeFilter });
     }
     return chips;
-  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter]);
+  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter, timePeriod]);
 
   const removeChip = useCallback((chip: { key: string; value: string }) => {
-    if (chip.key === "difficulty" || chip.key === "size") {
+    if (chip.key === "difficulty" || chip.key === "size" || chip.key === "period") {
       setParam(chip.key, "");
     } else {
       toggleListParam(chip.key, chip.value);
@@ -215,7 +247,7 @@ const Browse = () => {
 
   const clearAllFilters = useCallback(() => {
     const sp = new URLSearchParams(searchParams);
-    ["type", "difficulty", "tool", "usecase", "tags", "size", "contains"].forEach((k) => sp.delete(k));
+    ["type", "difficulty", "tool", "usecase", "tags", "size", "contains", "period"].forEach((k) => sp.delete(k));
     setSearchParams(sp, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -298,6 +330,7 @@ const Browse = () => {
         const itemTags = allMicrotagsMap.get(item.id) ?? [];
         if (!microtagFilters.every((mt) => itemTags.includes(mt))) return false;
       }
+      if (timePeriod && !isWithinPeriod(item.approved_at || item.created_at, timePeriod)) return false;
       return true;
     });
 
@@ -327,7 +360,7 @@ const Browse = () => {
     }
     // recent
     return base.sort((a, b) => new Date(b.approved_at || b.created_at).getTime() - new Date(a.approved_at || a.created_at).getTime());
-  }, [items, search, typeFilters, difficultyFilter, toolFilters, useCaseFilters, matchInterests, fullProfile, microtagFilters, allMicrotagsMap, sortMode]);
+  }, [items, search, typeFilters, difficultyFilter, toolFilters, useCaseFilters, matchInterests, fullProfile, microtagFilters, allMicrotagsMap, sortMode, timePeriod]);
 
   // ─── PROJECTS data ────────────────────────────────────────
 
@@ -383,6 +416,8 @@ const Browse = () => {
         if (!dbTypes.some((dt) => types.includes(dt))) return false;
       }
 
+      if (timePeriod && !isWithinPeriod(p.created_at, timePeriod)) return false;
+
       return true;
     });
 
@@ -409,7 +444,7 @@ const Browse = () => {
     }
     // recent
     return base.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [projects, search, sizeFilter, containsFilters, projectContentItems, sortMode]);
+  }, [projects, search, sizeFilter, containsFilters, projectContentItems, sortMode, timePeriod]);
 
   // ─── COLLECTIONS data ─────────────────────────────────────
 
@@ -473,6 +508,8 @@ const Browse = () => {
         if (!dbTypes.some((dt) => types.includes(dt))) return false;
       }
 
+      if (timePeriod && !isWithinPeriod(col.created_at, timePeriod)) return false;
+
       return true;
     });
 
@@ -496,7 +533,7 @@ const Browse = () => {
     }
     // recent
     return base.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [collections, search, sizeFilter, containsFilters, collectionItemsData, sortMode]);
+  }, [collections, search, sizeFilter, containsFilters, collectionItemsData, sortMode, timePeriod]);
 
   // ─── Sort options per tab ─────────────────────────────────
 
@@ -750,6 +787,23 @@ const Browse = () => {
               </Pill>
             ))}
           </div>
+        </div>
+
+        {/* ROW 2.5: Time period pills */}
+        <div className="flex gap-1.5 mb-3 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
+          {TIME_PERIOD_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setParam("period", opt.value)}
+              className={`px-2.5 h-7 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
+                timePeriod === opt.value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-accent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
 
         {/* ROW 3: Filters button + result count */}
