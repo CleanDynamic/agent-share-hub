@@ -5,11 +5,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
 import { FeedItem, timeAgo } from "@/components/FeedItem";
+import { CollectionFeedCard } from "@/components/CollectionFeedCard";
+import { ProjectFeedCard } from "@/components/ProjectFeedCard";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Download, Loader2, Upload, Search as SearchIcon } from "lucide-react";
 
 const PAGE_SIZE = 20;
+
+type FeedEntry = { _feedType: "blueprint" | "collection" | "project"; _sortDate: number; [key: string]: any };
+
+function renderFeedEntry(entry: FeedEntry) {
+  if (entry._feedType === "collection") return <CollectionFeedCard key={`col-${entry.id}`} item={entry} />;
+  if (entry._feedType === "project") return <ProjectFeedCard key={`proj-${entry.id}`} item={entry} />;
+  return <FeedItem key={entry.id} item={entry} />;
+}
 
 /* ---- Sign-in prompt ---- */
 function SignInPrompt() {
