@@ -120,6 +120,7 @@ const Upload = () => {
 
   const watchedContentType = form.watch("content_type");
   const isAIToolsType = watchedContentType === "AI Tools (LLMs)";
+  const isBlogType = watchedContentType === "Blog";
   const watchedAiTools = form.watch("ai_tools");
   const isOtherSelected = watchedAiTools?.includes("Other");
 
