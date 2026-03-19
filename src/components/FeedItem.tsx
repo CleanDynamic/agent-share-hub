@@ -8,8 +8,6 @@ import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { FeedItemExpanded } from "@/components/FeedItemExpanded";
 import { ShareToDMModal } from "@/components/dm/ShareToDMModal";
 import { useAuth } from "@/contexts/AuthContext";
-import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
-import { FeedItemExpanded } from "@/components/FeedItemExpanded";
 
 /* ---- Helpers ---- */
 
