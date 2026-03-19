@@ -26,6 +26,8 @@ interface BlockRow {
   image_url: string | null;
   image_description: string | null;
   is_preview: boolean;
+  external_file_url: string | null;
+  github_url: string | null;
 }
 
 interface VariationRow {
