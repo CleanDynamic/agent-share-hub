@@ -24,7 +24,7 @@ import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
-import Saved from "./pages/Saved";
+import LibraryPage from "./pages/Library";
 import Feed from "./pages/Feed";
 import MyUploads from "./pages/MyUploads";
 import RecentPage from "./pages/Recent";
