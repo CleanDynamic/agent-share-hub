@@ -70,6 +70,7 @@ const Upload = () => {
   const draftId = searchParams.get("draft");
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
+  const { groups: toolGroups } = useGroupedApprovedTools();
   const [uploadType, setUploadType] = useState<"single" | "project">("single");
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([emptyBlock("text")]);
   const [wteBlocks, setWteBlocks] = useState<WteBlock[]>([]);
