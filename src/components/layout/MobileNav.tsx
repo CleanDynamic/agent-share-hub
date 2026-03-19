@@ -322,6 +322,8 @@ export function MobileNav() {
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const isMessagesThread = location.pathname === "/messages" && (searchParams.has("thread") || searchParams.has("recipient"));
   const navigate = useNavigate();
   const { isLoggedIn, profile, user } = useAuth();
   const recentBadge = useRecentBadge();
