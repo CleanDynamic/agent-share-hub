@@ -175,20 +175,25 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
     });
   }, [user?.id]);
 
-  const navItems = [
+  type MobileNavItem = { icon: any; label: string; to: string; authOnly?: boolean; badge?: string | null; divider?: boolean };
+  const navItems: MobileNavItem[] = [
+    // Identity
     { icon: User, label: "Profile", to: "/profile", authOnly: true },
+    // Discovery
+    { icon: Home, label: "Home", to: "/", divider: true },
     { icon: LayoutGrid, label: "Discover", to: "/browse" },
-    
-    { icon: Heart, label: "For You", to: "/fyp", authOnly: true, badge: fypBadge },
     { icon: Library, label: "Library", to: "/library", authOnly: true },
+    // Creation
+    { icon: Upload, label: "Upload", to: "/upload", divider: true },
     { icon: FilePenLine, label: "Drafts", to: "/drafts", authOnly: true },
-    
-    { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true },
+    // Communication
+    { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true, divider: true },
     { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true },
-    { icon: Upload, label: "Upload", to: "/upload" },
-    ...(isLoggedIn && profile?.is_creator ? [{ icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true }] : []),
+    // Account
+    ...(isLoggedIn && profile?.is_creator ? [{ icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true, divider: true } as MobileNavItem] : [{ divider: true } as MobileNavItem]),
+    ...(!isLoggedIn || !profile?.is_creator ? [{ icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true } as MobileNavItem] : []),
     { icon: Info, label: "About", to: "/about" },
-  ].filter((item) => !item.authOnly || isLoggedIn);
+  ].filter((item) => (!item.authOnly || isLoggedIn) && item.label);
 
   return (
     <>

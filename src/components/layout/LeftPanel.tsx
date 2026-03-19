@@ -19,6 +19,7 @@ interface NavItem {
   to: string;
   authOnly?: boolean;
   badge?: string | null;
+  divider?: boolean;
 }
 
 export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
