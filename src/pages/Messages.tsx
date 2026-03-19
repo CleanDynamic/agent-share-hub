@@ -694,6 +694,29 @@ const MessagesPage = () => {
     }
   };
 
+  /* ═══════════ Pull to Refresh ═══════════ */
+  const [pullRefreshing, setPullRefreshing] = useState(false);
+  const pullStartY = useRef(0);
+  const [pullDelta, setPullDelta] = useState(0);
+
+  const handlePullTouchStart = (e: React.TouchEvent) => {
+    pullStartY.current = e.touches[0].clientY;
+  };
+  const handlePullTouchMove = (e: React.TouchEvent) => {
+    const el = e.currentTarget;
+    if (el.scrollTop > 0) return;
+    const delta = Math.max(0, Math.min(80, e.touches[0].clientY - pullStartY.current));
+    setPullDelta(delta);
+  };
+  const handlePullTouchEnd = async () => {
+    if (pullDelta >= 60 && !pullRefreshing) {
+      setPullRefreshing(true);
+      await queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
+      setPullRefreshing(false);
+    }
+    setPullDelta(0);
+  };
+
   /* ═══════════ Thread List ═══════════ */
   const ThreadList = () => (
     <div className="h-full flex flex-col" style={{ width: isMobileView ? "100%" : 360 }}>
