@@ -535,6 +535,14 @@ const Upload = () => {
 
       // ── Remaining metadata updates (safe to run after blocks are saved) ──
       const metaUpdates: any = {};
+      // Blog: compute estimated read time
+      if (isBlogType) {
+        const wordCount = contentBlocks.reduce((sum, b) => {
+          if (b.type === "text" || b.type === "long_text") return sum + (b.textContent?.split(/\s+/).filter(Boolean).length ?? 0);
+          return sum;
+        }, 0);
+        metaUpdates.estimated_read_minutes = Math.max(1, Math.round(wordCount / 200));
+      }
       if (isAIToolsType && toolUrl.trim()) metaUpdates.tool_url = toolUrl.trim();
       if (isAIToolsType && toolSubtype) metaUpdates.tool_subtype = toolSubtype;
       if (isAIToolsType && toolSubtype === "local") {
