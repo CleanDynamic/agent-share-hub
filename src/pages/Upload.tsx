@@ -1029,6 +1029,7 @@ const Upload = () => {
                 <FormMessage />
               </FormItem>
             )} />
+            )}
 
             {/* 10. Use Case Tags */}
             <FormField control={form.control} name="use_cases" render={({ field }) => (
