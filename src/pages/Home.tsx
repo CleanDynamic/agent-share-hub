@@ -242,22 +242,56 @@ function FollowingTab() {
     enabled: !!user,
   });
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
-    queryKey: ["home_following_feed", followIds],
-    queryFn: async ({ pageParam = 0 }) => {
+  const { data: bpData, isLoading: bpLoading } = useQuery({
+    queryKey: ["home_following_bp", followIds],
+    queryFn: async () => {
       if (!followIds || followIds.length === 0) return [];
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("content_items")
-        .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, creator_id, what_to_expect_blocks, what_to_expect, other_tool_name, profiles!content_items_creator_id_fkey(display_name, username)")
+        .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, creator_id, what_to_expect_blocks, what_to_expect, other_tool_name, tool_subtype, model_parameters, profiles!content_items_creator_id_fkey(display_name, username)")
         .in("creator_id", followIds)
         .eq("status", "approved")
         .order("created_at", { ascending: false })
-        .range(pageParam, pageParam + PAGE_SIZE - 1);
-      if (error) throw error;
-      return data ?? [];
+        .limit(40);
+      return (data ?? []).map((d: any) => ({ ...d, _feedType: "blueprint" as const, _sortDate: new Date(d.created_at).getTime() }));
     },
-    getNextPageParam: (last, all) => last.length < PAGE_SIZE ? undefined : all.flat().length,
-    initialPageParam: 0,
+    enabled: !!followIds && followIds.length > 0,
+  });
+
+  const { data: colData, isLoading: colLoading } = useQuery({
+    queryKey: ["home_following_col", followIds],
+    queryFn: async () => {
+      if (!followIds || followIds.length === 0) return [];
+      const { data } = await supabase
+        .from("collections")
+        .select("id, title, description, slug, item_count, follower_count, created_at, profiles:owner_id(display_name, username)")
+        .in("owner_id", followIds)
+        .eq("visibility", "public")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      return (data ?? []).map((d: any) => ({ ...d, _feedType: "collection" as const, _sortDate: new Date(d.created_at).getTime() }));
+    },
+    enabled: !!followIds && followIds.length > 0,
+  });
+
+  const { data: projData, isLoading: projLoading } = useQuery({
+    queryKey: ["home_following_proj", followIds],
+    queryFn: async () => {
+      if (!followIds || followIds.length === 0) return [];
+      const { data } = await supabase
+        .from("projects")
+        .select("id, title, description, cover_image_url, view_count, created_at, approved_at, package_price_enabled, package_price_gbp, profiles:creator_id(display_name, username), project_components(id)")
+        .in("creator_id", followIds)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      return (data ?? []).map((d: any) => ({
+        ...d,
+        _feedType: "project" as const,
+        _sortDate: new Date(d.approved_at || d.created_at).getTime(),
+        _component_count: (d.project_components ?? []).length,
+      }));
+    },
     enabled: !!followIds && followIds.length > 0,
   });
 
@@ -270,24 +304,18 @@ function FollowingTab() {
     );
   }
 
-  const items = data?.pages.flat() ?? [];
+  const isLoading = bpLoading || colLoading || projLoading;
+  const merged = [...(bpData ?? []), ...(colData ?? []), ...(projData ?? [])]
+    .sort((a, b) => b._sortDate - a._sortDate);
 
   return (
     <div>
       {isLoading ? (
         <div className="space-y-0">{[1,2,3,4,5].map(n => <div key={n} className="h-24 animate-pulse bg-card/30 border-b border-border" />)}</div>
-      ) : items.length === 0 ? (
+      ) : merged.length === 0 ? (
         <p className="text-sm text-muted-foreground py-16 text-center">No posts from people you follow yet.</p>
       ) : (
-        items.map((item: any) => <FeedItem key={item.id} item={item} />)
-      )}
-
-      {hasNextPage && (
-        <div className="flex justify-center py-6">
-          <Button variant="outline" size="sm" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
-            {isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Load more
-          </Button>
-        </div>
+        merged.map((entry: any) => renderFeedEntry(entry))
       )}
     </div>
   );
