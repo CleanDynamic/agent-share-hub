@@ -178,7 +178,7 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
   const navItems = [
     { icon: User, label: "Profile", to: "/profile", authOnly: true },
     { icon: LayoutGrid, label: "Discover", to: "/browse" },
-    { icon: Clock, label: "Recent", to: "/recent" },
+    
     { icon: Heart, label: "For You", to: "/fyp", authOnly: true, badge: fypBadge },
     { icon: Bookmark, label: "Bookmarks", to: "/saved", authOnly: true },
     { icon: FilePenLine, label: "Drafts", to: "/drafts", authOnly: true },
