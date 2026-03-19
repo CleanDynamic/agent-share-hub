@@ -404,7 +404,7 @@ const TABS = ["For You", "Following", "Trending", "Recent"] as const;
 type Tab = typeof TABS[number];
 
 const Home = () => {
-  const [activeTab, setActiveTab] = useState<Tab>("Recent");
+  const [activeTab, setActiveTab] = useState<Tab>("For You");
   const { isLoggedIn, profile } = useAuth();
   const navigate = useNavigate();
 
