@@ -330,6 +330,7 @@ const Browse = () => {
         const itemTags = allMicrotagsMap.get(item.id) ?? [];
         if (!microtagFilters.every((mt) => itemTags.includes(mt))) return false;
       }
+      if (timePeriod && !isWithinPeriod(item.approved_at || item.created_at, timePeriod)) return false;
       return true;
     });
 
