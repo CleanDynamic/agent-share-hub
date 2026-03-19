@@ -923,8 +923,8 @@ const Upload = () => {
               </FormItem>
             )} />
 
-            {/* 6. What to Expect (block builder) */}
-            <WhatToExpectBuilder blocks={wteBlocks} onChange={setWteBlocks} />
+            {/* 6. What to Expect (block builder) — hidden for Blog */}
+            {!isBlogType && <WhatToExpectBuilder blocks={wteBlocks} onChange={setWteBlocks} />}
 
             {/* 7. Your Blueprint (content block builder) */}
             <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} />
