@@ -355,25 +355,28 @@ export function MobileNav() {
 
   return (
     <>
-      {/* Top Bar */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 bg-background border-b border-border" style={{ height: 56 }}>
-        <button onClick={() => setLeftOpen(true)} className="p-1">
-          {isLoggedIn && profile ? (
-            <Avatar className="h-8 w-8">
-              {profile.avatar_url && <AvatarImage src={profile.avatar_url} />}
-              <AvatarFallback className="bg-primary text-primary-foreground text-xs">{initials}</AvatarFallback>
-            </Avatar>
-          ) : (
-            <User className="h-6 w-6 text-muted-foreground" />
-          )}
-        </button>
-        <Link to="/" className="text-lg font-bold text-primary">NeoScale AI</Link>
-        <button onClick={() => setSearchOpen(true)} className="p-2 text-muted-foreground hover:text-foreground">
-          <Search className="h-5 w-5" />
-        </button>
-      </header>
+      {/* Top Bar - hidden when in a message thread on mobile */}
+      {!isMessagesThread && (
+        <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 bg-background border-b border-border" style={{ height: 56 }}>
+          <button onClick={() => setLeftOpen(true)} className="p-1">
+            {isLoggedIn && profile ? (
+              <Avatar className="h-8 w-8">
+                {profile.avatar_url && <AvatarImage src={profile.avatar_url} />}
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs">{initials}</AvatarFallback>
+              </Avatar>
+            ) : (
+              <User className="h-6 w-6 text-muted-foreground" />
+            )}
+          </button>
+          <Link to="/" className="text-lg font-bold text-primary">NeoScale AI</Link>
+          <button onClick={() => setSearchOpen(true)} className="p-2 text-muted-foreground hover:text-foreground">
+            <Search className="h-5 w-5" />
+          </button>
+        </header>
+      )}
 
-      {/* Bottom Tab Bar */}
+      {/* Bottom Tab Bar - hidden when in a message thread on mobile */}
+      {!isMessagesThread && (
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 flex items-end justify-around bg-background border-t border-border"
         style={{ height: 56, paddingBottom: "env(safe-area-inset-bottom)" }}
