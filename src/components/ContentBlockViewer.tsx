@@ -566,6 +566,7 @@ export function ContentBlockViewer({
                           imageUrl={showingVariation.image_url}
                           imageDescription={showingVariation.image_description}
                           contentId={contentId}
+                          isBlogContent={isBlog}
                         />
                       ) : (
                         <RenderBlockContent
