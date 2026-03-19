@@ -446,3 +446,45 @@ function timeAgo(dateStr: string): string {
   if (days < 30) return `${days}d`;
   return `${Math.floor(days / 30)}mo`;
 }
+
+type PortfolioSort = "recent" | "rated" | "viewed";
+
+function sortPortfolio(items: any[], sort: PortfolioSort): any[] {
+  const copy = [...items];
+  if (sort === "rated") return copy.sort((a, b) => (b.avg_rating - a.avg_rating) || (b.rating_count - a.rating_count));
+  if (sort === "viewed") return copy.sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0));
+  return copy.sort((a, b) => new Date(b.approved_at || b.created_at).getTime() - new Date(a.approved_at || a.created_at).getTime());
+}
+
+function CreatorPostsTab({ items }: { items: any[] }) {
+  const [sort, setSort] = useState<PortfolioSort>("recent");
+  const sorted = useMemo(() => sortPortfolio(items, sort), [items, sort]);
+  const opts: { value: PortfolioSort; label: string }[] = [
+    { value: "recent", label: "Recent" },
+    { value: "rated", label: "Highest Rated" },
+    { value: "viewed", label: "Most Viewed" },
+  ];
+  return (
+    <div className="py-4">
+      <div className="flex justify-end gap-1 mb-3">
+        {opts.map((o) => (
+          <button
+            key={o.value}
+            onClick={() => setSort(o.value)}
+            className={`relative px-2.5 py-1 text-xs font-medium transition-colors ${
+              sort === o.value ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {o.label}
+            {sort === o.value && (
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[2px] bg-primary rounded-full" />
+            )}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {sorted.map((item: any) => <PortfolioCard key={item.id} item={item} />)}
+      </div>
+    </div>
+  );
+}
