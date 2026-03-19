@@ -20,8 +20,10 @@ const CATEGORIES: { name: string; dbType: string; difficulty: string; slug: stri
   { name: "Evaluation Framework", dbType: "Evaluation Framework", difficulty: "Intermediate", slug: "evaluation-framework" },
   { name: "Agent Stack", dbType: "Agent Stack", difficulty: "Advanced", slug: "agent-stack" },
   { name: "Failure Library", dbType: "Failure Library", difficulty: "Any", slug: "failure-library" },
+  { name: "Blog", dbType: "Blog", difficulty: "Any", slug: "blog" },
   { name: "Projects", dbType: "", difficulty: "Any", slug: "projects", isProject: true },
   { name: "AI Tools (LLMs)", dbType: "AI Tools (LLMs)", difficulty: "Any", slug: "ai-tools-llms" },
+  { name: "Install Guide", dbType: "AI Agent Install Guide", difficulty: "Any", slug: "install-guide" },
 ];
 
 const diffColor: Record<string, string> = {
@@ -216,8 +218,7 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
 
   return (
     <div className="grid grid-cols-2 gap-2">
-      {CATEGORIES.map((cat, i) => {
-        const isLast = i === CATEGORIES.length - 1;
+      {CATEGORIES.map((cat) => {
         const isAITools = cat.dbType === "AI Tools (LLMs)";
 
         // Strict equality — only highlight when slug explicitly matches
@@ -243,8 +244,10 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
           "evaluation-framework": "rgba(219, 39, 119, 0.7)",
           "agent-stack": "rgba(220, 38, 38, 0.7)",
           "failure-library": "rgba(75, 85, 99, 0.7)",
+          "blog": "rgba(244, 114, 182, 0.7)",
           "projects": "rgba(46, 196, 182, 0.7)",
           "ai-tools-llms": "rgba(167, 139, 250, 0.7)",
+          "install-guide": "rgba(6, 182, 212, 0.7)",
         };
         const activeBorder = accentBorders[cat.slug] ?? "rgba(232, 87, 26, 0.7)";
 
@@ -252,7 +255,7 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
           <button
             key={cat.slug}
             onClick={handleClick}
-            className={`text-left rounded-xl cursor-pointer transition-all duration-150 ${isLast ? "col-span-2" : ""} ${
+            className={`text-left rounded-xl cursor-pointer transition-all duration-150 ${
               isActive ? "" : "hover:bg-[rgba(255,255,255,0.04)]"
             }`}
             style={{

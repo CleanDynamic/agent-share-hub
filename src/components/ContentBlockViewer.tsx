@@ -26,6 +26,8 @@ interface BlockRow {
   image_url: string | null;
   image_description: string | null;
   is_preview: boolean;
+  external_file_url: string | null;
+  github_url: string | null;
 }
 
 interface VariationRow {
@@ -50,6 +52,7 @@ interface Props {
   useInstructions: string | null;
   onTriggerPaywall: () => void;
   isEligible?: boolean;
+  contentType?: string;
 }
 
 // ─── Ad Modal ───────────────────────────────────────────────
@@ -100,6 +103,23 @@ function AdModal({
   );
 }
 
+// ─── External host detection ────────────────────────────────
+
+function detectHostName(url: string): string {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    if (hostname.includes("drive.google.com")) return "Google Drive";
+    if (hostname.includes("dropbox.com")) return "Dropbox";
+    if (hostname.includes("mega.nz")) return "Mega";
+    if (hostname.includes("onedrive.live.com")) return "OneDrive";
+    if (hostname.includes("wetransfer.com")) return "WeTransfer";
+    if (hostname.includes("github.com")) return "GitHub";
+    return "External host";
+  } catch {
+    return "External host";
+  }
+}
+
 // ─── Block content renderer ─────────────────────────────────
 
 function RenderBlockContent({
@@ -114,6 +134,7 @@ function RenderBlockContent({
   imageUrl,
   imageDescription,
   contentId,
+  isBlogContent,
 }: {
   type: string;
   textContent: string | null;
@@ -126,6 +147,7 @@ function RenderBlockContent({
   imageUrl: string | null;
   imageDescription: string | null;
   contentId: string;
+  isBlogContent?: boolean;
 }) {
   const [downloading, setDownloading] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
@@ -152,12 +174,12 @@ function RenderBlockContent({
     if (isLong) {
       const paragraphs = text.split("\n\n").filter(Boolean);
       return (
-        <div className="max-w-prose" style={{ lineHeight: 1.8 }}>
+        <div className="max-w-full" style={{ lineHeight: isBlogContent ? 1.85 : 1.8 }}>
           {paragraphs.map((p, i) => {
             if (p.startsWith("# ") || (formatting?.type === "heading" && i === 0)) {
-              return <h3 key={i} className="text-lg font-bold text-foreground mt-4 mb-2">{p.replace(/^#\s*/, "")}</h3>;
+              return <h3 key={i} className={`font-bold text-foreground mt-4 mb-2 ${isBlogContent ? "text-xl" : "text-lg"}`}>{p.replace(/^#\s*/, "")}</h3>;
             }
-            return <p key={i} className="text-sm text-muted-foreground mb-[1.2em] whitespace-pre-wrap"><MentionText text={p} /></p>;
+            return <p key={i} className={`text-muted-foreground whitespace-pre-wrap ${isBlogContent ? "text-base mb-[1.4em]" : "text-sm mb-[1.2em]"}`}><MentionText text={p} /></p>;
           })}
         </div>
       );
@@ -269,8 +291,10 @@ export function ContentBlockViewer({
   useInstructions,
   onTriggerPaywall,
   isEligible = false,
+  contentType,
 }: Props) {
   const { isLoggedIn, profile } = useAuth();
+  const isBlog = contentType === "Blog";
   const [unblurred, setUnblurred] = useState<Record<string, boolean>>({});
   const [adModal, setAdModal] = useState<{
     blockId: string;
@@ -468,7 +492,7 @@ export function ContentBlockViewer({
             const hasVars = blockVariations.length > 0;
             const currentTab = activeTab[block.id] ?? "A";
             const isPreview = !!block.is_preview;
-            const isUnblurred = isPreview || !!unblurred[block.id];
+            const isUnblurred = isBlog || isPreview || !!unblurred[block.id];
 
             // Determine which content to show
             const showingVariation = currentTab !== "A"
@@ -542,6 +566,7 @@ export function ContentBlockViewer({
                           imageUrl={showingVariation.image_url}
                           imageDescription={showingVariation.image_description}
                           contentId={contentId}
+                          isBlogContent={isBlog}
                         />
                       ) : (
                         <RenderBlockContent
@@ -556,12 +581,44 @@ export function ContentBlockViewer({
                           imageUrl={block.image_url}
                           imageDescription={block.image_description}
                           contentId={contentId}
+                          isBlogContent={isBlog}
                         />
                       )}
                     </div>
 
-                    {/* View button overlay — not shown for preview blocks */}
-                    {!isUnblurred && !isPreview && (
+                    {/* External file download button */}
+                    {isUnblurred && block.external_file_url && (
+                      <div className="mt-3 px-1">
+                        <a
+                          href={block.external_file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors hover:bg-accent/60"
+                          style={{ borderColor: "#2EC4B6", color: "#2EC4B6" }}
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Download from {detectHostName(block.external_file_url)} →
+                        </a>
+                      </div>
+                    )}
+
+                    {/* GitHub pill */}
+                    {isUnblurred && block.github_url && (
+                      <div className="mt-2 px-1">
+                        <a
+                          href={block.github_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm transition-colors hover:underline"
+                          style={{ color: "#2EC4B6" }}
+                        >
+                          🐙 View on GitHub →
+                        </a>
+                      </div>
+                    )}
+
+                    {/* View button overlay — not shown for preview blocks or blogs */}
+                    {!isUnblurred && !isPreview && !isBlog && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <Button
                           onClick={() => handleViewClick(block.id)}

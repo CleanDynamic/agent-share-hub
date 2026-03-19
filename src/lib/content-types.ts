@@ -8,6 +8,7 @@
 export function displayContentType(dbType: string): string {
   if (dbType === "Prompt File") return "Prompt(s)";
   if (dbType === "Agent Blueprint") return "Agent(s)";
+  if (dbType === "AI Agent Install Guide") return "Install Guide";
   return dbType;
 }
 
@@ -22,7 +23,9 @@ export const ORDERED_CONTENT_TYPES = [
   "Evaluation Framework",
   "Agent Stack",
   "Failure Library",
+  "Blog",
   "AI Tools (LLMs)",
+  "AI Agent Install Guide",
 ];
 
 /** Badge colour map — keyed by DB value */
@@ -36,14 +39,16 @@ export const TYPE_COLORS: Record<string, string> = {
   "Integration Guide": "bg-[#D97706]/20 text-[#F59E0B] border-[#D97706]/25",
   "Evaluation Framework": "bg-[#DB2777]/20 text-[#EC4899] border-[#DB2777]/25",
   "Failure Library": "bg-[#374151]/20 text-[#9CA3AF] border-[#374151]/25",
+  "Blog": "bg-[#F472B6]/15 text-[#F472B6] border-[#F472B6]/25",
   "AI Tools (LLMs)": "bg-[#8B5CF6]/15 text-[#A78BFA] border-[#8B5CF6]/30",
+  "AI Agent Install Guide": "bg-[#06B6D4]/15 text-[#06B6D4] border-[#06B6D4]/30",
 };
 
 /** Difficulty levels including "Any" for special types */
 export const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
 
 /** Content types that auto-set difficulty to "Any" */
-export const ANY_DIFFICULTY_TYPES = ["Failure Library", "AI Tools (LLMs)"];
+export const ANY_DIFFICULTY_TYPES = ["Failure Library", "AI Tools (LLMs)", "Blog"];
 
 /** Slug-to-DB-type mapping for Browse/Category routes */
 export const SLUG_TO_TYPE: Record<string, string> = {
@@ -56,5 +61,7 @@ export const SLUG_TO_TYPE: Record<string, string> = {
   "integration-guide": "Integration Guide",
   "evaluation-framework": "Evaluation Framework",
   "failure-library": "Failure Library",
+  "blog": "Blog",
   "ai-tools-llms": "AI Tools (LLMs)",
+  "install-guide": "AI Agent Install Guide",
 };

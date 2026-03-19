@@ -45,11 +45,14 @@ export interface ContentBlock {
   imageDescription: string;
   variations: BlockVariation[];
   isPreview: boolean;
+  externalFileUrl?: string;
+  githubUrl?: string;
 }
 
 interface Props {
   blocks: ContentBlock[];
   onChange: (blocks: ContentBlock[]) => void;
+  contentType?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -97,6 +100,8 @@ export const emptyBlock = (type: BlockType): ContentBlock => ({
   imageDescription: "",
   variations: [],
   isPreview: false,
+  externalFileUrl: "",
+  githubUrl: "",
 });
 
 // ─── Formatting helpers ─────────────────────────────────────
@@ -574,9 +579,81 @@ const VariationEditor = ({
   );
 };
 
+// ─── External file URL section ──────────────────────────────
+
+const ExternalFileSection = ({
+  externalFileUrl,
+  onChange,
+}: {
+  externalFileUrl: string;
+  onChange: (url: string) => void;
+}) => {
+  const [open, setOpen] = useState(!!externalFileUrl);
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+      >
+        {open ? "▲ Hide external link" : "File too large? Link to an external host instead ↓"}
+      </button>
+      {open && (
+        <div className="mt-2 space-y-2">
+          <Label className="text-xs">File download URL</Label>
+          <Input
+            value={externalFileUrl}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="https://drive.google.com/... or https://dropbox.com/..."
+            className="bg-background border-border rounded-xl text-sm"
+          />
+          <p className="text-[10px] text-muted-foreground">
+            Google Drive, Dropbox, Mega, OneDrive, WeTransfer etc. Link must be directly accessible.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── GitHub URL field ───────────────────────────────────────
+
+const GitHubUrlField = ({
+  githubUrl,
+  onChange,
+}: {
+  githubUrl: string;
+  onChange: (url: string) => void;
+}) => {
+  const [open, setOpen] = useState(!!githubUrl);
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+      >
+        🐙 {open ? "Hide GitHub link" : "GitHub repository (optional)"}
+      </button>
+      {open && (
+        <div className="mt-2">
+          <Input
+            value={githubUrl}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="https://github.com/username/repository"
+            className="bg-background border-border rounded-xl text-sm"
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Main component ──────────────────────────────────────────
 
-export function ContentBlockBuilder({ blocks, onChange }: Props) {
+export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
   const [activeVariationTab, setActiveVariationTab] = useState<Record<string, string>>({});
 
   const update = useCallback(
@@ -641,9 +718,11 @@ export function ContentBlockBuilder({ blocks, onChange }: Props) {
 
   return (
     <div className="space-y-3">
-      <Label className="text-sm font-medium">Your Blueprint</Label>
+      <Label className="text-sm font-medium">{contentType === "Blog" ? "Your Blog Post" : "Your Blueprint"}</Label>
       <p className="text-xs text-muted-foreground -mt-1">
-        Build your blueprint using text, file, and image blocks. Reorder as needed.
+        {contentType === "Blog"
+          ? "Write your blog post using text, image, and file blocks."
+          : "Build your blueprint using text, file, and image blocks. Reorder as needed."}
       </p>
 
       {/* Block list */}
@@ -754,12 +833,19 @@ export function ContentBlockBuilder({ blocks, onChange }: Props) {
                       </div>
                     )}
                     {block.type === "file" && (
-                      <FilePicker
-                        file={block.file}
-                        fileName={block.fileName}
-                        fileSize={block.fileSize}
-                        onFileChange={(f) => update(index, { file: f, fileName: f?.name, fileSize: f?.size })}
-                      />
+                      <>
+                        <FilePicker
+                          file={block.file}
+                          fileName={block.fileName}
+                          fileSize={block.fileSize}
+                          onFileChange={(f) => update(index, { file: f, fileName: f?.name, fileSize: f?.size })}
+                        />
+                        {/* External file URL toggle */}
+                        <ExternalFileSection
+                          externalFileUrl={block.externalFileUrl ?? ""}
+                          onChange={(url) => update(index, { externalFileUrl: url })}
+                        />
+                      </>
                     )}
                     {block.type === "image" && (
                       <ImagePicker
@@ -770,6 +856,12 @@ export function ContentBlockBuilder({ blocks, onChange }: Props) {
                         onDescriptionChange={(v) => update(index, { imageDescription: v })}
                       />
                     )}
+
+                    {/* GitHub URL — available on all block types */}
+                    <GitHubUrlField
+                      githubUrl={block.githubUrl ?? ""}
+                      onChange={(url) => update(index, { githubUrl: url })}
+                    />
                   </>
                 ) : (
                   (() => {
@@ -820,18 +912,37 @@ export function ContentBlockBuilder({ blocks, onChange }: Props) {
 
       {/* Add block buttons */}
       <div className="flex flex-wrap gap-2 pt-1">
-        <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" /> Text
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" /> Long Text
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => addBlock("file")} className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" /> File
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => addBlock("image")} className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" /> Image
-        </Button>
+        {contentType === "Blog" ? (
+          <>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Long Text
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Text
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("image")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Image
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("file")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> File
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Text
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Long Text
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("file")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> File
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("image")} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Image
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

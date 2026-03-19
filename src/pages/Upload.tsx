@@ -120,12 +120,21 @@ const Upload = () => {
 
   const watchedContentType = form.watch("content_type");
   const isAIToolsType = watchedContentType === "AI Tools (LLMs)";
+  const isBlogType = watchedContentType === "Blog";
   const watchedAiTools = form.watch("ai_tools");
   const isOtherSelected = watchedAiTools?.includes("Other");
 
   useEffect(() => {
-    if (isAIToolsType) form.setValue("difficulty", "Any");
-  }, [isAIToolsType, form]);
+    if (isAIToolsType || isBlogType) form.setValue("difficulty", "Any");
+  }, [isAIToolsType, isBlogType, form]);
+
+  // For Blog: auto-set ai_tools to avoid validation error
+  useEffect(() => {
+    if (isBlogType) {
+      form.setValue("ai_tools", ["Any Tool"]);
+      form.setValue("monetisation_type", "free");
+    }
+  }, [isBlogType, form]);
 
   // Clear otherToolName when Other is deselected
   useEffect(() => {
@@ -482,6 +491,8 @@ const Upload = () => {
           is_preview: block.isPreview ?? false,
           use_instructions: block.useInstructions?.trim() || null,
           sub_blocks: block.formatting === "sub_list" && block.subBlocks?.length > 0 ? block.subBlocks : null,
+          external_file_url: block.externalFileUrl?.trim() || null,
+          github_url: block.githubUrl?.trim() || null,
         } as any).select("id").single();
 
         if (blockError || !insertedBlock) throw new Error(blockError?.message ?? "Block insert failed");
@@ -524,6 +535,14 @@ const Upload = () => {
 
       // ── Remaining metadata updates (safe to run after blocks are saved) ──
       const metaUpdates: any = {};
+      // Blog: compute estimated read time
+      if (isBlogType) {
+        const wordCount = contentBlocks.reduce((sum, b) => {
+          if (b.type === "text" || b.type === "long_text") return sum + (b.textContent?.split(/\s+/).filter(Boolean).length ?? 0);
+          return sum;
+        }, 0);
+        metaUpdates.estimated_read_minutes = Math.max(1, Math.round(wordCount / 200));
+      }
       if (isAIToolsType && toolUrl.trim()) metaUpdates.tool_url = toolUrl.trim();
       if (isAIToolsType && toolSubtype) metaUpdates.tool_subtype = toolSubtype;
       if (isAIToolsType && toolSubtype === "local") {
@@ -914,13 +933,24 @@ const Upload = () => {
               </FormItem>
             )} />
 
-            {/* 6. What to Expect (block builder) */}
-            <WhatToExpectBuilder blocks={wteBlocks} onChange={setWteBlocks} />
+            {/* 6. What to Expect (block builder) — hidden for Blog */}
+            {!isBlogType && <WhatToExpectBuilder blocks={wteBlocks} onChange={setWteBlocks} />}
 
             {/* 7. Your Blueprint (content block builder) */}
-            <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} />
+            <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} contentType={watchedContentType} />
 
-            {/* 8. Difficulty */}
+            {/* Blog: estimated read time */}
+            {isBlogType && (() => {
+              const wordCount = contentBlocks.reduce((sum, b) => {
+                if (b.type === "text" || b.type === "long_text") return sum + (b.textContent?.split(/\s+/).filter(Boolean).length ?? 0);
+                return sum;
+              }, 0);
+              const mins = Math.max(1, Math.round(wordCount / 200));
+              return <p className="text-xs text-muted-foreground">Estimated read time: ~{mins} min</p>;
+            })()}
+
+            {/* 8. Difficulty — hidden for Blog */}
+            {!isBlogType && (
             <FormField control={form.control} name="difficulty" render={({ field }) => (
               <FormItem>
                 <FormLabel>Difficulty</FormLabel>
@@ -936,8 +966,10 @@ const Upload = () => {
                 <FormMessage />
               </FormItem>
             )} />
+            )}
 
-            {/* 9. AI Tools Required — grouped by category */}
+            {/* 9. AI Tools Required — hidden for Blog */}
+            {!isBlogType && (
             <FormField control={form.control} name="ai_tools" render={() => (
               <FormItem>
                 <FormLabel>AI Tools Required</FormLabel>
@@ -1007,6 +1039,7 @@ const Upload = () => {
                 <FormMessage />
               </FormItem>
             )} />
+            )}
 
             {/* 10. Use Case Tags */}
             <FormField control={form.control} name="use_cases" render={({ field }) => (
@@ -1078,7 +1111,7 @@ const Upload = () => {
                 <p className="text-xs text-muted-foreground mt-0.5">Optional — free by default</p>
               </div>
               <div className="space-y-4">
-                {(["free", "paid"] as const).map((type) => (
+                {!isBlogType && (["free", "paid"] as const).map((type) => (
                   <div key={type} className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-foreground">{type === "free" ? "Free download" : "Paid (fixed price)"}</p>

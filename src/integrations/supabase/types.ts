@@ -461,11 +461,13 @@ export type Database = {
           block_type: string
           content_id: string
           created_at: string
+          external_file_url: string | null
           file_name: string | null
           file_size_bytes: number | null
           file_url: string | null
           formatting: Json | null
           formatting_type: string
+          github_url: string | null
           id: string
           image_description: string | null
           image_url: string | null
@@ -479,11 +481,13 @@ export type Database = {
           block_type: string
           content_id: string
           created_at?: string
+          external_file_url?: string | null
           file_name?: string | null
           file_size_bytes?: number | null
           file_url?: string | null
           formatting?: Json | null
           formatting_type?: string
+          github_url?: string | null
           id?: string
           image_description?: string | null
           image_url?: string | null
@@ -497,11 +501,13 @@ export type Database = {
           block_type?: string
           content_id?: string
           created_at?: string
+          external_file_url?: string | null
           file_name?: string | null
           file_size_bytes?: number | null
           file_url?: string | null
           formatting?: Json | null
           formatting_type?: string
+          github_url?: string | null
           id?: string
           image_description?: string | null
           image_url?: string | null
@@ -716,6 +722,7 @@ export type Database = {
           draft_name: string | null
           draft_saved_at: string | null
           embedding: string | null
+          estimated_read_minutes: number | null
           file_url: string | null
           fork_count: number
           fork_of_content_id: string | null
@@ -771,6 +778,7 @@ export type Database = {
           draft_name?: string | null
           draft_saved_at?: string | null
           embedding?: string | null
+          estimated_read_minutes?: number | null
           file_url?: string | null
           fork_count?: number
           fork_of_content_id?: string | null
@@ -826,6 +834,7 @@ export type Database = {
           draft_name?: string | null
           draft_saved_at?: string | null
           embedding?: string | null
+          estimated_read_minutes?: number | null
           file_url?: string | null
           fork_count?: number
           fork_of_content_id?: string | null
