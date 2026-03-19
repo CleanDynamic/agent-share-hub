@@ -151,6 +151,10 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const initials = profile?.display_name
+    ? profile.display_name.slice(0, 2).toUpperCase()
+    : profile?.username?.slice(0, 2).toUpperCase() ?? "?";
+
   const handleNav = (path: string) => { onClose(); navigate(path); };
   const handleSignOut = async () => { onClose(); await signOut(); navigate("/"); };
 
