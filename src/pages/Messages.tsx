@@ -895,13 +895,13 @@ const MessagesPage = () => {
           <ThreadList />
         </div>
         <div className="flex-1 overflow-hidden">
-          {showThreadView ? <ThreadView /> : <EmptyThread />}
+          {showThreadView ? <ThreadViewPanel /> : <EmptyThread />}
         </div>
       </div>
 
       {/* Mobile */}
       <div className="lg:hidden flex-1 overflow-hidden">
-        {mobileShowThread && showThreadView ? <ThreadView /> : <ThreadList />}
+        {mobileShowThread && showThreadView ? <ThreadViewPanel /> : <ThreadList />}
       </div>
 
       {/* Compose overlay */}
