@@ -245,8 +245,10 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
           "evaluation-framework": "rgba(219, 39, 119, 0.7)",
           "agent-stack": "rgba(220, 38, 38, 0.7)",
           "failure-library": "rgba(75, 85, 99, 0.7)",
+          "blog": "rgba(244, 114, 182, 0.7)",
           "projects": "rgba(46, 196, 182, 0.7)",
           "ai-tools-llms": "rgba(167, 139, 250, 0.7)",
+          "install-guide": "rgba(6, 182, 212, 0.7)",
         };
         const activeBorder = accentBorders[cat.slug] ?? "rgba(232, 87, 26, 0.7)";
 
