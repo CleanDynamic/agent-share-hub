@@ -271,12 +271,6 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
             })}
 
             <div className="border-t border-border my-3" />
-            <button onClick={() => handleNav("/about")} className="flex w-full items-center gap-3 rounded-lg px-3 h-10 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/60">
-              <Settings className="h-5 w-5" /> Settings and privacy
-            </button>
-            <button onClick={() => handleNav("/about")} className="flex w-full items-center gap-3 rounded-lg px-3 h-10 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/60">
-              <Info className="h-5 w-5" /> Help
-            </button>
           </nav>
 
           {/* Sign out at bottom */}
