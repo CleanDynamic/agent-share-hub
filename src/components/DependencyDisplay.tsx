@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
-import { AddToLibraryButton } from "@/components/AddToLibraryButton";
+import { BookmarkButton } from "@/components/BookmarkButton";
 import { CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
 
 import { TYPE_COLORS } from "@/lib/content-types";
