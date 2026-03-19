@@ -754,7 +754,137 @@ const Upload = () => {
               </FormItem>
             )} />
 
-            {/* 5. Description (max 500 chars) */}
+            {/* 4b. AI Tools Subtype selector */}
+            {isAIToolsType && (
+              <div className="space-y-2">
+                <Label>What kind of tool is this?</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {([
+                    { value: "api" as const, emoji: "🌐", label: "API / Web Tool", desc: "ChatGPT, Claude, Gemini, Grok etc." },
+                    { value: "local" as const, emoji: "🖥️", label: "Local / Open Source Model", desc: "Hugging Face, Ollama, LM Studio, GGUF files etc." },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setToolSubtype(opt.value)}
+                      className={`flex flex-col items-start p-4 rounded-xl border-2 transition-colors text-left ${
+                        toolSubtype === opt.value
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-card hover:border-muted-foreground/40"
+                      }`}
+                    >
+                      <span className="text-lg mb-1">{opt.emoji}</span>
+                      <p className="text-sm font-semibold text-foreground">{opt.label}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 4c. Tool URL / Model page URL */}
+            {isAIToolsType && (
+              <div className="space-y-2">
+                <Label>{toolSubtype === "local" ? "Model page URL" : "Tool URL"}</Label>
+                <Input
+                  value={toolUrl}
+                  onChange={(e) => setToolUrl(e.target.value)}
+                  placeholder={toolSubtype === "local" ? "e.g. https://huggingface.co/Qwen/Qwen3.5-27B" : "e.g. https://chat.openai.com"}
+                  className="bg-card border-border rounded-xl"
+                />
+              </div>
+            )}
+
+            {/* 4d. Local model fields */}
+            {isAIToolsType && toolSubtype === "local" && (
+              <div className="space-y-4 border border-border rounded-xl p-4 bg-card">
+                <h3 className="text-sm font-semibold text-foreground">Model Details</h3>
+
+                {/* Model size */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Model size (optional)</Label>
+                  <Select value={modelParameters} onValueChange={setModelParameters}>
+                    <SelectTrigger className="bg-background border-border rounded-xl">
+                      <SelectValue placeholder="Select size" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border">
+                      {["1B", "3B", "7B", "8B", "13B", "14B", "27B", "30B", "70B", "72B", "Other"].map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Base architecture */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Base architecture (optional)</Label>
+                  <Input
+                    value={modelBaseArchitecture}
+                    onChange={(e) => setModelBaseArchitecture(e.target.value.slice(0, 40))}
+                    placeholder="e.g. Qwen3.5, Llama 3.1, Mistral..."
+                    className="bg-background border-border rounded-xl"
+                    maxLength={40}
+                  />
+                </div>
+
+                {/* File format */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">File format (optional)</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {["Safetensors", "GGUF", "GGML", "Other"].map((fmt) => (
+                      <button
+                        key={fmt}
+                        type="button"
+                        onClick={() => setModelFormat(modelFormat === fmt ? "" : fmt)}
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                          modelFormat === fmt
+                            ? "bg-primary/15 text-primary border-primary/30"
+                            : "bg-background text-muted-foreground border-border hover:border-muted-foreground/40"
+                        }`}
+                      >
+                        {fmt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* License */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">License (optional)</Label>
+                  <Input
+                    value={modelLicense}
+                    onChange={(e) => setModelLicense(e.target.value.slice(0, 60))}
+                    placeholder="e.g. MIT, Apache 2.0, LGPL-3.0..."
+                    className="bg-background border-border rounded-xl"
+                    maxLength={60}
+                  />
+                </div>
+
+                {/* Runs on */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Runs on (optional)</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {["Ollama", "LM Studio", "Jan.ai", "llama.cpp", "Transformers", "vLLM", "Other"].map((platform) => {
+                      const selected = modelRunWith.includes(platform);
+                      return (
+                        <button
+                          key={platform}
+                          type="button"
+                          onClick={() => setModelRunWith(selected ? modelRunWith.filter((p) => p !== platform) : [...modelRunWith, platform])}
+                          className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                            selected
+                              ? "bg-primary/15 text-primary border-primary/30"
+                              : "bg-background text-muted-foreground border-border hover:border-muted-foreground/40"
+                          }`}
+                        >
+                          {platform}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
                 <FormLabel>Description</FormLabel>
