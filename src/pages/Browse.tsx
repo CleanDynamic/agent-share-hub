@@ -238,7 +238,7 @@ const Browse = () => {
   }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter, timePeriod]);
 
   const removeChip = useCallback((chip: { key: string; value: string }) => {
-    if (chip.key === "difficulty" || chip.key === "size") {
+    if (chip.key === "difficulty" || chip.key === "size" || chip.key === "period") {
       setParam(chip.key, "");
     } else {
       toggleListParam(chip.key, chip.value);
