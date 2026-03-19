@@ -134,6 +134,7 @@ function RenderBlockContent({
   imageUrl,
   imageDescription,
   contentId,
+  isBlogContent,
 }: {
   type: string;
   textContent: string | null;
@@ -146,6 +147,7 @@ function RenderBlockContent({
   imageUrl: string | null;
   imageDescription: string | null;
   contentId: string;
+  isBlogContent?: boolean;
 }) {
   const [downloading, setDownloading] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
