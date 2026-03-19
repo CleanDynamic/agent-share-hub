@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 import { LeftPanel } from "./LeftPanel";
 import { RightPanel } from "./RightPanel";
 import { MobileNav } from "./MobileNav";
@@ -9,13 +9,21 @@ export function AppLayout() {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const isMessagesRoute = location.pathname === "/messages";
+  const isMessagesThread = isMessagesRoute && (searchParams.has("thread") || searchParams.has("recipient"));
 
   if (isMobile) {
     return (
       <div className="min-h-screen bg-background">
         <MobileNav />
-        <main className="overflow-y-auto" style={{ paddingTop: 56, paddingBottom: isMessagesRoute ? 0 : "calc(56px + env(safe-area-inset-bottom))" }}>
+        <main
+          className="overflow-y-auto"
+          style={{
+            paddingTop: isMessagesThread ? 0 : 56,
+            paddingBottom: isMessagesRoute ? 0 : "calc(56px + env(safe-area-inset-bottom))",
+          }}
+        >
           <Outlet />
         </main>
       </div>
