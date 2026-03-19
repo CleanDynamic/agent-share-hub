@@ -19,6 +19,17 @@ import {
   BellOff, Eye, Trash2, Volume2, VolumeX,
 } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import { ThreadView } from "@/components/dm/ThreadView";
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
+  Loader2, ArrowLeft, Send, MessageSquare, Pencil, Search, X, Pin,
+  BellOff, Eye, Trash2, Volume2, VolumeX,
+} from "lucide-react";
+import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 
 /* ═══════════════════ Helpers ═══════════════════ */
 
