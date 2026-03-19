@@ -579,6 +579,78 @@ const VariationEditor = ({
   );
 };
 
+// ─── External file URL section ──────────────────────────────
+
+const ExternalFileSection = ({
+  externalFileUrl,
+  onChange,
+}: {
+  externalFileUrl: string;
+  onChange: (url: string) => void;
+}) => {
+  const [open, setOpen] = useState(!!externalFileUrl);
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+      >
+        {open ? "▲ Hide external link" : "File too large? Link to an external host instead ↓"}
+      </button>
+      {open && (
+        <div className="mt-2 space-y-2">
+          <Label className="text-xs">File download URL</Label>
+          <Input
+            value={externalFileUrl}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="https://drive.google.com/... or https://dropbox.com/..."
+            className="bg-background border-border rounded-xl text-sm"
+          />
+          <p className="text-[10px] text-muted-foreground">
+            Google Drive, Dropbox, Mega, OneDrive, WeTransfer etc. Link must be directly accessible.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── GitHub URL field ───────────────────────────────────────
+
+const GitHubUrlField = ({
+  githubUrl,
+  onChange,
+}: {
+  githubUrl: string;
+  onChange: (url: string) => void;
+}) => {
+  const [open, setOpen] = useState(!!githubUrl);
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+      >
+        🐙 {open ? "Hide GitHub link" : "GitHub repository (optional)"}
+      </button>
+      {open && (
+        <div className="mt-2">
+          <Input
+            value={githubUrl}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="https://github.com/username/repository"
+            className="bg-background border-border rounded-xl text-sm"
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Main component ──────────────────────────────────────────
 
 export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
