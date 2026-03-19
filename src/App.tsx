@@ -53,6 +53,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <PresenceProvider />
             <ConnectionBanner />
             <Routes>
               <Route element={<Layout />}>
