@@ -289,8 +289,10 @@ export function ContentBlockViewer({
   useInstructions,
   onTriggerPaywall,
   isEligible = false,
+  contentType,
 }: Props) {
   const { isLoggedIn, profile } = useAuth();
+  const isBlog = contentType === "Blog";
   const [unblurred, setUnblurred] = useState<Record<string, boolean>>({});
   const [adModal, setAdModal] = useState<{
     blockId: string;
