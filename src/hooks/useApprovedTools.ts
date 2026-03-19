@@ -23,7 +23,7 @@ export function useApprovedTools() {
       if (error) throw error;
       return (data as any[]) as ApprovedTool[];
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes — cached per session
+    staleTime: 10 * 60 * 1000,
   });
 }
 
@@ -34,4 +34,22 @@ export function useApprovedToolNames() {
     ...query,
     data: query.data?.map((t) => t.name) ?? [],
   };
+}
+
+/** Tools grouped by category for sectioned display */
+export function useGroupedApprovedTools() {
+  const query = useApprovedTools();
+
+  const groups: { label: string; category: string; tools: ApprovedTool[] }[] = [];
+  if (query.data) {
+    const apiTools = query.data.filter((t) => !t.category || t.category === "api" || t.category === "other");
+    const localTools = query.data.filter((t) => t.category === "local_runtime");
+    const automationTools = query.data.filter((t) => t.category === "automation");
+
+    if (apiTools.length > 0) groups.push({ label: "API Tools", category: "api", tools: apiTools });
+    if (localTools.length > 0) groups.push({ label: "Local Runtimes", category: "local_runtime", tools: localTools });
+    if (automationTools.length > 0) groups.push({ label: "Automation", category: "automation", tools: automationTools });
+  }
+
+  return { ...query, groups };
 }
