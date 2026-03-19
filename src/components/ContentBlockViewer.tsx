@@ -581,6 +581,7 @@ export function ContentBlockViewer({
                           imageUrl={block.image_url}
                           imageDescription={block.image_description}
                           contentId={contentId}
+                          isBlogContent={isBlog}
                         />
                       )}
                     </div>

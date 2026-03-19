@@ -125,8 +125,16 @@ const Upload = () => {
   const isOtherSelected = watchedAiTools?.includes("Other");
 
   useEffect(() => {
-    if (isAIToolsType) form.setValue("difficulty", "Any");
-  }, [isAIToolsType, form]);
+    if (isAIToolsType || isBlogType) form.setValue("difficulty", "Any");
+  }, [isAIToolsType, isBlogType, form]);
+
+  // For Blog: auto-set ai_tools to avoid validation error
+  useEffect(() => {
+    if (isBlogType) {
+      form.setValue("ai_tools", ["Any Tool"]);
+      form.setValue("monetisation_type", "free");
+    }
+  }, [isBlogType, form]);
 
   // Clear otherToolName when Other is deselected
   useEffect(() => {
