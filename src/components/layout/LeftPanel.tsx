@@ -105,7 +105,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                   {item.badge}
                 </span>
               )}
-              {item.to === "/saved" && hasUnseenSaves && !item.badge && (
+              {item.to === "/library" && hasUnseenSaves && !item.badge && (
                 <span className={`${collapsed ? "absolute top-1 right-1" : "ml-auto"} h-2 w-2 rounded-full bg-primary`} />
               )}
             </Link>
