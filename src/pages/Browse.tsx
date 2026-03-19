@@ -770,23 +770,13 @@ const Browse = () => {
           />
         </div>
 
-        {/* ROW 2: Interest toggle + Sort pills */}
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex gap-1">
-            {hasInterests && (
-              <>
-                <Pill active={!matchInterests} onClick={() => setForMe(false)}>All</Pill>
-                <Pill active={matchInterests} onClick={() => setForMe(true)}>For me</Pill>
-              </>
-            )}
-          </div>
-          <div className="flex gap-1">
-            {sortOptions.map((opt) => (
-              <Pill key={opt.value} active={sortMode === opt.value} onClick={() => setSort(opt.value)}>
-                {opt.label}
-              </Pill>
-            ))}
-          </div>
+        {/* ROW 2: Sort pills */}
+        <div className="flex gap-1 mb-2">
+          {sortOptions.map((opt) => (
+            <Pill key={opt.value} active={sortMode === opt.value} onClick={() => setSort(opt.value)}>
+              {opt.label}
+            </Pill>
+          ))}
         </div>
 
         {/* ROW 2.5: Time period pills */}
