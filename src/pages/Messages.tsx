@@ -928,7 +928,7 @@ const MessagesPage = () => {
   const showThreadView = activeThreadId || recipientParam;
 
   return (
-    <div className="h-[calc(100vh-56px)] lg:h-screen flex flex-col">
+    <div className={`flex flex-col ${mobileShowThread && showThreadView && isMobileView ? 'h-screen' : 'h-[calc(100vh-56px)]'} lg:h-screen`}>
       <SeoHead title="Messages — NeoScale AI" description="Your messages" path="/messages" />
 
       {/* Desktop: two columns */}
