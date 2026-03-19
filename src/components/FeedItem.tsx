@@ -323,6 +323,16 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
           </div>
         )}
       </div>
+
+      {/* Share to DM modal */}
+      {shareOpen && (
+        <ShareToDMModal
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          contentId={item.id}
+          contentTitle={item.title}
+        />
+      )}
     </div>
   );
 }
