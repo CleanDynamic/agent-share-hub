@@ -33,6 +33,33 @@ type ProjectSort = "recent" | "most-stars" | "rising";
 type CollectionSort = "recent" | "most-stars" | "largest";
 type AnySort = BlueprintSort | ProjectSort | CollectionSort;
 
+type TimePeriod = "1h" | "24h" | "7d" | "1m" | "3m" | "";
+const TIME_PERIOD_OPTIONS: { value: TimePeriod; label: string }[] = [
+  { value: "1h", label: "1 hour" },
+  { value: "24h", label: "24 hours" },
+  { value: "7d", label: "7 days" },
+  { value: "1m", label: "1 month" },
+  { value: "3m", label: "3 months" },
+  { value: "", label: "Any time" },
+];
+const PERIOD_MS: Record<string, number> = {
+  "1h": 3600000,
+  "24h": 86400000,
+  "7d": 7 * 86400000,
+  "1m": 30 * 86400000,
+  "3m": 90 * 86400000,
+};
+const PERIOD_LABELS: Record<string, string> = {
+  "1h": "1 hour", "24h": "24 hours", "7d": "7 days", "1m": "1 month", "3m": "3 months",
+};
+
+function isWithinPeriod(dateStr: string | null, period: string): boolean {
+  if (!period || !dateStr) return true;
+  const ms = PERIOD_MS[period];
+  if (!ms) return true;
+  return Date.now() - new Date(dateStr).getTime() <= ms;
+}
+
 // Slug helpers
 const TYPE_TO_SLUG: Record<string, string> = {};
 Object.entries(SLUG_TO_TYPE).forEach(([slug, type]) => { TYPE_TO_SLUG[type] = slug; });
