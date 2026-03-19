@@ -153,7 +153,9 @@ interface FeedItemProps {
 
 export function FeedItem({ item, rank, context = "home", navState }: FeedItemProps) {
   const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
   const [expanded, setExpanded] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const profile = item.profiles as any;
   const starVal = roundedStars(Number(item.avg_rating) || 0, item.rating_count ?? 0);
   const initials = (profile?.display_name || profile?.username || "?").slice(0, 2).toUpperCase();
