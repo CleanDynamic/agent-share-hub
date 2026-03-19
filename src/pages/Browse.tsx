@@ -738,6 +738,32 @@ const Browse = () => {
           </div>
         )}
 
+        {/* Sort pills */}
+        <div className="flex gap-1 mb-3">
+          {([
+            { value: "recent" as SortMode, label: "🕐 Recent" },
+            { value: "popular" as SortMode, label: "🔥 Popular" },
+            { value: "rising" as SortMode, label: "✨ Rising" },
+          ]).map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => {
+                setSortMode(opt.value);
+                const sp = new URLSearchParams(searchParams);
+                sp.set("sort", opt.value);
+                setSearchParams(sp, { replace: true });
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] ${
+                sortMode === opt.value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-accent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         {/* Desktop filters */}
         <div className="hidden md:flex gap-3 overflow-x-auto pb-2 mb-3 scrollbar-hide">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
