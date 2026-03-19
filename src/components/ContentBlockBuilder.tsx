@@ -52,6 +52,7 @@ export interface ContentBlock {
 interface Props {
   blocks: ContentBlock[];
   onChange: (blocks: ContentBlock[]) => void;
+  contentType?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
