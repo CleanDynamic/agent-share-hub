@@ -1111,7 +1111,7 @@ const Upload = () => {
                 <p className="text-xs text-muted-foreground mt-0.5">Optional — free by default</p>
               </div>
               <div className="space-y-4">
-                {(["free", "paid"] as const).map((type) => (
+                {!isBlogType && (["free", "paid"] as const).map((type) => (
                   <div key={type} className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-foreground">{type === "free" ? "Free download" : "Paid (fixed price)"}</p>
