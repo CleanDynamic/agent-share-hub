@@ -52,6 +52,7 @@ interface Props {
   useInstructions: string | null;
   onTriggerPaywall: () => void;
   isEligible?: boolean;
+  contentType?: string;
 }
 
 // ─── Ad Modal ───────────────────────────────────────────────
