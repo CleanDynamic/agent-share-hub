@@ -319,13 +319,6 @@ const Browse = () => {
       if (difficultyFilter && item.difficulty !== difficultyFilter) return false;
       if (toolFilters.length > 0 && !toolFilters.some((t) => (item.ai_tools ?? []).includes(t))) return false;
       if (useCaseFilters.length > 0 && !useCaseFilters.some((u) => (item.use_cases ?? []).includes(u))) return false;
-      if (matchInterests && fullProfile) {
-        const interests = (fullProfile as any).user_interests ?? [];
-        const tools = (fullProfile as any).user_ai_tools ?? [];
-        const matchesInterest = (item.use_cases ?? []).some((u: string) => interests.includes(u));
-        const matchesTool = (item.ai_tools ?? []).some((t: string) => tools.includes(t));
-        if (!matchesInterest && !matchesTool) return false;
-      }
       if (microtagFilters.length > 0 && allMicrotagsMap) {
         const itemTags = allMicrotagsMap.get(item.id) ?? [];
         if (!microtagFilters.every((mt) => itemTags.includes(mt))) return false;
