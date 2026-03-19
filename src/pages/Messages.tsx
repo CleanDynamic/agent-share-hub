@@ -783,8 +783,18 @@ const MessagesPage = () => {
         </button>
       </div>
 
-      {/* Thread list */}
-      <div className="flex-1 overflow-y-auto">
+      <div
+        className="flex-1 overflow-y-auto"
+        onTouchStart={isMobileView ? handlePullTouchStart : undefined}
+        onTouchMove={isMobileView ? handlePullTouchMove : undefined}
+        onTouchEnd={isMobileView ? handlePullTouchEnd : undefined}
+      >
+        {/* Pull to refresh indicator */}
+        {pullDelta > 0 && (
+          <div className="flex justify-center py-2" style={{ height: pullDelta }}>
+            <Loader2 className={`h-4 w-4 text-muted-foreground ${pullDelta >= 60 ? "animate-spin" : ""}`} />
+          </div>
+        )}
         {activeTab === "requests" && threads.length > 0 && (
           <p className="text-xs text-muted-foreground px-4 py-3">
             These are message requests from people you don't follow.
