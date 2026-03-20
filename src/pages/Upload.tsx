@@ -71,7 +71,7 @@ const Upload = () => {
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const { groups: toolGroups } = useGroupedApprovedTools();
-  const [uploadType, setUploadType] = useState<"single" | "project">("single");
+  const [uploadType, setUploadType] = useState<"blog" | "single" | "project">("single");
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([emptyBlock("text")]);
   const [wteBlocks, setWteBlocks] = useState<WteBlock[]>([]);
   const [submitting, setSubmitting] = useState(false);
