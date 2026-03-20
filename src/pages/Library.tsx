@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Library, Search, Plus, X, Folder, GripVertical, Smile, Pencil, Trash2,
+  Library, Search, Plus, X, Folder, GripVertical, Smile, Pencil, Trash2, MoreHorizontal, Share2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PublishCollectionModal } from "@/components/PublishCollectionModal";
 
 const COMMON_EMOJIS = ["⚡", "🔥", "💡", "🎯", "📌", "🚀", "💎", "🧠", "📁", "🎨", "🔧", "✨", "📊", "🤖", "💻", "🎓", "📝", "🏷️", "⭐", "🌟"];
 
@@ -30,6 +31,8 @@ export default function LibraryPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [publishFolderId, setPublishFolderId] = useState<string | null>(null);
+  const [folderMenuOpenId, setFolderMenuOpenId] = useState<string | null>(null);
 
   // Folders
   const { data: folders } = useQuery({
@@ -97,6 +100,13 @@ export default function LibraryPage() {
   const updateCount = libraryItems?.filter((l: any) => l.has_update).length ?? 0;
 
   const activeFolderObj = folders?.find((f: any) => f.id === activeFolder);
+
+  // Items for the folder being published (used by PublishCollectionModal)
+  const publishFolderObj = folders?.find((f: any) => f.id === publishFolderId) ?? null;
+  const publishFolderItems = useMemo(() => {
+    if (!publishFolderId || !libraryItems) return [];
+    return libraryItems.filter((l: any) => l.folder_id === publishFolderId);
+  }, [publishFolderId, libraryItems]);
   const folderLabel = activeFolder === "root" ? "📚 Library" : activeFolder ? `${activeFolderObj?.emoji ?? ""} ${activeFolderObj?.name ?? "Folder"}`.trim() : "All items";
 
   // Create folder
@@ -209,6 +219,11 @@ export default function LibraryPage() {
                       >
                         {folder.emoji && <span>{folder.emoji}</span>}
                         <span className="truncate">{folder.name}</span>
+                        {folder.published_collection_id && (
+                          <span className="text-[9px] font-medium px-1 rounded" style={{ background: "rgba(46,196,182,0.2)", color: "#2EC4B6" }}>
+                            Published
+                          </span>
+                        )}
                         <span className="ml-auto text-[11px] text-muted-foreground">{folder.item_count}</span>
                       </button>
                     )}
@@ -216,6 +231,52 @@ export default function LibraryPage() {
                       <div className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:flex gap-0.5">
                         <button onClick={() => { setEditingId(folder.id); setEditName(folder.name); }} className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent"><Pencil className="h-3 w-3" /></button>
                         <button onClick={() => setConfirmDeleteId(folder.id)} className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-accent"><Trash2 className="h-3 w-3" /></button>
+                        <button
+                          onClick={() => setFolderMenuOpenId(folderMenuOpenId === folder.id ? null : folder.id)}
+                          className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent"
+                          title="More options"
+                        >
+                          <MoreHorizontal className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    {/* Folder three-dot dropdown */}
+                    {folderMenuOpenId === folder.id && (
+                      <div
+                        className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-border bg-card shadow-lg py-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={() => { setEditingId(folder.id); setEditName(folder.name); setFolderMenuOpenId(null); }}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent"
+                        >
+                          <Pencil className="h-3.5 w-3.5" /> Rename folder
+                        </button>
+                        <button
+                          onClick={() => { setConfirmDeleteId(folder.id); setFolderMenuOpenId(null); }}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-accent"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Delete folder
+                        </button>
+                        <div className="my-1 border-t border-border" />
+                        <button
+                          onClick={() => {
+                            const itemsInFolder = libraryItems?.filter((l: any) => l.folder_id === folder.id) ?? [];
+                            if (itemsInFolder.length < 2) {
+                              toast({ title: "Add at least 2 items to this folder first" });
+                              setFolderMenuOpenId(null);
+                              return;
+                            }
+                            setPublishFolderId(folder.id);
+                            setFolderMenuOpenId(null);
+                          }}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent"
+                        >
+                          <Share2 className="h-3.5 w-3.5 shrink-0" style={{ color: "#2EC4B6" }} />
+                          <span style={{ color: "#2EC4B6" }}>
+                            {folder.published_collection_id ? "Update Collection" : "Publish as Collection"}
+                          </span>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -270,7 +331,21 @@ export default function LibraryPage() {
             </div>
 
             {/* Folder header */}
-            <p className="text-sm text-muted-foreground mb-3">{folderLabel} — {filtered.length} items</p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-muted-foreground">{folderLabel} — {filtered.length} items</p>
+              {activeFolder && activeFolder !== "root" && activeFolderObj && filtered.length >= 2 && (
+                <button
+                  onClick={() => setPublishFolderId(activeFolder)}
+                  className="text-xs px-3 py-1.5 rounded-full border font-medium transition-colors"
+                  style={{
+                    borderColor: "#2EC4B6",
+                    color: "#2EC4B6",
+                  }}
+                >
+                  {activeFolderObj.published_collection_id ? "Update Collection" : "Publish as Collection"}
+                </button>
+              )}
+            </div>
 
             {/* Grid */}
             {isLoading ? (
@@ -324,6 +399,30 @@ export default function LibraryPage() {
             )}
           </div>
         </div>
+
+        {/* Dismiss folder menu on outside click */}
+        {folderMenuOpenId && (
+          <div className="fixed inset-0 z-10" onClick={() => setFolderMenuOpenId(null)} />
+        )}
+
+        {/* Publish / Sync collection modal */}
+        {publishFolderId && publishFolderObj && (
+          <PublishCollectionModal
+            open={!!publishFolderId}
+            onOpenChange={(o) => { if (!o) setPublishFolderId(null); }}
+            folder={{
+              id: publishFolderObj.id,
+              name: publishFolderObj.name,
+              emoji: publishFolderObj.emoji,
+              published_collection_id: publishFolderObj.published_collection_id ?? null,
+            }}
+            items={publishFolderItems}
+            onSuccess={() => {
+              qc.invalidateQueries({ queryKey: ["library_folders", profile?.id] });
+              setPublishFolderId(null);
+            }}
+          />
+        )}
 
         {/* Delete confirmation */}
         {confirmDeleteId && (
