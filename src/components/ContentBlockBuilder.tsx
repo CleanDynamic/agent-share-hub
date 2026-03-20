@@ -732,10 +732,12 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                 )}
               </div>
 
-              {/* Per-block use instructions */}
+              {/* Per-block use instructions — hidden for Blog */}
+              {contentType !== "Blog" && (
               <div className="px-4 pb-3">
                 <UseInstructionsToggle value={block.useInstructions} onChange={(v) => update(index, { useInstructions: v })} />
               </div>
+              )}
 
               {/* Add variation link */}
               {supportsVariations(block.type) && (
