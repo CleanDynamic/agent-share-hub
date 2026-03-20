@@ -35,10 +35,8 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const navItems: NavItem[] = [
-    // Identity
-    { icon: User, label: "My Profile", to: "/profile", authOnly: true },
     // Discovery
-    { icon: Home, label: "Home", to: "/", divider: true },
+    { icon: Home, label: "Home", to: "/" },
     { icon: LayoutGrid, label: "Discover", to: "/browse" },
     { icon: Library, label: "Library", to: "/library", authOnly: true },
     // Creation
@@ -47,8 +45,9 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     // Communication
     { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true, badge: msgBadge, divider: true },
     { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true, badge: notifBadge },
-    // Account (creators only)
-    ...(isLoggedIn && profile?.is_creator ? [{ icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true, divider: true }] : []),
+    // Identity + Account
+    { icon: User, label: "My Profile", to: "/profile", authOnly: true, divider: true },
+    ...(isLoggedIn && profile?.is_creator ? [{ icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true }] : []),
   ];
 
   const visibleItems = navItems.filter((item) => !item.authOnly || isLoggedIn);

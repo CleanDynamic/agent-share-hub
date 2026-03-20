@@ -167,7 +167,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
   const stop = (e: React.MouseEvent) => e.stopPropagation();
 
   const isLight = context === "home";
-  const showDescription = item.title.length <= 60 && !!item.description;
+  const isBlog = item.content_type === "Blog";
 
   // WTE teaser
   const wteTeaser = extractWteTeaser(item);
@@ -232,13 +232,13 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
       {/* LINE 3 — Title */}
       <p className="text-sm font-semibold text-foreground leading-[1.3] mt-1 line-clamp-2">{item.title}</p>
 
-      {/* LINE 4 — Description (hidden if long title) */}
-      {showDescription && (
-        <p className="text-[13px] text-muted-foreground truncate mt-0.5">{item.description}</p>
+      {/* LINE 3.5 — Hook subtitle (blogs only) */}
+      {isBlog && item.description && (
+        <p className="text-[13px] text-muted-foreground italic truncate mt-0.5">{item.description}</p>
       )}
 
-      {/* LINE 4.25 — What to Expect teaser */}
-      {wteTeaser && (
+      {/* LINE 4.25 — What to Expect teaser (non-blogs only) */}
+      {!isBlog && wteTeaser && (
         <p className="text-[12px] italic mt-0.5 truncate" style={{ color: "#2EC4B6" }}>
           <Eye className="inline h-[10px] w-[10px] mr-1" style={{ verticalAlign: "middle" }} />
           <span className="opacity-70">Expect: </span>
@@ -263,14 +263,24 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
 
       {/* LINE 6 — Stats + Show More */}
       {(() => {
-        // Don't show expand for AI Tools or types without blueprint blocks
-        const canExpand = item.content_type !== "AI Tools (LLMs)";
+        // Don't show expand for AI Tools, blogs
+        const canExpand = item.content_type !== "AI Tools (LLMs)" && !isBlog;
         return (
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-3 text-xs text-muted-foreground flex-nowrap overflow-x-auto" style={{ scrollbarWidth: "none" }}>
               <span className="inline-flex items-center gap-[3px] shrink-0"><Eye className="h-3 w-3" />{formatNum(item.view_count ?? 0)}</span>
-              <span className="text-[#444450] shrink-0">·</span>
-              <span className="inline-flex items-center gap-[3px] shrink-0"><Download className="h-3 w-3" />{formatNum(item.download_count ?? 0)}</span>
+              {!isBlog && (
+                <>
+                  <span className="text-[#444450] shrink-0">·</span>
+                  <span className="inline-flex items-center gap-[3px] shrink-0"><Download className="h-3 w-3" />{formatNum(item.download_count ?? 0)}</span>
+                </>
+              )}
+              {isBlog && (item as any).estimated_read_minutes && (
+                <>
+                  <span className="text-[#444450] shrink-0">·</span>
+                  <span className="inline-flex items-center gap-[3px] shrink-0 text-muted-foreground">~{(item as any).estimated_read_minutes} min read</span>
+                </>
+              )}
               {(item.rating_count ?? 0) > 0 && (
                 <>
                   <span className="text-[#444450] shrink-0">·</span>
@@ -317,6 +327,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
           <div className="mt-2 pt-2 border-t border-border">
             <FeedItemExpanded
               contentId={item.id}
+              description={item.description ?? null}
               whatToExpect={item.what_to_expect ?? null}
               whatToExpectBlocks={item.what_to_expect_blocks as any[] | null}
             />

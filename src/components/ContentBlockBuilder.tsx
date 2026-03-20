@@ -628,7 +628,7 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                   {block.isPreview && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2EC4B6]/15 text-[#2EC4B6] font-medium">Preview</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  {supportsPreview(block.type) && (() => {
+                  {contentType !== "Blog" && supportsPreview(block.type) && (() => {
                     const previewCount = blocks.filter((b) => b.isPreview).length;
                     const canToggle = block.isPreview || previewCount < 2;
                     return (
@@ -732,10 +732,12 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                 )}
               </div>
 
-              {/* Per-block use instructions */}
+              {/* Per-block use instructions — hidden for Blog */}
+              {contentType !== "Blog" && (
               <div className="px-4 pb-3">
                 <UseInstructionsToggle value={block.useInstructions} onChange={(v) => update(index, { useInstructions: v })} />
               </div>
+              )}
 
               {/* Add variation link */}
               {supportsVariations(block.type) && (
@@ -752,12 +754,8 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
       <div className="flex flex-wrap gap-2 pt-1">
         {contentType === "Blog" ? (
           <>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Long Text</Button>
             <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Text</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("image")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Image</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("file")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> File</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("github")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> GitHub</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("large_file")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Large File</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Long Text</Button>
           </>
         ) : (
           <>
