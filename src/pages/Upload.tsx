@@ -32,7 +32,7 @@ import { DependencyPicker, type Dependency } from "@/components/DependencyPicker
 import { useMicrotagDefinitions } from "@/hooks/useMicrotags";
 import { ORDERED_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, ANY_DIFFICULTY_TYPES, displayContentType } from "@/lib/content-types";
 
-const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
+const CONTENT_TYPES = ORDERED_CONTENT_TYPES.filter(t => t !== "Blog");
 const DIFFICULTIES = [...DIFF_LIST, "Any"];
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance", "Hobby", "Other"];
 const ACCEPTED_TYPES = [".txt", ".md", ".json", ".pdf"];
