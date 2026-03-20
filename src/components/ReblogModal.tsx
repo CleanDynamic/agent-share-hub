@@ -313,15 +313,6 @@ export function ReblogModal({ open, onOpenChange, source, onSuccess }: ReblogMod
 
       if (error || !newItem) throw error ?? new Error("Insert failed");
 
-      // Increment reblog_count on the source optimistically via DB
-      if (ids.reblog_of_content_id) {
-        await supabase
-          .from("content_items")
-          .update({ reblog_count: supabase.rpc as any } as any)
-          .eq("id", ids.reblog_of_content_id);
-        // Use raw SQL increment via RPC if available; fallback: just invalidate cache
-      }
-
       // Insert notification for original creator
       const creatorId = await getCreatorId();
       if (creatorId && creatorId !== user.id) {
