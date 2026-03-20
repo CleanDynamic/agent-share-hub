@@ -240,7 +240,7 @@ function BlueprintSlotCard({
 
         {/* c. Content Type */}
         <div className="space-y-1.5">
-          <Label className="text-xs">Content Type</Label>
+          <Label className="text-xs">Type</Label>
           <Select value={slot.contentType} onValueChange={(v) => onChange({ contentType: v })}>
             <SelectTrigger className="bg-background border-border rounded-xl text-sm"><SelectValue placeholder="Select a type" /></SelectTrigger>
             <SelectContent className="bg-card border-border">

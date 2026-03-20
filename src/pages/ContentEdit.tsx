@@ -491,7 +491,7 @@ export default function ContentEditPage() {
       <EditDrawer open={drawerSection === "badges"} title="Edit Type & Difficulty" onClose={() => setDrawerSection(null)}>
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Content type</label>
+            <label className="text-xs text-muted-foreground mb-1 block">Type</label>
             <Input value={editContentType} onChange={(e) => setEditContentType(e.target.value)} className="bg-background border-border rounded-lg" />
           </div>
           <div>

@@ -938,7 +938,7 @@ const Upload = () => {
             {/* 4. Content Type */}
             <FormField control={form.control} name="content_type" render={({ field }) => (
               <FormItem>
-                <FormLabel>Content Type</FormLabel>
+                <FormLabel>Type</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className="bg-card border-border rounded-xl"><SelectValue placeholder="Select a type" /></SelectTrigger>
