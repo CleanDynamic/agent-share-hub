@@ -4,7 +4,7 @@ import { formatDistanceToNow } from "date-fns";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, CheckCircle2, FileText, FolderOpen, ImagePlus, X, ChevronDown } from "lucide-react";
+import { Loader2, CheckCircle2, FileText, FolderOpen, ImagePlus, X, ChevronDown, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectUploadForm } from "@/components/ProjectUploadForm";
 import { CollabInvitePicker, type CollabInvitee } from "@/components/CollabInvitePicker";
@@ -87,6 +87,12 @@ const Upload = () => {
   const { data: microtagDefs } = useMicrotagDefinitions();
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  // Thread mode state
+  const [isThreadMode, setIsThreadMode] = useState(false);
+  const [threadPosts, setThreadPosts] = useState<{ id: string; text: string; imageFile?: File; imagePreview?: string }[]>([
+    { id: "tp_1", text: "" },
+    { id: "tp_2", text: "" },
+  ]);
   const [toolUrl, setToolUrl] = useState("");
   const [toolSubtype, setToolSubtype] = useState<"api" | "local" | "">("");
   const [modelParameters, setModelParameters] = useState("");
@@ -668,6 +674,108 @@ const Upload = () => {
     }
   }
 
+  async function onSubmitThread() {
+    const filledPosts = threadPosts.filter((p) => p.text.trim().length > 0);
+    if (filledPosts.length < 2) {
+      toast({ title: "Add more posts", description: "A thread needs at least 2 posts.", variant: "destructive" });
+      return;
+    }
+    const title = form.getValues("title").trim();
+    if (!title) {
+      toast({ title: "Title required", description: "Add a title for your thread.", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await supabase.auth.refreshSession();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in");
+
+      const totalPosts = filledPosts.length;
+
+      // Insert first post
+      const { data: firstPost, error: firstErr } = await supabase.from("content_items").insert({
+        creator_id: user.id,
+        title,
+        content_type: "Blog",
+        difficulty: "Any",
+        status: "approved",
+        approved_at: new Date().toISOString(),
+        monetisation_type: "free",
+        donation_enabled: form.getValues("donation_enabled"),
+        description: form.getValues("description") || null,
+        is_thread_post: true,
+        thread_position: 1,
+        thread_total: totalPosts,
+        use_cases: form.getValues("use_cases"),
+        download_count: 0,
+        view_count: 0,
+        like_count: 0,
+        avg_rating: 0,
+        rating_count: 0,
+        current_version: "1.0",
+      } as any).select("id").single();
+      if (firstErr || !firstPost) throw firstErr || new Error("Failed to insert first thread post");
+
+      // Set thread_id = id for first post
+      await supabase.from("content_items").update({ thread_id: firstPost.id } as any).eq("id", firstPost.id);
+
+      // Upload cover image for first post
+      if (coverImageFile) {
+        const path = `${firstPost.id}/cover/${coverImageFile.name}`;
+        const { data: uploadData } = await supabase.storage.from("content-files").upload(path, coverImageFile);
+        if (uploadData) {
+          const { data: urlData } = supabase.storage.from("content-files").getPublicUrl(path);
+          await supabase.from("content_items").update({ cover_image_url: urlData.publicUrl } as any).eq("id", firstPost.id);
+        }
+      }
+
+      // Insert continuation posts
+      for (let i = 1; i < filledPosts.length; i++) {
+        const post = filledPosts[i];
+        const { data: nextPost, error: nextErr } = await supabase.from("content_items").insert({
+          creator_id: user.id,
+          title: null,
+          content_type: "Blog",
+          difficulty: "Any",
+          status: "approved",
+          approved_at: new Date().toISOString(),
+          monetisation_type: "free",
+          donation_enabled: false,
+          thread_id: firstPost.id,
+          thread_position: i + 1,
+          thread_total: totalPosts,
+          is_thread_post: true,
+          description: post.text.trim(),
+          download_count: 0,
+          view_count: 0,
+          like_count: 0,
+          avg_rating: 0,
+          rating_count: 0,
+          current_version: "1.0",
+        } as any).select("id").single();
+        if (nextErr || !nextPost) throw nextErr || new Error(`Failed to insert thread post ${i + 1}`);
+
+        // Upload image if any
+        if (post.imageFile) {
+          const path = `${nextPost.id}/cover/${post.imageFile.name}`;
+          const { data: uploadData } = await supabase.storage.from("content-files").upload(path, post.imageFile);
+          if (uploadData) {
+            const { data: urlData } = supabase.storage.from("content-files").getPublicUrl(path);
+            await supabase.from("content_items").update({ cover_image_url: urlData.publicUrl } as any).eq("id", nextPost.id);
+          }
+        }
+      }
+
+      setInsertedContentId(firstPost.id);
+      setSuccess(true);
+    } catch (err: any) {
+      toast({ title: "Thread failed to post", description: err?.message ?? "Please try again.", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   if (success) {
     return (
       <div className="py-20 px-6 flex flex-col items-center justify-center text-center gap-4">
@@ -821,18 +929,139 @@ const Upload = () => {
               </FormItem>
             )} />
 
-            {/* Blog: Content blocks — only Text and Long Text */}
-            <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} contentType="Blog" />
+            {/* Blog: Thread mode toggle */}
+            <div className="flex items-center justify-between border border-border rounded-xl p-3 bg-card">
+              <div>
+                <p className="text-sm font-medium text-foreground">Post as thread?</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Split your post into a connected series (max 280 chars each)</p>
+              </div>
+              <Switch
+                checked={isThreadMode}
+                onCheckedChange={(v) => {
+                  setIsThreadMode(v);
+                  if (v && threadPosts.length < 2) {
+                    setThreadPosts([{ id: "tp_1", text: "" }, { id: "tp_2", text: "" }]);
+                  }
+                }}
+              />
+            </div>
 
-            {/* Blog: estimated read time */}
-            {(() => {
-              const wordCount = contentBlocks.reduce((sum, b) => {
-                if (b.type === "text" || b.type === "long_text") return sum + (b.textContent?.split(/\s+/).filter(Boolean).length ?? 0);
-                return sum;
-              }, 0);
-              const mins = Math.max(1, Math.round(wordCount / 200));
-              return <p className="text-xs text-muted-foreground">Estimated read time: ~{mins} min</p>;
-            })()}
+            {isThreadMode ? (
+              /* Thread builder */
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Thread</p>
+                {threadPosts.map((post, idx) => (
+                  <div key={post.id} className="border border-border rounded-xl p-4 bg-card space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground">Post {idx + 1} of {threadPosts.length}</span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (idx === 0) return;
+                            const next = [...threadPosts];
+                            [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                            setThreadPosts(next);
+                          }}
+                          disabled={idx === 0}
+                          className="p-1 rounded hover:bg-muted disabled:opacity-30 text-muted-foreground"
+                        >
+                          <ChevronDown className="h-3.5 w-3.5 rotate-180" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (idx === threadPosts.length - 1) return;
+                            const next = [...threadPosts];
+                            [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+                            setThreadPosts(next);
+                          }}
+                          disabled={idx === threadPosts.length - 1}
+                          className="p-1 rounded hover:bg-muted disabled:opacity-30 text-muted-foreground"
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </button>
+                        {threadPosts.length > 2 && (
+                          <button
+                            type="button"
+                            onClick={() => setThreadPosts(threadPosts.filter((_, i) => i !== idx))}
+                            className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <textarea
+                      value={post.text}
+                      onChange={(e) => {
+                        const val = e.target.value.slice(0, 280);
+                        setThreadPosts(threadPosts.map((p, i) => i === idx ? { ...p, text: val } : p));
+                      }}
+                      placeholder="What's on your mind?"
+                      rows={3}
+                      maxLength={280}
+                      className="w-full bg-background border border-border rounded-lg p-2 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                    <div className="flex items-center justify-between">
+                      <label className="cursor-pointer flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                        <ImagePlus className="h-3.5 w-3.5" />
+                        Add image
+                        <input
+                          type="file"
+                          accept=".jpg,.jpeg,.png,.webp"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            if (file.size > 3 * 1024 * 1024) { toast({ title: "File too large", description: "Image must be under 3MB.", variant: "destructive" }); return; }
+                            const preview = URL.createObjectURL(file);
+                            setThreadPosts(threadPosts.map((p, i) => i === idx ? { ...p, imageFile: file, imagePreview: preview } : p));
+                          }}
+                        />
+                      </label>
+                      <span className="text-[11px] text-muted-foreground">{post.text.length} / 280</span>
+                    </div>
+                    {post.imagePreview && (
+                      <div className="relative">
+                        <img src={post.imagePreview} alt="" className="w-full rounded-lg object-cover" style={{ maxHeight: 120 }} />
+                        <button
+                          type="button"
+                          onClick={() => setThreadPosts(threadPosts.map((p, i) => i === idx ? { ...p, imageFile: undefined, imagePreview: undefined } : p))}
+                          className="absolute top-1 right-1 p-1 rounded-full bg-background/80 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {threadPosts.length < 25 && (
+                  <button
+                    type="button"
+                    onClick={() => setThreadPosts([...threadPosts, { id: `tp_${Date.now()}`, text: "" }])}
+                    className="flex items-center gap-1.5 text-sm text-primary hover:underline"
+                  >
+                    <Plus className="h-4 w-4" /> Add post
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Blog: Content blocks — only Text and Long Text */}
+                <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} contentType="Blog" />
+
+                {/* Blog: estimated read time */}
+                {(() => {
+                  const wordCount = contentBlocks.reduce((sum, b) => {
+                    if (b.type === "text" || b.type === "long_text") return sum + (b.textContent?.split(/\s+/).filter(Boolean).length ?? 0);
+                    return sum;
+                  }, 0);
+                  const mins = Math.max(1, Math.round(wordCount / 200));
+                  return <p className="text-xs text-muted-foreground">Estimated read time: ~{mins} min</p>;
+                })()}
+              </>
+            )}
 
             {/* Blog: Topics */}
             <FormField control={form.control} name="use_cases" render={({ field }) => (
@@ -873,31 +1102,43 @@ const Upload = () => {
             {/* Blog: Co-authors */}
             <CollabInvitePicker invitees={collabInvitees} onChange={setCollabInvitees} />
 
-            {/* Blog: Save Draft + Preview */}
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="flex-1 h-10 rounded-full"
-                disabled={savingDraft || submitting}
-                onClick={() => saveDraft(false)}
-              >
-                {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
-              </Button>
+            {/* Blog: Save Draft + Preview / Post Thread */}
+            {isThreadMode ? (
               <Button
                 type="button"
                 size="lg"
-                className="flex-1 h-10 rounded-full"
-                disabled={savingDraft || submitting}
-                onClick={async () => {
-                  const id = await saveDraft(false);
-                  if (id) navigate(`/upload/preview/${id}`);
-                }}
+                className="w-full h-10 rounded-full bg-primary hover:bg-primary/90"
+                disabled={submitting || threadPosts.filter((p) => p.text.trim()).length < 2}
+                onClick={onSubmitThread}
               >
-                Preview Post →
+                {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Posting…</> : `Post Thread (${threadPosts.filter((p) => p.text.trim()).length} posts)`}
               </Button>
-            </div>
+            ) : (
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  className="flex-1 h-10 rounded-full"
+                  disabled={savingDraft || submitting}
+                  onClick={() => saveDraft(false)}
+                >
+                  {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
+                </Button>
+                <Button
+                  type="button"
+                  size="lg"
+                  className="flex-1 h-10 rounded-full"
+                  disabled={savingDraft || submitting}
+                  onClick={async () => {
+                    const id = await saveDraft(false);
+                    if (id) navigate(`/upload/preview/${id}`);
+                  }}
+                >
+                  Preview Post →
+                </Button>
+              </div>
+            )}
           </form>
         </Form>
         ) : (
@@ -1153,7 +1394,7 @@ const Upload = () => {
                     {toolGroups.map((group) => {
                       const isExpanded = expandedToolGroups.has(group.category);
                       const selectedCount = (form.watch("ai_tools") ?? []).filter((t) =>
-                        group.tools.some((gt) => gt.name === t)
+                        group.tools.some((gt) => gt.tag === t)
                       ).length;
                       return (
                         <div key={group.category} className="border border-border rounded-xl overflow-hidden">
@@ -1174,17 +1415,17 @@ const Upload = () => {
                             <div className="px-3 pb-3 pt-1 border-t border-border">
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 {group.tools.map((tool) => (
-                                  <FormField key={tool.name} control={form.control} name="ai_tools" render={({ field }) => (
+                                  <FormField key={tool.tag} control={form.control} name="ai_tools" render={({ field }) => (
                                     <FormItem className="flex items-center space-x-2 space-y-0">
                                       <FormControl>
                                         <Checkbox
-                                          checked={field.value?.includes(tool.name)}
+                                          checked={field.value?.includes(tool.tag)}
                                           onCheckedChange={(checked) => {
-                                            field.onChange(checked ? [...(field.value ?? []), tool.name] : (field.value ?? []).filter((v) => v !== tool.name));
+                                            field.onChange(checked ? [...(field.value ?? []), tool.tag] : (field.value ?? []).filter((v) => v !== tool.tag));
                                           }}
                                         />
                                       </FormControl>
-                                      <Label className="text-xs text-foreground font-normal cursor-pointer">{tool.name}</Label>
+                                      <Label className="text-xs text-foreground font-normal cursor-pointer">{tool.tag}</Label>
                                     </FormItem>
                                   )} />
                                 ))}
