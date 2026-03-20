@@ -327,6 +327,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
           <div className="mt-2 pt-2 border-t border-border">
             <FeedItemExpanded
               contentId={item.id}
+              description={item.description ?? null}
               whatToExpect={item.what_to_expect ?? null}
               whatToExpectBlocks={item.what_to_expect_blocks as any[] | null}
             />
