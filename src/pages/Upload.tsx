@@ -749,6 +749,150 @@ const Upload = () => {
 
         {uploadType === "project" ? (
           <ProjectUploadForm />
+        ) : uploadType === "blog" ? (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+            {/* Blog: Title */}
+            <FormField control={form.control} name="title" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                  <Input placeholder="E.g. Why AI agents changed my workflow" className="bg-card border-border rounded-xl" {...field} maxLength={100} />
+                </FormControl>
+                <FormDescription>{field.value.length}/100</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Blog: Cover Image */}
+            <div className="space-y-2">
+              <Label>Cover image (optional)</Label>
+              <p className="text-xs text-muted-foreground">A visual that appears in the feed. Recommended: 1200×630px.</p>
+              {coverImagePreview ? (
+                <div className="relative">
+                  <img src={coverImagePreview} alt="Cover preview" className="w-full rounded-xl object-cover" style={{ maxHeight: 200 }} />
+                  <button type="button" onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); }} className="absolute top-2 right-2 p-1 rounded-full bg-background/80 text-muted-foreground hover:text-foreground transition-colors">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center gap-2 py-6 px-4 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/40 transition-colors">
+                  <ImagePlus className="h-6 w-6 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Click to upload (.jpg, .png, .webp — max 3MB)</span>
+                  <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 3 * 1024 * 1024) { toast({ title: "File too large", description: "Cover image must be under 3MB.", variant: "destructive" }); return; }
+                    setCoverImageFile(file);
+                    setCoverImagePreview(URL.createObjectURL(file));
+                  }} />
+                </label>
+              )}
+            </div>
+
+            {/* Blog: Hook (description) */}
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Hook</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="The first line people see. Make it count."
+                    className="bg-card border-border rounded-xl"
+                    maxLength={160}
+                  />
+                </FormControl>
+                <FormDescription>
+                  The first line people see. Make it count.
+                  <span className="ml-2 text-muted-foreground">{field.value.length}/160</span>
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Blog: Content blocks — only Text and Long Text */}
+            <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} contentType="Blog" />
+
+            {/* Blog: estimated read time */}
+            {(() => {
+              const wordCount = contentBlocks.reduce((sum, b) => {
+                if (b.type === "text" || b.type === "long_text") return sum + (b.textContent?.split(/\s+/).filter(Boolean).length ?? 0);
+                return sum;
+              }, 0);
+              const mins = Math.max(1, Math.round(wordCount / 200));
+              return <p className="text-xs text-muted-foreground">Estimated read time: ~{mins} min</p>;
+            })()}
+
+            {/* Blog: Use Case Tags */}
+            <FormField control={form.control} name="use_cases" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Use Case Tags</FormLabel>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {USE_CASES.map((uc) => {
+                    const selected = field.value.includes(uc);
+                    return (
+                      <button key={uc} type="button" onClick={() => field.onChange(selected ? field.value.filter((v) => v !== uc) : [...field.value, uc])}
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${selected ? "bg-primary/15 text-primary border-primary/30" : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"}`}>
+                        {uc}
+                      </button>
+                    );
+                  })}
+                </div>
+                <FormDescription>Select all that apply.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Blog: Monetisation — donation only */}
+            <div className="border border-border rounded-xl p-5 bg-card space-y-5">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Monetisation</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Blogs are always free. You can add a donation button.</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-foreground">Donation button</p>
+                  <p className="text-xs text-muted-foreground">Add a tip button so readers can support your work</p>
+                </div>
+                <FormField control={form.control} name="donation_enabled" render={({ field }) => (
+                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                )} />
+              </div>
+            </div>
+
+            {/* Blog: Co-authors */}
+            <CollabInvitePicker invitees={collabInvitees} onChange={setCollabInvitees} />
+
+            {/* Blog: Save Draft + Preview */}
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="flex-1 h-10 rounded-full"
+                disabled={savingDraft || submitting}
+                onClick={() => saveDraft(false)}
+              >
+                {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                className="flex-1 h-10 rounded-full"
+                disabled={savingDraft || submitting}
+                onClick={async () => {
+                  const id = await saveDraft(false);
+                  if (id) navigate(`/upload/preview/${id}`);
+                }}
+              >
+                Preview Post →
+              </Button>
+            </div>
+          </form>
+        </Form>
+        ) :
+          <ProjectUploadForm />
         ) : (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
