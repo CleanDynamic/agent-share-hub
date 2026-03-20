@@ -73,14 +73,14 @@ const FORMATS: { value: WteFormattingType; icon: typeof AlignLeft; label: string
 ];
 
 const FormatBar = ({ active, onChange }: { active: WteFormattingType; onChange: (f: WteFormattingType) => void }) => (
-  <div className="flex gap-1 mb-2">
+  <div className="flex gap-1 mb-1.5">
     {FORMATS.map((f) => {
       const Icon = f.icon;
       const isActive = active === f.value;
       return (
         <button key={f.value} type="button" onClick={() => onChange(f.value)} title={f.label}
-          className={`p-1.5 rounded-md text-xs flex items-center gap-1 transition-colors ${isActive ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-muted"}`}>
-          <Icon className="h-3.5 w-3.5" />
+          className={`h-7 px-2 rounded-md text-xs flex items-center gap-1 transition-colors ${isActive ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-muted"}`}>
+          <Icon className="h-3 w-3" />
           <span className="hidden sm:inline">{f.label}</span>
         </button>
       );
@@ -122,7 +122,7 @@ const UseInstructionsToggle = ({ value, onChange }: { value: string; onChange: (
     <div className="mt-3 pt-3 border-t border-border">
       <button type="button" onClick={handleToggle} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
         <ChevronRight className={`h-3 w-3 transition-transform ${open ? "rotate-90" : ""}`} />
-        Use instructions for this step
+        Instructions
       </button>
       {open && (
         <div className="mt-2">
@@ -161,15 +161,15 @@ export function WhatToExpectBuilder({ blocks, onChange, maxBlocks = 3, label, he
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <Label className="text-sm font-medium">{label || "What to Expect (optional)"}</Label>
-      <p className="text-xs text-muted-foreground -mt-1">{helper || "Show users what good output looks like before they download."}</p>
+      <p className="text-xs text-muted-foreground -mt-0.5">{helper || "What will users get? Keep it concrete."}</p>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {blocks.map((block, index) => (
           <div key={block.id} className="border rounded-xl bg-card overflow-hidden border-border">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border">
+            <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-b border-border">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                 {block.type === "text" ? <Type className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
                 <span>Expected output {index + 1}</span>
@@ -182,7 +182,7 @@ export function WhatToExpectBuilder({ blocks, onChange, maxBlocks = 3, label, he
             </div>
 
             {/* Content */}
-            <div className="p-4">
+            <div className="p-3">
               {block.type === "text" && (
                 <>
                   {block.formatting === "sub_list" ? (
@@ -251,7 +251,7 @@ export function WhatToExpectBuilder({ blocks, onChange, maxBlocks = 3, label, he
             </div>
 
             {/* Per-block use instructions */}
-            <div className="px-4 pb-3">
+            <div className="px-3 pb-2">
               <UseInstructionsToggle value={block.useInstructions} onChange={(v) => update(index, { useInstructions: v })} />
             </div>
           </div>

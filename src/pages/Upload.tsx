@@ -4,7 +4,7 @@ import { formatDistanceToNow } from "date-fns";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, CheckCircle2, FileText, FolderOpen, ImagePlus, X } from "lucide-react";
+import { Loader2, CheckCircle2, FileText, FolderOpen, ImagePlus, X, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectUploadForm } from "@/components/ProjectUploadForm";
 import { CollabInvitePicker, type CollabInvitee } from "@/components/CollabInvitePicker";
@@ -43,7 +43,7 @@ const schema = z.object({
   content_type: z.string().min(1, "Select a content type"),
   description: z.string().trim().min(1, "Description is required").max(500, "Max 500 characters"),
   difficulty: z.string().min(1, "Select a difficulty level"),
-  ai_tools: z.array(z.string()).min(1, "Select at least one AI tool"),
+  ai_tools: z.array(z.string()),
   use_cases: z.array(z.string()),
   use_instructions: z.string().trim().max(5000).optional().or(z.literal("")),
   what_to_expect: z.string().trim().max(2000).optional().or(z.literal("")),
@@ -83,7 +83,8 @@ const Upload = () => {
   const [inlineSplits, setInlineSplits] = useState<InlineSplit[]>([]);
   const [pwywFloor, setPwywFloor] = useState<number>(0);
   const [customTags, setCustomTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
+  const [expandedToolGroups, setExpandedToolGroups] = useState<Set<string>>(new Set(["api"]));
+  const { data: microtagDefs } = useMicrotagDefinitions();
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   const [toolUrl, setToolUrl] = useState("");
@@ -262,6 +263,15 @@ const Upload = () => {
   const totalSplitPct = inlineSplits.reduce((s, x) => s + (x.percentage || 0), 0);
   const keepPct = 100 - totalSplitPct;
   const splitError = totalSplitPct > 90;
+
+  const toggleToolGroup = (category: string) => {
+    setExpandedToolGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
+      return next;
+    });
+  };
 
   // Sort AI_TOOLS: "Other" always last, "Any Tool" always first
   const sortedTools = [...(AI_TOOLS ?? [])].sort((a, b) => {
@@ -751,7 +761,7 @@ const Upload = () => {
           <ProjectUploadForm />
         ) : uploadType === "blog" ? (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 
             {/* Blog: Title */}
             <FormField control={form.control} name="title" render={({ field }) => (
@@ -766,9 +776,9 @@ const Upload = () => {
             )} />
 
             {/* Blog: Cover Image */}
-            <div className="space-y-2">
-              <Label>Cover image (optional)</Label>
-              <p className="text-xs text-muted-foreground">A visual that appears in the feed. Recommended: 1200×630px.</p>
+            <div className="space-y-1.5">
+              <Label>Cover image</Label>
+              <p className="text-xs text-muted-foreground">Appears in the feed. 1200×630px recommended.</p>
               {coverImagePreview ? (
                 <div className="relative">
                   <img src={coverImagePreview} alt="Cover preview" className="w-full rounded-xl object-cover" style={{ maxHeight: 200 }} />
@@ -824,11 +834,11 @@ const Upload = () => {
               return <p className="text-xs text-muted-foreground">Estimated read time: ~{mins} min</p>;
             })()}
 
-            {/* Blog: Use Case Tags */}
+            {/* Blog: Topics */}
             <FormField control={form.control} name="use_cases" render={({ field }) => (
               <FormItem>
-                <FormLabel>Use Case Tags</FormLabel>
-                <div className="flex flex-wrap gap-2 mt-2">
+                <FormLabel>Topics</FormLabel>
+                <div className="flex flex-wrap gap-2 mt-1.5">
                   {USE_CASES.map((uc) => {
                     const selected = field.value.includes(uc);
                     return (
@@ -839,7 +849,6 @@ const Upload = () => {
                     );
                   })}
                 </div>
-                <FormDescription>Select all that apply.</FormDescription>
                 <FormMessage />
               </FormItem>
             )} />
@@ -893,24 +902,24 @@ const Upload = () => {
         </Form>
         ) : (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 
             {/* 2. Title */}
             <FormField control={form.control} name="title" render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1.5">
                 <FormLabel>Title</FormLabel>
                 <FormControl>
                   <Input placeholder="E.g. Email Summariser" className="bg-card border-border rounded-xl" {...field} />
                 </FormControl>
-                <FormDescription>Give it a clear name. E.g. 'Email Summariser' or 'Daily Tweet Writer'</FormDescription>
+                <FormDescription>Keep it short and specific.</FormDescription>
                 <FormMessage />
               </FormItem>
             )} />
 
-            {/* 3. Cover Image (optional) */}
-            <div className="space-y-2">
-              <Label>Cover image (optional)</Label>
-              <p className="text-xs text-muted-foreground">A visual that appears in the feed. Recommended: 1200×630px.</p>
+            {/* 3. Cover Image */}
+            <div className="space-y-1.5">
+              <Label>Cover image</Label>
+              <p className="text-xs text-muted-foreground">Appears in the feed. 1200×630px recommended.</p>
               {coverImagePreview ? (
                 <div className="relative">
                   <img src={coverImagePreview} alt="Cover preview" className="w-full rounded-xl object-cover" style={{ maxHeight: 200 }} />
@@ -935,7 +944,7 @@ const Upload = () => {
 
             {/* 4. Content Type */}
             <FormField control={form.control} name="content_type" render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1.5">
                 <FormLabel>Type</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
@@ -945,7 +954,7 @@ const Upload = () => {
                     {CONTENT_TYPES.map((t) => <SelectItem key={t} value={t}>{displayContentType(t)}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <FormDescription>Not sure? Prompt(s) is the simplest. Blueprint includes setup steps.</FormDescription>
+                <FormDescription>Not sure? Start with Prompt(s).</FormDescription>
                 <FormMessage />
               </FormItem>
             )} />
@@ -1082,7 +1091,7 @@ const Upload = () => {
               </div>
             )}
             <FormField control={form.control} name="description" render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1.5">
                 <FormLabel>Description</FormLabel>
                 <FormControl>
                   <Input
@@ -1093,15 +1102,14 @@ const Upload = () => {
                   />
                 </FormControl>
                 <FormDescription>
-                  Max 500 characters.
-                  <span className="ml-2 text-muted-foreground">{field.value.length}/500</span>
+                  <span className="text-muted-foreground">{field.value.length}/500</span>
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )} />
 
             {/* 6. What to Expect (block builder) — hidden for Blog */}
-            {!isBlogType && <WhatToExpectBuilder blocks={wteBlocks} onChange={setWteBlocks} />}
+            {!isBlogType && <WhatToExpectBuilder blocks={wteBlocks} onChange={setWteBlocks} helper="What will users get? Keep it concrete." />}
 
             {/* 7. Your Blueprint (content block builder) */}
             <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} contentType={watchedContentType} />
@@ -1119,7 +1127,7 @@ const Upload = () => {
             {/* 8. Difficulty — hidden for Blog */}
             {!isBlogType && (
             <FormField control={form.control} name="difficulty" render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1.5">
                 <FormLabel>Difficulty</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
@@ -1129,44 +1137,66 @@ const Upload = () => {
                     {DIFFICULTIES.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <FormDescription>Beginner = anyone can use this immediately. Advanced = multiple tools required.</FormDescription>
+                <FormDescription>Beginner = anyone. Advanced = technical setup needed.</FormDescription>
                 <FormMessage />
               </FormItem>
             )} />
             )}
 
-            {/* 9. AI Tools Required — hidden for Blog */}
+            {/* 9. Works with — hidden for Blog */}
             {!isBlogType && (
             <FormField control={form.control} name="ai_tools" render={() => (
-              <FormItem>
-                <FormLabel>AI Tools Required</FormLabel>
+              <FormItem className="space-y-1.5">
+                <FormLabel>Works with</FormLabel>
                 {toolGroups.length > 0 ? (
-                  <div className="space-y-4 mt-2">
-                    {toolGroups.map((group) => (
-                      <div key={group.category}>
-                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.label}</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {group.tools.map((tool) => (
-                            <FormField key={tool.name} control={form.control} name="ai_tools" render={({ field }) => (
-                              <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(tool.name)}
-                                    onCheckedChange={(checked) => {
-                                      field.onChange(checked ? [...(field.value ?? []), tool.name] : (field.value ?? []).filter((v) => v !== tool.name));
-                                    }}
-                                  />
-                                </FormControl>
-                                <Label className="text-xs text-foreground font-normal cursor-pointer">{tool.name}</Label>
-                              </FormItem>
-                            )} />
-                          ))}
+                  <div className="space-y-1 mt-1">
+                    {toolGroups.map((group) => {
+                      const isExpanded = expandedToolGroups.has(group.category);
+                      const selectedCount = (form.watch("ai_tools") ?? []).filter((t) =>
+                        group.tools.some((gt) => gt.name === t)
+                      ).length;
+                      return (
+                        <div key={group.category} className="border border-border rounded-xl overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => toggleToolGroup(group.category)}
+                            className="flex items-center justify-between w-full px-3 h-10 text-left hover:bg-muted/30 transition-colors"
+                          >
+                            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{group.label}</span>
+                            <div className="flex items-center gap-2">
+                              {!isExpanded && selectedCount > 0 && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-primary/15 text-primary font-medium">({selectedCount})</span>
+                              )}
+                              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                            </div>
+                          </button>
+                          {isExpanded && (
+                            <div className="px-3 pb-3 pt-1 border-t border-border">
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {group.tools.map((tool) => (
+                                  <FormField key={tool.name} control={form.control} name="ai_tools" render={({ field }) => (
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(tool.name)}
+                                          onCheckedChange={(checked) => {
+                                            field.onChange(checked ? [...(field.value ?? []), tool.name] : (field.value ?? []).filter((v) => v !== tool.name));
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <Label className="text-xs text-foreground font-normal cursor-pointer">{tool.name}</Label>
+                                    </FormItem>
+                                  )} />
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-1">
                     {sortedTools.map((tool) => (
                       <FormField key={tool} control={form.control} name="ai_tools" render={({ field }) => (
                         <FormItem className="flex items-center space-x-2 space-y-0">
@@ -1202,17 +1232,17 @@ const Upload = () => {
                 <button type="button" onClick={() => setSubmitToolOpen(true)} className="text-xs text-primary hover:underline mt-2">
                   Don't see your AI tool? Submit it →
                 </button>
-                <FormDescription>Tick every tool you have tested this with. Tick 'Any Tool' if it works everywhere.</FormDescription>
+                <FormDescription>Select every tool you've tested this with.</FormDescription>
                 <FormMessage />
               </FormItem>
             )} />
             )}
 
-            {/* 10. Use Case Tags */}
+            {/* 10. Topics */}
             <FormField control={form.control} name="use_cases" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Use Case Tags</FormLabel>
-                <div className="flex flex-wrap gap-2 mt-2">
+              <FormItem className="space-y-1.5">
+                <FormLabel>Topics</FormLabel>
+                <div className="flex flex-wrap gap-2 mt-1">
                   {USE_CASES.map((uc) => {
                     const selected = field.value.includes(uc);
                     return (
@@ -1233,41 +1263,47 @@ const Upload = () => {
                     <p className="text-[10px] text-muted-foreground mt-1">This appears on your post in the feed.</p>
                   </div>
                 )}
-                <FormDescription>Select all that apply. This helps people find your content.</FormDescription>
                 <FormMessage />
               </FormItem>
             )} />
 
-            {/* 11. Tags — free-text */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Tags (optional)</label>
-              <p className="text-xs text-muted-foreground">Add up to 5 tags to help people find your blueprint.</p>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {customTags.map((tag) => (
-                  <span key={tag} className="text-xs px-2.5 py-1 rounded-lg bg-primary/15 text-primary border border-primary/30 flex items-center gap-1.5">
-                    #{tag}
-                    <button type="button" onClick={() => setCustomTags(customTags.filter(t => t !== tag))} className="hover:text-foreground"><X className="h-3 w-3" /></button>
-                  </span>
-                ))}
+            {/* 11. Quick tags — pill grid from microtag_definitions */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Quick tags</label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {(microtagDefs ?? []).map((def) => {
+                  const tagKey = def.tag.replace(/^#/, "");
+                  const isSelected = customTags.includes(tagKey);
+                  const atMax = customTags.length >= 5;
+                  const disabled = !isSelected && atMax;
+                  return (
+                    <button
+                      key={def.tag}
+                      type="button"
+                      disabled={disabled}
+                      title={disabled ? "Max 5 selected" : def.description ?? undefined}
+                      onClick={() => {
+                        if (isSelected) {
+                          setCustomTags(customTags.filter((t) => t !== tagKey));
+                        } else if (!atMax) {
+                          setCustomTags([...customTags, tagKey]);
+                        }
+                      }}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : disabled
+                          ? "bg-muted text-muted-foreground/40 border-border cursor-not-allowed"
+                          : "bg-muted text-muted-foreground border-border hover:border-muted-foreground/40 hover:text-foreground"
+                      }`}
+                    >
+                      {def.tag}
+                    </button>
+                  );
+                })}
               </div>
-              {customTags.length < 5 && (
-                <div className="flex gap-2">
-                  <Input value={tagInput} onChange={(e) => setTagInput(e.target.value.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 30))} onKeyDown={(e) => {
-                    if (e.key === "Enter" && tagInput.trim()) {
-                      e.preventDefault();
-                      const tag = tagInput.trim().toLowerCase();
-                      if (!customTags.includes(tag)) setCustomTags([...customTags, tag]);
-                      setTagInput("");
-                    }
-                  }} placeholder="Type a tag and press Enter" className="bg-card border-border rounded-xl text-sm flex-1" />
-                  <Button type="button" variant="outline" size="sm" onClick={() => {
-                    if (tagInput.trim()) {
-                      const tag = tagInput.trim().toLowerCase();
-                      if (!customTags.includes(tag)) setCustomTags([...customTags, tag]);
-                      setTagInput("");
-                    }
-                  }}>Add</Button>
-                </div>
+              {customTags.length > 0 && (
+                <p className="text-[11px] text-muted-foreground">{customTags.length}/5 selected</p>
               )}
             </div>
 
