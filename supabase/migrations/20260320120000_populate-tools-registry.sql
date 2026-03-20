@@ -1,0 +1,65 @@
+
+-- Repopulate ai_tools_registry with the full alphabetical list
+-- grouped by category: api, local_runtime, automation
+-- "Any Tool" is intentionally excluded — it is hardcoded in the frontend hook
+
+DELETE FROM public.ai_tools_registry;
+
+INSERT INTO public.ai_tools_registry (name, website_url, description, category, status, is_official, approved_at) VALUES
+-- API TOOLS
+('Anthropic API',      'https://console.anthropic.com',              'Direct API access to Claude models',              'api',           'approved', true, now()),
+('Character.ai',       'https://character.ai',                       'Chat with AI personas and characters',            'api',           'approved', true, now()),
+('ChatGPT',            'https://chatgpt.com',                        'OpenAI AI assistant',                             'api',           'approved', true, now()),
+('Claude',             'https://claude.ai',                          'Anthropic AI assistant',                          'api',           'approved', true, now()),
+('Copy.ai',            'https://www.copy.ai',                        'AI copywriting tool',                             'api',           'approved', true, now()),
+('Coze',               'https://www.coze.com',                       'ByteDance no-code AI agent builder',              'api',           'approved', true, now()),
+('DeepSeek',           'https://chat.deepseek.com',                  'High-performance AI chatbot',                     'api',           'approved', true, now()),
+('Gemini',             'https://gemini.google.com',                  'Google AI assistant',                             'api',           'approved', true, now()),
+('Grok',               'https://grok.com',                           'xAI assistant with real-time access',            'api',           'approved', true, now()),
+('Jasper',             'https://www.jasper.ai',                      'Enterprise AI writing platform',                  'api',           'approved', true, now()),
+('Meta AI',            'https://www.meta.ai',                        'Meta AI assistant',                               'api',           'approved', true, now()),
+('Microsoft Copilot',  'https://copilot.microsoft.com',              'Microsoft GPT-4o assistant',                      'api',           'approved', true, now()),
+('Mistral Le Chat',    'https://chat.mistral.ai',                    'Mistral AI assistant',                            'api',           'approved', true, now()),
+('OpenRouter',         'https://openrouter.ai',                      'Unified API for 400+ AI models',                  'api',           'approved', true, now()),
+('Perplexity AI',      'https://www.perplexity.ai',                  'AI answer engine with citations',                 'api',           'approved', true, now()),
+('Pi',                 'https://pi.ai',                              'Conversational AI by Inflection',                 'api',           'approved', true, now()),
+('Poe',                'https://poe.com',                            'Multi-model AI aggregator',                       'api',           'approved', true, now()),
+('Qwen',               'https://chat.qwen.ai',                       'Alibaba multilingual AI assistant',               'api',           'approved', true, now()),
+('Writesonic',         'https://writesonic.com',                     'AI writing and SEO platform',                     'api',           'approved', true, now()),
+('You.com',            'https://you.com',                            'AI search assistant',                             'api',           'approved', true, now()),
+-- LOCAL RUNTIMES
+('AnythingLLM',        'https://anythingllm.com',                    'All-in-one local AI app with RAG',                'local_runtime', 'approved', true, now()),
+('GPT4All',            'https://gpt4all.io',                         'Beginner-friendly offline AI desktop app',        'local_runtime', 'approved', true, now()),
+('Jan.ai',             'https://jan.ai',                             'Privacy-first offline AI desktop app',            'local_runtime', 'approved', true, now()),
+('KoboldCpp',          'https://github.com/LostRuins/koboldcpp',     'Local LLM for creative writing',                  'local_runtime', 'approved', true, now()),
+('LibreChat',          'https://librechat.ai',                       'Self-hosted multi-provider chat platform',        'local_runtime', 'approved', true, now()),
+('llama.cpp',          'https://github.com/ggml-org/llama.cpp',      'C++ inference engine for local LLMs',             'local_runtime', 'approved', true, now()),
+('llamafile',          'https://github.com/Mozilla-Ocho/llamafile',  'Single-file executable local LLM',                'local_runtime', 'approved', true, now()),
+('LM Studio',          'https://lmstudio.ai',                        'Desktop GUI for running local models',            'local_runtime', 'approved', true, now()),
+('LocalAI',            'https://localai.io',                         'Self-hosted OpenAI-compatible API server',        'local_runtime', 'approved', true, now()),
+('Msty',               'https://msty.app',                           'Desktop app for local and remote AI',             'local_runtime', 'approved', true, now()),
+('Ollama',             'https://ollama.com',                         'Run open-source models locally via CLI',          'local_runtime', 'approved', true, now()),
+('Open WebUI',         'https://openwebui.com',                      'Self-hosted web interface for Ollama',            'local_runtime', 'approved', true, now()),
+('Text Generation WebUI', 'https://github.com/oobabooga/text-generation-webui', 'Gradio interface for local LLMs',     'local_runtime', 'approved', true, now()),
+('vLLM',               'https://vllm.ai',                            'Production-grade local inference server',         'local_runtime', 'approved', true, now()),
+-- AUTOMATION
+('Activepieces',       'https://www.activepieces.com',               'Open-source Zapier alternative',                  'automation',    'approved', true, now()),
+('Bardeen',            'https://www.bardeen.ai',                     'AI browser extension automation',                 'automation',    'approved', true, now()),
+('Botpress',           'https://botpress.com',                       'Open-source AI chatbot builder',                  'automation',    'approved', true, now()),
+('Dify',               'https://dify.ai',                            'Visual AI app builder for RAG and agents',        'automation',    'approved', true, now()),
+('Flowise',            'https://flowiseai.com',                      'Open-source visual LLM flow builder',             'automation',    'approved', true, now()),
+('Gumloop',            'https://www.gumloop.com',                    'Visual AI workflow builder',                      'automation',    'approved', true, now()),
+('IFTTT',              'https://ifttt.com',                          'Consumer trigger-action automation',               'automation',    'approved', true, now()),
+('Langflow',           'https://www.langflow.org',                   'Visual AI agent and LLM workflow builder',        'automation',    'approved', true, now()),
+('Lindy AI',           'https://www.lindy.ai',                       'No-code AI agent platform',                       'automation',    'approved', true, now()),
+('Make',               'https://www.make.com',                       'Visual scenario automation builder',              'automation',    'approved', true, now()),
+('Microsoft Power Automate', 'https://powerautomate.microsoft.com',  'Microsoft enterprise automation',                 'automation',    'approved', true, now()),
+('n8n',                'https://n8n.io',                             'Open-source workflow automation with AI nodes',   'automation',    'approved', true, now()),
+('Pabbly Connect',     'https://www.pabbly.com/connect',             'Budget-friendly no-code automation',              'automation',    'approved', true, now()),
+('Pipedream',          'https://pipedream.com',                      'Code-first automation for developers',            'automation',    'approved', true, now()),
+('Relay.app',          'https://www.relay.app',                      'Modern automation with human-in-loop support',    'automation',    'approved', true, now()),
+('Relevance AI',       'https://relevanceai.com',                    'No-code autonomous AI agent platform',            'automation',    'approved', true, now()),
+('Stack AI',           'https://www.stack-ai.com',                   'No-code AI workflow builder',                     'automation',    'approved', true, now()),
+('Typebot',            'https://typebot.io',                         'Open-source conversational form builder',         'automation',    'approved', true, now()),
+('Voiceflow',          'https://www.voiceflow.com',                  'No-code voice and text AI agent builder',         'automation',    'approved', true, now()),
+('Zapier',             'https://zapier.com',                         'Most-used no-code automation platform',           'automation',    'approved', true, now());

@@ -10,6 +10,16 @@ export interface ApprovedTool {
   is_official: boolean;
 }
 
+// "Any Tool" is not stored in the database — it is hardcoded as the first API option
+const ANY_TOOL: ApprovedTool = {
+  name: "Any Tool",
+  slug: "any-tool",
+  description: "Universal compatibility — works with any AI tool",
+  website_url: null,
+  category: "api",
+  is_official: true,
+};
+
 export function useApprovedTools() {
   return useQuery({
     queryKey: ["approved_ai_tools"],
@@ -27,12 +37,12 @@ export function useApprovedTools() {
   });
 }
 
-/** Convenience: just the names list for checkboxes/filters */
+/** Convenience: just the names list for checkboxes/filters. "Any Tool" is prepended. */
 export function useApprovedToolNames() {
   const query = useApprovedTools();
   return {
     ...query,
-    data: query.data?.map((t) => t.name) ?? [],
+    data: query.data ? [ANY_TOOL.name, ...query.data.map((t) => t.name)] : [],
   };
 }
 
@@ -42,11 +52,14 @@ export function useGroupedApprovedTools() {
 
   const groups: { label: string; category: string; tools: ApprovedTool[] }[] = [];
   if (query.data) {
-    const apiTools = query.data.filter((t) => !t.category || t.category === "api" || t.category === "other");
+    const apiTools = query.data.filter(
+      (t) => !t.category || t.category === "api" || t.category === "ai_chat" || t.category === "other"
+    );
     const localTools = query.data.filter((t) => t.category === "local_runtime");
     const automationTools = query.data.filter((t) => t.category === "automation");
 
-    if (apiTools.length > 0) groups.push({ label: "API Tools", category: "api", tools: apiTools });
+    // Always prepend "Any Tool" as the first API option
+    groups.push({ label: "API Tools", category: "api", tools: [ANY_TOOL, ...apiTools] });
     if (localTools.length > 0) groups.push({ label: "Local Runtimes", category: "local_runtime", tools: localTools });
     if (automationTools.length > 0) groups.push({ label: "Automation", category: "automation", tools: automationTools });
   }
