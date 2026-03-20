@@ -151,22 +151,22 @@ const FormatBar = ({
 }: {
   active: FormattingType; onChange: (f: FormattingType) => void; showHeading?: boolean;
 }) => (
-  <div className="flex gap-1 mb-2">
+  <div className="flex gap-1 mb-1.5">
     {FORMATS.map((f) => {
       const Icon = f.icon;
       const isActive = active === f.value;
       return (
         <button key={f.value} type="button" onClick={() => onChange(f.value)} title={f.label}
-          className={`p-1.5 rounded-md text-xs flex items-center gap-1 transition-colors ${isActive ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-muted"}`}>
-          <Icon className="h-3.5 w-3.5" />
+          className={`h-7 px-2 rounded-md text-xs flex items-center gap-1 transition-colors ${isActive ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-muted"}`}>
+          <Icon className="h-3 w-3" />
           <span className="hidden sm:inline">{f.label}</span>
         </button>
       );
     })}
     {showHeading && (
       <button type="button" onClick={() => onChange("paragraph")} title="Use # at the start of a line for headings"
-        className="p-1.5 rounded-md text-xs flex items-center gap-1 text-muted-foreground hover:bg-muted">
-        <Heading className="h-3.5 w-3.5" />
+        className="h-7 px-2 rounded-md text-xs flex items-center gap-1 text-muted-foreground hover:bg-muted">
+        <Heading className="h-3 w-3" />
         <span className="hidden sm:inline">Heading (# prefix)</span>
       </button>
     )}
@@ -497,7 +497,7 @@ const UseInstructionsToggle = ({ value, onChange }: { value: string; onChange: (
     <div className="mt-3 pt-3 border-t border-border">
       <button type="button" onClick={handleToggle} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
         <ChevronRight className={`h-3 w-3 transition-transform ${open ? "rotate-90" : ""}`} />
-        Use instructions for this step
+        Instructions
       </button>
       {open && (
         <div className="mt-2">
@@ -602,16 +602,14 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
   const supportsVariations = (type: BlockType) => type !== "github" && type !== "large_file";
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <Label className="text-sm font-medium">{contentType === "Blog" ? "Your Blog Post" : "Your Blueprint"}</Label>
-      <p className="text-xs text-muted-foreground -mt-1">
-        {contentType === "Blog"
-          ? "Write your blog post using text, image, and file blocks."
-          : "Build your blueprint using text, file, and image blocks. Reorder as needed."}
-      </p>
+      {contentType === "Blog" && (
+        <p className="text-xs text-muted-foreground -mt-0.5">Write your blog post using text, image, and file blocks.</p>
+      )}
 
       {/* Block list */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {blocks.map((block, index) => {
           const hasVariations = block.variations.length > 0;
           const activeTab = activeVariationTab[block.id] ?? "A";
@@ -620,7 +618,7 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
           return (
             <div key={block.id} className={`border rounded-xl bg-card overflow-hidden ${block.isPreview ? "border-[#2EC4B6]/50" : "border-border"}`}>
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border">
+              <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-b border-border">
                 <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <BlockTypeIcon type={block.type} />
                   <span>{BLOCK_TYPE_LABELS[block.type]}</span>
@@ -635,7 +633,7 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-muted-foreground">Free preview</span>
+                            <span className="text-[10px] text-muted-foreground">Preview</span>
                             <Switch checked={block.isPreview} disabled={!canToggle} onCheckedChange={(checked) => update(index, { isPreview: checked })} className="scale-75" />
                           </div>
                         </TooltipTrigger>
@@ -665,7 +663,7 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
               )}
 
               {/* Content area */}
-              <div className="p-4">
+              <div className="p-3">
                 {showingMain ? (
                   <>
                     {block.type === "text" && (
@@ -734,15 +732,15 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
 
               {/* Per-block use instructions — hidden for Blog */}
               {contentType !== "Blog" && (
-              <div className="px-4 pb-3">
+              <div className="px-3 pb-2">
                 <UseInstructionsToggle value={block.useInstructions} onChange={(v) => update(index, { useInstructions: v })} />
               </div>
               )}
 
               {/* Add variation link */}
               {supportsVariations(block.type) && (
-                <div className="px-4 pb-3">
-                  <button type="button" onClick={() => addVariation(index)} className="text-xs text-muted-foreground hover:text-primary transition-colors">· · · + Add variation</button>
+                <div className="px-3 pb-2">
+                  <button type="button" onClick={() => addVariation(index)} className="text-xs text-muted-foreground hover:text-primary transition-colors">+ Variation</button>
                 </div>
               )}
             </div>
@@ -750,23 +748,32 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
         })}
       </div>
 
-      {/* Add block buttons */}
-      <div className="flex flex-wrap gap-2 pt-1">
-        {contentType === "Blog" ? (
-          <>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Text</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Long Text</Button>
-          </>
+      {/* Add block buttons — single scrollable row */}
+      <div className="flex gap-1.5 pt-0.5 overflow-x-auto [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
+        {(contentType === "Blog" ? (
+          [
+            { type: "text" as BlockType, label: "+ Text" },
+            { type: "long_text" as BlockType, label: "+ Long Text" },
+          ]
         ) : (
-          <>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("text")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Text</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("long_text")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Long Text</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("file")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> File</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("image")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Image</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("github")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> GitHub</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => addBlock("large_file")} className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Large File</Button>
-          </>
-        )}
+          [
+            { type: "text" as BlockType, label: "+ Text" },
+            { type: "long_text" as BlockType, label: "+ Long Text" },
+            { type: "file" as BlockType, label: "+ File" },
+            { type: "image" as BlockType, label: "+ Image" },
+            { type: "github" as BlockType, label: "+ GitHub" },
+            { type: "large_file" as BlockType, label: "+ Large File" },
+          ]
+        )).map(({ type, label }) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => addBlock(type)}
+            className="flex-shrink-0 h-8 px-2.5 text-xs rounded-lg border border-border bg-card text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground transition-colors whitespace-nowrap"
+          >
+            {label}
+          </button>
+        ))}
       </div>
     </div>
   );
