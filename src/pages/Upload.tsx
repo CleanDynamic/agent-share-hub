@@ -890,6 +890,7 @@ const Upload = () => {
               </Button>
             </div>
           </form>
+        </Form>
         ) : (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
