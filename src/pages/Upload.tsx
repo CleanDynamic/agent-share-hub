@@ -720,18 +720,26 @@ const Upload = () => {
         </div>
 
         {/* 1. Upload type selector */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
-          <button type="button" onClick={() => setUploadType("single")}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+          <button type="button" onClick={() => { setUploadType("blog"); form.setValue("content_type", "Blog"); }}
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${uploadType === "blog" ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/40"}`}>
+            <span className={`text-xl mt-0.5 shrink-0`}>📝</span>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Blog</p>
+              <p className="text-xs text-muted-foreground mt-0.5">A post, opinion, or tutorial in your own words</p>
+            </div>
+          </button>
+          <button type="button" onClick={() => { setUploadType("single"); if (form.getValues("content_type") === "Blog") form.setValue("content_type", ""); }}
             className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${uploadType === "single" ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/40"}`}>
-            <FileText className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "single" ? "text-primary" : "text-muted-foreground"}`} />
+            <span className={`text-xl mt-0.5 shrink-0`}>🔷</span>
             <div>
               <p className="text-sm font-semibold text-foreground">Blueprint</p>
-              <p className="text-xs text-muted-foreground mt-0.5">A prompt, tutorial, or guide</p>
+              <p className="text-xs text-muted-foreground mt-0.5">A prompt, workflow, or guide people can use</p>
             </div>
           </button>
           <button type="button" onClick={() => setUploadType("project")}
             className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${uploadType === "project" ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/40"}`}>
-            <FolderOpen className={`h-6 w-6 mt-0.5 shrink-0 ${uploadType === "project" ? "text-primary" : "text-muted-foreground"}`} />
+            <span className={`text-xl mt-0.5 shrink-0`}>📁</span>
             <div>
               <p className="text-sm font-semibold text-foreground">Project</p>
               <p className="text-xs text-muted-foreground mt-0.5">A collection of related blueprints</p>
