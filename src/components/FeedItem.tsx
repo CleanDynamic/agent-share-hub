@@ -232,13 +232,13 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
       {/* LINE 3 — Title */}
       <p className="text-sm font-semibold text-foreground leading-[1.3] mt-1 line-clamp-2">{item.title}</p>
 
-      {/* LINE 4 — Description (hidden if long title) */}
-      {showDescription && (
-        <p className="text-[13px] text-muted-foreground truncate mt-0.5">{item.description}</p>
+      {/* LINE 3.5 — Hook subtitle (blogs only) */}
+      {isBlog && item.description && (
+        <p className="text-[13px] text-muted-foreground italic truncate mt-0.5">{item.description}</p>
       )}
 
-      {/* LINE 4.25 — What to Expect teaser */}
-      {wteTeaser && (
+      {/* LINE 4.25 — What to Expect teaser (non-blogs only) */}
+      {!isBlog && wteTeaser && (
         <p className="text-[12px] italic mt-0.5 truncate" style={{ color: "#2EC4B6" }}>
           <Eye className="inline h-[10px] w-[10px] mr-1" style={{ verticalAlign: "middle" }} />
           <span className="opacity-70">Expect: </span>
