@@ -628,7 +628,7 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                   {block.isPreview && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2EC4B6]/15 text-[#2EC4B6] font-medium">Preview</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  {supportsPreview(block.type) && (() => {
+                  {contentType !== "Blog" && supportsPreview(block.type) && (() => {
                     const previewCount = blocks.filter((b) => b.isPreview).length;
                     const canToggle = block.isPreview || previewCount < 2;
                     return (
