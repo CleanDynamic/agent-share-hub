@@ -167,7 +167,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
   const stop = (e: React.MouseEvent) => e.stopPropagation();
 
   const isLight = context === "home";
-  const showDescription = item.title.length <= 60 && !!item.description;
+  const isBlog = item.content_type === "Blog";
 
   // WTE teaser
   const wteTeaser = extractWteTeaser(item);
