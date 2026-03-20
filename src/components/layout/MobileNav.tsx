@@ -174,10 +174,8 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
 
   type MobileNavItem = { icon: any; label: string; to: string; authOnly?: boolean; badge?: string | null; divider?: boolean };
   const navItems: MobileNavItem[] = [
-    // Identity
-    { icon: User, label: "Profile", to: "/profile", authOnly: true },
     // Discovery
-    { icon: Home, label: "Home", to: "/", divider: true },
+    { icon: Home, label: "Home", to: "/" },
     { icon: LayoutGrid, label: "Discover", to: "/browse" },
     { icon: Library, label: "Library", to: "/library", authOnly: true },
     // Creation
@@ -186,9 +184,10 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
     // Communication
     { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true, divider: true },
     { icon: Bell, label: "Notifications", to: "/notifications", authOnly: true },
-    // Account
-    ...(isLoggedIn && profile?.is_creator ? [{ icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true, divider: true } as MobileNavItem] : []),
-    { icon: Info, label: "About", to: "/about", divider: !(isLoggedIn && profile?.is_creator) },
+    // Identity + Account
+    { icon: User, label: "My Profile", to: "/profile", authOnly: true, divider: true },
+    ...(isLoggedIn && profile?.is_creator ? [{ icon: BarChart3, label: "Analytics", to: "/analytics", authOnly: true } as MobileNavItem] : []),
+    { icon: Info, label: "About", to: "/about", divider: true },
   ].filter((item) => (!item.authOnly || isLoggedIn));
 
   return (

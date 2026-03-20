@@ -263,14 +263,24 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
 
       {/* LINE 6 — Stats + Show More */}
       {(() => {
-        // Don't show expand for AI Tools or types without blueprint blocks
-        const canExpand = item.content_type !== "AI Tools (LLMs)";
+        // Don't show expand for AI Tools, blogs
+        const canExpand = item.content_type !== "AI Tools (LLMs)" && !isBlog;
         return (
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-3 text-xs text-muted-foreground flex-nowrap overflow-x-auto" style={{ scrollbarWidth: "none" }}>
               <span className="inline-flex items-center gap-[3px] shrink-0"><Eye className="h-3 w-3" />{formatNum(item.view_count ?? 0)}</span>
-              <span className="text-[#444450] shrink-0">·</span>
-              <span className="inline-flex items-center gap-[3px] shrink-0"><Download className="h-3 w-3" />{formatNum(item.download_count ?? 0)}</span>
+              {!isBlog && (
+                <>
+                  <span className="text-[#444450] shrink-0">·</span>
+                  <span className="inline-flex items-center gap-[3px] shrink-0"><Download className="h-3 w-3" />{formatNum(item.download_count ?? 0)}</span>
+                </>
+              )}
+              {isBlog && (item as any).estimated_read_minutes && (
+                <>
+                  <span className="text-[#444450] shrink-0">·</span>
+                  <span className="inline-flex items-center gap-[3px] shrink-0 text-muted-foreground">~{(item as any).estimated_read_minutes} min read</span>
+                </>
+              )}
               {(item.rating_count ?? 0) > 0 && (
                 <>
                   <span className="text-[#444450] shrink-0">·</span>
