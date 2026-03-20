@@ -1147,7 +1147,7 @@ const Upload = () => {
             {!isBlogType && (
             <FormField control={form.control} name="ai_tools" render={() => (
               <FormItem className="space-y-1.5">
-                <FormLabel>Works with</FormLabel>
+                <FormLabel>Works with<span style={{ fontSize: '12px', color: '#9999AA', fontWeight: 400, marginLeft: '6px' }}>(optional)</span></FormLabel>
                 {toolGroups.length > 0 ? (
                   <div className="space-y-1 mt-1">
                     {toolGroups.map((group) => {
