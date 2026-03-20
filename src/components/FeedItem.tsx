@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Download, Eye, Star, StarHalf, MessageSquare, FolderOpen, ChevronDown, ChevronUp, Send as SendIcon } from "lucide-react";
+import { Download, Eye, Star, StarHalf, MessageSquare, FolderOpen, ChevronDown, ChevronUp, Send as SendIcon, Repeat2, Heart } from "lucide-react";
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { FeedItemExpanded } from "@/components/FeedItemExpanded";
 import { ShareToDMModal } from "@/components/dm/ShareToDMModal";
+import { ReblogModal } from "@/components/ReblogModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 /* ---- Helpers ---- */
 
@@ -64,7 +68,6 @@ export function formatNum(n: number): string {
 
 /* ---- What to Expect teaser extractor ---- */
 function extractWteTeaser(item: any): string | null {
-  // Try what_to_expect_blocks first
   const blocks = item.what_to_expect_blocks as any[] | null;
   if (blocks && Array.isArray(blocks) && blocks.length > 0) {
     const firstText = blocks.find((b: any) => b.block_type === "text" && b.text_content);
@@ -73,7 +76,6 @@ function extractWteTeaser(item: any): string | null {
       return text.length > 80 ? text.slice(0, 77) + "…" : text;
     }
   }
-  // Fallback to plain text
   const plain = item.what_to_expect as string | null;
   if (plain) {
     const firstSentence = plain.split(/[.!?\n]/)[0]?.trim();
@@ -138,6 +140,256 @@ function ProjectIndicator({ item, stop }: { item: any; stop: (e: React.MouseEven
   );
 }
 
+/* ---- Like button ---- */
+function LikeButton({ contentId, likeCount, stop }: { contentId: string; likeCount: number; stop: (e: React.MouseEvent) => void }) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [optimisticLiked, setOptimisticLiked] = useState<boolean | null>(null);
+  const [optimisticCount, setOptimisticCount] = useState<number | null>(null);
+
+  const { data: isLiked } = useQuery({
+    queryKey: ["content_like", contentId, user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data } = await supabase
+        .from("content_likes" as any)
+        .select("id")
+        .eq("content_id", contentId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user,
+  });
+
+  const liked = optimisticLiked ?? isLiked ?? false;
+  const count = optimisticCount ?? likeCount;
+
+  async function handleLike(e: React.MouseEvent) {
+    stop(e);
+    if (!user) return;
+
+    const newLiked = !liked;
+    setOptimisticLiked(newLiked);
+    setOptimisticCount(newLiked ? count + 1 : Math.max(0, count - 1));
+
+    try {
+      if (newLiked) {
+        await supabase.from("content_likes" as any).insert({ content_id: contentId, user_id: user.id } as any);
+      } else {
+        await supabase.from("content_likes" as any).delete().eq("content_id", contentId).eq("user_id", user.id);
+      }
+      queryClient.invalidateQueries({ queryKey: ["content_like", contentId, user.id] });
+    } catch {
+      setOptimisticLiked(!newLiked);
+      setOptimisticCount(count);
+    }
+  }
+
+  return (
+    <button
+      onClick={handleLike}
+      className="inline-flex items-center gap-[3px] shrink-0 hover:text-foreground transition-colors"
+      style={liked ? { color: "#E8571A" } : {}}
+    >
+      <Heart className={`h-3 w-3 ${liked ? "fill-current" : ""}`} />
+      {count > 0 && <span>{formatNum(count)}</span>}
+    </button>
+  );
+}
+
+/* ---- Quoted Post Card (for reblog rendering) ---- */
+function QuotedPostCard({ originalItem, stop }: { originalItem: any; stop: (e: React.MouseEvent) => void }) {
+  const navigate = useNavigate();
+  const creator = originalItem.profiles as any;
+  const initials = (creator?.display_name || creator?.username || "?").slice(0, 2).toUpperCase();
+
+  return (
+    <div
+      className="rounded-[10px] p-3 mt-2 cursor-pointer hover:bg-white/5 transition-colors"
+      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10 }}
+      onClick={(e) => { stop(e); navigate(`/content/${originalItem.id}`); }}
+    >
+      <div className="flex items-center gap-1.5 mb-1">
+        <Avatar className="h-6 w-6">
+          <AvatarFallback className="bg-primary text-primary-foreground text-[9px]">{initials}</AvatarFallback>
+        </Avatar>
+        <span className="text-[13px] font-bold text-foreground">{creator?.display_name || creator?.username}</span>
+        <span className="text-[11px] text-muted-foreground">@{creator?.username}</span>
+      </div>
+      <div className="flex items-center gap-1 mb-1">
+        <Badge variant="outline" className={`text-[9px] font-medium ${TYPE_COLORS[originalItem.content_type] ?? ""}`}>
+          {displayContentType(originalItem.content_type)}
+        </Badge>
+        <Badge variant="outline" className={`text-[9px] font-medium ${difficultyColor(originalItem.difficulty)}`}>
+          {originalItem.difficulty}
+        </Badge>
+      </div>
+      <p className="text-[13px] font-bold text-foreground line-clamp-2">{originalItem.title}</p>
+      {originalItem.cover_image_url && (
+        <img
+          src={originalItem.cover_image_url}
+          alt=""
+          loading="lazy"
+          className="w-full rounded-md mt-1.5 object-cover"
+          style={{ maxHeight: 120 }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ---- Thread Inline Viewer ---- */
+function ThreadPosts({ threadStarterId, totalPosts, stop }: { threadStarterId: string; totalPosts: number; stop: (e: React.MouseEvent) => void }) {
+  const { data: posts } = useQuery({
+    queryKey: ["thread_posts", threadStarterId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_items")
+        .select("*, profiles!content_items_creator_id_fkey(username, display_name)")
+        .eq("thread_id", threadStarterId)
+        .eq("status", "approved")
+        .order("thread_position");
+      return (data as any[]) ?? [];
+    },
+  });
+
+  if (!posts || posts.length === 0) return null;
+
+  return (
+    <div className="mt-2 space-y-0 border-l-2 pl-3" style={{ borderColor: "#2EC4B6" }}>
+      {posts.map((post: any) => (
+        <div key={post.id} className="py-2 relative">
+          <div className="absolute -left-[19px] top-3 h-5 w-5 rounded-full bg-background border border-border flex items-center justify-center">
+            <Avatar className="h-4 w-4">
+              <AvatarFallback className="bg-primary text-primary-foreground text-[8px]">
+                {(post.profiles?.display_name || post.profiles?.username || "?")[0]}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-[14px] text-foreground leading-relaxed flex-1">{post.text_content}</p>
+            <span className="text-[11px] text-muted-foreground shrink-0">
+              {post.thread_position} / {post.thread_total}
+            </span>
+          </div>
+          {post.cover_image_url && (
+            <img
+              src={post.cover_image_url}
+              alt=""
+              className="w-full rounded-lg mt-1.5 object-cover"
+              style={{ maxHeight: 160 }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ---- Reblog Feed Card ---- */
+function ReblogCard({ item, navState, stop }: { item: any; navState: any; stop: (e: React.MouseEvent) => void }) {
+  const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
+  const profile = item.profiles as any;
+  const initials = (profile?.display_name || profile?.username || "?").slice(0, 2).toUpperCase();
+
+  // Fetch original post data
+  const { data: originalItem } = useQuery({
+    queryKey: ["reblog_original", item.reblog_of_content_id],
+    queryFn: async () => {
+      if (!item.reblog_of_content_id) return null;
+      const { data } = await supabase
+        .from("content_items")
+        .select("*, profiles!content_items_creator_id_fkey(username, display_name)")
+        .eq("id", item.reblog_of_content_id)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!item.reblog_of_content_id,
+  });
+
+  const handleCardClick = () => {
+    navigate(`/content/${item.id}`, { state: navState });
+  };
+
+  return (
+    <div
+      onClick={handleCardClick}
+      className="px-4 py-3 border-b border-border cursor-pointer transition-colors duration-150 hover:bg-[hsl(0_0%_100%/0.03)]"
+    >
+      {/* Header row */}
+      <div className="flex items-center gap-2" style={{ height: 36 }}>
+        <Link to={`/creator/${profile?.username}`} onClick={stop}>
+          <Avatar className="h-9 w-9 shrink-0">
+            <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
+          </Avatar>
+        </Link>
+        <Link
+          to={`/creator/${profile?.username}`}
+          onClick={stop}
+          className="text-sm font-semibold text-foreground hover:underline truncate"
+        >
+          {profile?.display_name || profile?.username || "Unknown"}
+        </Link>
+        <span className="text-[13px] text-muted-foreground truncate">@{profile?.username}</span>
+        <span className="text-muted-foreground">·</span>
+        <span className="text-xs text-muted-foreground shrink-0">{timeAgo(item.created_at)}</span>
+        <div className="ml-auto shrink-0" onClick={stop}>
+          <BookmarkButton contentId={item.id} />
+        </div>
+      </div>
+
+      {/* Reblog label */}
+      <div className="flex items-center gap-1 mt-1">
+        <Repeat2 className="h-3 w-3" style={{ color: "#2EC4B6" }} />
+        <span className="text-[11px]" style={{ color: "#2EC4B6" }}>Reblogged</span>
+      </div>
+
+      {/* Reblog comment */}
+      {item.reblog_comment && (
+        <p className="text-[14px] text-foreground italic mt-1 line-clamp-3">{item.reblog_comment}</p>
+      )}
+
+      {/* Quoted post card */}
+      {originalItem ? (
+        <QuotedPostCard originalItem={originalItem} stop={stop} />
+      ) : (
+        <div
+          className="rounded-[10px] p-3 mt-2 text-xs text-muted-foreground"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)" }}
+        >
+          Original post unavailable
+        </div>
+      )}
+
+      {/* Stats row */}
+      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
+        <div onClick={stop}>
+          <LikeButton contentId={item.id} likeCount={item.like_count ?? 0} stop={stop} />
+        </div>
+        <span className="text-[#444450]">·</span>
+        <span className="inline-flex items-center gap-[3px]">
+          <Eye className="h-3 w-3" />{formatNum(item.view_count ?? 0)}
+        </span>
+        {isLoggedIn && (
+          <>
+            <span className="text-[#444450]">·</span>
+            <button
+              onClick={(e) => { stop(e); }}
+              className="inline-flex items-center gap-[3px] hover:text-foreground transition-colors"
+            >
+              <SendIcon className="h-3 w-3" />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ---- Component ---- */
 
 interface FeedItemProps {
@@ -151,14 +403,33 @@ interface FeedItemProps {
 
 export function FeedItem({ item, rank, context = "home", navState }: FeedItemProps) {
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [reblogOpen, setReblogOpen] = useState(false);
+  const [threadExpanded, setThreadExpanded] = useState(false);
   const profile = item.profiles as any;
   const starVal = roundedStars(Number(item.avg_rating) || 0, item.rating_count ?? 0);
   const initials = (profile?.display_name || profile?.username || "?").slice(0, 2).toUpperCase();
 
   const state = navState ?? { from: context === "browse" ? "browse" : "feed" };
+
+  // Check if already reblogged by current user
+  const { data: alreadyReblogged } = useQuery({
+    queryKey: ["user_reblogged", item.id, user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data } = await supabase
+        .from("content_items")
+        .select("id")
+        .eq("reblog_of_content_id", item.id)
+        .eq("creator_id", user.id)
+        .eq("is_reblog", true)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user && !!item.id && !(item as any).is_reblog,
+  });
 
   const handleCardClick = () => {
     navigate(`/content/${item.id}`, { state });
@@ -168,9 +439,16 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
 
   const isLight = context === "home";
   const isBlog = item.content_type === "Blog";
+  const isReblog = !!(item as any).is_reblog;
+  const isThread = !!(item as any).is_thread_post && (item as any).thread_position === 1;
 
   // WTE teaser
   const wteTeaser = extractWteTeaser(item);
+
+  // Render reblog cards differently
+  if (isReblog) {
+    return <ReblogCard item={item} navState={state} stop={stop} />;
+  }
 
   return (
     <div
@@ -212,6 +490,12 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
         <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(item.difficulty)}`}>
           {item.difficulty}
         </Badge>
+        {/* Thread indicator */}
+        {isThread && (
+          <span className="text-[10px] text-muted-foreground/60 flex items-center gap-0.5">
+            🧵 Thread
+          </span>
+        )}
         {/* AI Tools subtype indicator */}
         {item.content_type === "AI Tools (LLMs)" && (item as any).tool_subtype === "local" && (
           <>
@@ -261,15 +545,36 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
         />
       )}
 
+      {/* Thread expand control */}
+      {isThread && (item as any).thread_total > 1 && (
+        <div className="mt-2">
+          <button
+            onClick={(e) => { stop(e); setThreadExpanded(!threadExpanded); }}
+            className="text-[12px] font-medium transition-colors"
+            style={{ color: "#2EC4B6" }}
+          >
+            {threadExpanded
+              ? "Collapse thread ▲"
+              : `Show thread (${(item as any).thread_total} posts)`}
+          </button>
+          {threadExpanded && (
+            <ThreadPosts
+              threadStarterId={item.id}
+              totalPosts={(item as any).thread_total}
+              stop={stop}
+            />
+          )}
+        </div>
+      )}
+
       {/* LINE 6 — Stats + Show More */}
       {(() => {
-        // Don't show expand for AI Tools, blogs
-        const canExpand = item.content_type !== "AI Tools (LLMs)" && !isBlog;
+        const canExpand = item.content_type !== "AI Tools (LLMs)" && !isBlog && !isThread;
         return (
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-3 text-xs text-muted-foreground flex-nowrap overflow-x-auto" style={{ scrollbarWidth: "none" }}>
               <span className="inline-flex items-center gap-[3px] shrink-0"><Eye className="h-3 w-3" />{formatNum(item.view_count ?? 0)}</span>
-              {!isBlog && (
+              {!isBlog && !isThread && (
                 <>
                   <span className="text-[#444450] shrink-0">·</span>
                   <span className="inline-flex items-center gap-[3px] shrink-0"><Download className="h-3 w-3" />{formatNum(item.download_count ?? 0)}</span>
@@ -281,10 +586,18 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
                   <span className="inline-flex items-center gap-[3px] shrink-0 text-muted-foreground">~{(item as any).estimated_read_minutes} min read</span>
                 </>
               )}
-              {(item.rating_count ?? 0) > 0 && (
+              {(item.rating_count ?? 0) > 0 && !isThread && (
                 <>
                   <span className="text-[#444450] shrink-0">·</span>
                   <MiniStars value={starVal} />
+                </>
+              )}
+              {isThread && (
+                <>
+                  <span className="text-[#444450] shrink-0">·</span>
+                  <div onClick={stop}>
+                    <LikeButton contentId={item.id} likeCount={item.like_count ?? 0} stop={stop} />
+                  </div>
                 </>
               )}
               {!isLight && (
@@ -293,8 +606,17 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
                   <span className="inline-flex items-center gap-[3px] shrink-0"><MessageSquare className="h-3 w-3" />{item.comment_count ?? 0}</span>
                 </>
               )}
-              {isLoggedIn && (
+              {isLoggedIn && !isReblog && (
                 <>
+                  <span className="text-[#444450] shrink-0">·</span>
+                  <button
+                    onClick={(e) => { stop(e); setReblogOpen(true); }}
+                    className="inline-flex items-center gap-[3px] shrink-0 hover:text-foreground transition-colors"
+                    title="Reblog"
+                    style={alreadyReblogged ? { color: "#2EC4B6" } : {}}
+                  >
+                    <Repeat2 className="h-3 w-3" />
+                  </button>
                   <span className="text-[#444450] shrink-0">·</span>
                   <button
                     onClick={(e) => { stop(e); setShareOpen(true); }}
@@ -342,6 +664,29 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
           onClose={() => setShareOpen(false)}
           contentId={item.id}
           contentTitle={item.title}
+        />
+      )}
+
+      {/* Reblog modal */}
+      {reblogOpen && (
+        <ReblogModal
+          open={reblogOpen}
+          onOpenChange={setReblogOpen}
+          originalItem={{
+            id: item.id,
+            title: item.title,
+            content_type: item.content_type,
+            difficulty: item.difficulty,
+            cover_image_url: (item as any).cover_image_url,
+            created_at: item.created_at,
+            creator_id: item.creator_id,
+          }}
+          originalCreator={{
+            id: item.creator_id,
+            username: (item.profiles as any)?.username || "unknown",
+            display_name: (item.profiles as any)?.display_name || null,
+          }}
+          alreadyReblogged={alreadyReblogged ?? false}
         />
       )}
     </div>

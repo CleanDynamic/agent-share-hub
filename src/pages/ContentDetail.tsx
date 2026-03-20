@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link, useSearchParams, useNavigate, useLocation } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { BookmarkButton } from "@/components/BookmarkButton";
@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2, Eye, GitFork, ExternalLink, Clock, ShieldCheck } from "lucide-react";
+import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2, Eye, GitFork, ExternalLink, Clock, ShieldCheck, Repeat2 } from "lucide-react";
 import { VersionHistory } from "@/components/VersionHistory";
 import { ForkModal } from "@/components/ForkModal";
 import { DependencyDisplay } from "@/components/DependencyDisplay";
@@ -108,6 +108,10 @@ const ContentDetail = () => {
   const [curatorSubmitting, setCuratorSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<"content" | "changelog" | "tips" | "comments">("changelog");
   const viewTracked = useRef(false);
+
+  const queryClient = useQueryClient();
+  const [likeOptimistic, setLikeOptimistic] = useState<boolean | null>(null);
+  const [likeCountLocal, setLikeCountLocal] = useState<number | null>(null);
 
   const { data: item, isLoading, error } = useQuery({
     queryKey: ["content_detail", id],
@@ -299,6 +303,72 @@ const ContentDetail = () => {
   const isFreeContent = item?.monetisation_type === "free" || item?.monetisation_type === "donation";
   const isEligible = isLoggedIn && (isFreeContent || hasDownloaded === true || subscriberUnlocked);
 
+  // Like status
+  const { data: isLiked, refetch: refetchLike } = useQuery({
+    queryKey: ["content_like_detail", id, user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data } = await supabase
+        .from("content_likes" as any)
+        .select("id")
+        .eq("content_id", id!)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user && !!id,
+  });
+
+  const liked = likeOptimistic ?? isLiked ?? false;
+  const likeCount = likeCountLocal ?? (item as any)?.like_count ?? 0;
+
+  async function handleLike() {
+    if (!user || !item) return;
+    const newLiked = !liked;
+    setLikeOptimistic(newLiked);
+    setLikeCountLocal(newLiked ? likeCount + 1 : Math.max(0, likeCount - 1));
+    try {
+      if (newLiked) {
+        await supabase.from("content_likes" as any).insert({ content_id: item.id, user_id: user.id } as any);
+      } else {
+        await supabase.from("content_likes" as any).delete().eq("content_id", item.id).eq("user_id", user.id);
+      }
+      refetchLike();
+    } catch {
+      setLikeOptimistic(!newLiked);
+      setLikeCountLocal(likeCount);
+    }
+  }
+
+  // Reblog original post (for reblog detail pages)
+  const { data: reblogOriginal } = useQuery({
+    queryKey: ["reblog_original_detail", (item as any)?.reblog_of_content_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_items")
+        .select("*, profiles!content_items_creator_id_fkey(id, username, display_name, bio)")
+        .eq("id", (item as any)!.reblog_of_content_id)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!(item as any)?.reblog_of_content_id,
+  });
+
+  // Thread posts (for thread detail pages)
+  const { data: threadPosts } = useQuery({
+    queryKey: ["thread_posts_detail", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_items")
+        .select("*")
+        .eq("thread_id", id!)
+        .eq("status", "approved")
+        .order("thread_position");
+      return (data as any[]) ?? [];
+    },
+    enabled: !!(item as any)?.is_thread_post && (item as any)?.thread_position === 1,
+  });
+
   // Fork origin data
   const { data: forkOrigin } = useQuery({
     queryKey: ["fork_origin", item?.fork_of_content_id],
@@ -424,6 +494,228 @@ const ContentDetail = () => {
         <Button variant="outline" size="sm" asChild>
           <Link to="/browse"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Discover</Link>
         </Button>
+      </div>
+    );
+  }
+
+  const isReblog = !!(item as any).is_reblog;
+  const isThread = !!(item as any).is_thread_post && (item as any).thread_position === 1;
+
+  // ─── Reblog detail page ──────────────────────────────────────
+  if (isReblog) {
+    const state = location.state as { from?: string; name?: string } | null;
+    const backLabel = state?.from === "browse" ? "Back to Discover" : "Back to Feed";
+
+    return (
+      <div className="py-6 sm:py-10 px-4 sm:px-6 pb-24 lg:pb-12">
+        <div className="mx-auto max-w-2xl">
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center text-[13px] text-muted-foreground hover:text-foreground mb-3 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="mr-1 h-3.5 w-3.5" /> {backLabel}
+          </button>
+
+          {/* Reblogger header */}
+          {creator && (
+            <div className="flex items-center gap-3 mb-3">
+              <Link to={`/creator/${creator.username}`} className="shrink-0">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
+                  {(creator.display_name || creator.username || "?")[0].toUpperCase()}
+                </div>
+              </Link>
+              <div className="flex-1 min-w-0">
+                <Link to={`/creator/${creator.username}`} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
+                  {creator.display_name || creator.username}
+                </Link>
+                <p className="text-xs text-muted-foreground">@{creator.username}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Reblog label */}
+          <div className="flex items-center gap-1.5 mb-2">
+            <Repeat2 className="h-4 w-4" style={{ color: "#2EC4B6" }} />
+            <span className="text-sm font-medium" style={{ color: "#2EC4B6" }}>Reblogged</span>
+          </div>
+
+          {/* Reblog comment */}
+          {(item as any).reblog_comment && (
+            <p className="text-lg italic text-foreground mb-4 leading-relaxed">"{(item as any).reblog_comment}"</p>
+          )}
+
+          {/* Quoted post card (larger) */}
+          {reblogOriginal ? (
+            <div
+              className="rounded-xl p-4 mb-4"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)" }}
+            >
+              {reblogOriginal.cover_image_url && (
+                <img
+                  src={reblogOriginal.cover_image_url}
+                  alt=""
+                  className="w-full rounded-lg mb-3 object-cover"
+                  style={{ maxHeight: 240 }}
+                />
+              )}
+              <div className="flex items-center gap-2 mb-1.5">
+                <Badge variant="outline" className={`text-[10px] font-medium ${TYPE_COLORS[reblogOriginal.content_type] ?? ""}`}>
+                  {displayContentType(reblogOriginal.content_type)}
+                </Badge>
+                <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(reblogOriginal.difficulty)}`}>
+                  {reblogOriginal.difficulty}
+                </Badge>
+              </div>
+              <p className="text-base font-bold text-foreground mb-3">{reblogOriginal.title}</p>
+              <Link
+                to={`/content/${reblogOriginal.id}`}
+                className="text-sm font-medium hover:underline"
+                style={{ color: "#2EC4B6" }}
+              >
+                View original post →
+              </Link>
+            </div>
+          ) : (
+            <div
+              className="rounded-xl p-4 mb-4 text-sm text-muted-foreground"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)" }}
+            >
+              Original post unavailable
+            </div>
+          )}
+
+          {/* Like stats */}
+          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+            <span className="flex items-center gap-1">
+              <Heart className={`h-4 w-4 ${liked ? "fill-primary text-primary" : ""}`} />
+              {likeCount} {likeCount === 1 ? "like" : "likes"}
+            </span>
+            <span className="flex items-center gap-1">
+              <Eye className="h-4 w-4" />{(item as any).view_count ?? 0} views
+            </span>
+          </div>
+
+          {/* Like button */}
+          {isLoggedIn && (
+            <Button
+              className={`w-full mb-4 ${liked ? "bg-muted hover:bg-muted text-muted-foreground" : "bg-primary hover:bg-primary/90"}`}
+              onClick={handleLike}
+            >
+              <Heart className={`mr-2 h-4 w-4 ${liked ? "fill-current" : ""}`} />
+              {liked ? "❤️ Liked" : "❤️ Like this reblog"}
+            </Button>
+          )}
+
+          {/* Comments section */}
+          <CommentsSection
+            contentId={item.id}
+            contentTitle={item.title || "Reblog"}
+            commentCount={(item as any).comment_count ?? 0}
+            isEligible={isLoggedIn}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Thread detail page ──────────────────────────────────────
+  if (isThread && threadPosts && threadPosts.length > 0) {
+    const state = location.state as { from?: string } | null;
+    const backLabel = state?.from === "browse" ? "Back to Discover" : "Back to Feed";
+
+    return (
+      <div className="py-6 sm:py-10 px-4 sm:px-6 pb-24 lg:pb-12">
+        <div className="mx-auto max-w-2xl">
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center text-[13px] text-muted-foreground hover:text-foreground mb-3 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="mr-1 h-3.5 w-3.5" /> {backLabel}
+          </button>
+
+          {/* Creator header */}
+          {creator && (
+            <div className="flex items-center gap-3 mb-4">
+              <Link to={`/creator/${creator.username}`} className="shrink-0">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
+                  {(creator.display_name || creator.username || "?")[0].toUpperCase()}
+                </div>
+              </Link>
+              <div className="flex-1 min-w-0">
+                <Link to={`/creator/${creator.username}`} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
+                  {creator.display_name || creator.username}
+                </Link>
+                <p className="text-xs text-muted-foreground">@{creator.username}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Thread title */}
+          <h1 className="text-xl font-bold text-foreground mb-4">{item.title}</h1>
+
+          {/* Thread posts connected list */}
+          <div className="border-l-2 pl-4 space-y-0" style={{ borderColor: "#2EC4B6" }}>
+            {/* First post (the starter) */}
+            <div className="relative pb-4">
+              <div className="absolute -left-[21px] top-1 h-5 w-5 rounded-full bg-background border-2 flex items-center justify-center text-[9px] font-bold" style={{ borderColor: "#2EC4B6", color: "#2EC4B6" }}>
+                1
+              </div>
+              <div className="flex items-start justify-between gap-2 mb-1">
+                {item.description && <p className="text-[14px] text-foreground leading-relaxed flex-1">{item.description}</p>}
+                <span className="text-[11px] text-muted-foreground shrink-0">1 / {(item as any).thread_total}</span>
+              </div>
+              {(item as any).cover_image_url && (
+                <img src={(item as any).cover_image_url} alt="" className="w-full rounded-lg mt-2 object-cover" style={{ maxHeight: 240 }} />
+              )}
+            </div>
+
+            {/* Continuation posts */}
+            {threadPosts.map((post: any) => (
+              <div key={post.id} className="relative pb-4">
+                <div className="absolute -left-[21px] top-1 h-5 w-5 rounded-full bg-background border-2 flex items-center justify-center text-[9px] font-bold" style={{ borderColor: "#2EC4B6", color: "#2EC4B6" }}>
+                  {post.thread_position}
+                </div>
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <p className="text-[14px] text-foreground leading-relaxed flex-1">{post.text_content || post.description}</p>
+                  <span className="text-[11px] text-muted-foreground shrink-0">{post.thread_position} / {post.thread_total}</span>
+                </div>
+                {post.cover_image_url && (
+                  <img src={post.cover_image_url} alt="" className="w-full rounded-lg mt-2 object-cover" style={{ maxHeight: 240 }} />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Stats */}
+          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-4 mb-3">
+            <span className="flex items-center gap-1">
+              <Heart className={`h-4 w-4 ${liked ? "fill-primary text-primary" : ""}`} />
+              {likeCount} {likeCount === 1 ? "like" : "likes"}
+            </span>
+            <span className="flex items-center gap-1">
+              <Eye className="h-4 w-4" />{(item as any).view_count ?? 0} views
+            </span>
+          </div>
+
+          {/* Like button */}
+          {isLoggedIn && (
+            <Button
+              className={`w-full mb-4 ${liked ? "bg-muted hover:bg-muted text-muted-foreground" : "bg-primary hover:bg-primary/90"}`}
+              onClick={handleLike}
+            >
+              <Heart className={`mr-2 h-4 w-4 ${liked ? "fill-current" : ""}`} />
+              {liked ? "❤️ Liked" : "❤️ Like this thread"}
+            </Button>
+          )}
+
+          {/* Comments */}
+          <CommentsSection
+            contentId={item.id}
+            contentTitle={item.title || "Thread"}
+            commentCount={(item as any).comment_count ?? 0}
+            isEligible={isLoggedIn}
+          />
+        </div>
       </div>
     );
   }
@@ -670,8 +962,8 @@ const ContentDetail = () => {
         {/* 9. ACTION BOX — inline, full width */}
         <div className="rounded-xl border border-border bg-card p-3.5 sm:p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            {/* Left: rating */}
-            <div className="flex-shrink-0">
+            {/* Left: rating + like count */}
+            <div className="flex-shrink-0 flex items-center gap-3">
               <StarRating
                 contentId={item.id}
                 contentTitle={item.title}
@@ -679,6 +971,16 @@ const ContentDetail = () => {
                 ratingCount={(item as any).rating_count ?? 0}
                 isEligible={isEligible}
               />
+              {likeCount > 0 && (
+                <button
+                  onClick={handleLike}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  style={liked ? { color: "#E8571A" } : {}}
+                >
+                  <Heart className={`h-3.5 w-3.5 ${liked ? "fill-current" : ""}`} />
+                  {likeCount}
+                </button>
+              )}
             </div>
 
             {/* Right: action buttons */}

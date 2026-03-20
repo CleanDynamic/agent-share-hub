@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ApprovedTool {
-  name: string;
+  tag: string;
   slug: string;
   description: string | null;
-  website_url: string | null;
+  url: string | null;
   category: string | null;
   is_official: boolean;
 }
@@ -16,23 +16,31 @@ export function useApprovedTools() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ai_tools_registry" as any)
-        .select("name, slug, description, website_url, category, is_official")
+        .select("tag, name, slug, description, url, website_url, category, is_official")
         .eq("status", "approved")
-        .order("is_official", { ascending: false })
-        .order("name");
+        .order("category")
+        .order("tag");
       if (error) throw error;
-      return (data as any[]) as ApprovedTool[];
+      // Normalise: use tag if set, fallback to name; use url if set, fallback to website_url
+      return ((data as any[]) ?? []).map((row) => ({
+        tag: row.tag || row.name,
+        slug: row.slug,
+        description: row.description,
+        url: row.url || row.website_url,
+        category: row.category,
+        is_official: row.is_official,
+      })) as ApprovedTool[];
     },
     staleTime: 10 * 60 * 1000,
   });
 }
 
-/** Convenience: just the names list for checkboxes/filters */
+/** Convenience: just the tag names list for checkboxes/filters */
 export function useApprovedToolNames() {
   const query = useApprovedTools();
   return {
     ...query,
-    data: query.data?.map((t) => t.name) ?? [],
+    data: query.data?.map((t) => t.tag) ?? [],
   };
 }
 
@@ -42,13 +50,15 @@ export function useGroupedApprovedTools() {
 
   const groups: { label: string; category: string; tools: ApprovedTool[] }[] = [];
   if (query.data) {
-    const apiTools = query.data.filter((t) => !t.category || t.category === "api" || t.category === "other");
+    const apiTools = query.data.filter((t) => t.category === "api");
     const localTools = query.data.filter((t) => t.category === "local_runtime");
     const automationTools = query.data.filter((t) => t.category === "automation");
+    const otherTools = query.data.filter((t) => !t.category || (t.category !== "api" && t.category !== "local_runtime" && t.category !== "automation"));
 
-    if (apiTools.length > 0) groups.push({ label: "API Tools", category: "api", tools: apiTools });
+    if (apiTools.length > 0) groups.push({ label: "AI Tools", category: "api", tools: apiTools });
     if (localTools.length > 0) groups.push({ label: "Local Runtimes", category: "local_runtime", tools: localTools });
     if (automationTools.length > 0) groups.push({ label: "Automation", category: "automation", tools: automationTools });
+    if (otherTools.length > 0) groups.push({ label: "Other", category: "other", tools: otherTools });
   }
 
   return { ...query, groups };
