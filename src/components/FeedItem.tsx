@@ -342,6 +342,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
               description={item.description ?? null}
               whatToExpect={item.what_to_expect ?? null}
               whatToExpectBlocks={item.what_to_expect_blocks as any[] | null}
+              customTags={(item as any).custom_tags ?? (item as any).tags ?? []}
             />
           </div>
         )}
