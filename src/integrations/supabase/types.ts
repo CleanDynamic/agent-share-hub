@@ -714,6 +714,7 @@ export type Database = {
           created_at: string
           creator_id: string
           current_version: string
+          custom_tags: string[] | null
           custom_use_case_description: string | null
           description: string | null
           difficulty: string
@@ -770,6 +771,7 @@ export type Database = {
           created_at?: string
           creator_id: string
           current_version?: string
+          custom_tags?: string[] | null
           custom_use_case_description?: string | null
           description?: string | null
           difficulty: string
@@ -826,6 +828,7 @@ export type Database = {
           created_at?: string
           creator_id?: string
           current_version?: string
+          custom_tags?: string[] | null
           custom_use_case_description?: string | null
           description?: string | null
           difficulty?: string
