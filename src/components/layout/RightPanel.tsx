@@ -266,9 +266,15 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
               width: "100%",
               border: isActive
                 ? `1.5px solid ${activeBorder}`
-                : "1px solid rgba(255, 255, 255, 0.10)",
-              background: isActive ? "rgba(255, 255, 255, 0.04)" : "rgba(17, 17, 24, 0.7)",
+                : "1px solid rgba(255,255,255,0.09)",
+              background: isActive
+                ? "linear-gradient(145deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%)"
+                : "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
+              backdropFilter: "blur(12px) saturate(150%)",
+              WebkitBackdropFilter: "blur(12px) saturate(150%)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.10), 0 4px 20px rgba(0,0,0,0.35)",
               borderRadius: 12,
+              transition: "border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease",
             }}
           >
             <div className="text-left p-[0.875rem]">
