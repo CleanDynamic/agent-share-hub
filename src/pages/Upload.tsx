@@ -83,7 +83,7 @@ const Upload = () => {
   const [pwywFloor, setPwywFloor] = useState<number>(0);
   const [customTags, setCustomTags] = useState<string[]>([]);
   const [expandedToolGroups, setExpandedToolGroups] = useState<Set<string>>(new Set(["api"]));
-  const { data: microtagDefs } = useMicrotagDefinitions();
+  const [tagInput, setTagInput] = useState("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   const [toolUrl, setToolUrl] = useState("");
