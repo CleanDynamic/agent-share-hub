@@ -103,6 +103,15 @@
   text-decoration: underline;
 }
 
+/* ── Nav glass hover (inactive items) ── */
+nav a:not(.text-primary):hover,
+nav a.text-muted-foreground:hover {
+  background: rgba(255,255,255,0.05) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: background 0.15s ease;
+}
+
 /* ── Glass badges and pills ── */
 .badge,
 [data-slot="badge"],

@@ -115,9 +115,15 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                     collapsed ? "justify-center px-0" : "px-3"
                   } h-12 text-sm ${
                     isActive
-                      ? "text-primary font-semibold border-l-2 border-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                      ? "text-primary font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
+                  style={isActive ? {
+                    background: "linear-gradient(90deg, rgba(232,87,26,0.18) 0%, rgba(232,87,26,0.06) 100%)",
+                    borderLeft: "2px solid #E8571A",
+                    backdropFilter: "blur(4px)",
+                    WebkitBackdropFilter: "blur(4px)",
+                  } : undefined}
                 >
                   <item.icon className={`h-[22px] w-[22px] shrink-0 transition-colors ${!isActive ? "group-hover:text-primary/60" : ""}`} />
                   {!collapsed && <span>{item.label}</span>}
