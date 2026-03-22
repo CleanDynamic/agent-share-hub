@@ -144,53 +144,52 @@ export function StarRating({ contentId, contentTitle, avgRating, ratingCount, is
   const displayValue = roundedStars(localAvg, localCount);
 
   return (
-    <div className="space-y-2">
-      {/* Display stars */}
-      <div className="flex items-center gap-2">
-        <DisplayStars value={displayValue} />
-        <span className="text-xs text-muted-foreground">
-          {localCount === 0 ? "No ratings yet" : `(${localCount} rating${localCount !== 1 ? "s" : ""})`}
-        </span>
-      </div>
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {/* Display: stars or "No ratings yet" */}
+      {localCount === 0 ? (
+        <span className="text-[13px] text-muted-foreground">No ratings yet</span>
+      ) : (
+        <div className="flex items-center gap-1.5">
+          <DisplayStars value={displayValue} />
+          <span className="text-[13px] text-muted-foreground">({localCount})</span>
+        </div>
+      )}
 
-      {/* Interactive rating */}
+      {/* Interactive rating inline */}
       {isEligible && isLoggedIn && (
         <>
+          <span className="text-muted-foreground/40 text-[13px]">·</span>
           {myRating && !showInteractive ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
-                Your rating: {"★".repeat(myRating)}
-              </span>
+            <>
+              <span className="text-[13px] text-muted-foreground">Your rating: {"★".repeat(myRating)}</span>
               <button
                 onClick={() => setShowInteractive(true)}
-                className="text-xs text-secondary hover:underline"
+                className="text-[13px] text-[hsl(var(--secondary))] hover:underline"
               >
                 Change
               </button>
-            </div>
+            </>
           ) : (
-            <div>
-              {!myRating && <p className="text-xs text-muted-foreground mb-1">Rate this</p>}
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <button
-                    key={n}
-                    onMouseEnter={() => setHoverStar(n)}
-                    onMouseLeave={() => setHoverStar(0)}
-                    onClick={() => submitRating(n)}
-                    disabled={submitting}
-                    className="p-0.5 transition-transform hover:scale-110"
-                  >
-                    <Star
-                      className={`h-5 w-5 transition-colors ${
-                        n <= (hoverStar || myRating || 0)
-                          ? "fill-primary text-primary"
-                          : "text-muted-foreground/30"
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
+            <div className="flex items-center gap-0.5">
+              <span className="text-[13px] text-muted-foreground mr-1">Rate this:</span>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  onMouseEnter={() => setHoverStar(n)}
+                  onMouseLeave={() => setHoverStar(0)}
+                  onClick={() => submitRating(n)}
+                  disabled={submitting}
+                  className="transition-transform hover:scale-110"
+                >
+                  <Star
+                    className={`h-4 w-4 transition-colors ${
+                      n <= (hoverStar || myRating || 0)
+                        ? "fill-primary text-primary"
+                        : "text-muted-foreground/30"
+                    }`}
+                  />
+                </button>
+              ))}
             </div>
           )}
         </>

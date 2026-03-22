@@ -491,7 +491,7 @@ const ContentDetail = () => {
             loading="eager"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             className="w-full object-cover rounded-xl mb-4"
-            style={{ maxHeight: 360 }}
+            style={{ maxHeight: 320 }}
           />
         )}
 
@@ -530,7 +530,7 @@ const ContentDetail = () => {
 
         {/* 4. Description */}
         {item.description && (
-          <p className="text-[15px] text-muted-foreground leading-relaxed mb-3"><MentionText text={item.description} /></p>
+          <p className="text-[16px] text-[#CCCCCC] leading-[1.5] font-normal mt-2 mb-3"><MentionText text={item.description} /></p>
         )}
 
         {/* 5. Meta row */}
@@ -641,7 +641,9 @@ const ContentDetail = () => {
         {/* 8. BLUEPRINT — inline, always visible */}
         {(!isSub || subscriberUnlocked) && (
           <div className="mb-4">
-            <h2 className="text-lg font-semibold text-foreground mb-3">Blueprint:</h2>
+            {item.content_type !== "Blog" && (
+              <h2 className="text-lg font-semibold text-foreground mb-3">Blueprint:</h2>
+            )}
             <ContentBlockViewer
               contentId={item.id}
               contentTitle={item.title}
@@ -650,6 +652,7 @@ const ContentDetail = () => {
               useInstructions={item.use_instructions}
               onTriggerPaywall={handleDownload}
               isEligible={isEligible}
+              contentType={item.content_type}
             />
           </div>
         )}
@@ -668,10 +671,10 @@ const ContentDetail = () => {
         )}
 
         {/* 9. ACTION BOX — inline, full width */}
-        <div className="rounded-xl border border-border bg-card p-3.5 sm:p-4 mb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            {/* Left: rating */}
-            <div className="flex-shrink-0">
+        <div className="rounded-xl border border-border bg-card mb-4" style={{ padding: "12px 16px" }}>
+          {/* Single row: ratings left, icons right */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
               <StarRating
                 contentId={item.id}
                 contentTitle={item.title}
@@ -680,16 +683,14 @@ const ContentDetail = () => {
                 isEligible={isEligible}
               />
             </div>
-
-            {/* Right: action buttons */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <BookmarkButton contentId={item.id} />
               <AddToCollectionButton contentId={item.id} contentTitle={item.title} />
             </div>
           </div>
 
           {/* Secondary links row */}
-          <div className="flex flex-wrap items-center gap-4 mt-3 pt-3 border-t border-border">
+          <div className="flex flex-wrap items-center gap-4 mt-2">
             {isPaid && (
               <span className="text-[11px] text-muted-foreground">£{(item.price_gbp ?? 0).toFixed(2)} — one-time payment</span>
             )}
@@ -705,13 +706,13 @@ const ContentDetail = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    className="text-[13px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                    className="text-[12px] text-[hsl(var(--secondary))] hover:underline transition-colors flex items-center gap-1"
                     onClick={() => {
                       if (!isLoggedIn) { window.location.href = "/signup"; return; }
                       setForkModalOpen(true);
                     }}
                   >
-                    <GitFork className="h-3.5 w-3.5" /> Fork this ↗
+                    <GitFork className="h-3 w-3" /> Fork this ↗
                   </button>
                 </TooltipTrigger>
                 <TooltipContent><p>Clone to your drafts and make it your own</p></TooltipContent>
@@ -719,10 +720,10 @@ const ContentDetail = () => {
             </TooltipProvider>
             {isCurator && (
               <button
-                className="text-[13px] text-[hsl(var(--secondary))] hover:underline flex items-center gap-1"
+                className="text-[12px] text-[hsl(var(--secondary))] hover:underline flex items-center gap-1"
                 onClick={() => setCuratorModalOpen(true)}
               >
-                <ShieldCheck className="h-3.5 w-3.5" /> Add recommendation
+                <ShieldCheck className="h-3 w-3" /> Add recommendation
               </button>
             )}
           </div>
@@ -737,7 +738,7 @@ const ContentDetail = () => {
 
         {/* 9. CREATED BY — inline horizontal card */}
         {creator && (
-          <div className="flex items-center gap-3 py-3.5 mb-4 border-t border-b border-border">
+          <div className="flex items-center gap-3 py-3 mb-4 border-t border-b border-border">
             <Link to={`/creator/${creator.username}`} className="shrink-0">
               <div className="h-11 w-11 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground overflow-hidden">
                 {(creator.display_name || creator.username || "?")[0].toUpperCase()}
