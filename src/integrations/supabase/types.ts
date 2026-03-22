@@ -714,6 +714,7 @@ export type Database = {
           created_at: string
           creator_id: string
           current_version: string
+          custom_tags: string[] | null
           custom_use_case_description: string | null
           description: string | null
           difficulty: string
@@ -730,7 +731,6 @@ export type Database = {
           has_curator_recommendation: boolean | null
           id: string
           is_pwyw: boolean
-          is_reblog: boolean
           is_verified: boolean
           last_verified_at: string | null
           model_base_architecture: string | null
@@ -745,13 +745,7 @@ export type Database = {
           pwyw_enabled: boolean | null
           pwyw_floor_gbp: number | null
           pwyw_purchase_count: number | null
-          quoted_reblog_id: string | null
           rating_count: number
-          reblog_comment: string | null
-          reblog_count: number
-          reblog_of_collection_id: string | null
-          reblog_of_content_id: string | null
-          reblog_of_project_id: string | null
           star_rating: number
           status: string
           tags: string[]
@@ -777,6 +771,7 @@ export type Database = {
           created_at?: string
           creator_id: string
           current_version?: string
+          custom_tags?: string[] | null
           custom_use_case_description?: string | null
           description?: string | null
           difficulty: string
@@ -793,7 +788,6 @@ export type Database = {
           has_curator_recommendation?: boolean | null
           id?: string
           is_pwyw?: boolean
-          is_reblog?: boolean
           is_verified?: boolean
           last_verified_at?: string | null
           model_base_architecture?: string | null
@@ -808,13 +802,7 @@ export type Database = {
           pwyw_enabled?: boolean | null
           pwyw_floor_gbp?: number | null
           pwyw_purchase_count?: number | null
-          quoted_reblog_id?: string | null
           rating_count?: number
-          reblog_comment?: string | null
-          reblog_count?: number
-          reblog_of_collection_id?: string | null
-          reblog_of_content_id?: string | null
-          reblog_of_project_id?: string | null
           star_rating?: number
           status?: string
           tags?: string[]
@@ -840,6 +828,7 @@ export type Database = {
           created_at?: string
           creator_id?: string
           current_version?: string
+          custom_tags?: string[] | null
           custom_use_case_description?: string | null
           description?: string | null
           difficulty?: string
@@ -856,7 +845,6 @@ export type Database = {
           has_curator_recommendation?: boolean | null
           id?: string
           is_pwyw?: boolean
-          is_reblog?: boolean
           is_verified?: boolean
           last_verified_at?: string | null
           model_base_architecture?: string | null
@@ -871,13 +859,7 @@ export type Database = {
           pwyw_enabled?: boolean | null
           pwyw_floor_gbp?: number | null
           pwyw_purchase_count?: number | null
-          quoted_reblog_id?: string | null
           rating_count?: number
-          reblog_comment?: string | null
-          reblog_count?: number
-          reblog_of_collection_id?: string | null
-          reblog_of_content_id?: string | null
-          reblog_of_project_id?: string | null
           star_rating?: number
           status?: string
           tags?: string[]
@@ -912,34 +894,6 @@ export type Database = {
             columns: ["fork_of_creator_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "content_items_reblog_of_content_id_fkey"
-            columns: ["reblog_of_content_id"]
-            isOneToOne: false
-            referencedRelation: "content_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "content_items_reblog_of_collection_id_fkey"
-            columns: ["reblog_of_collection_id"]
-            isOneToOne: false
-            referencedRelation: "collections"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "content_items_reblog_of_project_id_fkey"
-            columns: ["reblog_of_project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "content_items_quoted_reblog_id_fkey"
-            columns: ["quoted_reblog_id"]
-            isOneToOne: false
-            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
         ]
@@ -1770,7 +1724,6 @@ export type Database = {
           item_count: number
           name: string
           position: number
-          published_collection_id: string | null
           user_id: string
         }
         Insert: {
@@ -1780,7 +1733,6 @@ export type Database = {
           item_count?: number
           name: string
           position?: number
-          published_collection_id?: string | null
           user_id: string
         }
         Update: {
@@ -1790,7 +1742,6 @@ export type Database = {
           item_count?: number
           name?: string
           position?: number
-          published_collection_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1799,13 +1750,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "library_folders_published_collection_id_fkey"
-            columns: ["published_collection_id"]
-            isOneToOne: false
-            referencedRelation: "collections"
             referencedColumns: ["id"]
           },
         ]

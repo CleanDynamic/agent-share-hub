@@ -29,7 +29,6 @@ import { SubmitToolModal } from "@/components/SubmitToolModal";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
 import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
-import { useMicrotagDefinitions } from "@/hooks/useMicrotags";
 import { ORDERED_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, ANY_DIFFICULTY_TYPES, displayContentType } from "@/lib/content-types";
 
 const CONTENT_TYPES = ORDERED_CONTENT_TYPES.filter(t => t !== "Blog");
@@ -41,7 +40,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const schema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
   content_type: z.string().min(1, "Select a content type"),
-  description: z.string().trim().min(1, "Description is required").max(500, "Max 500 characters"),
+  description: z.string().trim().max(500, "Max 500 characters").optional().or(z.literal("")),
   difficulty: z.string().min(1, "Select a difficulty level"),
   ai_tools: z.array(z.string()),
   use_cases: z.array(z.string()),
@@ -84,7 +83,7 @@ const Upload = () => {
   const [pwywFloor, setPwywFloor] = useState<number>(0);
   const [customTags, setCustomTags] = useState<string[]>([]);
   const [expandedToolGroups, setExpandedToolGroups] = useState<Set<string>>(new Set(["api"]));
-  const { data: microtagDefs } = useMicrotagDefinitions();
+  const [tagInput, setTagInput] = useState("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   const [toolUrl, setToolUrl] = useState("");
@@ -134,6 +133,7 @@ const Upload = () => {
     if (isBlogType) {
       form.setValue("ai_tools", ["Any Tool"]);
       form.setValue("monetisation_type", "free");
+      form.setValue("description", "");
     }
   }, [isBlogType, form]);
 
@@ -321,6 +321,7 @@ const Upload = () => {
         custom_use_case_description: customUseCaseDesc.trim() || null,
         tool_url: toolUrl.trim() || null,
         tags: customTags,
+        custom_tags: customTags,
         monetisation_type: values.monetisation_type,
         price_gbp: values.monetisation_type === "paid" && !isPwyw ? values.price_gbp ?? null : null,
         donation_enabled: values.donation_enabled,
@@ -427,11 +428,18 @@ const Upload = () => {
           }))
         : null;
 
+      // Auto-generate description for blogs from first text block
+      let finalDescription = values.description;
+      if (isBlogType) {
+        const firstTextBlock = contentBlocks.find(b => (b.type === "text" || b.type === "long_text") && b.textContent?.trim());
+        finalDescription = firstTextBlock ? firstTextBlock.textContent!.trim().slice(0, 160) : "";
+      }
+
       const { data: insertedItem, error: insertError } = await supabase.from("content_items").insert({
         creator_id: user.id,
         title: values.title,
         content_type: values.content_type,
-        description: values.description,
+        description: finalDescription,
         difficulty: values.difficulty,
         ai_tools: values.ai_tools,
         use_cases: values.use_cases,
@@ -448,6 +456,7 @@ const Upload = () => {
         pwyw_enabled: actualPwywEnabled,
         pwyw_floor_gbp: actualPwywFloor,
         is_pwyw: actualPwywEnabled,
+        custom_tags: customTags,
       } as any).select("id").single();
 
       if (insertError || !insertedItem) {
@@ -655,10 +664,6 @@ const Upload = () => {
         } as any);
       }
 
-      // Save free-text tags
-      if (customTags.length > 0) {
-        await supabase.from("content_items").update({ tags: customTags } as any).eq("id", contentId);
-      }
 
       setSuccess(true);
     } catch (err: any) {
@@ -801,25 +806,6 @@ const Upload = () => {
               )}
             </div>
 
-            {/* Blog: Hook (description) */}
-            <FormField control={form.control} name="description" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Hook</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    placeholder="The first line people see. Make it count."
-                    className="bg-card border-border rounded-xl"
-                    maxLength={160}
-                  />
-                </FormControl>
-                <FormDescription>
-                  The first line people see. Make it count.
-                  <span className="ml-2 text-muted-foreground">{field.value.length}/160</span>
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
 
             {/* Blog: Content blocks — only Text and Long Text */}
             <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} contentType="Blog" />
@@ -1102,7 +1088,7 @@ const Upload = () => {
                   />
                 </FormControl>
                 <FormDescription>
-                  <span className="text-muted-foreground">{field.value.length}/500</span>
+                  <span className="text-muted-foreground">{(field.value ?? "").length}/500</span>
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -1267,43 +1253,49 @@ const Upload = () => {
               </FormItem>
             )} />
 
-            {/* 11. Quick tags — pill grid from microtag_definitions */}
+            {/* 11. Tags — free-text input */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Quick tags</label>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {(microtagDefs ?? []).map((def) => {
-                  const tagKey = def.tag.replace(/^#/, "");
-                  const isSelected = customTags.includes(tagKey);
-                  const atMax = customTags.length >= 5;
-                  const disabled = !isSelected && atMax;
-                  return (
-                    <button
-                      key={def.tag}
-                      type="button"
-                      disabled={disabled}
-                      title={disabled ? "Max 5 selected" : def.description ?? undefined}
-                      onClick={() => {
-                        if (isSelected) {
-                          setCustomTags(customTags.filter((t) => t !== tagKey));
-                        } else if (!atMax) {
-                          setCustomTags([...customTags, tagKey]);
-                        }
-                      }}
-                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                        isSelected
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : disabled
-                          ? "bg-muted text-muted-foreground/40 border-border cursor-not-allowed"
-                          : "bg-muted text-muted-foreground border-border hover:border-muted-foreground/40 hover:text-foreground"
-                      }`}
-                    >
-                      {def.tag}
-                    </button>
-                  );
-                })}
-              </div>
+              <label className="text-sm font-medium text-foreground">Tags (optional)</label>
+              <Input
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value.slice(0, 30))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === ",") {
+                    e.preventDefault();
+                    const raw = tagInput.replace(/,/g, "").replace(/^#/, "").trim().toLowerCase().replace(/\s+/g, "-");
+                    if (raw && raw.length <= 30 && customTags.length < 10 && !customTags.includes(raw)) {
+                      setCustomTags([...customTags, raw]);
+                    }
+                    setTagInput("");
+                  }
+                }}
+                placeholder={customTags.length >= 10 ? "" : "Add a tag and press Enter..."}
+                disabled={customTags.length >= 10}
+                className="bg-card border-border rounded-full"
+                maxLength={30}
+              />
+              {customTags.length >= 10 && (
+                <p className="text-xs text-muted-foreground">Maximum 10 tags</p>
+              )}
               {customTags.length > 0 && (
-                <p className="text-[11px] text-muted-foreground">{customTags.length}/5 selected</p>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {customTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-2xl"
+                      style={{ backgroundColor: "#1E1E2A", color: "#9999AA" }}
+                    >
+                      #{tag}
+                      <button
+                        type="button"
+                        onClick={() => setCustomTags(customTags.filter((t) => t !== tag))}
+                        className="ml-0.5 hover:text-foreground transition-colors"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
 
