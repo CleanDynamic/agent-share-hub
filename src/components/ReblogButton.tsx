@@ -50,12 +50,13 @@ export function ReblogButton({ source, stopPropagation = true }: ReblogButtonPro
   const { data: hasReblogged } = useQuery({
     queryKey: ["user_has_reblogged", sourceColumn, sourceId, user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const query = supabase
         .from("content_items")
-        .select("id")
-        .eq(sourceColumn as any, sourceId)
+        .select("id") as any;
+      const { data } = await query
+        .eq(sourceColumn, sourceId)
         .eq("creator_id", user!.id)
-        .eq("is_reblog" as any, true)
+        .eq("is_reblog", true)
         .maybeSingle();
       return !!data;
     },
