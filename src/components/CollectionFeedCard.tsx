@@ -6,6 +6,7 @@ import { Eye, Users } from "lucide-react";
 import { timeAgo, formatNum } from "@/components/FeedItem";
 import { ReblogButton } from "@/components/ReblogButton";
 import { useAuth } from "@/contexts/AuthContext";
+import LiquidGlass from "liquid-glass-react";
 
 interface CollectionFeedCardProps {
   item: {
@@ -50,9 +51,19 @@ export function CollectionFeedCard({ item }: CollectionFeedCardProps) {
   const stop = (e: React.MouseEvent) => e.stopPropagation();
 
   return (
+    <LiquidGlass
+      displacementScale={25}
+      blurAmount={0.05}
+      saturation={130}
+      aberrationIntensity={0.8}
+      elasticity={0.15}
+      cornerRadius={16}
+      padding="0px"
+      style={{ width: "100%", marginBottom: "8px" }}
+    >
     <div
       onClick={() => navigate(`/collections/${item.slug}`)}
-      className="px-4 py-3 border-b border-border cursor-pointer transition-colors duration-150 hover:bg-[hsl(0_0%_100%/0.03)]"
+      className="px-4 py-3 cursor-pointer transition-colors duration-150 hover:bg-[hsl(0_0%_100%/0.03)]"
     >
       {/* Header */}
       <div className="flex items-center gap-2" style={{ height: 36 }}>
@@ -116,5 +127,6 @@ export function CollectionFeedCard({ item }: CollectionFeedCardProps) {
         )}
       </div>
     </div>
+    </LiquidGlass>
   );
 }
