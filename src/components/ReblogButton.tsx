@@ -34,11 +34,12 @@ export function ReblogButton({ source, stopPropagation = true }: ReblogButtonPro
   const { data: countData } = useQuery({
     queryKey: ["reblog_count", sourceColumn, sourceId],
     queryFn: async () => {
-      const { count } = await supabase
+      const query = supabase
         .from("content_items")
-        .select("id", { count: "exact", head: true })
-        .eq(sourceColumn as any, sourceId)
-        .eq("is_reblog" as any, true);
+        .select("id", { count: "exact", head: true }) as any;
+      const { count } = await query
+        .eq(sourceColumn, sourceId)
+        .eq("is_reblog", true);
       return count ?? 0;
     },
     enabled: !!sourceId,
