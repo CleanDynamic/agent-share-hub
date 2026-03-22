@@ -54,7 +54,7 @@ export function ReblogButton({ source, stopPropagation = true }: ReblogButtonPro
         .select("id")
         .eq(sourceColumn as any, sourceId)
         .eq("creator_id", user!.id)
-        .eq("is_reblog", true)
+        .eq("is_reblog" as any, true)
         .maybeSingle();
       return !!data;
     },
