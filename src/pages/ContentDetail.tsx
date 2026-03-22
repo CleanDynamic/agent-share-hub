@@ -491,7 +491,7 @@ const ContentDetail = () => {
             loading="eager"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             className="w-full object-cover rounded-xl mb-4"
-            style={{ maxHeight: 320 }}
+            style={{ maxHeight: 200 }}
           />
         )}
 
