@@ -754,6 +754,8 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
           [
             { type: "text" as BlockType, label: "+ Text" },
             { type: "long_text" as BlockType, label: "+ Long Text" },
+            { type: "image" as BlockType, label: "+ Image" },
+            { type: "file" as BlockType, label: "+ File" },
           ]
         ) : (
           [
