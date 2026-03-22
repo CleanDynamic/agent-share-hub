@@ -426,11 +426,18 @@ const Upload = () => {
           }))
         : null;
 
+      // Auto-generate description for blogs from first text block
+      let finalDescription = values.description;
+      if (isBlogType) {
+        const firstTextBlock = contentBlocks.find(b => (b.type === "text" || b.type === "long_text") && b.textContent?.trim());
+        finalDescription = firstTextBlock ? firstTextBlock.textContent!.trim().slice(0, 160) : "";
+      }
+
       const { data: insertedItem, error: insertError } = await supabase.from("content_items").insert({
         creator_id: user.id,
         title: values.title,
         content_type: values.content_type,
-        description: values.description,
+        description: finalDescription,
         difficulty: values.difficulty,
         ai_tools: values.ai_tools,
         use_cases: values.use_cases,
@@ -447,6 +454,7 @@ const Upload = () => {
         pwyw_enabled: actualPwywEnabled,
         pwyw_floor_gbp: actualPwywFloor,
         is_pwyw: actualPwywEnabled,
+        custom_tags: customTags,
       } as any).select("id").single();
 
       if (insertError || !insertedItem) {
