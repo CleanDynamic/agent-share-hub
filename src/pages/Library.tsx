@@ -186,11 +186,12 @@ export default function LibraryPage() {
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar (desktop) / pill row (mobile) */}
-          {folders && folders.length > 0 && (
-            <>
-              {/* Desktop sidebar */}
-              <div className="hidden lg:block w-[200px] shrink-0">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Folders</p>
+          <>
+            {/* Desktop sidebar */}
+            <div className="hidden lg:block w-[200px] shrink-0">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Folders</p>
+              </div>
                 <button
                   onClick={() => setActiveFolder(null)}
                   className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${!activeFolder ? "text-primary font-semibold border-l-2 border-primary bg-accent/40" : "text-muted-foreground hover:text-foreground hover:bg-accent/40"}`}
@@ -205,7 +206,7 @@ export default function LibraryPage() {
                   Unsorted
                   <span className="ml-auto text-[11px] text-muted-foreground">{libraryItems?.filter((l: any) => !l.folder_id).length ?? 0}</span>
                 </button>
-                {folders.map((folder: any) => (
+                {(folders ?? []).map((folder: any) => (
                   <div key={folder.id} className="group relative">
                     {editingId === folder.id ? (
                       <div className="flex items-center gap-1 px-2 py-1">
@@ -300,7 +301,7 @@ export default function LibraryPage() {
                 >
                   📚 Unsorted
                 </button>
-                {folders.map((folder: any) => (
+                {(folders ?? []).map((folder: any) => (
                   <button
                     key={folder.id}
                     onClick={() => setActiveFolder(folder.id)}
@@ -311,7 +312,6 @@ export default function LibraryPage() {
                 ))}
               </div>
             </>
-          )}
 
           {/* Main content area */}
           <div className="flex-1 min-w-0">
@@ -323,7 +323,7 @@ export default function LibraryPage() {
               </div>
               <div className="flex gap-1 shrink-0">
                 {(["recent", "rating"] as const).map((s) => (
-                  <button key={s} onClick={() => setSort(s)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sort === s ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:text-foreground"}`}>
+                  <button key={s} onClick={() => setSort(s)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sort === s ? "text-white border border-white" : "bg-accent text-muted-foreground hover:text-foreground"}`} style={sort === s ? { background: "#1E1E2A" } : undefined}>
                     {s === "recent" ? "Recent" : "Most ⭐"}
                   </button>
                 ))}
@@ -332,7 +332,7 @@ export default function LibraryPage() {
 
             {/* Folder header */}
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm text-muted-foreground">{folderLabel} — {filtered.length} items</p>
+              <p className="text-sm text-muted-foreground">{folderLabel} — {filtered.length} {filtered.length === 1 ? "item" : "items"}</p>
               {activeFolder && activeFolder !== "root" && activeFolderObj && filtered.length >= 2 && (
                 <button
                   onClick={() => setPublishFolderId(activeFolder)}
@@ -349,7 +349,7 @@ export default function LibraryPage() {
 
             {/* Grid */}
             {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="border border-border rounded-xl p-5 bg-card space-y-3">
                     <Skeleton className="h-5 w-24 rounded-md" />
@@ -359,7 +359,7 @@ export default function LibraryPage() {
                 ))}
               </div>
             ) : filtered.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
                 {filtered.map((lib: any) => {
                   const item = lib.content_items;
                   if (!item) return null;
@@ -379,6 +379,7 @@ export default function LibraryPage() {
                         avg_rating={Number(item.avg_rating) || 0}
                         rating_count={item.rating_count ?? 0}
                         view_count={item.view_count ?? 0}
+                        libraryMode
                       />
                       {lib.has_update && <p className="text-[11px] text-primary mt-1 px-1">Updated since you saved this</p>}
                     </div>
