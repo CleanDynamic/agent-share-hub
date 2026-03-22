@@ -29,7 +29,6 @@ import { SubmitToolModal } from "@/components/SubmitToolModal";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
 import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
-import { useMicrotagDefinitions } from "@/hooks/useMicrotags";
 import { ORDERED_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, ANY_DIFFICULTY_TYPES, displayContentType } from "@/lib/content-types";
 
 const CONTENT_TYPES = ORDERED_CONTENT_TYPES.filter(t => t !== "Blog");
