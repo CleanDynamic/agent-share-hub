@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import LiquidGlass from "liquid-glass-react";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -68,30 +67,18 @@ export function RightPanel() {
           >
             Sign in
           </Link>
-          <LiquidGlass
-            displacementScale={64}
-            blurAmount={0.1}
-            saturation={130}
-            aberrationIntensity={2}
-            elasticity={0.35}
-            cornerRadius={100}
-            padding="0px"
+          <Link
+            to="/signup"
+            className="flex items-center justify-center h-9 w-full rounded-full"
             style={{
               background: "linear-gradient(135deg, rgba(232,87,26,0.6), rgba(255,120,50,0.4))",
-              cursor: "pointer",
-              width: "100%",
               display: "block",
             }}
           >
-            <Link
-              to="/signup"
-              className="flex items-center justify-center h-9 w-full"
-            >
-              <span style={{ color: "white", fontWeight: 600, fontSize: "14px", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
-                Join free
-              </span>
-            </Link>
-          </LiquidGlass>
+            <span style={{ color: "white", fontWeight: 600, fontSize: "14px", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
+              Join free
+            </span>
+          </Link>
         </div>
       )}
 
@@ -271,15 +258,8 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
         const activeBorder = accentBorders[cat.slug] ?? "rgba(232, 87, 26, 0.7)";
 
         return (
-          <LiquidGlass
+          <div
             key={cat.slug}
-            displacementScale={30}
-            blurAmount={0.06}
-            saturation={140}
-            aberrationIntensity={1}
-            elasticity={0.25}
-            cornerRadius={12}
-            padding="0px"
             onClick={handleClick}
             style={{
               cursor: "pointer",
@@ -288,6 +268,7 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
                 ? `1.5px solid ${activeBorder}`
                 : "1px solid rgba(255, 255, 255, 0.10)",
               background: isActive ? "rgba(255, 255, 255, 0.04)" : "rgba(17, 17, 24, 0.7)",
+              borderRadius: 12,
             }}
           >
             <div className="text-left p-[0.875rem]">
@@ -298,7 +279,7 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
                 </span>
               )}
             </div>
-          </LiquidGlass>
+          </div>
         );
       })}
     </div>

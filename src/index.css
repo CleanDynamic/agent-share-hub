@@ -59,11 +59,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
-    background:
-      radial-gradient(ellipse at 20% 20%, rgba(232,87,26,0.15) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 80%, rgba(46,196,182,0.10) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 50%, rgba(100,50,200,0.08) 0%, transparent 70%),
-      #0A0A0F;
+    background: #0A0A0F;
     min-height: 100vh;
   }
 

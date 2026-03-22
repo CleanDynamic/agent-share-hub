@@ -12,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Library, Search, Plus, X, Folder, GripVertical, Smile, Pencil, Trash2, MoreHorizontal, Share2,
 } from "lucide-react";
-import LiquidGlass from "liquid-glass-react";
 import { Link } from "react-router-dom";
 import { PublishCollectionModal } from "@/components/PublishCollectionModal";
 
@@ -155,25 +154,17 @@ export default function LibraryPage() {
       <div className="mx-auto max-w-5xl">
         <div className="flex items-center justify-between mb-1">
           <h1 className="text-2xl font-bold text-foreground">Your Library</h1>
-          <LiquidGlass
-            displacementScale={64}
-            blurAmount={0.1}
-            saturation={130}
-            aberrationIntensity={2}
-            elasticity={0.35}
-            cornerRadius={100}
-            padding="0px"
+          <button
             onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
             style={{
               background: "linear-gradient(135deg, rgba(232,87,26,0.6), rgba(255,120,50,0.4))",
               cursor: "pointer",
             }}
           >
-            <div className="flex items-center gap-1.5 px-3 py-1.5">
-              <Plus className="h-4 w-4" style={{ color: "white" }} />
-              <span style={{ color: "white", fontWeight: 600, fontSize: "14px", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>New folder</span>
-            </div>
-          </LiquidGlass>
+            <Plus className="h-4 w-4" style={{ color: "white" }} />
+            <span style={{ color: "white", fontWeight: 600, fontSize: "14px", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>New folder</span>
+          </button>
         </div>
         <p className="text-sm text-muted-foreground mb-6">
           {libraryItems?.length ?? 0} item{(libraryItems?.length ?? 0) !== 1 ? "s" : ""}

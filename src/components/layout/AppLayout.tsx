@@ -4,8 +4,6 @@ import { RightPanel } from "./RightPanel";
 import { MobileNav } from "./MobileNav";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsTablet } from "@/hooks/use-tablet";
-import LiquidGlass from "liquid-glass-react";
-
 export function AppLayout() {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
@@ -39,13 +37,7 @@ export function AppLayout() {
   return (
     <div className="flex h-screen w-full justify-center bg-background">
       <div className="flex h-full w-full max-w-[1280px]">
-        <LiquidGlass
-          displacementScale={40}
-          blurAmount={0.08}
-          saturation={150}
-          aberrationIntensity={1.5}
-          elasticity={0.2}
-          cornerRadius={0}
+        <div
           style={{
             width: leftWidth,
             height: "100vh",
@@ -55,12 +47,11 @@ export function AppLayout() {
             zIndex: 10,
             flexShrink: 0,
             borderRight: "1px solid rgba(255,255,255,0.08)",
+            overflowY: "auto",
           }}
         >
-          <div style={{ width: leftWidth, height: "100vh", overflowY: "auto" }}>
-            <LeftPanel collapsed={collapsed} />
-          </div>
-        </LiquidGlass>
+          <LeftPanel collapsed={collapsed} />
+        </div>
 
         <main
           className="flex-1 overflow-y-auto"
@@ -76,13 +67,7 @@ export function AppLayout() {
         </main>
 
         {!hideRightPanel && (
-          <LiquidGlass
-            displacementScale={40}
-            blurAmount={0.08}
-            saturation={150}
-            aberrationIntensity={1.5}
-            elasticity={0.2}
-            cornerRadius={0}
+          <div
             style={{
               width: 350,
               height: "100vh",
@@ -92,12 +77,11 @@ export function AppLayout() {
               zIndex: 10,
               flexShrink: 0,
               borderLeft: "1px solid rgba(255,255,255,0.08)",
+              overflowY: "auto",
             }}
           >
-            <div style={{ width: 350, height: "100vh", overflowY: "auto" }}>
-              <RightPanel />
-            </div>
-          </LiquidGlass>
+            <RightPanel />
+          </div>
         )}
       </div>
     </div>

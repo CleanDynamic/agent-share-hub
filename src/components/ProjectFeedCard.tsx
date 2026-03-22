@@ -7,8 +7,6 @@ import { timeAgo, formatNum, roundedStars } from "@/components/FeedItem";
 import { displayContentType } from "@/lib/content-types";
 import { ReblogButton } from "@/components/ReblogButton";
 import { useAuth } from "@/contexts/AuthContext";
-import LiquidGlass from "liquid-glass-react";
-
 interface ProjectFeedCardProps {
   item: {
     id: string;
@@ -53,16 +51,7 @@ export function ProjectFeedCard({ item }: ProjectFeedCardProps) {
   const starVal = roundedStars(Number(item.avg_rating) || 0, item.rating_count ?? 0);
 
   return (
-    <LiquidGlass
-      displacementScale={25}
-      blurAmount={0.05}
-      saturation={130}
-      aberrationIntensity={0.8}
-      elasticity={0.15}
-      cornerRadius={16}
-      padding="0px"
-      style={{ width: "100%", marginBottom: "8px" }}
-    >
+    <div style={{ width: "100%", marginBottom: "8px" }}>
     <div
       onClick={() => navigate(`/project/${item.id}`)}
       className="px-4 py-3 cursor-pointer transition-colors duration-150 hover:bg-[hsl(0_0%_100%/0.03)]"
@@ -153,6 +142,6 @@ export function ProjectFeedCard({ item }: ProjectFeedCardProps) {
         )}
       </div>
     </div>
-    </LiquidGlass>
+    </div>
   );
 }
