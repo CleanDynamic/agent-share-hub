@@ -17,6 +17,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Eye, Download, Star, TrendingUp, TrendingDown, FileText, Image, Paperclip } from "lucide-react";
+import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
 
 type Range = "7" | "30" | "90";
@@ -53,12 +54,12 @@ export default function Analytics() {
   return (
     <>
       <SeoHead title="Your Analytics — NeoScale AI" description="Track your content performance" path="/analytics" />
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-5xl mx-auto px-4 py-8 flex flex-col gap-5">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <h1 className="text-2xl font-bold">Your Analytics</h1>
           <Select value={range} onValueChange={(v) => setRange(v as Range)}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-40 h-8 text-sm bg-transparent border border-border text-foreground"><SelectValue /></SelectTrigger>
             <SelectContent>
               {RANGE_OPTIONS.map((o) => (
                 <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -168,14 +169,16 @@ function OverviewCards({ userId, rangeStart, prevRangeStart, days }: { userId: s
               c.value
             )}
           </p>
-          {c.d !== null && (
-            <p className={`text-xs font-medium flex items-center gap-1 ${c.d >= 0 ? "text-green-500" : "text-red-500"}`}>
-              {c.d >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {c.d >= 0 ? "+" : ""}{c.d}% from last period
+          {c.d !== null && c.d !== 0 && (
+            <p className={`text-xs font-medium flex items-center gap-1 ${c.d > 0 ? "text-green-500" : "text-red-500"}`}>
+              {c.d > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {c.d > 0 ? "+" : ""}{c.d}% from last period
             </p>
           )}
           {c.label === "Total Earnings" && data?.totalEarnings === 0 && (
-            <p className="text-xs text-muted-foreground">Set up Stripe to track earnings.</p>
+            <Link to="/settings" className="text-xs hover:underline" style={{ color: "#2EC4B6" }}>
+              Connect Stripe →
+            </Link>
           )}
         </Card>
       ))}
@@ -222,12 +225,14 @@ function ViewsDownloadsChart({ userId, rangeStart, days }: { userId: string; ran
     },
   });
 
-  if (isLoading) return <Skeleton className="h-64 rounded-xl" />;
+  if (isLoading) return <Skeleton className="h-48 rounded-xl" />;
+
+  const hasData = (chartData || []).some((d) => d.views > 0 || d.downloads > 0);
 
   return (
     <Card className="p-5">
       <h2 className="text-lg font-semibold mb-4">Views vs Downloads</h2>
-      <div className="h-64">
+      <div className="relative" style={{ maxHeight: 200, height: 200 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData || []}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -242,6 +247,11 @@ function ViewsDownloadsChart({ userId, rangeStart, days }: { userId: string; ran
             <Line type="monotone" dataKey="downloads" stroke="hsl(168 70% 45%)" strokeWidth={2} dot={false} name="Downloads" />
           </LineChart>
         </ResponsiveContainer>
+        {!hasData && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <p className="text-xs italic text-muted-foreground">No data yet — views and downloads will appear here</p>
+          </div>
+        )}
       </div>
     </Card>
   );
@@ -296,7 +306,7 @@ function ContentPerformanceTable({ userId }: { userId: string }) {
           <TableHeader>
             <TableRow>
               <SortHead col="title" label="Title" />
-              <TableHead>Type</TableHead>
+              <TableHead style={{ width: 140 }}>Type</TableHead>
               <SortHead col="view_count" label="Views" />
               <SortHead col="download_count" label="Downloads" />
               <SortHead col="avg_rating" label="Avg Rating" />
@@ -308,21 +318,28 @@ function ContentPerformanceTable({ userId }: { userId: string }) {
           <TableBody>
             {sorted.map((item) => (
               <TableRow key={item.id}>
-                <TableCell>
+                <TableCell style={{ minWidth: 160 }}>
                   <Link to={`/content/${item.id}`} className="text-primary hover:underline truncate max-w-[200px] block">
                     {item.title}
                   </Link>
                 </TableCell>
-                <TableCell><Badge variant="secondary" className="text-[10px]">{item.content_type}</Badge></TableCell>
-                <TableCell>{item.view_count}</TableCell>
-                <TableCell>{item.download_count}</TableCell>
-                <TableCell>
-                  <span className="flex items-center gap-1">
-                    {item.avg_rating > 0 ? item.avg_rating.toFixed(1) : "—"}
-                    {item.avg_rating > 0 && <Star className="h-3 w-3 fill-primary text-primary" />}
-                  </span>
+                <TableCell style={{ width: 140 }}>
+                  <Badge variant="outline" className={`text-[10px] font-medium whitespace-nowrap ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
+                    {displayContentType(item.content_type)}
+                  </Badge>
                 </TableCell>
-                <TableCell>{item.verification_count}</TableCell>
+                <TableCell className="text-right" style={{ width: 80 }}>{item.view_count}</TableCell>
+                <TableCell className="text-right" style={{ width: 100 }}>{item.download_count}</TableCell>
+                <TableCell style={{ width: 110 }}>
+                  {item.avg_rating > 0 ? (
+                    <span className="flex items-center gap-1">
+                      {item.avg_rating.toFixed(1)} <Star className="h-3 w-3 fill-primary text-primary" />
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+                <TableCell style={{ width: 120 }}>{item.verification_count}</TableCell>
                 <TableCell>{item.fork_count}</TableCell>
                 <TableCell className="text-muted-foreground text-xs">{format(new Date(item.created_at), "MMM d, yyyy")}</TableCell>
               </TableRow>

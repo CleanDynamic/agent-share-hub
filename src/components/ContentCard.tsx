@@ -48,6 +48,7 @@ export interface ContentCardProps {
   has_curator_recommendation?: boolean;
   microtags?: string[];
   other_tool_name?: string | null;
+  libraryMode?: boolean;
 }
 
 function roundedStars(avg: number, count: number): number {
@@ -119,6 +120,7 @@ export function ContentCard({
   has_curator_recommendation = false,
   microtags: microtagsProp,
   other_tool_name = null,
+  libraryMode = false,
 }: ContentCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -272,7 +274,7 @@ export function ContentCard({
             </span>
           )}
         </h3>
-        <p className="text-xs text-muted-foreground leading-relaxed mb-1 flex-1">{description}</p>
+        {!libraryMode && <p className="text-xs text-muted-foreground leading-relaxed mb-1 flex-1">{description}</p>}
         {is_pwyw && (
           <p className="text-[10px] text-muted-foreground mb-0.5">
             {pwyw_purchase_count && pwyw_purchase_count > 0
@@ -329,7 +331,7 @@ export function ContentCard({
               <span className="text-[10px] text-muted-foreground">({rating_count})</span>
             </>
           ) : (
-            <span className="text-[10px] text-muted-foreground">No ratings</span>
+            !libraryMode && <span className="text-[10px] text-muted-foreground">No ratings</span>
           )}
         </div>
 
@@ -378,23 +380,25 @@ export function ContentCard({
                 <span className="flex items-center gap-0.5"><Download className="h-3 w-3" />{count.toLocaleString()}</span>
               </div>
             )}
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-xs text-primary hover:text-primary h-7 px-2"
-              onClick={handleDownload}
-              disabled={downloading}
-            >
-              {downloading ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : isSub ? (
-                <><Lock className="h-3 w-3 mr-1" />Subscribers only</>
-              ) : isPaid ? (
-                <><Lock className="h-3 w-3 mr-1" />{label}</>
-              ) : (
-                label
-              )}
-            </Button>
+            {!libraryMode && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs text-primary hover:text-primary h-7 px-2"
+                onClick={handleDownload}
+                disabled={downloading}
+              >
+                {downloading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : isSub ? (
+                  <><Lock className="h-3 w-3 mr-1" />Subscribers only</>
+                ) : isPaid ? (
+                  <><Lock className="h-3 w-3 mr-1" />{label}</>
+                ) : (
+                  label
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </div>
