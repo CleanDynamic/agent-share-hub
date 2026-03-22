@@ -800,25 +800,6 @@ const Upload = () => {
               )}
             </div>
 
-            {/* Blog: Hook (description) */}
-            <FormField control={form.control} name="description" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Hook</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    placeholder="The first line people see. Make it count."
-                    className="bg-card border-border rounded-xl"
-                    maxLength={160}
-                  />
-                </FormControl>
-                <FormDescription>
-                  The first line people see. Make it count.
-                  <span className="ml-2 text-muted-foreground">{field.value.length}/160</span>
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
 
             {/* Blog: Content blocks — only Text and Long Text */}
             <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} contentType="Blog" />
