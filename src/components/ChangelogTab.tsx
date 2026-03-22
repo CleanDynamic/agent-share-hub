@@ -59,14 +59,18 @@ export function ChangelogTab({ contentId, contentTitle, creatorId, currentVersio
 
   return (
     <div className="space-y-4">
-      {/* Creator: Edit & Post Update button */}
+      {/* Creator: Post Update button */}
       {isCreator && (
-        <Button
-          className="w-full h-10 rounded-full text-sm"
-          onClick={() => navigate(`/content/${contentId}/edit`)}
-        >
-          Edit & Post Update →
-        </Button>
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            className="h-9 text-sm text-[hsl(var(--secondary))] border-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/10"
+            style={{ maxWidth: 200 }}
+            onClick={() => navigate(`/content/${contentId}/edit`)}
+          >
+            Post Update →
+          </Button>
+        </div>
       )}
 
       {/* Entries */}

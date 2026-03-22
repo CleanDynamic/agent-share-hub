@@ -104,13 +104,11 @@ export function PortfolioCard({ item }: PortfolioCardProps) {
           <span className="flex items-center gap-1">
             <Download className="h-3 w-3" /> {formatCount(item.download_count)}
           </span>
-          {item.rating_count > 0 ? (
+          {item.rating_count > 0 && (
             <span className="flex items-center gap-1">
               <Star className="h-3.5 w-3.5 fill-[#E8571A] text-[#E8571A]" />
               <span>{item.avg_rating.toFixed(1)}</span>
             </span>
-          ) : (
-            <span className="text-[#666]">No ratings</span>
           )}
         </div>
       </div>

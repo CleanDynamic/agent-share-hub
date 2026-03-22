@@ -359,7 +359,6 @@ export function ContentBlockViewer({
   if (blocksLoading) {
     return (
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-3">How to Use This</h2>
         <div className="space-y-3"><Skeleton className="h-28 w-full rounded-xl" /><Skeleton className="h-28 w-full rounded-xl" /></div>
       </div>
     );
@@ -369,7 +368,6 @@ export function ContentBlockViewer({
     if (!useInstructions) return null;
     return (
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-3">How to Use This</h2>
         <div className="border border-[#1E1E2A] rounded-xl p-5 bg-[#111118]">
           <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-[inherit] leading-relaxed">{useInstructions}</pre>
         </div>
@@ -379,7 +377,6 @@ export function ContentBlockViewer({
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-foreground mb-4">How to Use This</h2>
       <AdModal open={!!adModal} onComplete={handleAdComplete} label="Your content unblurs in" countdownSeconds={3} />
 
       <div className="relative pl-8">

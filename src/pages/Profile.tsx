@@ -472,7 +472,7 @@ function PortfolioSortBar({ sort, setSort }: { sort: PortfolioSort; setSort: (s:
     { value: "viewed", label: "Most Viewed" },
   ];
   return (
-    <div className="flex justify-end gap-1 mb-3">
+    <div className="flex justify-start gap-1 mb-3">
       {opts.map((o) => (
         <button
           key={o.value}
