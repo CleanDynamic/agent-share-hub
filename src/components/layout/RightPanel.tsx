@@ -69,28 +69,23 @@ export function RightPanel() {
             Sign in
           </Link>
           <LiquidGlass
-            displacementScale={64}
+            displacementScale={60}
             blurAmount={0.1}
             saturation={130}
             aberrationIntensity={2}
             elasticity={0.35}
             cornerRadius={100}
-            padding="0px"
+            padding="10px 20px"
             style={{
-              background: "linear-gradient(135deg, rgba(232,87,26,0.6), rgba(255,120,50,0.4))",
-              cursor: "pointer",
+              background: "linear-gradient(135deg, rgba(232,87,26,0.55), rgba(255,140,60,0.35))",
               width: "100%",
-              display: "block",
+              cursor: "pointer",
             }}
+            onClick={() => navigate("/signup")}
           >
-            <Link
-              to="/signup"
-              className="flex items-center justify-center h-9 w-full"
-            >
-              <span style={{ color: "white", fontWeight: 600, fontSize: "14px", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
-                Join free
-              </span>
-            </Link>
+            <span style={{ color: "white", fontWeight: 600, fontSize: "14px" }}>
+              Join free
+            </span>
           </LiquidGlass>
         </div>
       )}
@@ -273,11 +268,11 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
         return (
           <LiquidGlass
             key={cat.slug}
-            displacementScale={30}
-            blurAmount={0.06}
+            displacementScale={28}
+            blurAmount={0.05}
             saturation={140}
-            aberrationIntensity={1}
-            elasticity={0.25}
+            aberrationIntensity={0.8}
+            elasticity={0.2}
             cornerRadius={12}
             padding="0px"
             onClick={handleClick}
@@ -286,8 +281,10 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
               width: "100%",
               border: isActive
                 ? `1.5px solid ${activeBorder}`
-                : "1px solid rgba(255, 255, 255, 0.10)",
-              background: isActive ? "rgba(255, 255, 255, 0.04)" : "rgba(17, 17, 24, 0.7)",
+                : "1px solid rgba(255,255,255,0.09)",
+              background: isActive
+                ? "linear-gradient(145deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%)"
+                : "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
             }}
           >
             <div className="text-left p-[0.875rem]">
