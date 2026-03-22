@@ -133,6 +133,7 @@ const Upload = () => {
     if (isBlogType) {
       form.setValue("ai_tools", ["Any Tool"]);
       form.setValue("monetisation_type", "free");
+      form.setValue("description", "");
     }
   }, [isBlogType, form]);
 
