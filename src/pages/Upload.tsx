@@ -1247,43 +1247,49 @@ const Upload = () => {
               </FormItem>
             )} />
 
-            {/* 11. Quick tags — pill grid from microtag_definitions */}
+            {/* 11. Tags — free-text input */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Quick tags</label>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {(microtagDefs ?? []).map((def) => {
-                  const tagKey = def.tag.replace(/^#/, "");
-                  const isSelected = customTags.includes(tagKey);
-                  const atMax = customTags.length >= 5;
-                  const disabled = !isSelected && atMax;
-                  return (
-                    <button
-                      key={def.tag}
-                      type="button"
-                      disabled={disabled}
-                      title={disabled ? "Max 5 selected" : def.description ?? undefined}
-                      onClick={() => {
-                        if (isSelected) {
-                          setCustomTags(customTags.filter((t) => t !== tagKey));
-                        } else if (!atMax) {
-                          setCustomTags([...customTags, tagKey]);
-                        }
-                      }}
-                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                        isSelected
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : disabled
-                          ? "bg-muted text-muted-foreground/40 border-border cursor-not-allowed"
-                          : "bg-muted text-muted-foreground border-border hover:border-muted-foreground/40 hover:text-foreground"
-                      }`}
-                    >
-                      {def.tag}
-                    </button>
-                  );
-                })}
-              </div>
+              <label className="text-sm font-medium text-foreground">Tags (optional)</label>
+              <Input
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value.slice(0, 30))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === ",") {
+                    e.preventDefault();
+                    const raw = tagInput.replace(/,/g, "").replace(/^#/, "").trim().toLowerCase().replace(/\s+/g, "-");
+                    if (raw && raw.length <= 30 && customTags.length < 10 && !customTags.includes(raw)) {
+                      setCustomTags([...customTags, raw]);
+                    }
+                    setTagInput("");
+                  }
+                }}
+                placeholder={customTags.length >= 10 ? "" : "Add a tag and press Enter..."}
+                disabled={customTags.length >= 10}
+                className="bg-card border-border rounded-full"
+                maxLength={30}
+              />
+              {customTags.length >= 10 && (
+                <p className="text-xs text-muted-foreground">Maximum 10 tags</p>
+              )}
               {customTags.length > 0 && (
-                <p className="text-[11px] text-muted-foreground">{customTags.length}/5 selected</p>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {customTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-2xl"
+                      style={{ backgroundColor: "#1E1E2A", color: "#9999AA" }}
+                    >
+                      #{tag}
+                      <button
+                        type="button"
+                        onClick={() => setCustomTags(customTags.filter((t) => t !== tag))}
+                        className="ml-0.5 hover:text-foreground transition-colors"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
 
