@@ -466,7 +466,7 @@ function CreatorPostsTab({ items }: { items: any[] }) {
   ];
   return (
     <div className="py-4">
-      <div className="flex justify-end gap-1 mb-3">
+      <div className="flex justify-start gap-1 mb-3">
         {opts.map((o) => (
           <button
             key={o.value}
