@@ -662,10 +662,6 @@ const Upload = () => {
         } as any);
       }
 
-      // Save free-text tags
-      if (customTags.length > 0) {
-        await supabase.from("content_items").update({ tags: customTags } as any).eq("id", contentId);
-      }
 
       setSuccess(true);
     } catch (err: any) {
