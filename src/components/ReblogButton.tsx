@@ -38,7 +38,7 @@ export function ReblogButton({ source, stopPropagation = true }: ReblogButtonPro
         .from("content_items")
         .select("id", { count: "exact", head: true })
         .eq(sourceColumn as any, sourceId)
-        .eq("is_reblog", true);
+        .eq("is_reblog" as any, true);
       return count ?? 0;
     },
     enabled: !!sourceId,
