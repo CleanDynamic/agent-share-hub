@@ -54,20 +54,11 @@
   }
 
   body {
-    @apply text-foreground;
+    @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
-    background:
-      radial-gradient(ellipse 80% 60% at 15% 10%,
-        rgba(232, 87, 26, 0.12) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 80% at 85% 85%,
-        rgba(46, 196, 182, 0.08) 0%, transparent 60%),
-      radial-gradient(ellipse 100% 100% at 50% 50%,
-        rgba(80, 40, 160, 0.06) 0%, transparent 70%),
-      #0A0A0F;
-    min-height: 100vh;
   }
 
   code, pre {
@@ -101,49 +92,4 @@
 }
 .mention-link:hover {
   text-decoration: underline;
-}
-
-/* ── Nav glass hover (inactive items) ── */
-nav a:not(.text-primary):hover,
-nav a.text-muted-foreground:hover {
-  background: rgba(255,255,255,0.05) !important;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  transition: background 0.15s ease;
-}
-
-/* ── Glass badges and pills ── */
-.badge,
-[data-slot="badge"],
-[class*="badge"],
-[class*="Badge"] {
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
-}
-
-/* ── Glass input fields ── */
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
-textarea,
-select {
-  background: rgba(255,255,255,0.05) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.10) !important;
-  border-radius: 12px;
-  color: white;
-  outline: none;
-  transition: border-color 0.2s ease, background 0.2s ease;
-}
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]):focus,
-textarea:focus,
-select:focus {
-  background: rgba(255,255,255,0.08) !important;
-  border-color: rgba(232,87,26,0.50) !important;
-  box-shadow: 0 0 0 3px rgba(232,87,26,0.12);
-}
-/* Pill shape for search bars */
-input[type="search"],
-.search-input {
-  border-radius: 24px;
 }

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import LiquidGlass from "liquid-glass-react";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -68,25 +67,12 @@ export function RightPanel() {
           >
             Sign in
           </Link>
-          <LiquidGlass
-            displacementScale={60}
-            blurAmount={0.1}
-            saturation={130}
-            aberrationIntensity={2}
-            elasticity={0.35}
-            cornerRadius={100}
-            padding="10px 20px"
-            style={{
-              background: "linear-gradient(135deg, rgba(232,87,26,0.55), rgba(255,140,60,0.35))",
-              width: "100%",
-              cursor: "pointer",
-            }}
-            onClick={() => navigate("/signup")}
+          <Link
+            to="/signup"
+            className="flex items-center justify-center h-9 w-full rounded-[20px] bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
           >
-            <span style={{ color: "white", fontWeight: 600, fontSize: "14px" }}>
-              Join free
-            </span>
-          </LiquidGlass>
+            Join free
+          </Link>
         </div>
       )}
 
@@ -266,36 +252,30 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
         const activeBorder = accentBorders[cat.slug] ?? "rgba(232, 87, 26, 0.7)";
 
         return (
-          <LiquidGlass
+          <button
             key={cat.slug}
-            displacementScale={28}
-            blurAmount={0.05}
-            saturation={140}
-            aberrationIntensity={0.8}
-            elasticity={0.2}
-            cornerRadius={12}
-            padding="0px"
             onClick={handleClick}
+            className={`text-left rounded-xl cursor-pointer transition-all duration-150 ${
+              isActive ? "" : "hover:bg-[rgba(255,255,255,0.04)]"
+            }`}
             style={{
-              cursor: "pointer",
-              width: "100%",
+              background: isActive ? "rgba(255, 255, 255, 0.04)" : "#111118",
               border: isActive
                 ? `1.5px solid ${activeBorder}`
-                : "1px solid rgba(255,255,255,0.09)",
-              background: isActive
-                ? "linear-gradient(145deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%)"
-                : "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
+                : "1px solid rgba(255, 255, 255, 0.10)",
+              padding: isActive ? "calc(0.875rem - 0.5px)" : "0.875rem",
+              ...(isActive ? {} : {}),
             }}
+            onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.30)"; }}
+            onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.10)"; }}
           >
-            <div className="text-left p-[0.875rem]">
-              <p className="text-sm font-bold text-foreground leading-tight">{cat.name}</p>
-              {cat.difficulty && (
-                <span className={`mt-1.5 inline-block rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${diffColor[cat.difficulty] || diffColor.Any}`}>
-                  {cat.difficulty}
-                </span>
-              )}
-            </div>
-          </LiquidGlass>
+            <p className="text-sm font-bold text-foreground leading-tight">{cat.name}</p>
+            {cat.difficulty && (
+              <span className={`mt-1.5 inline-block rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${diffColor[cat.difficulty] || diffColor.Any}`}>
+                {cat.difficulty}
+              </span>
+            )}
+          </button>
         );
       })}
     </div>

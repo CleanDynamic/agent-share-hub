@@ -6,6 +6,7 @@ import { Eye, Users } from "lucide-react";
 import { timeAgo, formatNum } from "@/components/FeedItem";
 import { ReblogButton } from "@/components/ReblogButton";
 import { useAuth } from "@/contexts/AuthContext";
+
 interface CollectionFeedCardProps {
   item: {
     id: string;
@@ -51,30 +52,7 @@ export function CollectionFeedCard({ item }: CollectionFeedCardProps) {
   return (
     <div
       onClick={() => navigate(`/collections/${item.slug}`)}
-      className="px-4 py-3 cursor-pointer"
-      style={{
-        width: "100%",
-        marginBottom: "8px",
-        background: "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
-        backdropFilter: "blur(12px) saturate(150%)",
-        WebkitBackdropFilter: "blur(12px) saturate(150%)",
-        border: "1px solid rgba(255,255,255,0.09)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.10), 0 4px 20px rgba(0,0,0,0.35)",
-        borderRadius: 16,
-        transition: "border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease",
-      }}
-      onMouseEnter={(e) => {
-        const el = e.currentTarget;
-        el.style.borderColor = "rgba(255,255,255,0.15)";
-        el.style.background = "linear-gradient(145deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%)";
-        el.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,0.15), 0 8px 28px rgba(0,0,0,0.45)";
-      }}
-      onMouseLeave={(e) => {
-        const el = e.currentTarget;
-        el.style.borderColor = "rgba(255,255,255,0.09)";
-        el.style.background = "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)";
-        el.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.10), 0 4px 20px rgba(0,0,0,0.35)";
-      }}
+      className="px-4 py-3 border-b border-border cursor-pointer transition-colors duration-150 hover:bg-[hsl(0_0%_100%/0.03)]"
     >
       {/* Header */}
       <div className="flex items-center gap-2" style={{ height: 36 }}>
