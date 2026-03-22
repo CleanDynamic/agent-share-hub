@@ -1088,7 +1088,7 @@ const Upload = () => {
                   />
                 </FormControl>
                 <FormDescription>
-                  <span className="text-muted-foreground">{field.value.length}/500</span>
+                  <span className="text-muted-foreground">{(field.value ?? "").length}/500</span>
                 </FormDescription>
                 <FormMessage />
               </FormItem>
