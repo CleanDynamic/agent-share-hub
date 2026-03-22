@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, LayoutGrid, Upload, Library, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, FilePenLine,
 } from "lucide-react";
+import LiquidGlass from "liquid-glass-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -87,27 +88,49 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
               {item.divider && idx > 0 && (
                 <div className="my-2 border-t" style={{ borderColor: "#1E1E2A" }} />
               )}
-              <Link
-                to={item.to}
-                className={`relative flex items-center gap-3 rounded-lg transition-colors ${
-                  collapsed ? "justify-center px-0" : "px-3"
-                } h-12 text-sm ${
-                  isActive
-                    ? "text-primary font-semibold border-l-2 border-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
-                }`}
-              >
-                <item.icon className={`h-[22px] w-[22px] shrink-0 transition-colors ${!isActive ? "group-hover:text-primary/60" : ""}`} />
-                {!collapsed && <span>{item.label}</span>}
-                {item.badge && (
-                  <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full ${item.to === "/drafts" ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"} px-1.5 text-[11px] font-bold`}>
-                    {item.badge}
-                  </span>
-                )}
-                {item.to === "/library" && hasUnseenSaves && !item.badge && (
-                  <span className={`${collapsed ? "absolute top-1 right-1" : "ml-auto"} h-2 w-2 rounded-full bg-primary`} />
-                )}
-              </Link>
+              {/* Upload button — liquid glass CTA */}
+              {item.to === "/upload" && !collapsed ? (
+                <LiquidGlass
+                  displacementScale={50}
+                  blurAmount={0.08}
+                  saturation={120}
+                  aberrationIntensity={1.5}
+                  elasticity={0.3}
+                  cornerRadius={12}
+                  style={{
+                    width: "100%",
+                    background: "linear-gradient(135deg, rgba(232,87,26,0.5), rgba(255,120,50,0.3))",
+                  }}
+                  onClick={() => navigate("/upload")}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", color: "white", fontWeight: 600 }}>
+                    <Upload size={18} />
+                    <span>Upload</span>
+                  </div>
+                </LiquidGlass>
+              ) : (
+                <Link
+                  to={item.to}
+                  className={`relative flex items-center gap-3 rounded-lg transition-colors ${
+                    collapsed ? "justify-center px-0" : "px-3"
+                  } h-12 text-sm ${
+                    isActive
+                      ? "text-primary font-semibold border-l-2 border-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                  }`}
+                >
+                  <item.icon className={`h-[22px] w-[22px] shrink-0 transition-colors ${!isActive ? "group-hover:text-primary/60" : ""}`} />
+                  {!collapsed && <span>{item.label}</span>}
+                  {item.badge && (
+                    <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full ${item.to === "/drafts" ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"} px-1.5 text-[11px] font-bold`}>
+                      {item.badge}
+                    </span>
+                  )}
+                  {item.to === "/library" && hasUnseenSaves && !item.badge && (
+                    <span className={`${collapsed ? "absolute top-1 right-1" : "ml-auto"} h-2 w-2 rounded-full bg-primary`} />
+                  )}
+                </Link>
+              )}
             </div>
           );
         })}
@@ -157,18 +180,28 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                 <Button variant="outline" className="w-full" size="sm" asChild>
                   <Link to="/login">Sign in</Link>
                 </Button>
-                <Link
-                  to="/signup"
-                  className="flex w-full items-center justify-center py-1.5 px-3 rounded-full"
+                <LiquidGlass
+                  displacementScale={60}
+                  blurAmount={0.1}
+                  saturation={130}
+                  aberrationIntensity={2}
+                  elasticity={0.35}
+                  cornerRadius={100}
+                  padding="0px"
                   style={{
-                    background: "linear-gradient(135deg, rgba(232,87,26,0.6), rgba(255,120,50,0.4))",
+                    background: "linear-gradient(135deg, rgba(232,87,26,0.55), rgba(255,140,60,0.35))",
+                    width: "100%",
+                    cursor: "pointer",
                     display: "block",
                   }}
+                  onClick={() => navigate("/signup")}
                 >
-                  <span style={{ color: "white", fontWeight: 600, fontSize: "14px", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
-                    Join free
-                  </span>
-                </Link>
+                  <div className="flex w-full items-center justify-center py-1.5 px-3">
+                    <span style={{ color: "white", fontWeight: 600, fontSize: "14px" }}>
+                      Join free
+                    </span>
+                  </div>
+                </LiquidGlass>
               </>
             )}
           </div>

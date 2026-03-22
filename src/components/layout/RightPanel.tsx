@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import LiquidGlass from "liquid-glass-react";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -67,18 +68,25 @@ export function RightPanel() {
           >
             Sign in
           </Link>
-          <Link
-            to="/signup"
-            className="flex items-center justify-center h-9 w-full rounded-full"
+          <LiquidGlass
+            displacementScale={60}
+            blurAmount={0.1}
+            saturation={130}
+            aberrationIntensity={2}
+            elasticity={0.35}
+            cornerRadius={100}
+            padding="10px 20px"
             style={{
-              background: "linear-gradient(135deg, rgba(232,87,26,0.6), rgba(255,120,50,0.4))",
-              display: "block",
+              background: "linear-gradient(135deg, rgba(232,87,26,0.55), rgba(255,140,60,0.35))",
+              width: "100%",
+              cursor: "pointer",
             }}
+            onClick={() => navigate("/signup")}
           >
-            <span style={{ color: "white", fontWeight: 600, fontSize: "14px", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
+            <span style={{ color: "white", fontWeight: 600, fontSize: "14px" }}>
               Join free
             </span>
-          </Link>
+          </LiquidGlass>
         </div>
       )}
 
@@ -258,8 +266,15 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
         const activeBorder = accentBorders[cat.slug] ?? "rgba(232, 87, 26, 0.7)";
 
         return (
-          <div
+          <LiquidGlass
             key={cat.slug}
+            displacementScale={28}
+            blurAmount={0.05}
+            saturation={140}
+            aberrationIntensity={0.8}
+            elasticity={0.2}
+            cornerRadius={12}
+            padding="0px"
             onClick={handleClick}
             style={{
               cursor: "pointer",
@@ -270,11 +285,6 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
               background: isActive
                 ? "linear-gradient(145deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%)"
                 : "linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
-              backdropFilter: "blur(12px) saturate(150%)",
-              WebkitBackdropFilter: "blur(12px) saturate(150%)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.10), 0 4px 20px rgba(0,0,0,0.35)",
-              borderRadius: 12,
-              transition: "border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease",
             }}
           >
             <div className="text-left p-[0.875rem]">
@@ -285,7 +295,7 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
                 </span>
               )}
             </div>
-          </div>
+          </LiquidGlass>
         );
       })}
     </div>

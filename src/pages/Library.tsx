@@ -13,6 +13,7 @@ import {
   Library, Search, Plus, X, Folder, GripVertical, Smile, Pencil, Trash2, MoreHorizontal, Share2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import LiquidGlass from "liquid-glass-react";
 import { PublishCollectionModal } from "@/components/PublishCollectionModal";
 
 const COMMON_EMOJIS = ["⚡", "🔥", "💡", "🎯", "📌", "🚀", "💎", "🧠", "📁", "🎨", "🔧", "✨", "📊", "🤖", "💻", "🎓", "📝", "🏷️", "⭐", "🌟"];
@@ -154,17 +155,25 @@ export default function LibraryPage() {
       <div className="mx-auto max-w-5xl">
         <div className="flex items-center justify-between mb-1">
           <h1 className="text-2xl font-bold text-foreground">Your Library</h1>
-          <button
+          <LiquidGlass
+            displacementScale={55}
+            blurAmount={0.08}
+            saturation={125}
+            aberrationIntensity={1.8}
+            elasticity={0.3}
+            cornerRadius={100}
+            padding="0px"
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
             style={{
-              background: "linear-gradient(135deg, rgba(232,87,26,0.6), rgba(255,120,50,0.4))",
+              background: "linear-gradient(135deg, rgba(232,87,26,0.5), rgba(255,120,50,0.3))",
               cursor: "pointer",
             }}
           >
-            <Plus className="h-4 w-4" style={{ color: "white" }} />
-            <span style={{ color: "white", fontWeight: 600, fontSize: "14px", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>New folder</span>
-          </button>
+            <div className="flex items-center gap-1.5 px-3 py-1.5">
+              <Plus className="h-4 w-4" style={{ color: "white" }} />
+              <span style={{ color: "white", fontWeight: 600, fontSize: "14px" }}>New folder</span>
+            </div>
+          </LiquidGlass>
         </div>
         <p className="text-sm text-muted-foreground mb-6">
           {libraryItems?.length ?? 0} item{(libraryItems?.length ?? 0) !== 1 ? "s" : ""}

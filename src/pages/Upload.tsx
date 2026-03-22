@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, CheckCircle2, FileText, FolderOpen, ImagePlus, X, ChevronDown } from "lucide-react";
+import LiquidGlass from "liquid-glass-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectUploadForm } from "@/components/ProjectUploadForm";
 import { CollabInvitePicker, type CollabInvitee } from "@/components/CollabInvitePicker";
@@ -871,18 +872,27 @@ const Upload = () => {
               >
                 {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
               </Button>
-              <Button
-                type="button"
-                size="lg"
-                className="flex-1 h-10 rounded-full"
-                disabled={savingDraft || submitting}
+              <LiquidGlass
+                displacementScale={55}
+                blurAmount={0.08}
+                saturation={125}
+                aberrationIntensity={1.8}
+                elasticity={0.3}
+                cornerRadius={100}
+                padding="10px 24px"
+                style={{
+                  background: "linear-gradient(135deg, rgba(232,87,26,0.5), rgba(255,130,55,0.3))",
+                  flex: 1,
+                  opacity: savingDraft || submitting ? 0.5 : 1,
+                  pointerEvents: savingDraft || submitting ? "none" : undefined,
+                }}
                 onClick={async () => {
                   const id = await saveDraft(false);
                   if (id) navigate(`/upload/preview/${id}`);
                 }}
               >
-                Preview Post →
-              </Button>
+                <span style={{ color: "white", fontWeight: 600 }}>Preview Post →</span>
+              </LiquidGlass>
             </div>
           </form>
         </Form>
@@ -1404,18 +1414,27 @@ const Upload = () => {
               >
                 {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
               </Button>
-              <Button
-                type="button"
-                size="lg"
-                className="flex-1 h-10 rounded-full"
-                disabled={savingDraft || submitting}
+              <LiquidGlass
+                displacementScale={55}
+                blurAmount={0.08}
+                saturation={125}
+                aberrationIntensity={1.8}
+                elasticity={0.3}
+                cornerRadius={100}
+                padding="10px 24px"
+                style={{
+                  background: "linear-gradient(135deg, rgba(232,87,26,0.5), rgba(255,130,55,0.3))",
+                  flex: 1,
+                  opacity: savingDraft || submitting ? 0.5 : 1,
+                  pointerEvents: savingDraft || submitting ? "none" : undefined,
+                }}
                 onClick={async () => {
                   const id = await saveDraft(false);
                   if (id) navigate(`/upload/preview/${id}`);
                 }}
               >
-                Preview Post →
-              </Button>
+                <span style={{ color: "white", fontWeight: 600 }}>Preview Post →</span>
+              </LiquidGlass>
             </div>
           </form>
         </Form>
