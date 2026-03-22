@@ -9,8 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
-
 import { useDraftCount } from "@/hooks/useDraftCount";
+import LiquidGlass from "liquid-glass-react";
 
 
 interface NavItem {
@@ -160,9 +160,30 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                 <Button variant="outline" className="w-full" size="sm" asChild>
                   <Link to="/login">Sign in</Link>
                 </Button>
-                <Button className="w-full" size="sm" asChild>
-                  <Link to="/signup">Join free</Link>
-                </Button>
+                <LiquidGlass
+                  displacementScale={64}
+                  blurAmount={0.1}
+                  saturation={130}
+                  aberrationIntensity={2}
+                  elasticity={0.35}
+                  cornerRadius={100}
+                  padding="0px"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(232,87,26,0.6), rgba(255,120,50,0.4))",
+                    cursor: "pointer",
+                    width: "100%",
+                    display: "block",
+                  }}
+                >
+                  <Link
+                    to="/signup"
+                    className="flex w-full items-center justify-center py-1.5 px-3"
+                  >
+                    <span style={{ color: "white", fontWeight: 600, fontSize: "14px", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
+                      Join free
+                    </span>
+                  </Link>
+                </LiquidGlass>
               </>
             )}
           </div>
