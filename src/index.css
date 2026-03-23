@@ -116,22 +116,22 @@
 }
 
 .ns-blob-2 {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(140, 140, 160, 0.40) 0%, rgba(85, 224, 210, 0.05) 40%, transparent 70%);
-  filter: blur(100px);
-  bottom: -150px;
-  right: -100px;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(130, 130, 155, 0.38) 0%, rgba(85, 224, 210, 0.05) 40%, transparent 65%);
+  filter: blur(90px);
+  bottom: -80px;
+  right: -80px;
   animation: blob2move 10s ease-in-out infinite;
 }
 
 .ns-blob-3 {
-  width: 380px;
-  height: 380px;
-  background: radial-gradient(circle, rgba(200, 200, 220, 0.45) 0%, rgba(85, 224, 210, 0.04) 40%, transparent 70%);
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(180, 180, 205, 0.32) 0%, rgba(85, 224, 210, 0.04) 40%, transparent 65%);
   filter: blur(60px);
-  top: 40%;
-  right: 15%;
+  top: 45%;
+  right: 20%;
   animation: blob3move 7s ease-in-out infinite;
 }
 
@@ -204,7 +204,7 @@
 }
 
 .ns-panel-right {
-  background: rgba(8, 8, 12, 0.20);
+  background: rgba(8, 8, 12, 0.30);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
   border-left: 1px solid rgba(255, 255, 255, 0.05) !important;
@@ -220,6 +220,11 @@
   border: none;
 }
 
+/* Tonal shift surface */
+.tonal-shift {
+  background-color: #0E0E12;
+}
+
 /* Glass Cards */
 .ns-card {
   background: rgba(8, 8, 12, 0.6);
@@ -232,6 +237,14 @@
 
 .ns-card:hover {
   border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Item card glass (library, discover) */
+.item-card-glass {
+  background: rgba(27, 27, 32, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(133, 148, 145, 0.15);
 }
 
 .ns-feed-item {
@@ -405,6 +418,29 @@
   100% { background-position: 0% 50%; }
 }
 
+/* Buttons — Silver Metal (solid, for profile/library) */
+.silver-metal {
+  background: linear-gradient(135deg, #cccbcb 0%, #859491 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  color: #1a1c1c;
+}
+
+.silver-metal:hover {
+  background: linear-gradient(135deg, #ffffff 0%, #cccbcb 100%);
+  transform: scale(0.98);
+}
+
+/* Black Metal Gradient */
+.black-metal {
+  background: linear-gradient(145deg, #353439, #08080C);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Active tab indicator (orange bottom border) */
+.active-tab-indicator {
+  box-shadow: 0 2px 0 0 #E8571A;
+}
+
 /* ============================================================ */
 
 @layer base {
@@ -419,10 +455,10 @@
     --popover: 240 17% 5%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 18 80% 51%;
+    --primary: 174 62% 47%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 174 62% 47%;
+    --secondary: 18 100% 80%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 240 17% 8%;
@@ -436,18 +472,18 @@
 
     --border: 240 17% 10%;
     --input: 240 17% 10%;
-    --ring: 18 80% 51%;
+    --ring: 174 62% 47%;
 
     --radius: 0.75rem;
 
     --sidebar-background: 240 17% 5%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 18 80% 51%;
+    --sidebar-primary: 174 62% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 17% 14%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 240 17% 10%;
-    --sidebar-ring: 18 80% 51%;
+    --sidebar-ring: 174 62% 47%;
   }
 }
 
@@ -515,4 +551,14 @@
 }
 .mention-link:hover {
   text-decoration: underline;
+}
+
+/* Selection highlight */
+::selection {
+  background: rgba(85, 224, 210, 0.30);
+}
+
+/* Mask blur effect (for cover images fading into content) */
+.mask-blur {
+  mask-image: linear-gradient(to bottom, black 20%, transparent 90%);
 }
