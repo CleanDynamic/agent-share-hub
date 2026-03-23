@@ -157,33 +157,30 @@
 
 /* Glass Panels */
 .ns-panel {
-  background: var(--ns-panel-bg);
-  backdrop-filter: var(--ns-panel-blur);
-  -webkit-backdrop-filter: var(--ns-panel-blur);
-  border: 1px solid var(--ns-panel-border);
-  box-shadow:
-    inset 0 1px 0 var(--ns-panel-shadow-inner),
-    0 32px 80px var(--ns-panel-shadow-outer);
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
 .ns-panel-left {
-  border-right: 1px solid var(--ns-panel-border);
+  border-right: 1px solid rgba(255,255,255,0.08);
   border-left: none;
   border-top: none;
   border-bottom: none;
 }
 
 .ns-panel-right {
-  border-left: 1px solid var(--ns-panel-border);
+  border-left: 1px solid rgba(255,255,255,0.08);
   border-right: none;
   border-top: none;
   border-bottom: none;
 }
 
 .ns-panel-centre {
-  background: rgba(10, 10, 16, 0.80);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: none;
 }
 
