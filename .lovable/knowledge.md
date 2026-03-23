@@ -29,19 +29,19 @@
 - **Never** use these words in user-facing copy: agent, agentic, LLM, RAG, pipeline, system prompt.
 - **Use instead:** AI assistant, ready-made setup, automation, connect your apps.
 
-## THE 9 CONTENT TYPES
+## THE CONTENT TYPES
 
 Colour coded in a gradient from green → amber → red. Used everywhere as a fixed list.
 
 1. **Prompt File** — Beginner
-2. **Prompt Tutorial** — Beginner-Mid
-3. **Agent Blueprint** — Beginner-Mid
-4. **Workflow Template** — Intermediate
-5. **Agent Stack** — Advanced
-6. **Model Config Guide** — Beginner
-7. **Integration Guide** — Beginner-Mid
-8. **Evaluation Framework** — Intermediate
-9. **Failure Library** — Any level
+2. **Agent Blueprint** — Beginner-Mid
+3. **Workflow Template** — Intermediate
+4. **Agent Stack** — Advanced
+5. **Model Config Guide** — Beginner
+6. **Integration Guide** — Beginner-Mid
+7. **Evaluation Framework** — Intermediate
+8. **Failure Library** — Any level
+9. **AI Tools Tutorials** (DB: "AI Tools (LLMs)") — Any level
 
 ## DIFFICULTY LEVELS
 

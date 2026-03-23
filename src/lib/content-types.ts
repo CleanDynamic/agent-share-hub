@@ -9,13 +9,13 @@ export function displayContentType(dbType: string): string {
   if (dbType === "Prompt File") return "Prompt(s)";
   if (dbType === "Agent Blueprint") return "Agent(s)";
   if (dbType === "AI Agent Install Guide") return "Install Guide";
+  if (dbType === "AI Tools (LLMs)") return "AI Tools Tutorials";
   return dbType;
 }
 
 /** Ordered content types for dropdowns, grids, etc. */
 export const ORDERED_CONTENT_TYPES = [
   "Prompt File",
-  "Prompt Tutorial",
   "Agent Blueprint",
   "Model Config Guide",
   "Integration Guide",
@@ -31,7 +31,6 @@ export const ORDERED_CONTENT_TYPES = [
 /** Badge colour map — keyed by DB value */
 export const TYPE_COLORS: Record<string, string> = {
   "Prompt File": "bg-[#E8571A]/20 text-[#E8571A] border-[#E8571A]/25",
-  "Prompt Tutorial": "bg-[#2EC4B6]/20 text-[#2EC4B6] border-[#2EC4B6]/25",
   "Agent Blueprint": "bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/25",
   "Workflow Template": "bg-[#2563EB]/20 text-[#3B82F6] border-[#2563EB]/25",
   "Agent Stack": "bg-[#DC2626]/20 text-[#EF4444] border-[#DC2626]/25",
@@ -53,7 +52,6 @@ export const ANY_DIFFICULTY_TYPES = ["Failure Library", "AI Tools (LLMs)", "Blog
 /** Slug-to-DB-type mapping for Browse/Category routes */
 export const SLUG_TO_TYPE: Record<string, string> = {
   "prompt-file": "Prompt File",
-  "prompt-tutorial": "Prompt Tutorial",
   "agent-blueprint": "Agent Blueprint",
   "workflow-template": "Workflow Template",
   "agent-stack": "Agent Stack",

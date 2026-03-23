@@ -12,7 +12,6 @@ import { ORDERED_CONTENT_TYPES, TYPE_COLORS, displayContentType } from "@/lib/co
 /* ---- helpers ---- */
 const CATEGORIES: { name: string; dbType: string; difficulty: string; slug: string; isProject?: boolean }[] = [
   { name: "Prompt(s)", dbType: "Prompt File", difficulty: "Beginner", slug: "prompt-file" },
-  { name: "Prompt Tutorial", dbType: "Prompt Tutorial", difficulty: "Beginner", slug: "prompt-tutorial" },
   { name: "Agent(s)", dbType: "Agent Blueprint", difficulty: "Beginner", slug: "agent-blueprint" },
   { name: "Model Config Guide", dbType: "Model Config Guide", difficulty: "Beginner", slug: "model-config-guide" },
   { name: "Integration Guide", dbType: "Integration Guide", difficulty: "Beginner", slug: "integration-guide" },
@@ -22,7 +21,7 @@ const CATEGORIES: { name: string; dbType: string; difficulty: string; slug: stri
   { name: "Failure Library", dbType: "Failure Library", difficulty: "Any", slug: "failure-library" },
   { name: "Blog", dbType: "Blog", difficulty: "Any", slug: "blog" },
   { name: "Projects", dbType: "", difficulty: "Any", slug: "projects", isProject: true },
-  { name: "AI Tools (LLMs)", dbType: "AI Tools (LLMs)", difficulty: "Any", slug: "ai-tools-llms" },
+  { name: "AI Tools Tutorials", dbType: "AI Tools (LLMs)", difficulty: "Any", slug: "ai-tools-llms" },
   { name: "Install Guide", dbType: "AI Agent Install Guide", difficulty: "Any", slug: "install-guide" },
 ];
 
