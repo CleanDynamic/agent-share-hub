@@ -15,7 +15,7 @@ export function AppLayout() {
 
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen" style={{ background: "#08080C" }}>
         <MobileNav />
         <main
           className="overflow-y-auto"
@@ -34,17 +34,17 @@ export function AppLayout() {
   const hideRightPanel = isTablet || isMessagesRoute;
 
   return (
-    <div className="flex h-screen w-full justify-center bg-background">
+    <div className="flex h-screen w-full justify-center" style={{ background: "#08080C" }}>
       <div className="flex h-full w-full max-w-[1280px]">
         <aside
-          className="ns-panel ns-panel-left h-screen shrink-0 overflow-y-auto border-r border-border"
+          className="ns-panel-left h-screen shrink-0 overflow-y-auto"
           style={{ width: collapsed ? 72 : 275 }}
         >
           <LeftPanel collapsed={collapsed} />
         </aside>
 
         <main
-          className="ns-panel ns-panel-centre flex-1 overflow-y-auto"
+          className="ns-panel-centre flex-1 overflow-y-auto"
           style={{
             maxWidth: isMessagesRoute ? undefined : (isTablet ? undefined : 600),
             margin: isMessagesRoute ? undefined : (isTablet ? undefined : "0 auto"),
@@ -54,7 +54,7 @@ export function AppLayout() {
         </main>
 
         {!hideRightPanel && (
-          <aside className="ns-panel ns-panel-right h-screen shrink-0 overflow-y-auto border-l border-border" style={{ width: 350 }}>
+          <aside className="ns-panel-right h-screen shrink-0 overflow-y-auto" style={{ width: 350 }}>
             <RightPanel />
           </aside>
         )}

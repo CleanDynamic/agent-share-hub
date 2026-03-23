@@ -27,10 +27,10 @@ const CATEGORIES: { name: string; dbType: string; difficulty: string; slug: stri
 ];
 
 const diffColor: Record<string, string> = {
-  Beginner: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
-  Intermediate: "text-amber-400 bg-amber-400/10 border-amber-400/20",
-  Advanced: "text-red-400 bg-red-400/10 border-red-400/20",
-  Any: "text-muted-foreground bg-muted border-border",
+  Beginner: "text-slate-400 bg-[#353439]/40 border-white/8",
+  Intermediate: "text-[#55e0d2] bg-[#55e0d2]/10 border-[#55e0d2]/25",
+  Advanced: "text-[#ffb59c] bg-[#cb4300]/15 border-[#cb4300]/25",
+  Any: "text-slate-500 bg-[#353439]/20 border-white/5",
 };
 
 export function RightPanel() {
@@ -62,14 +62,13 @@ export function RightPanel() {
         <div className="flex flex-col gap-2">
           <Link
             to="/login"
-            className="flex items-center justify-center h-9 w-full rounded-[20px] text-sm font-semibold text-foreground border border-border hover:brightness-110 transition-colors"
-            style={{ background: "#111118" }}
+            className="ns-btn-silver flex items-center justify-center h-9 w-full rounded-xl text-sm font-semibold transition-all"
           >
             Sign in
           </Link>
           <Link
             to="/signup"
-            className="ns-btn-primary flex items-center justify-center h-9 w-full text-sm font-semibold transition-colors"
+            className="ns-btn-primary flex items-center justify-center h-9 w-full rounded-xl text-sm font-semibold transition-all"
           >
             Join free
           </Link>
@@ -77,7 +76,7 @@ export function RightPanel() {
       )}
 
       {/* Position 7 — Footer links */}
-      <div className="mt-auto pt-4 flex flex-col gap-1 text-[13px] text-muted-foreground">
+      <div className="mt-auto pt-4 flex flex-col gap-1 text-[11px] text-slate-600">
         <Link to="/about" className="hover:text-foreground transition-colors">About NeoScale AI →</Link>
         <a href="https://twitter.com/neoscaleai" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
           Twitter @neoscaleai →
@@ -146,46 +145,46 @@ function SearchSection() {
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => query.length >= 2 && setOpen(true)}
-          placeholder="Search users or content..."
-          className="h-9 rounded-full bg-[#111118] border-border pl-9 text-sm"
+          placeholder="Search the void..."
+          className="h-9 rounded-full glass-pill pl-9 text-sm text-slate-300 placeholder:text-slate-600 border-none"
         />
       </div>
       {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-80 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
-          {loading && <p className="p-3 text-xs text-muted-foreground">Searching…</p>}
-          {noResults && <p className="p-3 text-xs text-muted-foreground">No results for "{query}"</p>}
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-80 overflow-y-auto rounded-xl border border-white/5 shadow-xl" style={{ background: "rgba(8,8,12,0.95)", backdropFilter: "blur(40px)" }}>
+          {loading && <p className="p-3 text-xs text-slate-500">Searching…</p>}
+          {noResults && <p className="p-3 text-xs text-slate-500">No results for "{query}"</p>}
           {users.length > 0 && (
             <div className="p-2">
-              <p className="px-2 pb-1 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">Users</p>
+              <p className="px-2 pb-1 text-[10px] font-bold uppercase text-slate-500 tracking-widest">Users</p>
               {users.map((u: any) => (
-                <button key={u.id} onClick={() => go(`/creator/${u.username}`)} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
+                <button key={u.id} onClick={() => go(`/creator/${u.username}`)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-[#353439]/60 transition-colors">
                   <Avatar className="h-6 w-6">
                     {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                    <AvatarFallback className="text-[10px] bg-primary text-primary-foreground">{(u.display_name || u.username || "?").slice(0, 2).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback className="text-[10px] bg-[#353439] text-slate-300">{(u.display_name || u.username || "?").slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <span className="truncate">{u.display_name || u.username}</span>
-                  {u.username && <span className="text-xs text-muted-foreground">@{u.username}</span>}
+                  <span className="truncate text-slate-200">{u.display_name || u.username}</span>
+                  {u.username && <span className="text-xs text-slate-500">@{u.username}</span>}
                 </button>
               ))}
             </div>
           )}
           {content.length > 0 && (
-            <div className="p-2 border-t border-border">
-              <p className="px-2 pb-1 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">Content</p>
+            <div className="p-2 border-t border-white/5">
+              <p className="px-2 pb-1 text-[10px] font-bold uppercase text-slate-500 tracking-widest">Content</p>
               {content.map((c: any) => (
-                <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60">
-                  <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">{displayContentType(c.content_type)}</span>
-                  <span className="truncate">{c.title}</span>
-                  {c.profiles?.username && <span className="ml-auto text-xs text-muted-foreground">@{c.profiles.username}</span>}
+                <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-[#353439]/60 transition-colors">
+                  <span className="shrink-0 rounded bg-[#353439] px-1.5 py-0.5 text-[10px] font-medium text-slate-300">{displayContentType(c.content_type)}</span>
+                  <span className="truncate text-slate-200">{c.title}</span>
+                  {c.profiles?.username && <span className="ml-auto text-xs text-slate-500">@{c.profiles.username}</span>}
                 </button>
               ))}
             </div>
           )}
           {query.length >= 2 && !loading && (
-            <div className="p-2 border-t border-border">
+            <div className="p-2 border-t border-white/5">
               <button
                 onClick={() => go(`/search?q=${encodeURIComponent(query.trim())}`)}
-                className="w-full text-center text-xs text-primary hover:underline py-1.5"
+                className="w-full text-center text-xs text-[#55e0d2] hover:underline py-1.5"
               >
                 See all results for "{query}"
               </button>
@@ -255,23 +254,21 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
           <button
             key={cat.slug}
             onClick={handleClick}
-            className={`ns-card text-left rounded-xl cursor-pointer transition-all duration-150 ${
-              isActive ? "" : "hover:bg-[rgba(255,255,255,0.04)]"
+            className={`glass-level-1 text-left rounded-xl cursor-pointer transition-all duration-200 ${
+              isActive ? "" : "hover:bg-[rgba(53,52,57,0.60)]"
             }`}
             style={{
-              background: isActive ? "rgba(255, 255, 255, 0.04)" : "#111118",
               border: isActive
                 ? `1.5px solid ${activeBorder}`
-                : "1px solid rgba(255, 255, 255, 0.10)",
+                : "1px solid rgba(255, 255, 255, 0.05)",
               padding: isActive ? "calc(0.875rem - 0.5px)" : "0.875rem",
-              ...(isActive ? {} : {}),
             }}
-            onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.30)"; }}
-            onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.10)"; }}
+            onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.18)"; }}
+            onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.05)"; }}
           >
-            <p className="text-sm font-bold text-foreground leading-tight">{cat.name}</p>
+            <p className="text-sm font-semibold text-slate-200 leading-tight">{cat.name}</p>
             {cat.difficulty && (
-              <span className={`mt-1.5 inline-block rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${diffColor[cat.difficulty] || diffColor.Any}`}>
+              <span className={`mt-1.5 inline-block rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${diffColor[cat.difficulty] || diffColor.Any}`}>
                 {cat.difficulty}
               </span>
             )}
@@ -313,21 +310,22 @@ function TrendingSection({ navigate }: { navigate: ReturnType<typeof useNavigate
 
   return (
     <div>
-      <p className="text-base font-medium text-foreground mb-3">Trending</p>
-      <div className="space-y-0.5">
+      <p className="text-[10px] text-slate-500 tracking-[0.2em] font-bold uppercase px-1 mb-3">Trending Now</p>
+      <div className="space-y-1">
         {trending.map((item, i) => (
           <button
             key={item.id}
             onClick={() => navigate(`/content/${item.id}`)}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors hover:bg-accent/60"
-            style={{ height: 56 }}
+            className="glass-level-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all hover:scale-[1.02] border border-white/5"
           >
-            <span className="shrink-0 w-6 text-xs text-muted-foreground text-center">#{i + 1}</span>
-            <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">
-              {displayContentType(item.content_type)}
-            </span>
-            <span className="flex-1 truncate text-[13px] font-bold text-foreground">{item.title}</span>
-            <span className="shrink-0 text-[11px] text-muted-foreground">{item.download_count} ↓</span>
+            <span className="shrink-0 w-6 text-xl font-light text-slate-600 text-center">{String(i + 1).padStart(2, "0")}</span>
+            <div className="flex-1 overflow-hidden">
+              <span className="block text-[8px] uppercase tracking-tighter text-[#55e0d2] bg-[#55e0d2]/10 px-1.5 py-0.5 rounded w-fit mb-1">
+                {displayContentType(item.content_type)}
+              </span>
+              <span className="block truncate text-sm font-medium text-slate-200">{item.title}</span>
+              <span className="block text-[10px] text-slate-500 mt-0.5">{item.download_count} downloads</span>
+            </div>
           </button>
         ))}
       </div>
@@ -362,12 +360,12 @@ function WhoToFollow({ userId }: { userId: string }) {
 
   return (
     <div>
-      <p className="text-base font-medium text-foreground mb-3">Who to follow</p>
+      <p className="text-[10px] text-slate-500 tracking-[0.2em] font-bold uppercase px-1 mb-3">Who to Follow</p>
       <div className="space-y-1">
         {suggestions.map((creator) => {
           const initials = (creator.display_name || creator.username || "?").slice(0, 2).toUpperCase();
           return (
-            <div key={creator.id} className="flex items-center gap-3 rounded-lg px-2 py-2" style={{ minHeight: 64 }}>
+            <div key={creator.id} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-[#353439]/40 transition-colors" style={{ minHeight: 64 }}>
               <Link to={`/creator/${creator.username}`}>
                 <Avatar className="h-10 w-10 shrink-0">
                   {creator.avatar_url && <AvatarImage src={creator.avatar_url} />}
@@ -423,7 +421,7 @@ function CuratorPicksSection({ navigate }: { navigate: ReturnType<typeof useNavi
 
   return (
     <div>
-      <p className="text-base font-medium text-foreground mb-3">Curator Picks</p>
+      <p className="text-[10px] text-slate-500 tracking-[0.2em] font-bold uppercase px-1 mb-3">Curator Picks</p>
       <div className="space-y-2">
         {picks.map((pick: any) => {
           const curator = pick.curators?.profiles;
@@ -432,7 +430,7 @@ function CuratorPicksSection({ navigate }: { navigate: ReturnType<typeof useNavi
             <button
               key={pick.id}
               onClick={() => navigate(`/content/${pick.content_id}`)}
-              className="w-full text-left rounded-lg px-2 py-2 transition-colors hover:bg-accent/60"
+              className="w-full text-left rounded-xl px-3 py-2 transition-colors hover:bg-[#353439]/50 glass-level-1 border border-white/5"
             >
               <div className="flex items-center gap-1.5 mb-1">
                 <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${TYPE_COLORS[pick.content?.content_type] || "bg-muted text-muted-foreground"}`}>
@@ -476,25 +474,25 @@ function FeaturedCollectionsSection({ navigate }: { navigate: ReturnType<typeof 
 
   return (
     <div>
-      <p className="text-base font-medium text-foreground mb-3">Featured Collections</p>
-      <div className="space-y-0.5">
+      <p className="text-[10px] text-slate-500 tracking-[0.2em] font-bold uppercase px-1 mb-3">Featured Collections</p>
+      <div className="space-y-1">
         {collections.map((col: any) => {
           const owner = col.profiles;
           return (
             <button
               key={col.slug}
               onClick={() => navigate(`/collections/${col.slug}`)}
-              className="flex flex-col w-full text-left rounded-lg px-2 py-2 transition-colors hover:bg-accent/60"
+              className="flex flex-col w-full text-left rounded-xl px-3 py-2.5 transition-colors hover:bg-[#353439]/50"
               style={{ minHeight: 56 }}
             >
-              <span className="text-[13px] font-bold text-foreground truncate">{col.title}</span>
-              <span className="text-[11px] text-muted-foreground">by @{owner?.username || "unknown"}</span>
-              <span className="text-[11px] text-muted-foreground">{col.item_count} items · {col.follower_count} followers</span>
+              <span className="text-sm font-semibold text-slate-200 truncate">{col.title}</span>
+              <span className="text-[11px] text-slate-500">by @{owner?.username || "unknown"}</span>
+              <span className="text-[11px] text-slate-500">{col.item_count} items · {col.follower_count} followers</span>
             </button>
           );
         })}
       </div>
-      <Link to="/browse?tab=collections" className="text-[11px] text-muted-foreground hover:text-foreground transition-colors mt-1.5 inline-block">
+      <Link to="/browse?tab=collections" className="text-[11px] text-slate-500 hover:text-[#55e0d2] transition-colors mt-1.5 inline-block px-1">
         Discover all →
       </Link>
     </div>
