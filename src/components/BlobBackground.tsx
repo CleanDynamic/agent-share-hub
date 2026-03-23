@@ -116,10 +116,34 @@ export function BlobBackground() {
   }, []);
 
   return (
-    <div className="ns-blob-bg" ref={containerRef} style={{ zIndex: 0 }}>
-      <div className="ns-blob ns-blob-1" data-base-x="0" data-base-y="0" />
-      <div className="ns-blob ns-blob-2" data-base-x="0" data-base-y="0" />
-      <div className="ns-blob ns-blob-3" data-base-x="0" data-base-y="0" />
+    <div className="ns-blob-bg" ref={containerRef} style={{ zIndex: 0, background: 'transparent' }}>
+      <div
+        className="ns-blob ns-blob-1"
+        data-base-x="0"
+        data-base-y="0"
+        style={{
+          background: 'radial-gradient(circle, rgba(160,160,180,0.70) 0%, rgba(100,100,120,0.30) 50%, transparent 70%)',
+          filter: 'blur(60px)',
+        }}
+      />
+      <div
+        className="ns-blob ns-blob-2"
+        data-base-x="0"
+        data-base-y="0"
+        style={{
+          background: 'radial-gradient(circle, rgba(130,130,150,0.60) 0%, rgba(80,80,100,0.25) 50%, transparent 70%)',
+          filter: 'blur(80px)',
+        }}
+      />
+      <div
+        className="ns-blob ns-blob-3"
+        data-base-x="0"
+        data-base-y="0"
+        style={{
+          background: 'radial-gradient(circle, rgba(180,180,200,0.65) 0%, rgba(120,120,140,0.28) 50%, transparent 70%)',
+          filter: 'blur(50px)',
+        }}
+      />
     </div>
   );
 }
