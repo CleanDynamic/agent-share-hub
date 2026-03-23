@@ -421,18 +421,21 @@ const Home = () => {
       />
 
       {isLoggedIn && (
-        <div className="flex items-center gap-3" style={{ height: 52, padding: "10px 16px" }}>
-          <Avatar className="h-9 w-9 shrink-0">
+        <div className="flex items-center gap-4 p-6 pb-4">
+          <Avatar className="h-10 w-10 shrink-0">
             {profile?.avatar_url && <img src={profile.avatar_url} className="h-full w-full rounded-full object-cover" />}
             <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
           </Avatar>
           <button
             onClick={() => navigate("/upload")}
-            className="flex-1 h-9 rounded-full bg-[#111118] border border-border px-4 text-left text-sm text-muted-foreground hover:border-primary/40 transition-colors"
+            className="flex-1 h-12 glass-pill rounded-full px-6 text-left text-sm text-on-surface-variant placeholder:text-slate-500 border-none hover:border-primary/30 transition-all"
           >
             Share something...
           </button>
-          <button onClick={() => navigate("/upload")} className="p-1.5 text-primary hover:text-primary/80 transition-colors">
+          <button
+            onClick={() => navigate("/upload")}
+            className="w-12 h-12 flex items-center justify-center bg-brand-orange text-white rounded-full hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-brand-orange/20"
+          >
             <Upload className="h-5 w-5" />
           </button>
         </div>
