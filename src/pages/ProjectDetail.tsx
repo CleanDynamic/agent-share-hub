@@ -145,7 +145,7 @@ function PackageBanner({ project, paidCount, totalPrice, hasPackage, onUnlock, u
             </p>
           </div>
         </div>
-        <Button onClick={onUnlock} disabled={unlocking} className="shrink-0">
+        <Button onClick={onUnlock} disabled={unlocking} className="ns-btn-primary shrink-0">
           {unlocking ? "Redirecting…" : "Unlock full project"}
         </Button>
       </div>
@@ -498,7 +498,7 @@ const ProjectDetail = () => {
                                 <div className="text-center py-6">
                                   <Lock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
                                   <p className="text-sm text-muted-foreground mb-3">This blueprint requires payment to unlock.</p>
-                                  <Button size="sm" onClick={() => handlePaywall(content.id)}>
+                                  <Button size="sm" className="ns-btn-primary" onClick={() => handlePaywall(content.id)}>
                                     Unlock — £{Number(content.price_gbp ?? 0).toFixed(2)}
                                   </Button>
                                 </div>

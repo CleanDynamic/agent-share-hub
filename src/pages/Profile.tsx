@@ -740,11 +740,11 @@ function EditProfileModal({
         </div>
 
         <div className="flex gap-2 mt-4">
-          <Button onClick={handleSave} disabled={saving} className="flex-1 bg-primary text-primary-foreground">
+          <Button onClick={handleSave} disabled={saving} className="ns-btn-primary flex-1 bg-primary text-primary-foreground">
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Save
           </Button>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" className="ns-btn-silver" onClick={onClose}>Cancel</Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -76,7 +76,7 @@ export function PwywPriceSelector({ contentId, floorGbp, avgPaid, purchaseCount 
       </p>
       {floorGbp > 0 && <p className="text-xs text-muted-foreground">Minimum: £{floorGbp.toFixed(2)}</p>}
       {error && <p className="text-xs text-destructive">{error}</p>}
-      <Button size="lg" className="w-full" onClick={handleUnlock} disabled={loading}>
+      <Button size="lg" className="ns-btn-primary w-full" onClick={handleUnlock} disabled={loading}>
         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
         Unlock
       </Button>

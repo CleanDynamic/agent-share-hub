@@ -69,7 +69,7 @@ export function RightPanel() {
           </Link>
           <Link
             to="/signup"
-            className="flex items-center justify-center h-9 w-full rounded-[20px] bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="ns-btn-primary flex items-center justify-center h-9 w-full text-sm font-semibold transition-colors"
           >
             Join free
           </Link>
@@ -255,7 +255,7 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
           <button
             key={cat.slug}
             onClick={handleClick}
-            className={`text-left rounded-xl cursor-pointer transition-all duration-150 ${
+            className={`ns-card text-left rounded-xl cursor-pointer transition-all duration-150 ${
               isActive ? "" : "hover:bg-[rgba(255,255,255,0.04)]"
             }`}
             style={{

@@ -92,11 +92,11 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
               )}
               <Link
                 to={item.to}
-                className={`relative flex items-center gap-3 rounded-lg transition-colors ${
+                className={`ns-nav-item relative flex items-center gap-3 rounded-lg transition-colors ${
                   collapsed ? "justify-center px-0" : "px-3"
                 } h-12 text-sm ${
                   isActive
-                    ? "text-primary font-semibold border-l-2 border-primary"
+                    ? "active text-primary font-semibold border-l-2 border-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
                 }`}
               >
@@ -160,7 +160,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                 <Button variant="outline" className="w-full" size="sm" asChild>
                   <Link to="/login">Sign in</Link>
                 </Button>
-                <Button className="w-full" size="sm" asChild>
+                <Button className="ns-btn-primary w-full" size="sm" asChild>
                   <Link to="/signup">Join free</Link>
                 </Button>
               </>
