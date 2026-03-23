@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
+import { BlobBackground } from "@/components/BlobBackground";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -46,6 +47,8 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <ErrorBoundary>
+    <BlobBackground />
+    <div style={{ position: "relative", zIndex: 1 }}>
     <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -96,6 +99,7 @@ const App = () => (
       </TooltipProvider>
     </QueryClientProvider>
     </HelmetProvider>
+    </div>
   </ErrorBoundary>
 );
 
