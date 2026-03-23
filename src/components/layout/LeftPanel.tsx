@@ -160,7 +160,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                 <Button variant="outline" className="w-full" size="sm" asChild>
                   <Link to="/login">Sign in</Link>
                 </Button>
-                <Button className="w-full" size="sm" asChild>
+                <Button className="ns-btn-primary w-full" size="sm" asChild>
                   <Link to="/signup">Join free</Link>
                 </Button>
               </>

@@ -865,7 +865,7 @@ const Upload = () => {
                 type="button"
                 variant="outline"
                 size="lg"
-                className="flex-1 h-10 rounded-full"
+                className="ns-btn-silver flex-1 h-10 rounded-full"
                 disabled={savingDraft || submitting}
                 onClick={() => saveDraft(false)}
               >
@@ -874,7 +874,7 @@ const Upload = () => {
               <Button
                 type="button"
                 size="lg"
-                className="flex-1 h-10 rounded-full"
+                className="ns-btn-primary flex-1 h-10 rounded-full"
                 disabled={savingDraft || submitting}
                 onClick={async () => {
                   const id = await saveDraft(false);
@@ -1398,7 +1398,7 @@ const Upload = () => {
                 type="button"
                 variant="outline"
                 size="lg"
-                className="flex-1 h-10 rounded-full"
+                className="ns-btn-silver flex-1 h-10 rounded-full"
                 disabled={savingDraft || submitting}
                 onClick={() => saveDraft(false)}
               >
@@ -1407,7 +1407,7 @@ const Upload = () => {
               <Button
                 type="button"
                 size="lg"
-                className="flex-1 h-10 rounded-full"
+                className="ns-btn-primary flex-1 h-10 rounded-full"
                 disabled={savingDraft || submitting}
                 onClick={async () => {
                   const id = await saveDraft(false);

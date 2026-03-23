@@ -263,11 +263,11 @@ export default function PostPreviewPage() {
         {/* Action box */}
         <div className="relative group rounded-xl border border-border bg-card p-4 mb-6">
           {draft.monetisation_type === "free" || draft.monetisation_type === "donation" ? (
-            <Button className="w-full rounded-full opacity-70 cursor-default" size="lg">
+            <Button className="ns-btn-primary w-full rounded-full opacity-70 cursor-default" size="lg">
               <Download className="h-4 w-4 mr-2" /> Download Free
             </Button>
           ) : (
-            <Button className="w-full rounded-full opacity-70 cursor-default" size="lg">
+            <Button className="ns-btn-primary w-full rounded-full opacity-70 cursor-default" size="lg">
               <Lock className="h-4 w-4 mr-2" /> Unlock — £{Number((draft as any).price_gbp ?? 0).toFixed(2)}
             </Button>
           )}

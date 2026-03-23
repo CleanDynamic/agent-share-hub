@@ -234,7 +234,7 @@ function MobileLeftPanel({ open, onClose }: { open: boolean; onClose: () => void
           ) : (
             <div className="mb-5 space-y-2">
               <Button variant="outline" className="w-full" asChild><Link to="/login" onClick={onClose}>Sign in</Link></Button>
-              <Button className="w-full" asChild><Link to="/signup" onClick={onClose}>Join free</Link></Button>
+              <Button className="ns-btn-primary w-full" asChild><Link to="/signup" onClick={onClose}>Join free</Link></Button>
             </div>
           )}
 

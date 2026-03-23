@@ -117,7 +117,7 @@ export function FollowButton({ creatorId, onCountChange }: FollowButtonProps) {
     return (
       <Button
         size="sm"
-        className="bg-secondary text-secondary-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
+        className="ns-btn-silver bg-secondary text-secondary-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
         onClick={handleClick}
@@ -138,7 +138,7 @@ export function FollowButton({ creatorId, onCountChange }: FollowButtonProps) {
     <Button
       variant="outline"
       size="sm"
-      className="border-secondary text-secondary hover:bg-secondary/10"
+      className="ns-btn-silver border-secondary text-secondary hover:bg-secondary/10"
       onClick={handleClick}
       disabled={acting}
     >

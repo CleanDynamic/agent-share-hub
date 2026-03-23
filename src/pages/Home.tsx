@@ -32,7 +32,7 @@ function SignInPrompt() {
       <div className="flex items-center gap-3">
         <Button size="sm" asChild><Link to="/login">Sign in</Link></Button>
         <span className="text-xs text-muted-foreground">or</span>
-        <Button size="sm" variant="outline" className="border-secondary text-secondary" asChild>
+        <Button size="sm" className="ns-btn-primary border-secondary text-secondary" asChild>
           <Link to="/signup">Join free</Link>
         </Button>
       </div>
