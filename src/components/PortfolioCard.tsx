@@ -6,7 +6,6 @@ import { displayContentType, TYPE_COLORS } from "@/lib/content-types";
 /** Accent colours per type for placeholder thumbnails */
 const TYPE_ACCENT: Record<string, string> = {
   "Prompt File": "#E8571A",
-  "Prompt Tutorial": "#2EC4B6",
   "Agent Blueprint": "#7C3AED",
   "Workflow Template": "#3B82F6",
   "Agent Stack": "#EF4444",

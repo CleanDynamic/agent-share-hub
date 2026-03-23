@@ -13,7 +13,7 @@ const PAGE_SIZE = 20;
 const ALL = "__all__";
 
 const CONTENT_TYPES = [
-  "Prompt File", "Prompt Tutorial", "Agent Blueprint", "Workflow Template",
+  "Prompt File", "Agent Blueprint", "Workflow Template",
   "Agent Stack", "Model Config Guide", "Integration Guide", "Evaluation Framework", "Failure Library",
 ];
 

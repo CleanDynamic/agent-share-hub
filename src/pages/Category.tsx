@@ -32,14 +32,6 @@ const CATEGORIES: CategoryDef[] = [
     seoDescription: "Download ready-made prompts for ChatGPT, Claude, Gemini and any AI. Free to download.",
   },
   {
-    slug: "prompt-tutorial",
-    name: "Prompt Tutorials",
-    contentType: "Prompt Tutorial",
-    description: "Step-by-step guides on how to write better prompts and get more out of AI tools.",
-    seoTitle: "Prompt Tutorials — Learn AI Prompting | NeoScale AI",
-    seoDescription: "Learn how to write effective prompts for ChatGPT, Claude, and other AI tools.",
-  },
-  {
     slug: "agent-blueprint",
     name: "Agent(s)",
     contentType: "Agent Blueprint",
@@ -97,11 +89,11 @@ const CATEGORIES: CategoryDef[] = [
   },
   {
     slug: "ai-tools-llms",
-    name: "AI Tools (LLMs)",
+    name: "AI Tools Tutorials",
     contentType: "AI Tools (LLMs)",
     description: "Discover and share AI tools, models, and platforms. Reviews, guides, and commentary from the community.",
-    seoTitle: "AI Tools & LLMs — Discover AI Models | NeoScale AI",
-    seoDescription: "Explore AI tools, LLMs, and platforms. Community reviews and guides.",
+    seoTitle: "AI Tools Tutorials — Discover AI Models | NeoScale AI",
+    seoDescription: "Explore AI tools tutorials, LLMs, and platforms. Community reviews and guides.",
   },
   {
     slug: "projects",
