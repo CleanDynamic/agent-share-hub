@@ -176,7 +176,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
   return (
     <div
       onClick={handleCardClick}
-      className="px-4 py-3 border-b border-border cursor-pointer transition-colors duration-150 hover:bg-[hsl(0_0%_100%/0.03)] m-0"
+      className="ns-feed-item px-4 py-3 border-b border-border cursor-pointer transition-colors duration-150 hover:bg-[hsl(0_0%_100%/0.03)] m-0"
     >
       {/* LINE 1 — Header row */}
       <div className="flex items-center gap-2" style={{ height: 36 }}>
