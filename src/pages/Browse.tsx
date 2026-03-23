@@ -157,7 +157,10 @@ const Browse = () => {
   const browseTab = (readParam("tab", "blueprints") as BrowseTab);
   const sortMode = readParam("sort", "recent") as AnySort;
   const search = readParam("q", "");
-  
+
+  // Bounty filters
+  const bountiesOnly = readParam("bounties", "") === "true";
+  const bountyStatusFilter = readParam("bounty_status", "");
 
   // Blueprint filters
   const typeFilters = readParamList("type");
@@ -205,8 +208,9 @@ const Browse = () => {
 
   const activeFilterCount = useMemo(() => {
     const tp = timePeriod ? 1 : 0;
+    const bt = bountiesOnly ? 1 : 0;
     if (browseTab === "blueprints") {
-      return typeFilters.length + (difficultyFilter ? 1 : 0) + toolFilters.length + useCaseFilters.length + microtagFilters.length + tp;
+      return typeFilters.length + (difficultyFilter ? 1 : 0) + toolFilters.length + useCaseFilters.length + microtagFilters.length + tp + bt;
     }
     if (browseTab === "projects") {
       return containsFilters.length + (sizeFilter ? 1 : 0) + (difficultyFilter ? 1 : 0) + tp;
@@ -246,7 +250,7 @@ const Browse = () => {
 
   const clearAllFilters = useCallback(() => {
     const sp = new URLSearchParams(searchParams);
-    ["type", "difficulty", "tool", "usecase", "tags", "size", "contains", "period"].forEach((k) => sp.delete(k));
+    ["type", "difficulty", "tool", "usecase", "tags", "size", "contains", "period", "bounties", "bounty_status"].forEach((k) => sp.delete(k));
     setSearchParams(sp, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -305,6 +309,8 @@ const Browse = () => {
         if (!microtagFilters.every((mt) => itemTags.includes(mt))) return false;
       }
       if (timePeriod && !isWithinPeriod(item.approved_at || item.created_at, timePeriod)) return false;
+      if (bountiesOnly && !(item as any).bounty_enabled) return false;
+      if (bountyStatusFilter && (item as any).bounty_status !== bountyStatusFilter) return false;
       return true;
     });
 
@@ -546,6 +552,37 @@ const Browse = () => {
     if (browseTab === "blueprints") {
       return (
         <div className="space-y-5 pb-4">
+          {/* Bounties toggle */}
+          <div className="pb-4 border-b border-border">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Bounties only</p>
+              <button
+                onClick={() => {
+                  const sp = new URLSearchParams(searchParams);
+                  if (bountiesOnly) { sp.delete("bounties"); sp.delete("bounty_status"); }
+                  else sp.set("bounties", "true");
+                  setSearchParams(sp, { replace: true });
+                }}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${bountiesOnly ? "bg-primary" : "bg-muted"}`}
+              >
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${bountiesOnly ? "translate-x-4" : "translate-x-1"}`} />
+              </button>
+            </div>
+            {bountiesOnly && (
+              <div className="flex flex-wrap gap-1.5">
+                {([["", "All"], ["open", "🔴 Open"], ["claimed", "🟡 Claimed"], ["solved", "🟢 Solved"]] as const).map(([val, label]) => (
+                  <FilterPill
+                    key={val}
+                    active={bountyStatusFilter === val}
+                    onClick={() => setParam("bounty_status", bountyStatusFilter === val ? "" : val)}
+                  >
+                    {label}
+                  </FilterPill>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Type */}
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Type</p>
