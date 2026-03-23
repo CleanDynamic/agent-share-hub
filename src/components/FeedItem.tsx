@@ -16,10 +16,10 @@ export { TYPE_COLORS };
 
 export function difficultyColor(level: string) {
   switch (level) {
-    case "Beginner": return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
-    case "Intermediate": return "bg-amber-500/15 text-amber-400 border-amber-500/30";
-    case "Advanced": return "bg-red-500/15 text-red-400 border-red-500/30";
-    default: return "bg-muted text-muted-foreground border-border";
+    case "Beginner": return "bg-[#353439]/40 text-slate-400 border-white/8";
+    case "Intermediate": return "bg-[#55e0d2]/10 text-[#55e0d2] border-[#55e0d2]/25";
+    case "Advanced": return "bg-[#cb4300]/15 text-[#ffb59c] border-[#cb4300]/25";
+    default: return "bg-[#353439]/20 text-slate-500 border-white/5";
   }
 }
 
@@ -176,7 +176,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
   return (
     <div
       onClick={handleCardClick}
-      className="ns-feed-item px-4 py-3 border-b border-border cursor-pointer transition-colors duration-150 hover:bg-[hsl(0_0%_100%/0.03)] m-0"
+      className="ns-feed-item cursor-pointer"
     >
       {/* LINE 1 — Header row */}
       <div className="flex items-center gap-2" style={{ height: 36 }}>
@@ -207,10 +207,10 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
 
       {/* LINE 2 — Badges + project indicator */}
       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-        <Badge variant="outline" className={`text-[10px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
+        <Badge variant="outline" className={`text-[9px] font-bold uppercase tracking-widest ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
           {displayContentType(item.content_type)}
         </Badge>
-        <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(item.difficulty)}`}>
+        <Badge variant="outline" className={`text-[9px] font-bold uppercase tracking-wider ${difficultyColor(item.difficulty)}`}>
           {item.difficulty}
         </Badge>
         {/* AI Tools subtype indicator */}
@@ -240,7 +240,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
 
       {/* LINE 4.25 — What to Expect teaser (non-blogs only) */}
       {!isBlog && wteTeaser && (
-        <p className="text-[12px] italic mt-0.5 truncate" style={{ color: "#2EC4B6" }}>
+        <p className="text-[12px] italic mt-0.5 truncate" style={{ color: "#55e0d2" }}>
           <Eye className="inline h-[10px] w-[10px] mr-1" style={{ verticalAlign: "middle" }} />
           <span className="opacity-70">Expect: </span>
           {wteTeaser}

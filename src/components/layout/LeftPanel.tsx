@@ -75,9 +75,16 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
   return (
     <div className="flex h-full flex-col">
       {/* Wordmark */}
-      <div className={`px-4 pt-5 pb-4 ${collapsed ? "flex justify-center" : ""}`}>
-        <Link to="/" className="text-xl font-bold text-primary">
-          {collapsed ? "N" : "NeoScale AI"}
+      <div className={`px-6 pt-7 pb-5 ${collapsed ? "flex justify-center" : ""}`}>
+        <Link to="/" className={collapsed ? "text-xl font-light text-[#E8571A]" : "block"}>
+          {collapsed ? (
+            "N"
+          ) : (
+            <>
+              <span className="text-2xl font-light text-[#E8571A] tracking-tighter uppercase">NeoScale AI</span>
+              <p className="text-[10px] text-slate-500 tracking-[0.2em] mt-0.5 uppercase">The Digital Alchemist</p>
+            </>
+          )}
         </Link>
       </div>
 
@@ -92,18 +99,18 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
               )}
               <Link
                 to={item.to}
-                className={`ns-nav-item relative flex items-center gap-3 rounded-lg transition-colors ${
-                  collapsed ? "justify-center px-0" : "px-3"
+                className={`ns-nav-item relative flex items-center gap-3 rounded-lg ${
+                  collapsed ? "justify-center px-0" : "px-4"
                 } h-12 text-sm ${
                   isActive
-                    ? "active text-primary font-semibold border-l-2 border-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                    ? "active"
+                    : ""
                 }`}
               >
                 <item.icon className={`h-[22px] w-[22px] shrink-0 transition-colors ${!isActive ? "group-hover:text-primary/60" : ""}`} />
                 {!collapsed && <span>{item.label}</span>}
                 {item.badge && (
-                  <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full ${item.to === "/drafts" ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"} px-1.5 text-[11px] font-bold`}>
+                  <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full ${item.to === "/drafts" ? "bg-[#353439] text-slate-400" : "bg-[#E8571A] text-white"} px-1.5 text-[11px] font-bold`}>
                     {item.badge}
                   </span>
                 )}
@@ -117,12 +124,12 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
       </nav>
 
       {/* Bottom user section */}
-      <div className="mt-auto px-3 py-3" style={{ borderTop: "1px solid #1E1E2A" }}>
+      <div className="mt-auto px-4 py-4" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
         {isLoggedIn ? (
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className={`flex w-full items-center gap-3 rounded-lg p-2 text-sm text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground ${collapsed ? "justify-center" : ""}`}
+              className={`flex w-full items-center gap-3 rounded-xl p-2 text-sm text-slate-400 transition-colors hover:bg-[#353439]/60 hover:text-slate-100 ${collapsed ? "justify-center" : ""}`}
             >
               <Avatar className="h-8 w-8 shrink-0">
                 {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
@@ -139,10 +146,10 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
               )}
             </button>
             {menuOpen && (
-              <div className="absolute bottom-full left-0 mb-1 w-full rounded-lg border border-border bg-popover p-1 shadow-lg">
+              <div className="absolute bottom-full left-0 mb-1 w-full rounded-xl border border-white/5 p-1 shadow-lg" style={{ background: "rgba(8,8,12,0.95)", backdropFilter: "blur(20px)" }}>
                 <button
                   onClick={handleSignOut}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-destructive hover:bg-accent/60"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-400 hover:bg-[#353439]/60"
                 >
                   <LogOut className="h-4 w-4" /> Sign out
                 </button>
@@ -157,7 +164,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
               </Button>
             ) : (
               <>
-                <Button variant="outline" className="w-full" size="sm" asChild>
+                <Button variant="outline" className="w-full border-white/10 text-slate-300 hover:bg-[#353439]/60 hover:text-white" size="sm" asChild>
                   <Link to="/login">Sign in</Link>
                 </Button>
                 <Button className="ns-btn-primary w-full" size="sm" asChild>
