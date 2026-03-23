@@ -74,6 +74,19 @@ function formatNotification(n: any): { text: string; link: string } {
       return { text: `Your proposed split of ${meta.proposed_percentage}% for "${meta.content_title || ""}" was accepted`, link: n.content_id ? `/content/${n.content_id}` : "/" };
     case "split_contest_rejected":
       return { text: `Your proposed split for "${meta.content_title || ""}" was declined. Original split kept at ${meta.original_percentage}%`, link: n.content_id ? `/content/${n.content_id}` : "/" };
+    case "bounty_response":
+      return { text: `★ ${actor} submitted a Blueprint for your bounty: '${meta.bounty_title || "your bounty"}'`, link: n.content_id ? `/content/${n.content_id}?tab=responses` : "/" };
+    case "bounty_me_too":
+      return { text: `${meta.count || "Several"} people now have your failure. Your bounty is gaining attention.`, link: n.content_id ? `/content/${n.content_id}` : "/" };
+    case "bounty_solution_marked":
+      return {
+        text: `🏆 Your Blueprint was marked as the solution to '${meta.bounty_title || "a bounty"}'${meta.tip_gbp ? ` — £${meta.tip_gbp} is being sent to you.` : ""}`,
+        link: n.content_id ? `/content/${n.content_id}?tab=responses` : "/",
+      };
+    case "bounty_verified":
+      return { text: `${actor} verified your Blueprint worked on their failure. (${meta.verifications || 1} total verifications)`, link: n.content_id ? `/content/${n.content_id}?tab=responses` : "/" };
+    case "bounty_solved":
+      return { text: `✓ A solution was found for a failure you shared: '${meta.bounty_title || ""}'. See what worked.`, link: n.content_id ? `/content/${n.content_id}?tab=responses` : "/" };
     default:
       return { text: "You have a new notification", link: "/" };
   }

@@ -39,6 +39,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
+import { BountyResponseComposer } from "@/components/BountyResponseComposer";
+import { insertNotification } from "@/lib/notifications";
 
 function difficultyColor(level: string) {
   switch (level) {
@@ -106,7 +108,10 @@ const ContentDetail = () => {
   const [curatorModalOpen, setCuratorModalOpen] = useState(false);
   const [curatorText, setCuratorText] = useState("");
   const [curatorSubmitting, setCuratorSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"content" | "changelog" | "tips" | "comments">("changelog");
+  const [activeTab, setActiveTab] = useState<"failure" | "content" | "changelog" | "tips" | "comments" | "responses">("changelog");
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [hasMeToo, setHasMeToo] = useState(false);
+  const [bountySort, setBountySort] = useState<"top" | "newest" | "verified">("top");
   const viewTracked = useRef(false);
 
   const { data: item, isLoading, error } = useQuery({
@@ -176,7 +181,17 @@ const ContentDetail = () => {
     refetchLibraryUpdate();
   }, [user, item, refetchLibraryUpdate]);
 
-  function handleTabChange(tab: "content" | "changelog" | "tips" | "comments") {
+  // Handle tab for bounty posts — default to responses
+  useEffect(() => {
+    if (!item) return;
+    if ((item as any).bounty_enabled) {
+      if (searchParams.get("tab") === "responses" || activeTab === "changelog") {
+        setActiveTab("responses");
+      }
+    }
+  }, [item]);
+
+  function handleTabChange(tab: "failure" | "content" | "changelog" | "tips" | "comments" | "responses") {
     setActiveTab(tab);
     if (tab === "changelog" && hasLibraryUpdate) {
       dismissLibraryUpdate();
@@ -343,6 +358,65 @@ const ContentDetail = () => {
     enabled: !!id,
   });
 
+  const isBounty = !!(item as any)?.bounty_enabled;
+  const isPoster = item?.creator_id === user?.id;
+
+  // Bounty responses query
+  const { data: bountyResponses, refetch: refetchResponses } = useQuery({
+    queryKey: ["bounty_responses", id, bountySort],
+    queryFn: async () => {
+      let q = supabase
+        .from("bounty_responses" as any)
+        .select("*, profiles!bounty_responses_responder_id_fkey(id, username, display_name, avatar_url)")
+        .eq("bounty_content_id", id!);
+      if (bountySort === "verified") q = (q as any).gt("verified_count", 0);
+      if (bountySort === "newest") q = (q as any).order("created_at", { ascending: false });
+      else q = (q as any).order("is_solution", { ascending: false }).order("score", { ascending: false });
+      const { data } = await q;
+      return (data as any[]) ?? [];
+    },
+    enabled: isBounty && !!id,
+  });
+
+  // Me-too status
+  const { data: meTooData, refetch: refetchMeToo } = useQuery({
+    queryKey: ["bounty_me_too_status", id, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("bounty_me_too" as any)
+        .select("id")
+        .eq("content_id", id!)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: isBounty && !!user?.id && !!id,
+  });
+
+  // User's own verification status per response
+  const { data: myVerifications, refetch: refetchVerifications } = useQuery({
+    queryKey: ["bounty_my_verifications", id, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("bounty_response_verifications" as any)
+        .select("response_id")
+        .eq("user_id", user!.id);
+      return new Set((data as any[]).map((r: any) => r.response_id));
+    },
+    enabled: isBounty && !!user?.id,
+  });
+
+  // User's own upvoted responses
+  const { data: myUpvotedResponses } = useQuery({
+    queryKey: ["bounty_my_upvotes", id, user?.id],
+    queryFn: async () => {
+      // We track upvotes via a simple count on bounty_responses — no separate table
+      // Just return empty set for now
+      return new Set<string>();
+    },
+    enabled: isBounty && !!user?.id,
+  });
+
   const isCurator = (profile as any)?.is_curator === true;
 
   const count = localCount ?? item?.download_count ?? 0;
@@ -483,6 +557,81 @@ const ContentDetail = () => {
           </div>
         )}
 
+        {/* BOUNTY HEADER BANNER */}
+        {isBounty && (() => {
+          const status = (item as any).bounty_status ?? "open";
+          const tipGbp = (item as any).bounty_tip_gbp as number | null;
+          const closesAt = (item as any).bounty_closes_at as string | null;
+          const meTooCount = (item as any).bounty_me_too_count ?? 0;
+          const hasMeTooLocal = meTooData ?? false;
+          const isExpired = closesAt && new Date(closesAt) < new Date();
+          const daysLeft = closesAt && !isExpired
+            ? Math.ceil((new Date(closesAt).getTime() - Date.now()) / 86400000)
+            : null;
+          const statusConfig = {
+            open:    { bg: "rgba(220,38,38,0.08)",  border: "#EF4444", text: "#EF4444",  emoji: "🔴" },
+            claimed: { bg: "rgba(217,119,6,0.08)",  border: "#F59E0B", text: "#F59E0B", emoji: "🟡" },
+            solved:  { bg: "rgba(22,163,74,0.08)",  border: "#22C55E", text: "#22C55E",  emoji: "🟢" },
+          }[status] ?? { bg: "rgba(220,38,38,0.08)", border: "#EF4444", text: "#EF4444", emoji: "🔴" };
+
+          async function toggleMeToo() {
+            if (!user) return;
+            if (hasMeTooLocal) {
+              await supabase.from("bounty_me_too" as any).delete().eq("content_id", id!).eq("user_id", user.id);
+            } else {
+              await supabase.from("bounty_me_too" as any).insert({ content_id: id!, user_id: user.id } as any);
+              // Notify poster at milestones
+              const newCount = meTooCount + 1;
+              if ([5, 10, 25, 50].includes(newCount) && item) {
+                await insertNotification({
+                  recipient_id: item.creator_id,
+                  actor_id: user.id,
+                  notification_type: "bounty_me_too",
+                  content_id: id!,
+                  metadata: { bounty_title: item.title, count: newCount },
+                });
+              }
+            }
+            refetchMeToo();
+          }
+
+          return (
+            <div
+              className="rounded-xl mb-4 px-4 py-3"
+              style={{ background: statusConfig.bg, borderBottom: `2px solid ${statusConfig.border}` }}
+            >
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: statusConfig.text }}>
+                    {statusConfig.emoji} {status.toUpperCase()} · BOUNTY
+                  </span>
+                  {tipGbp && tipGbp > 0 && (
+                    <span className="text-[11px] text-amber-400 font-medium">💰 £{tipGbp} tip for the solver</span>
+                  )}
+                  {daysLeft !== null && (
+                    <span className="text-[11px] text-muted-foreground">⏱ Closes in {daysLeft} day{daysLeft !== 1 ? "s" : ""}</span>
+                  )}
+                  {isExpired && status === "open" && (
+                    <span className="text-[11px] text-muted-foreground">⏱ Expired — still accepting responses</span>
+                  )}
+                </div>
+                {isLoggedIn && !isPoster && (
+                  <button
+                    onClick={toggleMeToo}
+                    className={`text-[11px] px-3 py-1.5 rounded-full border transition-colors ${
+                      hasMeTooLocal
+                        ? "bg-[#2EC4B6]/15 text-[#2EC4B6] border-[#2EC4B6]/30"
+                        : "bg-transparent text-muted-foreground border-border hover:border-muted-foreground/60"
+                    }`}
+                  >
+                    {hasMeTooLocal ? `You have this too ✓` : `🙋 ${meTooCount > 0 ? meTooCount + " others have this" : "I have this too"}`}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* 1. Cover image */}
         {(item as any).cover_image_url && (
           <img
@@ -531,6 +680,17 @@ const ContentDetail = () => {
         {/* 4. Description */}
         {item.description && (
           <p className="text-[16px] text-[#CCCCCC] leading-[1.5] font-normal mt-2 mb-3"><MentionText text={item.description} /></p>
+        )}
+
+        {/* BOUNTY — Failure detail + gap */}
+        {isBounty && (item as any).bounty_gap && (
+          <div
+            className="rounded-xl px-4 py-3 mb-4"
+            style={{ background: "rgba(46,196,182,0.05)", borderLeft: "2px solid #2EC4B6" }}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">What a good solution needs:</p>
+            <p className="text-sm text-foreground leading-relaxed">{(item as any).bounty_gap}</p>
+          </div>
         )}
 
         {/* 5. Meta row */}
@@ -863,24 +1023,47 @@ const ContentDetail = () => {
         {/* 12. Tab strip */}
         {(!isSub || subscriberUnlocked) && (
           <>
-            <div className="flex gap-0 border-b border-border sticky top-0 bg-background z-20">
-              {(["changelog", "tips", "comments"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => handleTabChange(tab)}
-                  className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-                    activeTab === tab
-                      ? "text-foreground border-b-2 border-primary -mb-px"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {tab === "changelog" && (
-                    <>Changelog{hasLibraryUpdate && <span className="ml-1 text-primary">●</span>}</>
-                  )}
-                  {tab === "tips" && "Tips"}
-                  {tab === "comments" && `Comments (${(item as any).comment_count ?? 0})`}
-                </button>
-              ))}
+            <div className="flex gap-0 border-b border-border sticky top-0 bg-background z-20 overflow-x-auto">
+              {isBounty ? (
+                <>
+                  {(["responses", "failure", "changelog", "comments"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => handleTabChange(tab)}
+                      className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
+                        activeTab === tab
+                          ? "text-foreground border-b-2 border-primary -mb-px"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {tab === "responses" && `Responses (${(bountyResponses ?? []).length})`}
+                      {tab === "failure" && "Failure"}
+                      {tab === "changelog" && "Changelog"}
+                      {tab === "comments" && `Comments (${(item as any).comment_count ?? 0})`}
+                    </button>
+                  ))}
+                </>
+              ) : (
+                <>
+                  {(["changelog", "tips", "comments"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => handleTabChange(tab)}
+                      className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                        activeTab === tab
+                          ? "text-foreground border-b-2 border-primary -mb-px"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {tab === "changelog" && (
+                        <>Changelog{hasLibraryUpdate && <span className="ml-1 text-primary">●</span>}</>
+                      )}
+                      {tab === "tips" && "Tips"}
+                      {tab === "comments" && `Comments (${(item as any).comment_count ?? 0})`}
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
 
             {/* 13. Tab content */}
@@ -911,6 +1094,207 @@ const ContentDetail = () => {
                     commentCount={(item as any).comment_count ?? 0}
                     isEligible={isEligible}
                   />
+                </div>
+              )}
+
+              {/* BOUNTY — Failure tab (blueprint blocks) */}
+              {activeTab === "failure" && (
+                <div className="py-4">
+                  <p className="text-sm text-muted-foreground mb-3">The failure this bounty is based on:</p>
+                  <ContentBlockViewer
+                    contentId={item.id}
+                    contentTitle={item.title}
+                    monetisationType={item.monetisation_type}
+                    creatorId={item.creator_id}
+                    useInstructions={item.use_instructions}
+                    onTriggerPaywall={handleDownload}
+                    isEligible={isEligible}
+                    contentType={item.content_type}
+                  />
+                </div>
+              )}
+
+              {/* BOUNTY — Responses tab */}
+              {activeTab === "responses" && (
+                <div className="py-4 space-y-4">
+                  {/* Solved banner */}
+                  {(item as any).bounty_status === "solved" && (item as any).bounty_solved_response_id && (() => {
+                    const winner = (bountyResponses ?? []).find((r: any) => r.id === (item as any).bounty_solved_response_id);
+                    return (
+                      <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-sm">
+                        <span>✓ Solved — {winner?.profiles?.display_name || winner?.profiles?.username || "Someone"}'s Blueprint was marked as the solution by the poster.</span>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Sort + submit row */}
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-bold text-foreground mr-2">{(bountyResponses ?? []).length} Responses</span>
+                      {(["top", "newest", "verified"] as const).map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => setBountySort(s)}
+                          className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+                            bountySort === s
+                              ? "bg-primary/15 text-primary border-primary/30"
+                              : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
+                          }`}
+                        >
+                          {s === "top" ? "Top" : s === "newest" ? "Newest" : "Verified only"}
+                        </button>
+                      ))}
+                    </div>
+                    {isLoggedIn && !isPoster && (item as any).bounty_status !== "solved" &&
+                      !(bountyResponses ?? []).some((r: any) => r.responder_id === user?.id) && (
+                      <button
+                        onClick={() => setComposerOpen(true)}
+                        className="text-sm font-semibold px-4 py-2 rounded-xl"
+                        style={{ background: "#E8571A", color: "white" }}
+                      >
+                        Submit a Blueprint →
+                      </button>
+                    )}
+                    {isLoggedIn && (bountyResponses ?? []).some((r: any) => r.responder_id === user?.id) && (
+                      <p className="text-xs text-muted-foreground">You've already submitted a response.</p>
+                    )}
+                  </div>
+
+                  {/* Response cards */}
+                  {(bountyResponses ?? []).length === 0 && (
+                    <p className="text-sm text-muted-foreground py-4 text-center">No responses yet. Be the first to solve this!</p>
+                  )}
+                  {(bountyResponses ?? []).map((resp: any) => {
+                    const respProfile = resp.profiles as any;
+                    const isVerified = (myVerifications ?? new Set()).has(resp.id);
+                    const isSolution = resp.is_solution;
+
+                    async function handleVerify() {
+                      if (!user) return;
+                      if (isVerified) {
+                        await supabase.from("bounty_response_verifications" as any).delete().eq("response_id", resp.id).eq("user_id", user.id);
+                      } else {
+                        await supabase.from("bounty_response_verifications" as any).insert({ response_id: resp.id, user_id: user.id } as any);
+                        await insertNotification({
+                          recipient_id: resp.responder_id,
+                          actor_id: user.id,
+                          notification_type: "bounty_verified",
+                          content_id: id!,
+                          metadata: { bounty_title: item.title, verifications: (resp.verified_count ?? 0) + 1 },
+                        });
+                      }
+                      refetchVerifications();
+                      refetchResponses();
+                    }
+
+                    async function handleMarkSolution() {
+                      if (!isPoster) return;
+                      await supabase.from("bounty_responses" as any).update({ is_solution: true } as any).eq("id", resp.id);
+                      await insertNotification({
+                        recipient_id: resp.responder_id,
+                        actor_id: user!.id,
+                        notification_type: "bounty_solution_marked",
+                        content_id: id!,
+                        metadata: { bounty_title: item.title, tip_gbp: (item as any).bounty_tip_gbp },
+                      });
+                      refetchResponses();
+                    }
+
+                    return (
+                      <div
+                        key={resp.id}
+                        id={`response-${resp.id}`}
+                        className="rounded-xl border bg-card overflow-hidden"
+                        style={isSolution ? {
+                          borderColor: "#22C55E",
+                          borderLeftWidth: 3,
+                          boxShadow: "0 0 12px rgba(34,197,94,0.15)",
+                        } : {}}
+                      >
+                        {isSolution && (
+                          <div className="px-4 py-2 text-xs font-bold text-green-400 border-b border-green-500/20" style={{ background: "rgba(34,197,94,0.06)" }}>
+                            ⭐ Marked as solution by @{creator?.username}
+                          </div>
+                        )}
+                        <div className="p-4 space-y-3">
+                          {/* ROW 1 — Responder header */}
+                          <div className="flex items-center gap-2">
+                            <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground shrink-0">
+                              {(respProfile?.display_name || respProfile?.username || "?")[0].toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-foreground truncate">{respProfile?.display_name || respProfile?.username}</p>
+                              <p className="text-xs text-muted-foreground">@{respProfile?.username}</p>
+                            </div>
+                            {isSolution && (
+                              <span className="text-xs font-bold px-2 py-1 rounded-full bg-green-500/15 text-green-400 shrink-0">✓ Solution</span>
+                            )}
+                          </div>
+
+                          {/* ROW 2 — How it fixes */}
+                          <div className="rounded-lg px-3 py-2.5" style={{ background: "rgba(255,255,255,0.03)", borderLeft: "2px solid #2EC4B6" }}>
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">How this fixes it:</p>
+                            <p className="text-sm text-foreground leading-relaxed">{resp.how_it_fixes}</p>
+                          </div>
+
+                          {/* ROW 3 — Tested on */}
+                          {resp.tested_on && resp.tested_on.length > 0 && (
+                            <div className="flex items-center flex-wrap gap-1.5">
+                              <span className="text-[11px] text-muted-foreground">Tested on:</span>
+                              {resp.tested_on.map((t: string) => (
+                                <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-accent text-muted-foreground">{t}</span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* ROW 4 — Linked Blueprint or inline blocks */}
+                          {resp.inline_title && (
+                            <div className="rounded-lg border border-border bg-background px-3 py-2">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Blueprint</p>
+                              <p className="text-sm font-semibold text-foreground">{resp.inline_title}</p>
+                              {resp.inline_blocks && Array.isArray(resp.inline_blocks) && resp.inline_blocks.map((b: any, i: number) => (
+                                <p key={i} className="text-sm text-muted-foreground mt-1 leading-relaxed">{b.text_content}</p>
+                              ))}
+                            </div>
+                          )}
+                          {resp.blueprint_content_id && (
+                            <Link
+                              to={`/content/${resp.blueprint_content_id}`}
+                              className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 hover:border-primary/30 transition-colors"
+                            >
+                              <span className="text-xs font-medium text-foreground flex-1">View linked Blueprint →</span>
+                            </Link>
+                          )}
+
+                          {/* ROW 5 — Footer */}
+                          <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-border">
+                            <button
+                              onClick={handleVerify}
+                              disabled={!isLoggedIn}
+                              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                                isVerified
+                                  ? "bg-[#2EC4B6]/15 text-[#2EC4B6] border-[#2EC4B6]/30"
+                                  : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
+                              }`}
+                            >
+                              {isVerified ? `✓ Verified` : "✓ This worked for me"}
+                              {(resp.verified_count ?? 0) > 0 && (
+                                <span className="ml-1.5 opacity-70">{resp.verified_count} verified</span>
+                              )}
+                            </button>
+                            {isPoster && (item as any).bounty_status !== "solved" && (
+                              <button
+                                onClick={handleMarkSolution}
+                                className="text-xs px-3 py-1.5 rounded-lg border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-colors"
+                              >
+                                Mark as Solution ★
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -994,6 +1378,17 @@ const ContentDetail = () => {
           onOpenChange={setForkModalOpen}
           originalItem={item as any}
           originalCreatorUsername={creator.username}
+        />
+      )}
+
+      {/* Bounty response composer */}
+      {composerOpen && isBounty && creator && (
+        <BountyResponseComposer
+          bountyContentId={item.id}
+          bountyTitle={item.title}
+          bountyCreatorId={item.creator_id}
+          onClose={() => setComposerOpen(false)}
+          onSubmitted={() => { setComposerOpen(false); refetchResponses(); }}
         />
       )}
 

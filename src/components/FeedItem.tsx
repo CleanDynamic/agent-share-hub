@@ -9,6 +9,7 @@ import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { FeedItemExpanded } from "@/components/FeedItemExpanded";
 import { ShareToDMModal } from "@/components/dm/ShareToDMModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { BountyCard } from "@/components/BountyCard";
 
 /* ---- Helpers ---- */
 
@@ -151,6 +152,11 @@ interface FeedItemProps {
 }
 
 export function FeedItem({ item, rank, context = "home", navState }: FeedItemProps) {
+  // Bounty posts get their own card layout
+  if ((item as any).bounty_enabled) {
+    return <BountyCard item={item} rank={rank} context={context} navState={navState} />;
+  }
+
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
   const [expanded, setExpanded] = useState(false);

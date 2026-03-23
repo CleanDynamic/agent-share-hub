@@ -99,6 +99,11 @@ const Upload = () => {
   const [draftLoading, setDraftLoading] = useState(!!draftId);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId || null);
   const [savingDraft, setSavingDraft] = useState(false);
+  // Bounty state
+  const [bountyEnabled, setBountyEnabled] = useState(false);
+  const [bountyTipGbp, setBountyTipGbp] = useState<number | null>(null);
+  const [bountyDeadlineDays, setBountyDeadlineDays] = useState<number | null>(null);
+  const [bountyGap, setBountyGap] = useState("");
   const autosaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastAutosaveRef = useRef<Date | null>(null);
   const form = useForm<FormValues>({
@@ -457,6 +462,13 @@ const Upload = () => {
         pwyw_floor_gbp: actualPwywFloor,
         is_pwyw: actualPwywEnabled,
         custom_tags: customTags,
+        bounty_enabled: values.content_type === "Failure Library" && bountyEnabled,
+        bounty_status: values.content_type === "Failure Library" && bountyEnabled ? "open" : "open",
+        bounty_tip_gbp: values.content_type === "Failure Library" && bountyEnabled && bountyTipGbp !== null ? bountyTipGbp : null,
+        bounty_closes_at: values.content_type === "Failure Library" && bountyEnabled && bountyDeadlineDays !== null
+          ? new Date(Date.now() + bountyDeadlineDays * 86400000).toISOString()
+          : null,
+        bounty_gap: values.content_type === "Failure Library" && bountyEnabled && bountyGap.trim() ? bountyGap.trim() : null,
       } as any).select("id").single();
 
       if (insertError || !insertedItem) {
@@ -1078,11 +1090,13 @@ const Upload = () => {
             )}
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem className="space-y-1.5">
-                <FormLabel>Description</FormLabel>
+                <FormLabel>{bountyEnabled ? "The Failure" : "Description"}</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
-                    placeholder="Turns your AI into a specialist that…"
+                    placeholder={bountyEnabled
+                      ? "Describe exactly what went wrong. Be specific — what did you expect vs what happened? What have you already tried?"
+                      : "Turns your AI into a specialist that…"}
                     className="bg-card border-border rounded-xl"
                     maxLength={500}
                   />
@@ -1093,6 +1107,83 @@ const Upload = () => {
                 <FormMessage />
               </FormItem>
             )} />
+
+            {/* BOUNTY SECTION — only when Failure Library selected */}
+            {watchedContentType === "Failure Library" && (
+              <div className="border border-border rounded-xl p-5 bg-card space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Turn this into a Bounty?</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Bounties invite the community to solve your failure with a Blueprint. The best solution gets marked as the answer.</p>
+                  </div>
+                  <Switch checked={bountyEnabled} onCheckedChange={setBountyEnabled} />
+                </div>
+
+                {bountyEnabled && (
+                  <div className="space-y-4 pt-2 border-t border-border">
+                    {/* Tip */}
+                    <div className="space-y-2">
+                      <Label className="text-sm">Attach a tip for the solver (optional)</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {([null, 0.5, 1, 2, 5] as const).map((amt) => (
+                          <button
+                            key={String(amt)}
+                            type="button"
+                            onClick={() => setBountyTipGbp(amt)}
+                            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                              bountyTipGbp === amt
+                                ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                                : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
+                            }`}
+                          >
+                            {amt === null ? "No tip" : `£${amt}`}
+                          </button>
+                        ))}
+                      </div>
+                      {bountyTipGbp !== null && (
+                        <p className="text-xs text-muted-foreground">Paid via Stripe to whoever you mark as the solution.</p>
+                      )}
+                    </div>
+
+                    {/* Deadline */}
+                    <div className="space-y-2">
+                      <Label className="text-sm">Close bounty after</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {([null, 3, 7, 14, 30] as const).map((days) => (
+                          <button
+                            key={String(days)}
+                            type="button"
+                            onClick={() => setBountyDeadlineDays(days)}
+                            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                              bountyDeadlineDays === days
+                                ? "bg-primary/15 text-primary border-primary/30"
+                                : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
+                            }`}
+                          >
+                            {days === null ? "No deadline" : `${days} days`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Gap */}
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">What does a good solution need to do? <span className="text-muted-foreground font-normal">(required)</span></Label>
+                      <div className="relative">
+                        <Input
+                          value={bountyGap}
+                          onChange={(e) => setBountyGap(e.target.value.slice(0, 300))}
+                          placeholder="e.g. The fix must work in ChatGPT 3.5 free tier, requires no plugins, and can be set up in under 10 minutes."
+                          className="bg-background border-border rounded-xl pr-16"
+                          maxLength={300}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{bountyGap.length}/300</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 6. What to Expect (block builder) — hidden for Blog */}
             {!isBlogType && <WhatToExpectBuilder blocks={wteBlocks} onChange={setWteBlocks} helper="What will users get? Keep it concrete." />}

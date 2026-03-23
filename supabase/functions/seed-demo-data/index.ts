@@ -762,6 +762,68 @@ Deno.serve(async (req) => {
       }).eq("id", cid);
     }));
 
+    // ═══ STEP 18b — BOUNTY SEED DATA ═══
+    // Convert isabelle's Failure Library posts to Bounties
+    const bountyGapText = "A fix that works in ChatGPT 3.5 free tier, requires no plugins, and can be set up in under 10 minutes.";
+    await supabase.from("content_items").update({
+      bounty_enabled: true,
+      bounty_status: "open",
+      bounty_gap: bountyGapText,
+    } as any).in("id", [contentMap.c7, contentMap.c17]);
+
+    // Insert sample bounty_responses for c7 (the customer service bot post)
+    const { data: bountyRespInserts } = await supabase.from("bounty_responses" as any).insert([
+      {
+        bounty_content_id: contentMap.c7,
+        responder_id: users.alex,
+        how_it_fixes: "This fixes the over-apologising by injecting a hard constraint at the system level before any user message. The model cannot override it because it is placed before the conversation context.",
+        tested_on: ["ChatGPT", "Claude"],
+        upvotes: 4,
+        inline_title: "Stop the Apology Loop — System Prompt Fix",
+        inline_blocks: [{ position: 1, block_type: "text", formatting_type: "paragraph", text_content: "Add this as your system prompt before any customer service conversation: [RULE: Never apologise. Acknowledge issues factually. Offer solutions immediately. Do not use the words sorry, apologise, or unfortunately under any circumstances.]" }],
+      },
+      {
+        bounty_content_id: contentMap.c7,
+        responder_id: users.marcus,
+        how_it_fixes: "Restructures the prompt to give the AI a persona that is factually helpful rather than emotionally responsive. Tested across 40 customer queries.",
+        tested_on: ["ChatGPT"],
+        upvotes: 2,
+      },
+    ] as any).select("id");
+
+    // Add sample verifications for response 1
+    if (bountyRespInserts && bountyRespInserts.length > 0) {
+      const resp1Id = (bountyRespInserts[0] as any).id;
+      const resp2Id = bountyRespInserts.length > 1 ? (bountyRespInserts[1] as any).id : null;
+      if (resp1Id) {
+        await supabase.from("bounty_response_verifications" as any).insert([
+          { response_id: resp1Id, user_id: users.power },
+          { response_id: resp1Id, user_id: users.sam },
+        ] as any);
+        // The trigger should update verified_count, but let's also manually set it
+        await supabase.from("bounty_responses" as any).update({ verified_count: 2 } as any).eq("id", resp1Id);
+      }
+      if (resp2Id) {
+        await supabase.from("bounty_response_verifications" as any).insert([
+          { response_id: resp2Id, user_id: users.lurker },
+        ] as any);
+        await supabase.from("bounty_responses" as any).update({ verified_count: 1 } as any).eq("id", resp2Id);
+      }
+    }
+
+    // Add some me-too entries for both bounties
+    await supabase.from("bounty_me_too" as any).insert([
+      { content_id: contentMap.c7, user_id: users.power },
+      { content_id: contentMap.c7, user_id: users.sam },
+      { content_id: contentMap.c7, user_id: users.newjoin },
+      { content_id: contentMap.c17, user_id: users.lurker },
+      { content_id: contentMap.c17, user_id: users.devtest },
+    ] as any);
+
+    // Update me_too counts
+    await supabase.from("content_items" as any).update({ bounty_me_too_count: 3 } as any).eq("id", contentMap.c7);
+    await supabase.from("content_items" as any).update({ bounty_me_too_count: 2 } as any).eq("id", contentMap.c17);
+
     // Recalculate collection counts
     for (const [, colId] of Object.entries(collectionIds)) {
       const { count: icCount } = await supabase.from("collection_items").select("*", { count: "exact", head: true }).eq("collection_id", colId);
