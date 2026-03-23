@@ -38,7 +38,10 @@ export function AppLayout() {
       <div className="flex h-full w-full max-w-[1280px]">
         <aside
           className="ns-panel-left h-screen shrink-0 overflow-y-auto"
-          style={{ width: collapsed ? 72 : 275 }}
+          style={{
+            width: collapsed ? 72 : 275,
+            boxShadow: "0 0 50px rgba(46,196,182,0.08)",
+          }}
         >
           <LeftPanel collapsed={collapsed} />
         </aside>
@@ -46,7 +49,7 @@ export function AppLayout() {
         <main
           className="ns-panel-centre flex-1 overflow-y-auto"
           style={{
-            maxWidth: isMessagesRoute ? undefined : (isTablet ? undefined : 600),
+            maxWidth: isMessagesRoute ? undefined : (isTablet ? undefined : 660),
             margin: isMessagesRoute ? undefined : (isTablet ? undefined : "0 auto"),
           }}
         >

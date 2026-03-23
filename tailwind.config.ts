@@ -14,6 +14,7 @@ export default {
     },
     extend: {
       colors: {
+        /* --- Semantic tokens (shadcn) --- */
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -57,6 +58,67 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+
+        /* --- M3-inspired surface system --- */
+        "surface-dim": "#131317",
+        "surface": "#131317",
+        "surface-container-lowest": "#0e0e12",
+        "surface-container-low": "#1b1b20",
+        "surface-container": "#1f1f24",
+        "surface-container-high": "#2a292e",
+        "surface-container-highest": "#353439",
+        "surface-bright": "#39393e",
+        "surface-variant": "#353439",
+        "surface-tint": "#4fdbcc",
+
+        /* --- On-surface text --- */
+        "on-surface": "#e4e1e8",
+        "on-surface-variant": "#bbcac6",
+        "on-background": "#e4e1e8",
+
+        /* --- Brand --- */
+        "brand-orange": "#E8571A",
+
+        /* --- Accent containers --- */
+        "primary-container": "#2ec4b6",
+        "primary-fixed": "#70f8e8",
+        "primary-fixed-dim": "#4fdbcc",
+        "secondary-container": "#cb4300",
+        "secondary-fixed": "#ffdbcf",
+        "secondary-fixed-dim": "#ffb59c",
+        "tertiary": "#cccbcb",
+        "tertiary-container": "#b0b0b0",
+        "tertiary-fixed": "#e3e2e2",
+
+        /* --- On containers --- */
+        "on-primary": "#003732",
+        "on-primary-container": "#004c46",
+        "on-primary-fixed": "#00201d",
+        "on-primary-fixed-variant": "#005049",
+        "on-secondary": "#5c1a00",
+        "on-secondary-container": "#fff7f4",
+        "on-secondary-fixed": "#380c00",
+        "on-secondary-fixed-variant": "#822800",
+        "on-tertiary": "#2f3131",
+        "on-tertiary-container": "#424343",
+        "on-tertiary-fixed": "#1a1c1c",
+        "on-tertiary-fixed-variant": "#464747",
+
+        /* --- Utility --- */
+        "outline": "#859491",
+        "outline-variant": "#3c4947",
+        "inverse-surface": "#e4e1e8",
+        "inverse-on-surface": "#303035",
+        "inverse-primary": "#006a62",
+        "error": "#ffb4ab",
+        "error-container": "#93000a",
+        "on-error": "#690005",
+        "on-error-container": "#ffdad6",
+      },
+      fontFamily: {
+        headline: ["Inter", "system-ui", "sans-serif"],
+        body: ["Inter", "system-ui", "sans-serif"],
+        label: ["Inter", "system-ui", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -65,20 +127,12 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {
