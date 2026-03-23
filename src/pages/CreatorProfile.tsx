@@ -186,13 +186,48 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
     enabled: !!profile.id,
   });
 
+  // Bounty posts by this profile
+  const { data: bountyItems } = useQuery({
+    queryKey: ["profile_bounties", profile.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_items")
+        .select("*, profiles!content_items_creator_id_fkey(id, username, display_name, avatar_url)")
+        .eq("creator_id", profile.id)
+        .eq("status", "approved")
+        .eq("bounty_enabled" as any, true)
+        .order("created_at", { ascending: false });
+      return (data ?? []) as any[];
+    },
+    enabled: !!profile.id && activeTab === "bounties",
+  });
+
+  // Solutions (bounty responses marked as solution)
+  const { data: solutionResponses } = useQuery({
+    queryKey: ["profile_solutions", profile.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("bounty_responses" as any)
+        .select("*, content_items!bounty_responses_bounty_content_id_fkey(id, title)")
+        .eq("responder_id", profile.id)
+        .eq("is_solution", true)
+        .order("created_at", { ascending: false });
+      return (data ?? []) as any[];
+    },
+    enabled: !!profile.id && activeTab === "solutions",
+  });
+
   const allTabs = useMemo(() => {
     const t = [...tabs];
     if (collections && collections.length > 0) {
       t.push({ key: "collections", label: "Collections" });
     }
+    t.push({ key: "bounties", label: "Bounties" });
+    if ((profile.bounties_solved ?? 0) > 0) {
+      t.push({ key: "solutions", label: "Solutions" });
+    }
     return t;
-  }, [collections]);
+  }, [collections, profile.bounties_solved]);
 
   const seoDesc = `${(profile.bio || "").slice(0, 155)}${profile.bio ? " — " : ""}${contentItems?.length ?? 0} posts on NeoScale AI.`;
 
@@ -272,12 +307,18 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
             <span className="text-muted-foreground">Followers</span>
           </button>
         </div>
-        <div className="flex items-center gap-3 mt-2 text-[13px] text-muted-foreground">
+        <div className="flex items-center gap-3 mt-2 text-[13px] text-muted-foreground flex-wrap">
           <span className="inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" /> {contentItems?.length ?? 0} posts</span>
           <span>·</span>
           <span className="inline-flex items-center gap-1"><Download className="h-3.5 w-3.5" /> {totalDownloads.toLocaleString()} downloads</span>
           <span>·</span>
           <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {totalViews.toLocaleString()} views</span>
+          {(profile.bounties_solved ?? 0) > 0 && (
+            <>
+              <span>·</span>
+              <span className="inline-flex items-center gap-1 text-[#2EC4B6]">★ {profile.bounties_solved} bounties solved</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -381,6 +422,37 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
               </button>
             ))}
           </div>
+        )}
+        {activeTab === "bounties" && (
+          bountyItems && bountyItems.length > 0 ? (
+            <div>{bountyItems.map((item: any) => <FeedItem key={item.id} item={item} context="profile" navState={{ from: "profile", name: displayName }} />)}</div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <p className="text-sm text-muted-foreground">No bounties posted yet.</p>
+            </div>
+          )
+        )}
+        {activeTab === "solutions" && (
+          solutionResponses && solutionResponses.length > 0 ? (
+            <div className="p-4 space-y-3">
+              {solutionResponses.map((resp: any) => {
+                const bounty = resp.content_items as any;
+                return (
+                  <Link key={resp.id} to={`/content/${resp.bounty_content_id}?tab=responses`} className="block rounded-xl border border-green-500/30 bg-card p-4 hover:brightness-110 transition-colors">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold text-green-400 px-2 py-0.5 rounded-full bg-green-500/15">✓ Solution</span>
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">{bounty?.title || "Unknown bounty"}</p>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{resp.how_it_fixes}</p>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <p className="text-sm text-muted-foreground">No solved bounties yet.</p>
+            </div>
+          )
         )}
       </div>
 
