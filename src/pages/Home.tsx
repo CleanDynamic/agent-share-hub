@@ -443,20 +443,17 @@ const Home = () => {
 
       {!isLoggedIn && <HowItWorks />}
 
-      <div className="sticky top-0 z-10 bg-background border-b border-border" style={{ height: 48, backdropFilter: "none" }}>
-        <div className="flex h-full">
+      <div className="sticky top-0 z-10 border-b border-white/5" style={{ background: "rgba(8,8,12,0.80)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
+        <div className="flex px-6">
           {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 text-center text-[14px] font-medium transition-colors relative h-full ${
-                activeTab === tab ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              className={`px-6 py-4 text-sm font-medium transition-colors relative ${
+                activeTab === tab ? "text-on-surface border-b-2 border-brand-orange" : "text-slate-400 hover:text-white"
               }`}
             >
               {tab}
-              {activeTab === tab && (
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[2px] bg-primary" />
-              )}
             </button>
           ))}
         </div>

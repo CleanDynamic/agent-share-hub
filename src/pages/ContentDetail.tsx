@@ -42,10 +42,10 @@ import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 
 function difficultyColor(level: string) {
   switch (level) {
-    case "Beginner": return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
-    case "Intermediate": return "bg-amber-500/15 text-amber-400 border-amber-500/30";
-    case "Advanced": return "bg-red-500/15 text-red-400 border-red-500/30";
-    default: return "bg-muted text-muted-foreground border-border";
+    case "Beginner": return "bg-surface-container-highest/40 text-slate-400 border-white/8";
+    case "Intermediate": return "bg-primary-container/20 text-primary border-primary/20";
+    case "Advanced": return "bg-secondary-container/18 text-secondary-fixed-dim border-secondary-container/25";
+    default: return "bg-surface-container-highest/50 text-tertiary border-white/10";
   }
 }
 
