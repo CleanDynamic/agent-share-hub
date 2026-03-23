@@ -85,7 +85,6 @@
 .ns-blob {
   position: absolute;
   border-radius: 50%;
-  mix-blend-mode: screen;
   will-change: transform;
   pointer-events: none;
 }
@@ -93,8 +92,9 @@
 .ns-blob-1 {
   width: 700px;
   height: 700px;
-  background: radial-gradient(circle, rgba(200,200,216,0.65) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(180,180,200,0.55) 0%, rgba(120,120,140,0.25) 40%, transparent 70%);
   filter: blur(80px);
+  opacity: 1;
   top: -200px;
   left: -150px;
 }
@@ -102,8 +102,9 @@
 .ns-blob-2 {
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(144,144,152,0.45) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(140,140,160,0.45) 0%, rgba(90,90,110,0.20) 40%, transparent 70%);
   filter: blur(100px);
+  opacity: 1;
   bottom: -150px;
   right: -100px;
 }
@@ -111,8 +112,9 @@
 .ns-blob-3 {
   width: 380px;
   height: 380px;
-  background: radial-gradient(circle, rgba(216,216,232,0.38) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(200,200,220,0.50) 0%, rgba(150,150,170,0.22) 40%, transparent 70%);
   filter: blur(60px);
+  opacity: 1;
   top: 40%;
   right: 15%;
 }
@@ -357,7 +359,10 @@
   }
 
   body {
-    background: #08080C;
+    background:
+      radial-gradient(ellipse 80% 60% at 10% 10%, rgba(160,160,180,0.08) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 80% at 90% 90%, rgba(130,130,150,0.06) 0%, transparent 55%),
+      #08080C;
     color: var(--ns-text-primary);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-size: 13px;
