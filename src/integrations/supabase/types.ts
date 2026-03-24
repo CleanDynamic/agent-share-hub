@@ -752,6 +752,7 @@ export type Database = {
           title: string
           tool_subtype: string | null
           tool_url: string | null
+          topics: string[] | null
           use_cases: string[] | null
           use_instructions: string | null
           verification_count: number
@@ -809,6 +810,7 @@ export type Database = {
           title: string
           tool_subtype?: string | null
           tool_url?: string | null
+          topics?: string[] | null
           use_cases?: string[] | null
           use_instructions?: string | null
           verification_count?: number
@@ -866,6 +868,7 @@ export type Database = {
           title?: string
           tool_subtype?: string | null
           tool_url?: string | null
+          topics?: string[] | null
           use_cases?: string[] | null
           use_instructions?: string | null
           verification_count?: number
@@ -2282,6 +2285,54 @@ export type Database = {
           {
             foreignKeyName: "tip_upvotes_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tool_compatibility: {
+        Row: {
+          content_id: string
+          id: string
+          notes: string | null
+          status: string
+          tool_name: string
+          tool_version: string | null
+          verified_at: string
+          verified_by: string | null
+        }
+        Insert: {
+          content_id: string
+          id?: string
+          notes?: string | null
+          status?: string
+          tool_name: string
+          tool_version?: string | null
+          verified_at?: string
+          verified_by?: string | null
+        }
+        Update: {
+          content_id?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          tool_name?: string
+          tool_version?: string | null
+          verified_at?: string
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tool_compatibility_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_compatibility_verified_by_fkey"
+            columns: ["verified_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
