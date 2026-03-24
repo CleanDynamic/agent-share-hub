@@ -29,7 +29,7 @@ import { SubmitToolModal } from "@/components/SubmitToolModal";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
 import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
-import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType } from "@/lib/content-types";
+import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS } from "@/lib/content-types";
 
 const CONTENT_TYPES = BLUEPRINT_CONTENT_TYPES;
 const DIFFICULTIES = [...DIFF_LIST, "Any"];
