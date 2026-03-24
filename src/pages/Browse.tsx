@@ -352,9 +352,7 @@ const Browse = () => {
 
   // ─── BOUNTIES data ────────────────────────────────────────
 
-  // Bounty-specific URL filters
-  const bountyTypeFilter = readParam("type", "");
-  const bountyStatusTabFilter = readParam("bounty_status", "");
+  // bountyTypeFilter and bountyStatusTabFilter are hoisted above activeFilterCount useMemo
 
   const filteredBounties = useMemo(() => {
     if (!items) return [];
