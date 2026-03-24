@@ -698,6 +698,18 @@ const Browse = () => {
             </div>
           </div>
 
+          {/* Topics */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Topics</p>
+            <div className="flex flex-wrap gap-1.5">
+              {TOPICS.map((t) => (
+                <FilterPill key={t} active={topicFilters.includes(t)} onClick={() => toggleListParam("topic", t)}>
+                  {t}
+                </FilterPill>
+              ))}
+            </div>
+          </div>
+
           {/* Tags */}
           {(microtagDefs ?? []).length > 0 && (
             <div>
