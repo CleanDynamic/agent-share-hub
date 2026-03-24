@@ -83,6 +83,10 @@ const Upload = () => {
   const [inlineSplits, setInlineSplits] = useState<InlineSplit[]>([]);
   const [pwywFloor, setPwywFloor] = useState<number>(0);
   const [customTags, setCustomTags] = useState<string[]>([]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [githubUrl, setGithubUrl] = useState("");
+  const [githubImporting, setGithubImporting] = useState(false);
+  const [showGithubImport, setShowGithubImport] = useState(false);
   const [expandedToolGroups, setExpandedToolGroups] = useState<Set<string>>(new Set(["api"]));
   const [tagInput, setTagInput] = useState("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
