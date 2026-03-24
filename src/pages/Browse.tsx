@@ -215,7 +215,7 @@ const Browse = () => {
   const activeFilterCount = useMemo(() => {
     const tp = timePeriod ? 1 : 0;
     if (browseTab === "blueprints") {
-      return typeFilters.length + (difficultyFilter ? 1 : 0) + toolFilters.length + useCaseFilters.length + microtagFilters.length + tp;
+      return typeFilters.length + (difficultyFilter ? 1 : 0) + toolFilters.length + useCaseFilters.length + microtagFilters.length + topicFilters.length + tp;
     }
     if (browseTab === "bounties") {
       return (bountyTypeFilter ? 1 : 0) + (bountyStatusTabFilter && bountyStatusTabFilter !== "" ? 1 : 0) + tp;
