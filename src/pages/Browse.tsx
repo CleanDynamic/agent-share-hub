@@ -205,6 +205,10 @@ const Browse = () => {
   const setSort = useCallback((sort: string) => setParam("sort", sort), [setParam]);
   const setSearch = useCallback((q: string) => setParam("q", q), [setParam]);
 
+  // Bounty-specific URL filters (hoisted above useMemo that references them)
+  const bountyTypeFilter = readParam("type", "");
+  const bountyStatusTabFilter = readParam("bounty_status", "");
+
   // ─── Active filter count ─────────────────────────────────
 
   const activeFilterCount = useMemo(() => {
