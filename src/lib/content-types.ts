@@ -95,11 +95,11 @@ export const BOUNTY_CONTENT_TYPES = [
 export const BLUEPRINT_CONTENT_TYPES = [
   "Prompt File",
   "Agent Blueprint",
+  "AI Agent Install Guide",
   "Model Config Guide",
   "Integration Guide",
   "Workflow Template",
   "Evaluation Framework",
   "Agent Stack",
   "AI Tools (LLMs)",
-  "AI Agent Install Guide",
 ];
