@@ -169,6 +169,7 @@ const Browse = () => {
   const toolFilters = readParamList("tool");
   const useCaseFilters = readParamList("usecase");
   const microtagFilters = readParamList("tags");
+  const topicFilters = readParamList("topic");
 
   // Project/Collection filters
   const sizeFilter = readParam("size", "");
