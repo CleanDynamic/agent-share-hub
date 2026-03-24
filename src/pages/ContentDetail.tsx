@@ -923,7 +923,7 @@ const ContentDetail = () => {
           </div>
         )}
 
-        {/* 8. Works With */}
+        {/* 8. Works With — pill fallback + compatibility table */}
         {item.ai_tools && item.ai_tools.length > 0 && (
           <div className="mb-3">
             <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Works with</h3>
@@ -935,6 +935,9 @@ const ContentDetail = () => {
             </div>
           </div>
         )}
+
+        {/* Compatibility Table */}
+        <CompatibilityTable contentId={item.id} creatorId={item.creator_id} />
 
         {/* 8b. Model specs for local AI Tools */}
         {item.content_type === "AI Tools (LLMs)" && (item as any).tool_subtype === "local" && (

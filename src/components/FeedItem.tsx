@@ -86,13 +86,14 @@ function extractWteTeaser(item: any): string | null {
   return null;
 }
 
-/* ---- Tools + Use Cases Row ---- */
+/* ---- Tools + Use Cases + Topics Row ---- */
 function ToolsUseCasesRow({ item }: { item: any }) {
   const tools = (item.ai_tools ?? []) as string[];
   const useCases = (item.use_cases ?? []) as string[];
+  const topics = (item.topics ?? []) as string[];
   const customDesc = item.custom_use_case_description as string | null;
 
-  if (tools.length === 0 && useCases.length === 0) return null;
+  if (tools.length === 0 && useCases.length === 0 && topics.length === 0) return null;
 
   const otherToolName = item.other_tool_name as string | null;
   const displayTools = tools.slice(0, 2).map((t: string) =>
@@ -103,8 +104,11 @@ function ToolsUseCasesRow({ item }: { item: any }) {
     uc === "Other" && customDesc ? customDesc : uc
   );
   const extraUseCases = useCases.length - 2;
+  const displayTopics = topics.slice(0, 2);
+  const extraTopics = topics.length - 2;
 
   const pillClass = "text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]";
+  const topicPillClass = "text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary/70";
 
   return (
     <div className="flex items-center flex-wrap gap-1 mt-1">
@@ -112,13 +116,20 @@ function ToolsUseCasesRow({ item }: { item: any }) {
         <span key={t} className={pillClass}>{t}</span>
       ))}
       {extraTools > 0 && <span className={pillClass}>+{extraTools} more</span>}
-      {displayTools.length > 0 && displayUseCases.length > 0 && (
+      {displayTools.length > 0 && (displayUseCases.length > 0 || displayTopics.length > 0) && (
         <span className="text-[10px] text-muted-foreground/40">·</span>
       )}
       {displayUseCases.map((u, i) => (
         <span key={i} className={pillClass}>{u}</span>
       ))}
       {extraUseCases > 0 && <span className={pillClass}>+{extraUseCases} more</span>}
+      {displayTopics.length > 0 && displayUseCases.length > 0 && (
+        <span className="text-[10px] text-muted-foreground/40">·</span>
+      )}
+      {displayTopics.map((t) => (
+        <span key={t} className={topicPillClass}>{t}</span>
+      ))}
+      {extraTopics > 0 && <span className={topicPillClass}>+{extraTopics} more</span>}
     </div>
   );
 }
