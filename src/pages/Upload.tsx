@@ -184,6 +184,7 @@ const Upload = () => {
         if ((item as any).tool_url) setToolUrl((item as any).tool_url);
         if ((item as any).tags?.length > 0) setCustomTags((item as any).tags);
         if ((item as any).cover_image_url) setCoverImagePreview((item as any).cover_image_url);
+        if ((item as any).topics?.length > 0) setSelectedTopics((item as any).topics);
         if ((item as any).pwyw_floor_gbp) setPwywFloor(Number((item as any).pwyw_floor_gbp));
 
         // WTE blocks
