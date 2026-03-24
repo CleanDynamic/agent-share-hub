@@ -42,6 +42,7 @@ import {
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { BountyResponseComposer } from "@/components/BountyResponseComposer";
 import { insertNotification } from "@/lib/notifications";
+import { ReblogDetailView } from "@/components/ReblogDetailView";
 
 function difficultyColor(level: string) {
   switch (level) {
@@ -499,6 +500,23 @@ const ContentDetail = () => {
         <Button variant="outline" size="sm" asChild>
           <Link to="/browse"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Discover</Link>
         </Button>
+      </div>
+    );
+  }
+
+  // Reblog posts get their own detail layout
+  if ((item as any).is_reblog) {
+    return (
+      <div className="py-6 sm:py-10 px-4 sm:px-6 pb-24 lg:pb-12">
+        <div className="mx-auto max-w-3xl">
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center text-[13px] text-muted-foreground hover:text-foreground mb-4 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back
+          </button>
+          <ReblogDetailView item={item} />
+        </div>
       </div>
     );
   }
