@@ -333,6 +333,7 @@ const Upload = () => {
         tool_url: toolUrl.trim() || null,
         tags: customTags,
         custom_tags: customTags,
+        topics: selectedTopics,
         monetisation_type: values.monetisation_type,
         price_gbp: values.monetisation_type === "paid" && !isPwyw ? values.price_gbp ?? null : null,
         donation_enabled: values.donation_enabled,
