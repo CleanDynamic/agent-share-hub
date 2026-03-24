@@ -225,7 +225,7 @@ const Browse = () => {
     }
     // collections
     return containsFilters.length + (sizeFilter ? 1 : 0) + tp;
-  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter, timePeriod, bountyTypeFilter, bountyStatusTabFilter]);
+  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, topicFilters, containsFilters, sizeFilter, timePeriod, bountyTypeFilter, bountyStatusTabFilter]);
 
   // Active filter chips
   const activeChips = useMemo(() => {
