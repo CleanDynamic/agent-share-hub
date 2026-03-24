@@ -87,6 +87,17 @@ function formatNotification(n: any): { text: string; link: string } {
       return { text: `${actor} verified your Blueprint worked on their failure. (${meta.verifications || 1} total verifications)`, link: n.content_id ? `/content/${n.content_id}?tab=responses` : "/" };
     case "bounty_solved":
       return { text: `✓ A solution was found for a failure you shared: '${meta.bounty_title || ""}'. See what worked.`, link: n.content_id ? `/content/${n.content_id}?tab=responses` : "/" };
+    case "post_reblogged":
+      return {
+        text: `↺ ${meta.reblogger_username || actor} reblogged your post: '${meta.original_title || meta.source_title || "your post"}'${meta.reblog_title ? ` — "${meta.reblog_title}"` : ""}`,
+        link: meta.reblog_id ? `/content/${meta.reblog_id}` : n.content_id ? `/content/${n.content_id}` : "/",
+      };
+    case "reblog":
+      // Legacy reblog notification
+      return {
+        text: `↺ ${meta.reblogger_username || actor} reblogged '${meta.source_title || "your content"}'`,
+        link: n.content_id ? `/content/${n.content_id}` : "/",
+      };
     default:
       return { text: "You have a new notification", link: "/" };
   }

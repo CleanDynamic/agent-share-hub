@@ -5,8 +5,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Eye, Star, ClipboardList } from "lucide-react";
 import { timeAgo, formatNum, roundedStars } from "@/components/FeedItem";
 import { displayContentType } from "@/lib/content-types";
-import { ReblogButton } from "@/components/ReblogButton";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface ProjectFeedCardProps {
   item: {
@@ -43,7 +41,6 @@ function CoverMosaic({ images, title }: { images: string[]; title: string }) {
 
 export function ProjectFeedCard({ item }: ProjectFeedCardProps) {
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
   const profile = item.profiles as any;
   const initials = (profile?.display_name || profile?.username || "?").slice(0, 2).toUpperCase();
   const stop = (e: React.MouseEvent) => e.stopPropagation();
@@ -115,24 +112,6 @@ export function ProjectFeedCard({ item }: ProjectFeedCardProps) {
           <>
             <span className="text-[#444450] shrink-0">·</span>
             <span className="inline-flex items-center gap-[3px] shrink-0"><Star className="h-3 w-3 fill-primary text-primary" />{(item.avg_rating ?? 0).toFixed(1)}</span>
-          </>
-        )}
-        {isLoggedIn && (
-          <>
-            <span className="text-[#444450] shrink-0">·</span>
-            <span onClick={stop}>
-              <ReblogButton
-                source={{
-                  type: "project",
-                  id: item.id,
-                  title: item.title,
-                  creatorUsername: profile?.username ?? "unknown",
-                  blueprintCount: item._component_count ?? 0,
-                  coverUrl: item.cover_image_url ?? null,
-                  packagePrice: item.package_price_enabled ? (item.package_price_gbp ?? null) : null,
-                }}
-              />
-            </span>
           </>
         )}
         {item.package_price_enabled && item.package_price_gbp != null && (

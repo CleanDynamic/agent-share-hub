@@ -42,6 +42,8 @@ import {
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { BountyResponseComposer } from "@/components/BountyResponseComposer";
 import { insertNotification } from "@/lib/notifications";
+import { ReblogDetailView } from "@/components/ReblogDetailView";
+import { ReblogCard } from "@/components/ReblogCard";
 
 function difficultyColor(level: string) {
   switch (level) {
@@ -109,7 +111,7 @@ const ContentDetail = () => {
   const [curatorModalOpen, setCuratorModalOpen] = useState(false);
   const [curatorText, setCuratorText] = useState("");
   const [curatorSubmitting, setCuratorSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"failure" | "content" | "changelog" | "tips" | "comments" | "responses">("changelog");
+  const [activeTab, setActiveTab] = useState<"failure" | "content" | "changelog" | "tips" | "comments" | "responses" | "reblogs">("changelog");
   const [composerOpen, setComposerOpen] = useState(false);
   const [hasMeToo, setHasMeToo] = useState(false);
   const [bountySort, setBountySort] = useState<"top" | "newest" | "verified">("top");
@@ -192,7 +194,7 @@ const ContentDetail = () => {
     }
   }, [item]);
 
-  function handleTabChange(tab: "failure" | "content" | "changelog" | "tips" | "comments" | "responses") {
+  function handleTabChange(tab: "failure" | "content" | "changelog" | "tips" | "comments" | "responses" | "reblogs") {
     setActiveTab(tab);
     if (tab === "changelog" && hasLibraryUpdate) {
       dismissLibraryUpdate();
@@ -231,6 +233,22 @@ const ContentDetail = () => {
       return data;
     },
     enabled: !!item?.content_type && !!id,
+  });
+
+  // Reblogs of this post
+  const { data: reblogs } = useQuery({
+    queryKey: ["post_reblogs", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_items")
+        .select("*, profiles!content_items_creator_id_fkey(id, username, display_name)")
+        .eq("reblog_of_id", id!)
+        .eq("is_reblog", true)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+      return (data ?? []) as any[];
+    },
+    enabled: !!id,
   });
 
   const isSub = item?.monetisation_type === "subscription";
@@ -499,6 +517,23 @@ const ContentDetail = () => {
         <Button variant="outline" size="sm" asChild>
           <Link to="/browse"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Discover</Link>
         </Button>
+      </div>
+    );
+  }
+
+  // Reblog posts get their own detail layout
+  if ((item as any).is_reblog) {
+    return (
+      <div className="py-6 sm:py-10 px-4 sm:px-6 pb-24 lg:pb-12">
+        <div className="mx-auto max-w-3xl">
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center text-[13px] text-muted-foreground hover:text-foreground mb-4 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back
+          </button>
+          <ReblogDetailView item={item} />
+        </div>
       </div>
     );
   }
@@ -1049,11 +1084,11 @@ const ContentDetail = () => {
                 </>
               ) : (
                 <>
-                  {(["changelog", "tips", "comments"] as const).map((tab) => (
+                  {(["changelog", "tips", "comments", "reblogs"] as const).map((tab) => (
                     <button
                       key={tab}
                       onClick={() => handleTabChange(tab)}
-                      className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                      className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
                         activeTab === tab
                           ? "text-foreground border-b-2 border-primary -mb-px"
                           : "text-muted-foreground hover:text-foreground"
@@ -1064,6 +1099,7 @@ const ContentDetail = () => {
                       )}
                       {tab === "tips" && "Tips"}
                       {tab === "comments" && `Comments (${(item as any).comment_count ?? 0})`}
+                      {tab === "reblogs" && `Reblogs (${(item as any).reblog_count ?? reblogs?.length ?? 0})`}
                     </button>
                   ))}
                 </>
@@ -1098,6 +1134,23 @@ const ContentDetail = () => {
                     commentCount={(item as any).comment_count ?? 0}
                     isEligible={isEligible}
                   />
+                </div>
+              )}
+
+              {/* Reblogs tab */}
+              {activeTab === "reblogs" && (
+                <div className="py-4">
+                  {(!reblogs || reblogs.length === 0) ? (
+                    <div className="flex flex-col items-center gap-3 py-10 text-center">
+                      <p className="text-sm text-muted-foreground">No reblogs yet. Be the first.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-0 -mx-4 sm:-mx-6">
+                      {reblogs.map((reblog: any) => (
+                        <ReblogCard key={reblog.id} item={reblog} compact context="browse" />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 

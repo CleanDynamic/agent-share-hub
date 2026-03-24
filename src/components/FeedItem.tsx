@@ -3,13 +3,16 @@ import { Link, useNavigate } from "react-router-dom";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Download, Eye, Star, StarHalf, MessageSquare, FolderOpen, ChevronDown, ChevronUp, Send as SendIcon } from "lucide-react";
-import { ReblogButton } from "@/components/ReblogButton";
+import { Download, Eye, Star, StarHalf, MessageSquare, FolderOpen, ChevronDown, ChevronUp, Send as SendIcon, Repeat2 } from "lucide-react";
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { FeedItemExpanded } from "@/components/FeedItemExpanded";
 import { ShareToDMModal } from "@/components/dm/ShareToDMModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { BountyCard } from "@/components/BountyCard";
+import { ReblogComposer, type ReblogComposerOriginal } from "@/components/ReblogComposer";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 /* ---- Helpers ---- */
 
@@ -169,9 +172,11 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
   }
 
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
+  const { toast } = useToast();
   const [expanded, setExpanded] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [reblogOpen, setReblogOpen] = useState(false);
   const profile = item.profiles as any;
   const starVal = roundedStars(Number(item.avg_rating) || 0, item.rating_count ?? 0);
   const initials = (profile?.display_name || profile?.username || "?").slice(0, 2).toUpperCase();
@@ -186,6 +191,50 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
 
   const isLight = context === "home";
   const isBlog = item.content_type === "Blog";
+
+  // Reblog count for this item
+  const { data: reblogCount } = useQuery({
+    queryKey: ["reblog_count", item.id],
+    queryFn: async () => {
+      const { count } = await (supabase
+        .from("content_items")
+        .select("id", { count: "exact", head: true }) as any)
+        .eq("reblog_of_id", item.id)
+        .eq("is_reblog", true)
+        .eq("status", "approved");
+      return count ?? 0;
+    },
+    staleTime: 60_000,
+    enabled: !!item.id,
+  });
+
+  // Whether current user has reblogged this item
+  const { data: userHasReblogged } = useQuery({
+    queryKey: ["user_has_reblogged", item.id, user?.id],
+    queryFn: async () => {
+      const { data } = await (supabase
+        .from("content_items")
+        .select("id") as any)
+        .eq("reblog_of_id", item.id)
+        .eq("creator_id", user!.id)
+        .eq("is_reblog", true)
+        .maybeSingle();
+      return !!data;
+    },
+    staleTime: 60_000,
+    enabled: !!item.id && !!user?.id,
+  });
+
+  const original: ReblogComposerOriginal = {
+    id: item.id,
+    title: item.title,
+    creatorId: item.creator_id ?? (item.profiles as any)?.id ?? "",
+    creatorUsername: (item.profiles as any)?.username ?? "unknown",
+    creatorDisplayName: (item.profiles as any)?.display_name,
+    contentType: item.content_type,
+    viewCount: item.view_count ?? 0,
+    downloadCount: item.download_count ?? 0,
+  };
 
   // WTE teaser
   const wteTeaser = extractWteTeaser(item);
@@ -321,16 +370,23 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
                     <SendIcon className="h-3 w-3" />
                   </button>
                   <span className="text-[#444450] shrink-0">·</span>
-                  <ReblogButton
-                    source={{
-                      type: "content",
-                      id: item.id,
-                      title: item.title,
-                      creatorUsername: (item.profiles as any)?.username ?? "unknown",
-                      contentType: item.content_type,
-                      coverUrl: item.cover_image_url ?? null,
+                  <button
+                    onClick={(e) => {
+                      stop(e);
+                      if (userHasReblogged) {
+                        // Navigate to their reblog (handled by detail page)
+                        toast({ title: "You've already reblogged this" });
+                      } else {
+                        setReblogOpen(true);
+                      }
                     }}
-                  />
+                    className="inline-flex items-center gap-[3px] shrink-0 hover:text-foreground transition-colors"
+                    style={{ color: userHasReblogged ? "#2EC4B6" : undefined }}
+                    title={userHasReblogged ? "You reblogged this" : "Reblog"}
+                  >
+                    <Repeat2 className="h-3.5 w-3.5" style={{ color: userHasReblogged ? "#2EC4B6" : "currentColor" }} />
+                    {(reblogCount ?? 0) > 0 && <span>{formatNum(reblogCount ?? 0)}</span>}
+                  </button>
                 </>
               )}
             </div>
@@ -372,6 +428,15 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
           onClose={() => setShareOpen(false)}
           contentId={item.id}
           contentTitle={item.title}
+        />
+      )}
+
+      {/* Reblog composer */}
+      {reblogOpen && (
+        <ReblogComposer
+          open={reblogOpen}
+          onOpenChange={setReblogOpen}
+          original={original}
         />
       )}
     </div>
