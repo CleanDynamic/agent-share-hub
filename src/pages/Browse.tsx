@@ -247,7 +247,7 @@ const Browse = () => {
       if (sizeFilter) chips.push({ label: sizeFilter, key: "size", value: sizeFilter });
     }
     return chips;
-  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter, timePeriod]);
+  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, topicFilters, containsFilters, sizeFilter, timePeriod]);
 
   const removeChip = useCallback((chip: { key: string; value: string }) => {
     if (chip.key === "difficulty" || chip.key === "size" || chip.key === "period") {
