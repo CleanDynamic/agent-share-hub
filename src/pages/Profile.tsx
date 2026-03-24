@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { FeedItem } from "@/components/FeedItem";
+import { ReblogCard } from "@/components/ReblogCard";
 import { PortfolioCard } from "@/components/PortfolioCard";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -203,6 +204,22 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
     enabled: !!profile.id && activeTab === "bounties",
   });
 
+  // --- Reblogs tab ---
+  const { data: reblogItems } = useQuery({
+    queryKey: ["profile_reblogs", profile.id],
+    queryFn: async () => {
+      const { data } = await (supabase
+        .from("content_items")
+        .select("*, profiles!content_items_creator_id_fkey(id, username, display_name, avatar_url)")
+        .eq("creator_id", profile.id)
+        .eq("is_reblog", true)
+        .eq("status", "approved") as any)
+        .order("created_at", { ascending: false });
+      return (data ?? []) as any[];
+    },
+    enabled: !!profile.id && activeTab === "reblogs",
+  });
+
   // --- Solutions tab (bounty responses marked as solution) ---
   const { data: solutionResponses } = useQuery({
     queryKey: ["profile_solutions", profile.id],
@@ -218,6 +235,22 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
     enabled: !!profile.id && activeTab === "solutions",
   });
 
+  // Reblog count for this profile (used in stats row)
+  const { data: profileReblogCount } = useQuery({
+    queryKey: ["profile_reblog_count", profile.id],
+    queryFn: async () => {
+      const { count } = await (supabase
+        .from("content_items")
+        .select("id", { count: "exact", head: true }) as any)
+        .eq("creator_id", profile.id)
+        .eq("is_reblog", true)
+        .eq("status", "approved");
+      return count ?? 0;
+    },
+    staleTime: 60_000,
+    enabled: !!profile.id,
+  });
+
   // Add collections tab if user has public collections
   const allTabs = useMemo(() => {
     const t = [...tabs];
@@ -225,6 +258,7 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
       t.push({ key: "collections", label: "Collections" });
     }
     t.push({ key: "bounties", label: "Bounties" });
+    t.push({ key: "reblogs", label: "Reblogs" });
     if ((profile.bounties_solved ?? 0) > 0) {
       t.push({ key: "solutions", label: "Solutions" });
     }
@@ -441,6 +475,19 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <p className="text-sm text-muted-foreground">No bounties posted yet.</p>
+            </div>
+          )
+        )}
+        {activeTab === "reblogs" && (
+          reblogItems && reblogItems.length > 0 ? (
+            <div>
+              {reblogItems.map((item: any) => (
+                <ReblogCard key={item.id} item={item} context="profile" />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <p className="text-sm text-muted-foreground">No reblogs yet.</p>
             </div>
           )
         )}
