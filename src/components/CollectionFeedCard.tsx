@@ -4,8 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Eye, Users } from "lucide-react";
 import { timeAgo, formatNum } from "@/components/FeedItem";
-import { ReblogButton } from "@/components/ReblogButton";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface CollectionFeedCardProps {
   item: {
@@ -43,7 +41,6 @@ function CoverMosaic({ images, title }: { images: string[]; title: string }) {
 
 export function CollectionFeedCard({ item }: CollectionFeedCardProps) {
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
   const profile = item.profiles as any;
   const initials = (profile?.display_name || profile?.username || "?").slice(0, 2).toUpperCase();
 
@@ -96,24 +93,6 @@ export function CollectionFeedCard({ item }: CollectionFeedCardProps) {
       {/* Stats */}
       <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-[3px] shrink-0"><Users className="h-3 w-3" />{formatNum(item.follower_count)} followers</span>
-        {isLoggedIn && (
-          <>
-            <span className="text-[#444450] shrink-0">·</span>
-            <span onClick={stop}>
-              <ReblogButton
-                source={{
-                  type: "collection",
-                  id: item.id,
-                  title: item.title,
-                  creatorUsername: profile?.username ?? "unknown",
-                  itemCount: item.item_count,
-                  coverImages: item._cover_images,
-                  slug: item.slug ?? undefined,
-                }}
-              />
-            </span>
-          </>
-        )}
       </div>
     </div>
   );

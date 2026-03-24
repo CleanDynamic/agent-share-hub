@@ -4,7 +4,6 @@ import { BookmarkButton } from "@/components/BookmarkButton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Download, Eye, Star, StarHalf, MessageSquare, FolderOpen, ChevronDown, ChevronUp, Send as SendIcon } from "lucide-react";
-import { ReblogButton } from "@/components/ReblogButton";
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { FeedItemExpanded } from "@/components/FeedItemExpanded";
 import { ShareToDMModal } from "@/components/dm/ShareToDMModal";
@@ -320,17 +319,6 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
                   >
                     <SendIcon className="h-3 w-3" />
                   </button>
-                  <span className="text-[#444450] shrink-0">·</span>
-                  <ReblogButton
-                    source={{
-                      type: "content",
-                      id: item.id,
-                      title: item.title,
-                      creatorUsername: (item.profiles as any)?.username ?? "unknown",
-                      contentType: item.content_type,
-                      coverUrl: item.cover_image_url ?? null,
-                    }}
-                  />
                 </>
               )}
             </div>
