@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { ORDERED_CONTENT_TYPES, SLUG_TO_TYPE, displayContentType } from "@/lib/content-types";
+import { ORDERED_CONTENT_TYPES, SLUG_TO_TYPE, displayContentType, TOPICS } from "@/lib/content-types";
 
 const ALL = "all";
 const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
