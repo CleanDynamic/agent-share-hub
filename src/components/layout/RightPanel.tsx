@@ -18,11 +18,17 @@ const CATEGORIES: { name: string; dbType: string; difficulty: string; slug: stri
   { name: "Workflow Template", dbType: "Workflow Template", difficulty: "Intermediate", slug: "workflow-template" },
   { name: "Evaluation Framework", dbType: "Evaluation Framework", difficulty: "Intermediate", slug: "evaluation-framework" },
   { name: "Agent Stack", dbType: "Agent Stack", difficulty: "Advanced", slug: "agent-stack" },
-  { name: "Failure Library", dbType: "Failure Library", difficulty: "Any", slug: "failure-library" },
   { name: "Blog", dbType: "Blog", difficulty: "Any", slug: "blog" },
   { name: "Projects", dbType: "", difficulty: "Any", slug: "projects", isProject: true },
   { name: "AI Tools Tutorials", dbType: "AI Tools (LLMs)", difficulty: "Any", slug: "ai-tools-llms" },
   { name: "Install Guide", dbType: "AI Agent Install Guide", difficulty: "Any", slug: "install-guide" },
+];
+
+const BOUNTY_CATEGORIES: { name: string; slug: string; typeSlug: string }[] = [
+  { name: "🎯 All Bounties", slug: "all-bounties", typeSlug: "" },
+  { name: "Failure Library", slug: "failure-library", typeSlug: "failure-library" },
+  { name: "Open Question", slug: "open-question", typeSlug: "open-question" },
+  { name: "Challenge", slug: "challenge", typeSlug: "challenge" },
 ];
 
 const diffColor: Record<string, string> = {
@@ -208,6 +214,10 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
     if (location.pathname === "/browse") {
       const params = new URLSearchParams(location.search);
       if (params.get("tab") === "projects") return "projects";
+      if (params.get("tab") === "bounties") {
+        const type = params.get("type");
+        return type ? type : "all-bounties";
+      }
     }
     // Any other page: no card active
     return null;
@@ -274,6 +284,46 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
           </button>
         );
       })}
+
+      {/* Bounties group */}
+      <div className="col-span-2 mt-1">
+        <p className="text-[10px] text-slate-500 tracking-[0.2em] font-bold uppercase px-1 mb-2">Bounties</p>
+        <div className="grid grid-cols-2 gap-2">
+          {BOUNTY_CATEGORIES.map((bcat) => {
+            const isActive = activeSlug === bcat.slug || (bcat.slug === "all-bounties" && activeSlug === "all-bounties");
+            const handleClick = () => {
+              if (bcat.slug === "all-bounties") {
+                navigate("/browse?tab=bounties");
+              } else {
+                navigate(`/browse?tab=bounties&type=${bcat.typeSlug}`);
+              }
+            };
+            const borderColor = bcat.slug === "all-bounties" ? "rgba(239,68,68,0.7)" : "rgba(75,85,99,0.7)";
+            return (
+              <button
+                key={bcat.slug}
+                onClick={handleClick}
+                className={`glass-level-1 text-left rounded-xl cursor-pointer transition-all duration-200 ${
+                  isActive ? "" : "hover:bg-[rgba(53,52,57,0.60)]"
+                }`}
+                style={{
+                  border: isActive
+                    ? `1.5px solid ${borderColor}`
+                    : "1px solid rgba(255, 255, 255, 0.05)",
+                  padding: isActive ? "calc(0.875rem - 0.5px)" : "0.875rem",
+                }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.18)"; }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.05)"; }}
+              >
+                <p className="text-sm font-semibold text-slate-200 leading-tight">{bcat.name}</p>
+                <span className={`mt-1.5 inline-block rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${diffColor.Any}`}>
+                  Any
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
