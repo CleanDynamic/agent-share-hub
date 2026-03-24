@@ -39,6 +39,7 @@ import CollectionDetail from "./pages/CollectionDetail";
 import Analytics from "./pages/Analytics";
 import SearchPage from "./pages/SearchPage";
 import Category from "./pages/Category";
+import ApiDocs from "./pages/ApiDocs";
 
 import DraftsPage from "./pages/Drafts";
 import PostPreviewPage from "./pages/PostPreview";
