@@ -316,6 +316,7 @@ const Browse = () => {
       if (difficultyFilter && item.difficulty !== difficultyFilter) return false;
       if (toolFilters.length > 0 && !toolFilters.some((t) => (item.ai_tools ?? []).includes(t))) return false;
       if (useCaseFilters.length > 0 && !useCaseFilters.some((u) => (item.use_cases ?? []).includes(u))) return false;
+      if (topicFilters.length > 0 && !topicFilters.some((t) => ((item as any).topics ?? []).includes(t))) return false;
       if (microtagFilters.length > 0 && allMicrotagsMap) {
         const itemTags = allMicrotagsMap.get(item.id) ?? [];
         if (!microtagFilters.every((mt) => itemTags.includes(mt))) return false;
