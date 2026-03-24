@@ -69,6 +69,7 @@ const App = () => (
                 <Route path="/category/:slug" element={<Category />} />
                 <Route path="/upload" element={<Upload />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/api-docs" element={<ApiDocs />} />
                 <Route path="/content/:id" element={<ContentDetail />} />
                 <Route path="/content/:id/edit" element={<ProtectedRoute requireCreator><ContentEditPage /></ProtectedRoute>} />
                 <Route path="/project/:id" element={<ProjectDetail />} />

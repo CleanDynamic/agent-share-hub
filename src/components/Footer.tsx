@@ -23,6 +23,9 @@ export function Footer() {
           <Link to="/about" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
             About
           </Link>
+          <Link to="/api-docs" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            API
+          </Link>
           <a
             href="https://twitter.com/neoscaleai"
             target="_blank"
