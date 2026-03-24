@@ -473,6 +473,7 @@ const Upload = () => {
         pwyw_floor_gbp: actualPwywFloor,
         is_pwyw: actualPwywEnabled,
         custom_tags: customTags,
+        topics: selectedTopics,
         post_category: isBountyType ? "bounty" : isBlogType ? "blog" : "blueprint",
         bounty_enabled: isBountyType ? bountyBlueprintRequired : false,
         bounty_status: isBountyType ? "open" : null,
