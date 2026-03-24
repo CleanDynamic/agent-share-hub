@@ -1281,6 +1281,52 @@ const Upload = () => {
             </button>
           </div>
 
+          {/* GitHub Import */}
+          <div className="mb-5">
+            {!showGithubImport ? (
+              <button type="button" onClick={() => setShowGithubImport(true)}
+                className="text-xs text-primary hover:underline flex items-center gap-1">
+                📥 Import from GitHub
+              </button>
+            ) : (
+              <div className="border border-border rounded-xl p-4 bg-card space-y-3">
+                <p className="text-sm font-semibold text-foreground">Import from GitHub</p>
+                <p className="text-xs text-muted-foreground">Paste a GitHub repo or file URL. We'll fetch the README and pre-fill your Blueprint.</p>
+                <div className="flex gap-2">
+                  <Input
+                    value={githubUrl}
+                    onChange={(e) => setGithubUrl(e.target.value)}
+                    placeholder="https://github.com/owner/repo"
+                    className="bg-background border-border text-sm flex-1"
+                  />
+                  <Button type="button" size="sm" disabled={githubImporting || !githubUrl.includes("github.com")}
+                    onClick={async () => {
+                      setGithubImporting(true);
+                      try {
+                        const { data, error } = await supabase.functions.invoke("import-github-readme", { body: { url: githubUrl } });
+                        if (error || data?.error) throw new Error(data?.error || "Import failed");
+                        if (data.title) form.setValue("title", data.title);
+                        if (data.description) form.setValue("description", data.description);
+                        if (data.markdown) {
+                          setContentBlocks([{ id: crypto.randomUUID(), type: "long_text", textContent: data.markdown, formatting: "paragraph", subBlocks: [], useInstructions: "", file: null, imageFile: null, imageDescription: "", externalFileUrl: "", fileName: "", githubUrl: "" }]);
+                        }
+                        setShowGithubImport(false);
+                        setGithubUrl("");
+                        toast({ title: "Imported!", description: `Pre-filled from ${data.source}` });
+                      } catch (err: any) {
+                        toast({ title: "Import failed", description: err.message, variant: "destructive" });
+                      } finally {
+                        setGithubImporting(false);
+                      }
+                    }}>
+                    {githubImporting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Fetch"}
+                  </Button>
+                </div>
+                <button type="button" onClick={() => { setShowGithubImport(false); setGithubUrl(""); }} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
+              </div>
+            )}
+          </div>
+
           {isProjectMode ? (
             <ProjectUploadForm />
           ) : (
