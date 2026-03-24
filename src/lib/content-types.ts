@@ -41,6 +41,8 @@ export const TYPE_COLORS: Record<string, string> = {
   "Blog": "bg-[#F472B6]/15 text-[#F472B6] border-[#F472B6]/25",
   "AI Tools (LLMs)": "bg-[#8B5CF6]/15 text-[#A78BFA] border-[#8B5CF6]/30",
   "AI Agent Install Guide": "bg-[#06B6D4]/15 text-[#06B6D4] border-[#06B6D4]/30",
+  "Open Question": "bg-[#A78BFA]/15 text-[#A78BFA] border-[#A78BFA]/25",
+  "Challenge": "bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/25",
 };
 
 /** Difficulty levels including "Any" for special types */
@@ -62,4 +64,26 @@ export const SLUG_TO_TYPE: Record<string, string> = {
   "blog": "Blog",
   "ai-tools-llms": "AI Tools (LLMs)",
   "install-guide": "AI Agent Install Guide",
+  "open-question": "Open Question",
+  "challenge": "Challenge",
 };
+
+/** Bounty sub-types */
+export const BOUNTY_CONTENT_TYPES = [
+  "Failure Library",
+  "Open Question",
+  "Challenge",
+] as const;
+
+/** Content types shown in Blueprint upload dropdown (excludes Blog and Bounty sub-types) */
+export const BLUEPRINT_CONTENT_TYPES = [
+  "Prompt File",
+  "Agent Blueprint",
+  "Model Config Guide",
+  "Integration Guide",
+  "Workflow Template",
+  "Evaluation Framework",
+  "Agent Stack",
+  "AI Tools (LLMs)",
+  "AI Agent Install Guide",
+];

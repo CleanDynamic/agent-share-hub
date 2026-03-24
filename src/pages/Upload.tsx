@@ -29,9 +29,9 @@ import { SubmitToolModal } from "@/components/SubmitToolModal";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
 import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
-import { ORDERED_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, ANY_DIFFICULTY_TYPES, displayContentType } from "@/lib/content-types";
+import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType } from "@/lib/content-types";
 
-const CONTENT_TYPES = ORDERED_CONTENT_TYPES.filter(t => t !== "Blog");
+const CONTENT_TYPES = BLUEPRINT_CONTENT_TYPES;
 const DIFFICULTIES = [...DIFF_LIST, "Any"];
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance", "Hobby", "Other"];
 const ACCEPTED_TYPES = [".txt", ".md", ".json", ".pdf"];
@@ -70,7 +70,8 @@ const Upload = () => {
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const { groups: toolGroups } = useGroupedApprovedTools();
-  const [uploadType, setUploadType] = useState<"blog" | "single" | "project">("single");
+  const [uploadType, setUploadType] = useState<"blog" | "single" | "bounty">("single");
+  const [isProjectMode, setIsProjectMode] = useState(false);
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([emptyBlock("text")]);
   const [wteBlocks, setWteBlocks] = useState<WteBlock[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -100,10 +101,10 @@ const Upload = () => {
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId || null);
   const [savingDraft, setSavingDraft] = useState(false);
   // Bounty state
-  const [bountyEnabled, setBountyEnabled] = useState(false);
   const [bountyTipGbp, setBountyTipGbp] = useState<number | null>(null);
   const [bountyDeadlineDays, setBountyDeadlineDays] = useState<number | null>(null);
   const [bountyGap, setBountyGap] = useState("");
+  const [bountyBlueprintRequired, setBountyBlueprintRequired] = useState(true);
   const autosaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastAutosaveRef = useRef<Date | null>(null);
   const form = useForm<FormValues>({
@@ -125,7 +126,8 @@ const Upload = () => {
 
   const watchedContentType = form.watch("content_type");
   const isAIToolsType = watchedContentType === "AI Tools (LLMs)";
-  const isBlogType = watchedContentType === "Blog";
+  const isBlogType = uploadType === "blog";
+  const isBountyType = uploadType === "bounty";
   const watchedAiTools = form.watch("ai_tools");
   const isOtherSelected = watchedAiTools?.includes("Other");
 
@@ -333,6 +335,10 @@ const Upload = () => {
         pwyw_enabled: isPwyw,
         pwyw_floor_gbp: isPwyw ? pwywFloor : null,
         is_pwyw: isPwyw,
+        post_category: isBountyType ? "bounty" : isBlogType ? "blog" : "blueprint",
+        bounty_enabled: isBountyType ? bountyBlueprintRequired : false,
+        bounty_gap: isBountyType && bountyGap.trim() ? bountyGap.trim() : null,
+        bounty_tip_gbp: isBountyType && bountyTipGbp !== null ? bountyTipGbp : null,
         status: "draft",
         draft_saved_at: new Date().toISOString(),
         draft_name: values.title || null,
@@ -383,7 +389,7 @@ const Upload = () => {
     } finally {
       if (!silent) setSavingDraft(false);
     }
-  }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast]);
+  }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast, isBountyType, isBlogType, bountyBlueprintRequired, bountyGap, bountyTipGbp]);
 
   // ── Autosave every 60 seconds ──
   useEffect(() => {
@@ -396,7 +402,7 @@ const Upload = () => {
   }, [saveDraft]);
 
   async function onSubmit(values: FormValues) {
-    if (contentBlocks.length === 0) {
+    if (!isBountyType && contentBlocks.length === 0) {
       toast({ title: "Add content", description: "Please add at least one content block.", variant: "destructive" });
       return;
     }
@@ -462,13 +468,14 @@ const Upload = () => {
         pwyw_floor_gbp: actualPwywFloor,
         is_pwyw: actualPwywEnabled,
         custom_tags: customTags,
-        bounty_enabled: values.content_type === "Failure Library" && bountyEnabled,
-        bounty_status: values.content_type === "Failure Library" && bountyEnabled ? "open" : "open",
-        bounty_tip_gbp: values.content_type === "Failure Library" && bountyEnabled && bountyTipGbp !== null ? bountyTipGbp : null,
-        bounty_closes_at: values.content_type === "Failure Library" && bountyEnabled && bountyDeadlineDays !== null
+        post_category: isBountyType ? "bounty" : isBlogType ? "blog" : "blueprint",
+        bounty_enabled: isBountyType ? bountyBlueprintRequired : false,
+        bounty_status: isBountyType ? "open" : null,
+        bounty_tip_gbp: isBountyType && bountyTipGbp !== null ? bountyTipGbp : null,
+        bounty_closes_at: isBountyType && bountyDeadlineDays !== null
           ? new Date(Date.now() + bountyDeadlineDays * 86400000).toISOString()
           : null,
-        bounty_gap: values.content_type === "Failure Library" && bountyEnabled && bountyGap.trim() ? bountyGap.trim() : null,
+        bounty_gap: isBountyType && bountyGap.trim() ? bountyGap.trim() : null,
       } as any).select("id").single();
 
       if (insertError || !insertedItem) {
@@ -740,7 +747,12 @@ const Upload = () => {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Share Your Work</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            {uploadType === "blog" ? "Write a Post"
+              : uploadType === "bounty" ? "Post a Bounty"
+              : isProjectMode ? "Share a Project"
+              : "Share a Blueprint"}
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
             All submissions are reviewed and tested before going live. We aim to respond within 48 hours.
           </p>
@@ -750,33 +762,32 @@ const Upload = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
           <button type="button" onClick={() => { setUploadType("blog"); form.setValue("content_type", "Blog"); }}
             className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${uploadType === "blog" ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/40"}`}>
-            <span className={`text-xl mt-0.5 shrink-0`}>📝</span>
+            <span className="text-xl mt-0.5 shrink-0">📝</span>
             <div>
               <p className="text-sm font-semibold text-foreground">Blog</p>
               <p className="text-xs text-muted-foreground mt-0.5">A post, opinion, or tutorial in your own words</p>
             </div>
           </button>
-          <button type="button" onClick={() => { setUploadType("single"); if (form.getValues("content_type") === "Blog") form.setValue("content_type", ""); }}
+          <button type="button" onClick={() => { setUploadType("single"); const ct = form.getValues("content_type"); if (ct === "Blog" || ct === "Failure Library" || ct === "Open Question" || ct === "Challenge") form.setValue("content_type", ""); }}
             className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${uploadType === "single" ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/40"}`}>
-            <span className={`text-xl mt-0.5 shrink-0`}>🔷</span>
+            <span className="text-xl mt-0.5 shrink-0">🔷</span>
             <div>
               <p className="text-sm font-semibold text-foreground">Blueprint</p>
               <p className="text-xs text-muted-foreground mt-0.5">A prompt, workflow, or guide people can use</p>
             </div>
           </button>
-          <button type="button" onClick={() => setUploadType("project")}
-            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${uploadType === "project" ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/40"}`}>
-            <span className={`text-xl mt-0.5 shrink-0`}>📁</span>
+          <button type="button" onClick={() => { setUploadType("bounty"); form.setValue("content_type", ""); }}
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${uploadType === "bounty" ? "bg-red-500/5" : "border-border bg-card hover:border-muted-foreground/40"}`}
+            style={uploadType === "bounty" ? { borderColor: "rgba(239,68,68,0.4)" } : {}}>
+            <span className="text-xl mt-0.5 shrink-0">🎯</span>
             <div>
-              <p className="text-sm font-semibold text-foreground">Project</p>
-              <p className="text-xs text-muted-foreground mt-0.5">A collection of related blueprints</p>
+              <p className="text-sm font-semibold text-foreground">Bounty</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Post a failure or challenge and invite the community to solve it with a Blueprint.</p>
             </div>
           </button>
         </div>
 
-        {uploadType === "project" ? (
-          <ProjectUploadForm />
-        ) : uploadType === "blog" ? (
+        {uploadType === "blog" ? (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 
@@ -898,7 +909,375 @@ const Upload = () => {
             </div>
           </form>
         </Form>
+        ) : uploadType === "bounty" ? (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+
+            {/* Bounty: Content Type */}
+            <FormField control={form.control} name="content_type" render={({ field }) => (
+              <FormItem className="space-y-1.5">
+                <FormLabel>Bounty type</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="bg-card border-border rounded-xl"><SelectValue placeholder="Select a type" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="Failure Library">Failure Library — Something that went wrong and why</SelectItem>
+                    <SelectItem value="Open Question">Open Question — A problem you haven't solved yet</SelectItem>
+                    <SelectItem value="Challenge">Challenge — A task you want the community to attempt</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Bounty: Title */}
+            <FormField control={form.control} name="title" render={({ field }) => (
+              <FormItem className="space-y-1.5">
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                  <Input placeholder="E.g. My AI agent keeps hallucinating product names" className="bg-card border-border rounded-xl" {...field} />
+                </FormControl>
+                <FormDescription>Keep it short and specific.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Bounty: Cover Image */}
+            <div className="space-y-1.5">
+              <Label>Cover image <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
+              <p className="text-xs text-muted-foreground">Appears in the feed. 1200×630px recommended.</p>
+              {coverImagePreview ? (
+                <div className="relative">
+                  <img src={coverImagePreview} alt="Cover preview" className="w-full rounded-xl object-cover" style={{ maxHeight: 200 }} />
+                  <button type="button" onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); }} className="absolute top-2 right-2 p-1 rounded-full bg-background/80 text-muted-foreground hover:text-foreground transition-colors">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center gap-2 py-6 px-4 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/40 transition-colors">
+                  <ImagePlus className="h-6 w-6 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Click to upload (.jpg, .png, .webp — max 3MB)</span>
+                  <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 3 * 1024 * 1024) { toast({ title: "File too large", description: "Cover image must be under 3MB.", variant: "destructive" }); return; }
+                    setCoverImageFile(file);
+                    setCoverImagePreview(URL.createObjectURL(file));
+                  }} />
+                </label>
+              )}
+            </div>
+
+            {/* Bounty: Description (relabeled) */}
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem className="space-y-1.5">
+                <FormLabel>What happened / What's the problem?</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="Be specific. What did you try? What went wrong? What have you already ruled out?"
+                    className="bg-card border-border rounded-xl"
+                    maxLength={500}
+                  />
+                </FormControl>
+                <FormDescription><span className="text-muted-foreground">{(field.value ?? "").length}/500</span></FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Bounty: The Gap */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">What does a good solution need to do? <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <div className="relative">
+                <Input
+                  value={bountyGap}
+                  onChange={(e) => setBountyGap(e.target.value.slice(0, 300))}
+                  placeholder="e.g. The fix must work in ChatGPT 3.5 free tier, requires no plugins, and can be set up in under 10 minutes."
+                  className="bg-card border-border rounded-xl pr-16"
+                  maxLength={300}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{bountyGap.length}/300</span>
+              </div>
+            </div>
+
+            {/* Bounty: Works with */}
+            <FormField control={form.control} name="ai_tools" render={() => (
+              <FormItem className="space-y-1.5">
+                <FormLabel>Works with<span style={{ fontSize: '12px', color: '#9999AA', fontWeight: 400, marginLeft: '6px' }}>(optional)</span></FormLabel>
+                {toolGroups.length > 0 ? (
+                  <div className="space-y-1 mt-1">
+                    {toolGroups.map((group) => {
+                      const isExpanded = expandedToolGroups.has(group.category);
+                      const selectedCount = (form.watch("ai_tools") ?? []).filter((t) =>
+                        group.tools.some((gt) => gt.name === t)
+                      ).length;
+                      return (
+                        <div key={group.category} className="border border-border rounded-xl overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => toggleToolGroup(group.category)}
+                            className="flex items-center justify-between w-full px-3 h-10 text-left hover:bg-muted/30 transition-colors"
+                          >
+                            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{group.label}</span>
+                            <div className="flex items-center gap-2">
+                              {!isExpanded && selectedCount > 0 && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-primary/15 text-primary font-medium">({selectedCount})</span>
+                              )}
+                              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                            </div>
+                          </button>
+                          {isExpanded && (
+                            <div className="px-3 pb-3 pt-1 border-t border-border">
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {group.tools.map((tool) => (
+                                  <FormField key={tool.name} control={form.control} name="ai_tools" render={({ field }) => (
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(tool.name)}
+                                          onCheckedChange={(checked) => {
+                                            field.onChange(checked ? [...(field.value ?? []), tool.name] : (field.value ?? []).filter((v) => v !== tool.name));
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <Label className="text-xs text-foreground font-normal cursor-pointer">{tool.name}</Label>
+                                    </FormItem>
+                                  )} />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-1">
+                    {sortedTools.map((tool) => (
+                      <FormField key={tool} control={form.control} name="ai_tools" render={({ field }) => (
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(tool)}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked ? [...(field.value ?? []), tool] : (field.value ?? []).filter((v) => v !== tool));
+                              }}
+                            />
+                          </FormControl>
+                          <Label className="text-xs text-foreground font-normal cursor-pointer">{tool}</Label>
+                        </FormItem>
+                      )} />
+                    ))}
+                  </div>
+                )}
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Bounty: Difficulty */}
+            <FormField control={form.control} name="difficulty" render={({ field }) => (
+              <FormItem className="space-y-1.5">
+                <FormLabel>Difficulty</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="bg-card border-border rounded-xl"><SelectValue placeholder="Select difficulty" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="bg-card border-border">
+                    {DIFFICULTIES.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Bounty: Topics */}
+            <FormField control={form.control} name="use_cases" render={({ field }) => (
+              <FormItem className="space-y-1.5">
+                <FormLabel>Topics</FormLabel>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {USE_CASES.map((uc) => {
+                    const selected = field.value.includes(uc);
+                    return (
+                      <button key={uc} type="button" onClick={() => field.onChange(selected ? field.value.filter((v) => v !== uc) : [...field.value, uc])}
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${selected ? "bg-primary/15 text-primary border-primary/30" : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"}`}>
+                        {uc}
+                      </button>
+                    );
+                  })}
+                </div>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Bounty: Tags */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Tags (optional)</label>
+              <Input
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value.slice(0, 30))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === ",") {
+                    e.preventDefault();
+                    const raw = tagInput.replace(/,/g, "").replace(/^#/, "").trim().toLowerCase().replace(/\s+/g, "-");
+                    if (raw && raw.length <= 30 && customTags.length < 10 && !customTags.includes(raw)) {
+                      setCustomTags([...customTags, raw]);
+                    }
+                    setTagInput("");
+                  }
+                }}
+                placeholder={customTags.length >= 10 ? "" : "Add a tag and press Enter..."}
+                disabled={customTags.length >= 10}
+                className="bg-card border-border rounded-full"
+                maxLength={30}
+              />
+              {customTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {customTags.map((tag) => (
+                    <span key={tag} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-2xl" style={{ backgroundColor: "#1E1E2A", color: "#9999AA" }}>
+                      #{tag}
+                      <button type="button" onClick={() => setCustomTags(customTags.filter((t) => t !== tag))} className="ml-0.5 hover:text-foreground transition-colors">×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Bounty Settings */}
+            <div className="border border-border rounded-xl p-5 bg-card space-y-4">
+              <h3 className="text-sm font-semibold text-foreground">Bounty Settings</h3>
+
+              {/* Tip */}
+              <div className="space-y-2">
+                <Label className="text-sm">Tip for solver (optional)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {([null, 0.5, 1, 2, 5] as const).map((amt) => (
+                    <button
+                      key={String(amt)}
+                      type="button"
+                      onClick={() => setBountyTipGbp(amt)}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                        bountyTipGbp === amt
+                          ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                          : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
+                      }`}
+                    >
+                      {amt === null ? "No tip" : `£${amt}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Deadline */}
+              <div className="space-y-2">
+                <Label className="text-sm">Close after</Label>
+                <div className="flex flex-wrap gap-2">
+                  {([null, 3, 7, 14, 30] as const).map((days) => (
+                    <button
+                      key={String(days)}
+                      type="button"
+                      onClick={() => setBountyDeadlineDays(days)}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                        bountyDeadlineDays === days
+                          ? "bg-primary/15 text-primary border-primary/30"
+                          : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
+                      }`}
+                    >
+                      {days === null ? "No deadline" : `${days} days`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Blueprint response required */}
+              <div className="flex items-center justify-between pt-2 border-t border-border">
+                <div>
+                  <p className="text-sm text-foreground">I need a Blueprint response</p>
+                  <p className="text-xs text-muted-foreground">When on, responses must be Blueprints. When off, free-text comments only.</p>
+                </div>
+                <Switch checked={bountyBlueprintRequired} onCheckedChange={setBountyBlueprintRequired} />
+              </div>
+            </div>
+
+            {/* Bounty: Monetisation */}
+            <div className="border border-border rounded-xl p-5 bg-card space-y-5">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Monetisation</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Optional — free by default</p>
+              </div>
+              <div className="space-y-4">
+                {(["free", "paid"] as const).map((type) => (
+                  <div key={type} className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-foreground">{type === "free" ? "Free" : "Paid (fixed price)"}</p>
+                      <p className="text-xs text-muted-foreground">{type === "free" ? "Anyone can view for free" : "Set a price in GBP"}</p>
+                    </div>
+                    <Switch
+                      checked={form.watch("monetisation_type") === type}
+                      onCheckedChange={(checked) => { if (checked) form.setValue("monetisation_type", type); }}
+                    />
+                  </div>
+                ))}
+                {form.watch("monetisation_type") === "paid" && (
+                  <FormField control={form.control} name="price_gbp" render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-foreground font-medium">£</span>
+                        <FormControl>
+                          <Input type="number" step="0.01" min="1" placeholder="4.99" className="bg-background border-border rounded-xl w-32" {...field} />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                )}
+              </div>
+            </div>
+
+            {/* Bounty: Co-authors */}
+            <CollabInvitePicker invitees={collabInvitees} onChange={setCollabInvitees} />
+
+            {/* Bounty: Dependencies */}
+            <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
+
+            {/* Bounty: Save Draft + Preview */}
+            <div className="flex gap-3">
+              <Button type="button" variant="outline" size="lg" className="ns-btn-silver flex-1 h-10 rounded-full" disabled={savingDraft || submitting} onClick={() => saveDraft(false)}>
+                {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
+              </Button>
+              <Button type="button" size="lg" className="ns-btn-primary flex-1 h-10 rounded-full" disabled={savingDraft || submitting}
+                onClick={async () => { const id = await saveDraft(false); if (id) navigate(`/upload/preview/${id}`); }}>
+                Preview Post →
+              </Button>
+            </div>
+          </form>
+        </Form>
         ) : (
+        <>
+          {/* Project toggle */}
+          <div
+            className="mb-5 flex items-center justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3.5"
+            style={{ borderRadius: 12 }}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xl">📁</span>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Make this a Project</p>
+                <p className="text-xs text-muted-foreground">Group multiple Blueprints into one post</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsProjectMode((v) => !v)}
+              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${isProjectMode ? "bg-primary" : "bg-muted"}`}
+            >
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${isProjectMode ? "translate-x-4" : "translate-x-1"}`} />
+            </button>
+          </div>
+
+          {isProjectMode ? (
+            <ProjectUploadForm />
+          ) : (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 
@@ -1090,13 +1469,11 @@ const Upload = () => {
             )}
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem className="space-y-1.5">
-                <FormLabel>{bountyEnabled ? "The Failure" : "Description"}</FormLabel>
+                <FormLabel>Description</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
-                    placeholder={bountyEnabled
-                      ? "Describe exactly what went wrong. Be specific — what did you expect vs what happened? What have you already tried?"
-                      : "Turns your AI into a specialist that…"}
+                    placeholder="Turns your AI into a specialist that…"
                     className="bg-card border-border rounded-xl"
                     maxLength={500}
                   />
@@ -1108,85 +1485,8 @@ const Upload = () => {
               </FormItem>
             )} />
 
-            {/* BOUNTY SECTION — only when Failure Library selected */}
-            {watchedContentType === "Failure Library" && (
-              <div className="border border-border rounded-xl p-5 bg-card space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Turn this into a Bounty?</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Bounties invite the community to solve your failure with a Blueprint. The best solution gets marked as the answer.</p>
-                  </div>
-                  <Switch checked={bountyEnabled} onCheckedChange={setBountyEnabled} />
-                </div>
-
-                {bountyEnabled && (
-                  <div className="space-y-4 pt-2 border-t border-border">
-                    {/* Tip */}
-                    <div className="space-y-2">
-                      <Label className="text-sm">Attach a tip for the solver (optional)</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {([null, 0.5, 1, 2, 5] as const).map((amt) => (
-                          <button
-                            key={String(amt)}
-                            type="button"
-                            onClick={() => setBountyTipGbp(amt)}
-                            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                              bountyTipGbp === amt
-                                ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                                : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
-                            }`}
-                          >
-                            {amt === null ? "No tip" : `£${amt}`}
-                          </button>
-                        ))}
-                      </div>
-                      {bountyTipGbp !== null && (
-                        <p className="text-xs text-muted-foreground">Paid via Stripe to whoever you mark as the solution.</p>
-                      )}
-                    </div>
-
-                    {/* Deadline */}
-                    <div className="space-y-2">
-                      <Label className="text-sm">Close bounty after</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {([null, 3, 7, 14, 30] as const).map((days) => (
-                          <button
-                            key={String(days)}
-                            type="button"
-                            onClick={() => setBountyDeadlineDays(days)}
-                            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                              bountyDeadlineDays === days
-                                ? "bg-primary/15 text-primary border-primary/30"
-                                : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
-                            }`}
-                          >
-                            {days === null ? "No deadline" : `${days} days`}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Gap */}
-                    <div className="space-y-1.5">
-                      <Label className="text-sm">What does a good solution need to do? <span className="text-muted-foreground font-normal">(required)</span></Label>
-                      <div className="relative">
-                        <Input
-                          value={bountyGap}
-                          onChange={(e) => setBountyGap(e.target.value.slice(0, 300))}
-                          placeholder="e.g. The fix must work in ChatGPT 3.5 free tier, requires no plugins, and can be set up in under 10 minutes."
-                          className="bg-background border-border rounded-xl pr-16"
-                          maxLength={300}
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{bountyGap.length}/300</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 6. What to Expect (block builder) — hidden for Blog */}
-            {!isBlogType && <WhatToExpectBuilder blocks={wteBlocks} onChange={setWteBlocks} helper="What will users get? Keep it concrete." />}
+            {/* 6. What to Expect (block builder) */}
+            <WhatToExpectBuilder blocks={wteBlocks} onChange={setWteBlocks} helper="What will users get? Keep it concrete." />
 
             {/* 7. Your Blueprint (content block builder) */}
             <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} contentType={watchedContentType} />
@@ -1510,6 +1810,8 @@ const Upload = () => {
             </div>
           </form>
         </Form>
+          )}
+        </>
         )}
       </div>
 

@@ -4,6 +4,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { Link, useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal, X, Clock, Users, Star, Eye } from "lucide-react";
 import { FeedItem } from "@/components/FeedItem";
+import { BountyCard } from "@/components/BountyCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,7 +28,7 @@ const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
 const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced", "Any"];
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance", "Hobby", "Other"];
 
-type BrowseTab = "blueprints" | "projects" | "collections";
+type BrowseTab = "blueprints" | "bounties" | "projects" | "collections";
 type BlueprintSort = "recent" | "most-stars" | "rising";
 type ProjectSort = "recent" | "most-stars" | "rising";
 type CollectionSort = "recent" | "most-stars" | "largest";
@@ -208,16 +209,18 @@ const Browse = () => {
 
   const activeFilterCount = useMemo(() => {
     const tp = timePeriod ? 1 : 0;
-    const bt = bountiesOnly ? 1 : 0;
     if (browseTab === "blueprints") {
-      return typeFilters.length + (difficultyFilter ? 1 : 0) + toolFilters.length + useCaseFilters.length + microtagFilters.length + tp + bt;
+      return typeFilters.length + (difficultyFilter ? 1 : 0) + toolFilters.length + useCaseFilters.length + microtagFilters.length + tp;
+    }
+    if (browseTab === "bounties") {
+      return (bountyTypeFilter ? 1 : 0) + (bountyStatusTabFilter && bountyStatusTabFilter !== "" ? 1 : 0) + tp;
     }
     if (browseTab === "projects") {
       return containsFilters.length + (sizeFilter ? 1 : 0) + (difficultyFilter ? 1 : 0) + tp;
     }
     // collections
     return containsFilters.length + (sizeFilter ? 1 : 0) + tp;
-  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter, timePeriod]);
+  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter, timePeriod, bountyTypeFilter, bountyStatusTabFilter]);
 
   // Active filter chips
   const activeChips = useMemo(() => {
@@ -289,6 +292,9 @@ const Browse = () => {
     const now = Date.now();
 
     let base = items.filter((item) => {
+      // Exclude bounty posts from the Blueprints tab
+      if ((item as any).post_category === "bounty" || (item as any).bounty_enabled) return false;
+
       const q = search.toLowerCase();
       if (q) {
         const fields = [item.title, item.description ?? "", item.content_type, ((item as any).what_to_expect ?? ""), ((item as any).custom_use_case_description ?? "")];
@@ -309,8 +315,6 @@ const Browse = () => {
         if (!microtagFilters.every((mt) => itemTags.includes(mt))) return false;
       }
       if (timePeriod && !isWithinPeriod(item.approved_at || item.created_at, timePeriod)) return false;
-      if (bountiesOnly && !(item as any).bounty_enabled) return false;
-      if (bountyStatusFilter && (item as any).bounty_status !== bountyStatusFilter) return false;
       return true;
     });
 
@@ -341,6 +345,50 @@ const Browse = () => {
     // recent
     return base.sort((a, b) => new Date(b.approved_at || b.created_at).getTime() - new Date(a.approved_at || a.created_at).getTime());
   }, [items, search, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, allMicrotagsMap, sortMode, timePeriod]);
+
+  // ─── BOUNTIES data ────────────────────────────────────────
+
+  // Bounty-specific URL filters
+  const bountyTypeFilter = readParam("type", "");
+  const bountyStatusTabFilter = readParam("bounty_status", "");
+
+  const filteredBounties = useMemo(() => {
+    if (!items) return [];
+    const now = Date.now();
+
+    let base = items.filter((item) => {
+      // Only show bounty posts
+      if ((item as any).post_category !== "bounty" && !(item as any).bounty_enabled) return false;
+
+      const q = search.toLowerCase();
+      if (q) {
+        const fields = [item.title, item.description ?? "", item.content_type];
+        if (!fields.some((f) => f.toLowerCase().includes(q))) return false;
+      }
+      if (bountyTypeFilter) {
+        const typeMap: Record<string, string> = {
+          "failure-library": "Failure Library",
+          "open-question": "Open Question",
+          "challenge": "Challenge",
+        };
+        const dbType = typeMap[bountyTypeFilter] || bountyTypeFilter;
+        if (item.content_type !== dbType) return false;
+      }
+      if (bountyStatusTabFilter && bountyStatusTabFilter !== "all") {
+        if ((item as any).bounty_status !== bountyStatusTabFilter) return false;
+      }
+      if (timePeriod && !isWithinPeriod(item.approved_at || item.created_at, timePeriod)) return false;
+      return true;
+    });
+
+    // Default sort: most me_too first, then recent
+    return base.sort((a, b) => {
+      const aMeToo = (a as any).bounty_me_too_count ?? 0;
+      const bMeToo = (b as any).bounty_me_too_count ?? 0;
+      if (bMeToo !== aMeToo) return bMeToo - aMeToo;
+      return new Date(b.approved_at || b.created_at).getTime() - new Date(a.approved_at || a.created_at).getTime();
+    });
+  }, [items, search, bountyTypeFilter, bountyStatusTabFilter, timePeriod]);
 
   // ─── PROJECTS data ────────────────────────────────────────
 
@@ -534,15 +582,18 @@ const Browse = () => {
 
   // Result count
   const resultCount = browseTab === "blueprints" ? filteredBlueprints.length
+    : browseTab === "bounties" ? filteredBounties.length
     : browseTab === "projects" ? filteredProjects.length
     : filteredCollections.length;
 
   const isLoading = browseTab === "blueprints" ? blueprintsLoading
+    : browseTab === "bounties" ? blueprintsLoading
     : browseTab === "projects" ? projectsLoading
     : collectionsLoading;
 
   // Search placeholder per tab
   const searchPlaceholder = browseTab === "blueprints" ? "Search blueprints..."
+    : browseTab === "bounties" ? "Search bounties..."
     : browseTab === "projects" ? "Search projects..."
     : "Search collections...";
 
@@ -748,9 +799,10 @@ const Browse = () => {
       />
       <div className="mx-auto max-w-5xl">
         {/* Tab bar */}
-        <div className="flex gap-1 mb-4">
+        <div className="flex gap-1 mb-4 flex-wrap">
           {([
             { value: "blueprints" as BrowseTab, label: "Blueprints" },
+            { value: "bounties" as BrowseTab, label: "Bounties" },
             { value: "projects" as BrowseTab, label: "Projects" },
             { value: "collections" as BrowseTab, label: "Collections" },
           ]).map((tab) => (
@@ -935,6 +987,61 @@ const Browse = () => {
             <p className="text-sm text-muted-foreground text-center">Something went wrong loading content.</p>
             <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Reload</Button>
           </div>
+        )}
+
+        {/* BOUNTIES TAB */}
+        {browseTab === "bounties" && !blueprintsLoading && (
+          <>
+            {/* Sub-filter pills */}
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {([
+                { value: "", label: "All" },
+                { value: "open", label: "🔴 Open" },
+                { value: "claimed", label: "🟡 Claimed" },
+                { value: "solved", label: "🟢 Solved" },
+                { value: "failure-library", label: "Failure Library" },
+                { value: "open-question", label: "Open Question" },
+                { value: "challenge", label: "Challenge" },
+              ]).map(({ value, label }) => {
+                const isStatusPill = ["open", "claimed", "solved", ""].includes(value);
+                const active = isStatusPill ? bountyStatusTabFilter === value : bountyTypeFilter === value;
+                const setFn = () => {
+                  const sp = new URLSearchParams(searchParams);
+                  if (isStatusPill) {
+                    sp.set("bounty_status", value);
+                    if (!isStatusPill) sp.delete("type");
+                  } else {
+                    sp.set("type", active ? "" : value);
+                    if (active) sp.delete("type");
+                  }
+                  setSearchParams(sp, { replace: true });
+                };
+                return (
+                  <button
+                    key={value || "all"}
+                    onClick={setFn}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                      active
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-accent text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {filteredBounties.length > 0 ? (
+              <div className="space-y-3">
+                {filteredBounties.map((item) => (
+                  <BountyCard key={item.id} item={item as any} context="browse" />
+                ))}
+              </div>
+            ) : (
+              <EmptyState search={search} hasFilters={false} onClear={clearAllFilters} />
+            )}
+          </>
         )}
 
         {/* PROJECTS TAB */}
