@@ -237,6 +237,7 @@ const Browse = () => {
       toolFilters.forEach((t) => chips.push({ label: t, key: "tool", value: t }));
       useCaseFilters.forEach((u) => chips.push({ label: u, key: "usecase", value: u }));
       microtagFilters.forEach((m) => chips.push({ label: m, key: "tags", value: m }));
+      topicFilters.forEach((t) => chips.push({ label: t, key: "topic", value: t }));
     } else if (browseTab === "projects") {
       if (difficultyFilter) chips.push({ label: difficultyFilter, key: "difficulty", value: difficultyFilter });
       containsFilters.forEach((c) => chips.push({ label: displayContentType(SLUG_TO_TYPE[c] || c), key: "contains", value: c }));
