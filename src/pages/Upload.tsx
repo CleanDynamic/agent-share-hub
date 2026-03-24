@@ -29,7 +29,7 @@ import { SubmitToolModal } from "@/components/SubmitToolModal";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
 import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
-import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType } from "@/lib/content-types";
+import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS } from "@/lib/content-types";
 
 const CONTENT_TYPES = BLUEPRINT_CONTENT_TYPES;
 const DIFFICULTIES = [...DIFF_LIST, "Any"];
@@ -83,6 +83,10 @@ const Upload = () => {
   const [inlineSplits, setInlineSplits] = useState<InlineSplit[]>([]);
   const [pwywFloor, setPwywFloor] = useState<number>(0);
   const [customTags, setCustomTags] = useState<string[]>([]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [githubUrl, setGithubUrl] = useState("");
+  const [githubImporting, setGithubImporting] = useState(false);
+  const [showGithubImport, setShowGithubImport] = useState(false);
   const [expandedToolGroups, setExpandedToolGroups] = useState<Set<string>>(new Set(["api"]));
   const [tagInput, setTagInput] = useState("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
@@ -180,6 +184,7 @@ const Upload = () => {
         if ((item as any).tool_url) setToolUrl((item as any).tool_url);
         if ((item as any).tags?.length > 0) setCustomTags((item as any).tags);
         if ((item as any).cover_image_url) setCoverImagePreview((item as any).cover_image_url);
+        if ((item as any).topics?.length > 0) setSelectedTopics((item as any).topics);
         if ((item as any).pwyw_floor_gbp) setPwywFloor(Number((item as any).pwyw_floor_gbp));
 
         // WTE blocks
@@ -329,6 +334,7 @@ const Upload = () => {
         tool_url: toolUrl.trim() || null,
         tags: customTags,
         custom_tags: customTags,
+        topics: selectedTopics,
         monetisation_type: values.monetisation_type,
         price_gbp: values.monetisation_type === "paid" && !isPwyw ? values.price_gbp ?? null : null,
         donation_enabled: values.donation_enabled,
@@ -468,6 +474,7 @@ const Upload = () => {
         pwyw_floor_gbp: actualPwywFloor,
         is_pwyw: actualPwywEnabled,
         custom_tags: customTags,
+        topics: selectedTopics,
         post_category: isBountyType ? "bounty" : isBlogType ? "blog" : "blueprint",
         bounty_enabled: isBountyType ? bountyBlueprintRequired : false,
         bounty_status: isBountyType ? "open" : null,
@@ -1275,6 +1282,52 @@ const Upload = () => {
             </button>
           </div>
 
+          {/* GitHub Import */}
+          <div className="mb-5">
+            {!showGithubImport ? (
+              <button type="button" onClick={() => setShowGithubImport(true)}
+                className="text-xs text-primary hover:underline flex items-center gap-1">
+                📥 Import from GitHub
+              </button>
+            ) : (
+              <div className="border border-border rounded-xl p-4 bg-card space-y-3">
+                <p className="text-sm font-semibold text-foreground">Import from GitHub</p>
+                <p className="text-xs text-muted-foreground">Paste a GitHub repo or file URL. We'll fetch the README and pre-fill your Blueprint.</p>
+                <div className="flex gap-2">
+                  <Input
+                    value={githubUrl}
+                    onChange={(e) => setGithubUrl(e.target.value)}
+                    placeholder="https://github.com/owner/repo"
+                    className="bg-background border-border text-sm flex-1"
+                  />
+                  <Button type="button" size="sm" disabled={githubImporting || !githubUrl.includes("github.com")}
+                    onClick={async () => {
+                      setGithubImporting(true);
+                      try {
+                        const { data, error } = await supabase.functions.invoke("import-github-readme", { body: { url: githubUrl } });
+                        if (error || data?.error) throw new Error(data?.error || "Import failed");
+                        if (data.title) form.setValue("title", data.title);
+                        if (data.description) form.setValue("description", data.description);
+                        if (data.markdown) {
+                          setContentBlocks([{ id: crypto.randomUUID(), type: "long_text", textContent: data.markdown, formatting: "paragraph", subBlocks: [], useInstructions: "", file: null, imageFile: null, imageDescription: "", externalFileUrl: "", variations: [], isPreview: false }]);
+                        }
+                        setShowGithubImport(false);
+                        setGithubUrl("");
+                        toast({ title: "Imported!", description: `Pre-filled from ${data.source}` });
+                      } catch (err: any) {
+                        toast({ title: "Import failed", description: err.message, variant: "destructive" });
+                      } finally {
+                        setGithubImporting(false);
+                      }
+                    }}>
+                    {githubImporting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Fetch"}
+                  </Button>
+                </div>
+                <button type="button" onClick={() => { setShowGithubImport(false); setGithubUrl(""); }} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
+              </div>
+            )}
+          </div>
+
           {isProjectMode ? (
             <ProjectUploadForm />
           ) : (
@@ -1689,6 +1742,31 @@ const Upload = () => {
                 </div>
               )}
             </div>
+
+            {/* 11b. Topics */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Topics (optional)</label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {TOPICS.map((topic) => {
+                  const selected = selectedTopics.includes(topic);
+                  return (
+                    <button key={topic} type="button" onClick={() => setSelectedTopics(selected ? selectedTopics.filter((t) => t !== topic) : [...selectedTopics, topic])}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${selected ? "bg-primary/15 text-primary border-primary/30" : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"}`}>
+                      {topic}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Install Guide helper text */}
+            {watchedContentType === "AI Agent Install Guide" && (
+              <div className="p-3 rounded-xl border border-primary/20 bg-primary/5">
+                <p className="text-xs text-primary">
+                  Install Guides bridge the gap between a Blueprint and actually using it. Include step-by-step setup instructions.
+                </p>
+              </div>
+            )}
 
             {/* 12. Monetisation */}
             <div className="border border-border rounded-xl p-5 bg-card space-y-5">

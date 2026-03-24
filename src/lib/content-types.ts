@@ -17,6 +17,7 @@ export function displayContentType(dbType: string): string {
 export const ORDERED_CONTENT_TYPES = [
   "Prompt File",
   "Agent Blueprint",
+  "AI Agent Install Guide",
   "Model Config Guide",
   "Integration Guide",
   "Workflow Template",
@@ -25,7 +26,22 @@ export const ORDERED_CONTENT_TYPES = [
   "Failure Library",
   "Blog",
   "AI Tools (LLMs)",
-  "AI Agent Install Guide",
+];
+
+/** Predefined topics for tagging content */
+export const TOPICS = [
+  "Git Workflows",
+  "Prompt Engineering",
+  "CI/CD & DevOps",
+  "API Integration",
+  "Data Analysis",
+  "Web Scraping",
+  "Content Creation",
+  "Code Review",
+  "Testing & QA",
+  "Security",
+  "Database",
+  "Infrastructure",
 ];
 
 /** Badge colour map — keyed by DB value */
@@ -79,11 +95,11 @@ export const BOUNTY_CONTENT_TYPES = [
 export const BLUEPRINT_CONTENT_TYPES = [
   "Prompt File",
   "Agent Blueprint",
+  "AI Agent Install Guide",
   "Model Config Guide",
   "Integration Guide",
   "Workflow Template",
   "Evaluation Framework",
   "Agent Stack",
   "AI Tools (LLMs)",
-  "AI Agent Install Guide",
 ];

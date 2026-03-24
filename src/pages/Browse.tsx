@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { ORDERED_CONTENT_TYPES, SLUG_TO_TYPE, displayContentType } from "@/lib/content-types";
+import { ORDERED_CONTENT_TYPES, SLUG_TO_TYPE, displayContentType, TOPICS } from "@/lib/content-types";
 
 const ALL = "all";
 const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
@@ -169,6 +169,7 @@ const Browse = () => {
   const toolFilters = readParamList("tool");
   const useCaseFilters = readParamList("usecase");
   const microtagFilters = readParamList("tags");
+  const topicFilters = readParamList("topic");
 
   // Project/Collection filters
   const sizeFilter = readParam("size", "");
@@ -205,12 +206,16 @@ const Browse = () => {
   const setSort = useCallback((sort: string) => setParam("sort", sort), [setParam]);
   const setSearch = useCallback((q: string) => setParam("q", q), [setParam]);
 
+  // Bounty-specific URL filters (hoisted above useMemo that references them)
+  const bountyTypeFilter = readParam("type", "");
+  const bountyStatusTabFilter = readParam("bounty_status", "");
+
   // ─── Active filter count ─────────────────────────────────
 
   const activeFilterCount = useMemo(() => {
     const tp = timePeriod ? 1 : 0;
     if (browseTab === "blueprints") {
-      return typeFilters.length + (difficultyFilter ? 1 : 0) + toolFilters.length + useCaseFilters.length + microtagFilters.length + tp;
+      return typeFilters.length + (difficultyFilter ? 1 : 0) + toolFilters.length + useCaseFilters.length + microtagFilters.length + topicFilters.length + tp;
     }
     if (browseTab === "bounties") {
       return (bountyTypeFilter ? 1 : 0) + (bountyStatusTabFilter && bountyStatusTabFilter !== "" ? 1 : 0) + tp;
@@ -220,7 +225,7 @@ const Browse = () => {
     }
     // collections
     return containsFilters.length + (sizeFilter ? 1 : 0) + tp;
-  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter, timePeriod, bountyTypeFilter, bountyStatusTabFilter]);
+  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, topicFilters, containsFilters, sizeFilter, timePeriod, bountyTypeFilter, bountyStatusTabFilter]);
 
   // Active filter chips
   const activeChips = useMemo(() => {
@@ -232,6 +237,7 @@ const Browse = () => {
       toolFilters.forEach((t) => chips.push({ label: t, key: "tool", value: t }));
       useCaseFilters.forEach((u) => chips.push({ label: u, key: "usecase", value: u }));
       microtagFilters.forEach((m) => chips.push({ label: m, key: "tags", value: m }));
+      topicFilters.forEach((t) => chips.push({ label: t, key: "topic", value: t }));
     } else if (browseTab === "projects") {
       if (difficultyFilter) chips.push({ label: difficultyFilter, key: "difficulty", value: difficultyFilter });
       containsFilters.forEach((c) => chips.push({ label: displayContentType(SLUG_TO_TYPE[c] || c), key: "contains", value: c }));
@@ -241,7 +247,7 @@ const Browse = () => {
       if (sizeFilter) chips.push({ label: sizeFilter, key: "size", value: sizeFilter });
     }
     return chips;
-  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, containsFilters, sizeFilter, timePeriod]);
+  }, [browseTab, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, topicFilters, containsFilters, sizeFilter, timePeriod]);
 
   const removeChip = useCallback((chip: { key: string; value: string }) => {
     if (chip.key === "difficulty" || chip.key === "size" || chip.key === "period") {
@@ -253,7 +259,7 @@ const Browse = () => {
 
   const clearAllFilters = useCallback(() => {
     const sp = new URLSearchParams(searchParams);
-    ["type", "difficulty", "tool", "usecase", "tags", "size", "contains", "period", "bounties", "bounty_status"].forEach((k) => sp.delete(k));
+    ["type", "difficulty", "tool", "usecase", "tags", "topic", "size", "contains", "period", "bounties", "bounty_status"].forEach((k) => sp.delete(k));
     setSearchParams(sp, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -310,6 +316,7 @@ const Browse = () => {
       if (difficultyFilter && item.difficulty !== difficultyFilter) return false;
       if (toolFilters.length > 0 && !toolFilters.some((t) => (item.ai_tools ?? []).includes(t))) return false;
       if (useCaseFilters.length > 0 && !useCaseFilters.some((u) => (item.use_cases ?? []).includes(u))) return false;
+      if (topicFilters.length > 0 && !topicFilters.some((t) => ((item as any).topics ?? []).includes(t))) return false;
       if (microtagFilters.length > 0 && allMicrotagsMap) {
         const itemTags = allMicrotagsMap.get(item.id) ?? [];
         if (!microtagFilters.every((mt) => itemTags.includes(mt))) return false;
@@ -344,13 +351,11 @@ const Browse = () => {
     }
     // recent
     return base.sort((a, b) => new Date(b.approved_at || b.created_at).getTime() - new Date(a.approved_at || a.created_at).getTime());
-  }, [items, search, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, allMicrotagsMap, sortMode, timePeriod]);
+  }, [items, search, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, topicFilters, allMicrotagsMap, sortMode, timePeriod]);
 
   // ─── BOUNTIES data ────────────────────────────────────────
 
-  // Bounty-specific URL filters
-  const bountyTypeFilter = readParam("type", "");
-  const bountyStatusTabFilter = readParam("bounty_status", "");
+  // bountyTypeFilter and bountyStatusTabFilter are hoisted above activeFilterCount useMemo
 
   const filteredBounties = useMemo(() => {
     if (!items) return [];
@@ -688,6 +693,18 @@ const Browse = () => {
               {USE_CASES.map((u) => (
                 <FilterPill key={u} active={useCaseFilters.includes(u)} onClick={() => toggleListParam("usecase", u)}>
                   {u}
+                </FilterPill>
+              ))}
+            </div>
+          </div>
+
+          {/* Topics */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Topics</p>
+            <div className="flex flex-wrap gap-1.5">
+              {TOPICS.map((t) => (
+                <FilterPill key={t} active={topicFilters.includes(t)} onClick={() => toggleListParam("topic", t)}>
+                  {t}
                 </FilterPill>
               ))}
             </div>

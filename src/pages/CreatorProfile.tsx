@@ -190,12 +190,12 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
   const { data: bountyItems } = useQuery({
     queryKey: ["profile_bounties", profile.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase
         .from("content_items")
         .select("*, profiles!content_items_creator_id_fkey(id, username, display_name, avatar_url)")
         .eq("creator_id", profile.id)
-        .eq("status", "approved")
-        .eq("bounty_enabled" as any, true)
+        .eq("status", "approved") as any)
+        .eq("bounty_enabled", true)
         .order("created_at", { ascending: false });
       return (data ?? []) as any[];
     },
