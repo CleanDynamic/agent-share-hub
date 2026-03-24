@@ -259,7 +259,7 @@ const Browse = () => {
 
   const clearAllFilters = useCallback(() => {
     const sp = new URLSearchParams(searchParams);
-    ["type", "difficulty", "tool", "usecase", "tags", "size", "contains", "period", "bounties", "bounty_status"].forEach((k) => sp.delete(k));
+    ["type", "difficulty", "tool", "usecase", "tags", "topic", "size", "contains", "period", "bounties", "bounty_status"].forEach((k) => sp.delete(k));
     setSearchParams(sp, { replace: true });
   }, [searchParams, setSearchParams]);
 
