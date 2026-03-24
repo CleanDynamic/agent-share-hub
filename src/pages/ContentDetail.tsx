@@ -26,6 +26,7 @@ import { VersionHistory } from "@/components/VersionHistory";
 import { ForkModal } from "@/components/ForkModal";
 import { DependencyDisplay } from "@/components/DependencyDisplay";
 import { CompatibilityBadge } from "@/components/CompatibilityBadge";
+import { CompatibilityTable } from "@/components/CompatibilityTable";
 import { PwywPriceSelector } from "@/components/PwywPriceSelector";
 import { MentionText } from "@/components/MentionText";
 import { Textarea } from "@/components/ui/textarea";
