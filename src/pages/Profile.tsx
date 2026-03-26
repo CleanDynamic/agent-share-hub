@@ -802,7 +802,11 @@ function EditProfileModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="bg-card border-border sm:max-w-lg">
+      <DialogContent
+        className="sm:max-w-lg"
+        data-visual-slot="modal-surface"
+        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+      >
         <DialogHeader>
           <DialogTitle>Edit profile</DialogTitle>
         </DialogHeader>
@@ -906,7 +910,11 @@ function FollowListModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="bg-card border-border sm:max-w-sm">
+      <DialogContent
+        className="sm:max-w-sm"
+        data-visual-slot="modal-surface"
+        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+      >
         <DialogHeader>
           <DialogTitle>{mode === "followers" ? "Followers" : "Following"}</DialogTitle>
         </DialogHeader>

@@ -4,6 +4,7 @@ import { RightPanel } from "./RightPanel";
 import { MobileNav } from "./MobileNav";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsTablet } from "@/hooks/use-tablet";
+import { BlobBackground } from "@/components/BlobBackground";
 
 export function AppLayout() {
   const isMobile = useIsMobile();
@@ -34,32 +35,35 @@ export function AppLayout() {
   const hideRightPanel = isTablet || isMessagesRoute;
 
   return (
-    <div className="flex h-screen w-full justify-center" style={{ background: "#08080C" }}>
-      <div className="flex h-full w-full max-w-[1280px]">
+    <div className="flex h-screen w-full justify-center" style={{ background: 'var(--bg)' }}>
+      <div className="relative flex h-full w-full max-w-[1280px]" style={{ zIndex: 1 }}>
+        <BlobBackground />
+
         <aside
-          className="ns-panel-left h-screen shrink-0 overflow-y-auto"
-          style={{
-            width: collapsed ? 72 : 275,
-            boxShadow: "0 0 50px rgba(46,196,182,0.08)",
-          }}
+          className="h-screen shrink-0 overflow-y-auto"
           data-visual-slot="left-panel"
+          style={{ width: collapsed ? 72 : 275, borderRight: '1px solid var(--border)' }}
         >
           <LeftPanel collapsed={collapsed} />
         </aside>
 
         <main
-          className="ns-panel-centre flex-1 overflow-y-auto"
+          className="flex-1 overflow-y-auto"
+          data-visual-slot="centre-panel"
           style={{
             maxWidth: isMessagesRoute ? undefined : (isTablet ? undefined : 660),
-            margin: isMessagesRoute ? undefined : (isTablet ? undefined : "0 auto"),
+            margin: isMessagesRoute ? undefined : (isTablet ? undefined : '0 auto'),
           }}
-          data-visual-slot="centre-panel"
         >
           <Outlet />
         </main>
 
         {!hideRightPanel && (
-          <aside className="ns-panel-right h-screen shrink-0 overflow-y-auto" style={{ width: 350 }} data-visual-slot="right-panel">
+          <aside
+            className="h-screen shrink-0 overflow-y-auto"
+            data-visual-slot="right-panel"
+            style={{ width: 350, borderLeft: '1px solid var(--border)' }}
+          >
             <RightPanel />
           </aside>
         )}

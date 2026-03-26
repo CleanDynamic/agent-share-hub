@@ -29,7 +29,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
   const { hasUnseenSaves } = useNavBadges();
   const { display: notifBadge } = useUnreadNotifications();
   const { display: msgBadge } = useUnreadMessages();
-  
+
   const { display: draftBadge } = useDraftCount();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -99,15 +99,17 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
               )}
               <Link
                 to={item.to}
-                className={`ns-nav-item relative flex items-center gap-3 rounded-lg ${
+                className={`relative flex items-center gap-3 rounded-lg ${
                   collapsed ? "justify-center px-0" : "px-4"
-                } h-12 text-sm ${
-                  isActive
-                    ? "active"
-                    : ""
-                }`}
+                } h-12 text-sm`}
+                style={isActive
+                  ? { color: 'var(--orange)', borderLeft: '2px solid var(--orange)', background: 'rgba(232,87,26,0.08)' }
+                  : { color: 'var(--text-muted)' }
+                }
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
               >
-                <item.icon className={`h-[22px] w-[22px] shrink-0 transition-colors ${!isActive ? "group-hover:text-primary/60" : ""}`} />
+                <item.icon className="h-[22px] w-[22px] shrink-0 transition-colors" />
                 {!collapsed && <span>{item.label}</span>}
                 {item.badge && (
                   <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full ${item.to === "/drafts" ? "bg-[#353439] text-slate-400" : "bg-[#E8571A] text-white"} px-1.5 text-[11px] font-bold`}>
@@ -129,7 +131,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className={`flex w-full items-center gap-3 rounded-xl p-2 text-sm text-slate-400 transition-colors hover:bg-[#353439]/60 hover:text-slate-100 ${collapsed ? "justify-center" : ""}`}
+              className={`flex w-full items-center gap-3 rounded-xl p-2 text-sm text-slate-400 transition-colors ${collapsed ? "justify-center" : ""}`}
             >
               <Avatar className="h-8 w-8 shrink-0">
                 {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
@@ -146,10 +148,10 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
               )}
             </button>
             {menuOpen && (
-              <div className="absolute bottom-full left-0 mb-1 w-full rounded-xl border border-white/5 p-1 shadow-lg" style={{ background: "rgba(8,8,12,0.95)", backdropFilter: "blur(20px)" }}>
+              <div className="absolute bottom-full left-0 mb-1 w-full rounded-xl border border-white/5 p-1 shadow-lg" style={{ background: "rgba(8,8,12,0.95)" }}>
                 <button
                   onClick={handleSignOut}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-400 hover:bg-[#353439]/60"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-400"
                 >
                   <LogOut className="h-4 w-4" /> Sign out
                 </button>
@@ -164,10 +166,22 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
               </Button>
             ) : (
               <>
-                <Button variant="outline" className="w-full border-white/10 text-slate-300 hover:bg-[#353439]/60 hover:text-white" size="sm" asChild>
+                <Button variant="outline" className="w-full border-white/10 text-slate-300" size="sm" asChild>
                   <Link to="/login">Sign in</Link>
                 </Button>
-                <Button className="ns-btn-primary w-full" size="sm" asChild>
+                <Button
+                  className="w-full"
+                  size="sm"
+                  asChild
+                  data-visual-slot="btn-primary"
+                  style={{
+                    background: '#111',
+                    border: '1px solid rgba(255,255,255,0.10)',
+                    borderRadius: 'var(--radius-btn)',
+                    color: '#fff',
+                    fontWeight: 600,
+                  }}
+                >
                   <Link to="/signup">Join free</Link>
                 </Button>
               </>

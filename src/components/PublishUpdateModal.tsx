@@ -133,7 +133,11 @@ export function PublishUpdateModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="bg-card border-border sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        data-visual-slot="modal-surface"
+        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+      >
         <DialogHeader>
           <DialogTitle>Publish update</DialogTitle>
           <DialogDescription>Update "{contentTitle}" (currently v{currentVersion})</DialogDescription>

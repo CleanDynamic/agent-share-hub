@@ -242,8 +242,18 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
   return (
     <div
       onClick={handleCardClick}
-      className="ns-feed-item cursor-pointer"
+      className="px-5 py-5"
       data-visual-slot="feed-card"
+      style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-card)',
+        marginBottom: '8px',
+        transition: 'border-color 0.15s ease',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
     >
       {/* LINE 1 — Header row */}
       <div className="flex items-center gap-2" style={{ height: 36 }}>

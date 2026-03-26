@@ -1,9 +1,21 @@
+import React from 'react';
+
 export function BlobBackground() {
+  /* ── SWAP THIS COMPONENT ──────────────────────────
+     Replace this entire component with your external
+     blob/3D background when ready.
+     Requirements: position fixed, inset 0, zIndex 0,
+     pointerEvents none, transparent background.
+  ─────────────────────────────────────────────────── */
   return (
-    <div className="ns-blob-bg" data-visual-slot="background">
-      <div className="ns-blob ns-blob-1" />
-      <div className="ns-blob ns-blob-2" />
-      <div className="ns-blob ns-blob-3" />
-    </div>
+    <div
+      data-visual-slot="background"
+      style={{
+        position: 'fixed', inset: 0, zIndex: 0,
+        pointerEvents: 'none',
+      }}
+    />
   );
 }
+
+export default BlobBackground;

@@ -370,7 +370,11 @@ export function PublishCollectionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-md max-h-[90vh] overflow-y-auto"
+        data-visual-slot="modal-surface"
+        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+      >
         <DialogHeader>
           <DialogTitle>
             {isUpdate

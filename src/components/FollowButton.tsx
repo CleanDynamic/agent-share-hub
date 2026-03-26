@@ -117,7 +117,13 @@ export function FollowButton({ creatorId, onCountChange }: FollowButtonProps) {
     return (
       <Button
         size="sm"
-        className="ns-btn-silver bg-secondary text-secondary-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
+        data-visual-slot="btn-secondary"
+        style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-btn)',
+          color: 'var(--text)',
+        }}
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
         onClick={handleClick}
@@ -136,9 +142,14 @@ export function FollowButton({ creatorId, onCountChange }: FollowButtonProps) {
 
   return (
     <Button
-      variant="outline"
       size="sm"
-      className="ns-btn-silver border-secondary text-secondary hover:bg-secondary/10"
+      data-visual-slot="btn-secondary"
+      style={{
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-btn)',
+        color: 'var(--text)',
+      }}
       onClick={handleClick}
       disabled={acting}
     >

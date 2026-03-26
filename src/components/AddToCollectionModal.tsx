@@ -195,7 +195,12 @@ export function AddToCollectionModal({ open, onOpenChange, contentId, contentTit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm" onClick={(e) => e.stopPropagation()}>
+      <DialogContent
+        className="max-w-sm"
+        data-visual-slot="modal-surface"
+        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <DialogHeader>
           <DialogTitle className="text-base">{prefill ? "Create companion collection" : "Add to collection"}</DialogTitle>
         </DialogHeader>

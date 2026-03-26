@@ -60,7 +60,11 @@ export function GuestDownloadModal({ open, onOpenChange, contentId, onDownload }
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (ready || !v) onOpenChange(v); }}>
-      <DialogContent className="bg-card border-border sm:max-w-md max-w-[calc(100vw-32px)] p-0 gap-0 overflow-hidden">
+      <DialogContent
+        className="sm:max-w-md max-w-[calc(100vw-32px)] p-0 gap-0 overflow-hidden"
+        data-visual-slot="modal-surface"
+        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+      >
         {/* Ad placeholder */}
         <div className="flex items-center justify-center bg-accent/50 border-b border-border" style={{ minHeight: 100 }}>
           <div className="w-full max-w-[320px] h-[100px] rounded-lg border border-dashed border-border flex items-center justify-center">
