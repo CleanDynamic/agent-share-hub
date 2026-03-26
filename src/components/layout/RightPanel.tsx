@@ -67,13 +67,28 @@ export function RightPanel() {
         <div className="flex flex-col gap-2">
           <Link
             to="/login"
-            className="ns-btn-silver flex items-center justify-center h-9 w-full rounded-xl text-sm font-semibold transition-all"
+            className="flex items-center justify-center h-9 w-full text-sm font-semibold"
+            data-visual-slot="btn-secondary"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-btn)',
+              color: 'var(--text)',
+            }}
           >
             Sign in
           </Link>
           <Link
             to="/signup"
-            className="ns-btn-primary flex items-center justify-center h-9 w-full rounded-xl text-sm font-semibold transition-all"
+            className="flex items-center justify-center h-9 w-full text-sm font-semibold"
+            data-visual-slot="btn-primary"
+            style={{
+              background: '#111',
+              border: '1px solid rgba(255,255,255,0.10)',
+              borderRadius: 'var(--radius-btn)',
+              color: '#fff',
+              fontWeight: 600,
+            }}
           >
             Join free
           </Link>
