@@ -852,23 +852,13 @@ const Upload = () => {
             })()}
 
             {/* Blog: Topics */}
-            <FormField control={form.control} name="use_cases" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Topics</FormLabel>
-                <div className="flex flex-wrap gap-2 mt-1.5">
-                  {USE_CASES.map((uc) => {
-                    const selected = field.value.includes(uc);
-                    return (
-                      <button key={uc} type="button" onClick={() => field.onChange(selected ? field.value.filter((v) => v !== uc) : [...field.value, uc])}
-                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${selected ? "bg-primary/15 text-primary border-primary/30" : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"}`}>
-                        {uc}
-                      </button>
-                    );
-                  })}
-                </div>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <TopicsPicker
+              value={[...(form.watch("use_cases") ?? []), ...selectedTopics]}
+              onChange={(topics) => {
+                form.setValue("use_cases", topics);
+                setSelectedTopics(topics);
+              }}
+            />
 
             {/* Blog: Monetisation — donation only */}
             <div className="border border-border rounded-xl p-5 bg-card space-y-5">
