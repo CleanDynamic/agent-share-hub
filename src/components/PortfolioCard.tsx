@@ -53,6 +53,7 @@ export function PortfolioCard({ item }: PortfolioCardProps) {
     <div
       onClick={() => navigate(`/content/${item.id}`)}
       className="flex overflow-hidden rounded-2xl border border-[#1E1E2A] bg-[#111118] cursor-pointer transition-all duration-150 hover:border-[rgba(232,87,26,0.4)] hover:bg-[#13131C]"
+      data-visual-slot="portfolio-card"
     >
       {/* Thumbnail */}
       <div className="w-[140px] shrink-0 min-h-[120px]">

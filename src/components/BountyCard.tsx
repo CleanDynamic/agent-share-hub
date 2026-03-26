@@ -48,6 +48,7 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
       onClick={handleCardClick}
       className="cursor-pointer rounded-2xl overflow-hidden border border-border bg-card"
       style={{ borderLeft: `3px solid ${sc.border}` }}
+      data-visual-slot="bounty-card"
     >
       {/* TOP BAR */}
       <div

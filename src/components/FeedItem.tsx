@@ -243,6 +243,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
     <div
       onClick={handleCardClick}
       className="ns-feed-item cursor-pointer"
+      data-visual-slot="feed-card"
     >
       {/* LINE 1 — Header row */}
       <div className="flex items-center gap-2" style={{ height: 36 }}>
