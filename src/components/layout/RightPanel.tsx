@@ -274,6 +274,7 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
             }}
             onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.18)"; }}
             onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.05)"; }}
+            data-visual-slot="category-card"
           >
             <p className="text-sm font-semibold text-slate-200 leading-tight">{cat.name}</p>
             {cat.difficulty && (
@@ -314,6 +315,7 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
                 }}
                 onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.18)"; }}
                 onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.05)"; }}
+                data-visual-slot="category-card"
               >
                 <p className="text-sm font-semibold text-slate-200 leading-tight">{bcat.name}</p>
                 <span className={`mt-1.5 inline-block rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${diffColor.Any}`}>

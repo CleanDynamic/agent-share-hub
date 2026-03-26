@@ -206,6 +206,7 @@ export function ContentCard({
       <div
         onClick={() => navigate(`/content/${id}`)}
         className="relative w-full text-left border border-border rounded-xl p-5 bg-card hover:border-primary/40 transition-colors flex flex-col group cursor-pointer"
+        data-visual-slot="feed-card"
       >
         {/* Actions — bookmark + collection */}
         <div className="absolute top-2 right-2 z-10 flex items-center gap-0.5 min-h-[44px]">

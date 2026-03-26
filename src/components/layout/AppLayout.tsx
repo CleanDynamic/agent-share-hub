@@ -42,6 +42,7 @@ export function AppLayout() {
             width: collapsed ? 72 : 275,
             boxShadow: "0 0 50px rgba(46,196,182,0.08)",
           }}
+          data-visual-slot="left-panel"
         >
           <LeftPanel collapsed={collapsed} />
         </aside>
@@ -52,12 +53,13 @@ export function AppLayout() {
             maxWidth: isMessagesRoute ? undefined : (isTablet ? undefined : 660),
             margin: isMessagesRoute ? undefined : (isTablet ? undefined : "0 auto"),
           }}
+          data-visual-slot="centre-panel"
         >
           <Outlet />
         </main>
 
         {!hideRightPanel && (
-          <aside className="ns-panel-right h-screen shrink-0 overflow-y-auto" style={{ width: 350 }}>
+          <aside className="ns-panel-right h-screen shrink-0 overflow-y-auto" style={{ width: 350 }} data-visual-slot="right-panel">
             <RightPanel />
           </aside>
         )}
