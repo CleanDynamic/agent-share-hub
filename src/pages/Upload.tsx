@@ -1023,23 +1023,13 @@ const Upload = () => {
             )} />
 
             {/* Bounty: Topics */}
-            <FormField control={form.control} name="use_cases" render={({ field }) => (
-              <FormItem className="space-y-1.5">
-                <FormLabel>Topics</FormLabel>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {USE_CASES.map((uc) => {
-                    const selected = field.value.includes(uc);
-                    return (
-                      <button key={uc} type="button" onClick={() => field.onChange(selected ? field.value.filter((v) => v !== uc) : [...field.value, uc])}
-                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${selected ? "bg-primary/15 text-primary border-primary/30" : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"}`}>
-                        {uc}
-                      </button>
-                    );
-                  })}
-                </div>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <TopicsPicker
+              value={[...(form.watch("use_cases") ?? []), ...selectedTopics]}
+              onChange={(topics) => {
+                form.setValue("use_cases", topics);
+                setSelectedTopics(topics);
+              }}
+            />
 
             {/* Bounty: Tags */}
             <div className="space-y-1.5">

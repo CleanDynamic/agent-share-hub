@@ -239,12 +239,12 @@ const ContentDetail = () => {
   const { data: reblogs } = useQuery({
     queryKey: ["post_reblogs", id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase
         .from("content_items")
         .select("*, profiles!content_items_creator_id_fkey(id, username, display_name)")
-        .eq("reblog_of_id", id!)
-        .eq("is_reblog", true)
-        .eq("status", "approved")
+        .eq("reblog_of_id" as any, id!)
+        .eq("is_reblog" as any, true)
+        .eq("status", "approved") as any)
         .order("created_at", { ascending: false });
       return (data ?? []) as any[];
     },
