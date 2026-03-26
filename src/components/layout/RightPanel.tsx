@@ -263,18 +263,17 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
           <button
             key={cat.slug}
             onClick={handleClick}
-            className={`glass-level-1 text-left rounded-xl cursor-pointer transition-all duration-200 ${
-              isActive ? "" : "hover:bg-[rgba(53,52,57,0.60)]"
-            }`}
-            style={{
-              border: isActive
-                ? `1.5px solid ${activeBorder}`
-                : "1px solid rgba(255, 255, 255, 0.05)",
-              padding: isActive ? "calc(0.875rem - 0.5px)" : "0.875rem",
-            }}
-            onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.18)"; }}
-            onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.05)"; }}
             data-visual-slot="category-card"
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-card)',
+              padding: '14px',
+              cursor: 'pointer',
+              transition: 'border-color 0.15s ease',
+            }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
           >
             <p className="text-sm font-semibold text-slate-200 leading-tight">{cat.name}</p>
             {cat.difficulty && (
@@ -304,18 +303,17 @@ function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNaviga
               <button
                 key={bcat.slug}
                 onClick={handleClick}
-                className={`glass-level-1 text-left rounded-xl cursor-pointer transition-all duration-200 ${
-                  isActive ? "" : "hover:bg-[rgba(53,52,57,0.60)]"
-                }`}
-                style={{
-                  border: isActive
-                    ? `1.5px solid ${borderColor}`
-                    : "1px solid rgba(255, 255, 255, 0.05)",
-                  padding: isActive ? "calc(0.875rem - 0.5px)" : "0.875rem",
-                }}
-                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.18)"; }}
-                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.05)"; }}
                 data-visual-slot="category-card"
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-card)',
+                  padding: '14px',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.15s ease',
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
               >
                 <p className="text-sm font-semibold text-slate-200 leading-tight">{bcat.name}</p>
                 <span className={`mt-1.5 inline-block rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${diffColor.Any}`}>
