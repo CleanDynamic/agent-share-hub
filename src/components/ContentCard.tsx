@@ -205,8 +205,18 @@ export function ContentCard({
     <>
       <div
         onClick={() => navigate(`/content/${id}`)}
-        className="relative w-full text-left border border-border rounded-xl p-5 bg-card hover:border-primary/40 transition-colors flex flex-col group cursor-pointer"
+        className="relative w-full text-left flex flex-col p-5"
         data-visual-slot="feed-card"
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-card)',
+          marginBottom: '8px',
+          transition: 'border-color 0.15s ease',
+          cursor: 'pointer',
+        }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
+        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
       >
         {/* Actions — bookmark + collection */}
         <div className="absolute top-2 right-2 z-10 flex items-center gap-0.5 min-h-[44px]">

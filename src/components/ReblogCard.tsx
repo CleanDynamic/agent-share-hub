@@ -302,8 +302,18 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
   return (
     <div
       onClick={() => navigate(`/content/${item.id}`)}
-      className="px-4 py-3 border-b border-border cursor-pointer transition-colors duration-150 hover:bg-[hsl(0_0%_100%/0.03)]"
-      data-visual-slot="reblog-card"
+      className="px-4 py-3"
+      data-visual-slot="feed-card"
+      style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-card)',
+        marginBottom: '8px',
+        transition: 'border-color 0.15s ease',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
     >
       {/* ROW 1 — Reblog header */}
       <div className="flex items-start gap-2">

@@ -46,9 +46,19 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
   return (
     <div
       onClick={handleCardClick}
-      className="cursor-pointer rounded-2xl overflow-hidden border border-border bg-card"
-      style={{ borderLeft: `3px solid ${sc.border}` }}
-      data-visual-slot="bounty-card"
+      className="overflow-hidden"
+      data-visual-slot="feed-card"
+      style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderLeft: `3px solid ${sc.border}`,
+        borderRadius: 'var(--radius-card)',
+        marginBottom: '8px',
+        transition: 'border-color 0.15s ease',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
     >
       {/* TOP BAR */}
       <div
