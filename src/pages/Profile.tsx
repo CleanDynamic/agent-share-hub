@@ -208,12 +208,12 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
   const { data: reblogItems } = useQuery({
     queryKey: ["profile_reblogs", profile.id],
     queryFn: async () => {
-      const { data } = await (supabase
+      const { data } = await (supabase as any)
         .from("content_items")
         .select("*, profiles!content_items_creator_id_fkey(id, username, display_name, avatar_url)")
         .eq("creator_id", profile.id)
         .eq("is_reblog", true)
-        .eq("status", "approved") as any)
+        .eq("status", "approved")
         .order("created_at", { ascending: false });
       return (data ?? []) as any[];
     },

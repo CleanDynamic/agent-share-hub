@@ -352,13 +352,13 @@ export function ReblogDetailView({ item }: ReblogDetailViewProps) {
       )}
 
       {/* Changelog tab */}
-      {activeTab === "changelog" && <ChangelogTab contentId={item.id} />}
+      {activeTab === "changelog" && <ChangelogTab contentId={item.id} contentTitle={item.title} creatorId={item.creator_id} currentVersion={(item as any).current_version ?? "1.0"} />}
 
       {/* Tips tab */}
-      {activeTab === "tips" && <TipsTab contentId={item.id} />}
+      {activeTab === "tips" && <TipsTab contentId={item.id} isEligible={true} />}
 
       {/* Comments tab */}
-      {activeTab === "comments" && <CommentsSection contentId={item.id} />}
+      {activeTab === "comments" && <CommentsSection contentId={item.id} contentTitle={item.title} commentCount={(item as any).comment_count ?? 0} isEligible={true} />}
 
       {/* Creator card */}
       <div className="mt-8 p-4 rounded-xl bg-white/3 border border-white/8">
