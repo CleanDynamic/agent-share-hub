@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/form";
 import { SubmitToolModal } from "@/components/SubmitToolModal";
 import { WorksWithPicker } from "@/components/WorksWithPicker";
+import { TopicsPicker } from "@/components/TopicsPicker";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
 import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
