@@ -4,413 +4,51 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================================
-   NeoScale AI — Chrome Glassmorphism Design System
-   ============================================================ */
-
-/* CSS Custom Properties */
 :root {
-  /* Background */
-  --ns-void: #08080C;
-
-  /* Glass surfaces */
-  --ns-panel-bg: rgba(8, 8, 12, 0.6);
-  --ns-panel-border: rgba(255, 255, 255, 0.05);
-  --ns-panel-shadow-inner: rgba(255, 255, 255, 0.08);
-  --ns-panel-shadow-outer: rgba(0, 0, 0, 0.65);
-
-  --ns-card-bg: rgba(8, 8, 12, 0.6);
-  --ns-card-border: rgba(255, 255, 255, 0.05);
-  --ns-card-border-hover: rgba(255, 255, 255, 0.12);
-
-  /* Text */
-  --ns-text-primary: rgba(255, 255, 255, 0.90);
-  --ns-text-secondary: rgba(255, 255, 255, 0.45);
-  --ns-text-muted: rgba(255, 255, 255, 0.28);
-
-  /* Brand */
-  --ns-orange: #E8571A;
-  --ns-orange-glow: rgba(232, 87, 26, 0.20);
-
-  /* Primary accent (teal) */
-  --ns-primary: #55e0d2;
-
-  /* Badges — content types */
-  --ns-badge-prompt-bg: rgba(203, 67, 0, 0.20);
-  --ns-badge-prompt-border: rgba(203, 67, 0, 0.30);
-  --ns-badge-prompt-text: #ffb59c;
-
-  --ns-badge-agent-bg: rgba(85, 224, 210, 0.12);
-  --ns-badge-agent-border: rgba(85, 224, 210, 0.25);
-  --ns-badge-agent-text: #55e0d2;
-
-  --ns-badge-workflow-bg: rgba(204, 203, 203, 0.10);
-  --ns-badge-workflow-border: rgba(204, 203, 203, 0.20);
-  --ns-badge-workflow-text: #cccbcb;
-
-  --ns-badge-blog-bg: rgba(232, 87, 26, 0.12);
-  --ns-badge-blog-border: rgba(232, 87, 26, 0.25);
-  --ns-badge-blog-text: #E8571A;
-
-  /* Badges — difficulty */
-  --ns-badge-beginner-bg: rgba(53, 52, 57, 0.40);
-  --ns-badge-beginner-border: rgba(255, 255, 255, 0.08);
-  --ns-badge-beginner-text: #9ca3af;
-
-  --ns-badge-intermediate-bg: rgba(85, 224, 210, 0.15);
-  --ns-badge-intermediate-border: rgba(85, 224, 210, 0.25);
-  --ns-badge-intermediate-text: #55e0d2;
-
-  --ns-badge-advanced-bg: rgba(203, 67, 0, 0.18);
-  --ns-badge-advanced-border: rgba(203, 67, 0, 0.30);
-  --ns-badge-advanced-text: #ffb59c;
-
-  /* Chrome blobs */
-  --ns-blob-1: rgba(160, 160, 185, 0.45);
-  --ns-blob-2: rgba(140, 140, 160, 0.45);
-  --ns-blob-3: rgba(200, 200, 220, 0.50);
-
-  /* Buttons */
-  --ns-btn-primary-bg: linear-gradient(145deg, #353439, #08080C);
-  --ns-btn-primary-border: rgba(255, 255, 255, 0.10);
-  --ns-btn-primary-text: #e4e1e8;
-
-  --ns-btn-silver-bg: linear-gradient(90deg, #1b1b20 0%, #353439 50%, #1b1b20 100%);
-  --ns-btn-silver-text: #e4e1e8;
-
-  /* Layout */
-  --ns-panel-radius: 20px;
-  --ns-card-radius: 16px;
-  --ns-badge-radius: 6px;
-  --ns-btn-radius: 12px;
-
-  --ns-panel-blur: blur(40px) saturate(180%);
-  --ns-card-blur: blur(12px);
+  --bg: #08080C;
+  --surface: rgba(255,255,255,0.03);
+  --border: rgba(255,255,255,0.08);
+  --border-hover: rgba(255,255,255,0.14);
+  --text: rgba(255,255,255,0.90);
+  --text-muted: rgba(255,255,255,0.45);
+  --orange: #E8571A;
+  --teal: #2EC4B6;
+  --radius-card: 12px;
+  --radius-btn: 100px;
+  --radius-badge: 100px;
 }
 
-/* Blob Background */
-.ns-blob-bg {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background: transparent;
-  overflow: hidden;
-  pointer-events: none;
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-.ns-blob {
-  position: absolute;
-  border-radius: 50%;
-  will-change: transform;
-  pointer-events: none;
-}
-
-.ns-blob-1 {
-  width: 600px;
-  height: 600px;
-  top: -100px;
-  left: -100px;
-  background: radial-gradient(circle, rgba(160, 160, 185, 0.40) 0%, rgba(85, 224, 210, 0.06) 45%, transparent 65%);
-  filter: blur(70px);
-  animation: blob1move 14s ease-in-out infinite;
-}
-
-.ns-blob-2 {
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, rgba(130, 130, 155, 0.38) 0%, rgba(85, 224, 210, 0.05) 40%, transparent 65%);
-  filter: blur(90px);
-  bottom: -80px;
-  right: -80px;
-  animation: blob2move 10s ease-in-out infinite;
-}
-
-.ns-blob-3 {
-  width: 350px;
-  height: 350px;
-  background: radial-gradient(circle, rgba(180, 180, 205, 0.32) 0%, rgba(85, 224, 210, 0.04) 40%, transparent 65%);
-  filter: blur(60px);
-  top: 45%;
-  right: 20%;
-  animation: blob3move 7s ease-in-out infinite;
-}
-
-@keyframes blob1move {
-  0%,100% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(80px, -60px) scale(1.1); }
-  66% { transform: translate(-40px, 80px) scale(0.92); }
-}
-@keyframes blob2move {
-  0%,100% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(-70px, 50px) scale(1.08); }
-  66% { transform: translate(60px, -70px) scale(0.94); }
-}
-@keyframes blob3move {
-  0%,100% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(50px, 60px) scale(1.12); }
-  66% { transform: translate(-60px, -40px) scale(0.9); }
-}
-
-/* ============================================================
-   Glass Level System (matches HTML design reference)
-   ============================================================ */
-
-.glass-level-1 {
-  background: rgba(8, 8, 12, 0.6);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-}
-
-.glass-level-2 {
-  background: rgba(27, 27, 32, 0.4);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
-.glass-level-3 {
-  background: rgba(53, 52, 57, 0.8);
-  backdrop-filter: blur(60px);
-  -webkit-backdrop-filter: blur(60px);
-}
-
-.glass-pill {
-  background: rgba(27, 27, 32, 0.4) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
-}
-
-.glass-pill:focus {
-  border-color: rgba(85, 224, 210, 0.40) !important;
-  outline: none;
-}
-
-/* Glass Panels */
-.ns-panel {
-  background: rgba(8, 8, 12, 0.6);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border: none;
-}
-
-.ns-panel-left {
-  background: rgba(8, 8, 12, 0.60);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
-  border-left: none;
-  border-top: none;
-  border-bottom: none;
-}
-
-.ns-panel-right {
-  background: rgba(8, 8, 12, 0.30);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border-left: 1px solid rgba(255, 255, 255, 0.05) !important;
-  border-right: none;
-  border-top: none;
-  border-bottom: none;
-}
-
-.ns-panel-centre {
-  background: rgba(8, 8, 12, 0.15);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: none;
-}
-
-/* Tonal shift surface */
-.tonal-shift {
-  background-color: #0E0E12;
-}
-
-/* Glass Cards */
-.ns-card {
-  background: rgba(8, 8, 12, 0.6);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: var(--ns-card-radius);
-  transition: border-color 0.2s ease, background 0.2s ease;
-}
-
-.ns-card:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-/* Item card glass (library, discover) */
-.item-card-glass {
-  background: rgba(27, 27, 32, 0.4);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(133, 148, 145, 0.15);
-}
-
-.ns-feed-item {
-  background: rgba(8, 8, 12, 0.6);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  margin-bottom: 8px;
-  padding: 20px;
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-
-.ns-feed-item:hover {
-  background: rgba(27, 27, 32, 0.60);
-  border-color: rgba(255, 255, 255, 0.09);
-}
-
-/* Navigation */
-.ns-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  border-radius: 10px;
-  color: rgba(148, 163, 184, 1);
-  font-size: 14px;
-  font-weight: 400;
-  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
-  cursor: pointer;
-  border-left: none;
-}
-
-.ns-nav-item:hover {
-  background: rgba(53, 52, 57, 0.60);
-  color: rgba(255, 255, 255, 0.90);
-  transform: scale(0.98);
-}
-
-.ns-nav-item.active {
-  color: #55e0d2;
-  background: rgba(53, 52, 57, 0.50);
-  font-weight: 600;
-  transform: none;
-}
-
-/* Badges */
+/* Badge base — content, not decoration */
 .ns-badge {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 9999px;
   font-size: 9px;
-  font-weight: 700;
+  border-radius: var(--radius-badge);
   border: 1px solid;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
 }
 
-.ns-badge-prompt {
-  background: var(--ns-badge-prompt-bg);
-  border-color: var(--ns-badge-prompt-border);
-  color: var(--ns-badge-prompt-text);
-}
-
-.ns-badge-agent {
-  background: var(--ns-badge-agent-bg);
-  border-color: var(--ns-badge-agent-border);
-  color: var(--ns-badge-agent-text);
-}
-
-.ns-badge-workflow {
-  background: var(--ns-badge-workflow-bg);
-  border-color: var(--ns-badge-workflow-border);
-  color: var(--ns-badge-workflow-text);
-}
-
-.ns-badge-blog {
-  background: var(--ns-badge-blog-bg);
-  border-color: var(--ns-badge-blog-border);
-  color: var(--ns-badge-blog-text);
-}
-
-.ns-badge-beginner {
-  background: var(--ns-badge-beginner-bg);
-  border-color: var(--ns-badge-beginner-border);
-  color: var(--ns-badge-beginner-text);
-}
-
-.ns-badge-intermediate {
-  background: var(--ns-badge-intermediate-bg);
-  border-color: var(--ns-badge-intermediate-border);
-  color: var(--ns-badge-intermediate-text);
-}
-
-.ns-badge-advanced {
-  background: var(--ns-badge-advanced-bg);
-  border-color: var(--ns-badge-advanced-border);
-  color: var(--ns-badge-advanced-text);
-}
-
-/* Buttons — Black Metal Primary */
-.ns-btn-primary {
-  background: linear-gradient(145deg, #353439 0%, #08080C 100%);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  color: #e4e1e8;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 13px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 12px rgba(0, 0, 0, 0.50);
-  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.ns-btn-primary::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 45%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 100%);
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-.ns-btn-primary:hover {
-  border-color: rgba(255, 255, 255, 0.18);
-  transform: scale(1.02);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 6px 20px rgba(0, 0, 0, 0.60);
-}
-
-.ns-btn-primary:active {
-  transform: scale(0.97);
-}
-
-/* Buttons — Silver Shimmer Secondary */
-.ns-btn-silver {
-  background: linear-gradient(90deg, #1b1b20 0%, #353439 50%, #1b1b20 100%);
-  background-size: 200% 100%;
-  animation: silverShift 4s ease-in-out infinite;
-  border: none;
-  color: #e4e1e8;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 13px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 12px rgba(0, 0, 0, 0.30);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
-}
-
-.ns-btn-silver::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 45%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-.ns-btn-silver:hover {
-  transform: scale(1.02);
-  opacity: 0.90;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 6px 20px rgba(0, 0, 0, 0.35);
-}
+/* Badge colour rules — keep exactly */
+.ns-badge-prompt     { background: rgba(203,67,0,0.20);    border-color: rgba(203,67,0,0.30);    color: #ffb59c; }
+.ns-badge-agent      { background: rgba(85,224,210,0.12);  border-color: rgba(85,224,210,0.25);  color: #55e0d2; }
+.ns-badge-tutorial   { background: rgba(46,196,182,0.15);  border-color: rgba(46,196,182,0.25);  color: #2EC4B6; }
+.ns-badge-workflow   { background: rgba(204,203,203,0.10); border-color: rgba(204,203,203,0.20); color: #cccbcb; }
+.ns-badge-eval       { background: rgba(219,39,119,0.15);  border-color: rgba(219,39,119,0.25);  color: #EC4899; }
+.ns-badge-stack      { background: rgba(220,38,38,0.15);   border-color: rgba(220,38,38,0.25);   color: #EF4444; }
+.ns-badge-failure    { background: rgba(75,85,99,0.15);    border-color: rgba(75,85,99,0.25);    color: #9CA3AF; }
+.ns-badge-blog       { background: rgba(232,87,26,0.12);   border-color: rgba(232,87,26,0.25);   color: #E8571A; }
+.ns-badge-bounty     { background: rgba(239,68,68,0.12);   border-color: rgba(239,68,68,0.25);   color: #EF4444; }
+.ns-badge-beginner   { background: rgba(53,52,57,0.40);    border-color: rgba(255,255,255,0.08); color: #9ca3af; }
+.ns-badge-intermediate { background: rgba(85,224,210,0.15); border-color: rgba(85,224,210,0.25); color: #55e0d2; }
+.ns-badge-advanced   { background: rgba(203,67,0,0.18);    border-color: rgba(203,67,0,0.30);    color: #ffb59c; }
+.ns-badge-any        { background: rgba(75,85,99,0.12);    border-color: rgba(75,85,99,0.20);    color: #9CA3AF; }
 
 @keyframes silverShift {
   0%   { background-position: 0% 50%; }
@@ -418,64 +56,29 @@
   100% { background-position: 0% 50%; }
 }
 
-/* Buttons — Silver Metal (solid, for profile/library) */
-.silver-metal {
-  background: linear-gradient(135deg, #cccbcb 0%, #859491 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  color: #1a1c1c;
-}
-
-.silver-metal:hover {
-  background: linear-gradient(135deg, #ffffff 0%, #cccbcb 100%);
-  transform: scale(0.98);
-}
-
-/* Black Metal Gradient */
-.black-metal {
-  background: linear-gradient(145deg, #353439, #08080C);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-/* Active tab indicator (orange bottom border) */
-.active-tab-indicator {
-  box-shadow: 0 2px 0 0 #E8571A;
-}
-
-/* ============================================================ */
-
+/* ── shadcn/ui infrastructure — do not remove ─────────────── */
 @layer base {
   :root {
-    /* Dark mode only — these are the only values */
     --background: 240 20% 5%;
     --foreground: 0 0% 100%;
-
     --card: 240 17% 8%;
     --card-foreground: 0 0% 100%;
-
     --popover: 240 17% 5%;
     --popover-foreground: 0 0% 100%;
-
     --primary: 174 62% 47%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 18 100% 80%;
     --secondary-foreground: 0 0% 100%;
-
     --muted: 240 17% 8%;
     --muted-foreground: 240 8% 63%;
-
     --accent: 240 17% 14%;
     --accent-foreground: 0 0% 100%;
-
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 240 17% 10%;
     --input: 240 17% 10%;
     --ring: 174 62% 47%;
-
     --radius: 0.75rem;
-
     --sidebar-background: 240 17% 5%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 174 62% 47%;
@@ -495,7 +98,7 @@
   body {
     background-color: #08080C;
     min-height: 100vh;
-    color: var(--ns-text-primary);
+    color: var(--text);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-size: 13px;
     font-weight: 300;
@@ -507,15 +110,6 @@
 
   code, pre {
     font-family: 'JetBrains Mono', monospace;
-  }
-
-  /* Input focus — teal glow */
-  input:focus-visible,
-  textarea:focus-visible,
-  select:focus-visible {
-    outline: none;
-    border-color: rgba(85, 224, 210, 0.50) !important;
-    box-shadow: 0 0 0 1px rgba(85, 224, 210, 0.20) !important;
   }
 
   /* Prevent iOS auto-zoom on input focus */
@@ -553,12 +147,6 @@
   text-decoration: underline;
 }
 
-/* Selection highlight */
-::selection {
-  background: rgba(85, 224, 210, 0.30);
-}
-
-/* Mask blur effect (for cover images fading into content) */
 .mask-blur {
   mask-image: linear-gradient(to bottom, black 20%, transparent 90%);
 }
