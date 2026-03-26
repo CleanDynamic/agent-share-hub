@@ -1571,21 +1571,6 @@ const Upload = () => {
               )}
             </div>
 
-            {/* 11b. Topics */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Topics (optional)</label>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {TOPICS.map((topic) => {
-                  const selected = selectedTopics.includes(topic);
-                  return (
-                    <button key={topic} type="button" onClick={() => setSelectedTopics(selected ? selectedTopics.filter((t) => t !== topic) : [...selectedTopics, topic])}
-                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${selected ? "bg-primary/15 text-primary border-primary/30" : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"}`}>
-                      {topic}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
 
             {/* Install Guide helper text */}
             {watchedContentType === "AI Agent Install Guide" && (
