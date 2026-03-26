@@ -1517,33 +1517,13 @@ const Upload = () => {
             )}
 
             {/* 10. Topics */}
-            <FormField control={form.control} name="use_cases" render={({ field }) => (
-              <FormItem className="space-y-1.5">
-                <FormLabel>Topics</FormLabel>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {USE_CASES.map((uc) => {
-                    const selected = field.value.includes(uc);
-                    return (
-                      <button key={uc} type="button" onClick={() => field.onChange(selected ? field.value.filter((v) => v !== uc) : [...field.value, uc])}
-                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${selected ? "bg-primary/15 text-primary border-primary/30" : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"}`}>
-                        {uc}
-                      </button>
-                    );
-                  })}
-                </div>
-                {field.value.includes("Other") && (
-                  <div className="mt-2">
-                    <Label className="text-xs text-muted-foreground">Describe your use case (optional)</Label>
-                    <div className="relative mt-1">
-                      <Input value={customUseCaseDesc} onChange={(e) => setCustomUseCaseDesc(e.target.value.slice(0, 50))} placeholder="e.g. Legal research, Recipe planning..." className="h-9 text-sm bg-card border-border pr-14" maxLength={50} />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{customUseCaseDesc.length} / 50</span>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">This appears on your post in the feed.</p>
-                  </div>
-                )}
-                <FormMessage />
-              </FormItem>
-            )} />
+            <TopicsPicker
+              value={[...(form.watch("use_cases") ?? []), ...selectedTopics]}
+              onChange={(topics) => {
+                form.setValue("use_cases", topics);
+                setSelectedTopics(topics);
+              }}
+            />
 
             {/* 11. Tags — free-text input */}
             <div className="space-y-1.5">
