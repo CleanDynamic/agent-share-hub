@@ -242,9 +242,9 @@ const ContentDetail = () => {
       const { data } = await (supabase as any)
         .from("content_items")
         .select("*, profiles!content_items_creator_id_fkey(id, username, display_name)")
-        .eq("reblog_of_id" as any, id!)
-        .eq("is_reblog" as any, true)
-        .eq("status", "approved") as any)
+        .eq("reblog_of_id", id!)
+        .eq("is_reblog", true)
+        .eq("status", "approved")
         .order("created_at", { ascending: false });
       return (data ?? []) as any[];
     },

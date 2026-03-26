@@ -213,7 +213,7 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
         .select("*, profiles!content_items_creator_id_fkey(id, username, display_name, avatar_url)")
         .eq("creator_id", profile.id)
         .eq("is_reblog", true)
-        .eq("status", "approved") as any)
+        .eq("status", "approved")
         .order("created_at", { ascending: false });
       return (data ?? []) as any[];
     },
