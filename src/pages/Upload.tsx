@@ -1009,78 +1009,11 @@ const Upload = () => {
             </div>
 
             {/* Bounty: Works with */}
-            <FormField control={form.control} name="ai_tools" render={() => (
-              <FormItem className="space-y-1.5">
-                <FormLabel>Works with<span style={{ fontSize: '12px', color: '#9999AA', fontWeight: 400, marginLeft: '6px' }}>(optional)</span></FormLabel>
-                {toolGroups.length > 0 ? (
-                  <div className="space-y-1 mt-1">
-                    {toolGroups.map((group) => {
-                      const isExpanded = expandedToolGroups.has(group.category);
-                      const selectedCount = (form.watch("ai_tools") ?? []).filter((t) =>
-                        group.tools.some((gt) => gt.name === t)
-                      ).length;
-                      return (
-                        <div key={group.category} className="border border-border rounded-xl overflow-hidden">
-                          <button
-                            type="button"
-                            onClick={() => toggleToolGroup(group.category)}
-                            className="flex items-center justify-between w-full px-3 h-10 text-left hover:bg-muted/30 transition-colors"
-                          >
-                            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{group.label}</span>
-                            <div className="flex items-center gap-2">
-                              {!isExpanded && selectedCount > 0 && (
-                                <span className="text-xs px-1.5 py-0.5 rounded bg-primary/15 text-primary font-medium">({selectedCount})</span>
-                              )}
-                              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                            </div>
-                          </button>
-                          {isExpanded && (
-                            <div className="px-3 pb-3 pt-1 border-t border-border">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                {group.tools.map((tool) => (
-                                  <FormField key={tool.name} control={form.control} name="ai_tools" render={({ field }) => (
-                                    <FormItem className="flex items-center space-x-2 space-y-0">
-                                      <FormControl>
-                                        <Checkbox
-                                          checked={field.value?.includes(tool.name)}
-                                          onCheckedChange={(checked) => {
-                                            field.onChange(checked ? [...(field.value ?? []), tool.name] : (field.value ?? []).filter((v) => v !== tool.name));
-                                          }}
-                                        />
-                                      </FormControl>
-                                      <Label className="text-xs text-foreground font-normal cursor-pointer">{tool.name}</Label>
-                                    </FormItem>
-                                  )} />
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-1">
-                    {sortedTools.map((tool) => (
-                      <FormField key={tool} control={form.control} name="ai_tools" render={({ field }) => (
-                        <FormItem className="flex items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(tool)}
-                              onCheckedChange={(checked) => {
-                                field.onChange(checked ? [...(field.value ?? []), tool] : (field.value ?? []).filter((v) => v !== tool));
-                              }}
-                            />
-                          </FormControl>
-                          <Label className="text-xs text-foreground font-normal cursor-pointer">{tool}</Label>
-                        </FormItem>
-                      )} />
-                    ))}
-                  </div>
-                )}
-                <FormMessage />
-              </FormItem>
-            )} />
+            <WorksWithPicker
+              value={form.watch("ai_tools") ?? []}
+              onChange={(tools) => form.setValue("ai_tools", tools)}
+              onSubmitToolClick={() => setSubmitToolOpen(true)}
+            />
 
             {/* Bounty: Difficulty */}
             <FormField control={form.control} name="difficulty" render={({ field }) => (
