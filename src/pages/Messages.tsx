@@ -275,7 +275,11 @@ function NewMessageCompose({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="bg-card border-border max-w-md">
+      <DialogContent
+        className="max-w-md"
+        data-visual-slot="modal-surface"
+        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+      >
         <DialogHeader>
           <DialogTitle className="text-base font-bold text-foreground">New message</DialogTitle>
         </DialogHeader>

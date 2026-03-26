@@ -1451,7 +1451,11 @@ const ContentDetail = () => {
 
       {/* Forks list modal */}
       <Dialog open={forksModalOpen} onOpenChange={setForksModalOpen}>
-        <DialogContent className="bg-card border-border sm:max-w-sm">
+        <DialogContent
+          className="sm:max-w-sm"
+          data-visual-slot="modal-surface"
+          style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+        >
           <DialogHeader>
             <DialogTitle>Forks of this content</DialogTitle>
           </DialogHeader>
@@ -1475,7 +1479,11 @@ const ContentDetail = () => {
 
       {/* Curator recommendation modal */}
       <Dialog open={curatorModalOpen} onOpenChange={setCuratorModalOpen}>
-        <DialogContent className="bg-card border-border sm:max-w-md">
+        <DialogContent
+          className="sm:max-w-md"
+          data-visual-slot="modal-surface"
+          style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+        >
           <DialogHeader>
             <DialogTitle>Write a recommendation</DialogTitle>
             <DialogDescription>Appears as a highlighted quote on this post page.</DialogDescription>

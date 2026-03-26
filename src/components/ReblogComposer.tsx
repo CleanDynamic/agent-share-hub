@@ -356,11 +356,8 @@ export function ReblogComposer({ open, onOpenChange, original, onSuccess }: Rebl
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-w-[680px] max-h-[92vh] overflow-y-auto p-0"
-        style={{
-          background: "rgba(14,14,20,0.97)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(255,255,255,0.10)",
-        }}
+        data-visual-slot="modal-surface"
+        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
       >
         {/* Header */}
         <DialogHeader className="px-5 pt-5 pb-3 border-b border-white/8 sticky top-0 z-10"

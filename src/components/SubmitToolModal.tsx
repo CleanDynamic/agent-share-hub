@@ -124,7 +124,11 @@ export function SubmitToolModal({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md bg-card border-border">
+      <DialogContent
+        className="sm:max-w-md"
+        data-visual-slot="modal-surface"
+        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+      >
         {success ? (
           <div className="flex flex-col items-center text-center gap-4 py-6">
             <CheckCircle2 className="h-10 w-10 text-primary" />
