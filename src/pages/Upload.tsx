@@ -26,6 +26,7 @@ import {
   Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
 import { SubmitToolModal } from "@/components/SubmitToolModal";
+import { WorksWithPicker } from "@/components/WorksWithPicker";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
 import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
