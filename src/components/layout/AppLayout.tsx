@@ -40,9 +40,9 @@ export function AppLayout() {
         <BlobBackground />
 
         <aside
-          className="h-screen shrink-0 overflow-y-auto"
+          className="self-center shrink-0 overflow-y-auto"
           data-visual-slot="left-panel"
-          style={{ width: collapsed ? 72 : 275, borderRight: '1px solid var(--border)' }}
+          style={{ width: collapsed ? 72 : 240, borderRight: '1px solid var(--border)' }}
         >
           <LeftPanel collapsed={collapsed} />
         </aside>
