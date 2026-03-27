@@ -901,23 +901,26 @@ export function NeoScaleShell() {
   }
 
   /* ── Directional flip ── */
+  // Front face → standard 180° flip (direction depends on source)
+  // Back face  → full 360° spin, landing back on the back face with new content
   function flipMiddle(source: 'left' | 'right') {
     if (isFlipping.current) return;
-
-    // NAV-1: If already on the back face (outlet visible), skip the flip.
-    // currentRotation % 360 === 0 means front face; any other value means back face.
-    // Without this guard, each nav click unconditionally adds 180°, so clicking from
-    // the back face (180°) flips to 360° (front/home) — causing the double-click bug.
-    if (currentRotation.current % 360 !== 0) return;
 
     const flipper = document.querySelector(
       '.ns-middle-flipper'
     ) as HTMLElement | null;
     if (!flipper) return;
 
-    // Direction: left source adds 180, right source subtracts 180
-    const delta = source === 'left' ? 180 : -180;
-    currentRotation.current += delta;
+    const onFrontFace = currentRotation.current % 360 === 0;
+
+    if (onFrontFace) {
+      // Standard directional flip to reveal the back face
+      const delta = source === 'left' ? 180 : -180;
+      currentRotation.current += delta;
+    } else {
+      // Already on back face — full 360° spin back to back face (new page visible)
+      currentRotation.current += 360;
+    }
 
     isFlipping.current = true;
     flipper.style.transition =
