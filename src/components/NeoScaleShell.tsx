@@ -477,6 +477,40 @@ const NEOSCALE_CSS = `
   cursor: pointer;
 }
 .ns-footer-link:hover { color: rgba(255,255,255,0.5); }
+
+/* ── Feed card ── */
+.ns-feed-card {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  display: flex; flex-direction: column; gap: 8px;
+  cursor: pointer; transition: background 0.15s;
+}
+.ns-feed-card:hover { background: rgba(255,255,255,0.02); }
+.ns-feed-card-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+  overflow: hidden;
+}
+.ns-feed-card-top { display: flex; align-items: center; gap: 8px; }
+.ns-feed-card-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8); }
+.ns-feed-card-handle { font-size: 11px; color: rgba(255,255,255,0.3); }
+.ns-feed-card-time { font-size: 10px; color: rgba(255,255,255,0.2); margin-left: auto; }
+.ns-feed-card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.ns-feed-card-type-badge {
+  font-size: 9px; font-weight: 600; padding: 2px 7px;
+  border-radius: 4px; background: rgba(232,87,26,0.15); color: #E8571A;
+  letter-spacing: 0.3px;
+}
+.ns-feed-card-title { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); line-height: 1.4; }
+.ns-feed-card-stats { display: flex; gap: 12px; font-size: 11px; color: rgba(255,255,255,0.25); }
+.ns-feed-card-actions { display: flex; gap: 6px; }
+.feed-action-btn {
+  padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.03); font-size: 11px; color: rgba(255,255,255,0.35);
+  cursor: pointer; transition: all 0.15s; font-family: inherit;
+}
+.feed-action-btn:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.6); }
 `;
 
 /* ────────────────────────────────────────────────
@@ -530,6 +564,36 @@ function diffBadgeClass(difficulty?: string): string {
 }
 
 /* ────────────────────────────────────────────────
+   Time-ago helper
+──────────────────────────────────────────────── */
+function timeAgo(dateStr: string): string {
+  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+  if (diff < 60) return `${Math.floor(diff)}s`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  return `${Math.floor(diff / 86400)}d`;
+}
+
+/* ────────────────────────────────────────────────
+   Content-type avatar background colour
+──────────────────────────────────────────────── */
+function ctypeBg(contentType: string): string {
+  const map: Record<string, string> = {
+    "prompt-file": "#E8571A",
+    "agent-blueprint": "#9B59B6",
+    "workflow-template": "#3498DB",
+    "ai-tools-llms": "#1ABC9C",
+    "blog": "#27AE60",
+    "projects": "#E67E22",
+    "evaluation-framework": "#F39C12",
+    "install-guide": "#2980B9",
+    "model-config-guide": "#8E44AD",
+    "integration-guide": "#16A085",
+  };
+  return map[contentType] ?? "#555";
+}
+
+/* ────────────────────────────────────────────────
    Feed renderer helper
 ──────────────────────────────────────────────── */
 function renderFeedEntry(entry: any) {
@@ -578,6 +642,7 @@ export function NeoScaleShell() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [posts, setPosts] = useState<any[]>([]);
 
   const isMobile = useIsMobile();
   const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
@@ -599,6 +664,24 @@ export function NeoScaleShell() {
     document.head.appendChild(tag);
     return () => { document.head.removeChild(tag); };
   }, [isMobile]);
+
+  /* ── Fetch feed posts ── */
+  useEffect(() => {
+    const fetchPosts = async () => {
+      const { data } = await supabase
+        .from('content_items')
+        .select(`
+          id, title, content_type, difficulty,
+          view_count, download_count, created_at,
+          profiles:creator_id (display_name, username, avatar_url)
+        `)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (data) setPosts(data);
+    };
+    fetchPosts();
+  }, []);
 
   /* ── Flip on route change ── */
   useEffect(() => {
@@ -992,14 +1075,49 @@ export function NeoScaleShell() {
                   ))}
                 </div>
                 <div className="ns-feed-scroll">
-                  {feedLoading ? (
+                  {posts.length === 0 ? (
                     <div className="ns-feed-loading">
                       {[1,2,3,4].map(n => <div key={n} className="ns-feed-skeleton" />)}
                     </div>
-                  ) : !feedItems || feedItems.length === 0 ? (
-                    <div className="ns-feed-empty">No posts yet.</div>
                   ) : (
-                    feedItems.map((entry: any) => renderFeedEntry(entry))
+                    posts.map((post: any) => {
+                      const profile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+                      const displayName = profile?.display_name || profile?.username || "Unknown";
+                      const username = profile?.username || "unknown";
+                      const initials2 = displayName.slice(0, 2).toUpperCase();
+                      return (
+                        <div key={post.id} className="ns-feed-card">
+                          <div className="ns-feed-card-top">
+                            <div
+                              className="ns-feed-card-avatar"
+                              style={{ background: ctypeBg(post.content_type) }}
+                            >
+                              {initials2}
+                            </div>
+                            <span className="ns-feed-card-name">{displayName}</span>
+                            <span className="ns-feed-card-handle">@{username}</span>
+                            <span className="ns-feed-card-time">{timeAgo(post.created_at)}</span>
+                          </div>
+                          <div className="ns-feed-card-badges">
+                            <span className="ns-feed-card-type-badge">{displayContentType(post.content_type)}</span>
+                            {post.difficulty && (
+                              <span className={`ns-trending-badge ${diffBadgeClass(post.difficulty)}`}>{post.difficulty}</span>
+                            )}
+                          </div>
+                          <div className="ns-feed-card-title">{post.title}</div>
+                          <div className="ns-feed-card-stats">
+                            <span>👁 {post.view_count ?? 0}</span>
+                            <span>↓ {post.download_count ?? 0}</span>
+                            <span>💬 0</span>
+                          </div>
+                          <div className="ns-feed-card-actions">
+                            <button className="feed-action-btn">Like</button>
+                            <button className="feed-action-btn">Comment</button>
+                            <button className="feed-action-btn">Share</button>
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>
