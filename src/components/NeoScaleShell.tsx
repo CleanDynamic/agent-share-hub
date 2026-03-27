@@ -477,6 +477,40 @@ const NEOSCALE_CSS = `
   cursor: pointer;
 }
 .ns-footer-link:hover { color: rgba(255,255,255,0.5); }
+
+/* ── Feed card ── */
+.ns-feed-card {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  display: flex; flex-direction: column; gap: 8px;
+  cursor: pointer; transition: background 0.15s;
+}
+.ns-feed-card:hover { background: rgba(255,255,255,0.02); }
+.ns-feed-card-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+  overflow: hidden;
+}
+.ns-feed-card-top { display: flex; align-items: center; gap: 8px; }
+.ns-feed-card-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8); }
+.ns-feed-card-handle { font-size: 11px; color: rgba(255,255,255,0.3); }
+.ns-feed-card-time { font-size: 10px; color: rgba(255,255,255,0.2); margin-left: auto; }
+.ns-feed-card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.ns-feed-card-type-badge {
+  font-size: 9px; font-weight: 600; padding: 2px 7px;
+  border-radius: 4px; background: rgba(232,87,26,0.15); color: #E8571A;
+  letter-spacing: 0.3px;
+}
+.ns-feed-card-title { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); line-height: 1.4; }
+.ns-feed-card-stats { display: flex; gap: 12px; font-size: 11px; color: rgba(255,255,255,0.25); }
+.ns-feed-card-actions { display: flex; gap: 6px; }
+.feed-action-btn {
+  padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.03); font-size: 11px; color: rgba(255,255,255,0.35);
+  cursor: pointer; transition: all 0.15s; font-family: inherit;
+}
+.feed-action-btn:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.6); }
 `;
 
 /* ────────────────────────────────────────────────
@@ -530,6 +564,36 @@ function diffBadgeClass(difficulty?: string): string {
 }
 
 /* ────────────────────────────────────────────────
+   Time-ago helper
+──────────────────────────────────────────────── */
+function timeAgo(dateStr: string): string {
+  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+  if (diff < 60) return `${Math.floor(diff)}s`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  return `${Math.floor(diff / 86400)}d`;
+}
+
+/* ────────────────────────────────────────────────
+   Content-type avatar background colour
+──────────────────────────────────────────────── */
+function ctypeBg(contentType: string): string {
+  const map: Record<string, string> = {
+    "prompt-file": "#E8571A",
+    "agent-blueprint": "#9B59B6",
+    "workflow-template": "#3498DB",
+    "ai-tools-llms": "#1ABC9C",
+    "blog": "#27AE60",
+    "projects": "#E67E22",
+    "evaluation-framework": "#F39C12",
+    "install-guide": "#2980B9",
+    "model-config-guide": "#8E44AD",
+    "integration-guide": "#16A085",
+  };
+  return map[contentType] ?? "#555";
+}
+
+/* ────────────────────────────────────────────────
    Feed renderer helper
 ──────────────────────────────────────────────── */
 function renderFeedEntry(entry: any) {
@@ -568,16 +632,15 @@ export function NeoScaleShell() {
   const rightRef   = useRef<HTMLDivElement>(null);
   const searchDebounce = useRef<ReturnType<typeof setTimeout>>();
 
-  const [isFlipped,  setIsFlipped]  = useState(false);
   const [flipDir,    setFlipDir]    = useState<1 | -1>(1);
-  const [flipLocked, setFlipLocked] = useState(false);
   const [pulsing,    setPulsing]    = useState(false);
-  const [activeTab,  setActiveTab]  = useState("Recent");
+  const [activeTab,  setActiveTab]  = useState("For You");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [posts, setPosts] = useState<any[]>([]);
 
   const isMobile = useIsMobile();
   const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
@@ -586,7 +649,6 @@ export function NeoScaleShell() {
   const { display: draftBadge } = useDraftCount();
   const { hasUnseenSaves } = useNavBadges();
 
-  const FLIP_MS = 720;
   const isHome  = location.pathname === "/";
   const navPage = routeToNav(location.pathname);
 
@@ -600,33 +662,23 @@ export function NeoScaleShell() {
     return () => { document.head.removeChild(tag); };
   }, [isMobile]);
 
-  /* ── Flip on route change ── */
+  /* ── Fetch feed posts ── */
   useEffect(() => {
-    if (isMobile) return;
-    if (!flipperRef.current) return;
-    const flipper = flipperRef.current;
-
-    if (isHome) {
-      if (!isFlipped) return;
-      flipper.style.transition = `transform ${FLIP_MS}ms cubic-bezier(0.175,0.885,0.32,1.275)`;
-      flipper.style.transform  = "rotateY(0deg)";
-      setIsFlipped(false);
-      triggerPulse();
-    } else {
-      if (isFlipped) {
-        flipper.style.transition = "none";
-        flipper.style.transform  = "rotateY(0deg)";
-        void flipper.offsetWidth;
-      }
-      const dir = 1;
-      setFlipDir(dir);
-      flipper.style.transition = `transform ${FLIP_MS}ms cubic-bezier(0.175,0.885,0.32,1.275)`;
-      flipper.style.transform  = `rotateY(${dir * 180}deg)`;
-      setIsFlipped(true);
-      triggerPulse();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, isMobile]);
+    const fetchPosts = async () => {
+      const { data } = await supabase
+        .from('content_items')
+        .select(`
+          id, title, content_type, difficulty,
+          view_count, download_count, created_at,
+          profiles:creator_id (display_name, username, avatar_url)
+        `)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (data) setPosts(data);
+    };
+    fetchPosts();
+  }, []);
 
   function triggerPulse() {
     setPulsing(false);
@@ -851,9 +903,21 @@ export function NeoScaleShell() {
     };
   }
 
+  /* ── Directional flip ── */
+  const FLIP_LEFT  = 'rotateY(180deg)';
+  const FLIP_RIGHT = 'rotateY(-180deg)';
+
+  function flipMiddle(direction: 'left' | 'right') {
+    const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement;
+    if (!flipper) return;
+    flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+    flipper.style.transform = direction === 'left' ? FLIP_LEFT : FLIP_RIGHT;
+    setFlipDir(direction === 'left' ? 1 : -1);
+    triggerPulse();
+  }
+
   /* ── Nav click handler ── */
   function handleNav(route: string) {
-    if (flipLocked) return;
     navigate(route);
   }
 
@@ -922,14 +986,14 @@ export function NeoScaleShell() {
             ref={leftRef}
             {...initTilt(leftRef)}
           >
-            <div className="ns-logo" onClick={() => handleNav("/")}>NeoScale</div>
+            <div className="ns-logo" onClick={() => { flipMiddle('left'); handleNav("/"); }}>NeoScale</div>
             <ul className="ns-nav-list">
               {visibleNav.map((item, idx) => (
                 <li key={item.key}>
                   {item.divider && idx > 0 && <div className="ns-nav-divider" />}
                   <div
                     className={`ns-nav-item${navPage === item.key ? " active" : ""}`}
-                    onClick={() => handleNav(item.route)}
+                    onClick={() => { flipMiddle('left'); handleNav(item.route); }}
                   >
                     <span className="ns-nav-icon">{item.icon}</span>
                     <span className="ns-nav-label">{item.label}</span>
@@ -981,7 +1045,7 @@ export function NeoScaleShell() {
               <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
                 <div className="ns-front-title">Home</div>
                 <div className="ns-tab-row">
-                  {["Recent", "Popular", "Following"].map(tab => (
+                  {["For You", "Following", "Trending", "Recent"].map(tab => (
                     <div
                       key={tab}
                       className={`ns-tab${activeTab === tab ? " active" : ""}`}
@@ -992,14 +1056,49 @@ export function NeoScaleShell() {
                   ))}
                 </div>
                 <div className="ns-feed-scroll">
-                  {feedLoading ? (
+                  {posts.length === 0 ? (
                     <div className="ns-feed-loading">
                       {[1,2,3,4].map(n => <div key={n} className="ns-feed-skeleton" />)}
                     </div>
-                  ) : !feedItems || feedItems.length === 0 ? (
-                    <div className="ns-feed-empty">No posts yet.</div>
                   ) : (
-                    feedItems.map((entry: any) => renderFeedEntry(entry))
+                    posts.map((post: any) => {
+                      const profile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+                      const displayName = profile?.display_name || profile?.username || "Unknown";
+                      const username = profile?.username || "unknown";
+                      const initials2 = displayName.slice(0, 2).toUpperCase();
+                      return (
+                        <div key={post.id} className="ns-feed-card">
+                          <div className="ns-feed-card-top">
+                            <div
+                              className="ns-feed-card-avatar"
+                              style={{ background: ctypeBg(post.content_type) }}
+                            >
+                              {initials2}
+                            </div>
+                            <span className="ns-feed-card-name">{displayName}</span>
+                            <span className="ns-feed-card-handle">@{username}</span>
+                            <span className="ns-feed-card-time">{timeAgo(post.created_at)}</span>
+                          </div>
+                          <div className="ns-feed-card-badges">
+                            <span className="ns-feed-card-type-badge">{displayContentType(post.content_type)}</span>
+                            {post.difficulty && (
+                              <span className={`ns-trending-badge ${diffBadgeClass(post.difficulty)}`}>{post.difficulty}</span>
+                            )}
+                          </div>
+                          <div className="ns-feed-card-title">{post.title}</div>
+                          <div className="ns-feed-card-stats">
+                            <span>👁 {post.view_count ?? 0}</span>
+                            <span>↓ {post.download_count ?? 0}</span>
+                            <span>💬 0</span>
+                          </div>
+                          <div className="ns-feed-card-actions">
+                            <button className="feed-action-btn">Like</button>
+                            <button className="feed-action-btn">Comment</button>
+                            <button className="feed-action-btn">Share</button>
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -1007,6 +1106,25 @@ export function NeoScaleShell() {
               {/* BACK FACE — router outlet */}
               <div className={`ns-middle-back${flipDir === -1 ? " rtl" : ""}`}>
                 <div className="ns-outlet-wrap">
+                  <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
+                    <button
+                      onClick={() => {
+                        const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement;
+                        if (!flipper) return;
+                        flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+                        flipper.style.transform = 'rotateY(0deg)';
+                      }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6,
+                        background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: 8, padding: "5px 10px", cursor: "pointer",
+                        color: "rgba(255,255,255,0.5)", fontSize: 12, fontFamily: "inherit",
+                        transition: "background 0.15s",
+                      }}
+                    >
+                      ← Back
+                    </button>
+                  </div>
                   <Outlet />
                 </div>
               </div>
@@ -1035,6 +1153,7 @@ export function NeoScaleShell() {
                   if (e.key === "Enter" && searchQuery.trim().length >= 1) {
                     setSearchOpen(false);
                     setSearchQuery("");
+                    flipMiddle('right');
                     navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
                   }
                 }}
@@ -1045,13 +1164,13 @@ export function NeoScaleShell() {
                 {searchLoading && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>Searching…</div>}
                 {!searchLoading && searchResults.length === 0 && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>No results</div>}
                 {searchResults.map((r: any) => (
-                  <div key={r.id} className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); navigate(`/content/${r.id}`); }}>
+                  <div key={r.id} className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); flipMiddle('right'); navigate(`/content/${r.id}`); }}>
                     <span className="ns-search-result-badge">{displayContentType(r.content_type)}</span>
                     <span className="ns-search-result-title">{r.title}</span>
                   </div>
                 ))}
                 {searchQuery.length >= 2 && !searchLoading && (
-                  <div className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`); }}>
+                  <div className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); flipMiddle('right'); navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`); }}>
                     <span style={{ fontSize: 10, color: "#55e0d2" }}>See all results →</span>
                   </div>
                 )}
@@ -1065,6 +1184,7 @@ export function NeoScaleShell() {
                   key={cat.slug}
                   className="ns-right-cat"
                   onClick={() => {
+                    flipMiddle('right');
                     if (cat.slug === "projects") navigate("/category/projects");
                     else if (cat.slug === "bounties") navigate("/browse?tab=bounties");
                     else navigate(`/category/${cat.slug}`);
@@ -1085,7 +1205,7 @@ export function NeoScaleShell() {
                 <div
                   key={item.id}
                   className="ns-trending-item"
-                  onClick={() => navigate(`/content/${item.id}`)}
+                  onClick={() => { flipMiddle('right'); navigate(`/content/${item.id}`); }}
                 >
                   <span className="ns-trending-rank">{i + 1}</span>
                   <div className="ns-trending-info">
@@ -1111,7 +1231,7 @@ export function NeoScaleShell() {
                   const content = pick.content_items;
                   const curator = pick.curators?.profiles;
                   return (
-                    <div key={pick.id} className="ns-curator-item" onClick={() => content && navigate(`/content/${content.id}`)}>
+                    <div key={pick.id} className="ns-curator-item" onClick={() => { if (content) { flipMiddle('right'); navigate(`/content/${content.id}`); } }}>
                       <div className="ns-curator-avatar">
                         {curator?.avatar_url ? <img src={curator.avatar_url} alt="" /> : <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>✦</span>}
                       </div>
@@ -1130,7 +1250,7 @@ export function NeoScaleShell() {
               <>
                 <div className="ns-section-title">Collections</div>
                 {featuredCollections.map((col: any) => (
-                  <div key={col.id} className="ns-collection-item" onClick={() => navigate(`/collection/${col.slug || col.id}`)}>
+                  <div key={col.id} className="ns-collection-item" onClick={() => { flipMiddle('right'); navigate(`/collection/${col.slug || col.id}`); }}>
                     <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>{col.title}</div>
                     <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>
                       {(col.profiles as any)?.display_name || (col.profiles as any)?.username || "Creator"} · {col.item_count} items
