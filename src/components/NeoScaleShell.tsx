@@ -1151,7 +1151,7 @@ export function NeoScaleShell() {
                       <div className="ns-follow-name">{s.display_name || s.username}</div>
                       <div className="ns-follow-handle">@{s.username}</div>
                     </div>
-                    <FollowButton targetUserId={s.id} size="sm" />
+                    <FollowButton creatorId={s.id} />
                   </div>
                 ))}
               </>
