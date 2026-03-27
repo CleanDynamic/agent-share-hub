@@ -566,6 +566,7 @@ export function NeoScaleShell() {
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRef    = useRef<HTMLDivElement>(null);
   const rightRef   = useRef<HTMLDivElement>(null);
+  const searchDebounce = useRef<ReturnType<typeof setTimeout>>();
 
   const [isFlipped,  setIsFlipped]  = useState(false);
   const [flipDir,    setFlipDir]    = useState<1 | -1>(1);
@@ -575,6 +576,8 @@ export function NeoScaleShell() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const isMobile = useIsMobile();
   const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
@@ -586,18 +589,6 @@ export function NeoScaleShell() {
   const FLIP_MS = 720;
   const isHome  = location.pathname === "/";
   const navPage = routeToNav(location.pathname);
-
-  /* ── Mobile fallback ── */
-  if (isMobile) {
-    return (
-      <>
-        <MobileNav />
-        <main style={{ paddingTop: 56, paddingBottom: 56, minHeight: "100vh" }}>
-          <Outlet />
-        </main>
-      </>
-    );
-  }
 
   /* ── CSS injection ── */
   // eslint-disable-next-line react-hooks/rules-of-hooks
