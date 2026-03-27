@@ -901,23 +901,28 @@ export function NeoScaleShell() {
   }
 
   /* ── Directional flip ── */
+  // 'left'  → targets the FRONT face (home feed); no-op if already on front
+  // 'right' → targets the BACK face  (router outlet); no-op if already on back
   function flipMiddle(source: 'left' | 'right') {
     if (isFlipping.current) return;
 
-    // NAV-1: If already on the back face (outlet visible), skip the flip.
-    // currentRotation % 360 === 0 means front face; any other value means back face.
-    // Without this guard, each nav click unconditionally adds 180°, so clicking from
-    // the back face (180°) flips to 360° (front/home) — causing the double-click bug.
-    if (currentRotation.current % 360 !== 0) return;
+    const onFrontFace = currentRotation.current % 360 === 0;
+    if (source === 'left'  &&  onFrontFace) return;  // already showing front
+    if (source === 'right' && !onFrontFace) return;  // already showing back
 
     const flipper = document.querySelector(
       '.ns-middle-flipper'
     ) as HTMLElement | null;
     if (!flipper) return;
 
-    // Direction: left source adds 180, right source subtracts 180
-    const delta = source === 'left' ? 180 : -180;
-    currentRotation.current += delta;
+    if (source === 'left') {
+      // Snap to nearest front-face angle (0°, 360°, 720°, …)
+      const nearest360 = Math.round(currentRotation.current / 360) * 360;
+      currentRotation.current = nearest360;
+    } else {
+      // Advance +180° to reach the back face
+      currentRotation.current += 180;
+    }
 
     isFlipping.current = true;
     flipper.style.transition =
@@ -1007,7 +1012,7 @@ export function NeoScaleShell() {
                   {item.divider && idx > 0 && <div className="ns-nav-divider" />}
                   <div
                     className={`ns-nav-item${navPage === item.key ? " active" : ""}`}
-                    onClick={() => { flipMiddle('left'); handleNav(item.route); }}
+                    onClick={() => { flipMiddle('right'); handleNav(item.route); }}
                   >
                     <span className="ns-nav-icon">{item.icon}</span>
                     <span className="ns-nav-label">{item.label}</span>
