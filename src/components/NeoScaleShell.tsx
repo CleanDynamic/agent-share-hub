@@ -591,18 +591,18 @@ export function NeoScaleShell() {
   const navPage = routeToNav(location.pathname);
 
   /* ── CSS injection ── */
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
+    if (isMobile) return;
     const tag = document.createElement("style");
     tag.setAttribute("data-neoscale-shell", "1");
     tag.textContent = NEOSCALE_CSS;
     document.head.appendChild(tag);
     return () => { document.head.removeChild(tag); };
-  }, []);
+  }, [isMobile]);
 
   /* ── Flip on route change ── */
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
+    if (isMobile) return;
     if (!flipperRef.current) return;
     const flipper = flipperRef.current;
 
@@ -626,7 +626,7 @@ export function NeoScaleShell() {
       triggerPulse();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
+  }, [location.pathname, isMobile]);
 
   function triggerPulse() {
     setPulsing(false);
@@ -635,8 +635,8 @@ export function NeoScaleShell() {
   }
 
   /* ── Canvas grid background ── */
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
+    if (isMobile) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
@@ -701,11 +701,11 @@ export function NeoScaleShell() {
     }
     draw();
     return () => { window.removeEventListener("resize", resize); cancelAnimationFrame(raf); };
-  }, []);
+  }, [isMobile]);
 
   /* ── Responsive scale ── */
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
+    if (isMobile) return;
     const el = containerRef.current;
     if (!el) return;
     const nativeW = 1068, nativeH = 775, pad = 48;
@@ -720,59 +720,12 @@ export function NeoScaleShell() {
     window.addEventListener("resize", rescale);
     rescale();
     return () => window.removeEventListener("resize", rescale);
-  }, []);
-
-  /* ── Tilt effect for side panels ── */
-  function initTilt(ref: React.RefObject<HTMLDivElement>) {
-    return {
-      onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!ref.current) return;
-        const r = ref.current.getBoundingClientRect();
-        const rx = (e.clientY - r.top)  / r.height;
-        const ry = (e.clientX - r.left) / r.width;
-        const rotY = (ry - 0.5) * 16;
-        const rotX = (0.5 - rx) * 16;
-        ref.current.style.transform = `perspective(600px) rotateX(${rotX}deg) rotateY(${rotY}deg) scale(1.02)`;
-      },
-      onMouseLeave: () => {
-        if (!ref.current) return;
-        ref.current.style.transform = "perspective(600px) rotateX(0deg) rotateY(0deg) scale(1)";
-      },
-    };
-  }
-
-  /* ── Nav click handler ── */
-  function handleNav(route: string) {
-    if (flipLocked) return;
-    navigate(route);
-  }
-
-  /* ── Right panel search ── */
-  const searchDebounce = useRef<ReturnType<typeof setTimeout>>();
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-
-  function handleSearchChange(q: string) {
-    setSearchQuery(q);
-    setSearchOpen(q.length >= 2);
-    clearTimeout(searchDebounce.current);
-    if (q.length < 2) { setSearchResults([]); return; }
-    searchDebounce.current = setTimeout(async () => {
-      setSearchLoading(true);
-      const { data } = await supabase
-        .from("content_items")
-        .select("id, title, content_type")
-        .ilike("title", `%${q}%`)
-        .eq("status", "approved")
-        .limit(6);
-      setSearchResults(data ?? []);
-      setSearchLoading(false);
-    }, 300);
-  }
+  }, [isMobile]);
 
   /* ── Supabase: recent feed ── */
   const { data: feedItems, isLoading: feedLoading } = useQuery({
     queryKey: ["ns_home_recent"],
+    enabled: !isMobile,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
@@ -788,6 +741,7 @@ export function NeoScaleShell() {
   /* ── Supabase: trending ── */
   const { data: trendingItems } = useQuery({
     queryKey: ["ns_trending"],
+    enabled: !isMobile,
     queryFn: async () => {
       const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
       const { data } = await supabase
@@ -814,6 +768,7 @@ export function NeoScaleShell() {
   /* ── Supabase: curator picks ── */
   const { data: curatorPicks } = useQuery({
     queryKey: ["ns_curator_picks"],
+    enabled: !isMobile,
     queryFn: async () => {
       const { data } = await (supabase
         .from("curator_recommendations")
@@ -829,6 +784,7 @@ export function NeoScaleShell() {
   /* ── Supabase: featured collections ── */
   const { data: featuredCollections } = useQuery({
     queryKey: ["ns_featured_collections"],
+    enabled: !isMobile,
     queryFn: async () => {
       const { data } = await supabase
         .from("collections")
@@ -844,7 +800,7 @@ export function NeoScaleShell() {
   /* ── Supabase: who to follow ── */
   const { data: followSuggestions } = useQuery({
     queryKey: ["ns_who_to_follow", user?.id],
-    enabled: isLoggedIn && !!user?.id,
+    enabled: !isMobile && isLoggedIn && !!user?.id,
     queryFn: async () => {
       const { data: followRows } = await supabase
         .from("follows")
@@ -863,6 +819,61 @@ export function NeoScaleShell() {
     },
     staleTime: 120_000,
   });
+
+  /* ── Mobile fallback (after all hooks) ── */
+  if (isMobile) {
+    return (
+      <>
+        <MobileNav />
+        <main style={{ paddingTop: 56, paddingBottom: 56, minHeight: "100vh" }}>
+          <Outlet />
+        </main>
+      </>
+    );
+  }
+
+  /* ── Tilt effect for side panels ── */
+  function initTilt(ref: React.RefObject<HTMLDivElement>) {
+    return {
+      onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!ref.current) return;
+        const r = ref.current.getBoundingClientRect();
+        const rx = (e.clientY - r.top)  / r.height;
+        const ry = (e.clientX - r.left) / r.width;
+        const rotY = (ry - 0.5) * 16;
+        const rotX = (0.5 - rx) * 16;
+        ref.current.style.transform = `perspective(600px) rotateX(${rotX}deg) rotateY(${rotY}deg) scale(1.02)`;
+      },
+      onMouseLeave: () => {
+        if (!ref.current) return;
+        ref.current.style.transform = "perspective(600px) rotateX(0deg) rotateY(0deg) scale(1)";
+      },
+    };
+  }
+
+  /* ── Nav click handler ── */
+  function handleNav(route: string) {
+    if (flipLocked) return;
+    navigate(route);
+  }
+
+  function handleSearchChange(q: string) {
+    setSearchQuery(q);
+    setSearchOpen(q.length >= 2);
+    clearTimeout(searchDebounce.current);
+    if (q.length < 2) { setSearchResults([]); return; }
+    searchDebounce.current = setTimeout(async () => {
+      setSearchLoading(true);
+      const { data } = await supabase
+        .from("content_items")
+        .select("id, title, content_type")
+        .ilike("title", `%${q}%`)
+        .eq("status", "approved")
+        .limit(6);
+      setSearchResults(data ?? []);
+      setSearchLoading(false);
+    }, 300);
+  }
 
   /* ── Build nav items ── */
   type NavEntry = { key: string; icon: JSX.Element; label: string; route: string; badge?: string | null; authOnly?: boolean; divider?: boolean; creatorOnly?: boolean };
