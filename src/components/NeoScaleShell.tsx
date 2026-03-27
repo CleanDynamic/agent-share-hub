@@ -647,7 +647,6 @@ export function NeoScaleShell() {
   const { display: draftBadge } = useDraftCount();
   const { hasUnseenSaves } = useNavBadges();
 
-  const isHome  = location.pathname === "/";
   const navPage = routeToNav(location.pathname);
 
   /* ── CSS injection ── */
@@ -904,6 +903,12 @@ export function NeoScaleShell() {
   /* ── Directional flip ── */
   function flipMiddle(source: 'left' | 'right') {
     if (isFlipping.current) return;
+
+    // NAV-1: If already on the back face (outlet visible), skip the flip.
+    // currentRotation % 360 === 0 means front face; any other value means back face.
+    // Without this guard, each nav click unconditionally adds 180°, so clicking from
+    // the back face (180°) flips to 360° (front/home) — causing the double-click bug.
+    if (currentRotation.current % 360 !== 0) return;
 
     const flipper = document.querySelector(
       '.ns-middle-flipper'
