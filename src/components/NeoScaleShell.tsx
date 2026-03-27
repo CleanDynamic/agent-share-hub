@@ -632,9 +632,7 @@ export function NeoScaleShell() {
   const rightRef   = useRef<HTMLDivElement>(null);
   const searchDebounce = useRef<ReturnType<typeof setTimeout>>();
 
-  const [isFlipped,  setIsFlipped]  = useState(false);
   const [flipDir,    setFlipDir]    = useState<1 | -1>(1);
-  const [flipLocked, setFlipLocked] = useState(false);
   const [pulsing,    setPulsing]    = useState(false);
   const [activeTab,  setActiveTab]  = useState("For You");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -651,7 +649,6 @@ export function NeoScaleShell() {
   const { display: draftBadge } = useDraftCount();
   const { hasUnseenSaves } = useNavBadges();
 
-  const FLIP_MS = 720;
   const isHome  = location.pathname === "/";
   const navPage = routeToNav(location.pathname);
 
@@ -682,34 +679,6 @@ export function NeoScaleShell() {
     };
     fetchPosts();
   }, []);
-
-  /* ── Flip on route change ── */
-  useEffect(() => {
-    if (isMobile) return;
-    if (!flipperRef.current) return;
-    const flipper = flipperRef.current;
-
-    if (isHome) {
-      if (!isFlipped) return;
-      flipper.style.transition = `transform ${FLIP_MS}ms cubic-bezier(0.175,0.885,0.32,1.275)`;
-      flipper.style.transform  = "rotateY(0deg)";
-      setIsFlipped(false);
-      triggerPulse();
-    } else {
-      if (isFlipped) {
-        flipper.style.transition = "none";
-        flipper.style.transform  = "rotateY(0deg)";
-        void flipper.offsetWidth;
-      }
-      const dir = 1;
-      setFlipDir(dir);
-      flipper.style.transition = `transform ${FLIP_MS}ms cubic-bezier(0.175,0.885,0.32,1.275)`;
-      flipper.style.transform  = `rotateY(${dir * 180}deg)`;
-      setIsFlipped(true);
-      triggerPulse();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, isMobile]);
 
   function triggerPulse() {
     setPulsing(false);
@@ -934,9 +903,21 @@ export function NeoScaleShell() {
     };
   }
 
+  /* ── Directional flip ── */
+  const FLIP_LEFT  = 'rotateY(180deg)';
+  const FLIP_RIGHT = 'rotateY(-180deg)';
+
+  function flipMiddle(direction: 'left' | 'right') {
+    const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement;
+    if (!flipper) return;
+    flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+    flipper.style.transform = direction === 'left' ? FLIP_LEFT : FLIP_RIGHT;
+    setFlipDir(direction === 'left' ? 1 : -1);
+    triggerPulse();
+  }
+
   /* ── Nav click handler ── */
   function handleNav(route: string) {
-    if (flipLocked) return;
     navigate(route);
   }
 
@@ -1005,14 +986,14 @@ export function NeoScaleShell() {
             ref={leftRef}
             {...initTilt(leftRef)}
           >
-            <div className="ns-logo" onClick={() => handleNav("/")}>NeoScale</div>
+            <div className="ns-logo" onClick={() => { flipMiddle('left'); handleNav("/"); }}>NeoScale</div>
             <ul className="ns-nav-list">
               {visibleNav.map((item, idx) => (
                 <li key={item.key}>
                   {item.divider && idx > 0 && <div className="ns-nav-divider" />}
                   <div
                     className={`ns-nav-item${navPage === item.key ? " active" : ""}`}
-                    onClick={() => handleNav(item.route)}
+                    onClick={() => { flipMiddle('left'); handleNav(item.route); }}
                   >
                     <span className="ns-nav-icon">{item.icon}</span>
                     <span className="ns-nav-label">{item.label}</span>
@@ -1125,6 +1106,25 @@ export function NeoScaleShell() {
               {/* BACK FACE — router outlet */}
               <div className={`ns-middle-back${flipDir === -1 ? " rtl" : ""}`}>
                 <div className="ns-outlet-wrap">
+                  <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
+                    <button
+                      onClick={() => {
+                        const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement;
+                        if (!flipper) return;
+                        flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+                        flipper.style.transform = 'rotateY(0deg)';
+                      }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6,
+                        background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: 8, padding: "5px 10px", cursor: "pointer",
+                        color: "rgba(255,255,255,0.5)", fontSize: 12, fontFamily: "inherit",
+                        transition: "background 0.15s",
+                      }}
+                    >
+                      ← Back
+                    </button>
+                  </div>
                   <Outlet />
                 </div>
               </div>
@@ -1153,6 +1153,7 @@ export function NeoScaleShell() {
                   if (e.key === "Enter" && searchQuery.trim().length >= 1) {
                     setSearchOpen(false);
                     setSearchQuery("");
+                    flipMiddle('right');
                     navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
                   }
                 }}
@@ -1163,13 +1164,13 @@ export function NeoScaleShell() {
                 {searchLoading && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>Searching…</div>}
                 {!searchLoading && searchResults.length === 0 && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>No results</div>}
                 {searchResults.map((r: any) => (
-                  <div key={r.id} className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); navigate(`/content/${r.id}`); }}>
+                  <div key={r.id} className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); flipMiddle('right'); navigate(`/content/${r.id}`); }}>
                     <span className="ns-search-result-badge">{displayContentType(r.content_type)}</span>
                     <span className="ns-search-result-title">{r.title}</span>
                   </div>
                 ))}
                 {searchQuery.length >= 2 && !searchLoading && (
-                  <div className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`); }}>
+                  <div className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); flipMiddle('right'); navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`); }}>
                     <span style={{ fontSize: 10, color: "#55e0d2" }}>See all results →</span>
                   </div>
                 )}
@@ -1183,6 +1184,7 @@ export function NeoScaleShell() {
                   key={cat.slug}
                   className="ns-right-cat"
                   onClick={() => {
+                    flipMiddle('right');
                     if (cat.slug === "projects") navigate("/category/projects");
                     else if (cat.slug === "bounties") navigate("/browse?tab=bounties");
                     else navigate(`/category/${cat.slug}`);
@@ -1203,7 +1205,7 @@ export function NeoScaleShell() {
                 <div
                   key={item.id}
                   className="ns-trending-item"
-                  onClick={() => navigate(`/content/${item.id}`)}
+                  onClick={() => { flipMiddle('right'); navigate(`/content/${item.id}`); }}
                 >
                   <span className="ns-trending-rank">{i + 1}</span>
                   <div className="ns-trending-info">
@@ -1229,7 +1231,7 @@ export function NeoScaleShell() {
                   const content = pick.content_items;
                   const curator = pick.curators?.profiles;
                   return (
-                    <div key={pick.id} className="ns-curator-item" onClick={() => content && navigate(`/content/${content.id}`)}>
+                    <div key={pick.id} className="ns-curator-item" onClick={() => { if (content) { flipMiddle('right'); navigate(`/content/${content.id}`); } }}>
                       <div className="ns-curator-avatar">
                         {curator?.avatar_url ? <img src={curator.avatar_url} alt="" /> : <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>✦</span>}
                       </div>
@@ -1248,7 +1250,7 @@ export function NeoScaleShell() {
               <>
                 <div className="ns-section-title">Collections</div>
                 {featuredCollections.map((col: any) => (
-                  <div key={col.id} className="ns-collection-item" onClick={() => navigate(`/collection/${col.slug || col.id}`)}>
+                  <div key={col.id} className="ns-collection-item" onClick={() => { flipMiddle('right'); navigate(`/collection/${col.slug || col.id}`); }}>
                     <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>{col.title}</div>
                     <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>
                       {(col.profiles as any)?.display_name || (col.profiles as any)?.username || "Creator"} · {col.item_count} items
