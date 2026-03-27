@@ -73,7 +73,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-col">
       {/* Wordmark */}
       <div className={`px-6 pt-7 pb-5 ${collapsed ? "flex justify-center" : ""}`}>
         <Link to="/" className={collapsed ? "text-xl font-light text-[#E8571A]" : "block"}>
@@ -89,7 +89,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 px-2">
+      <nav className="px-2">
         {visibleItems.map((item, idx) => {
           const isActive = location.pathname === item.to;
           return (
@@ -126,7 +126,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
       </nav>
 
       {/* Bottom user section */}
-      <div className="mt-auto px-4 py-4" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <div className="mt-3 px-4 py-4" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
         {isLoggedIn ? (
           <div className="relative" ref={menuRef}>
             <button
