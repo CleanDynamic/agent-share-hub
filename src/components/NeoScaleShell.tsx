@@ -904,19 +904,23 @@ export function NeoScaleShell() {
   function flipMiddle(source: 'left' | 'right') {
     if (isFlipping.current) return;
 
-    // NAV-1: If already on the back face (outlet visible), skip the flip.
-    // currentRotation % 360 === 0 means front face; any other value means back face.
-    // Without this guard, each nav click unconditionally adds 180°, so clicking from
-    // the back face (180°) flips to 360° (front/home) — causing the double-click bug.
-    if (currentRotation.current % 360 !== 0) return;
-
     const flipper = document.querySelector(
       '.ns-middle-flipper'
     ) as HTMLElement | null;
     if (!flipper) return;
 
-    // Direction: left source adds 180, right source subtracts 180
-    const delta = source === 'left' ? 180 : -180;
+    // NAV-1: Determine which face is currently showing.
+    // Front face: currentRotation % 360 === 0 (0°, 360°, 720°, …)
+    // Back face:  currentRotation % 360 === ±180° (180°, 540°, -180°, …)
+    //
+    // The original bug: every call added ±180°, so a click from the back face
+    // (180°) would land on 360° (front/home), requiring a second click.
+    //
+    // Fix: from the back face, add a full 360° so the card spins all the way
+    // around and lands on the back face again — continuous animation, no home detour.
+    const normalized = ((currentRotation.current % 360) + 360) % 360;
+    const isOnBackFace = normalized !== 0;
+    const delta = isOnBackFace ? 360 : (source === 'left' ? 180 : -180);
     currentRotation.current += delta;
 
     isFlipping.current = true;
