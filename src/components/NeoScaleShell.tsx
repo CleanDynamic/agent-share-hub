@@ -647,6 +647,7 @@ export function NeoScaleShell() {
   const { display: draftBadge } = useDraftCount();
   const { hasUnseenSaves } = useNavBadges();
 
+  const isHome  = location.pathname === "/";
   const navPage = routeToNav(location.pathname);
 
   /* ── CSS injection ── */
@@ -901,8 +902,6 @@ export function NeoScaleShell() {
   }
 
   /* ── Directional flip ── */
-  // Front face → standard 180° flip (direction depends on source)
-  // Back face  → full 360° spin, landing back on the back face with new content
   function flipMiddle(source: 'left' | 'right') {
     if (isFlipping.current) return;
 
@@ -911,16 +910,9 @@ export function NeoScaleShell() {
     ) as HTMLElement | null;
     if (!flipper) return;
 
-    const onFrontFace = currentRotation.current % 360 === 0;
-
-    if (onFrontFace) {
-      // Standard directional flip to reveal the back face
-      const delta = source === 'left' ? 180 : -180;
-      currentRotation.current += delta;
-    } else {
-      // Already on back face — full 360° spin back to back face (new page visible)
-      currentRotation.current += 360;
-    }
+    // Direction: left source adds 180, right source subtracts 180
+    const delta = source === 'left' ? 180 : -180;
+    currentRotation.current += delta;
 
     isFlipping.current = true;
     flipper.style.transition =
