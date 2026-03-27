@@ -572,7 +572,7 @@ export function NeoScaleShell() {
   const [flipDir,    setFlipDir]    = useState<1 | -1>(1);
   const [flipLocked, setFlipLocked] = useState(false);
   const [pulsing,    setPulsing]    = useState(false);
-  const [activeTab,  setActiveTab]  = useState("Recent");
+  const [activeTab,  setActiveTab]  = useState("For You");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -981,7 +981,7 @@ export function NeoScaleShell() {
               <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
                 <div className="ns-front-title">Home</div>
                 <div className="ns-tab-row">
-                  {["Recent", "Popular", "Following"].map(tab => (
+                  {["For You", "Following", "Trending", "Recent"].map(tab => (
                     <div
                       key={tab}
                       className={`ns-tab${activeTab === tab ? " active" : ""}`}
