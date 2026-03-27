@@ -98,9 +98,6 @@ const NEOSCALE_CSS = `
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: transform 0.15s ease-out;
-  transform-style: preserve-3d;
-  will-change: transform;
 }
 .ns-logo {
   font-size: 15px;
@@ -232,7 +229,6 @@ const NEOSCALE_CSS = `
   width: 100%; height: 100%;
   position: relative;
   transform-style: preserve-3d;
-  transform: rotateY(0deg);
 }
 .ns-middle-front, .ns-middle-back {
   position: absolute; top: 0; left: 0;
@@ -631,6 +627,8 @@ export function NeoScaleShell() {
   const leftRef    = useRef<HTMLDivElement>(null);
   const rightRef   = useRef<HTMLDivElement>(null);
   const searchDebounce = useRef<ReturnType<typeof setTimeout>>();
+  const isFlipping = useRef(false);
+  const currentRotation = useRef(0);
 
   const [flipDir,    setFlipDir]    = useState<1 | -1>(1);
   const [pulsing,    setPulsing]    = useState(false);
@@ -904,16 +902,27 @@ export function NeoScaleShell() {
   }
 
   /* ── Directional flip ── */
-  const FLIP_LEFT  = 'rotateY(180deg)';
-  const FLIP_RIGHT = 'rotateY(-180deg)';
+  function flipMiddle(source: 'left' | 'right') {
+    if (isFlipping.current) return;
 
-  function flipMiddle(direction: 'left' | 'right') {
-    const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement;
+    const flipper = document.querySelector(
+      '.ns-middle-flipper'
+    ) as HTMLElement | null;
     if (!flipper) return;
-    flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-    flipper.style.transform = direction === 'left' ? FLIP_LEFT : FLIP_RIGHT;
-    setFlipDir(direction === 'left' ? 1 : -1);
-    triggerPulse();
+
+    // Direction: left source adds 180, right source subtracts 180
+    const delta = source === 'left' ? 180 : -180;
+    currentRotation.current += delta;
+
+    isFlipping.current = true;
+    flipper.style.transition =
+      'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+    flipper.style.transform =
+      `rotateY(${currentRotation.current}deg)`;
+
+    setTimeout(() => {
+      isFlipping.current = false;
+    }, 650);
   }
 
   /* ── Nav click handler ── */
@@ -1109,10 +1118,23 @@ export function NeoScaleShell() {
                   <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
                     <button
                       onClick={() => {
-                        const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement;
+                        if (isFlipping.current) return;
+                        const flipper = document.querySelector(
+                          '.ns-middle-flipper'
+                        ) as HTMLElement | null;
                         if (!flipper) return;
-                        flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-                        flipper.style.transform = 'rotateY(0deg)';
+                        // Round to nearest 180 that shows the front face
+                        // Front face shows at 0, 360, 720 (even multiples of 360)
+                        const current = currentRotation.current;
+                        const nearest360 = Math.round(current / 360) * 360;
+                        currentRotation.current = nearest360;
+                        isFlipping.current = true;
+                        flipper.style.transition =
+                          'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+                        flipper.style.transform = `rotateY(${nearest360}deg)`;
+                        setTimeout(() => {
+                          isFlipping.current = false;
+                        }, 650);
                       }}
                       style={{
                         display: "flex", alignItems: "center", gap: 6,
