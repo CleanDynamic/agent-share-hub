@@ -1,5 +1,9 @@
-import { AppLayout } from "@/components/layout/AppLayout";
+import { NeoScaleShell } from "@/components/NeoScaleShell";
 
 export function Layout() {
-  return <AppLayout />;
+  return <NeoScaleShell />;
 }
+
+// AppLayout kept for reference/revert:
+// import { AppLayout } from "@/components/layout/AppLayout";
+// export function Layout() { return <AppLayout />; }
