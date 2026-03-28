@@ -20,9 +20,24 @@ import { displayContentType } from "@/lib/content-types";
    CSS — injected into document.head on mount
 ──────────────────────────────────────────────── */
 const NEOSCALE_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 .ns-root *, .ns-root *::before, .ns-root *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ── Middle panel design tokens ── */
+.ns-middle-front, .ns-middle-back {
+  --mp-text: rgba(255,255,255,0.92);
+  --mp-text-secondary: rgba(255,255,255,0.45);
+  --mp-text-muted: rgba(255,255,255,0.25);
+  --mp-border: rgba(255,255,255,0.06);
+  --mp-surface: rgba(255,255,255,0.03);
+  --mp-orange: #E8571A;
+  --mp-teal: #2EC4B6;
+  --mp-font: 'Playfair Display', Georgia, serif;
+  font-family: var(--mp-font);
+  color: var(--mp-text);
+}
 
 .ns-root {
   min-height: 100vh;
@@ -247,7 +262,7 @@ const NEOSCALE_CSS = `
     0 0 0 1px rgba(255,255,255,0.03) inset,
     0 1px 0 rgba(255,255,255,0.05) inset;
   overflow: hidden;
-  padding: 24px;
+  padding: 0;
 }
 .ns-middle-front::before, .ns-middle-back::before {
   content: '';
@@ -259,27 +274,48 @@ const NEOSCALE_CSS = `
 .ns-middle-back { transform: rotateY(180deg); }
 .ns-middle-back.rtl { transform: rotateY(-180deg); }
 
-/* ── Front face — feed ── */
-.ns-front-title {
-  font-size: 18px; font-weight: 600;
-  color: rgba(255,255,255,0.9);
-  letter-spacing: -0.3px;
-  margin-bottom: 16px;
+/* ── Front face — compose bar ── */
+.ns-compose-bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--mp-border);
+  flex-shrink: 0;
 }
+.ns-compose-avatar {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: var(--mp-orange); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; color: #fff;
+}
+.ns-compose-prompt {
+  flex: 1; color: var(--mp-text-muted);
+  font-size: 17px; cursor: pointer;
+  font-family: var(--mp-font); font-weight: 300;
+}
+.ns-compose-prompt:hover { color: var(--mp-text-secondary); }
+
+/* ── Front face — Twitter tabs ── */
 .ns-tab-row {
-  display: flex; gap: 4px;
-  margin-bottom: 20px;
-  background: rgba(255,255,255,0.03);
-  border-radius: 10px; padding: 3px;
+  display: flex; gap: 0; background: transparent;
+  border-radius: 0; padding: 0; margin-bottom: 0;
+  border-bottom: 1px solid var(--mp-border);
+  flex-shrink: 0;
 }
 .ns-tab {
-  flex: 1; text-align: center;
-  padding: 7px 0; font-size: 12px; font-weight: 500;
-  color: rgba(255,255,255,0.35);
-  border-radius: 8px; cursor: pointer;
-  transition: all 0.25s;
+  flex: 1; text-align: center; padding: 14px 0;
+  font-size: 14px; font-weight: 500;
+  color: var(--mp-text-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px; cursor: pointer;
+  transition: color 0.15s; border-radius: 0;
+  background: transparent;
+  font-family: var(--mp-font);
 }
-.ns-tab.active { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+.ns-tab:hover { color: var(--mp-text); background: rgba(255,255,255,0.02); }
+.ns-tab.active {
+  color: var(--mp-text); font-weight: 700;
+  border-bottom: 2px solid var(--mp-orange);
+}
 
 .ns-feed-scroll {
   flex: 1;
@@ -310,13 +346,95 @@ const NEOSCALE_CSS = `
 /* ── Back face — outlet ── */
 .ns-outlet-wrap {
   width: 100%; height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto; overflow-x: hidden;
+  display: flex; flex-direction: column;
+  background: transparent;
+  color: var(--mp-text);
+  font-family: var(--mp-font);
 }
 .ns-outlet-wrap::-webkit-scrollbar { width: 3px; }
 .ns-outlet-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+/* Reset Lovable page styles inside the panel */
+.ns-outlet-wrap .bg-background,
+.ns-outlet-wrap [class*="bg-background"] { background: transparent !important; }
+.ns-outlet-wrap .text-foreground,
+.ns-outlet-wrap [class*="text-foreground"] { color: var(--mp-text) !important; }
+.ns-outlet-wrap .text-muted-foreground,
+.ns-outlet-wrap [class*="text-muted-foreground"] { color: var(--mp-text-secondary) !important; }
+.ns-outlet-wrap .border-border,
+.ns-outlet-wrap [class*="border-border"] { border-color: var(--mp-border) !important; }
+.ns-outlet-wrap .sticky,
+.ns-outlet-wrap [class*="sticky"] {
+  background: rgba(14,14,22,0.92) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.ns-outlet-wrap button[class*="text-center"][class*="font-medium"] {
+  font-family: var(--mp-font) !important;
+  font-size: 14px !important;
+  color: var(--mp-text-secondary) !important;
+}
+.ns-outlet-wrap button[class*="text-center"][class*="font-medium"][class*="text-foreground"] {
+  color: var(--mp-text) !important;
+  font-weight: 700 !important;
+}
+.ns-outlet-wrap .px-5,
+.ns-outlet-wrap [class*="px-5"] {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+.ns-outlet-wrap h1[class*="text-[22px]"] {
+  font-size: 20px !important;
+  font-family: var(--mp-font) !important;
+  font-weight: 700 !important;
+  color: var(--mp-text) !important;
+}
+.ns-outlet-wrap [class*="rounded-full"][class*="border"][class*="px-2.5"] {
+  font-family: var(--mp-font) !important;
+  font-size: 10px !important;
+}
+.ns-outlet-wrap p[class*="font-semibold"][class*="text-foreground"] {
+  font-family: var(--mp-font) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: var(--mp-text) !important;
+}
+.ns-outlet-wrap a[class*="font-semibold"][class*="text-foreground"] {
+  color: var(--mp-text) !important;
+  font-family: var(--mp-font) !important;
+  font-weight: 700 !important;
+  text-decoration: none;
+}
+.ns-outlet-wrap [class*="text-xs"][class*="text-muted-foreground"] {
+  color: var(--mp-text-muted) !important;
+  font-size: 12px !important;
+}
+.ns-outlet-wrap img[class*="rounded-xl"] {
+  border-radius: 12px !important;
+  border: 1px solid var(--mp-border) !important;
+}
+.ns-outlet-wrap button[class*="text-[11px]"] {
+  color: var(--mp-teal) !important;
+  font-size: 12px !important;
+  font-family: var(--mp-font) !important;
+  background: none !important;
+  border: none !important;
+  cursor: pointer;
+}
+
+/* Back button */
+.ns-outlet-back-btn {
+  display: inline-flex; align-items: center;
+  gap: 6px; padding: 10px 16px;
+  font-size: 13px; color: var(--mp-text-secondary);
+  background: none; border: none;
+  cursor: pointer; font-family: var(--mp-font);
+  transition: color 0.12s;
+  border-bottom: 1px solid var(--mp-border);
+  width: 100%; flex-shrink: 0;
+}
+.ns-outlet-back-btn:hover { color: var(--mp-text); }
 
 /* ── Right panel ── */
 .ns-right-panel {
@@ -474,39 +592,84 @@ const NEOSCALE_CSS = `
 }
 .ns-footer-link:hover { color: rgba(255,255,255,0.5); }
 
-/* ── Feed card ── */
+/* ── Feed card — Twitter two-column ── */
 .ns-feed-card {
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  display: flex; flex-direction: column; gap: 8px;
-  cursor: pointer; transition: background 0.15s;
+  display: flex; flex-direction: row; gap: 12px;
+  padding: 14px 16px 10px 16px;
+  border-bottom: 1px solid var(--mp-border);
+  cursor: pointer; transition: background 0.12s;
+  background: transparent;
 }
-.ns-feed-card:hover { background: rgba(255,255,255,0.02); }
+.ns-feed-card:hover { background: rgba(255,255,255,0.018); }
+.ns-feed-avatar-col { flex-shrink: 0; }
+.ns-feed-content-col {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.ns-feed-header {
+  display: flex; align-items: baseline;
+  gap: 5px; overflow: hidden;
+}
+.ns-feed-name {
+  font-size: 14px; font-weight: 700;
+  color: var(--mp-text); white-space: nowrap;
+  font-family: var(--mp-font);
+}
+.ns-feed-handle {
+  font-size: 13px; color: var(--mp-text-secondary);
+  white-space: nowrap;
+}
+.ns-feed-sep { color: var(--mp-text-muted); font-size: 12px; }
+.ns-feed-time { font-size: 13px; color: var(--mp-text-secondary); }
+.ns-feed-menu {
+  margin-left: auto; color: var(--mp-text-muted);
+  font-size: 16px; cursor: pointer; flex-shrink: 0;
+  line-height: 1; padding: 0 2px;
+}
+.ns-feed-menu:hover { color: var(--mp-text); }
+.ns-feed-type-badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  background: rgba(232,87,26,0.15); color: #E8571A;
+  border: 1px solid rgba(232,87,26,0.25);
+  align-self: flex-start;
+}
+.ns-feed-title {
+  font-size: 14px; font-weight: 500;
+  color: var(--mp-text); line-height: 1.45;
+  font-family: var(--mp-font);
+}
+.ns-feed-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.ns-feed-tag {
+  font-size: 12px; color: var(--mp-teal);
+  font-weight: 400;
+}
+.ns-feed-tag::before { content: '#'; }
+.ns-feed-actions {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  max-width: 260px; margin-top: 4px;
+}
+.ns-feed-action {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 13px; color: var(--mp-text-muted);
+  cursor: pointer; padding: 4px 6px 4px 0;
+  background: none; border: none;
+  transition: color 0.12s;
+  font-family: var(--mp-font);
+}
+.ns-feed-action:hover { color: var(--mp-text); }
+.ns-feed-action.like:hover { color: #E8571A; }
+.ns-feed-action.reply:hover { color: var(--mp-teal); }
+.ns-feed-action.dl:hover { color: #22C55E; }
 .ns-feed-card-avatar {
-  width: 32px; height: 32px; border-radius: 50%;
+  width: 42px; height: 42px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
-  overflow: hidden;
+  font-size: 14px; font-weight: 700;
+  color: #fff; flex-shrink: 0;
 }
-.ns-feed-card-top { display: flex; align-items: center; gap: 8px; }
-.ns-feed-card-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8); }
-.ns-feed-card-handle { font-size: 11px; color: rgba(255,255,255,0.3); }
-.ns-feed-card-time { font-size: 10px; color: rgba(255,255,255,0.2); margin-left: auto; }
-.ns-feed-card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
-.ns-feed-card-type-badge {
-  font-size: 9px; font-weight: 600; padding: 2px 7px;
-  border-radius: 4px; background: rgba(232,87,26,0.15); color: #E8571A;
-  letter-spacing: 0.3px;
-}
-.ns-feed-card-title { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); line-height: 1.4; }
-.ns-feed-card-stats { display: flex; gap: 12px; font-size: 11px; color: rgba(255,255,255,0.25); }
-.ns-feed-card-actions { display: flex; gap: 6px; }
-.feed-action-btn {
-  padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.07);
-  background: rgba(255,255,255,0.03); font-size: 11px; color: rgba(255,255,255,0.35);
-  cursor: pointer; transition: all 0.15s; font-family: inherit;
-}
-.feed-action-btn:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.6); }
 `;
 
 /* ────────────────────────────────────────────────
@@ -978,6 +1141,198 @@ export function NeoScaleShell() {
     navigate("/");
   };
 
+  /* ── Back-face flip-to-front button handler ── */
+  function handleBackBtn() {
+    if (isFlipping.current) return;
+    const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement | null;
+    if (!flipper) return;
+    const nearest360 = Math.round(currentRotation.current / 360) * 360;
+    currentRotation.current = nearest360;
+    isFlipping.current = true;
+    flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+    flipper.style.transform = `rotateY(${nearest360}deg)`;
+    setTimeout(() => { isFlipping.current = false; }, 650);
+    navigate("/");
+  }
+
+  /* ── Back face content router ── */
+  function renderPageWithHeader(title: string) {
+    return (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
+        <div style={{
+          padding: '16px 16px 14px 16px',
+          borderBottom: '1px solid var(--mp-border)',
+          fontSize: 18, fontWeight: 700,
+          color: 'var(--mp-text)',
+          fontFamily: 'var(--mp-font)',
+          flexShrink: 0,
+        }}>
+          {title}
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <Outlet />
+        </div>
+      </div>
+    );
+  }
+
+  function renderBackFaceContent() {
+    const path = location.pathname;
+    const searchParams = new URLSearchParams(location.search);
+
+    /* /upload without type param → compact entry */
+    if (path === '/upload' && !searchParams.get('type')) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+          <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
+          <div style={{ padding: '20px 16px', flex: 1, overflowY: 'auto' }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--mp-text)', marginBottom: 6, fontFamily: 'var(--mp-font)' }}>
+              Share your work
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--mp-text-secondary)', marginBottom: 24, fontFamily: 'var(--mp-font)' }}>
+              What are you sharing today?
+            </div>
+            {(['Blueprint', 'Blog', 'Bounty', 'Project'] as const).map(type => (
+              <button key={type}
+                onClick={() => navigate(`/upload?type=${type.toLowerCase()}`)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14, width: '100%',
+                  padding: '14px 16px', marginBottom: 8,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--mp-border)',
+                  borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s',
+                  color: 'var(--mp-text)', fontFamily: 'var(--mp-font)',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--mp-border)';
+                }}
+              >
+                <span style={{ fontSize: 20 }}>
+                  {type === 'Blueprint' ? '📐' : type === 'Blog' ? '📝' : type === 'Bounty' ? '🎯' : '🗂️'}
+                </span>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{type}</div>
+                  <div style={{ fontSize: 12, color: 'var(--mp-text-secondary)' }}>
+                    {type === 'Blueprint' ? 'Prompts, agents, workflows, configs'
+                      : type === 'Blog' ? 'Write an article or tutorial'
+                      : type === 'Bounty' ? 'Post a challenge for the community'
+                      : 'Share a project or tool you built'}
+                  </div>
+                </div>
+                <span style={{ marginLeft: 'auto', color: 'var(--mp-text-muted)', fontSize: 16 }}>→</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    /* /profile → compact profile header */
+    if (path === '/profile') {
+      const pInitials = (profile?.display_name ?? profile?.username ?? 'U').slice(0, 2).toUpperCase();
+      return (
+        <div style={{ height: '100%', overflowY: 'auto' }}>
+          <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
+          <div style={{ padding: '20px 16px 16px 16px', borderBottom: '1px solid var(--mp-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: '50%',
+                background: 'var(--mp-orange)', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 22, fontWeight: 700, color: '#fff',
+              }}>
+                {pInitials}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--mp-text)', fontFamily: 'var(--mp-font)', marginBottom: 2 }}>
+                  {profile?.display_name ?? 'Your Name'}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--mp-text-secondary)', marginBottom: 10 }}>
+                  @{profile?.username ?? 'username'}
+                </div>
+                <button onClick={() => navigate('/profile/edit')} style={{
+                  padding: '6px 16px',
+                  border: '1px solid var(--mp-border)',
+                  borderRadius: 100, background: 'transparent',
+                  color: 'var(--mp-text)', fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'var(--mp-font)',
+                }}>
+                  Edit profile
+                </button>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 20, marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--mp-border)' }}>
+              {[{ label: 'Posts', value: '—' }, { label: 'Downloads', value: '—' }, { label: 'Following', value: '—' }, { label: 'Followers', value: '—' }].map(s => (
+                <div key={s.label} style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--mp-text)', fontFamily: 'var(--mp-font)' }}>{s.value}</div>
+                  <div style={{ fontSize: 11, color: 'var(--mp-text-secondary)', marginTop: 2 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ padding: '10px 16px 6px 16px', borderBottom: '1px solid var(--mp-border)' }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--mp-text)', borderBottom: '2px solid var(--mp-orange)', paddingBottom: 10, fontFamily: 'var(--mp-font)' }}>Posts</span>
+          </div>
+          <Outlet />
+        </div>
+      );
+    }
+
+    /* /messages → panel-native DM header */
+    if (path === '/messages') {
+      return (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--mp-border)', fontSize: 18, fontWeight: 700, color: 'var(--mp-text)', fontFamily: 'var(--mp-font)', flexShrink: 0 }}>
+            Messages
+          </div>
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--mp-border)', flexShrink: 0 }}>
+            <input placeholder="Search messages..."
+              style={{
+                width: '100%', padding: '8px 14px',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid var(--mp-border)',
+                borderRadius: 24, color: 'var(--mp-text)',
+                fontSize: 13, outline: 'none',
+                fontFamily: 'var(--mp-font)',
+                boxSizing: 'border-box',
+              }} />
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            <Outlet />
+          </div>
+        </div>
+      );
+    }
+
+    /* /library, /drafts, /notifications, /analytics → titled header */
+    const titledRoutes: Record<string, string> = {
+      '/library': 'Your Library',
+      '/drafts': 'Drafts',
+      '/notifications': 'Notifications',
+      '/analytics': 'Analytics',
+    };
+    if (titledRoutes[path]) {
+      return renderPageWithHeader(titledRoutes[path]);
+    }
+
+    /* Fallback — all other routes */
+    return (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <Outlet />
+        </div>
+      </div>
+    );
+  }
+
   /* ── Render ── */
   return (
     <div className="ns-root">
@@ -1052,7 +1407,17 @@ export function NeoScaleShell() {
 
               {/* FRONT FACE — home feed */}
               <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
-                <div className="ns-front-title">Home</div>
+                {/* Compose bar */}
+                <div className="ns-compose-bar">
+                  <div className="ns-compose-avatar">
+                    {profile ? (profile.display_name ?? profile.username ?? "U").slice(0, 2).toUpperCase() : "U"}
+                  </div>
+                  <div className="ns-compose-prompt" onClick={() => navigate('/upload')}>
+                    Share something...
+                  </div>
+                </div>
+
+                {/* Twitter-style underline tabs */}
                 <div className="ns-tab-row">
                   {["For You", "Following", "Trending", "Recent"].map(tab => (
                     <div
@@ -1064,6 +1429,8 @@ export function NeoScaleShell() {
                     </div>
                   ))}
                 </div>
+
+                {/* Feed */}
                 <div className="ns-feed-scroll">
                   {posts.length === 0 ? (
                     <div className="ns-feed-loading">
@@ -1071,39 +1438,42 @@ export function NeoScaleShell() {
                     </div>
                   ) : (
                     posts.map((post: any) => {
-                      const profile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
-                      const displayName = profile?.display_name || profile?.username || "Unknown";
-                      const username = profile?.username || "unknown";
-                      const initials2 = displayName.slice(0, 2).toUpperCase();
+                      const postProfile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+                      const displayName = postProfile?.display_name || postProfile?.username || "Unknown";
+                      const username = postProfile?.username || "user";
+                      const tags: string[] = post.ai_tools ?? post.topics ?? [];
                       return (
-                        <div key={post.id} className="ns-feed-card">
-                          <div className="ns-feed-card-top">
-                            <div
-                              className="ns-feed-card-avatar"
-                              style={{ background: ctypeBg(post.content_type) }}
-                            >
-                              {initials2}
+                        <div key={post.id} className="ns-feed-card"
+                             onClick={() => navigate(`/content/${post.id}`)}>
+                          <div className="ns-feed-avatar-col">
+                            <div className="ns-feed-card-avatar"
+                                 style={{ background: ctypeBg(post.content_type) }}>
+                              {displayName.slice(0, 2).toUpperCase()}
                             </div>
-                            <span className="ns-feed-card-name">{displayName}</span>
-                            <span className="ns-feed-card-handle">@{username}</span>
-                            <span className="ns-feed-card-time">{timeAgo(post.created_at)}</span>
                           </div>
-                          <div className="ns-feed-card-badges">
-                            <span className="ns-feed-card-type-badge">{displayContentType(post.content_type)}</span>
-                            {post.difficulty && (
-                              <span className={`ns-trending-badge ${diffBadgeClass(post.difficulty)}`}>{post.difficulty}</span>
+                          <div className="ns-feed-content-col">
+                            <div className="ns-feed-header">
+                              <span className="ns-feed-name">{displayName}</span>
+                              <span className="ns-feed-handle">@{username}</span>
+                              <span className="ns-feed-sep">·</span>
+                              <span className="ns-feed-time">{timeAgo(post.created_at)}</span>
+                              <span className="ns-feed-menu">···</span>
+                            </div>
+                            <span className="ns-feed-type-badge">{displayContentType(post.content_type)}</span>
+                            <div className="ns-feed-title">{post.title}</div>
+                            {tags.length > 0 && (
+                              <div className="ns-feed-tags">
+                                {tags.slice(0, 3).map((t: string) => (
+                                  <span key={t} className="ns-feed-tag">{t}</span>
+                                ))}
+                              </div>
                             )}
-                          </div>
-                          <div className="ns-feed-card-title">{post.title}</div>
-                          <div className="ns-feed-card-stats">
-                            <span>👁 {post.view_count ?? 0}</span>
-                            <span>↓ {post.download_count ?? 0}</span>
-                            <span>💬 0</span>
-                          </div>
-                          <div className="ns-feed-card-actions">
-                            <button className="feed-action-btn">Like</button>
-                            <button className="feed-action-btn">Comment</button>
-                            <button className="feed-action-btn">Share</button>
+                            <div className="ns-feed-actions">
+                              <button className="ns-feed-action like" onClick={e => e.stopPropagation()}>♡ {post.view_count ?? 0}</button>
+                              <button className="ns-feed-action reply" onClick={e => e.stopPropagation()}>💬 0</button>
+                              <button className="ns-feed-action dl" onClick={e => e.stopPropagation()}>↓ {post.download_count ?? 0}</button>
+                              <button className="ns-feed-action" onClick={e => e.stopPropagation()}>↗</button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1115,39 +1485,7 @@ export function NeoScaleShell() {
               {/* BACK FACE — router outlet */}
               <div className={`ns-middle-back${flipDir === -1 ? " rtl" : ""}`}>
                 <div className="ns-outlet-wrap">
-                  <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
-                    <button
-                      onClick={() => {
-                        if (isFlipping.current) return;
-                        const flipper = document.querySelector(
-                          '.ns-middle-flipper'
-                        ) as HTMLElement | null;
-                        if (!flipper) return;
-                        // Round to nearest 180 that shows the front face
-                        // Front face shows at 0, 360, 720 (even multiples of 360)
-                        const current = currentRotation.current;
-                        const nearest360 = Math.round(current / 360) * 360;
-                        currentRotation.current = nearest360;
-                        isFlipping.current = true;
-                        flipper.style.transition =
-                          'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-                        flipper.style.transform = `rotateY(${nearest360}deg)`;
-                        setTimeout(() => {
-                          isFlipping.current = false;
-                        }, 650);
-                      }}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 6,
-                        background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-                        borderRadius: 8, padding: "5px 10px", cursor: "pointer",
-                        color: "rgba(255,255,255,0.5)", fontSize: 12, fontFamily: "inherit",
-                        transition: "background 0.15s",
-                      }}
-                    >
-                      ← Back
-                    </button>
-                  </div>
-                  <Outlet />
+                  {renderBackFaceContent()}
                 </div>
               </div>
 
