@@ -1180,6 +1180,57 @@ export function NeoScaleShell() {
   function renderBackFaceContent() {
     const path = location.pathname;
 
+    /* /profile → compact profile header */
+    if (path === '/profile') {
+      const pInitials = (profile?.display_name ?? profile?.username ?? 'U').slice(0, 2).toUpperCase();
+      return (
+        <div style={{ height: '100%', overflowY: 'auto' }}>
+          <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
+          <div style={{ padding: '20px 16px 16px 16px', borderBottom: '1px solid var(--mp-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: '50%',
+                background: 'var(--mp-orange)', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 22, fontWeight: 700, color: '#fff',
+              }}>
+                {pInitials}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--mp-text)', fontFamily: 'var(--mp-font)', marginBottom: 2 }}>
+                  {profile?.display_name ?? 'Your Name'}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--mp-text-secondary)', marginBottom: 10 }}>
+                  @{profile?.username ?? 'username'}
+                </div>
+                <button onClick={() => navigate('/profile/edit')} style={{
+                  padding: '6px 16px',
+                  border: '1px solid var(--mp-border)',
+                  borderRadius: 100, background: 'transparent',
+                  color: 'var(--mp-text)', fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'var(--mp-font)',
+                }}>
+                  Edit profile
+                </button>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 20, marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--mp-border)' }}>
+              {[{ label: 'Posts', value: '—' }, { label: 'Downloads', value: '—' }, { label: 'Following', value: '—' }, { label: 'Followers', value: '—' }].map(s => (
+                <div key={s.label} style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--mp-text)', fontFamily: 'var(--mp-font)' }}>{s.value}</div>
+                  <div style={{ fontSize: 11, color: 'var(--mp-text-secondary)', marginTop: 2 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ padding: '10px 16px 6px 16px', borderBottom: '1px solid var(--mp-border)' }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--mp-text)', borderBottom: '2px solid var(--mp-orange)', paddingBottom: 10, fontFamily: 'var(--mp-font)' }}>Posts</span>
+          </div>
+          <Outlet />
+        </div>
+      );
+    }
+
     /* /messages → panel-native DM header */
     if (path === '/messages') {
       return (
