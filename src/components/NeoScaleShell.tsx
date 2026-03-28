@@ -1141,6 +1141,56 @@ export function NeoScaleShell() {
     navigate("/");
   };
 
+  /* ── Back-face flip-to-front button handler ── */
+  function handleBackBtn() {
+    if (isFlipping.current) return;
+    const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement | null;
+    if (!flipper) return;
+    const nearest360 = Math.round(currentRotation.current / 360) * 360;
+    currentRotation.current = nearest360;
+    isFlipping.current = true;
+    flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+    flipper.style.transform = `rotateY(${nearest360}deg)`;
+    setTimeout(() => { isFlipping.current = false; }, 650);
+    navigate("/");
+  }
+
+  /* ── Back face content router ── */
+  function renderPageWithHeader(title: string) {
+    return (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
+        <div style={{
+          padding: '16px 16px 14px 16px',
+          borderBottom: '1px solid var(--mp-border)',
+          fontSize: 18, fontWeight: 700,
+          color: 'var(--mp-text)',
+          fontFamily: 'var(--mp-font)',
+          flexShrink: 0,
+        }}>
+          {title}
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <Outlet />
+        </div>
+      </div>
+    );
+  }
+
+  function renderBackFaceContent() {
+    const path = location.pathname;
+
+    /* Fallback — all other routes */
+    return (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <Outlet />
+        </div>
+      </div>
+    );
+  }
+
   /* ── Render ── */
   return (
     <div className="ns-root">
@@ -1293,39 +1343,7 @@ export function NeoScaleShell() {
               {/* BACK FACE — router outlet */}
               <div className={`ns-middle-back${flipDir === -1 ? " rtl" : ""}`}>
                 <div className="ns-outlet-wrap">
-                  <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
-                    <button
-                      onClick={() => {
-                        if (isFlipping.current) return;
-                        const flipper = document.querySelector(
-                          '.ns-middle-flipper'
-                        ) as HTMLElement | null;
-                        if (!flipper) return;
-                        // Round to nearest 180 that shows the front face
-                        // Front face shows at 0, 360, 720 (even multiples of 360)
-                        const current = currentRotation.current;
-                        const nearest360 = Math.round(current / 360) * 360;
-                        currentRotation.current = nearest360;
-                        isFlipping.current = true;
-                        flipper.style.transition =
-                          'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-                        flipper.style.transform = `rotateY(${nearest360}deg)`;
-                        setTimeout(() => {
-                          isFlipping.current = false;
-                        }, 650);
-                      }}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 6,
-                        background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-                        borderRadius: 8, padding: "5px 10px", cursor: "pointer",
-                        color: "rgba(255,255,255,0.5)", fontSize: 12, fontFamily: "inherit",
-                        transition: "background 0.15s",
-                      }}
-                    >
-                      ← Back
-                    </button>
-                  </div>
-                  <Outlet />
+                  {renderBackFaceContent()}
                 </div>
               </div>
 
