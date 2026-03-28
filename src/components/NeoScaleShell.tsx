@@ -1180,6 +1180,17 @@ export function NeoScaleShell() {
   function renderBackFaceContent() {
     const path = location.pathname;
 
+    /* /library, /drafts, /notifications, /analytics → titled header */
+    const titledRoutes: Record<string, string> = {
+      '/library': 'Your Library',
+      '/drafts': 'Drafts',
+      '/notifications': 'Notifications',
+      '/analytics': 'Analytics',
+    };
+    if (titledRoutes[path]) {
+      return renderPageWithHeader(titledRoutes[path]);
+    }
+
     /* Fallback — all other routes */
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
