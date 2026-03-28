@@ -1179,6 +1179,59 @@ export function NeoScaleShell() {
 
   function renderBackFaceContent() {
     const path = location.pathname;
+    const searchParams = new URLSearchParams(location.search);
+
+    /* /upload without type param → compact entry */
+    if (path === '/upload' && !searchParams.get('type')) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+          <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
+          <div style={{ padding: '20px 16px', flex: 1, overflowY: 'auto' }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--mp-text)', marginBottom: 6, fontFamily: 'var(--mp-font)' }}>
+              Share your work
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--mp-text-secondary)', marginBottom: 24, fontFamily: 'var(--mp-font)' }}>
+              What are you sharing today?
+            </div>
+            {(['Blueprint', 'Blog', 'Bounty', 'Project'] as const).map(type => (
+              <button key={type}
+                onClick={() => navigate(`/upload?type=${type.toLowerCase()}`)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14, width: '100%',
+                  padding: '14px 16px', marginBottom: 8,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--mp-border)',
+                  borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s',
+                  color: 'var(--mp-text)', fontFamily: 'var(--mp-font)',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--mp-border)';
+                }}
+              >
+                <span style={{ fontSize: 20 }}>
+                  {type === 'Blueprint' ? '📐' : type === 'Blog' ? '📝' : type === 'Bounty' ? '🎯' : '🗂️'}
+                </span>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{type}</div>
+                  <div style={{ fontSize: 12, color: 'var(--mp-text-secondary)' }}>
+                    {type === 'Blueprint' ? 'Prompts, agents, workflows, configs'
+                      : type === 'Blog' ? 'Write an article or tutorial'
+                      : type === 'Bounty' ? 'Post a challenge for the community'
+                      : 'Share a project or tool you built'}
+                  </div>
+                </div>
+                <span style={{ marginLeft: 'auto', color: 'var(--mp-text-muted)', fontSize: 16 }}>→</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
 
     /* /profile → compact profile header */
     if (path === '/profile') {
