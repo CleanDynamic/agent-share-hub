@@ -20,9 +20,24 @@ import { displayContentType } from "@/lib/content-types";
    CSS — injected into document.head on mount
 ──────────────────────────────────────────────── */
 const NEOSCALE_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 .ns-root *, .ns-root *::before, .ns-root *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ── Middle panel design tokens ── */
+.ns-middle-front, .ns-middle-back {
+  --mp-text: rgba(255,255,255,0.92);
+  --mp-text-secondary: rgba(255,255,255,0.45);
+  --mp-text-muted: rgba(255,255,255,0.25);
+  --mp-border: rgba(255,255,255,0.06);
+  --mp-surface: rgba(255,255,255,0.03);
+  --mp-orange: #E8571A;
+  --mp-teal: #2EC4B6;
+  --mp-font: 'Playfair Display', Georgia, serif;
+  font-family: var(--mp-font);
+  color: var(--mp-text);
+}
 
 .ns-root {
   min-height: 100vh;
@@ -247,7 +262,7 @@ const NEOSCALE_CSS = `
     0 0 0 1px rgba(255,255,255,0.03) inset,
     0 1px 0 rgba(255,255,255,0.05) inset;
   overflow: hidden;
-  padding: 24px;
+  padding: 0;
 }
 .ns-middle-front::before, .ns-middle-back::before {
   content: '';
