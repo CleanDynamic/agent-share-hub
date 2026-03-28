@@ -1180,6 +1180,33 @@ export function NeoScaleShell() {
   function renderBackFaceContent() {
     const path = location.pathname;
 
+    /* /messages → panel-native DM header */
+    if (path === '/messages') {
+      return (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--mp-border)', fontSize: 18, fontWeight: 700, color: 'var(--mp-text)', fontFamily: 'var(--mp-font)', flexShrink: 0 }}>
+            Messages
+          </div>
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--mp-border)', flexShrink: 0 }}>
+            <input placeholder="Search messages..."
+              style={{
+                width: '100%', padding: '8px 14px',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid var(--mp-border)',
+                borderRadius: 24, color: 'var(--mp-text)',
+                fontSize: 13, outline: 'none',
+                fontFamily: 'var(--mp-font)',
+                boxSizing: 'border-box',
+              }} />
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            <Outlet />
+          </div>
+        </div>
+      );
+    }
+
     /* /library, /drafts, /notifications, /analytics → titled header */
     const titledRoutes: Record<string, string> = {
       '/library': 'Your Library',
