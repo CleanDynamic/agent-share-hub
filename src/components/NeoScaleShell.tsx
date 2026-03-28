@@ -274,27 +274,48 @@ const NEOSCALE_CSS = `
 .ns-middle-back { transform: rotateY(180deg); }
 .ns-middle-back.rtl { transform: rotateY(-180deg); }
 
-/* ── Front face — feed ── */
-.ns-front-title {
-  font-size: 18px; font-weight: 600;
-  color: rgba(255,255,255,0.9);
-  letter-spacing: -0.3px;
-  margin-bottom: 16px;
+/* ── Front face — compose bar ── */
+.ns-compose-bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--mp-border);
+  flex-shrink: 0;
 }
+.ns-compose-avatar {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: var(--mp-orange); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; color: #fff;
+}
+.ns-compose-prompt {
+  flex: 1; color: var(--mp-text-muted);
+  font-size: 17px; cursor: pointer;
+  font-family: var(--mp-font); font-weight: 300;
+}
+.ns-compose-prompt:hover { color: var(--mp-text-secondary); }
+
+/* ── Front face — Twitter tabs ── */
 .ns-tab-row {
-  display: flex; gap: 4px;
-  margin-bottom: 20px;
-  background: rgba(255,255,255,0.03);
-  border-radius: 10px; padding: 3px;
+  display: flex; gap: 0; background: transparent;
+  border-radius: 0; padding: 0; margin-bottom: 0;
+  border-bottom: 1px solid var(--mp-border);
+  flex-shrink: 0;
 }
 .ns-tab {
-  flex: 1; text-align: center;
-  padding: 7px 0; font-size: 12px; font-weight: 500;
-  color: rgba(255,255,255,0.35);
-  border-radius: 8px; cursor: pointer;
-  transition: all 0.25s;
+  flex: 1; text-align: center; padding: 14px 0;
+  font-size: 14px; font-weight: 500;
+  color: var(--mp-text-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px; cursor: pointer;
+  transition: color 0.15s; border-radius: 0;
+  background: transparent;
+  font-family: var(--mp-font);
 }
-.ns-tab.active { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+.ns-tab:hover { color: var(--mp-text); background: rgba(255,255,255,0.02); }
+.ns-tab.active {
+  color: var(--mp-text); font-weight: 700;
+  border-bottom: 2px solid var(--mp-orange);
+}
 
 .ns-feed-scroll {
   flex: 1;
@@ -489,39 +510,84 @@ const NEOSCALE_CSS = `
 }
 .ns-footer-link:hover { color: rgba(255,255,255,0.5); }
 
-/* ── Feed card ── */
+/* ── Feed card — Twitter two-column ── */
 .ns-feed-card {
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  display: flex; flex-direction: column; gap: 8px;
-  cursor: pointer; transition: background 0.15s;
+  display: flex; flex-direction: row; gap: 12px;
+  padding: 14px 16px 10px 16px;
+  border-bottom: 1px solid var(--mp-border);
+  cursor: pointer; transition: background 0.12s;
+  background: transparent;
 }
-.ns-feed-card:hover { background: rgba(255,255,255,0.02); }
+.ns-feed-card:hover { background: rgba(255,255,255,0.018); }
+.ns-feed-avatar-col { flex-shrink: 0; }
+.ns-feed-content-col {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.ns-feed-header {
+  display: flex; align-items: baseline;
+  gap: 5px; overflow: hidden;
+}
+.ns-feed-name {
+  font-size: 14px; font-weight: 700;
+  color: var(--mp-text); white-space: nowrap;
+  font-family: var(--mp-font);
+}
+.ns-feed-handle {
+  font-size: 13px; color: var(--mp-text-secondary);
+  white-space: nowrap;
+}
+.ns-feed-sep { color: var(--mp-text-muted); font-size: 12px; }
+.ns-feed-time { font-size: 13px; color: var(--mp-text-secondary); }
+.ns-feed-menu {
+  margin-left: auto; color: var(--mp-text-muted);
+  font-size: 16px; cursor: pointer; flex-shrink: 0;
+  line-height: 1; padding: 0 2px;
+}
+.ns-feed-menu:hover { color: var(--mp-text); }
+.ns-feed-type-badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  background: rgba(232,87,26,0.15); color: #E8571A;
+  border: 1px solid rgba(232,87,26,0.25);
+  align-self: flex-start;
+}
+.ns-feed-title {
+  font-size: 14px; font-weight: 500;
+  color: var(--mp-text); line-height: 1.45;
+  font-family: var(--mp-font);
+}
+.ns-feed-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.ns-feed-tag {
+  font-size: 12px; color: var(--mp-teal);
+  font-weight: 400;
+}
+.ns-feed-tag::before { content: '#'; }
+.ns-feed-actions {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  max-width: 260px; margin-top: 4px;
+}
+.ns-feed-action {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 13px; color: var(--mp-text-muted);
+  cursor: pointer; padding: 4px 6px 4px 0;
+  background: none; border: none;
+  transition: color 0.12s;
+  font-family: var(--mp-font);
+}
+.ns-feed-action:hover { color: var(--mp-text); }
+.ns-feed-action.like:hover { color: #E8571A; }
+.ns-feed-action.reply:hover { color: var(--mp-teal); }
+.ns-feed-action.dl:hover { color: #22C55E; }
 .ns-feed-card-avatar {
-  width: 32px; height: 32px; border-radius: 50%;
+  width: 42px; height: 42px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
-  overflow: hidden;
+  font-size: 14px; font-weight: 700;
+  color: #fff; flex-shrink: 0;
 }
-.ns-feed-card-top { display: flex; align-items: center; gap: 8px; }
-.ns-feed-card-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8); }
-.ns-feed-card-handle { font-size: 11px; color: rgba(255,255,255,0.3); }
-.ns-feed-card-time { font-size: 10px; color: rgba(255,255,255,0.2); margin-left: auto; }
-.ns-feed-card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
-.ns-feed-card-type-badge {
-  font-size: 9px; font-weight: 600; padding: 2px 7px;
-  border-radius: 4px; background: rgba(232,87,26,0.15); color: #E8571A;
-  letter-spacing: 0.3px;
-}
-.ns-feed-card-title { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); line-height: 1.4; }
-.ns-feed-card-stats { display: flex; gap: 12px; font-size: 11px; color: rgba(255,255,255,0.25); }
-.ns-feed-card-actions { display: flex; gap: 6px; }
-.feed-action-btn {
-  padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.07);
-  background: rgba(255,255,255,0.03); font-size: 11px; color: rgba(255,255,255,0.35);
-  cursor: pointer; transition: all 0.15s; font-family: inherit;
-}
-.feed-action-btn:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.6); }
 `;
 
 /* ────────────────────────────────────────────────
@@ -1067,7 +1133,17 @@ export function NeoScaleShell() {
 
               {/* FRONT FACE — home feed */}
               <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
-                <div className="ns-front-title">Home</div>
+                {/* Compose bar */}
+                <div className="ns-compose-bar">
+                  <div className="ns-compose-avatar">
+                    {profile ? (profile.display_name ?? profile.username ?? "U").slice(0, 2).toUpperCase() : "U"}
+                  </div>
+                  <div className="ns-compose-prompt" onClick={() => navigate('/upload')}>
+                    Share something...
+                  </div>
+                </div>
+
+                {/* Twitter-style underline tabs */}
                 <div className="ns-tab-row">
                   {["For You", "Following", "Trending", "Recent"].map(tab => (
                     <div
@@ -1079,6 +1155,8 @@ export function NeoScaleShell() {
                     </div>
                   ))}
                 </div>
+
+                {/* Feed */}
                 <div className="ns-feed-scroll">
                   {posts.length === 0 ? (
                     <div className="ns-feed-loading">
@@ -1086,39 +1164,42 @@ export function NeoScaleShell() {
                     </div>
                   ) : (
                     posts.map((post: any) => {
-                      const profile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
-                      const displayName = profile?.display_name || profile?.username || "Unknown";
-                      const username = profile?.username || "unknown";
-                      const initials2 = displayName.slice(0, 2).toUpperCase();
+                      const postProfile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+                      const displayName = postProfile?.display_name || postProfile?.username || "Unknown";
+                      const username = postProfile?.username || "user";
+                      const tags: string[] = post.ai_tools ?? post.topics ?? [];
                       return (
-                        <div key={post.id} className="ns-feed-card">
-                          <div className="ns-feed-card-top">
-                            <div
-                              className="ns-feed-card-avatar"
-                              style={{ background: ctypeBg(post.content_type) }}
-                            >
-                              {initials2}
+                        <div key={post.id} className="ns-feed-card"
+                             onClick={() => navigate(`/content/${post.id}`)}>
+                          <div className="ns-feed-avatar-col">
+                            <div className="ns-feed-card-avatar"
+                                 style={{ background: ctypeBg(post.content_type) }}>
+                              {displayName.slice(0, 2).toUpperCase()}
                             </div>
-                            <span className="ns-feed-card-name">{displayName}</span>
-                            <span className="ns-feed-card-handle">@{username}</span>
-                            <span className="ns-feed-card-time">{timeAgo(post.created_at)}</span>
                           </div>
-                          <div className="ns-feed-card-badges">
-                            <span className="ns-feed-card-type-badge">{displayContentType(post.content_type)}</span>
-                            {post.difficulty && (
-                              <span className={`ns-trending-badge ${diffBadgeClass(post.difficulty)}`}>{post.difficulty}</span>
+                          <div className="ns-feed-content-col">
+                            <div className="ns-feed-header">
+                              <span className="ns-feed-name">{displayName}</span>
+                              <span className="ns-feed-handle">@{username}</span>
+                              <span className="ns-feed-sep">·</span>
+                              <span className="ns-feed-time">{timeAgo(post.created_at)}</span>
+                              <span className="ns-feed-menu">···</span>
+                            </div>
+                            <span className="ns-feed-type-badge">{displayContentType(post.content_type)}</span>
+                            <div className="ns-feed-title">{post.title}</div>
+                            {tags.length > 0 && (
+                              <div className="ns-feed-tags">
+                                {tags.slice(0, 3).map((t: string) => (
+                                  <span key={t} className="ns-feed-tag">{t}</span>
+                                ))}
+                              </div>
                             )}
-                          </div>
-                          <div className="ns-feed-card-title">{post.title}</div>
-                          <div className="ns-feed-card-stats">
-                            <span>👁 {post.view_count ?? 0}</span>
-                            <span>↓ {post.download_count ?? 0}</span>
-                            <span>💬 0</span>
-                          </div>
-                          <div className="ns-feed-card-actions">
-                            <button className="feed-action-btn">Like</button>
-                            <button className="feed-action-btn">Comment</button>
-                            <button className="feed-action-btn">Share</button>
+                            <div className="ns-feed-actions">
+                              <button className="ns-feed-action like" onClick={e => e.stopPropagation()}>♡ {post.view_count ?? 0}</button>
+                              <button className="ns-feed-action reply" onClick={e => e.stopPropagation()}>💬 0</button>
+                              <button className="ns-feed-action dl" onClick={e => e.stopPropagation()}>↓ {post.download_count ?? 0}</button>
+                              <button className="ns-feed-action" onClick={e => e.stopPropagation()}>↗</button>
+                            </div>
                           </div>
                         </div>
                       );
