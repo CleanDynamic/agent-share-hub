@@ -2,10 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { FeedItem } from "@/components/FeedItem";
-import { CollectionFeedCard } from "@/components/CollectionFeedCard";
-import { ProjectFeedCard } from "@/components/ProjectFeedCard";
-import { ReblogCard } from "@/components/ReblogCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
@@ -723,46 +719,6 @@ function diffBadgeClass(difficulty?: string): string {
 }
 
 /* ────────────────────────────────────────────────
-   Time-ago helper
-──────────────────────────────────────────────── */
-function timeAgo(dateStr: string): string {
-  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-  if (diff < 60) return `${Math.floor(diff)}s`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  return `${Math.floor(diff / 86400)}d`;
-}
-
-/* ────────────────────────────────────────────────
-   Content-type avatar background colour
-──────────────────────────────────────────────── */
-function ctypeBg(contentType: string): string {
-  const map: Record<string, string> = {
-    "prompt-file": "#E8571A",
-    "agent-blueprint": "#9B59B6",
-    "workflow-template": "#3498DB",
-    "ai-tools-llms": "#1ABC9C",
-    "blog": "#27AE60",
-    "projects": "#E67E22",
-    "evaluation-framework": "#F39C12",
-    "install-guide": "#2980B9",
-    "model-config-guide": "#8E44AD",
-    "integration-guide": "#16A085",
-  };
-  return map[contentType] ?? "#555";
-}
-
-/* ────────────────────────────────────────────────
-   Feed renderer helper
-──────────────────────────────────────────────── */
-function renderFeedEntry(entry: any) {
-  if (entry._feedType === "collection") return <CollectionFeedCard key={`col-${entry.id}`} item={entry} />;
-  if (entry._feedType === "project")    return <ProjectFeedCard key={`proj-${entry.id}`} item={entry} />;
-  if (entry.is_reblog)                  return <ReblogCard key={entry.id} item={entry} />;
-  return <FeedItem key={entry.id} item={entry} />;
-}
-
-/* ────────────────────────────────────────────────
    SVG icons for nav
 ──────────────────────────────────────────────── */
 const ICONS = {
@@ -793,15 +749,14 @@ export function NeoScaleShell() {
   const isFlipping = useRef(false);
   const currentRotation = useRef(0);
 
-  const [flipDir,    setFlipDir]    = useState<1 | -1>(1);
   const [pulsing,    setPulsing]    = useState(false);
-  const [activeTab,  setActiveTab]  = useState("For You");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [lastFlipDir, setLastFlipDir] = useState<'left' | 'right'>('left');
+  const showingFrontRef = useRef(true);
 
   const isMobile = useIsMobile();
   const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
@@ -823,23 +778,27 @@ export function NeoScaleShell() {
     return () => { document.head.removeChild(tag); };
   }, [isMobile]);
 
-  /* ── Fetch feed posts ── */
+  /* ── Sync face on browser back/forward (popstate) only ── */
+  const lastPathRef = useRef(location.pathname);
   useEffect(() => {
-    const fetchPosts = async () => {
-      const { data } = await supabase
-        .from('content_items')
-        .select(`
-          id, title, content_type, difficulty,
-          view_count, download_count, created_at,
-          profiles:creator_id (display_name, username, avatar_url)
-        `)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (data) setPosts(data);
-    };
-    fetchPosts();
-  }, []);
+    if (isMobile) return;
+    const prevPath = lastPathRef.current;
+    const currPath = location.pathname;
+    lastPathRef.current = currPath;
+    // Only auto-flip if navigation was NOT triggered by our handleNavClick
+    // (detected: isFlipping is false AND path actually changed)
+    if (isFlipping.current) return;
+    const wasHome = prevPath === "/";
+    const isHome = currPath === "/";
+    if (isHome && !showingFrontRef.current) {
+      doFlip('left');
+    } else if (!isHome && showingFrontRef.current && !wasHome) {
+      // non-home to non-home, no flip needed
+    } else if (!isHome && showingFrontRef.current) {
+      doFlip('left');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, isMobile]);
 
   function triggerPulse() {
     setPulsing(false);
@@ -935,21 +894,7 @@ export function NeoScaleShell() {
     return () => window.removeEventListener("resize", rescale);
   }, [isMobile]);
 
-  /* ── Supabase: recent feed ── */
-  const { data: feedItems, isLoading: feedLoading } = useQuery({
-    queryKey: ["ns_home_recent"],
-    enabled: !isMobile,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("content_items")
-        .select("id, title, description, content_type, post_category, is_reblog, reblog_of_id, reblog_thread_count, reblog_count, creator_id, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, what_to_expect_blocks, what_to_expect, other_tool_name, tool_subtype, model_parameters, custom_tags, profiles!content_items_creator_id_fkey(display_name, username)")
-        .eq("status", "approved")
-        .order("created_at", { ascending: false })
-        .limit(30);
-      if (error) throw error;
-      return (data ?? []).map((d: any) => ({ ...d, _feedType: "blueprint" as const }));
-    },
-  });
+  /* (front face now renders <Outlet /> → Home.tsx handles its own feed queries) */
 
   /* ── Supabase: trending ── */
   const { data: trendingItems } = useQuery({
@@ -1064,33 +1009,42 @@ export function NeoScaleShell() {
     };
   }
 
-  /* ── Directional flip ── */
-  function flipMiddle(source: 'left' | 'right') {
+  /* ── Directional flip — only flips once ── */
+  function doFlip(source: 'left' | 'right') {
     if (isFlipping.current) return;
 
-    const flipper = document.querySelector(
-      '.ns-middle-flipper'
-    ) as HTMLElement | null;
+    const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement | null;
     if (!flipper) return;
 
-    // Direction: left source adds 180, right source subtracts 180
     const delta = source === 'left' ? 180 : -180;
     currentRotation.current += delta;
+    showingFrontRef.current = !showingFrontRef.current;
+    setLastFlipDir(source);
 
     isFlipping.current = true;
-    flipper.style.transition =
-      'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-    flipper.style.transform =
-      `rotateY(${currentRotation.current}deg)`;
+    flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+    flipper.style.transform = `rotateY(${currentRotation.current}deg)`;
 
     setTimeout(() => {
       isFlipping.current = false;
     }, 650);
   }
 
-  /* ── Nav click handler ── */
-  function handleNav(route: string) {
+  /* ── Nav click handler — navigate + flip only if needed ── */
+  function handleNavClick(route: string, source: 'left' | 'right') {
+    if (isFlipping.current) return;
+
+    const targetIsHome = route === '/';
+    const frontVisible = showingFrontRef.current;
+
+    // Navigate first so Outlet renders the target page
     navigate(route);
+
+    if (targetIsHome && frontVisible) return; // already showing home
+    if (!targetIsHome && !frontVisible) return; // already showing back (outlet)
+
+    // Need to flip
+    doFlip(source);
   }
 
   function handleSearchChange(q: string) {
@@ -1144,15 +1098,10 @@ export function NeoScaleShell() {
   /* ── Back-face flip-to-front button handler ── */
   function handleBackBtn() {
     if (isFlipping.current) return;
-    const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement | null;
-    if (!flipper) return;
-    const nearest360 = Math.round(currentRotation.current / 360) * 360;
-    currentRotation.current = nearest360;
-    isFlipping.current = true;
-    flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-    flipper.style.transform = `rotateY(${nearest360}deg)`;
-    setTimeout(() => { isFlipping.current = false; }, 650);
     navigate("/");
+    if (!showingFrontRef.current) {
+      doFlip('left');
+    }
   }
 
   /* ── Back face content router ── */
@@ -1350,14 +1299,14 @@ export function NeoScaleShell() {
             ref={leftRef}
             {...initTilt(leftRef)}
           >
-            <div className="ns-logo" onClick={() => { flipMiddle('left'); handleNav("/"); }}>NeoScale</div>
+            <div className="ns-logo" onClick={() => handleNavClick("/", 'left')}>NeoScale</div>
             <ul className="ns-nav-list">
               {visibleNav.map((item, idx) => (
                 <li key={item.key}>
                   {item.divider && idx > 0 && <div className="ns-nav-divider" />}
                   <div
                     className={`ns-nav-item${navPage === item.key ? " active" : ""}`}
-                    onClick={() => { flipMiddle('left'); handleNav(item.route); }}
+                    onClick={() => handleNavClick(item.route, 'left')}
                   >
                     <span className="ns-nav-icon">{item.icon}</span>
                     <span className="ns-nav-label">{item.label}</span>
@@ -1394,8 +1343,8 @@ export function NeoScaleShell() {
                 </>
               ) : (
                 <div className="ns-auth-btns">
-                  <button className="ns-auth-btn signin" onClick={() => handleNav("/login")}>Sign in</button>
-                  <button className="ns-auth-btn join" onClick={() => handleNav("/signup")}>Join free</button>
+                  <button className="ns-auth-btn signin" onClick={() => handleNavClick("/login", 'left')}>Sign in</button>
+                  <button className="ns-auth-btn join" onClick={() => handleNavClick("/signup", 'left')}>Join free</button>
                 </div>
               )}
             </div>
@@ -1405,85 +1354,13 @@ export function NeoScaleShell() {
           <div className="ns-middle-wrapper">
             <div className="ns-middle-flipper" ref={flipperRef}>
 
-              {/* FRONT FACE — home feed */}
-              <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
-                {/* Compose bar */}
-                <div className="ns-compose-bar">
-                  <div className="ns-compose-avatar">
-                    {profile ? (profile.display_name ?? profile.username ?? "U").slice(0, 2).toUpperCase() : "U"}
-                  </div>
-                  <div className="ns-compose-prompt" onClick={() => navigate('/upload')}>
-                    Share something...
-                  </div>
-                </div>
-
-                {/* Twitter-style underline tabs */}
-                <div className="ns-tab-row">
-                  {["For You", "Following", "Trending", "Recent"].map(tab => (
-                    <div
-                      key={tab}
-                      className={`ns-tab${activeTab === tab ? " active" : ""}`}
-                      onClick={() => setActiveTab(tab)}
-                    >
-                      {tab}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Feed */}
-                <div className="ns-feed-scroll">
-                  {posts.length === 0 ? (
-                    <div className="ns-feed-loading">
-                      {[1,2,3,4].map(n => <div key={n} className="ns-feed-skeleton" />)}
-                    </div>
-                  ) : (
-                    posts.map((post: any) => {
-                      const postProfile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
-                      const displayName = postProfile?.display_name || postProfile?.username || "Unknown";
-                      const username = postProfile?.username || "user";
-                      const tags: string[] = post.ai_tools ?? post.topics ?? [];
-                      return (
-                        <div key={post.id} className="ns-feed-card"
-                             onClick={() => navigate(`/content/${post.id}`)}>
-                          <div className="ns-feed-avatar-col">
-                            <div className="ns-feed-card-avatar"
-                                 style={{ background: ctypeBg(post.content_type) }}>
-                              {displayName.slice(0, 2).toUpperCase()}
-                            </div>
-                          </div>
-                          <div className="ns-feed-content-col">
-                            <div className="ns-feed-header">
-                              <span className="ns-feed-name">{displayName}</span>
-                              <span className="ns-feed-handle">@{username}</span>
-                              <span className="ns-feed-sep">·</span>
-                              <span className="ns-feed-time">{timeAgo(post.created_at)}</span>
-                              <span className="ns-feed-menu">···</span>
-                            </div>
-                            <span className="ns-feed-type-badge">{displayContentType(post.content_type)}</span>
-                            <div className="ns-feed-title">{post.title}</div>
-                            {tags.length > 0 && (
-                              <div className="ns-feed-tags">
-                                {tags.slice(0, 3).map((t: string) => (
-                                  <span key={t} className="ns-feed-tag">{t}</span>
-                                ))}
-                              </div>
-                            )}
-                            <div className="ns-feed-actions">
-                              <button className="ns-feed-action like" onClick={e => e.stopPropagation()}>♡ {post.view_count ?? 0}</button>
-                              <button className="ns-feed-action reply" onClick={e => e.stopPropagation()}>💬 0</button>
-                              <button className="ns-feed-action dl" onClick={e => e.stopPropagation()}>↓ {post.download_count ?? 0}</button>
-                              <button className="ns-feed-action" onClick={e => e.stopPropagation()}>↗</button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
+              {/* FRONT FACE — home (Outlet renders Home.tsx) */}
+              <div className="ns-middle-front ns-outlet-wrap" style={{ display: "flex", flexDirection: "column" }}>
+                <Outlet />
               </div>
 
-              {/* BACK FACE — router outlet */}
-              <div className={`ns-middle-back${flipDir === -1 ? " rtl" : ""}`}>
+              {/* BACK FACE — non-home pages */}
+              <div className={`ns-middle-back${lastFlipDir === 'right' ? " rtl" : ""}`}>
                 <div className="ns-outlet-wrap">
                   {renderBackFaceContent()}
                 </div>
@@ -1512,9 +1389,9 @@ export function NeoScaleShell() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && searchQuery.trim().length >= 1) {
                     setSearchOpen(false);
+                    const q = searchQuery.trim();
                     setSearchQuery("");
-                    flipMiddle('right');
-                    navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                    handleNavClick(`/search?q=${encodeURIComponent(q)}`, 'right');
                   }
                 }}
               />
@@ -1524,13 +1401,13 @@ export function NeoScaleShell() {
                 {searchLoading && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>Searching…</div>}
                 {!searchLoading && searchResults.length === 0 && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>No results</div>}
                 {searchResults.map((r: any) => (
-                  <div key={r.id} className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); flipMiddle('right'); navigate(`/content/${r.id}`); }}>
+                  <div key={r.id} className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); handleNavClick(`/content/${r.id}`, 'right'); }}>
                     <span className="ns-search-result-badge">{displayContentType(r.content_type)}</span>
                     <span className="ns-search-result-title">{r.title}</span>
                   </div>
                 ))}
                 {searchQuery.length >= 2 && !searchLoading && (
-                  <div className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); flipMiddle('right'); navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`); }}>
+                  <div className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); handleNavClick(`/search?q=${encodeURIComponent(searchQuery.trim())}`, 'right'); }}>
                     <span style={{ fontSize: 10, color: "#55e0d2" }}>See all results →</span>
                   </div>
                 )}
@@ -1544,10 +1421,10 @@ export function NeoScaleShell() {
                   key={cat.slug}
                   className="ns-right-cat"
                   onClick={() => {
-                    flipMiddle('right');
-                    if (cat.slug === "projects") navigate("/category/projects");
-                    else if (cat.slug === "bounties") navigate("/browse?tab=bounties");
-                    else navigate(`/category/${cat.slug}`);
+                    const route = cat.slug === "projects" ? "/category/projects"
+                      : cat.slug === "bounties" ? "/browse?tab=bounties"
+                      : `/category/${cat.slug}`;
+                    handleNavClick(route, 'right');
                   }}
                 >
                   <span className="ns-right-cat-emoji">{cat.emoji}</span>
@@ -1565,7 +1442,7 @@ export function NeoScaleShell() {
                 <div
                   key={item.id}
                   className="ns-trending-item"
-                  onClick={() => { flipMiddle('right'); navigate(`/content/${item.id}`); }}
+                  onClick={() => handleNavClick(`/content/${item.id}`, 'right')}
                 >
                   <span className="ns-trending-rank">{i + 1}</span>
                   <div className="ns-trending-info">
@@ -1591,7 +1468,7 @@ export function NeoScaleShell() {
                   const content = pick.content_items;
                   const curator = pick.curators?.profiles;
                   return (
-                    <div key={pick.id} className="ns-curator-item" onClick={() => { if (content) { flipMiddle('right'); navigate(`/content/${content.id}`); } }}>
+                    <div key={pick.id} className="ns-curator-item" onClick={() => { if (content) handleNavClick(`/content/${content.id}`, 'right'); }}>
                       <div className="ns-curator-avatar">
                         {curator?.avatar_url ? <img src={curator.avatar_url} alt="" /> : <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>✦</span>}
                       </div>
@@ -1610,7 +1487,7 @@ export function NeoScaleShell() {
               <>
                 <div className="ns-section-title">Collections</div>
                 {featuredCollections.map((col: any) => (
-                  <div key={col.id} className="ns-collection-item" onClick={() => { flipMiddle('right'); navigate(`/collection/${col.slug || col.id}`); }}>
+                  <div key={col.id} className="ns-collection-item" onClick={() => handleNavClick(`/collection/${col.slug || col.id}`, 'right')}>
                     <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>{col.title}</div>
                     <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>
                       {(col.profiles as any)?.display_name || (col.profiles as any)?.username || "Creator"} · {col.item_count} items
@@ -1643,8 +1520,8 @@ export function NeoScaleShell() {
             {!isLoggedIn && (
               <div style={{ marginTop: 16 }}>
                 <div className="ns-auth-btns">
-                  <button className="ns-auth-btn signin" onClick={() => handleNav("/login")}>Sign in</button>
-                  <button className="ns-auth-btn join" onClick={() => handleNav("/signup")}>Join free</button>
+                  <button className="ns-auth-btn signin" onClick={() => handleNavClick("/login", 'right')}>Sign in</button>
+                  <button className="ns-auth-btn join" onClick={() => handleNavClick("/signup", 'right')}>Join free</button>
                 </div>
               </div>
             )}
