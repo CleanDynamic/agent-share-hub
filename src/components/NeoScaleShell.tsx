@@ -1471,10 +1471,10 @@ export function NeoScaleShell() {
                   key={cat.slug}
                   className="ns-right-cat"
                   onClick={() => {
-                    flipMiddle('right');
-                    if (cat.slug === "projects") navigate("/category/projects");
-                    else if (cat.slug === "bounties") navigate("/browse?tab=bounties");
-                    else navigate(`/category/${cat.slug}`);
+                    const route = cat.slug === "projects" ? "/category/projects"
+                      : cat.slug === "bounties" ? "/browse?tab=bounties"
+                      : `/category/${cat.slug}`;
+                    handleNavClick(route, 'right');
                   }}
                 >
                   <span className="ns-right-cat-emoji">{cat.emoji}</span>
