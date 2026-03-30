@@ -736,62 +736,100 @@ const Upload = () => {
   }
 
   return (
-    <div className="py-10 px-6">
+    <div style={{ paddingTop: 28, paddingBottom: 48, paddingLeft: 24, paddingRight: 24 }}>
       <SeoHead title="Upload — NeoScale AI" description="Share your AI assistants, blueprints and workflows with the community." path="/upload" />
       <div className="mx-auto max-w-2xl">
         {/* Draft banner */}
         {draftMeta && (
-          <div className="mb-6 rounded-xl border px-4 py-3 flex items-center justify-between gap-3" style={{ backgroundColor: "#1A1500", borderColor: "#BA7517" }}>
-            <p className="text-sm" style={{ color: "#EF9F27" }}>
-              Editing draft — <span className="font-semibold">{draftMeta.name}</span>
-              <span className="ml-2 opacity-70">· {lastAutosaveRef.current
+          <div
+            className="mb-5 flex items-center justify-between gap-3"
+            style={{ background: 'rgba(186,117,23,0.08)', border: '1px solid rgba(186,117,23,0.30)', borderRadius: 10, padding: '10px 16px' }}
+          >
+            <p style={{ fontSize: 13, fontWeight: 300, color: '#EF9F27' }}>
+              Editing draft — <span style={{ fontWeight: 600 }}>{draftMeta.name}</span>
+              <span className="opacity-70 ml-2">· {lastAutosaveRef.current
                 ? `Autosaved ${formatDistanceToNow(lastAutosaveRef.current, { addSuffix: true })}`
                 : `Last saved ${formatDistanceToNow(new Date(draftMeta.savedAt), { addSuffix: true })}`}</span>
             </p>
-            <button onClick={discardDraft} className="text-xs hover:underline shrink-0" style={{ color: "#EF9F27" }}>
+            <button onClick={discardDraft} className="hover:underline shrink-0" style={{ fontSize: 12, color: '#EF9F27', background: 'none', border: 'none', cursor: 'pointer' }}>
               Discard draft
             </button>
           </div>
         )}
 
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)' }}>
             {uploadType === "blog" ? "Write a Post"
               : uploadType === "bounty" ? "Post a Bounty"
               : isProjectMode ? "Share a Project"
               : "Share a Blueprint"}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p style={{ fontSize: 13, fontWeight: 300, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
             All submissions are reviewed and tested before going live. We aim to respond within 48 hours.
           </p>
         </div>
 
-        {/* 1. Upload type selector */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
-          <button type="button" onClick={() => { setUploadType("blog"); form.setValue("content_type", "Blog"); }}
-            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${uploadType === "blog" ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/40"}`}>
-            <span className="text-xl mt-0.5 shrink-0">📝</span>
+        {/* 1. Post type selector */}
+        <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 10, marginBottom: 32 }}>
+          <button
+            type="button"
+            onClick={() => { setUploadType("blog"); form.setValue("content_type", "Blog"); }}
+            className="flex items-start gap-3 text-left transition-colors"
+            style={{
+              padding: 16,
+              borderRadius: 12,
+              border: uploadType === "blog" ? '1px solid #2EC4B6' : '1px solid rgba(255,255,255,0.06)',
+              background: uploadType === "blog" ? 'rgba(46,196,182,0.04)' : 'rgba(255,255,255,0.025)',
+              flex: 1,
+            }}
+            onMouseEnter={e => { if (uploadType !== "blog") (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.12)'; }}
+            onMouseLeave={e => { if (uploadType !== "blog") (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
+          >
+            <span style={{ fontSize: 20, marginTop: 2, flexShrink: 0 }}>📝</span>
             <div>
-              <p className="text-sm font-semibold text-foreground">Blog</p>
-              <p className="text-xs text-muted-foreground mt-0.5">A post, opinion, or tutorial in your own words</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>Blog</p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>A post, opinion, or tutorial in your own words</p>
             </div>
           </button>
-          <button type="button" onClick={() => { setUploadType("single"); const ct = form.getValues("content_type"); if (ct === "Blog" || ct === "Failure Library" || ct === "Open Question" || ct === "Challenge") form.setValue("content_type", ""); }}
-            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${uploadType === "single" ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/40"}`}>
-            <span className="text-xl mt-0.5 shrink-0">🔷</span>
+          <button
+            type="button"
+            onClick={() => { setUploadType("single"); const ct = form.getValues("content_type"); if (ct === "Blog" || ct === "Failure Library" || ct === "Open Question" || ct === "Challenge") form.setValue("content_type", ""); }}
+            className="flex items-start gap-3 text-left transition-colors"
+            style={{
+              padding: 16,
+              borderRadius: 12,
+              border: uploadType === "single" ? '1px solid #2EC4B6' : '1px solid rgba(255,255,255,0.06)',
+              background: uploadType === "single" ? 'rgba(46,196,182,0.04)' : 'rgba(255,255,255,0.025)',
+              flex: 1,
+            }}
+            onMouseEnter={e => { if (uploadType !== "single") (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.12)'; }}
+            onMouseLeave={e => { if (uploadType !== "single") (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
+          >
+            <span style={{ fontSize: 20, marginTop: 2, flexShrink: 0 }}>🔷</span>
             <div>
-              <p className="text-sm font-semibold text-foreground">Blueprint</p>
-              <p className="text-xs text-muted-foreground mt-0.5">A prompt, workflow, or guide people can use</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>Blueprint</p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>A prompt, workflow, or guide people can use</p>
             </div>
           </button>
-          <button type="button" onClick={() => { setUploadType("bounty"); form.setValue("content_type", ""); }}
-            className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors text-left ${uploadType === "bounty" ? "bg-red-500/5" : "border-border bg-card hover:border-muted-foreground/40"}`}
-            style={uploadType === "bounty" ? { borderColor: "rgba(239,68,68,0.4)" } : {}}>
-            <span className="text-xl mt-0.5 shrink-0">🎯</span>
+          <button
+            type="button"
+            onClick={() => { setUploadType("bounty"); form.setValue("content_type", ""); }}
+            className="flex items-start gap-3 text-left transition-colors"
+            style={{
+              padding: 16,
+              borderRadius: 12,
+              border: uploadType === "bounty" ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.06)',
+              background: uploadType === "bounty" ? 'rgba(239,68,68,0.04)' : 'rgba(255,255,255,0.025)',
+              flex: 1,
+            }}
+            onMouseEnter={e => { if (uploadType !== "bounty") (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.12)'; }}
+            onMouseLeave={e => { if (uploadType !== "bounty") (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
+          >
+            <span style={{ fontSize: 20, marginTop: 2, flexShrink: 0 }}>🎯</span>
             <div>
-              <p className="text-sm font-semibold text-foreground">Bounty</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Post a failure or challenge and invite the community to solve it with a Blueprint.</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>Bounty</p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>Post a failure or challenge and invite the community to solve it with a Blueprint.</p>
             </div>
           </button>
         </div>
@@ -803,11 +841,28 @@ const Upload = () => {
             {/* Blog: Title */}
             <FormField control={form.control} name="title" render={({ field }) => (
               <FormItem>
-                <FormLabel>Title</FormLabel>
                 <FormControl>
-                  <Input placeholder="E.g. Why AI agents changed my workflow" className="bg-card border-border rounded-xl" {...field} maxLength={100} />
+                  <Input
+                    placeholder="Post title..."
+                    {...field}
+                    maxLength={100}
+                    className="text-foreground"
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 500,
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: 0,
+                      padding: '12px 0',
+                      color: 'rgba(255,255,255,0.90)',
+                      outline: 'none',
+                    }}
+                    onFocus={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.16)'}
+                    onBlur={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.06)'}
+                  />
                 </FormControl>
-                <FormDescription>{field.value.length}/100</FormDescription>
+                <FormDescription style={{ fontSize: 11, color: 'rgba(255,255,255,0.20)', textAlign: 'right' }}>{field.value.length}/100</FormDescription>
                 <FormMessage />
               </FormItem>
             )} />
@@ -824,9 +879,19 @@ const Upload = () => {
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center gap-2 py-6 px-4 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/40 transition-colors">
-                  <ImagePlus className="h-6 w-6 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Click to upload (.jpg, .png, .webp — max 3MB)</span>
+                <label
+                  className="flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors"
+                  style={{
+                    border: '1.5px dashed rgba(255,255,255,0.10)',
+                    borderRadius: 12,
+                    height: 140,
+                    background: 'transparent',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.20)'; (e.currentTarget as HTMLLabelElement).style.background = 'rgba(255,255,255,0.01)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLLabelElement).style.background = 'transparent'; }}
+                >
+                  <ImagePlus style={{ width: 22, height: 22, color: 'rgba(255,255,255,0.28)' }} />
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Click to upload cover image (.jpg, .png, .webp — max 3MB)</span>
                   <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -932,12 +997,27 @@ const Upload = () => {
 
             {/* Bounty: Title */}
             <FormField control={form.control} name="title" render={({ field }) => (
-              <FormItem className="space-y-1.5">
-                <FormLabel>Title</FormLabel>
+              <FormItem className="space-y-0">
                 <FormControl>
-                  <Input placeholder="E.g. My AI agent keeps hallucinating product names" className="bg-card border-border rounded-xl" {...field} />
+                  <Input
+                    placeholder="Describe your failure or challenge..."
+                    {...field}
+                    className="text-foreground"
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 500,
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: 0,
+                      padding: '12px 0',
+                      color: 'rgba(255,255,255,0.90)',
+                      outline: 'none',
+                    }}
+                    onFocus={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.16)'}
+                    onBlur={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.06)'}
+                  />
                 </FormControl>
-                <FormDescription>Keep it short and specific.</FormDescription>
                 <FormMessage />
               </FormItem>
             )} />
@@ -954,9 +1034,19 @@ const Upload = () => {
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center gap-2 py-6 px-4 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/40 transition-colors">
-                  <ImagePlus className="h-6 w-6 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Click to upload (.jpg, .png, .webp — max 3MB)</span>
+                <label
+                  className="flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors"
+                  style={{
+                    border: '1.5px dashed rgba(255,255,255,0.10)',
+                    borderRadius: 12,
+                    height: 140,
+                    background: 'transparent',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.20)'; (e.currentTarget as HTMLLabelElement).style.background = 'rgba(255,255,255,0.01)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLLabelElement).style.background = 'transparent'; }}
+                >
+                  <ImagePlus style={{ width: 22, height: 22, color: 'rgba(255,255,255,0.28)' }} />
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Click to upload cover image (.jpg, .png, .webp — max 3MB)</span>
                   <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -1251,12 +1341,27 @@ const Upload = () => {
 
             {/* 2. Title */}
             <FormField control={form.control} name="title" render={({ field }) => (
-              <FormItem className="space-y-1.5">
-                <FormLabel>Title</FormLabel>
+              <FormItem className="space-y-0">
                 <FormControl>
-                  <Input placeholder="E.g. Email Summariser" className="bg-card border-border rounded-xl" {...field} />
+                  <Input
+                    placeholder="Blueprint title..."
+                    {...field}
+                    className="text-foreground"
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 500,
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: 0,
+                      padding: '12px 0',
+                      color: 'rgba(255,255,255,0.90)',
+                      outline: 'none',
+                    }}
+                    onFocus={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.16)'}
+                    onBlur={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.06)'}
+                  />
                 </FormControl>
-                <FormDescription>Keep it short and specific.</FormDescription>
                 <FormMessage />
               </FormItem>
             )} />
@@ -1273,9 +1378,19 @@ const Upload = () => {
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center gap-2 py-6 px-4 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/40 transition-colors">
-                  <ImagePlus className="h-6 w-6 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Click to upload (.jpg, .png, .webp — max 3MB)</span>
+                <label
+                  className="flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors"
+                  style={{
+                    border: '1.5px dashed rgba(255,255,255,0.10)',
+                    borderRadius: 12,
+                    height: 140,
+                    background: 'transparent',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.20)'; (e.currentTarget as HTMLLabelElement).style.background = 'rgba(255,255,255,0.01)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLLabelElement).style.background = 'transparent'; }}
+                >
+                  <ImagePlus style={{ width: 22, height: 22, color: 'rgba(255,255,255,0.28)' }} />
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Click to upload cover image (.jpg, .png, .webp — max 3MB)</span>
                   <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
