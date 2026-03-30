@@ -236,16 +236,8 @@ const NEOSCALE_CSS = `
 
 /* ── Middle panel ── */
 .ns-middle-wrapper { width: 600px; height: 775px; perspective: 1400px; flex-shrink: 0; }
-.ns-middle-flipper {
+.ns-middle-panel {
   width: 100%; height: 100%;
-  position: relative;
-  transform-style: preserve-3d;
-}
-.ns-middle-front, .ns-middle-back {
-  position: absolute; top: 0; left: 0;
-  width: 100%; height: 100%;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
   border-radius: 20px;
   background: linear-gradient(165deg,
     rgba(255,255,255,0.06) 0%,
@@ -258,17 +250,34 @@ const NEOSCALE_CSS = `
     0 0 0 1px rgba(255,255,255,0.03) inset,
     0 1px 0 rgba(255,255,255,0.05) inset;
   overflow: hidden;
-  padding: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
-.ns-middle-front::before, .ns-middle-back::before {
+.ns-middle-panel::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  z-index: 1;
 }
-.ns-middle-back { transform: rotateY(180deg); }
-.ns-middle-back.rtl { transform: rotateY(-180deg); }
+.ns-middle-panel.ns-flip-ltr {
+  animation: nsFlipLTR 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.ns-middle-panel.ns-flip-rtl {
+  animation: nsFlipRTL 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+}
+@keyframes nsFlipLTR {
+  0%   { transform: rotateY(0deg); }
+  40%  { transform: rotateY(90deg); }
+  100% { transform: rotateY(0deg); }
+}
+@keyframes nsFlipRTL {
+  0%   { transform: rotateY(0deg); }
+  40%  { transform: rotateY(-90deg); }
+  100% { transform: rotateY(0deg); }
+}
 
 /* ── Front face — compose bar ── */
 .ns-compose-bar {
@@ -741,13 +750,12 @@ export function NeoScaleShell() {
   const location   = useLocation();
   const navigate   = useNavigate();
   const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const flipperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRef    = useRef<HTMLDivElement>(null);
   const rightRef   = useRef<HTMLDivElement>(null);
+  const middleRef  = useRef<HTMLDivElement>(null);
   const searchDebounce = useRef<ReturnType<typeof setTimeout>>();
   const isFlipping = useRef(false);
-  const currentRotation = useRef(0);
 
   const [pulsing,    setPulsing]    = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -755,8 +763,7 @@ export function NeoScaleShell() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [lastFlipDir, setLastFlipDir] = useState<'left' | 'right'>('left');
-  const showingFrontRef = useRef(true);
+  const [flipClass, setFlipClass] = useState("");
 
   const isMobile = useIsMobile();
   const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
@@ -778,27 +785,7 @@ export function NeoScaleShell() {
     return () => { document.head.removeChild(tag); };
   }, [isMobile]);
 
-  /* ── Sync face on browser back/forward (popstate) only ── */
-  const lastPathRef = useRef(location.pathname);
-  useEffect(() => {
-    if (isMobile) return;
-    const prevPath = lastPathRef.current;
-    const currPath = location.pathname;
-    lastPathRef.current = currPath;
-    // Only auto-flip if navigation was NOT triggered by our handleNavClick
-    // (detected: isFlipping is false AND path actually changed)
-    if (isFlipping.current) return;
-    const wasHome = prevPath === "/";
-    const isHome = currPath === "/";
-    if (isHome && !showingFrontRef.current) {
-      doFlip('left');
-    } else if (!isHome && showingFrontRef.current && !wasHome) {
-      // non-home to non-home, no flip needed
-    } else if (!isHome && showingFrontRef.current) {
-      doFlip('left');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, isMobile]);
+  /* (browser back/forward handled naturally — Outlet re-renders, no flip needed) */
 
   function triggerPulse() {
     setPulsing(false);
@@ -1009,42 +996,23 @@ export function NeoScaleShell() {
     };
   }
 
-  /* ── Directional flip — only flips once ── */
-  function doFlip(source: 'left' | 'right') {
+  /* ── Trigger a flip animation ── */
+  function triggerFlip(source: 'left' | 'right') {
     if (isFlipping.current) return;
-
-    const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement | null;
-    if (!flipper) return;
-
-    const delta = source === 'left' ? 180 : -180;
-    currentRotation.current += delta;
-    showingFrontRef.current = !showingFrontRef.current;
-    setLastFlipDir(source);
-
     isFlipping.current = true;
-    flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-    flipper.style.transform = `rotateY(${currentRotation.current}deg)`;
-
+    const cls = source === 'left' ? 'ns-flip-ltr' : 'ns-flip-rtl';
+    setFlipClass(cls);
     setTimeout(() => {
+      setFlipClass('');
       isFlipping.current = false;
-    }, 650);
+    }, 560);
   }
 
-  /* ── Nav click handler — navigate + flip only if needed ── */
+  /* ── Nav click handler — always navigate + flip ── */
   function handleNavClick(route: string, source: 'left' | 'right') {
     if (isFlipping.current) return;
-
-    const targetIsHome = route === '/';
-    const frontVisible = showingFrontRef.current;
-
-    // Navigate first so Outlet renders the target page
     navigate(route);
-
-    if (targetIsHome && frontVisible) return; // already showing home
-    if (!targetIsHome && !frontVisible) return; // already showing back (outlet)
-
-    // Need to flip
-    doFlip(source);
+    triggerFlip(source);
   }
 
   function handleSearchChange(q: string) {
@@ -1095,13 +1063,11 @@ export function NeoScaleShell() {
     navigate("/");
   };
 
-  /* ── Back-face flip-to-front button handler ── */
+  /* ── Back button handler ── */
   function handleBackBtn() {
     if (isFlipping.current) return;
     navigate("/");
-    if (!showingFrontRef.current) {
-      doFlip('left');
-    }
+    triggerFlip('left');
   }
 
   /* ── Back face content router ── */
@@ -1352,20 +1318,12 @@ export function NeoScaleShell() {
 
           {/* ═══ MIDDLE PANEL ═══ */}
           <div className="ns-middle-wrapper">
-            <div className="ns-middle-flipper" ref={flipperRef}>
-
-              {/* FRONT FACE — home (Outlet renders Home.tsx) */}
-              <div className="ns-middle-front ns-outlet-wrap" style={{ display: "flex", flexDirection: "column" }}>
+            <div className={`ns-middle-panel ns-outlet-wrap ${flipClass}`} ref={middleRef}>
+              {location.pathname === "/" ? (
                 <Outlet />
-              </div>
-
-              {/* BACK FACE — non-home pages */}
-              <div className={`ns-middle-back${lastFlipDir === 'right' ? " rtl" : ""}`}>
-                <div className="ns-outlet-wrap">
-                  {renderBackFaceContent()}
-                </div>
-              </div>
-
+              ) : (
+                renderBackFaceContent()
+              )}
             </div>
           </div>
 
