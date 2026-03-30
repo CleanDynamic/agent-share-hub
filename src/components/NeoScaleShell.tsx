@@ -1148,15 +1148,10 @@ export function NeoScaleShell() {
   /* ── Back-face flip-to-front button handler ── */
   function handleBackBtn() {
     if (isFlipping.current) return;
-    const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement | null;
-    if (!flipper) return;
-    const nearest360 = Math.round(currentRotation.current / 360) * 360;
-    currentRotation.current = nearest360;
-    isFlipping.current = true;
-    flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-    flipper.style.transform = `rotateY(${nearest360}deg)`;
-    setTimeout(() => { isFlipping.current = false; }, 650);
     navigate("/");
+    if (!showingFrontRef.current) {
+      doFlip('left');
+    }
   }
 
   /* ── Back face content router ── */
