@@ -1570,8 +1570,8 @@ export function NeoScaleShell() {
             {!isLoggedIn && (
               <div style={{ marginTop: 16 }}>
                 <div className="ns-auth-btns">
-                  <button className="ns-auth-btn signin" onClick={() => handleNav("/login")}>Sign in</button>
-                  <button className="ns-auth-btn join" onClick={() => handleNav("/signup")}>Join free</button>
+                  <button className="ns-auth-btn signin" onClick={() => handleNavClick("/login", 'right')}>Sign in</button>
+                  <button className="ns-auth-btn join" onClick={() => handleNavClick("/signup", 'right')}>Join free</button>
                 </div>
               </div>
             )}
