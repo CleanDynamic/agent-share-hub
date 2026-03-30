@@ -1492,7 +1492,7 @@ export function NeoScaleShell() {
                 <div
                   key={item.id}
                   className="ns-trending-item"
-                  onClick={() => { flipMiddle('right'); navigate(`/content/${item.id}`); }}
+                  onClick={() => handleNavClick(`/content/${item.id}`, 'right')}
                 >
                   <span className="ns-trending-rank">{i + 1}</span>
                   <div className="ns-trending-info">
