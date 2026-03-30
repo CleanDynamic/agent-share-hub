@@ -1537,7 +1537,7 @@ export function NeoScaleShell() {
               <>
                 <div className="ns-section-title">Collections</div>
                 {featuredCollections.map((col: any) => (
-                  <div key={col.id} className="ns-collection-item" onClick={() => { flipMiddle('right'); navigate(`/collection/${col.slug || col.id}`); }}>
+                  <div key={col.id} className="ns-collection-item" onClick={() => handleNavClick(`/collection/${col.slug || col.id}`, 'right')}>
                     <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>{col.title}</div>
                     <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>
                       {(col.profiles as any)?.display_name || (col.profiles as any)?.username || "Creator"} · {col.item_count} items
