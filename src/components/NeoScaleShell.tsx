@@ -748,15 +748,6 @@ function ctypeBg(contentType: string): string {
   return map[contentType] ?? "#555";
 }
 
-/* ────────────────────────────────────────────────
-   Feed renderer helper
-──────────────────────────────────────────────── */
-function renderFeedEntry(entry: any) {
-  if (entry._feedType === "collection") return <CollectionFeedCard key={`col-${entry.id}`} item={entry} />;
-  if (entry._feedType === "project")    return <ProjectFeedCard key={`proj-${entry.id}`} item={entry} />;
-  if (entry.is_reblog)                  return <ReblogCard key={entry.id} item={entry} />;
-  return <FeedItem key={entry.id} item={entry} />;
-}
 
 /* ────────────────────────────────────────────────
    SVG icons for nav
