@@ -53,8 +53,8 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
         border: '1px solid var(--border)',
         borderLeft: `3px solid ${sc.border}`,
         borderRadius: 'var(--radius-card)',
-        marginBottom: '8px',
-        transition: 'border-color 0.15s ease',
+        marginBottom: 12,
+        transition: 'border-color 0.2s ease',
         cursor: 'pointer',
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
@@ -72,24 +72,25 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
       </div>
 
       {/* CARD BODY */}
-      <div className="p-4 space-y-2">
+      <div style={{ padding: '18px 20px' }} className="space-y-2">
         {/* ROW 1 — Header */}
         <div className="flex items-center gap-2" style={{ height: 34 }}>
           <Link to={`/creator/${profile?.username}`} onClick={stop}>
-            <Avatar className="h-[34px] w-[34px] shrink-0">
+            <Avatar className="shrink-0" style={{ width: 34, height: 34 }}>
               <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
             </Avatar>
           </Link>
           <Link
             to={`/creator/${profile?.username}`}
             onClick={stop}
-            className="text-sm font-semibold text-foreground hover:underline truncate"
+            className="hover:underline truncate"
+            style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.90)' }}
           >
             {profile?.display_name || profile?.username || "Unknown"}
           </Link>
-          <span className="text-[13px] text-muted-foreground truncate">@{profile?.username}</span>
-          <span className="text-muted-foreground">·</span>
-          <span className="text-xs text-muted-foreground shrink-0">{timeAgo(item.created_at)}</span>
+          <span className="truncate" style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>@{profile?.username}</span>
+          <span style={{ color: 'rgba(255,255,255,0.20)' }}>·</span>
+          <span className="shrink-0" style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)' }}>{timeAgo(item.created_at)}</span>
           <div className="ml-auto shrink-0" onClick={stop}>
             <BookmarkButton contentId={item.id} />
           </div>
@@ -108,7 +109,7 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
         </div>
 
         {/* ROW 3 — Title */}
-        <p className="text-sm font-semibold text-foreground leading-[1.3] line-clamp-2">{item.title}</p>
+        <p className="line-clamp-2" style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.90)', lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
 
         {/* ROW 4 — The Gap Preview */}
         {gap && (
@@ -125,13 +126,13 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
         )}
 
         {/* ROW 5 — Stats */}
-        <div className="flex items-center justify-between pt-1">
-          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-between" style={{ paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          <div className="flex items-center" style={{ gap: 16, fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>
             <span className="flex items-center gap-1">
-              <Eye className="h-3 w-3" />{formatNum(item.view_count ?? 0)}
+              <Eye style={{ width: 15, height: 15 }} />{formatNum(item.view_count ?? 0)}
             </span>
             <span className="flex items-center gap-1">
-              <MessageSquare className="h-3 w-3" />{responsesCount} responses
+              <MessageSquare style={{ width: 15, height: 15 }} />{responsesCount} responses
             </span>
             {meTooCount > 0 && (
               <span>🙋 {meTooCount} have this</span>

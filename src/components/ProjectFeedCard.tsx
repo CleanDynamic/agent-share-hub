@@ -51,32 +51,32 @@ export function ProjectFeedCard({ item }: ProjectFeedCardProps) {
   return (
     <div
       onClick={() => navigate(`/project/${item.id}`)}
-      className="px-4 py-3"
       data-visual-slot="feed-card"
       style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius-card)',
-        marginBottom: '8px',
-        transition: 'border-color 0.15s ease',
+        marginBottom: 12,
+        padding: '18px 20px',
+        transition: 'border-color 0.2s ease',
         cursor: 'pointer',
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
       onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
     >
       {/* Header */}
-      <div className="flex items-center gap-2" style={{ height: 36 }}>
+      <div className="flex items-center gap-2" style={{ height: 34 }}>
         <Link to={`/creator/${profile?.username}`} onClick={stop}>
-          <Avatar className="h-9 w-9 shrink-0">
+          <Avatar className="shrink-0" style={{ width: 34, height: 34 }}>
             <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
           </Avatar>
         </Link>
-        <Link to={`/creator/${profile?.username}`} onClick={stop} className="text-sm font-semibold text-foreground hover:underline truncate">
+        <Link to={`/creator/${profile?.username}`} onClick={stop} className="hover:underline truncate" style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.90)' }}>
           {profile?.display_name || profile?.username || "Unknown"}
         </Link>
-        <span className="text-[13px] text-muted-foreground truncate">@{profile?.username}</span>
-        <span className="text-muted-foreground">·</span>
-        <span className="text-xs text-muted-foreground shrink-0">{timeAgo(item.approved_at || item.created_at)}</span>
+        <span className="truncate" style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>@{profile?.username}</span>
+        <span style={{ color: 'rgba(255,255,255,0.20)' }}>·</span>
+        <span className="shrink-0" style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)' }}>{timeAgo(item.approved_at || item.created_at)}</span>
         <div className="ml-auto shrink-0" onClick={stop}>
           <BookmarkButton contentId={item.id} />
         </div>
@@ -98,9 +98,9 @@ export function ProjectFeedCard({ item }: ProjectFeedCardProps) {
       </div>
 
       {/* Title + Description */}
-      <p className="text-sm font-semibold text-foreground leading-[1.3] mt-1 line-clamp-2">{item.title}</p>
+      <p className="line-clamp-2" style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.90)', lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
       {item.description && (
-        <p className="text-[13px] text-muted-foreground truncate mt-0.5">{item.description}</p>
+        <p className="truncate" style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{item.description}</p>
       )}
 
       {/* Cover */}
@@ -113,17 +113,13 @@ export function ProjectFeedCard({ item }: ProjectFeedCardProps) {
       ) : null}
 
       {/* Stats */}
-      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-[3px] shrink-0">
-          <ClipboardList className="h-3 w-3" />{item._component_count ?? 0} blueprints
+      <div className="flex items-center" style={{ gap: 16, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.04)', fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>
+        <span className="inline-flex items-center gap-1 shrink-0">
+          <ClipboardList style={{ width: 15, height: 15 }} />{item._component_count ?? 0} blueprints
         </span>
-        <span className="text-[#444450] shrink-0">·</span>
-        <span className="inline-flex items-center gap-[3px] shrink-0"><Eye className="h-3 w-3" />{formatNum(item.view_count)}</span>
+        <span className="inline-flex items-center gap-1 shrink-0"><Eye style={{ width: 15, height: 15 }} />{formatNum(item.view_count)}</span>
         {(item.rating_count ?? 0) > 0 && (
-          <>
-            <span className="text-[#444450] shrink-0">·</span>
-            <span className="inline-flex items-center gap-[3px] shrink-0"><Star className="h-3 w-3 fill-primary text-primary" />{(item.avg_rating ?? 0).toFixed(1)}</span>
-          </>
+          <span className="inline-flex items-center gap-1 shrink-0"><Star style={{ width: 15, height: 15, fill: '#2EC4B6', color: '#2EC4B6' }} />{(item.avg_rating ?? 0).toFixed(1)}</span>
         )}
         {item.package_price_enabled && item.package_price_gbp != null && (
           <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary border border-primary/25 font-medium">
