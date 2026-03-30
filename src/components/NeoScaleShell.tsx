@@ -1404,85 +1404,13 @@ export function NeoScaleShell() {
           <div className="ns-middle-wrapper">
             <div className="ns-middle-flipper" ref={flipperRef}>
 
-              {/* FRONT FACE — home feed */}
-              <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
-                {/* Compose bar */}
-                <div className="ns-compose-bar">
-                  <div className="ns-compose-avatar">
-                    {profile ? (profile.display_name ?? profile.username ?? "U").slice(0, 2).toUpperCase() : "U"}
-                  </div>
-                  <div className="ns-compose-prompt" onClick={() => navigate('/upload')}>
-                    Share something...
-                  </div>
-                </div>
-
-                {/* Twitter-style underline tabs */}
-                <div className="ns-tab-row">
-                  {["For You", "Following", "Trending", "Recent"].map(tab => (
-                    <div
-                      key={tab}
-                      className={`ns-tab${activeTab === tab ? " active" : ""}`}
-                      onClick={() => setActiveTab(tab)}
-                    >
-                      {tab}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Feed */}
-                <div className="ns-feed-scroll">
-                  {posts.length === 0 ? (
-                    <div className="ns-feed-loading">
-                      {[1,2,3,4].map(n => <div key={n} className="ns-feed-skeleton" />)}
-                    </div>
-                  ) : (
-                    posts.map((post: any) => {
-                      const postProfile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
-                      const displayName = postProfile?.display_name || postProfile?.username || "Unknown";
-                      const username = postProfile?.username || "user";
-                      const tags: string[] = post.ai_tools ?? post.topics ?? [];
-                      return (
-                        <div key={post.id} className="ns-feed-card"
-                             onClick={() => navigate(`/content/${post.id}`)}>
-                          <div className="ns-feed-avatar-col">
-                            <div className="ns-feed-card-avatar"
-                                 style={{ background: ctypeBg(post.content_type) }}>
-                              {displayName.slice(0, 2).toUpperCase()}
-                            </div>
-                          </div>
-                          <div className="ns-feed-content-col">
-                            <div className="ns-feed-header">
-                              <span className="ns-feed-name">{displayName}</span>
-                              <span className="ns-feed-handle">@{username}</span>
-                              <span className="ns-feed-sep">·</span>
-                              <span className="ns-feed-time">{timeAgo(post.created_at)}</span>
-                              <span className="ns-feed-menu">···</span>
-                            </div>
-                            <span className="ns-feed-type-badge">{displayContentType(post.content_type)}</span>
-                            <div className="ns-feed-title">{post.title}</div>
-                            {tags.length > 0 && (
-                              <div className="ns-feed-tags">
-                                {tags.slice(0, 3).map((t: string) => (
-                                  <span key={t} className="ns-feed-tag">{t}</span>
-                                ))}
-                              </div>
-                            )}
-                            <div className="ns-feed-actions">
-                              <button className="ns-feed-action like" onClick={e => e.stopPropagation()}>♡ {post.view_count ?? 0}</button>
-                              <button className="ns-feed-action reply" onClick={e => e.stopPropagation()}>💬 0</button>
-                              <button className="ns-feed-action dl" onClick={e => e.stopPropagation()}>↓ {post.download_count ?? 0}</button>
-                              <button className="ns-feed-action" onClick={e => e.stopPropagation()}>↗</button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
+              {/* FRONT FACE — home (Outlet renders Home.tsx) */}
+              <div className="ns-middle-front ns-outlet-wrap" style={{ display: "flex", flexDirection: "column" }}>
+                <Outlet />
               </div>
 
-              {/* BACK FACE — router outlet */}
-              <div className={`ns-middle-back${flipDir === -1 ? " rtl" : ""}`}>
+              {/* BACK FACE — non-home pages */}
+              <div className={`ns-middle-back${lastFlipDir === 'right' ? " rtl" : ""}`}>
                 <div className="ns-outlet-wrap">
                   {renderBackFaceContent()}
                 </div>
