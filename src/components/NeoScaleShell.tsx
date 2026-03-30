@@ -1059,33 +1059,42 @@ export function NeoScaleShell() {
     };
   }
 
-  /* ── Directional flip ── */
-  function flipMiddle(source: 'left' | 'right') {
+  /* ── Directional flip — only flips once ── */
+  function doFlip(source: 'left' | 'right') {
     if (isFlipping.current) return;
 
-    const flipper = document.querySelector(
-      '.ns-middle-flipper'
-    ) as HTMLElement | null;
+    const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement | null;
     if (!flipper) return;
 
-    // Direction: left source adds 180, right source subtracts 180
     const delta = source === 'left' ? 180 : -180;
     currentRotation.current += delta;
+    showingFrontRef.current = !showingFrontRef.current;
+    setLastFlipDir(source);
 
     isFlipping.current = true;
-    flipper.style.transition =
-      'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-    flipper.style.transform =
-      `rotateY(${currentRotation.current}deg)`;
+    flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+    flipper.style.transform = `rotateY(${currentRotation.current}deg)`;
 
     setTimeout(() => {
       isFlipping.current = false;
     }, 650);
   }
 
-  /* ── Nav click handler ── */
-  function handleNav(route: string) {
+  /* ── Nav click handler — navigate + flip only if needed ── */
+  function handleNavClick(route: string, source: 'left' | 'right') {
+    if (isFlipping.current) return;
+
+    const targetIsHome = route === '/';
+    const frontVisible = showingFrontRef.current;
+
+    // Navigate first so Outlet renders the target page
     navigate(route);
+
+    if (targetIsHome && frontVisible) return; // already showing home
+    if (!targetIsHome && !frontVisible) return; // already showing back (outlet)
+
+    // Need to flip
+    doFlip(source);
   }
 
   function handleSearchChange(q: string) {
