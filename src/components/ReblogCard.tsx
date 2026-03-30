@@ -302,14 +302,14 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
   return (
     <div
       onClick={() => navigate(`/content/${item.id}`)}
-      className="px-4 py-3"
       data-visual-slot="feed-card"
       style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius-card)',
-        marginBottom: '8px',
-        transition: 'border-color 0.15s ease',
+        marginBottom: 12,
+        padding: '18px 20px',
+        transition: 'border-color 0.2s ease',
         cursor: 'pointer',
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
@@ -323,22 +323,23 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2" style={{ height: 36 }}>
+          <div className="flex items-center gap-2" style={{ height: 34 }}>
             <Link to={`/creator/${profile?.username}`} onClick={stop}>
-              <Avatar className="h-9 w-9 shrink-0">
+              <Avatar className="shrink-0" style={{ width: 34, height: 34 }}>
                 <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
               </Avatar>
             </Link>
             <Link
               to={`/creator/${profile?.username}`}
               onClick={stop}
-              className="text-sm font-semibold text-foreground hover:underline truncate"
+              className="hover:underline truncate"
+              style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.90)' }}
             >
               {profile?.display_name || profile?.username || "Unknown"}
             </Link>
-            <span className="text-[13px] text-muted-foreground truncate">@{profile?.username}</span>
-            <span className="text-muted-foreground">·</span>
-            <span className="text-xs text-muted-foreground shrink-0">{timeAgo(item.created_at)}</span>
+            <span className="truncate" style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>@{profile?.username}</span>
+            <span style={{ color: 'rgba(255,255,255,0.20)' }}>·</span>
+            <span className="shrink-0" style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)' }}>{timeAgo(item.created_at)}</span>
             <div className="ml-auto shrink-0" onClick={stop}>
               <BookmarkButton contentId={item.id} />
             </div>
@@ -365,7 +366,7 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
 
       {/* ROW 2 — Reblog title (if set) */}
       {item.title && (
-        <p className="text-[15px] font-bold text-white mt-2 line-clamp-2 ml-5">{item.title}</p>
+        <p className="line-clamp-2 ml-5" style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.90)', lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
       )}
 
       {/* ROW 3 — Quoted post (always visible, unless compact mode) */}
@@ -407,22 +408,19 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
       )}
 
       {/* ROW 6 — Stats row */}
-      <div className="flex items-center justify-between mt-3 ml-5">
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-[3px] shrink-0">
-            <Eye className="h-3 w-3" />{formatNum(item.view_count ?? 0)}
+      <div className="flex items-center justify-between ml-5" style={{ paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div className="flex items-center" style={{ gap: 16, fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>
+          <span className="inline-flex items-center gap-1 shrink-0">
+            <Eye style={{ width: 15, height: 15 }} />{formatNum(item.view_count ?? 0)}
           </span>
-          <span className="text-[#444450] shrink-0">·</span>
-          <span className="inline-flex items-center gap-[3px] shrink-0">
-            <Download className="h-3 w-3" />{formatNum(item.download_count ?? 0)}
+          <span className="inline-flex items-center gap-1 shrink-0">
+            <Download style={{ width: 15, height: 15 }} />{formatNum(item.download_count ?? 0)}
           </span>
-          <span className="text-[#444450] shrink-0">·</span>
-          <span className="inline-flex items-center gap-[3px] shrink-0">
-            <MessageSquare className="h-3 w-3" />{item.comment_count ?? 0}
+          <span className="inline-flex items-center gap-1 shrink-0">
+            <MessageSquare style={{ width: 15, height: 15 }} />{item.comment_count ?? 0}
           </span>
-          <span className="text-[#444450] shrink-0">·</span>
-          <span className="inline-flex items-center gap-[3px] shrink-0">
-            <Repeat2 className="h-3 w-3" />{formatNum(reblogCount ?? 0)}
+          <span className="inline-flex items-center gap-1 shrink-0">
+            <Repeat2 style={{ width: 15, height: 15 }} />{formatNum(reblogCount ?? 0)}
           </span>
         </div>
 

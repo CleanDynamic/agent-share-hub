@@ -415,7 +415,7 @@ const Home = () => {
     : profile?.username?.slice(0, 2).toUpperCase() ?? "?";
 
   return (
-    <div>
+    <div style={{ paddingTop: 28 }}>
       <SeoHead
         title="NeoScale AI — The AI Agent Tactics Forum"
         description="Download AI assistants, blueprints and workflows. Works with ChatGPT, Claude, Gemini and any AI tool."
@@ -423,37 +423,64 @@ const Home = () => {
       />
 
       {isLoggedIn && (
-        <div className="flex items-center gap-4 p-6 pb-4">
-          <Avatar className="h-10 w-10 shrink-0">
+        <div
+          className="flex items-center gap-3 mx-6 mt-7 mb-5"
+          style={{
+            background: 'rgba(255,255,255,0.025)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 14,
+            padding: '12px 16px',
+          }}
+        >
+          <Avatar className="shrink-0" style={{ width: 34, height: 34 }}>
             {profile?.avatar_url && <img src={profile.avatar_url} className="h-full w-full rounded-full object-cover" />}
             <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
           </Avatar>
           <button
             onClick={() => navigate("/upload")}
-            className="flex-1 h-12 glass-pill rounded-full px-6 text-left text-sm text-on-surface-variant placeholder:text-slate-500 border-none hover:border-primary/30 transition-all"
+            className="flex-1 text-left transition-colors"
+            style={{ fontSize: 14, fontWeight: 300, color: 'rgba(255,255,255,0.28)', background: 'none', border: 'none', padding: 0 }}
           >
             Share something...
           </button>
           <button
             onClick={() => navigate("/upload")}
-            className="w-12 h-12 flex items-center justify-center bg-brand-orange text-white rounded-full hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-brand-orange/20"
+            className="shrink-0 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+            style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'rgba(232,87,26,0.9)', color: '#fff', border: 'none',
+            }}
           >
-            <Upload className="h-5 w-5" />
+            <Upload className="h-4 w-4" />
           </button>
         </div>
       )}
 
       {!isLoggedIn && <HowItWorks />}
 
-      <div className="sticky top-0 z-10 border-b border-white/5" style={{ background: "rgba(8,8,12,0.80)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
-        <div className="flex px-6">
+      <div
+        className="sticky top-0 z-10"
+        style={{ background: "rgba(8,8,12,0.80)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+      >
+        <div
+          className="flex items-center gap-1 px-6"
+          style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 20 }}
+        >
           {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-4 text-sm font-medium transition-colors relative ${
-                activeTab === tab ? "text-on-surface border-b-2 border-brand-orange" : "text-slate-400 hover:text-white"
-              }`}
+              className="transition-colors"
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                padding: '6px 16px',
+                borderRadius: 100,
+                border: 'none',
+                background: activeTab === tab ? 'rgba(232,87,26,0.08)' : 'transparent',
+                color: activeTab === tab ? '#E8571A' : 'rgba(255,255,255,0.45)',
+                cursor: 'pointer',
+              }}
             >
               {tab}
             </button>

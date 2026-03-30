@@ -156,7 +156,7 @@ export default function LibraryPage() {
   }, [activeFolder, qc, toast]);
 
   return (
-    <div className="py-8 px-4 sm:px-6">
+    <div style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24 }}>
       <SeoHead title="Your Library — NeoScale AI" description="Your personal content library on NeoScale AI." path="/library" noIndex />
       <div className="mx-auto max-w-5xl">
         {/* Header */}

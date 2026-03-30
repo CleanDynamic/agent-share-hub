@@ -111,24 +111,28 @@ function SwipeableThreadRow({
 
   const row = (
     <div
-      className={`relative flex items-center gap-3 w-full px-4 cursor-pointer transition-colors ${
-        isActive ? "bg-primary/[0.08]" : "hover:bg-[rgba(255,255,255,0.03)]"
-      }`}
-      style={{ height: 72 }}
+      className="relative flex items-center gap-3 w-full px-4 cursor-pointer transition-colors"
+      style={{
+        height: 72,
+        background: isActive ? 'rgba(255,255,255,0.03)' : 'transparent',
+        borderLeft: isActive ? '2px solid #2EC4B6' : '2px solid transparent',
+      }}
+      onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+      onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
       onClick={onClick}
     >
       {/* Avatar with presence dot */}
       <div className="relative shrink-0">
-        <Avatar className="h-12 w-12">
+        <Avatar className="shrink-0" style={{ width: 36, height: 36 }}>
           {thread.other_avatar_url && <AvatarImage src={thread.other_avatar_url} />}
-          <AvatarFallback className="bg-accent text-muted-foreground text-sm">
+          <AvatarFallback style={{ fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.60)' }}>
             {initials(thread.other_display_name)}
           </AvatarFallback>
         </Avatar>
         {thread.is_online && (
           <span
-            className="absolute bottom-0 right-0 h-[10px] w-[10px] rounded-full border-2 border-background"
-            style={{ backgroundColor: "#22C55E" }}
+            className="absolute bottom-0 right-0 rounded-full"
+            style={{ width: 8, height: 8, background: '#22C55E', border: '1.5px solid rgba(8,8,12,1)' }}
           />
         )}
       </div>
@@ -136,21 +140,25 @@ function SwipeableThreadRow({
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-foreground truncate">{thread.other_display_name}</span>
-          <span className="text-[11px] text-muted-foreground shrink-0 ml-auto">{timeAgo(thread.last_sent_at)}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.90)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{thread.other_display_name}</span>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', flexShrink: 0 }}>{timeAgo(thread.last_sent_at)}</span>
         </div>
-        <div className="flex items-center gap-1.5 mt-0.5">
-          {thread.is_muted && <VolumeX className="h-[10px] w-[10px] text-muted-foreground shrink-0" />}
-          <p
-            className={`text-[13px] truncate flex-1 ${
-              thread.unread_count > 0 ? "font-bold text-foreground" : "text-muted-foreground"
-            }`}
-          >
-            {thread.last_sender_is_me && <span className="text-muted-foreground font-normal">You: </span>}
+        <div className="flex items-center mt-0.5" style={{ gap: 6 }}>
+          {thread.is_muted && <VolumeX style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.28)', flexShrink: 0 }} />}
+          <p style={{
+            fontSize: 12,
+            color: thread.unread_count > 0 ? 'rgba(255,255,255,0.80)' : 'rgba(255,255,255,0.35)',
+            fontWeight: thread.unread_count > 0 ? 500 : 400,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            flex: 1,
+          }}>
+            {thread.last_sender_is_me && <span style={{ color: 'rgba(255,255,255,0.28)', fontWeight: 400 }}>You: </span>}
             {thread.last_message || "Start a conversation"}
           </p>
           {thread.unread_count > 0 && (
-            <span className="shrink-0 flex items-center justify-center h-[18px] min-w-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+            <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 16, minWidth: 16, padding: '0 4px', borderRadius: 100, background: '#2EC4B6', color: '#fff', fontSize: 10, fontWeight: 700 }}>
               {thread.unread_count > 9 ? "9+" : thread.unread_count}
             </span>
           )}
@@ -159,7 +167,7 @@ function SwipeableThreadRow({
 
       {/* Pin icon */}
       {thread.is_pinned && (
-        <Pin className="absolute top-2 right-3 h-[10px] w-[10px] text-muted-foreground" />
+        <Pin className="absolute top-2 right-3" style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.28)' }} />
       )}
     </div>
   );
@@ -726,10 +734,12 @@ const MessagesPage = () => {
     <div className="h-full flex flex-col" style={{ width: isMobileView ? "100%" : 360 }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 shrink-0" style={{ height: 52 }}>
-        <h2 className="text-lg font-bold text-foreground">Messages</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.90)' }}>Messages</h2>
         <button
           onClick={() => setComposeOpen(true)}
-          className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent/40"
+          style={{ padding: 8, color: 'rgba(255,255,255,0.45)', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: 8 }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.80)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.background = 'transparent'; }}
         >
           <Pencil className="h-5 w-5" />
         </button>
@@ -738,17 +748,19 @@ const MessagesPage = () => {
       {/* Search */}
       <div className="px-4 pb-2 shrink-0">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: 'rgba(255,255,255,0.28)' }} />
+          <input
             value={threadSearch}
             onChange={(e) => setThreadSearch(e.target.value)}
             placeholder="Search messages..."
-            className="h-9 rounded-full bg-accent/50 border-border pl-9 pr-8 text-sm"
+            className="w-full outline-none"
+            style={{ height: 36, borderRadius: 100, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', paddingLeft: 36, paddingRight: 32, fontSize: 13, fontWeight: 300, color: 'rgba(255,255,255,0.80)' }}
           />
           {threadSearch && (
             <button
               onClick={() => setThreadSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+              style={{ color: 'rgba(255,255,255,0.28)', background: 'none', border: 'none', cursor: 'pointer' }}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -757,32 +769,23 @@ const MessagesPage = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex px-4 gap-4 shrink-0 border-b border-border">
+      <div className="flex items-center gap-1 px-4 shrink-0" style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 4 }}>
         <button
           onClick={() => setActiveTab("primary")}
-          className={`pb-2.5 text-sm font-medium transition-colors relative ${
-            activeTab === "primary" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-          }`}
+          style={{ fontSize: 13, fontWeight: 500, padding: '5px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: activeTab === "primary" ? 'rgba(46,196,182,0.08)' : 'transparent', color: activeTab === "primary" ? '#2EC4B6' : 'rgba(255,255,255,0.45)' }}
         >
           Primary
-          {activeTab === "primary" && (
-            <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full" />
-          )}
         </button>
         <button
           onClick={() => setActiveTab("requests")}
-          className={`pb-2.5 text-sm font-medium transition-colors relative flex items-center gap-1.5 ${
-            activeTab === "requests" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-          }`}
+          className="flex items-center"
+          style={{ fontSize: 13, fontWeight: 500, padding: '5px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', gap: 6, background: activeTab === "requests" ? 'rgba(46,196,182,0.08)' : 'transparent', color: activeTab === "requests" ? '#2EC4B6' : 'rgba(255,255,255,0.45)' }}
         >
           Requests
           {requestCount > 0 && (
-            <span className="flex items-center justify-center h-[16px] min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 16, minWidth: 16, padding: '0 4px', borderRadius: 100, background: '#2EC4B6', color: '#fff', fontSize: 10, fontWeight: 700 }}>
               {requestCount}
             </span>
-          )}
-          {activeTab === "requests" && (
-            <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full" />
           )}
         </button>
       </div>

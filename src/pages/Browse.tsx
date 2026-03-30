@@ -808,15 +808,21 @@ const Browse = () => {
   // ─── RENDER ───────────────────────────────────────────────
 
   return (
-    <div className="py-10 px-4 sm:px-6">
+    <div style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24 }}>
       <SeoHead
         title="Discover AI Blueprints — NeoScale AI"
         description="Find ready-made AI setups for any task. Filter by type, difficulty, and the AI tools you already use. Free to download."
         path="/browse"
       />
       <div className="mx-auto max-w-5xl">
-        {/* Tab bar */}
-        <div className="flex gap-1 mb-4 flex-wrap">
+        {/* Page heading */}
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)', marginBottom: 20 }}>Discover</h1>
+
+        {/* Tab bar — teal active for Browse context */}
+        <div
+          className="flex items-center gap-1 flex-wrap"
+          style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 20 }}
+        >
           {([
             { value: "blueprints" as BrowseTab, label: "Blueprints" },
             { value: "bounties" as BrowseTab, label: "Bounties" },
@@ -826,11 +832,17 @@ const Browse = () => {
             <button
               key={tab.value}
               onClick={() => setTab(tab.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
-                browseTab === tab.value
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-accent text-muted-foreground hover:text-foreground"
-              }`}
+              className="transition-colors"
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                padding: '6px 16px',
+                borderRadius: 100,
+                border: 'none',
+                background: browseTab === tab.value ? 'rgba(46,196,182,0.08)' : 'transparent',
+                color: browseTab === tab.value ? '#2EC4B6' : 'rgba(255,255,255,0.45)',
+                cursor: 'pointer',
+              }}
             >
               {tab.label}
             </button>
@@ -840,36 +852,73 @@ const Browse = () => {
         {/* ─── UNIFIED CONTROL BAR ─────────────────────────── */}
 
         {/* ROW 1: Search */}
-        <div className="relative mb-2">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative mb-3">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2"
+            style={{ width: 16, height: 16, color: 'rgba(255,255,255,0.28)' }}
+          />
           <Input
             placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 bg-card border-border text-foreground placeholder:text-muted-foreground rounded-full"
+            className="text-foreground"
+            style={{
+              paddingLeft: 40,
+              height: 40,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 10,
+              fontSize: 13,
+              fontWeight: 300,
+              color: 'rgba(255,255,255,0.90)',
+              outline: 'none',
+              transition: 'border-color 200ms',
+            }}
+            onFocus={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(255,255,255,0.16)'}
+            onBlur={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(255,255,255,0.08)'}
           />
         </div>
 
         {/* ROW 2: Sort pills */}
-        <div className="flex gap-1 mb-2">
+        <div className="flex gap-1.5 mb-2 flex-wrap">
           {sortOptions.map((opt) => (
-            <Pill key={opt.value} active={sortMode === opt.value} onClick={() => setSort(opt.value)}>
+            <button
+              key={opt.value}
+              onClick={() => setSort(opt.value)}
+              className="transition-colors whitespace-nowrap shrink-0"
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                padding: '4px 10px',
+                borderRadius: 100,
+                border: '1px solid ' + (sortMode === opt.value ? 'rgba(46,196,182,0.3)' : 'rgba(255,255,255,0.06)'),
+                background: sortMode === opt.value ? 'rgba(46,196,182,0.10)' : 'transparent',
+                color: sortMode === opt.value ? '#2EC4B6' : 'rgba(255,255,255,0.45)',
+                cursor: 'pointer',
+              }}
+            >
               {opt.label}
-            </Pill>
+            </button>
           ))}
         </div>
 
         {/* ROW 3: Time period pills */}
-        <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
+        <div className="flex gap-1.5 mb-3 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
           {TIME_PERIOD_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               onClick={() => setParam("period", opt.value)}
-              className={`px-2.5 h-7 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                timePeriod === opt.value
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-accent text-muted-foreground hover:text-foreground"
-              }`}
+              className="transition-colors whitespace-nowrap shrink-0"
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                padding: '4px 12px',
+                borderRadius: 100,
+                border: '1px solid ' + (timePeriod === opt.value ? 'rgba(46,196,182,0.3)' : 'rgba(255,255,255,0.06)'),
+                background: timePeriod === opt.value ? 'rgba(46,196,182,0.10)' : 'transparent',
+                color: timePeriod === opt.value ? '#2EC4B6' : 'rgba(255,255,255,0.45)',
+                cursor: 'pointer',
+              }}
             >
               {opt.label}
             </button>
@@ -877,26 +926,39 @@ const Browse = () => {
         </div>
 
         {/* ROW 4: Filters button + result count */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3">
           <div className="relative">
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-border text-muted-foreground hover:text-foreground"
+            <button
               onClick={() => setFilterDrawerOpen(true)}
+              className="inline-flex items-center gap-1.5 transition-colors"
+              style={{
+                fontSize: 12,
+                fontWeight: 500,
+                padding: '6px 14px',
+                borderRadius: 100,
+                border: '1px solid rgba(255,255,255,0.10)',
+                background: 'transparent',
+                color: 'rgba(255,255,255,0.60)',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.20)'}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.10)'}
             >
-              <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
+              <SlidersHorizontal style={{ width: 13, height: 13 }} />
               Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-            </Button>
+            </button>
             {activeFilterCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-medium">
+              <span
+                className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full flex items-center justify-center font-medium"
+                style={{ background: '#2EC4B6', color: '#08080C', fontSize: 10 }}
+              >
                 {activeFilterCount}
               </span>
             )}
           </div>
           {!isLoading && (
-            <p className="text-[12px] text-muted-foreground">
-              Showing {resultCount} result{resultCount !== 1 ? "s" : ""}
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+              {resultCount} result{resultCount !== 1 ? "s" : ""}
             </p>
           )}
         </div>

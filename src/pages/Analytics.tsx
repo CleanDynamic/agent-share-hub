@@ -54,10 +54,10 @@ export default function Analytics() {
   return (
     <>
       <SeoHead title="Your Analytics — NeoScale AI" description="Track your content performance" path="/analytics" />
-      <div className="max-w-5xl mx-auto px-4 py-8 flex flex-col gap-5">
+      <div className="max-w-5xl mx-auto flex flex-col" style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24, gap: 20 }}>
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <h1 className="text-2xl font-bold">Your Analytics</h1>
+        <div className="flex items-center justify-between flex-wrap" style={{ gap: 16 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)' }}>Your Analytics</h1>
           <Select value={range} onValueChange={(v) => setRange(v as Range)}>
             <SelectTrigger className="w-40 h-8 text-sm bg-transparent border border-border text-foreground"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -153,34 +153,34 @@ function OverviewCards({ userId, rangeStart, prevRangeStart, days }: { userId: s
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: 12 }}>
       {cards.map((c) => (
-        <Card key={c.label} className="p-5 space-y-2">
-          <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium">
-            <c.icon className="h-4 w-4" />
+        <div key={c.label} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="flex items-center" style={{ gap: 6, fontSize: 11, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
+            <c.icon style={{ width: 13, height: 13 }} />
             {c.label}
           </div>
-          <p className="text-2xl font-bold">
+          <p style={{ fontSize: 24, fontWeight: 600, color: 'rgba(255,255,255,0.90)', lineHeight: 1.1 }}>
             {c.isStar ? (
-              <span className="flex items-center gap-1">
-                {c.value} <Star className="h-5 w-5 fill-primary text-primary" />
+              <span className="flex items-center" style={{ gap: 6 }}>
+                {c.value} <Star style={{ width: 18, height: 18, fill: '#E8571A', color: '#E8571A' }} />
               </span>
             ) : (
-              c.value
+              c.value.toLocaleString?.() ?? c.value
             )}
           </p>
           {c.d !== null && c.d !== 0 && (
-            <p className={`text-xs font-medium flex items-center gap-1 ${c.d > 0 ? "text-green-500" : "text-red-500"}`}>
-              {c.d > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {c.d > 0 ? "+" : ""}{c.d}% from last period
+            <p className="flex items-center" style={{ fontSize: 11, fontWeight: 500, gap: 4, color: c.d > 0 ? '#34D399' : '#F87171' }}>
+              {c.d > 0 ? <TrendingUp style={{ width: 11, height: 11 }} /> : <TrendingDown style={{ width: 11, height: 11 }} />}
+              {c.d > 0 ? "+" : ""}{c.d}% vs prev period
             </p>
           )}
           {c.label === "Total Earnings" && data?.totalEarnings === 0 && (
-            <Link to="/settings" className="text-xs hover:underline" style={{ color: "#2EC4B6" }}>
+            <Link to="/settings" style={{ fontSize: 11, color: '#2EC4B6' }}>
               Connect Stripe →
             </Link>
           )}
-        </Card>
+        </div>
       ))}
     </div>
   );
@@ -230,8 +230,8 @@ function ViewsDownloadsChart({ userId, rangeStart, days }: { userId: string; ran
   const hasData = (chartData || []).some((d) => d.views > 0 || d.downloads > 0);
 
   return (
-    <Card className="p-5">
-      <h2 className="text-lg font-semibold mb-4">Views vs Downloads</h2>
+    <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 20 }}>
+      <h2 style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.80)', marginBottom: 16 }}>Views vs Downloads</h2>
       <div className="relative" style={{ maxHeight: 200, height: 200 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData || []}>
@@ -253,7 +253,7 @@ function ViewsDownloadsChart({ userId, rangeStart, days }: { userId: string; ran
           </div>
         )}
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -299,8 +299,8 @@ function ContentPerformanceTable({ userId }: { userId: string }) {
   if (isLoading) return <Skeleton className="h-48 rounded-xl" />;
 
   return (
-    <Card className="p-5">
-      <h2 className="text-lg font-semibold mb-4">Your posts</h2>
+    <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 20 }}>
+      <h2 style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.80)', marginBottom: 16 }}>Your posts</h2>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -350,7 +350,7 @@ function ContentPerformanceTable({ userId }: { userId: string }) {
           </TableBody>
         </Table>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -417,9 +417,9 @@ function BlockEngagementHeatmap({ userId }: { userId: string }) {
   };
 
   return (
-    <Card className="p-5">
-      <h2 className="text-lg font-semibold mb-1">Which blocks are people actually reading?</h2>
-      <p className="text-xs text-muted-foreground mb-5">Based on View button clicks per block.</p>
+    <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 20 }}>
+      <h2 style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.80)', marginBottom: 4 }}>Which blocks are people actually reading?</h2>
+      <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>Based on View button clicks per block.</p>
 
       <div className="space-y-6">
         {data.map((post) => {
@@ -447,6 +447,6 @@ function BlockEngagementHeatmap({ userId }: { userId: string }) {
           );
         })}
       </div>
-    </Card>
+    </div>
   );
 }

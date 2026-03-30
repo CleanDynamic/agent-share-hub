@@ -78,15 +78,15 @@ export default function DraftsPage() {
   if (loading) return null;
 
   return (
-    <div className="py-8 sm:py-12 px-4 sm:px-6">
+    <div style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24 }}>
       <SeoHead title="Drafts — NeoScale AI" description="Manage your draft posts." path="/drafts" noIndex />
       <div className="mx-auto max-w-3xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-[22px] font-bold text-foreground">Drafts</h1>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)', marginBottom: 4 }}>Drafts</h1>
             {drafts && (
-              <p className="text-sm text-muted-foreground mt-0.5">
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>
                 {drafts.length} draft{drafts.length !== 1 ? "s" : ""}
               </p>
             )}
@@ -112,58 +112,64 @@ export default function DraftsPage() {
               return (
                 <div
                   key={draft.id}
-                  className="border border-border rounded-xl p-[14px_16px] bg-card flex items-start gap-4"
+                  style={{
+                    background: 'rgba(255,255,255,0.025)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: 14,
+                    padding: '18px 20px',
+                    marginBottom: 12,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 16,
+                    transition: 'border-color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
                 >
                   {/* Left */}
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <p className={`text-[15px] font-bold truncate ${displayName ? "text-foreground" : "text-muted-foreground italic"}`}>
+                  <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: displayName ? 'rgba(255,255,255,0.90)' : 'rgba(255,255,255,0.35)', fontStyle: displayName ? 'normal' : 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {displayName || "Untitled draft"}
                     </p>
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center flex-wrap" style={{ gap: 6 }}>
                       {draft.content_type && (
-                        <Badge variant="secondary" className="text-[10px]">
+                        <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(232,87,26,0.08)', color: '#E8571A', border: '1px solid rgba(232,87,26,0.2)' }}>
                           {displayContentType(draft.content_type)}
-                        </Badge>
+                        </span>
                       )}
                       {draft.difficulty && (
-                        <Badge variant="outline" className="text-[10px]">
+                        <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.08)' }}>
                           {draft.difficulty}
-                        </Badge>
+                        </span>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
                       Last saved {formatDistanceToNow(new Date(savedAt), { addSuffix: true })}
                     </p>
-                    <p className={`text-xs ${allComplete ? "text-emerald-400" : "text-muted-foreground"}`}>
-                      {allComplete
-                        ? "Ready to preview ✓"
-                        : `${filled} of ${total} required fields complete`}
+                    <p style={{ fontSize: 12, color: allComplete ? '#34D399' : 'rgba(255,255,255,0.35)' }}>
+                      {allComplete ? "Ready to preview ✓" : `${filled} of ${total} required fields complete`}
                     </p>
                   </div>
 
                   {/* Right */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 rounded-full text-xs border-secondary text-secondary hover:bg-secondary/10"
+                  <div className="flex items-center shrink-0" style={{ gap: 8 }}>
+                    <button
                       onClick={() => navigate(`/upload?draft=${draft.id}`)}
+                      style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(46,196,182,0.3)', color: '#2EC4B6', background: 'rgba(46,196,182,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                     >
-                      <Pencil className="h-3.5 w-3.5 mr-1" /> Continue editing
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 rounded-full text-xs"
+                      <Pencil style={{ width: 13, height: 13 }} /> Continue editing
+                    </button>
+                    <button
                       onClick={() => navigate(`/content/${draft.id}`)}
+                      style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.60)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                     >
-                      <Eye className="h-3.5 w-3.5 mr-1" /> Preview
-                    </Button>
+                      <Eye style={{ width: 13, height: 13 }} /> Preview
+                    </button>
                     <button
                       onClick={() => setDeleteTarget(draft.id)}
-                      className="h-8 w-8 flex items-center justify-center rounded-full border border-border text-destructive hover:bg-destructive/10 transition-colors"
+                      style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: '1px solid rgba(239,68,68,0.25)', color: '#EF4444', background: 'transparent', cursor: 'pointer' }}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 style={{ width: 14, height: 14 }} />
                     </button>
                   </div>
                 </div>
@@ -172,13 +178,16 @@ export default function DraftsPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-sm text-muted-foreground mb-1">No drafts yet.</p>
-            <p className="text-xs text-muted-foreground mb-4">
+            <p style={{ fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.45)', marginBottom: 6 }}>No drafts yet.</p>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.28)', marginBottom: 20 }}>
               Start a new post and save it as a draft to see it here.
             </p>
-            <Button className="min-h-[44px]" onClick={() => navigate("/upload")}>
+            <button
+              onClick={() => navigate("/upload")}
+              style={{ fontSize: 13, fontWeight: 500, padding: '8px 20px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.70)', background: 'transparent', cursor: 'pointer' }}
+            >
               Start writing
-            </Button>
+            </button>
           </div>
         )}
       </div>

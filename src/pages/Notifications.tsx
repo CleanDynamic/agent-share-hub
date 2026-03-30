@@ -521,13 +521,13 @@ const NotificationsPage = () => {
   };
 
   return (
-    <div className="py-6 px-4 sm:px-6">
+    <div style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24 }}>
       <SeoHead title="Notifications — NeoScale AI" description="Your notifications" path="/notifications" />
       <div className="mx-auto max-w-2xl">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-foreground">Notifications</h1>
+        <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)' }}>Notifications</h1>
           {allNotifications.some((n) => !n.is_read) && (
-            <button onClick={markAllRead} disabled={markingAll} className="text-sm text-secondary hover:underline disabled:opacity-50">
+            <button onClick={markAllRead} disabled={markingAll} style={{ fontSize: 13, color: '#2EC4B6', background: 'none', border: 'none', cursor: 'pointer', opacity: markingAll ? 0.5 : 1 }}>
               {markingAll ? "Marking…" : "Mark all as read"}
             </button>
           )}
@@ -540,7 +540,7 @@ const NotificationsPage = () => {
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : allNotifications.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-16">No notifications yet.</p>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', textAlign: 'center', paddingTop: 64, paddingBottom: 64 }}>No notifications yet.</p>
         ) : (
           <div className="space-y-0">
             {allNotifications.map((n) => {
@@ -553,18 +553,35 @@ const NotificationsPage = () => {
                 <div key={n.id}>
                   <button
                     onClick={() => !isSplitContest && handleClick(n)}
-                    className={`flex items-start gap-3 w-full text-left px-4 py-3 border-b border-border transition-colors hover:bg-accent/40 ${!n.is_read ? "bg-[hsl(var(--card))]" : ""}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 12,
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '14px 0',
+                      borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      background: !n.is_read ? 'rgba(255,255,255,0.01)' : 'transparent',
+                      border: 'none',
+                      borderBottomWidth: 1,
+                      borderBottomStyle: 'solid',
+                      borderBottomColor: 'rgba(255,255,255,0.04)',
+                      cursor: isSplitContest ? 'default' : 'pointer',
+                      transition: 'background 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = !n.is_read ? 'rgba(255,255,255,0.01)' : 'transparent'; }}
                   >
-                    <div className="w-2 pt-2 shrink-0">
-                      {!n.is_read && <span className="block h-2 w-2 rounded-full bg-primary" />}
+                    <div className="shrink-0" style={{ width: 8, paddingTop: 6 }}>
+                      {!n.is_read && <span style={{ display: 'block', width: 6, height: 6, borderRadius: '50%', background: '#2EC4B6' }} />}
                     </div>
-                    <Avatar className="h-8 w-8 shrink-0 mt-0.5">
-                      <AvatarFallback className={`text-[10px] font-bold ${isSystem ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground"}`}>
+                    <Avatar className="shrink-0" style={{ width: 28, height: 28, marginTop: 2 }}>
+                      <AvatarFallback style={{ fontSize: 10, fontWeight: 700, background: isSystem ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.06)', color: isSystem ? '#E8571A' : 'rgba(255,255,255,0.45)' }}>
                         {isSystem ? "NS" : initials}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground leading-snug">{text}</p>
+                      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.80)', lineHeight: 1.4 }}>{text}</p>
                       {isSplitContest && (
                         <SplitContestActions notification={n} onDone={() => {
                           markRead(n.id);
@@ -572,7 +589,7 @@ const NotificationsPage = () => {
                         }} />
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground shrink-0 pt-0.5">
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', flexShrink: 0, paddingTop: 2 }}>
                       {timeAgo(n.created_at)}
                     </span>
                   </button>
