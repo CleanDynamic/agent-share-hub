@@ -822,23 +822,19 @@ export function NeoScaleShell() {
     return () => { document.head.removeChild(tag); };
   }, [isMobile]);
 
-  /* ── Fetch feed posts ── */
+  /* ── Sync front/back face with route ── */
   useEffect(() => {
-    const fetchPosts = async () => {
-      const { data } = await supabase
-        .from('content_items')
-        .select(`
-          id, title, content_type, difficulty,
-          view_count, download_count, created_at,
-          profiles:creator_id (display_name, username, avatar_url)
-        `)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (data) setPosts(data);
-    };
-    fetchPosts();
-  }, []);
+    if (isMobile) return;
+    const isHomePath = location.pathname === "/";
+    const frontVisible = showingFrontRef.current;
+    // If route changed externally (e.g. browser back), sync face
+    if (isHomePath && !frontVisible) {
+      doFlip('left'); // flip to front
+    } else if (!isHomePath && frontVisible) {
+      doFlip('left'); // flip to back
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, isMobile]);
 
   function triggerPulse() {
     setPulsing(false);
