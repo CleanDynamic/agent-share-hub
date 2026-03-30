@@ -719,37 +719,6 @@ function diffBadgeClass(difficulty?: string): string {
 }
 
 /* ────────────────────────────────────────────────
-   Time-ago helper
-──────────────────────────────────────────────── */
-function timeAgo(dateStr: string): string {
-  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-  if (diff < 60) return `${Math.floor(diff)}s`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  return `${Math.floor(diff / 86400)}d`;
-}
-
-/* ────────────────────────────────────────────────
-   Content-type avatar background colour
-──────────────────────────────────────────────── */
-function ctypeBg(contentType: string): string {
-  const map: Record<string, string> = {
-    "prompt-file": "#E8571A",
-    "agent-blueprint": "#9B59B6",
-    "workflow-template": "#3498DB",
-    "ai-tools-llms": "#1ABC9C",
-    "blog": "#27AE60",
-    "projects": "#E67E22",
-    "evaluation-framework": "#F39C12",
-    "install-guide": "#2980B9",
-    "model-config-guide": "#8E44AD",
-    "integration-guide": "#16A085",
-  };
-  return map[contentType] ?? "#555";
-}
-
-
-/* ────────────────────────────────────────────────
    SVG icons for nav
 ──────────────────────────────────────────────── */
 const ICONS = {
