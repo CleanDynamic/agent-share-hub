@@ -793,15 +793,14 @@ export function NeoScaleShell() {
   const isFlipping = useRef(false);
   const currentRotation = useRef(0);
 
-  const [flipDir,    setFlipDir]    = useState<1 | -1>(1);
   const [pulsing,    setPulsing]    = useState(false);
-  const [activeTab,  setActiveTab]  = useState("For You");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [lastFlipDir, setLastFlipDir] = useState<'left' | 'right'>('left');
+  const showingFrontRef = useRef(true);
 
   const isMobile = useIsMobile();
   const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
