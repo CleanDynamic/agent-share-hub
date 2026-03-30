@@ -750,13 +750,12 @@ export function NeoScaleShell() {
   const location   = useLocation();
   const navigate   = useNavigate();
   const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const flipperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRef    = useRef<HTMLDivElement>(null);
   const rightRef   = useRef<HTMLDivElement>(null);
+  const middleRef  = useRef<HTMLDivElement>(null);
   const searchDebounce = useRef<ReturnType<typeof setTimeout>>();
   const isFlipping = useRef(false);
-  const currentRotation = useRef(0);
 
   const [pulsing,    setPulsing]    = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -764,8 +763,7 @@ export function NeoScaleShell() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [lastFlipDir, setLastFlipDir] = useState<'left' | 'right'>('left');
-  const showingFrontRef = useRef(true);
+  const [flipClass, setFlipClass] = useState("");
 
   const isMobile = useIsMobile();
   const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
