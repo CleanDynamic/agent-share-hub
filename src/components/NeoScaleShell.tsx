@@ -1349,7 +1349,7 @@ export function NeoScaleShell() {
             ref={leftRef}
             {...initTilt(leftRef)}
           >
-            <div className="ns-logo" onClick={() => { flipMiddle('left'); handleNav("/"); }}>NeoScale</div>
+            <div className="ns-logo" onClick={() => handleNavClick("/", 'left')}>NeoScale</div>
             <ul className="ns-nav-list">
               {visibleNav.map((item, idx) => (
                 <li key={item.key}>
