@@ -1451,7 +1451,7 @@ export function NeoScaleShell() {
                 {searchLoading && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>Searching…</div>}
                 {!searchLoading && searchResults.length === 0 && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>No results</div>}
                 {searchResults.map((r: any) => (
-                  <div key={r.id} className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); flipMiddle('right'); navigate(`/content/${r.id}`); }}>
+                  <div key={r.id} className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); handleNavClick(`/content/${r.id}`, 'right'); }}>
                     <span className="ns-search-result-badge">{displayContentType(r.content_type)}</span>
                     <span className="ns-search-result-title">{r.title}</span>
                   </div>
