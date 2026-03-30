@@ -785,27 +785,7 @@ export function NeoScaleShell() {
     return () => { document.head.removeChild(tag); };
   }, [isMobile]);
 
-  /* ── Sync face on browser back/forward (popstate) only ── */
-  const lastPathRef = useRef(location.pathname);
-  useEffect(() => {
-    if (isMobile) return;
-    const prevPath = lastPathRef.current;
-    const currPath = location.pathname;
-    lastPathRef.current = currPath;
-    // Only auto-flip if navigation was NOT triggered by our handleNavClick
-    // (detected: isFlipping is false AND path actually changed)
-    if (isFlipping.current) return;
-    const wasHome = prevPath === "/";
-    const isHome = currPath === "/";
-    if (isHome && !showingFrontRef.current) {
-      doFlip('left');
-    } else if (!isHome && showingFrontRef.current && !wasHome) {
-      // non-home to non-home, no flip needed
-    } else if (!isHome && showingFrontRef.current) {
-      doFlip('left');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, isMobile]);
+  /* (browser back/forward handled naturally — Outlet re-renders, no flip needed) */
 
   function triggerPulse() {
     setPulsing(false);
