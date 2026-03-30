@@ -1356,7 +1356,7 @@ export function NeoScaleShell() {
                   {item.divider && idx > 0 && <div className="ns-nav-divider" />}
                   <div
                     className={`ns-nav-item${navPage === item.key ? " active" : ""}`}
-                    onClick={() => { flipMiddle('left'); handleNav(item.route); }}
+                    onClick={() => handleNavClick(item.route, 'left')}
                   >
                     <span className="ns-nav-icon">{item.icon}</span>
                     <span className="ns-nav-label">{item.label}</span>
