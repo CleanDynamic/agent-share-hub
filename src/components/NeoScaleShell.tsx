@@ -1518,7 +1518,7 @@ export function NeoScaleShell() {
                   const content = pick.content_items;
                   const curator = pick.curators?.profiles;
                   return (
-                    <div key={pick.id} className="ns-curator-item" onClick={() => { if (content) { flipMiddle('right'); navigate(`/content/${content.id}`); } }}>
+                    <div key={pick.id} className="ns-curator-item" onClick={() => { if (content) handleNavClick(`/content/${content.id}`, 'right'); }}>
                       <div className="ns-curator-avatar">
                         {curator?.avatar_url ? <img src={curator.avatar_url} alt="" /> : <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>✦</span>}
                       </div>
