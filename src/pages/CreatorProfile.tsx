@@ -247,7 +247,7 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
       {/* AVATAR + ACTION */}
       <div className="px-4 flex justify-between items-start">
         <div className="relative -mt-10">
-          <Avatar className="h-20 w-20 border-4 border-background">
+          <Avatar className="shrink-0" style={{ width: 72, height: 72, border: '3px solid rgba(8,8,12,1)' }}>
             {profile.avatar_url && <AvatarImage src={profile.avatar_url} />}
             <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">{initials}</AvatarFallback>
           </Avatar>
@@ -265,7 +265,7 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
       {/* INFO */}
       <div className="px-4 mt-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{displayName}</h1>
           {profile.is_creator && (
             <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">
               <BadgeCheck className="h-3 w-3 mr-1" /> Creator
@@ -277,8 +277,8 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
             </Badge>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">@{profile.username}</p>
-        {profile.bio && <p className="text-sm text-foreground leading-relaxed mt-2">{profile.bio}</p>}
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>@{profile.username}</p>
+        {profile.bio && <p style={{ fontSize: 13, fontWeight: 300, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5, marginTop: 8 }}>{profile.bio}</p>}
         <div className="flex items-center gap-3 mt-2 flex-wrap">
           {profile.website_url && (
             <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-secondary hover:underline">
@@ -297,49 +297,43 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
             <span>Joined {format(new Date(joinDate), "MMMM yyyy")}</span>
           </div>
         )}
-        <div className="flex items-center gap-4 mt-2">
-          <button onClick={() => setFollowingOpen(true)} className="text-sm hover:underline">
-            <span className="font-bold text-foreground">{followingCount}</span>{" "}
-            <span className="text-muted-foreground">Following</span>
+        <div className="flex items-center flex-wrap" style={{ gap: 16, marginTop: 12, fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
+          <button onClick={() => setFollowingOpen(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
+            <span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{followingCount}</span> Following
           </button>
-          <button onClick={() => setFollowersOpen(true)} className="text-sm hover:underline">
-            <span className="font-bold text-foreground">{followerCount}</span>{" "}
-            <span className="text-muted-foreground">Followers</span>
+          <button onClick={() => setFollowersOpen(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
+            <span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{followerCount}</span> Followers
           </button>
-        </div>
-        <div className="flex items-center gap-3 mt-2 text-[13px] text-muted-foreground flex-wrap">
-          <span className="inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" /> {contentItems?.length ?? 0} posts</span>
-          <span>·</span>
-          <span className="inline-flex items-center gap-1"><Download className="h-3.5 w-3.5" /> {totalDownloads.toLocaleString()} downloads</span>
-          <span>·</span>
-          <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {totalViews.toLocaleString()} views</span>
+          <span><span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{contentItems?.length ?? 0}</span> posts</span>
+          <span><span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{totalDownloads.toLocaleString()}</span> downloads</span>
+          <span><span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{totalViews.toLocaleString()}</span> views</span>
           {(profile.bounties_solved ?? 0) > 0 && (
-            <>
-              <span>·</span>
-              <span className="inline-flex items-center gap-1 text-[#2EC4B6]">★ {profile.bounties_solved} bounties solved</span>
-            </>
+            <span style={{ color: '#2EC4B6' }}>★ <span style={{ fontWeight: 600 }}>{profile.bounties_solved}</span> bounties solved</span>
           )}
         </div>
       </div>
 
       {/* TAB BAR */}
-      <div className="mt-4 border-b border-border sticky top-0 z-10 bg-background">
-        <div className="flex">
-          {allTabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 text-center py-3 text-sm font-medium transition-colors relative ${
-                activeTab === tab.key ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-              {activeTab === tab.key && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-primary rounded-full" />
-              )}
-            </button>
-          ))}
-        </div>
+      <div className="flex items-center gap-1 mt-4 sticky top-0 z-10 overflow-x-auto" style={{ background: 'rgba(8,8,12,0.80)', backdropFilter: 'blur(12px)', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 20 }}>
+        {allTabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              padding: '6px 16px',
+              borderRadius: 100,
+              border: 'none',
+              cursor: 'pointer',
+              background: activeTab === tab.key ? 'rgba(232,87,26,0.08)' : 'transparent',
+              color: activeTab === tab.key ? '#E8571A' : 'rgba(255,255,255,0.45)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* TAB CONTENT */}
