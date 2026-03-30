@@ -236,16 +236,8 @@ const NEOSCALE_CSS = `
 
 /* ── Middle panel ── */
 .ns-middle-wrapper { width: 600px; height: 775px; perspective: 1400px; flex-shrink: 0; }
-.ns-middle-flipper {
+.ns-middle-panel {
   width: 100%; height: 100%;
-  position: relative;
-  transform-style: preserve-3d;
-}
-.ns-middle-front, .ns-middle-back {
-  position: absolute; top: 0; left: 0;
-  width: 100%; height: 100%;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
   border-radius: 20px;
   background: linear-gradient(165deg,
     rgba(255,255,255,0.06) 0%,
@@ -258,17 +250,34 @@ const NEOSCALE_CSS = `
     0 0 0 1px rgba(255,255,255,0.03) inset,
     0 1px 0 rgba(255,255,255,0.05) inset;
   overflow: hidden;
-  padding: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
-.ns-middle-front::before, .ns-middle-back::before {
+.ns-middle-panel::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  z-index: 1;
 }
-.ns-middle-back { transform: rotateY(180deg); }
-.ns-middle-back.rtl { transform: rotateY(-180deg); }
+.ns-middle-panel.ns-flip-ltr {
+  animation: nsFlipLTR 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.ns-middle-panel.ns-flip-rtl {
+  animation: nsFlipRTL 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+}
+@keyframes nsFlipLTR {
+  0%   { transform: rotateY(0deg); }
+  40%  { transform: rotateY(90deg); }
+  100% { transform: rotateY(0deg); }
+}
+@keyframes nsFlipRTL {
+  0%   { transform: rotateY(0deg); }
+  40%  { transform: rotateY(-90deg); }
+  100% { transform: rotateY(0deg); }
+}
 
 /* ── Front face — compose bar ── */
 .ns-compose-bar {
