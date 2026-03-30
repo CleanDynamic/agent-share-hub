@@ -1318,20 +1318,12 @@ export function NeoScaleShell() {
 
           {/* ═══ MIDDLE PANEL ═══ */}
           <div className="ns-middle-wrapper">
-            <div className="ns-middle-flipper" ref={flipperRef}>
-
-              {/* FRONT FACE — home (Outlet renders Home.tsx) */}
-              <div className="ns-middle-front ns-outlet-wrap" style={{ display: "flex", flexDirection: "column" }}>
+            <div className={`ns-middle-panel ns-outlet-wrap ${flipClass}`} ref={middleRef}>
+              {location.pathname === "/" ? (
                 <Outlet />
-              </div>
-
-              {/* BACK FACE — non-home pages */}
-              <div className={`ns-middle-back${lastFlipDir === 'right' ? " rtl" : ""}`}>
-                <div className="ns-outlet-wrap">
-                  {renderBackFaceContent()}
-                </div>
-              </div>
-
+              ) : (
+                renderBackFaceContent()
+              )}
             </div>
           </div>
 
