@@ -1457,7 +1457,7 @@ export function NeoScaleShell() {
                   </div>
                 ))}
                 {searchQuery.length >= 2 && !searchLoading && (
-                  <div className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); flipMiddle('right'); navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`); }}>
+                  <div className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); handleNavClick(`/search?q=${encodeURIComponent(searchQuery.trim())}`, 'right'); }}>
                     <span style={{ fontSize: 10, color: "#55e0d2" }}>See all results →</span>
                   </div>
                 )}
