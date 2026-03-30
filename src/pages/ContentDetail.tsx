@@ -553,7 +553,7 @@ const ContentDetail = () => {
   };
 
   return (
-    <div className="py-6 sm:py-10 px-4 sm:px-6 pb-24 lg:pb-12">
+    <div style={{ paddingTop: 28, paddingBottom: 48, paddingLeft: 24, paddingRight: 24 }}>
       <SeoHead
         title={`${item.title} — NeoScale AI`}
         description={item.description || `${item.content_type} for ${(item.ai_tools ?? []).join(", ") || "any AI tool"}`}
@@ -573,9 +573,21 @@ const ContentDetail = () => {
           return (
             <button
               onClick={() => navigate(-1)}
-              className="inline-flex items-center text-[13px] text-muted-foreground hover:text-foreground mb-3 transition-colors duration-100 cursor-pointer"
+              className="inline-flex items-center transition-colors"
+              style={{
+                fontSize: 13,
+                fontWeight: 400,
+                color: 'rgba(255,255,255,0.45)',
+                marginBottom: 16,
+                cursor: 'pointer',
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+              }}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.75)'}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.45)'}
             >
-              <ArrowLeft className="mr-1 h-3.5 w-3.5" /> {backLabel}
+              <ArrowLeft style={{ width: 14, height: 14, marginRight: 4 }} /> {backLabel}
             </button>
           );
         })()}
@@ -1062,18 +1074,34 @@ const ContentDetail = () => {
         {/* 12. Tab strip */}
         {(!isSub || subscriberUnlocked) && (
           <>
-            <div className="flex gap-0 border-b border-border sticky top-0 bg-background z-20 overflow-x-auto">
+            <div
+              className="flex items-center gap-1 sticky top-0 z-20 overflow-x-auto"
+              style={{
+                background: 'rgba(8,8,12,0.80)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                paddingBottom: 12,
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                marginBottom: 20,
+              }}
+            >
               {isBounty ? (
                 <>
                   {(["responses", "failure", "changelog", "comments"] as const).map((tab) => (
                     <button
                       key={tab}
                       onClick={() => handleTabChange(tab)}
-                      className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
-                        activeTab === tab
-                          ? "text-foreground border-b-2 border-primary -mb-px"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
+                      className="transition-colors whitespace-nowrap"
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        padding: '6px 16px',
+                        borderRadius: 100,
+                        border: 'none',
+                        background: activeTab === tab ? 'rgba(232,87,26,0.08)' : 'transparent',
+                        color: activeTab === tab ? '#E8571A' : 'rgba(255,255,255,0.45)',
+                        cursor: 'pointer',
+                      }}
                     >
                       {tab === "responses" && `Responses (${(bountyResponses ?? []).length})`}
                       {tab === "failure" && "Failure"}
@@ -1088,14 +1116,20 @@ const ContentDetail = () => {
                     <button
                       key={tab}
                       onClick={() => handleTabChange(tab)}
-                      className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
-                        activeTab === tab
-                          ? "text-foreground border-b-2 border-primary -mb-px"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
+                      className="transition-colors whitespace-nowrap"
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        padding: '6px 16px',
+                        borderRadius: 100,
+                        border: 'none',
+                        background: activeTab === tab ? 'rgba(232,87,26,0.08)' : 'transparent',
+                        color: activeTab === tab ? '#E8571A' : 'rgba(255,255,255,0.45)',
+                        cursor: 'pointer',
+                      }}
                     >
                       {tab === "changelog" && (
-                        <>Changelog{hasLibraryUpdate && <span className="ml-1 text-primary">●</span>}</>
+                        <>Changelog{hasLibraryUpdate && <span style={{ marginLeft: 4, color: '#E8571A' }}>●</span>}</>
                       )}
                       {tab === "tips" && "Tips"}
                       {tab === "comments" && `Comments (${(item as any).comment_count ?? 0})`}
