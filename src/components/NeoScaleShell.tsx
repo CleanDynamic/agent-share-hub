@@ -1063,13 +1063,11 @@ export function NeoScaleShell() {
     navigate("/");
   };
 
-  /* ── Back-face flip-to-front button handler ── */
+  /* ── Back button handler ── */
   function handleBackBtn() {
     if (isFlipping.current) return;
     navigate("/");
-    if (!showingFrontRef.current) {
-      doFlip('left');
-    }
+    triggerFlip('left');
   }
 
   /* ── Back face content router ── */
