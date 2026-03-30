@@ -1439,9 +1439,9 @@ export function NeoScaleShell() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && searchQuery.trim().length >= 1) {
                     setSearchOpen(false);
+                    const q = searchQuery.trim();
                     setSearchQuery("");
-                    flipMiddle('right');
-                    navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                    handleNavClick(`/search?q=${encodeURIComponent(q)}`, 'right');
                   }
                 }}
               />
