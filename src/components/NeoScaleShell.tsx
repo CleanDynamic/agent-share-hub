@@ -1374,177 +1374,194 @@ export function NeoScaleShell() {
   }
 
   /* ── Back face content router ── */
-  function renderPageWithHeader(title: string) {
-    return (
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
-        <div style={{
-          padding: '16px 16px 14px 16px',
-          borderBottom: '1px solid var(--mp-border)',
-          fontSize: 18, fontWeight: 700,
-          color: 'var(--mp-text)',
-          fontFamily: 'var(--mp-font)',
-          flexShrink: 0,
-        }}>
-          {title}
-        </div>
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          <Outlet />
-        </div>
-      </div>
-    );
-  }
-
   function renderBackFaceContent() {
     const path = location.pathname;
     const searchParams = new URLSearchParams(location.search);
 
-    /* /upload without type param → compact entry */
+    /* Page title/subtitle map */
+    const pageMeta: Record<string, { title: string; subtitle?: string }> = {
+      '/upload':        { title: 'Dispatch Something', subtitle: 'What are you sharing?' },
+      '/profile':       { title: 'Your Profile' },
+      '/messages':      { title: 'Messages' },
+      '/library':       { title: 'Your Archives', subtitle: 'Everything you\'ve saved' },
+      '/drafts':        { title: 'Drafts', subtitle: 'Work in progress' },
+      '/notifications': { title: 'Notifications' },
+      '/analytics':     { title: 'Neural Analytics', subtitle: 'Your dispatch performance' },
+    };
+
+    /* /upload without type param → glass type selector */
     if (path === '/upload' && !searchParams.get('type')) {
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-          <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
-          <div style={{ padding: '20px 16px', flex: 1, overflowY: 'auto' }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--mp-text)', marginBottom: 6, fontFamily: 'var(--mp-font)' }}>
-              Share your work
+        <div className="ns-page-shell">
+          <button className="ns-back-btn" onClick={() => navigate(-1)}>
+            ← Back
+          </button>
+          <div className="ns-page-header">
+            <div className="ns-page-title">Dispatch Something</div>
+            <div className="ns-page-subtitle">
+              What fragment are you releasing into the feed?
             </div>
-            <div style={{ fontSize: 13, color: 'var(--mp-text-secondary)', marginBottom: 24, fontFamily: 'var(--mp-font)' }}>
-              What are you sharing today?
-            </div>
-            {(['Blueprint', 'Blog', 'Bounty', 'Project'] as const).map(type => (
-              <button key={type}
-                onClick={() => navigate(`/upload?type=${type.toLowerCase()}`)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14, width: '100%',
-                  padding: '14px 16px', marginBottom: 8,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid var(--mp-border)',
-                  borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s',
-                  color: 'var(--mp-text)', fontFamily: 'var(--mp-font)',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
-                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--mp-border)';
-                }}
+          </div>
+          <div className="ns-page-body" style={{ padding: '20px 24px' }}>
+            {[
+              { type: 'blueprint', icon: '📐', label: 'Blueprint',
+                desc: 'Prompts, agents, workflows, model configs' },
+              { type: 'blog', icon: '📝', label: 'Blog',
+                desc: 'An article, tutorial, or thought piece' },
+              { type: 'bounty', icon: '🎯', label: 'Bounty',
+                desc: 'A challenge with a reward for the community' },
+              { type: 'project', icon: '🗂️', label: 'Project',
+                desc: 'A tool or system you built with AI' },
+            ].map(item => (
+              <div
+                key={item.type}
+                className="ns-glass-card"
+                style={{ marginBottom: 12, cursor: 'pointer',
+                         display: 'flex', alignItems: 'center', gap: 16 }}
+                onClick={() => navigate(`/upload?type=${item.type}`)}
               >
-                <span style={{ fontSize: 20 }}>
-                  {type === 'Blueprint' ? '📐' : type === 'Blog' ? '📝' : type === 'Bounty' ? '🎯' : '🗂️'}
-                </span>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{type}</div>
-                  <div style={{ fontSize: 12, color: 'var(--mp-text-secondary)' }}>
-                    {type === 'Blueprint' ? 'Prompts, agents, workflows, configs'
-                      : type === 'Blog' ? 'Write an article or tutorial'
-                      : type === 'Bounty' ? 'Post a challenge for the community'
-                      : 'Share a project or tool you built'}
+                <span style={{ fontSize: 24, flexShrink: 0 }}>{item.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 3,
+                  }}>
+                    {item.label}
+                  </div>
+                  <div style={{
+                    fontFamily: 'Inter', fontSize: 12,
+                    color: 'rgba(255,255,255,0.40)',
+                  }}>
+                    {item.desc}
                   </div>
                 </div>
-                <span style={{ marginLeft: 'auto', color: 'var(--mp-text-muted)', fontSize: 16 }}>→</span>
-              </button>
+                <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 18 }}>→</span>
+              </div>
             ))}
           </div>
         </div>
       );
     }
 
-    /* /profile → compact profile header */
+    /* /profile → glass profile header */
     if (path === '/profile') {
-      const pInitials = (profile?.display_name ?? profile?.username ?? 'U').slice(0, 2).toUpperCase();
       return (
-        <div style={{ height: '100%', overflowY: 'auto' }}>
-          <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
-          <div style={{ padding: '20px 16px 16px 16px', borderBottom: '1px solid var(--mp-border)' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-              <div style={{
-                width: 64, height: 64, borderRadius: '50%',
-                background: 'var(--mp-orange)', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 22, fontWeight: 700, color: '#fff',
-              }}>
-                {pInitials}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--mp-text)', fontFamily: 'var(--mp-font)', marginBottom: 2 }}>
-                  {profile?.display_name ?? 'Your Name'}
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--mp-text-secondary)', marginBottom: 10 }}>
-                  @{profile?.username ?? 'username'}
-                </div>
-                <button onClick={() => navigate('/profile/edit')} style={{
-                  padding: '6px 16px',
-                  border: '1px solid var(--mp-border)',
-                  borderRadius: 100, background: 'transparent',
-                  color: 'var(--mp-text)', fontSize: 13, fontWeight: 600,
-                  cursor: 'pointer', fontFamily: 'var(--mp-font)',
-                }}>
-                  Edit profile
-                </button>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 20, marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--mp-border)' }}>
-              {[{ label: 'Posts', value: '—' }, { label: 'Downloads', value: '—' }, { label: 'Following', value: '—' }, { label: 'Followers', value: '—' }].map(s => (
-                <div key={s.label} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--mp-text)', fontFamily: 'var(--mp-font)' }}>{s.value}</div>
-                  <div style={{ fontSize: 11, color: 'var(--mp-text-secondary)', marginTop: 2 }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div style={{ padding: '10px 16px 6px 16px', borderBottom: '1px solid var(--mp-border)' }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--mp-text)', borderBottom: '2px solid var(--mp-orange)', paddingBottom: 10, fontFamily: 'var(--mp-font)' }}>Posts</span>
-          </div>
-          <Outlet />
-        </div>
-      );
-    }
+        <div className="ns-page-shell">
+          <button className="ns-back-btn" onClick={() => navigate(-1)}>← Back</button>
 
-    /* /messages → panel-native DM header */
-    if (path === '/messages') {
-      return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--mp-border)', fontSize: 18, fontWeight: 700, color: 'var(--mp-text)', fontFamily: 'var(--mp-font)', flexShrink: 0 }}>
-            Messages
+          {/* Profile card */}
+          <div style={{ padding: '20px 24px 0 24px' }}>
+            <div className="ns-glass-card" style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                <div style={{
+                  width: 64, height: 64, borderRadius: '50%',
+                  background: '#E8571A', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 22, fontWeight: 700, color: '#fff',
+                  border: '2px solid rgba(232,87,26,0.30)',
+                }}>
+                  {getInitials(profile?.display_name ?? 'U')}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 2,
+                  }}>
+                    {profile?.display_name ?? 'Your Name'}
+                  </div>
+                  <div style={{
+                    fontFamily: 'Inter', fontSize: 13,
+                    color: 'rgba(255,255,255,0.35)', marginBottom: 12,
+                  }}>
+                    @{profile?.username ?? 'username'}
+                  </div>
+                  <button
+                    className="ns-btn-ghost"
+                    onClick={() => navigate('/profile/edit')}
+                  >
+                    Edit Profile
+                  </button>
+                </div>
+              </div>
+
+              {/* Stats row */}
+              <div style={{
+                display: 'flex', gap: 32, marginTop: 20,
+                paddingTop: 16,
+                borderTop: '1px solid rgba(255,255,255,0.05)',
+              }}>
+                {[
+                  { label: 'Dispatches', value: '—' },
+                  { label: 'Downloads', value: '—' },
+                  { label: 'Following', value: '—' },
+                  { label: 'Followers', value: '—' },
+                ].map(s => (
+                  <div key={s.label} style={{ textAlign: 'center' }}>
+                    <div style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: 18, fontWeight: 700, color: '#fff',
+                    }}>{s.value}</div>
+                    <div style={{
+                      fontFamily: 'Inter', fontSize: 10,
+                      color: 'rgba(255,255,255,0.30)',
+                      textTransform: 'uppercase', letterSpacing: '0.08em',
+                      marginTop: 2,
+                    }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--mp-border)', flexShrink: 0 }}>
-            <input placeholder="Search messages..."
-              style={{
-                width: '100%', padding: '8px 14px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid var(--mp-border)',
-                borderRadius: 24, color: 'var(--mp-text)',
-                fontSize: 13, outline: 'none',
-                fontFamily: 'var(--mp-font)',
-                boxSizing: 'border-box',
-              }} />
-          </div>
-          <div style={{ flex: 1, overflowY: 'auto' }}>
+
+          <div className="ns-page-body">
             <Outlet />
           </div>
         </div>
       );
     }
 
-    /* /library, /drafts, /notifications, /analytics → titled header */
-    const titledRoutes: Record<string, string> = {
-      '/library': 'Your Library',
-      '/drafts': 'Drafts',
-      '/notifications': 'Notifications',
-      '/analytics': 'Analytics',
-    };
-    if (titledRoutes[path]) {
-      return renderPageWithHeader(titledRoutes[path]);
+    /* /messages → page shell with search input */
+    if (path === '/messages') {
+      return (
+        <div className="ns-page-shell">
+          <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
+          <div className="ns-page-header">
+            <div className="ns-page-title">Messages</div>
+          </div>
+          <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <input className="ns-glass-input" placeholder="Search messages..." />
+          </div>
+          <div className="ns-page-body">
+            <Outlet />
+          </div>
+        </div>
+      );
+    }
+
+    /* /library, /drafts, /notifications, /analytics → page shell with title/subtitle */
+    const meta = pageMeta[path];
+    if (meta) {
+      return (
+        <div className="ns-page-shell">
+          <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
+          <div className="ns-page-header">
+            <div className="ns-page-title">{meta.title}</div>
+            {meta.subtitle && (
+              <div className="ns-page-subtitle">{meta.subtitle}</div>
+            )}
+          </div>
+          <div className="ns-page-body">
+            <Outlet />
+          </div>
+        </div>
+      );
     }
 
     /* Fallback — all other routes */
     return (
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div className="ns-page-shell">
+        <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
+        <div className="ns-page-body">
           <Outlet />
         </div>
       </div>
