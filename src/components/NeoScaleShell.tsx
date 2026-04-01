@@ -15,6 +15,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { FollowButton } from "@/components/FollowButton";
 import { displayContentType } from "@/lib/content-types";
+import { FeedCard } from "@/components/feed-card";
+import { ComposerBar } from "@/components/composer-bar";
+import { FeedTabs } from "@/components/feed-tabs";
 
 /* ────────────────────────────────────────────────
    CSS — injected into document.head on mount
@@ -273,104 +276,6 @@ const NEOSCALE_CSS = `
 .ns-middle-back { transform: rotateY(180deg); }
 .ns-middle-back.rtl { transform: rotateY(-180deg); }
 
-/* ── Compose area ── */
-.ns-compose-wrap {
-  background: rgba(27,27,32,0.4);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255,255,255,0.05);
-  border-top: 1px solid rgba(255,255,255,0.08);
-  border-left: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 32px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-}
-.ns-compose-row {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-.ns-compose-avatar {
-  width: 48px; height: 48px; border-radius: 50%;
-  background: #E8571A;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px; font-weight: 700; color: #fff;
-  flex-shrink: 0;
-  border: 1px solid rgba(255,255,255,0.10);
-}
-.ns-compose-input {
-  flex: 1;
-}
-.ns-compose-placeholder {
-  font-family: 'Playfair Display', serif;
-  font-size: 18px;
-  color: rgba(255,255,255,0.30);
-  cursor: pointer;
-  padding-top: 4px;
-  padding-bottom: 20px;
-}
-.ns-compose-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255,255,255,0.05);
-}
-.ns-compose-actions {
-  display: flex;
-  gap: 16px;
-}
-.ns-compose-action-btn {
-  color: rgba(255,255,255,0.35);
-  cursor: pointer;
-  font-size: 20px;
-  background: none;
-  border: none;
-  transition: color 0.15s;
-}
-.ns-compose-action-btn:hover { color: #2EC4B6; }
-.ns-compose-submit {
-  background: linear-gradient(135deg, #E8571A, #f66124);
-  color: #fff;
-  padding: 8px 24px;
-  border-radius: 9999px;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(232,87,26,0.20);
-  transition: transform 0.15s;
-}
-.ns-compose-submit:hover { transform: scale(1.05); }
-.ns-compose-submit:active { transform: scale(0.95); }
-
-/* ── Feed tabs ── */
-.ns-tab-row {
-  display: flex;
-  gap: 32px;
-  margin-bottom: 40px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  padding-bottom: 8px;
-}
-.ns-tab {
-  font-family: 'Playfair Display', serif;
-  font-size: 18px;
-  font-weight: 400;
-  color: rgba(255,255,255,0.35);
-  cursor: pointer;
-  padding-bottom: 12px;
-  border: none;
-  background: none;
-  transition: color 0.15s;
-}
-.ns-tab:hover { color: rgba(255,255,255,0.65); }
-.ns-tab.active {
-  color: #fff;
-  box-shadow: 0 2px 0 0 #E8571A;
-}
-
 /* ── Feed scroll container ── */
 .ns-feed-scroll {
   flex: 1;
@@ -392,156 +297,6 @@ const NEOSCALE_CSS = `
   animation: nsPulse 1.5s ease-in-out infinite;
 }
 @keyframes nsPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }
-
-/* ── Feed cards ── */
-.ns-feed-card {
-  background: rgba(27,27,32,0.4);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255,255,255,0.05);
-  border-top: 1px solid rgba(255,255,255,0.08);
-  border-left: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 32px;
-  cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease,
-              border-color 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-.ns-feed-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-  border-color: rgba(255,255,255,0.10);
-}
-
-.ns-card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-.ns-card-header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.ns-card-avatar {
-  width: 42px; height: 42px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700;
-  flex-shrink: 0;
-  border: 1px solid;
-}
-.ns-card-meta { display: flex; flex-direction: column; gap: 4px; }
-.ns-card-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 18px;
-  font-weight: 400;
-  color: #fff;
-  line-height: 1.3;
-  margin-bottom: 0;
-}
-.ns-card-byline {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.ns-card-author {
-  font-size: 12px;
-  color: rgba(255,255,255,0.45);
-  font-family: 'Inter', sans-serif;
-}
-.ns-card-dot {
-  color: rgba(255,255,255,0.20);
-  font-size: 10px;
-}
-.ns-card-time {
-  font-size: 12px;
-  color: rgba(255,255,255,0.30);
-  font-family: 'Inter', sans-serif;
-}
-.ns-card-type-badge {
-  padding: 2px 8px;
-  border-radius: 9999px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border: 1px solid;
-  font-family: 'Inter', sans-serif;
-}
-.ns-card-menu {
-  color: rgba(255,255,255,0.30);
-  cursor: pointer;
-  font-size: 20px;
-  background: none; border: none;
-  transition: color 0.15s;
-  flex-shrink: 0;
-}
-.ns-card-menu:hover { color: #fff; }
-
-.ns-card-body {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  color: rgba(255,255,255,0.45);
-  line-height: 1.65;
-  margin-bottom: 24px;
-}
-.ns-card-body.italic { font-style: italic; }
-
-.ns-card-image-wrap {
-  position: relative;
-  overflow: hidden;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.05);
-  margin-bottom: 24px;
-}
-.ns-card-image {
-  width: 100%;
-  height: 192px;
-  object-fit: cover;
-  opacity: 0.8;
-  transition: transform 0.7s ease;
-  display: block;
-}
-.ns-feed-card:hover .ns-card-image {
-  transform: scale(1.05);
-}
-.ns-card-image-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(8,8,12,0.8), transparent);
-}
-
-.ns-card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255,255,255,0.05);
-}
-.ns-card-actions-left { display: flex; gap: 24px; }
-.ns-card-actions-right { display: flex; gap: 16px; }
-.ns-card-action {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  color: rgba(255,255,255,0.35);
-  background: none; border: none;
-  cursor: pointer;
-  transition: color 0.15s, transform 0.15s;
-}
-.ns-card-action:hover { transform: scale(1.1); }
-.ns-card-action.like:hover  { color: #E8571A; }
-.ns-card-action.reply:hover { color: #2EC4B6; }
-.ns-card-action.dl:hover    { color: #22C55E; }
-.ns-card-action.share:hover { color: #fff; }
 
 /* ── Page shell (outlet pages) ── */
 .ns-page-shell {
@@ -1644,152 +1399,28 @@ export function NeoScaleShell() {
               <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column", padding: "24px 24px 0 24px" }}>
 
                 {/* Compose area */}
-                <div className="ns-compose-wrap">
-                  <div className="ns-compose-row">
-                    <div className="ns-compose-avatar">
-                      {getInitials(profile?.display_name ?? 'U')}
-                    </div>
-                    <div className="ns-compose-input">
-                      <div
-                        className="ns-compose-placeholder"
-                        onClick={() => navigate('/upload')}
-                      >
-                        Share something ethereal...
-                      </div>
-                      <div className="ns-compose-toolbar">
-                        <div className="ns-compose-actions">
-                          <button className="ns-compose-action-btn" title="Image">🖼</button>
-                          <button className="ns-compose-action-btn" title="Poll">📊</button>
-                          <button className="ns-compose-action-btn" title="Link">🔗</button>
-                        </div>
-                        <button
-                          className="ns-compose-submit"
-                          onClick={() => navigate('/upload')}
-                        >
-                          Dispatch
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <ComposerBar user={{
+                  display_name: profile?.display_name ?? 'You',
+                  avatar_url: profile?.avatar_url
+                }} />
 
                 {/* Tab navigation */}
-                <nav className="ns-tab-row">
-                  {['For You','Following','Trending','Recent'].map(tab => (
-                    <button
-                      key={tab}
-                      className={`ns-tab${activeTab === tab ? ' active' : ''}`}
-                      onClick={() => setActiveTab(tab)}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </nav>
+                <FeedTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
                 {/* Feed */}
                 <div className="ns-feed-scroll">
                   {posts.map((post: any) => {
-                    const postProfile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
-                    const av = getAvatarStyle(displayContentType(post.content_type));
-                    const postInitials = getInitials(postProfile?.display_name ?? 'U');
-                    const hasImage = !!post.cover_image_url;
-                    const snippet = post.description
-                      ? post.description.substring(0, 140) + (post.description.length > 140 ? '...' : '')
-                      : null;
-                    return (
-                      <article
-                        key={post.id}
-                        className="ns-feed-card"
-                        onClick={() => navigate(`/content/${post.id}`)}
-                      >
-                        {/* Card header */}
-                        <div className="ns-card-header">
-                          <div className="ns-card-header-left">
-                            <div
-                              className="ns-card-avatar"
-                              style={{ background: av.bg, color: av.color, borderColor: av.border }}
-                            >
-                              {postInitials}
-                            </div>
-                            <div className="ns-card-meta">
-                              <div className="ns-card-title">{post.title}</div>
-                              <div className="ns-card-byline">
-                                <span className="ns-card-author">
-                                  {postProfile?.display_name ?? 'Unknown'}
-                                </span>
-                                <span className="ns-card-dot">•</span>
-                                <span className="ns-card-time">{getTimeAgo(post.created_at)}</span>
-                                <span
-                                  className="ns-card-type-badge"
-                                  style={{
-                                    background: av.bg,
-                                    color: av.color,
-                                    borderColor: av.border,
-                                  }}
-                                >
-                                  {displayContentType(post.content_type)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <button
-                            className="ns-card-menu"
-                            onClick={e => e.stopPropagation()}
-                          >
-                            ···
-                          </button>
-                        </div>
-
-                        {/* Body text */}
-                        {snippet && (
-                          <p className="ns-card-body">{snippet}</p>
-                        )}
-
-                        {/* Cover image */}
-                        {hasImage && (
-                          <div className="ns-card-image-wrap">
-                            <img
-                              src={post.cover_image_url}
-                              alt={post.title}
-                              className="ns-card-image"
-                            />
-                            <div className="ns-card-image-overlay" />
-                          </div>
-                        )}
-
-                        {/* Footer actions */}
-                        <div className="ns-card-footer">
-                          <div className="ns-card-actions-left">
-                            <button
-                              className="ns-card-action like"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              ♡ <span>{post.view_count ?? 0}</span>
-                            </button>
-                            <button
-                              className="ns-card-action reply"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              💬 <span>0</span>
-                            </button>
-                          </div>
-                          <div className="ns-card-actions-right">
-                            <button
-                              className="ns-card-action dl"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              ↓ {post.download_count ?? 0}
-                            </button>
-                            <button
-                              className="ns-card-action share"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              ↗
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    );
+                    const postProfile = Array.isArray(post.profiles)
+                      ? post.profiles[0] : post.profiles;
+                    const adaptedPost = {
+                      ...post,
+                      author: {
+                        display_name: postProfile?.display_name ?? 'Unknown',
+                        username: postProfile?.username ?? 'user',
+                        avatar_url: postProfile?.avatar_url,
+                      }
+                    };
+                    return <FeedCard key={post.id} post={adaptedPost} />;
                   })}
 
                   {posts.length === 0 && (
