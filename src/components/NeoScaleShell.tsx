@@ -20,8 +20,7 @@ import { displayContentType } from "@/lib/content-types";
    CSS — injected into document.head on mount
 ──────────────────────────────────────────────── */
 const NEOSCALE_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@400;500;600;700&display=swap');
 
 .ns-root *, .ns-root *::before, .ns-root *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -35,8 +34,8 @@ const NEOSCALE_CSS = `
   --mp-orange: #E8571A;
   --mp-teal: #2EC4B6;
   --mp-font: 'Playfair Display', Georgia, serif;
-  font-family: var(--mp-font);
-  color: var(--mp-text);
+  font-family: 'Inter', sans-serif;
+  color: rgba(255,255,255,0.90);
 }
 
 .ns-root {
@@ -274,65 +273,116 @@ const NEOSCALE_CSS = `
 .ns-middle-back { transform: rotateY(180deg); }
 .ns-middle-back.rtl { transform: rotateY(-180deg); }
 
-/* ── Front face — compose bar ── */
-.ns-compose-bar {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--mp-border);
-  flex-shrink: 0;
+/* ── Compose area ── */
+.ns-compose-wrap {
+  background: rgba(27,27,32,0.4);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  border-left: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+}
+.ns-compose-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
 }
 .ns-compose-avatar {
-  width: 42px; height: 42px; border-radius: 50%;
-  background: var(--mp-orange); flex-shrink: 0;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: #E8571A;
   display: flex; align-items: center; justify-content: center;
   font-size: 15px; font-weight: 700; color: #fff;
-}
-.ns-compose-prompt {
-  flex: 1; color: var(--mp-text-muted);
-  font-size: 17px; cursor: pointer;
-  font-family: var(--mp-font); font-weight: 300;
-}
-.ns-compose-prompt:hover { color: var(--mp-text-secondary); }
-
-/* ── Front face — Twitter tabs ── */
-.ns-tab-row {
-  display: flex; gap: 0; background: transparent;
-  border-radius: 0; padding: 0; margin-bottom: 0;
-  border-bottom: 1px solid var(--mp-border);
   flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.10);
+}
+.ns-compose-input {
+  flex: 1;
+}
+.ns-compose-placeholder {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  color: rgba(255,255,255,0.30);
+  cursor: pointer;
+  padding-top: 4px;
+  padding-bottom: 20px;
+}
+.ns-compose-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.ns-compose-actions {
+  display: flex;
+  gap: 16px;
+}
+.ns-compose-action-btn {
+  color: rgba(255,255,255,0.35);
+  cursor: pointer;
+  font-size: 20px;
+  background: none;
+  border: none;
+  transition: color 0.15s;
+}
+.ns-compose-action-btn:hover { color: #2EC4B6; }
+.ns-compose-submit {
+  background: linear-gradient(135deg, #E8571A, #f66124);
+  color: #fff;
+  padding: 8px 24px;
+  border-radius: 9999px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(232,87,26,0.20);
+  transition: transform 0.15s;
+}
+.ns-compose-submit:hover { transform: scale(1.05); }
+.ns-compose-submit:active { transform: scale(0.95); }
+
+/* ── Feed tabs ── */
+.ns-tab-row {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 40px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding-bottom: 8px;
 }
 .ns-tab {
-  flex: 1; text-align: center; padding: 14px 0;
-  font-size: 14px; font-weight: 500;
-  color: var(--mp-text-secondary);
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px; cursor: pointer;
-  transition: color 0.15s; border-radius: 0;
-  background: transparent;
-  font-family: var(--mp-font);
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.35);
+  cursor: pointer;
+  padding-bottom: 12px;
+  border: none;
+  background: none;
+  transition: color 0.15s;
 }
-.ns-tab:hover { color: var(--mp-text); background: rgba(255,255,255,0.02); }
+.ns-tab:hover { color: rgba(255,255,255,0.65); }
 .ns-tab.active {
-  color: var(--mp-text); font-weight: 700;
-  border-bottom: 2px solid var(--mp-orange);
+  color: #fff;
+  box-shadow: 0 2px 0 0 #E8571A;
 }
 
+/* ── Feed scroll container ── */
 .ns-feed-scroll {
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0;
+  padding-bottom: 24px;
 }
 .ns-feed-scroll::-webkit-scrollbar { width: 3px; }
 .ns-feed-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
 
-.ns-feed-empty {
-  font-size: 13px;
-  color: rgba(255,255,255,0.3);
-  text-align: center;
-  padding: 40px 20px;
-}
 .ns-feed-loading {
   display: flex; flex-direction: column; gap: 12px; padding: 4px 0;
 }
@@ -343,98 +393,316 @@ const NEOSCALE_CSS = `
 }
 @keyframes nsPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }
 
+/* ── Feed cards ── */
+.ns-feed-card {
+  background: rgba(27,27,32,0.4);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  border-left: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 32px;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease,
+              border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.ns-feed-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  border-color: rgba(255,255,255,0.10);
+}
+
+.ns-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.ns-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ns-card-avatar {
+  width: 42px; height: 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  flex-shrink: 0;
+  border: 1px solid;
+}
+.ns-card-meta { display: flex; flex-direction: column; gap: 4px; }
+.ns-card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: #fff;
+  line-height: 1.3;
+  margin-bottom: 0;
+}
+.ns-card-byline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ns-card-author {
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+  font-family: 'Inter', sans-serif;
+}
+.ns-card-dot {
+  color: rgba(255,255,255,0.20);
+  font-size: 10px;
+}
+.ns-card-time {
+  font-size: 12px;
+  color: rgba(255,255,255,0.30);
+  font-family: 'Inter', sans-serif;
+}
+.ns-card-type-badge {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid;
+  font-family: 'Inter', sans-serif;
+}
+.ns-card-menu {
+  color: rgba(255,255,255,0.30);
+  cursor: pointer;
+  font-size: 20px;
+  background: none; border: none;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.ns-card-menu:hover { color: #fff; }
+
+.ns-card-body {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.65;
+  margin-bottom: 24px;
+}
+.ns-card-body.italic { font-style: italic; }
+
+.ns-card-image-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.05);
+  margin-bottom: 24px;
+}
+.ns-card-image {
+  width: 100%;
+  height: 192px;
+  object-fit: cover;
+  opacity: 0.8;
+  transition: transform 0.7s ease;
+  display: block;
+}
+.ns-feed-card:hover .ns-card-image {
+  transform: scale(1.05);
+}
+.ns-card-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(8,8,12,0.8), transparent);
+}
+
+.ns-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.ns-card-actions-left { display: flex; gap: 24px; }
+.ns-card-actions-right { display: flex; gap: 16px; }
+.ns-card-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  color: rgba(255,255,255,0.35);
+  background: none; border: none;
+  cursor: pointer;
+  transition: color 0.15s, transform 0.15s;
+}
+.ns-card-action:hover { transform: scale(1.1); }
+.ns-card-action.like:hover  { color: #E8571A; }
+.ns-card-action.reply:hover { color: #2EC4B6; }
+.ns-card-action.dl:hover    { color: #22C55E; }
+.ns-card-action.share:hover { color: #fff; }
+
+/* ── Page shell (outlet pages) ── */
+.ns-page-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.ns-page-header {
+  padding: 20px 24px 16px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.ns-page-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.ns-page-subtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.35);
+  font-family: 'Inter', sans-serif;
+}
+.ns-page-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+/* ── Back button ── */
+.ns-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 24px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.35);
+  background: none; border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: color 0.15s;
+  width: 100%;
+  text-align: left;
+}
+.ns-back-btn:hover { color: #fff; }
+
 /* ── Back face — outlet ── */
 .ns-outlet-wrap {
   width: 100%; height: 100%;
   overflow-y: auto; overflow-x: hidden;
   display: flex; flex-direction: column;
   background: transparent;
-  color: var(--mp-text);
-  font-family: var(--mp-font);
+  color: rgba(255,255,255,0.90);
+  font-family: 'Inter', sans-serif;
 }
 .ns-outlet-wrap::-webkit-scrollbar { width: 3px; }
 .ns-outlet-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
 
-/* Reset Lovable page styles inside the panel */
-.ns-outlet-wrap .bg-background,
-.ns-outlet-wrap [class*="bg-background"] { background: transparent !important; }
-.ns-outlet-wrap .text-foreground,
-.ns-outlet-wrap [class*="text-foreground"] { color: var(--mp-text) !important; }
-.ns-outlet-wrap .text-muted-foreground,
-.ns-outlet-wrap [class*="text-muted-foreground"] { color: var(--mp-text-secondary) !important; }
-.ns-outlet-wrap .border-border,
-.ns-outlet-wrap [class*="border-border"] { border-color: var(--mp-border) !important; }
-.ns-outlet-wrap .sticky,
-.ns-outlet-wrap [class*="sticky"] {
-  background: rgba(14,14,22,0.92) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+/* ── Glass input (forms, search) ── */
+.ns-glass-input {
+  width: 100%;
+  background: rgba(27,27,32,0.5);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 10px 16px;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
 }
-.ns-outlet-wrap button[class*="text-center"][class*="font-medium"] {
-  font-family: var(--mp-font) !important;
-  font-size: 14px !important;
-  color: var(--mp-text-secondary) !important;
+.ns-glass-input:focus {
+  border-color: rgba(232,87,26,0.50);
+  box-shadow: 0 0 0 3px rgba(232,87,26,0.08);
 }
-.ns-outlet-wrap button[class*="text-center"][class*="font-medium"][class*="text-foreground"] {
-  color: var(--mp-text) !important;
-  font-weight: 700 !important;
+.ns-glass-input::placeholder { color: rgba(255,255,255,0.25); }
+
+/* ── Glass card (reusable smaller card) ── */
+.ns-glass-card {
+  background: rgba(27,27,32,0.4);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  border-left: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 20px;
+  transition: border-color 0.2s;
 }
-.ns-outlet-wrap .px-5,
-.ns-outlet-wrap [class*="px-5"] {
-  padding-left: 16px !important;
-  padding-right: 16px !important;
-}
-.ns-outlet-wrap h1[class*="text-[22px]"] {
-  font-size: 20px !important;
-  font-family: var(--mp-font) !important;
-  font-weight: 700 !important;
-  color: var(--mp-text) !important;
-}
-.ns-outlet-wrap [class*="rounded-full"][class*="border"][class*="px-2.5"] {
-  font-family: var(--mp-font) !important;
-  font-size: 10px !important;
-}
-.ns-outlet-wrap p[class*="font-semibold"][class*="text-foreground"] {
-  font-family: var(--mp-font) !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  color: var(--mp-text) !important;
-}
-.ns-outlet-wrap a[class*="font-semibold"][class*="text-foreground"] {
-  color: var(--mp-text) !important;
-  font-family: var(--mp-font) !important;
-  font-weight: 700 !important;
-  text-decoration: none;
-}
-.ns-outlet-wrap [class*="text-xs"][class*="text-muted-foreground"] {
-  color: var(--mp-text-muted) !important;
-  font-size: 12px !important;
-}
-.ns-outlet-wrap img[class*="rounded-xl"] {
-  border-radius: 12px !important;
-  border: 1px solid var(--mp-border) !important;
-}
-.ns-outlet-wrap button[class*="text-[11px]"] {
-  color: var(--mp-teal) !important;
-  font-size: 12px !important;
-  font-family: var(--mp-font) !important;
-  background: none !important;
-  border: none !important;
+.ns-glass-card:hover { border-color: rgba(255,255,255,0.10); }
+
+/* ── Orange button (primary CTA) ── */
+.ns-btn-orange {
+  background: linear-gradient(135deg, #E8571A, #f66124);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 9999px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
   cursor: pointer;
+  box-shadow: 0 4px 20px rgba(232,87,26,0.20);
+  transition: transform 0.15s;
+}
+.ns-btn-orange:hover  { transform: scale(1.05); }
+.ns-btn-orange:active { transform: scale(0.95); }
+
+/* ── Ghost button ── */
+.ns-btn-ghost {
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.70);
+  padding: 8px 20px;
+  border-radius: 9999px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.10);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ns-btn-ghost:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
 }
 
-/* Back button */
-.ns-outlet-back-btn {
-  display: inline-flex; align-items: center;
-  gap: 6px; padding: 10px 16px;
-  font-size: 13px; color: var(--mp-text-secondary);
-  background: none; border: none;
-  cursor: pointer; font-family: var(--mp-font);
-  transition: color 0.12s;
-  border-bottom: 1px solid var(--mp-border);
-  width: 100%; flex-shrink: 0;
+/* ── Section label (trending, categories etc) ── */
+.ns-section-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.30);
+  margin-bottom: 16px;
 }
-.ns-outlet-back-btn:hover { color: var(--mp-text); }
+
+/* ── Override Lovable outlet styles ── */
+.ns-page-body .bg-background,
+.ns-page-body [class*="bg-background"] {
+  background: transparent !important;
+}
+.ns-page-body .text-foreground,
+.ns-page-body [class*="text-foreground"] {
+  color: rgba(255,255,255,0.90) !important;
+  font-family: 'Inter', sans-serif !important;
+}
+.ns-page-body .text-muted-foreground,
+.ns-page-body [class*="text-muted-foreground"] {
+  color: rgba(255,255,255,0.40) !important;
+}
+.ns-page-body .border-border,
+.ns-page-body [class*="border-border"] {
+  border-color: rgba(255,255,255,0.05) !important;
+}
+.ns-page-body .sticky {
+  background: rgba(8,8,12,0.90) !important;
+  backdrop-filter: blur(20px) !important;
+}
 
 /* ── Right panel ── */
 .ns-right-panel {
@@ -592,84 +860,6 @@ const NEOSCALE_CSS = `
 }
 .ns-footer-link:hover { color: rgba(255,255,255,0.5); }
 
-/* ── Feed card — Twitter two-column ── */
-.ns-feed-card {
-  display: flex; flex-direction: row; gap: 12px;
-  padding: 14px 16px 10px 16px;
-  border-bottom: 1px solid var(--mp-border);
-  cursor: pointer; transition: background 0.12s;
-  background: transparent;
-}
-.ns-feed-card:hover { background: rgba(255,255,255,0.018); }
-.ns-feed-avatar-col { flex-shrink: 0; }
-.ns-feed-content-col {
-  flex: 1; min-width: 0;
-  display: flex; flex-direction: column; gap: 5px;
-}
-.ns-feed-header {
-  display: flex; align-items: baseline;
-  gap: 5px; overflow: hidden;
-}
-.ns-feed-name {
-  font-size: 14px; font-weight: 700;
-  color: var(--mp-text); white-space: nowrap;
-  font-family: var(--mp-font);
-}
-.ns-feed-handle {
-  font-size: 13px; color: var(--mp-text-secondary);
-  white-space: nowrap;
-}
-.ns-feed-sep { color: var(--mp-text-muted); font-size: 12px; }
-.ns-feed-time { font-size: 13px; color: var(--mp-text-secondary); }
-.ns-feed-menu {
-  margin-left: auto; color: var(--mp-text-muted);
-  font-size: 16px; cursor: pointer; flex-shrink: 0;
-  line-height: 1; padding: 0 2px;
-}
-.ns-feed-menu:hover { color: var(--mp-text); }
-.ns-feed-type-badge {
-  display: inline-flex; align-items: center;
-  padding: 2px 8px; border-radius: 4px;
-  font-size: 10px; font-weight: 600;
-  letter-spacing: 0.5px; text-transform: uppercase;
-  background: rgba(232,87,26,0.15); color: #E8571A;
-  border: 1px solid rgba(232,87,26,0.25);
-  align-self: flex-start;
-}
-.ns-feed-title {
-  font-size: 14px; font-weight: 500;
-  color: var(--mp-text); line-height: 1.45;
-  font-family: var(--mp-font);
-}
-.ns-feed-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-.ns-feed-tag {
-  font-size: 12px; color: var(--mp-teal);
-  font-weight: 400;
-}
-.ns-feed-tag::before { content: '#'; }
-.ns-feed-actions {
-  display: flex; align-items: center;
-  justify-content: space-between;
-  max-width: 260px; margin-top: 4px;
-}
-.ns-feed-action {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 13px; color: var(--mp-text-muted);
-  cursor: pointer; padding: 4px 6px 4px 0;
-  background: none; border: none;
-  transition: color 0.12s;
-  font-family: var(--mp-font);
-}
-.ns-feed-action:hover { color: var(--mp-text); }
-.ns-feed-action.like:hover { color: #E8571A; }
-.ns-feed-action.reply:hover { color: var(--mp-teal); }
-.ns-feed-action.dl:hover { color: #22C55E; }
-.ns-feed-card-avatar {
-  width: 42px; height: 42px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 700;
-  color: #fff; flex-shrink: 0;
-}
 `;
 
 /* ────────────────────────────────────────────────
@@ -752,6 +942,34 @@ function ctypeBg(contentType: string): string {
   return map[contentType] ?? "#555";
 }
 
+function getAvatarStyle(contentType: string) {
+  const map: Record<string, {bg:string, color:string, border:string}> = {
+    'Prompt(s)':          {bg:'rgba(232,87,26,0.20)',   color:'#E8571A', border:'rgba(232,87,26,0.30)'},
+    'Agent(s)':           {bg:'rgba(124,58,237,0.20)',  color:'#7C3AED', border:'rgba(124,58,237,0.30)'},
+    'Blog':               {bg:'rgba(46,196,182,0.20)',  color:'#2EC4B6', border:'rgba(46,196,182,0.30)'},
+    'Workflow Template':  {bg:'rgba(37,99,235,0.20)',   color:'#3B82F6', border:'rgba(37,99,235,0.30)'},
+    'Evaluation Framework':{bg:'rgba(219,39,119,0.20)',color:'#EC4899', border:'rgba(219,39,119,0.30)'},
+    'Agent Stack':        {bg:'rgba(220,38,38,0.20)',   color:'#EF4444', border:'rgba(220,38,38,0.30)'},
+    'Failure Library':    {bg:'rgba(75,85,99,0.20)',    color:'#9CA3AF', border:'rgba(75,85,99,0.30)'},
+    'Model Config Guide': {bg:'rgba(22,163,74,0.20)',   color:'#22C55E', border:'rgba(22,163,74,0.30)'},
+    'Install Guide':      {bg:'rgba(6,182,212,0.20)',   color:'#06B6D4', border:'rgba(6,182,212,0.30)'},
+    'Projects':           {bg:'rgba(245,158,11,0.20)',  color:'#F59E0B', border:'rgba(245,158,11,0.30)'},
+  };
+  return map[contentType] ?? {bg:'rgba(100,100,120,0.20)',color:'#9CA3AF',border:'rgba(100,100,120,0.30)'};
+}
+
+function getInitials(name: string): string {
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getTimeAgo(dateStr: string): string {
+  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+  if (diff < 60) return `${Math.floor(diff)}s`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  return `${Math.floor(diff / 86400)}d`;
+}
+
 /* ────────────────────────────────────────────────
    Feed renderer helper
 ──────────────────────────────────────────────── */
@@ -829,8 +1047,8 @@ export function NeoScaleShell() {
       const { data } = await supabase
         .from('content_items')
         .select(`
-          id, title, content_type, difficulty,
-          view_count, download_count, created_at,
+          id, title, description, content_type, difficulty,
+          view_count, download_count, cover_image_url, created_at,
           profiles:creator_id (display_name, username, avatar_url)
         `)
         .eq('status', 'approved')
@@ -1156,177 +1374,194 @@ export function NeoScaleShell() {
   }
 
   /* ── Back face content router ── */
-  function renderPageWithHeader(title: string) {
-    return (
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
-        <div style={{
-          padding: '16px 16px 14px 16px',
-          borderBottom: '1px solid var(--mp-border)',
-          fontSize: 18, fontWeight: 700,
-          color: 'var(--mp-text)',
-          fontFamily: 'var(--mp-font)',
-          flexShrink: 0,
-        }}>
-          {title}
-        </div>
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          <Outlet />
-        </div>
-      </div>
-    );
-  }
-
   function renderBackFaceContent() {
     const path = location.pathname;
     const searchParams = new URLSearchParams(location.search);
 
-    /* /upload without type param → compact entry */
+    /* Page title/subtitle map */
+    const pageMeta: Record<string, { title: string; subtitle?: string }> = {
+      '/upload':        { title: 'Dispatch Something', subtitle: 'What are you sharing?' },
+      '/profile':       { title: 'Your Profile' },
+      '/messages':      { title: 'Messages' },
+      '/library':       { title: 'Your Archives', subtitle: 'Everything you\'ve saved' },
+      '/drafts':        { title: 'Drafts', subtitle: 'Work in progress' },
+      '/notifications': { title: 'Notifications' },
+      '/analytics':     { title: 'Neural Analytics', subtitle: 'Your dispatch performance' },
+    };
+
+    /* /upload without type param → glass type selector */
     if (path === '/upload' && !searchParams.get('type')) {
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-          <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
-          <div style={{ padding: '20px 16px', flex: 1, overflowY: 'auto' }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--mp-text)', marginBottom: 6, fontFamily: 'var(--mp-font)' }}>
-              Share your work
+        <div className="ns-page-shell">
+          <button className="ns-back-btn" onClick={() => navigate(-1)}>
+            ← Back
+          </button>
+          <div className="ns-page-header">
+            <div className="ns-page-title">Dispatch Something</div>
+            <div className="ns-page-subtitle">
+              What fragment are you releasing into the feed?
             </div>
-            <div style={{ fontSize: 13, color: 'var(--mp-text-secondary)', marginBottom: 24, fontFamily: 'var(--mp-font)' }}>
-              What are you sharing today?
-            </div>
-            {(['Blueprint', 'Blog', 'Bounty', 'Project'] as const).map(type => (
-              <button key={type}
-                onClick={() => navigate(`/upload?type=${type.toLowerCase()}`)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14, width: '100%',
-                  padding: '14px 16px', marginBottom: 8,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid var(--mp-border)',
-                  borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s',
-                  color: 'var(--mp-text)', fontFamily: 'var(--mp-font)',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
-                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--mp-border)';
-                }}
+          </div>
+          <div className="ns-page-body" style={{ padding: '20px 24px' }}>
+            {[
+              { type: 'blueprint', icon: '📐', label: 'Blueprint',
+                desc: 'Prompts, agents, workflows, model configs' },
+              { type: 'blog', icon: '📝', label: 'Blog',
+                desc: 'An article, tutorial, or thought piece' },
+              { type: 'bounty', icon: '🎯', label: 'Bounty',
+                desc: 'A challenge with a reward for the community' },
+              { type: 'project', icon: '🗂️', label: 'Project',
+                desc: 'A tool or system you built with AI' },
+            ].map(item => (
+              <div
+                key={item.type}
+                className="ns-glass-card"
+                style={{ marginBottom: 12, cursor: 'pointer',
+                         display: 'flex', alignItems: 'center', gap: 16 }}
+                onClick={() => navigate(`/upload?type=${item.type}`)}
               >
-                <span style={{ fontSize: 20 }}>
-                  {type === 'Blueprint' ? '📐' : type === 'Blog' ? '📝' : type === 'Bounty' ? '🎯' : '🗂️'}
-                </span>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{type}</div>
-                  <div style={{ fontSize: 12, color: 'var(--mp-text-secondary)' }}>
-                    {type === 'Blueprint' ? 'Prompts, agents, workflows, configs'
-                      : type === 'Blog' ? 'Write an article or tutorial'
-                      : type === 'Bounty' ? 'Post a challenge for the community'
-                      : 'Share a project or tool you built'}
+                <span style={{ fontSize: 24, flexShrink: 0 }}>{item.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 3,
+                  }}>
+                    {item.label}
+                  </div>
+                  <div style={{
+                    fontFamily: 'Inter', fontSize: 12,
+                    color: 'rgba(255,255,255,0.40)',
+                  }}>
+                    {item.desc}
                   </div>
                 </div>
-                <span style={{ marginLeft: 'auto', color: 'var(--mp-text-muted)', fontSize: 16 }}>→</span>
-              </button>
+                <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 18 }}>→</span>
+              </div>
             ))}
           </div>
         </div>
       );
     }
 
-    /* /profile → compact profile header */
+    /* /profile → glass profile header */
     if (path === '/profile') {
-      const pInitials = (profile?.display_name ?? profile?.username ?? 'U').slice(0, 2).toUpperCase();
       return (
-        <div style={{ height: '100%', overflowY: 'auto' }}>
-          <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
-          <div style={{ padding: '20px 16px 16px 16px', borderBottom: '1px solid var(--mp-border)' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-              <div style={{
-                width: 64, height: 64, borderRadius: '50%',
-                background: 'var(--mp-orange)', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 22, fontWeight: 700, color: '#fff',
-              }}>
-                {pInitials}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--mp-text)', fontFamily: 'var(--mp-font)', marginBottom: 2 }}>
-                  {profile?.display_name ?? 'Your Name'}
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--mp-text-secondary)', marginBottom: 10 }}>
-                  @{profile?.username ?? 'username'}
-                </div>
-                <button onClick={() => navigate('/profile/edit')} style={{
-                  padding: '6px 16px',
-                  border: '1px solid var(--mp-border)',
-                  borderRadius: 100, background: 'transparent',
-                  color: 'var(--mp-text)', fontSize: 13, fontWeight: 600,
-                  cursor: 'pointer', fontFamily: 'var(--mp-font)',
-                }}>
-                  Edit profile
-                </button>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 20, marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--mp-border)' }}>
-              {[{ label: 'Posts', value: '—' }, { label: 'Downloads', value: '—' }, { label: 'Following', value: '—' }, { label: 'Followers', value: '—' }].map(s => (
-                <div key={s.label} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--mp-text)', fontFamily: 'var(--mp-font)' }}>{s.value}</div>
-                  <div style={{ fontSize: 11, color: 'var(--mp-text-secondary)', marginTop: 2 }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div style={{ padding: '10px 16px 6px 16px', borderBottom: '1px solid var(--mp-border)' }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--mp-text)', borderBottom: '2px solid var(--mp-orange)', paddingBottom: 10, fontFamily: 'var(--mp-font)' }}>Posts</span>
-          </div>
-          <Outlet />
-        </div>
-      );
-    }
+        <div className="ns-page-shell">
+          <button className="ns-back-btn" onClick={() => navigate(-1)}>← Back</button>
 
-    /* /messages → panel-native DM header */
-    if (path === '/messages') {
-      return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--mp-border)', fontSize: 18, fontWeight: 700, color: 'var(--mp-text)', fontFamily: 'var(--mp-font)', flexShrink: 0 }}>
-            Messages
+          {/* Profile card */}
+          <div style={{ padding: '20px 24px 0 24px' }}>
+            <div className="ns-glass-card" style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                <div style={{
+                  width: 64, height: 64, borderRadius: '50%',
+                  background: '#E8571A', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 22, fontWeight: 700, color: '#fff',
+                  border: '2px solid rgba(232,87,26,0.30)',
+                }}>
+                  {getInitials(profile?.display_name ?? 'U')}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 2,
+                  }}>
+                    {profile?.display_name ?? 'Your Name'}
+                  </div>
+                  <div style={{
+                    fontFamily: 'Inter', fontSize: 13,
+                    color: 'rgba(255,255,255,0.35)', marginBottom: 12,
+                  }}>
+                    @{profile?.username ?? 'username'}
+                  </div>
+                  <button
+                    className="ns-btn-ghost"
+                    onClick={() => navigate('/profile/edit')}
+                  >
+                    Edit Profile
+                  </button>
+                </div>
+              </div>
+
+              {/* Stats row */}
+              <div style={{
+                display: 'flex', gap: 32, marginTop: 20,
+                paddingTop: 16,
+                borderTop: '1px solid rgba(255,255,255,0.05)',
+              }}>
+                {[
+                  { label: 'Dispatches', value: '—' },
+                  { label: 'Downloads', value: '—' },
+                  { label: 'Following', value: '—' },
+                  { label: 'Followers', value: '—' },
+                ].map(s => (
+                  <div key={s.label} style={{ textAlign: 'center' }}>
+                    <div style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: 18, fontWeight: 700, color: '#fff',
+                    }}>{s.value}</div>
+                    <div style={{
+                      fontFamily: 'Inter', fontSize: 10,
+                      color: 'rgba(255,255,255,0.30)',
+                      textTransform: 'uppercase', letterSpacing: '0.08em',
+                      marginTop: 2,
+                    }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--mp-border)', flexShrink: 0 }}>
-            <input placeholder="Search messages..."
-              style={{
-                width: '100%', padding: '8px 14px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid var(--mp-border)',
-                borderRadius: 24, color: 'var(--mp-text)',
-                fontSize: 13, outline: 'none',
-                fontFamily: 'var(--mp-font)',
-                boxSizing: 'border-box',
-              }} />
-          </div>
-          <div style={{ flex: 1, overflowY: 'auto' }}>
+
+          <div className="ns-page-body">
             <Outlet />
           </div>
         </div>
       );
     }
 
-    /* /library, /drafts, /notifications, /analytics → titled header */
-    const titledRoutes: Record<string, string> = {
-      '/library': 'Your Library',
-      '/drafts': 'Drafts',
-      '/notifications': 'Notifications',
-      '/analytics': 'Analytics',
-    };
-    if (titledRoutes[path]) {
-      return renderPageWithHeader(titledRoutes[path]);
+    /* /messages → page shell with search input */
+    if (path === '/messages') {
+      return (
+        <div className="ns-page-shell">
+          <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
+          <div className="ns-page-header">
+            <div className="ns-page-title">Messages</div>
+          </div>
+          <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <input className="ns-glass-input" placeholder="Search messages..." />
+          </div>
+          <div className="ns-page-body">
+            <Outlet />
+          </div>
+        </div>
+      );
+    }
+
+    /* /library, /drafts, /notifications, /analytics → page shell with title/subtitle */
+    const meta = pageMeta[path];
+    if (meta) {
+      return (
+        <div className="ns-page-shell">
+          <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
+          <div className="ns-page-header">
+            <div className="ns-page-title">{meta.title}</div>
+            {meta.subtitle && (
+              <div className="ns-page-subtitle">{meta.subtitle}</div>
+            )}
+          </div>
+          <div className="ns-page-body">
+            <Outlet />
+          </div>
+        </div>
+      );
     }
 
     /* Fallback — all other routes */
     return (
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <button className="ns-outlet-back-btn" onClick={handleBackBtn}>← Back</button>
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div className="ns-page-shell">
+        <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
+        <div className="ns-page-body">
           <Outlet />
         </div>
       </div>
@@ -1406,78 +1641,166 @@ export function NeoScaleShell() {
             <div className="ns-middle-flipper" ref={flipperRef}>
 
               {/* FRONT FACE — home feed */}
-              <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
-                {/* Compose bar */}
-                <div className="ns-compose-bar">
-                  <div className="ns-compose-avatar">
-                    {profile ? (profile.display_name ?? profile.username ?? "U").slice(0, 2).toUpperCase() : "U"}
-                  </div>
-                  <div className="ns-compose-prompt" onClick={() => navigate('/upload')}>
-                    Share something...
+              <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column", padding: "24px 24px 0 24px" }}>
+
+                {/* Compose area */}
+                <div className="ns-compose-wrap">
+                  <div className="ns-compose-row">
+                    <div className="ns-compose-avatar">
+                      {getInitials(profile?.display_name ?? 'U')}
+                    </div>
+                    <div className="ns-compose-input">
+                      <div
+                        className="ns-compose-placeholder"
+                        onClick={() => navigate('/upload')}
+                      >
+                        Share something ethereal...
+                      </div>
+                      <div className="ns-compose-toolbar">
+                        <div className="ns-compose-actions">
+                          <button className="ns-compose-action-btn" title="Image">🖼</button>
+                          <button className="ns-compose-action-btn" title="Poll">📊</button>
+                          <button className="ns-compose-action-btn" title="Link">🔗</button>
+                        </div>
+                        <button
+                          className="ns-compose-submit"
+                          onClick={() => navigate('/upload')}
+                        >
+                          Dispatch
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Twitter-style underline tabs */}
-                <div className="ns-tab-row">
-                  {["For You", "Following", "Trending", "Recent"].map(tab => (
-                    <div
+                {/* Tab navigation */}
+                <nav className="ns-tab-row">
+                  {['For You','Following','Trending','Recent'].map(tab => (
+                    <button
                       key={tab}
-                      className={`ns-tab${activeTab === tab ? " active" : ""}`}
+                      className={`ns-tab${activeTab === tab ? ' active' : ''}`}
                       onClick={() => setActiveTab(tab)}
                     >
                       {tab}
-                    </div>
+                    </button>
                   ))}
-                </div>
+                </nav>
 
                 {/* Feed */}
                 <div className="ns-feed-scroll">
-                  {posts.length === 0 ? (
-                    <div className="ns-feed-loading">
-                      {[1,2,3,4].map(n => <div key={n} className="ns-feed-skeleton" />)}
-                    </div>
-                  ) : (
-                    posts.map((post: any) => {
-                      const postProfile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
-                      const displayName = postProfile?.display_name || postProfile?.username || "Unknown";
-                      const username = postProfile?.username || "user";
-                      const tags: string[] = post.ai_tools ?? post.topics ?? [];
-                      return (
-                        <div key={post.id} className="ns-feed-card"
-                             onClick={() => navigate(`/content/${post.id}`)}>
-                          <div className="ns-feed-avatar-col">
-                            <div className="ns-feed-card-avatar"
-                                 style={{ background: ctypeBg(post.content_type) }}>
-                              {displayName.slice(0, 2).toUpperCase()}
+                  {posts.map((post: any) => {
+                    const postProfile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+                    const av = getAvatarStyle(displayContentType(post.content_type));
+                    const postInitials = getInitials(postProfile?.display_name ?? 'U');
+                    const hasImage = !!post.cover_image_url;
+                    const snippet = post.description
+                      ? post.description.substring(0, 140) + (post.description.length > 140 ? '...' : '')
+                      : null;
+                    return (
+                      <article
+                        key={post.id}
+                        className="ns-feed-card"
+                        onClick={() => navigate(`/content/${post.id}`)}
+                      >
+                        {/* Card header */}
+                        <div className="ns-card-header">
+                          <div className="ns-card-header-left">
+                            <div
+                              className="ns-card-avatar"
+                              style={{ background: av.bg, color: av.color, borderColor: av.border }}
+                            >
+                              {postInitials}
+                            </div>
+                            <div className="ns-card-meta">
+                              <div className="ns-card-title">{post.title}</div>
+                              <div className="ns-card-byline">
+                                <span className="ns-card-author">
+                                  {postProfile?.display_name ?? 'Unknown'}
+                                </span>
+                                <span className="ns-card-dot">•</span>
+                                <span className="ns-card-time">{getTimeAgo(post.created_at)}</span>
+                                <span
+                                  className="ns-card-type-badge"
+                                  style={{
+                                    background: av.bg,
+                                    color: av.color,
+                                    borderColor: av.border,
+                                  }}
+                                >
+                                  {displayContentType(post.content_type)}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          <div className="ns-feed-content-col">
-                            <div className="ns-feed-header">
-                              <span className="ns-feed-name">{displayName}</span>
-                              <span className="ns-feed-handle">@{username}</span>
-                              <span className="ns-feed-sep">·</span>
-                              <span className="ns-feed-time">{timeAgo(post.created_at)}</span>
-                              <span className="ns-feed-menu">···</span>
-                            </div>
-                            <span className="ns-feed-type-badge">{displayContentType(post.content_type)}</span>
-                            <div className="ns-feed-title">{post.title}</div>
-                            {tags.length > 0 && (
-                              <div className="ns-feed-tags">
-                                {tags.slice(0, 3).map((t: string) => (
-                                  <span key={t} className="ns-feed-tag">{t}</span>
-                                ))}
-                              </div>
-                            )}
-                            <div className="ns-feed-actions">
-                              <button className="ns-feed-action like" onClick={e => e.stopPropagation()}>♡ {post.view_count ?? 0}</button>
-                              <button className="ns-feed-action reply" onClick={e => e.stopPropagation()}>💬 0</button>
-                              <button className="ns-feed-action dl" onClick={e => e.stopPropagation()}>↓ {post.download_count ?? 0}</button>
-                              <button className="ns-feed-action" onClick={e => e.stopPropagation()}>↗</button>
-                            </div>
+                          <button
+                            className="ns-card-menu"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            ···
+                          </button>
+                        </div>
+
+                        {/* Body text */}
+                        {snippet && (
+                          <p className="ns-card-body">{snippet}</p>
+                        )}
+
+                        {/* Cover image */}
+                        {hasImage && (
+                          <div className="ns-card-image-wrap">
+                            <img
+                              src={post.cover_image_url}
+                              alt={post.title}
+                              className="ns-card-image"
+                            />
+                            <div className="ns-card-image-overlay" />
+                          </div>
+                        )}
+
+                        {/* Footer actions */}
+                        <div className="ns-card-footer">
+                          <div className="ns-card-actions-left">
+                            <button
+                              className="ns-card-action like"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              ♡ <span>{post.view_count ?? 0}</span>
+                            </button>
+                            <button
+                              className="ns-card-action reply"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              💬 <span>0</span>
+                            </button>
+                          </div>
+                          <div className="ns-card-actions-right">
+                            <button
+                              className="ns-card-action dl"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              ↓ {post.download_count ?? 0}
+                            </button>
+                            <button
+                              className="ns-card-action share"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              ↗
+                            </button>
                           </div>
                         </div>
-                      );
-                    })
+                      </article>
+                    );
+                  })}
+
+                  {posts.length === 0 && (
+                    <div style={{
+                      textAlign: 'center', padding: '48px 24px',
+                      color: 'rgba(255,255,255,0.25)',
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: 18,
+                    }}>
+                      Nothing dispatched yet.
+                    </div>
                   )}
                 </div>
               </div>
