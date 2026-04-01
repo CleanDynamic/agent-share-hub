@@ -25,7 +25,15 @@ import { FeedTabs } from "@/components/feed-tabs";
 const NEOSCALE_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@400;500;600;700&display=swap');
 
-.ns-root *, .ns-root *::before, .ns-root *::after { margin: 0; padding: 0; box-sizing: border-box; }
+.ns-middle-front *,
+.ns-middle-front ::before,
+.ns-middle-front ::after,
+.ns-middle-back *,
+.ns-middle-back ::before,
+.ns-middle-back ::after {
+  box-sizing: border-box;
+  min-width: 0;
+}
 
 /* ── Middle panel design tokens ── */
 .ns-middle-front, .ns-middle-back {
