@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { FollowButton } from "@/components/FollowButton";
 import { displayContentType } from "@/lib/content-types";
+import Home from "@/pages/Home";
 
 /* ────────────────────────────────────────────────
    CSS — injected into document.head on mount
@@ -570,6 +571,9 @@ const NEOSCALE_CSS = `
   overflow-y: auto;
   padding: 0;
 }
+.ns-page-body--immersive {
+  padding: 0 0 28px;
+}
 
 /* ── Back button ── */
 .ns-back-btn {
@@ -1013,13 +1017,11 @@ export function NeoScaleShell() {
 
   const [flipDir,    setFlipDir]    = useState<1 | -1>(1);
   const [pulsing,    setPulsing]    = useState(false);
-  const [activeTab,  setActiveTab]  = useState("For You");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [posts, setPosts] = useState<any[]>([]);
 
   const isMobile = useIsMobile();
   const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
@@ -1040,24 +1042,6 @@ export function NeoScaleShell() {
     document.head.appendChild(tag);
     return () => { document.head.removeChild(tag); };
   }, [isMobile]);
-
-  /* ── Fetch feed posts ── */
-  useEffect(() => {
-    const fetchPosts = async () => {
-      const { data } = await supabase
-        .from('content_items')
-        .select(`
-          id, title, description, content_type, difficulty,
-          view_count, download_count, cover_image_url, created_at,
-          profiles:creator_id (display_name, username, avatar_url)
-        `)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (data) setPosts(data);
-    };
-    fetchPosts();
-  }, []);
 
   function triggerPulse() {
     setPulsing(false);
@@ -1152,6 +1136,22 @@ export function NeoScaleShell() {
     rescale();
     return () => window.removeEventListener("resize", rescale);
   }, [isMobile]);
+
+  /* ── Keep correct face visible for deep links / browser nav ── */
+  useEffect(() => {
+    if (isMobile || !flipperRef.current) return;
+
+    const shouldShowBack = location.pathname !== "/";
+    const normalized = ((currentRotation.current % 360) + 360) % 360;
+    const showingBack = normalized === 180;
+
+    if (shouldShowBack === showingBack) return;
+
+    const base = Math.round(currentRotation.current / 360) * 360;
+    currentRotation.current = shouldShowBack ? base + 180 : base;
+    flipperRef.current.style.transition = "transform 0s";
+    flipperRef.current.style.transform = `rotateY(${currentRotation.current}deg)`;
+  }, [location.pathname, isMobile]);
 
   /* ── Supabase: recent feed ── */
   const { data: feedItems, isLoading: feedLoading } = useQuery({
@@ -1377,6 +1377,24 @@ export function NeoScaleShell() {
   function renderBackFaceContent() {
     const path = location.pathname;
     const searchParams = new URLSearchParams(location.search);
+
+    if (
+      path.startsWith("/content/") ||
+      path.startsWith("/creator/") ||
+      path.startsWith("/project/") ||
+      path.startsWith("/collections/") ||
+      path.startsWith("/browse") ||
+      path.startsWith("/category/") ||
+      path.startsWith("/search")
+    ) {
+      return (
+        <div className="ns-page-shell">
+          <div className="ns-page-body ns-page-body--immersive">
+            <Outlet />
+          </div>
+        </div>
+      );
+    }
 
     /* Page title/subtitle map */
     const pageMeta: Record<string, { title: string; subtitle?: string }> = {
@@ -1641,167 +1659,9 @@ export function NeoScaleShell() {
             <div className="ns-middle-flipper" ref={flipperRef}>
 
               {/* FRONT FACE — home feed */}
-              <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column", padding: "24px 24px 0 24px" }}>
-
-                {/* Compose area */}
-                <div className="ns-compose-wrap">
-                  <div className="ns-compose-row">
-                    <div className="ns-compose-avatar">
-                      {getInitials(profile?.display_name ?? 'U')}
-                    </div>
-                    <div className="ns-compose-input">
-                      <div
-                        className="ns-compose-placeholder"
-                        onClick={() => navigate('/upload')}
-                      >
-                        Share something ethereal...
-                      </div>
-                      <div className="ns-compose-toolbar">
-                        <div className="ns-compose-actions">
-                          <button className="ns-compose-action-btn" title="Image">🖼</button>
-                          <button className="ns-compose-action-btn" title="Poll">📊</button>
-                          <button className="ns-compose-action-btn" title="Link">🔗</button>
-                        </div>
-                        <button
-                          className="ns-compose-submit"
-                          onClick={() => navigate('/upload')}
-                        >
-                          Dispatch
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tab navigation */}
-                <nav className="ns-tab-row">
-                  {['For You','Following','Trending','Recent'].map(tab => (
-                    <button
-                      key={tab}
-                      className={`ns-tab${activeTab === tab ? ' active' : ''}`}
-                      onClick={() => setActiveTab(tab)}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </nav>
-
-                {/* Feed */}
-                <div className="ns-feed-scroll">
-                  {posts.map((post: any) => {
-                    const postProfile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
-                    const av = getAvatarStyle(displayContentType(post.content_type));
-                    const postInitials = getInitials(postProfile?.display_name ?? 'U');
-                    const hasImage = !!post.cover_image_url;
-                    const snippet = post.description
-                      ? post.description.substring(0, 140) + (post.description.length > 140 ? '...' : '')
-                      : null;
-                    return (
-                      <article
-                        key={post.id}
-                        className="ns-feed-card"
-                        onClick={() => navigate(`/content/${post.id}`)}
-                      >
-                        {/* Card header */}
-                        <div className="ns-card-header">
-                          <div className="ns-card-header-left">
-                            <div
-                              className="ns-card-avatar"
-                              style={{ background: av.bg, color: av.color, borderColor: av.border }}
-                            >
-                              {postInitials}
-                            </div>
-                            <div className="ns-card-meta">
-                              <div className="ns-card-title">{post.title}</div>
-                              <div className="ns-card-byline">
-                                <span className="ns-card-author">
-                                  {postProfile?.display_name ?? 'Unknown'}
-                                </span>
-                                <span className="ns-card-dot">•</span>
-                                <span className="ns-card-time">{getTimeAgo(post.created_at)}</span>
-                                <span
-                                  className="ns-card-type-badge"
-                                  style={{
-                                    background: av.bg,
-                                    color: av.color,
-                                    borderColor: av.border,
-                                  }}
-                                >
-                                  {displayContentType(post.content_type)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <button
-                            className="ns-card-menu"
-                            onClick={e => e.stopPropagation()}
-                          >
-                            ···
-                          </button>
-                        </div>
-
-                        {/* Body text */}
-                        {snippet && (
-                          <p className="ns-card-body">{snippet}</p>
-                        )}
-
-                        {/* Cover image */}
-                        {hasImage && (
-                          <div className="ns-card-image-wrap">
-                            <img
-                              src={post.cover_image_url}
-                              alt={post.title}
-                              className="ns-card-image"
-                            />
-                            <div className="ns-card-image-overlay" />
-                          </div>
-                        )}
-
-                        {/* Footer actions */}
-                        <div className="ns-card-footer">
-                          <div className="ns-card-actions-left">
-                            <button
-                              className="ns-card-action like"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              ♡ <span>{post.view_count ?? 0}</span>
-                            </button>
-                            <button
-                              className="ns-card-action reply"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              💬 <span>0</span>
-                            </button>
-                          </div>
-                          <div className="ns-card-actions-right">
-                            <button
-                              className="ns-card-action dl"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              ↓ {post.download_count ?? 0}
-                            </button>
-                            <button
-                              className="ns-card-action share"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              ↗
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
-
-                  {posts.length === 0 && (
-                    <div style={{
-                      textAlign: 'center', padding: '48px 24px',
-                      color: 'rgba(255,255,255,0.25)',
-                      fontFamily: "'Playfair Display', serif",
-                      fontSize: 18,
-                    }}>
-                      Nothing dispatched yet.
-                    </div>
-                  )}
+              <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
+                <div className="ns-outlet-wrap">
+                  <Home />
                 </div>
               </div>
 
@@ -1933,7 +1793,7 @@ export function NeoScaleShell() {
               <>
                 <div className="ns-section-title">Collections</div>
                 {featuredCollections.map((col: any) => (
-                  <div key={col.id} className="ns-collection-item" onClick={() => { flipMiddle('right'); navigate(`/collection/${col.slug || col.id}`); }}>
+                  <div key={col.id} className="ns-collection-item" onClick={() => { flipMiddle('right'); navigate(`/collections/${col.slug || col.id}`); }}>
                     <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>{col.title}</div>
                     <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>
                       {(col.profiles as any)?.display_name || (col.profiles as any)?.username || "Creator"} · {col.item_count} items
