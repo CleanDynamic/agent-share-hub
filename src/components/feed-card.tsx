@@ -133,8 +133,14 @@ export function FeedCard({ post }: { post: FeedPost }) {
 
   return (
     <article
-      className="group relative rounded-xl px-4 py-3 mb-3 cursor-pointer transition-all duration-300 hover:bg-white/[0.02]"
+      className="group relative cursor-pointer transition-all duration-300 hover:bg-white/[0.02]"
       style={{
+        borderRadius: '12px',
+        padding: '16px',
+        marginBottom: '12px',
+        display: 'block',
+        width: '100%',
+        boxSizing: 'border-box' as const,
         background: "linear-gradient(135deg, rgba(27, 27, 32, 0.4) 0%, rgba(27, 27, 32, 0.35) 100%)",
         backdropFilter: "blur(60px)",
         WebkitBackdropFilter: "blur(60px)",
@@ -147,7 +153,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
       onClick={() => navigate(`/content/${post.id}`)}
     >
       {/* Header */}
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3" style={{ gap: '12px', marginBottom: '8px' }}>
         <div className="flex items-start gap-2.5">
           {/* Avatar - with hover card */}
           <AccountHoverCard account={post.author}>
@@ -156,11 +162,15 @@ export function FeedCard({ post }: { post: FeedPost }) {
                 src={post.author.avatar_url}
                 alt={post.author.display_name}
                 className="w-9 h-9 rounded-full object-cover flex-shrink-0 hover:opacity-80 transition-opacity"
+                style={{ width: '38px', height: '38px', flexShrink: 0 }}
               />
             ) : (
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 hover:opacity-80 transition-opacity"
                 style={{
+                  width: '38px',
+                  height: '38px',
+                  flexShrink: 0,
                   background: avatarStyle?.bg,
                   color: avatarStyle?.color,
                   border: `1px solid ${avatarStyle?.border}`,
@@ -176,18 +186,19 @@ export function FeedCard({ post }: { post: FeedPost }) {
             {/* Top line: username, content type, time - all horizontal */}
             <div className="flex items-center gap-2 flex-wrap">
               <AccountHoverCard account={post.author}>
-                <span className="text-sm font-medium text-white hover:underline">
+                <span className="font-medium text-white hover:underline" style={{ fontSize: '13px', fontWeight: 600 }}>
                   {post.author.display_name}
                 </span>
               </AccountHoverCard>
               <AccountHoverCard account={post.author}>
-                <span className="text-white/40 text-xs hover:underline">@{post.author.username}</span>
+                <span className="text-white/40 hover:underline" style={{ fontSize: '12px' }}>@{post.author.username}</span>
               </AccountHoverCard>
               <span className="text-white/25">·</span>
               {/* Content Type Badge - inline with username */}
               <span
-                className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
+                className="inline-flex items-center px-1.5 py-0.5 rounded font-bold uppercase tracking-wider"
                 style={{
+                  fontSize: '10px',
                   background: contentTypeStyle.bg,
                   color: contentTypeStyle.color,
                   border: `1px solid ${contentTypeStyle.border}`,
@@ -196,7 +207,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
                 {displayContentType(post.content_type)}
               </span>
               <span className="text-white/25">·</span>
-              <span className="text-xs text-white/40">{getTimeAgo(post.created_at)}</span>
+              <span className="text-white/40" style={{ fontSize: '12px' }}>{getTimeAgo(post.created_at)}</span>
             </div>
           </div>
         </div>
@@ -211,13 +222,13 @@ export function FeedCard({ post }: { post: FeedPost }) {
       </div>
 
       {/* Title - smaller, closer to description */}
-      <h3 className="font-playfair text-[15px] font-medium text-white leading-snug mt-2">
+      <h3 className="font-playfair font-medium text-white mt-2" style={{ marginTop: '8px', marginBottom: '6px', fontSize: '15px', lineHeight: '1.35' }}>
         {post.title}
       </h3>
 
       {/* Preview text (always visible) - up to 500 chars */}
       {previewText && (
-        <p className="mt-1.5 text-sm text-white/50 leading-relaxed">{previewText}</p>
+        <p className="text-white/50 leading-relaxed" style={{ marginTop: '8px', marginBottom: '8px', fontSize: '13px', lineHeight: '1.6' }}>{previewText}</p>
       )}
 
       {/* Cover image (always visible if present) */}
@@ -226,7 +237,8 @@ export function FeedCard({ post }: { post: FeedPost }) {
           <img
             src={post.cover_image_url}
             alt={post.title}
-            className="w-full h-48 object-cover opacity-80 transition-transform duration-700 group-hover:scale-105"
+            className="w-full object-cover opacity-80 transition-transform duration-700 group-hover:scale-105"
+            style={{ height: '160px', objectFit: 'cover', width: '100%', borderRadius: '8px' }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         </div>
@@ -244,7 +256,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
           }}
         >
           {/* Continue from where preview left off */}
-          <p className="text-sm text-white/55 leading-relaxed">{remainingText}</p>
+          <p className="text-white/55 leading-relaxed" style={{ fontSize: '13px', lineHeight: '1.6' }}>{remainingText}</p>
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3">
               {tags.map((tag) => (
@@ -303,19 +315,21 @@ export function FeedCard({ post }: { post: FeedPost }) {
       )}
 
       {/* Footer actions */}
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
+      <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5" style={{ marginTop: '14px', paddingTop: '12px' }}>
         <div className="flex items-center gap-5">
           <button
-            className={`flex items-center gap-1.5 text-sm transition-colors ${
+            className={`flex items-center gap-1.5 transition-colors ${
               isLiked ? "text-red-500" : "text-white/40 hover:text-red-400"
             }`}
+            style={{ fontSize: '12px' }}
             onClick={handleLike}
           >
             <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
             <span>{likeCount}</span>
           </button>
           <button
-            className="flex items-center gap-1.5 text-sm text-white/40 hover:text-[#2EC4B6] transition-colors"
+            className="flex items-center gap-1.5 text-white/40 hover:text-[#2EC4B6] transition-colors"
+            style={{ fontSize: '12px' }}
             onClick={(e) => e.stopPropagation()}
           >
             <MessageCircle className="w-4 h-4" />
@@ -324,7 +338,8 @@ export function FeedCard({ post }: { post: FeedPost }) {
         </div>
         <div className="flex items-center gap-4">
           <button
-            className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white/70 transition-colors"
+            className="flex items-center gap-1.5 text-white/40 hover:text-white/70 transition-colors"
+            style={{ fontSize: '12px' }}
             onClick={(e) => e.stopPropagation()}
           >
             <Download className="w-4 h-4" />
