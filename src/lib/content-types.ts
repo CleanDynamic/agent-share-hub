@@ -1,105 +1,173 @@
-/**
- * Shared content type utilities.
- * DB stores "Prompt File" — UI displays "Prompt(s)".
- * All TYPE_COLORS keyed by DB value.
- */
+// ─── POST TYPES (the social object — what the post IS) ───
 
-/** Map DB content_type to display label */
-export function displayContentType(dbType: string): string {
-  if (dbType === "Prompt File") return "Prompt(s)";
-  if (dbType === "Agent Blueprint") return "Agent(s)";
-  if (dbType === "AI Agent Install Guide") return "Install Guide";
-  if (dbType === "AI Tools (LLMs)") return "AI Tools Tutorials";
-  return dbType;
-}
-
-/** Ordered content types for dropdowns, grids, etc. */
-export const ORDERED_CONTENT_TYPES = [
-  "Prompt File",
-  "Agent Blueprint",
-  "AI Agent Install Guide",
-  "Model Config Guide",
-  "Integration Guide",
-  "Workflow Template",
-  "Evaluation Framework",
-  "Agent Stack",
-  "Failure Library",
-  "Blog",
-  "AI Tools (LLMs)",
-];
-
-/** Predefined topics for tagging content */
-export const TOPICS = [
-  "Git Workflows",
-  "Prompt Engineering",
-  "CI/CD & DevOps",
-  "API Integration",
-  "Data Analysis",
-  "Web Scraping",
-  "Content Creation",
-  "Code Review",
-  "Testing & QA",
-  "Security",
-  "Database",
-  "Infrastructure",
-];
-
-/** Badge colour map — keyed by DB value */
-export const TYPE_COLORS: Record<string, string> = {
-  "Prompt File": "bg-[#E8571A]/20 text-[#E8571A] border-[#E8571A]/25",
-  "Agent Blueprint": "bg-[#7C3AED]/20 text-[#7C3AED] border-[#7C3AED]/25",
-  "Workflow Template": "bg-[#2563EB]/20 text-[#3B82F6] border-[#2563EB]/25",
-  "Agent Stack": "bg-[#DC2626]/20 text-[#EF4444] border-[#DC2626]/25",
-  "Model Config Guide": "bg-[#16A34A]/20 text-[#22C55E] border-[#16A34A]/25",
-  "Integration Guide": "bg-[#D97706]/20 text-[#F59E0B] border-[#D97706]/25",
-  "Evaluation Framework": "bg-[#DB2777]/20 text-[#EC4899] border-[#DB2777]/25",
-  "Failure Library": "bg-[#374151]/20 text-[#9CA3AF] border-[#374151]/25",
-  "Blog": "bg-[#F472B6]/15 text-[#F472B6] border-[#F472B6]/25",
-  "AI Tools (LLMs)": "bg-[#8B5CF6]/15 text-[#A78BFA] border-[#8B5CF6]/30",
-  "AI Agent Install Guide": "bg-[#06B6D4]/15 text-[#06B6D4] border-[#06B6D4]/30",
-  "Open Question": "bg-[#A78BFA]/15 text-[#A78BFA] border-[#A78BFA]/25",
-  "Challenge": "bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/25",
-};
-
-/** Difficulty levels including "Any" for special types */
-export const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
-
-/** Content types that auto-set difficulty to "Any" */
-export const ANY_DIFFICULTY_TYPES = ["Failure Library", "AI Tools (LLMs)", "Blog"];
-
-/** Slug-to-DB-type mapping for Browse/Category routes */
-export const SLUG_TO_TYPE: Record<string, string> = {
-  "prompt-file": "Prompt File",
-  "agent-blueprint": "Agent Blueprint",
-  "workflow-template": "Workflow Template",
-  "agent-stack": "Agent Stack",
-  "model-config-guide": "Model Config Guide",
-  "integration-guide": "Integration Guide",
-  "evaluation-framework": "Evaluation Framework",
-  "failure-library": "Failure Library",
-  "blog": "Blog",
-  "ai-tools-llms": "AI Tools (LLMs)",
-  "install-guide": "AI Agent Install Guide",
-  "open-question": "Open Question",
-  "challenge": "Challenge",
-};
-
-/** Bounty sub-types */
-export const BOUNTY_CONTENT_TYPES = [
-  "Failure Library",
-  "Open Question",
-  "Challenge",
+export const POST_TYPES = [
+  {
+    value: 'build',
+    label: 'Build',
+    description: 'Something you made — a tool, agent, workflow, or system',
+    color: '#E8571A',
+    bg: 'rgba(232,87,26,0.15)',
+    border: 'rgba(232,87,26,0.30)',
+    emoji: '🔨',
+  },
+  {
+    value: 'technique',
+    label: 'Technique',
+    description: 'A specific method or approach you have tested and proven',
+    color: '#2EC4B6',
+    bg: 'rgba(46,196,182,0.15)',
+    border: 'rgba(46,196,182,0.30)',
+    emoji: '⚡',
+  },
+  {
+    value: 'discovery',
+    label: 'Discovery',
+    description: 'Something you found — a behaviour, result, or tool',
+    color: '#7C3AED',
+    bg: 'rgba(124,58,237,0.15)',
+    border: 'rgba(124,58,237,0.30)',
+    emoji: '🔍',
+  },
+  {
+    value: 'discussion',
+    label: 'Discussion',
+    description: 'A question, debate, challenge, or open thought',
+    color: '#F59E0B',
+    bg: 'rgba(245,158,11,0.15)',
+    border: 'rgba(245,158,11,0.30)',
+    emoji: '💬',
+  },
 ] as const;
 
-/** Content types shown in Blueprint upload dropdown (excludes Blog and Bounty sub-types) */
-export const BLUEPRINT_CONTENT_TYPES = [
-  "Prompt File",
-  "Agent Blueprint",
-  "AI Agent Install Guide",
-  "Model Config Guide",
-  "Integration Guide",
-  "Workflow Template",
-  "Evaluation Framework",
-  "Agent Stack",
-  "AI Tools (LLMs)",
-];
+export type PostType = typeof POST_TYPES[number]['value'];
+
+export function getPostType(value: string) {
+  return POST_TYPES.find(p => p.value === value) ?? POST_TYPES[0];
+}
+
+// ─── BLOCK TYPES (what lives INSIDE a post as subheadings) ───
+
+export const BLOCK_TYPES = [
+  {
+    value: 'prompt',
+    label: 'Prompt',
+    description: 'A copyable prompt to paste into any AI tool',
+    icon: 'MessageSquare',
+  },
+  {
+    value: 'agent_config',
+    label: 'Agent Config',
+    description: 'System prompt, model settings, and agent instructions',
+    icon: 'Bot',
+  },
+  {
+    value: 'workflow',
+    label: 'Workflow',
+    description: 'Step-by-step process or automation sequence',
+    icon: 'GitBranch',
+  },
+  {
+    value: 'model_params',
+    label: 'Model Parameters',
+    description: 'Temperature, context window, and model settings',
+    icon: 'Sliders',
+  },
+  {
+    value: 'tool_setup',
+    label: 'Tool Setup',
+    description: 'How to configure a specific tool or integration',
+    icon: 'Settings',
+  },
+  {
+    value: 'code',
+    label: 'Code',
+    description: 'A script, function, or code snippet',
+    icon: 'Code',
+  },
+  {
+    value: 'result',
+    label: 'Result',
+    description: 'Output or screenshot showing what happened',
+    icon: 'BarChart',
+  },
+  {
+    value: 'comparison',
+    label: 'Comparison',
+    description: 'Side-by-side model or approach comparison',
+    icon: 'Columns',
+  },
+  {
+    value: 'text',
+    label: 'Text',
+    description: 'Written context, explanation, or narrative',
+    icon: 'AlignLeft',
+  },
+  {
+    value: 'image',
+    label: 'Image',
+    description: 'A screenshot, diagram, or visual',
+    icon: 'Image',
+  },
+  {
+    value: 'resource',
+    label: 'Resource',
+    description: 'A link, paper, or external reference',
+    icon: 'Link',
+  },
+] as const;
+
+export type BlockType = typeof BLOCK_TYPES[number]['value'];
+
+export function getBlockType(value: string) {
+  return BLOCK_TYPES.find(b => b.value === value) ??
+    BLOCK_TYPES.find(b => b.value === 'text')!;
+}
+
+// ─── LEGACY SUPPORT — maps old content_type to post_type ───
+// Keeps old posts readable. Remove after full migration.
+
+export const LEGACY_TYPE_MAP: Record<string, PostType> = {
+  'Prompt File':         'technique',
+  'Agent Blueprint':     'build',
+  'AI Agent Install Guide': 'build',
+  'Model Config Guide':  'build',
+  'Integration Guide':   'build',
+  'Workflow Template':   'build',
+  'Evaluation Framework':'technique',
+  'Agent Stack':         'build',
+  'Failure Library':     'discovery',
+  'Blog':                'discussion',
+  'AI Tools (LLMs)':     'build',
+  'Open Question':       'discussion',
+  'Challenge':           'discussion',
+};
+
+export function resolvePostType(
+  post_type: string | null,
+  content_type: string | null
+): PostType {
+  if (post_type && ['build','technique','discovery','discussion'].includes(post_type)) {
+    return post_type as PostType;
+  }
+  if (content_type && LEGACY_TYPE_MAP[content_type]) {
+    return LEGACY_TYPE_MAP[content_type];
+  }
+  return 'build';
+}
+
+// ─── DIFFICULTY ───
+
+export const DIFFICULTIES = [
+  'Beginner', 'Intermediate', 'Advanced', 'Any'
+] as const;
+
+export type Difficulty = typeof DIFFICULTIES[number];
+
+export const DIFFICULTY_COLORS: Record<string, {
+  color: string; bg: string; border: string;
+}> = {
+  'Beginner':     { color: '#22C55E', bg: 'rgba(22,163,74,0.12)',  border: 'rgba(22,163,74,0.30)'  },
+  'Intermediate': { color: '#F59E0B', bg: 'rgba(217,119,6,0.12)',  border: 'rgba(217,119,6,0.30)'  },
+  'Advanced':     { color: '#EF4444', bg: 'rgba(220,38,38,0.12)',  border: 'rgba(220,38,38,0.30)'  },
+  'Any':          { color: '#9CA3AF', bg: 'rgba(75,85,99,0.12)',   border: 'rgba(75,85,99,0.30)'   },
+};
