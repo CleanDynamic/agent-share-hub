@@ -2,26 +2,14 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Heart, MessageCircle, Download, ExternalLink, MoreHorizontal } from "lucide-react"
 import { AccountHoverCard } from "@/components/account-hover-card"
-
-// Content type badge colors
-const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  prompt: { bg: "rgba(232, 87, 26, 0.15)", color: "#E8571A", border: "rgba(232, 87, 26, 0.3)" },
-  prompts: { bg: "rgba(232, 87, 26, 0.15)", color: "#E8571A", border: "rgba(232, 87, 26, 0.3)" },
-  agent: { bg: "rgba(46, 196, 182, 0.15)", color: "#2EC4B6", border: "rgba(46, 196, 182, 0.3)" },
-  agents: { bg: "rgba(46, 196, 182, 0.15)", color: "#2EC4B6", border: "rgba(46, 196, 182, 0.3)" },
-  workflow: { bg: "rgba(139, 92, 246, 0.15)", color: "#8B5CF6", border: "rgba(139, 92, 246, 0.3)" },
-  blog: { bg: "rgba(59, 130, 246, 0.15)", color: "#3B82F6", border: "rgba(59, 130, 246, 0.3)" },
-  tutorial: { bg: "rgba(34, 197, 94, 0.15)", color: "#22C55E", border: "rgba(34, 197, 94, 0.3)" },
-  "failure-library": { bg: "rgba(239, 68, 68, 0.15)", color: "#EF4444", border: "rgba(239, 68, 68, 0.3)" },
-  "failure library": { bg: "rgba(239, 68, 68, 0.15)", color: "#EF4444", border: "rgba(239, 68, 68, 0.3)" },
-  default: { bg: "rgba(255, 255, 255, 0.08)", color: "rgba(255, 255, 255, 0.7)", border: "rgba(255, 255, 255, 0.1)" },
-}
+import { resolvePostType, getPostType } from '@/lib/content-types'
 
 export interface FeedPost {
   id: string
   title: string
   description?: string
   content_type: string
+  post_type?: string | null
   cover_image_url?: string
   created_at: string
   view_count?: number
@@ -68,11 +56,16 @@ function getInitials(name: string): string {
     .slice(0, 2)
 }
 
+const AVATAR_COLORS = [
+  { bg: "rgba(232, 87, 26, 0.15)", color: "#E8571A", border: "rgba(232, 87, 26, 0.3)" },
+  { bg: "rgba(46, 196, 182, 0.15)", color: "#2EC4B6", border: "rgba(46, 196, 182, 0.3)" },
+  { bg: "rgba(124, 58, 237, 0.15)", color: "#7C3AED", border: "rgba(124, 58, 237, 0.3)" },
+  { bg: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", border: "rgba(245, 158, 11, 0.3)" },
+]
+
 function getAvatarStyle(name: string) {
-  const colors = CONTENT_TYPE_COLORS
-  const types = Object.keys(colors).filter((k) => k !== "default")
-  const index = name.length % types.length
-  return colors[types[index]] || colors.default
+  const index = name.length % AVATAR_COLORS.length
+  return AVATAR_COLORS[index]
 }
 
 export function FeedCard({ post }: { post: FeedPost }) {
@@ -81,7 +74,9 @@ export function FeedCard({ post }: { post: FeedPost }) {
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.view_count ?? 0)
 
-  const contentTypeStyle = CONTENT_TYPE_COLORS[post.content_type.toLowerCase()] || CONTENT_TYPE_COLORS.default
+  const postType = getPostType(
+    resolvePostType(post.post_type ?? null, post.content_type ?? null)
+  );
   const avatarStyle = post.author.avatar_url ? null : getAvatarStyle(post.author.display_name)
   const initials = getInitials(post.author.display_name)
 
@@ -125,10 +120,6 @@ export function FeedCard({ post }: { post: FeedPost }) {
     } else {
       setExpandStage(0)
     }
-  }
-
-  const displayContentType = (type: string) => {
-    return type.toUpperCase().replace("-", " ")
   }
 
   return (
@@ -194,17 +185,22 @@ export function FeedCard({ post }: { post: FeedPost }) {
                 <span className="text-white/40 hover:underline" style={{ fontSize: '12px' }}>@{post.author.username}</span>
               </AccountHoverCard>
               <span className="text-white/25">·</span>
-              {/* Content Type Badge - inline with username */}
-              <span
-                className="inline-flex items-center px-1.5 py-0.5 rounded font-bold uppercase tracking-wider"
-                style={{
-                  fontSize: '10px',
-                  background: contentTypeStyle.bg,
-                  color: contentTypeStyle.color,
-                  border: `1px solid ${contentTypeStyle.border}`,
-                }}
-              >
-                {displayContentType(post.content_type)}
+              {/* Post Type Badge - inline with username */}
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '2px 8px',
+                borderRadius: 9999,
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                background: postType.bg,
+                color: postType.color,
+                border: `1px solid ${postType.border}`,
+              }}>
+                {postType.emoji} {postType.label}
               </span>
               <span className="text-white/25">·</span>
               <span className="text-white/40" style={{ fontSize: '12px' }}>{getTimeAgo(post.created_at)}</span>
