@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Heart, MessageCircle, Download, ExternalLink, MoreHorizontal } from "lucide-react"
 import { AccountHoverCard } from "@/components/account-hover-card"
 
@@ -75,6 +76,7 @@ function getAvatarStyle(name: string) {
 }
 
 export function FeedCard({ post }: { post: FeedPost }) {
+  const navigate = useNavigate()
   const [expandStage, setExpandStage] = useState(0)
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.view_count ?? 0)
@@ -140,7 +142,9 @@ export function FeedCard({ post }: { post: FeedPost }) {
         borderTopColor: "rgba(255, 255, 255, 0.12)",
         borderLeftColor: "rgba(255, 255, 255, 0.12)",
         boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3)",
+        cursor: "pointer",
       }}
+      onClick={() => navigate(`/content/${post.id}`)}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
