@@ -40,18 +40,14 @@ export function useUnreadMessages() {
   // Realtime: listen for thread updates
   useEffect(() => {
     if (!isLoggedIn || !user) return;
-
     const channel = supabase
-      .channel(`dm-unread-badge-${user.id}`)
+      .channel("dm-unread-badge")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "dm_threads" },
         () => refresh()
       )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") refresh();
-      });
-
+      .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [isLoggedIn, user, refresh]);
 

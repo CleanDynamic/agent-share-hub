@@ -424,44 +424,35 @@ const Home = () => {
 
       {isLoggedIn && (
         <div
-          className="mx-6 mt-6 mb-5"
+          className="flex items-center gap-3 mx-6 mt-7 mb-5"
           style={{
             background: 'rgba(255,255,255,0.025)',
             border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 18,
-            padding: '12px 14px',
+            borderRadius: 14,
+            padding: '12px 16px',
           }}
         >
-          <div className="flex items-center gap-3">
-            <Avatar className="shrink-0" style={{ width: 34, height: 34 }}>
-              {profile?.avatar_url && <img src={profile.avatar_url} className="h-full w-full rounded-full object-cover" />}
-              <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
-            </Avatar>
-            <button
-              onClick={() => navigate("/upload")}
-              className="flex-1 text-left transition-colors"
-              style={{
-                minHeight: 46,
-                borderRadius: 999,
-                border: '1px solid rgba(255,255,255,0.06)',
-                background: 'rgba(12,12,16,0.6)',
-                padding: '0 14px',
-                fontSize: 14,
-                fontWeight: 500,
-                color: 'rgba(255,255,255,0.28)',
-              }}
-            >
-              Share something...
-            </button>
-            <button
-              onClick={() => navigate("/upload")}
-              className="shrink-0 flex items-center justify-center transition-colors"
-              style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.55)' }}
-              title="Add post"
-            >
-              <Upload className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          <Avatar className="shrink-0" style={{ width: 34, height: 34 }}>
+            {profile?.avatar_url && <img src={profile.avatar_url} className="h-full w-full rounded-full object-cover" />}
+            <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
+          </Avatar>
+          <button
+            onClick={() => navigate("/upload")}
+            className="flex-1 text-left transition-colors"
+            style={{ fontSize: 14, fontWeight: 300, color: 'rgba(255,255,255,0.28)', background: 'none', border: 'none', padding: 0 }}
+          >
+            Share something...
+          </button>
+          <button
+            onClick={() => navigate("/upload")}
+            className="shrink-0 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+            style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'rgba(232,87,26,0.9)', color: '#fff', border: 'none',
+            }}
+          >
+            <Upload className="h-4 w-4" />
+          </button>
         </div>
       )}
 
@@ -473,7 +464,7 @@ const Home = () => {
       >
         <div
           className="flex items-center gap-1 px-6"
-          style={{ paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 20 }}
+          style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 20 }}
         >
           {TABS.map((tab) => (
             <button
@@ -481,13 +472,13 @@ const Home = () => {
               onClick={() => setActiveTab(tab)}
               className="transition-colors"
               style={{
-                fontSize: 15,
+                fontSize: 13,
                 fontWeight: 500,
-                padding: '4px 10px 12px',
+                padding: '6px 16px',
+                borderRadius: 100,
                 border: 'none',
-                background: 'transparent',
-                boxShadow: activeTab === tab ? 'inset 0 -2px 0 rgba(232,87,26,0.95)' : 'none',
-                color: activeTab === tab ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.45)',
+                background: activeTab === tab ? 'rgba(232,87,26,0.08)' : 'transparent',
+                color: activeTab === tab ? '#E8571A' : 'rgba(255,255,255,0.45)',
                 cursor: 'pointer',
               }}
             >
