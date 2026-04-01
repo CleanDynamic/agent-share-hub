@@ -19,8 +19,10 @@ export function ComposerBar({ user }: { user?: User }) {
 
   return (
     <div
-      className="flex items-center gap-4 p-4 rounded-2xl mb-6 transition-all duration-200"
+      className="flex items-center gap-4 rounded-2xl transition-all duration-200"
       style={{
+        padding: '14px 16px',
+        marginBottom: '0px',
         background: "rgba(27, 27, 32, 0.4)",
         backdropFilter: "blur(40px)",
         border: `1px solid ${isFocused ? "rgba(232, 87, 26, 0.3)" : "rgba(255, 255, 255, 0.05)"}`,
