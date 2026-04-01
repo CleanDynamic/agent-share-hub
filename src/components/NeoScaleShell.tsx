@@ -247,12 +247,16 @@ const NEOSCALE_CSS = `
   position: relative;
   transform-style: preserve-3d;
 }
-.ns-middle-front, .ns-middle-back {
-  position: absolute; top: 0; left: 0;
+.ns-middle-front {
+  position: absolute;
+  top: 0; left: 0;
   width: 100%; height: 100%;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   border-radius: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
   background: linear-gradient(165deg,
     rgba(255,255,255,0.06) 0%,
     rgba(255,255,255,0.02) 50%,
@@ -261,10 +265,30 @@ const NEOSCALE_CSS = `
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
   box-shadow: 0 30px 80px rgba(0,0,0,0.5),
-    0 0 0 1px rgba(255,255,255,0.03) inset,
-    0 1px 0 rgba(255,255,255,0.05) inset;
-  overflow: hidden;
+    inset 0 0 0 1px rgba(255,255,255,0.03),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.ns-middle-back {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 20px;
+  transform: rotateY(180deg);
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 0;
+  background: linear-gradient(165deg,
+    rgba(255,255,255,0.06) 0%,
+    rgba(255,255,255,0.02) 50%,
+    rgba(255,255,255,0.04) 100%);
+  border: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5),
+    inset 0 0 0 1px rgba(255,255,255,0.03),
+    inset 0 1px 0 rgba(255,255,255,0.05);
 }
 .ns-middle-front::before, .ns-middle-back::before {
   content: '';
@@ -273,17 +297,20 @@ const NEOSCALE_CSS = `
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
 }
-.ns-middle-back { transform: rotateY(180deg); }
-.ns-middle-back.rtl { transform: rotateY(-180deg); }
+.ns-middle-back.rtl {
+  transform: rotateY(-180deg);
+}
 
 /* ── Feed scroll container ── */
 .ns-feed-scroll {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding-bottom: 24px;
+  padding: 16px;
+  box-sizing: border-box;
 }
 .ns-feed-scroll::-webkit-scrollbar { width: 3px; }
 .ns-feed-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
@@ -323,7 +350,9 @@ const NEOSCALE_CSS = `
 .ns-page-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0;
+  box-sizing: border-box;
 }
 
 /* ── Back button ── */
@@ -346,10 +375,15 @@ const NEOSCALE_CSS = `
 
 /* ── Back face — outlet ── */
 .ns-outlet-wrap {
-  width: 100%; height: 100%;
-  overflow-y: auto; overflow-x: hidden;
-  display: flex; flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
   background: transparent;
+  padding: 0;
+  box-sizing: border-box;
   color: rgba(255,255,255,0.90);
   font-family: 'Inter', sans-serif;
 }
@@ -614,6 +648,37 @@ const NEOSCALE_CSS = `
   cursor: pointer;
 }
 .ns-footer-link:hover { color: rgba(255,255,255,0.5); }
+
+/* ── Free-canvas overrides ── */
+/* Prevent Tailwind from adding overflow:hidden
+   to the panel faces via bg-* or other utility
+   class side effects */
+.ns-middle-front *,
+.ns-middle-back * {
+  min-width: 0;
+}
+
+/* Ensure cards in the feed have consistent spacing */
+.ns-feed-scroll > * {
+  flex-shrink: 0;
+}
+
+/* Kill any max-width constraints from v0 layout */
+.ns-middle-front .max-w-2xl,
+.ns-middle-front .max-w-xl,
+.ns-middle-front .max-w-lg,
+.ns-middle-back .max-w-2xl,
+.ns-middle-back .max-w-xl,
+.ns-middle-back .max-w-lg {
+  max-width: 100% !important;
+}
+
+/* Ensure mx-auto doesn't add weird margins */
+.ns-middle-front .mx-auto,
+.ns-middle-back .mx-auto {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
 
 `;
 
@@ -1396,16 +1461,16 @@ export function NeoScaleShell() {
             <div className="ns-middle-flipper" ref={flipperRef}>
 
               {/* FRONT FACE — home feed */}
-              <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column", padding: "24px 24px 0 24px" }}>
+              <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
 
-                {/* Compose area */}
-                <ComposerBar user={{
-                  display_name: profile?.display_name ?? 'You',
-                  avatar_url: profile?.avatar_url
-                }} />
-
-                {/* Tab navigation */}
-                <FeedTabs activeTab={activeTab} onTabChange={setActiveTab} />
+                {/* Compose area + tabs — padded header strip */}
+                <div style={{ padding: '16px 16px 0' }}>
+                  <ComposerBar user={{
+                    display_name: profile?.display_name ?? 'You',
+                    avatar_url: profile?.avatar_url
+                  }} />
+                  <FeedTabs activeTab={activeTab} onTabChange={setActiveTab} />
+                </div>
 
                 {/* Feed */}
                 <div className="ns-feed-scroll">
