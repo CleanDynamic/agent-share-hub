@@ -246,9 +246,9 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
       style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-card)',
-        marginBottom: 12,
-        padding: '18px 20px',
+        borderRadius: '16px',
+        marginBottom: 14,
+        padding: isLight ? '16px 16px 18px' : '18px 20px',
         transition: 'border-color 0.2s ease',
         cursor: 'pointer',
       }}
@@ -309,7 +309,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
       </div>
 
       {/* LINE 3 — Title */}
-      <p className="line-clamp-2" style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.90)', lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
+      <p className="line-clamp-2" style={{ fontSize: isLight ? 17 : 15, fontWeight: 600, color: 'rgba(255,255,255,0.90)', lineHeight: 1.25, marginTop: 10, fontFamily: isLight ? 'Georgia, serif' : 'inherit' }}>{item.title}</p>
 
       {/* LINE 3.5 — Hook subtitle (blogs only) */}
       {isBlog && item.description && (
@@ -336,7 +336,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
           loading="lazy"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           className="w-full block object-cover"
-          style={{ borderRadius: 10, marginTop: 12, maxHeight: 240 }}
+          style={{ borderRadius: 14, marginTop: 12, maxHeight: isLight ? 280 : 240 }}
         />
       )}
 
