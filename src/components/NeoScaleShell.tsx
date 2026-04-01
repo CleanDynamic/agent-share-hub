@@ -942,6 +942,34 @@ function ctypeBg(contentType: string): string {
   return map[contentType] ?? "#555";
 }
 
+function getAvatarStyle(contentType: string) {
+  const map: Record<string, {bg:string, color:string, border:string}> = {
+    'Prompt(s)':          {bg:'rgba(232,87,26,0.20)',   color:'#E8571A', border:'rgba(232,87,26,0.30)'},
+    'Agent(s)':           {bg:'rgba(124,58,237,0.20)',  color:'#7C3AED', border:'rgba(124,58,237,0.30)'},
+    'Blog':               {bg:'rgba(46,196,182,0.20)',  color:'#2EC4B6', border:'rgba(46,196,182,0.30)'},
+    'Workflow Template':  {bg:'rgba(37,99,235,0.20)',   color:'#3B82F6', border:'rgba(37,99,235,0.30)'},
+    'Evaluation Framework':{bg:'rgba(219,39,119,0.20)',color:'#EC4899', border:'rgba(219,39,119,0.30)'},
+    'Agent Stack':        {bg:'rgba(220,38,38,0.20)',   color:'#EF4444', border:'rgba(220,38,38,0.30)'},
+    'Failure Library':    {bg:'rgba(75,85,99,0.20)',    color:'#9CA3AF', border:'rgba(75,85,99,0.30)'},
+    'Model Config Guide': {bg:'rgba(22,163,74,0.20)',   color:'#22C55E', border:'rgba(22,163,74,0.30)'},
+    'Install Guide':      {bg:'rgba(6,182,212,0.20)',   color:'#06B6D4', border:'rgba(6,182,212,0.30)'},
+    'Projects':           {bg:'rgba(245,158,11,0.20)',  color:'#F59E0B', border:'rgba(245,158,11,0.30)'},
+  };
+  return map[contentType] ?? {bg:'rgba(100,100,120,0.20)',color:'#9CA3AF',border:'rgba(100,100,120,0.30)'};
+}
+
+function getInitials(name: string): string {
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getTimeAgo(dateStr: string): string {
+  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+  if (diff < 60) return `${Math.floor(diff)}s`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  return `${Math.floor(diff / 86400)}d`;
+}
+
 /* ────────────────────────────────────────────────
    Feed renderer helper
 ──────────────────────────────────────────────── */
@@ -1596,78 +1624,166 @@ export function NeoScaleShell() {
             <div className="ns-middle-flipper" ref={flipperRef}>
 
               {/* FRONT FACE — home feed */}
-              <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
-                {/* Compose bar */}
-                <div className="ns-compose-bar">
-                  <div className="ns-compose-avatar">
-                    {profile ? (profile.display_name ?? profile.username ?? "U").slice(0, 2).toUpperCase() : "U"}
-                  </div>
-                  <div className="ns-compose-prompt" onClick={() => navigate('/upload')}>
-                    Share something...
+              <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column", padding: "24px 24px 0 24px" }}>
+
+                {/* Compose area */}
+                <div className="ns-compose-wrap">
+                  <div className="ns-compose-row">
+                    <div className="ns-compose-avatar">
+                      {getInitials(profile?.display_name ?? 'U')}
+                    </div>
+                    <div className="ns-compose-input">
+                      <div
+                        className="ns-compose-placeholder"
+                        onClick={() => navigate('/upload')}
+                      >
+                        Share something ethereal...
+                      </div>
+                      <div className="ns-compose-toolbar">
+                        <div className="ns-compose-actions">
+                          <button className="ns-compose-action-btn" title="Image">🖼</button>
+                          <button className="ns-compose-action-btn" title="Poll">📊</button>
+                          <button className="ns-compose-action-btn" title="Link">🔗</button>
+                        </div>
+                        <button
+                          className="ns-compose-submit"
+                          onClick={() => navigate('/upload')}
+                        >
+                          Dispatch
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Twitter-style underline tabs */}
-                <div className="ns-tab-row">
-                  {["For You", "Following", "Trending", "Recent"].map(tab => (
-                    <div
+                {/* Tab navigation */}
+                <nav className="ns-tab-row">
+                  {['For You','Following','Trending','Recent'].map(tab => (
+                    <button
                       key={tab}
-                      className={`ns-tab${activeTab === tab ? " active" : ""}`}
+                      className={`ns-tab${activeTab === tab ? ' active' : ''}`}
                       onClick={() => setActiveTab(tab)}
                     >
                       {tab}
-                    </div>
+                    </button>
                   ))}
-                </div>
+                </nav>
 
                 {/* Feed */}
                 <div className="ns-feed-scroll">
-                  {posts.length === 0 ? (
-                    <div className="ns-feed-loading">
-                      {[1,2,3,4].map(n => <div key={n} className="ns-feed-skeleton" />)}
-                    </div>
-                  ) : (
-                    posts.map((post: any) => {
-                      const postProfile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
-                      const displayName = postProfile?.display_name || postProfile?.username || "Unknown";
-                      const username = postProfile?.username || "user";
-                      const tags: string[] = post.ai_tools ?? post.topics ?? [];
-                      return (
-                        <div key={post.id} className="ns-feed-card"
-                             onClick={() => navigate(`/content/${post.id}`)}>
-                          <div className="ns-feed-avatar-col">
-                            <div className="ns-feed-card-avatar"
-                                 style={{ background: ctypeBg(post.content_type) }}>
-                              {displayName.slice(0, 2).toUpperCase()}
+                  {posts.map((post: any) => {
+                    const postProfile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+                    const av = getAvatarStyle(displayContentType(post.content_type));
+                    const postInitials = getInitials(postProfile?.display_name ?? 'U');
+                    const hasImage = !!post.cover_image_url;
+                    const snippet = post.description
+                      ? post.description.substring(0, 140) + (post.description.length > 140 ? '...' : '')
+                      : null;
+                    return (
+                      <article
+                        key={post.id}
+                        className="ns-feed-card"
+                        onClick={() => navigate(`/content/${post.id}`)}
+                      >
+                        {/* Card header */}
+                        <div className="ns-card-header">
+                          <div className="ns-card-header-left">
+                            <div
+                              className="ns-card-avatar"
+                              style={{ background: av.bg, color: av.color, borderColor: av.border }}
+                            >
+                              {postInitials}
+                            </div>
+                            <div className="ns-card-meta">
+                              <div className="ns-card-title">{post.title}</div>
+                              <div className="ns-card-byline">
+                                <span className="ns-card-author">
+                                  {postProfile?.display_name ?? 'Unknown'}
+                                </span>
+                                <span className="ns-card-dot">•</span>
+                                <span className="ns-card-time">{getTimeAgo(post.created_at)}</span>
+                                <span
+                                  className="ns-card-type-badge"
+                                  style={{
+                                    background: av.bg,
+                                    color: av.color,
+                                    borderColor: av.border,
+                                  }}
+                                >
+                                  {displayContentType(post.content_type)}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          <div className="ns-feed-content-col">
-                            <div className="ns-feed-header">
-                              <span className="ns-feed-name">{displayName}</span>
-                              <span className="ns-feed-handle">@{username}</span>
-                              <span className="ns-feed-sep">·</span>
-                              <span className="ns-feed-time">{timeAgo(post.created_at)}</span>
-                              <span className="ns-feed-menu">···</span>
-                            </div>
-                            <span className="ns-feed-type-badge">{displayContentType(post.content_type)}</span>
-                            <div className="ns-feed-title">{post.title}</div>
-                            {tags.length > 0 && (
-                              <div className="ns-feed-tags">
-                                {tags.slice(0, 3).map((t: string) => (
-                                  <span key={t} className="ns-feed-tag">{t}</span>
-                                ))}
-                              </div>
-                            )}
-                            <div className="ns-feed-actions">
-                              <button className="ns-feed-action like" onClick={e => e.stopPropagation()}>♡ {post.view_count ?? 0}</button>
-                              <button className="ns-feed-action reply" onClick={e => e.stopPropagation()}>💬 0</button>
-                              <button className="ns-feed-action dl" onClick={e => e.stopPropagation()}>↓ {post.download_count ?? 0}</button>
-                              <button className="ns-feed-action" onClick={e => e.stopPropagation()}>↗</button>
-                            </div>
+                          <button
+                            className="ns-card-menu"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            ···
+                          </button>
+                        </div>
+
+                        {/* Body text */}
+                        {snippet && (
+                          <p className="ns-card-body">{snippet}</p>
+                        )}
+
+                        {/* Cover image */}
+                        {hasImage && (
+                          <div className="ns-card-image-wrap">
+                            <img
+                              src={post.cover_image_url}
+                              alt={post.title}
+                              className="ns-card-image"
+                            />
+                            <div className="ns-card-image-overlay" />
+                          </div>
+                        )}
+
+                        {/* Footer actions */}
+                        <div className="ns-card-footer">
+                          <div className="ns-card-actions-left">
+                            <button
+                              className="ns-card-action like"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              ♡ <span>{post.view_count ?? 0}</span>
+                            </button>
+                            <button
+                              className="ns-card-action reply"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              💬 <span>0</span>
+                            </button>
+                          </div>
+                          <div className="ns-card-actions-right">
+                            <button
+                              className="ns-card-action dl"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              ↓ {post.download_count ?? 0}
+                            </button>
+                            <button
+                              className="ns-card-action share"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              ↗
+                            </button>
                           </div>
                         </div>
-                      );
-                    })
+                      </article>
+                    );
+                  })}
+
+                  {posts.length === 0 && (
+                    <div style={{
+                      textAlign: 'center', padding: '48px 24px',
+                      color: 'rgba(255,255,255,0.25)',
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: 18,
+                    }}>
+                      Nothing dispatched yet.
+                    </div>
                   )}
                 </div>
               </div>
