@@ -166,17 +166,13 @@ interface FeedItemProps {
 }
 
 export function FeedItem({ item, rank, context = "home", navState }: FeedItemProps) {
-  // Bounty posts get their own card layout
-  if ((item as any).bounty_enabled) {
-    return <BountyCard item={item} rank={rank} context={context} navState={navState} />;
-  }
-
   const navigate = useNavigate();
   const { isLoggedIn, user } = useAuth();
   const { toast } = useToast();
   const [expanded, setExpanded] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [reblogOpen, setReblogOpen] = useState(false);
+  const isBounty = !!(item as any).bounty_enabled;
   const profile = item.profiles as any;
   const starVal = roundedStars(Number(item.avg_rating) || 0, item.rating_count ?? 0);
   const initials = (profile?.display_name || profile?.username || "?").slice(0, 2).toUpperCase();
@@ -238,6 +234,10 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
 
   // WTE teaser
   const wteTeaser = extractWteTeaser(item);
+
+  if (isBounty) {
+    return <BountyCard item={item} rank={rank} context={context} navState={navState} />;
+  }
 
   return (
     <div
