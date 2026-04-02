@@ -14,7 +14,7 @@ import { useNavBadges } from "@/hooks/useNavBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { FollowButton } from "@/components/FollowButton";
-import { displayContentType } from "@/lib/content-types";
+import { displayContentType, POST_TYPES } from "@/lib/content-types";
 import { FeedCard } from "@/components/feed-card";
 import { ComposerBar } from "@/components/composer-bar";
 import { FeedTabs } from "@/components/feed-tabs";
@@ -1218,7 +1218,7 @@ export function NeoScaleShell() {
     };
 
     /* /upload without type param → glass type selector */
-    if (path === '/upload' && !searchParams.get('type')) {
+    if (path === '/upload' && !searchParams.get('type') && !searchParams.get('post_type')) {
       return (
         <div className="ns-page-shell">
           <button className="ns-back-btn" onClick={() => navigate(-1)}>
@@ -1231,36 +1231,33 @@ export function NeoScaleShell() {
             </div>
           </div>
           <div className="ns-page-body" style={{ padding: '20px 24px' }}>
-            {[
-              { type: 'blueprint', icon: '📐', label: 'Blueprint',
-                desc: 'Prompts, agents, workflows, model configs' },
-              { type: 'blog', icon: '📝', label: 'Blog',
-                desc: 'An article, tutorial, or thought piece' },
-              { type: 'bounty', icon: '🎯', label: 'Bounty',
-                desc: 'A challenge with a reward for the community' },
-              { type: 'project', icon: '🗂️', label: 'Project',
-                desc: 'A tool or system you built with AI' },
-            ].map(item => (
+            {POST_TYPES.map(pt => (
               <div
-                key={item.type}
+                key={pt.value}
                 className="ns-glass-card"
-                style={{ marginBottom: 12, cursor: 'pointer',
-                         display: 'flex', alignItems: 'center', gap: 16 }}
-                onClick={() => navigate(`/upload?type=${item.type}`)}
+                style={{
+                  marginBottom: 12,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                }}
+                onClick={() => navigate(`/upload?post_type=${pt.value}`)}
               >
-                <span style={{ fontSize: 24, flexShrink: 0 }}>{item.icon}</span>
+                <span style={{ fontSize: 28, flexShrink: 0 }}>{pt.emoji}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{
                     fontFamily: "'Playfair Display', serif",
-                    fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 3,
+                    fontSize: 16, fontWeight: 700,
+                    color: pt.color, marginBottom: 3,
                   }}>
-                    {item.label}
+                    {pt.label}
                   </div>
                   <div style={{
                     fontFamily: 'Inter', fontSize: 12,
                     color: 'rgba(255,255,255,0.40)',
                   }}>
-                    {item.desc}
+                    {pt.description}
                   </div>
                 </div>
                 <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 18 }}>→</span>

@@ -31,7 +31,7 @@ import { TopicsPicker } from "@/components/TopicsPicker";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
 import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
-import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS } from "@/lib/content-types";
+import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, POST_TYPES, getPostType } from "@/lib/content-types";
 
 const CONTENT_TYPES = BLUEPRINT_CONTENT_TYPES;
 const DIFFICULTIES = [...DIFF_LIST, "Any"];
@@ -40,6 +40,7 @@ const ACCEPTED_TYPES = [".txt", ".md", ".json", ".pdf"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 const schema = z.object({
+  post_type: z.enum(['build','technique','discovery','discussion']).default('build'),
   title: z.string().trim().min(1, "Title is required").max(200),
   content_type: z.string().min(1, "Select a content type"),
   description: z.string().trim().max(500, "Max 500 characters").optional().or(z.literal("")),
@@ -69,6 +70,7 @@ const Upload = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const draftId = searchParams.get("draft");
+  const postTypeParam = searchParams.get('post_type');
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const { groups: toolGroups } = useGroupedApprovedTools();
@@ -116,6 +118,7 @@ const Upload = () => {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      post_type: 'build',
       title: "",
       content_type: "",
       description: "",
@@ -154,6 +157,14 @@ const Upload = () => {
   useEffect(() => {
     if (!isOtherSelected) setOtherToolName("");
   }, [isOtherSelected]);
+
+  useEffect(() => {
+    if (postTypeParam &&
+        ['build','technique','discovery','discussion']
+          .includes(postTypeParam)) {
+      form.setValue('post_type', postTypeParam as any);
+    }
+  }, [postTypeParam]);
 
   // ── Load draft when ?draft= is present ──
   useEffect(() => {
@@ -457,6 +468,7 @@ const Upload = () => {
       const { data: insertedItem, error: insertError } = await supabase.from("content_items").insert({
         creator_id: user.id,
         title: values.title,
+        post_type: values.post_type,
         content_type: values.content_type,
         description: finalDescription,
         difficulty: values.difficulty,
@@ -1401,6 +1413,31 @@ const Upload = () => {
                 </label>
               )}
             </div>
+
+            {/* 4a. Post Type display */}
+            {(() => {
+              const selectedPostType = getPostType(form.watch('post_type'));
+              return (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 0', marginBottom: 16,
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                }}>
+                  <span style={{ fontSize: 20 }}>{selectedPostType.emoji}</span>
+                  <div>
+                    <div style={{
+                      fontSize: 15, fontWeight: 700,
+                      color: selectedPostType.color,
+                    }}>
+                      {selectedPostType.label}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+                      {selectedPostType.description}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* 4. Content Type */}
             <FormField control={form.control} name="content_type" render={({ field }) => (
