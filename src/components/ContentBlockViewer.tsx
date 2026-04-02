@@ -3,11 +3,21 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { triggerDownload } from "@/lib/download";
+import { getBlockType } from "@/lib/content-types";
 import { CommentsSection } from "@/components/CommentsSection";
 import { MentionText } from "@/components/MentionText";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Download, Loader2, Eye, MessageCircle, ChevronRight, ClipboardList, Github, Cloud, ExternalLink } from "lucide-react";
+
+// ─── Block icons ────────────────────────────────────────────
+
+const BLOCK_ICONS: Record<string, string> = {
+  prompt: '💬', agent_config: '🤖', workflow: '🔄',
+  model_params: '⚙️', tool_setup: '🔧', code: '{ }',
+  result: '📊', comparison: '↔', text: '¶',
+  image: '🖼', resource: '🔗',
+};
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -166,6 +176,7 @@ function RenderBlockContent({
 }) {
   const [downloading, setDownloading] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (type === "image" && imageUrl) {
@@ -252,6 +263,91 @@ function RenderBlockContent({
           {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}Download
         </Button>
       </div>
+    );
+  }
+
+  if (type === "prompt" || type === "agent_config") {
+    const handleCopy = () => {
+      navigator.clipboard.writeText(textContent ?? "").then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    };
+    return (
+      <div style={{ position: 'relative', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: 14 }}>
+        <button
+          onClick={handleCopy}
+          style={{ position: 'absolute', top: 10, right: 10, fontSize: 11, padding: '2px 8px', borderRadius: 4, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.60)', cursor: 'pointer' }}
+        >
+          {copied ? 'Copied!' : 'Copy to clipboard'}
+        </button>
+        <pre style={{ fontFamily: "'Courier New', monospace", fontSize: 13, color: 'rgba(255,255,255,0.80)', whiteSpace: 'pre-wrap', margin: 0, paddingRight: 110 }}>{textContent ?? ""}</pre>
+      </div>
+    );
+  }
+
+  if (type === "code") {
+    const lang = (Array.isArray(subBlocks) && subBlocks[0]?.language) ? subBlocks[0].language : null;
+    const handleCopy = () => {
+      navigator.clipboard.writeText(textContent ?? "").then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    };
+    return (
+      <div style={{ position: 'relative', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: 14 }}>
+        {lang && (
+          <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', display: 'block', marginBottom: 8 }}>{lang}</span>
+        )}
+        <button
+          onClick={handleCopy}
+          style={{ position: 'absolute', top: 10, right: 10, fontSize: 11, padding: '2px 8px', borderRadius: 4, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.60)', cursor: 'pointer' }}
+        >
+          {copied ? 'Copied!' : 'Copy to clipboard'}
+        </button>
+        <pre style={{ fontFamily: "'Courier New', monospace", fontSize: 13, color: 'rgba(255,255,255,0.80)', whiteSpace: 'pre-wrap', margin: 0, paddingRight: 110 }}>{textContent ?? ""}</pre>
+      </div>
+    );
+  }
+
+  if (type === "comparison") {
+    const sides = Array.isArray(subBlocks) ? subBlocks : [];
+    const sideA = sides[0] ?? {};
+    const sideB = sides[1] ?? {};
+    const aText = sideA.content ?? sideA.text ?? (typeof sideA === 'string' ? sideA : null) ?? textContent ?? "";
+    const bText = sideB.content ?? sideB.text ?? (typeof sideB === 'string' ? sideB : null) ?? "";
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: 12 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', marginBottom: 8 }}>A</div>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', whiteSpace: 'pre-wrap', margin: 0 }}>{aText}</p>
+        </div>
+        <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: 12 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', marginBottom: 8 }}>B</div>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', whiteSpace: 'pre-wrap', margin: 0 }}>{bText}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "resource") {
+    const url = textContent ?? "";
+    const description = (Array.isArray(subBlocks) && subBlocks[0]?.description)
+      ? subBlocks[0].description
+      : imageDescription;
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 14, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, textDecoration: 'none' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <ExternalLink style={{ width: 14, height: 14, color: '#2EC4B6', flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: '#2EC4B6', wordBreak: 'break-all' }}>{url}</span>
+        </div>
+        {description && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', margin: 0 }}>{description}</p>}
+      </a>
     );
   }
 
@@ -392,6 +488,7 @@ export function ContentBlockViewer({
             const isUnblurred = isBlog || isPreview || isGitHub || !!unblurred[block.id];
 
             const showingVariation = currentTab !== "A" ? blockVariations.find((v) => v.variation_label === currentTab) : null;
+            const effectiveType = showingVariation ? showingVariation.variation_type : block.block_type;
 
             return (
               <div key={block.id} className="relative">
@@ -419,6 +516,22 @@ export function ContentBlockViewer({
 
                   {/* Block content with blur */}
                   <div className="p-5 relative min-h-[80px]">
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.12em',
+                      color: 'rgba(255,255,255,0.28)',
+                      marginBottom: 10,
+                      paddingBottom: 8,
+                      borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    }}>
+                      <span>{BLOCK_ICONS[effectiveType] ?? '¶'}</span>
+                      <span>{getBlockType(effectiveType).label}</span>
+                    </div>
                     <div className={isUnblurred ? "" : "blur-[6px] pointer-events-none select-none"} style={{ transition: "filter 0.3s ease" }}>
                       {showingVariation ? (
                         <RenderBlockContent type={showingVariation.variation_type} textContent={showingVariation.text_content} formatting={showingVariation.formatting}
