@@ -875,9 +875,14 @@ export function NeoScaleShell() {
       const { data } = await supabase
         .from('content_items')
         .select(`
-          id, title, description, content_type, difficulty,
-          view_count, download_count, cover_image_url, created_at,
-          profiles:creator_id (display_name, username, avatar_url)
+          id, title, description, content_type, post_type,
+          difficulty, ai_tools, use_cases, custom_tags,
+          cover_image_url, created_at, view_count,
+          download_count, comment_count, what_to_expect,
+          what_to_expect_blocks,
+          profiles!content_items_creator_id_fkey(
+            display_name, username, avatar_url
+          )
         `)
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
@@ -1484,6 +1489,7 @@ export function NeoScaleShell() {
                       ? post.profiles[0] : post.profiles;
                     const adaptedPost = {
                       ...post,
+                      post_type: post.post_type ?? null,
                       author: {
                         display_name: postProfile?.display_name ?? 'Unknown',
                         username: postProfile?.username ?? 'user',
