@@ -15,7 +15,23 @@ import { MentionInput } from "@/components/MentionInput";
 // ─── Types ───────────────────────────────────────────────────
 
 export type FormattingType = "paragraph" | "bullets" | "numbers" | "sub_list";
-export type BlockType = "text" | "long_text" | "file" | "image" | "github" | "large_file";
+export type BlockType =
+  | "prompt"
+  | "agent_config"
+  | "workflow"
+  | "model_params"
+  | "tool_setup"
+  | "code"
+  | "result"
+  | "comparison"
+  | "text"
+  | "image"
+  | "resource"
+  // legacy types kept for backward compatibility
+  | "long_text"
+  | "file"
+  | "github"
+  | "large_file";
 
 export interface BlockVariation {
   id: string;
@@ -54,6 +70,11 @@ export interface ContentBlock {
   largeFileCustomPlatform?: string;
   largeFileDescription?: string;
   largeFileSizeHint?: string;
+  // Comparison block fields
+  comparisonA?: string;
+  comparisonB?: string;
+  // Resource block fields
+  resourceDescription?: string;
 }
 
 interface Props {
@@ -113,6 +134,9 @@ export const emptyBlock = (type: BlockType): ContentBlock => ({
   largeFileCustomPlatform: "",
   largeFileDescription: "",
   largeFileSizeHint: "",
+  comparisonA: "",
+  comparisonB: "",
+  resourceDescription: "",
 });
 
 // ─── Formatting helpers ─────────────────────────────────────
@@ -465,22 +489,144 @@ const LargeFileBlockEditor = ({
   );
 };
 
+// ─── Block type options ──────────────────────────────────────
+
+const BLOCK_TYPE_OPTIONS = [
+  { value: "prompt",       label: "Prompt",      icon: "💬" },
+  { value: "agent_config", label: "Agent Config", icon: "🤖" },
+  { value: "workflow",     label: "Workflow",     icon: "🔄" },
+  { value: "model_params", label: "Model Params", icon: "⚙️" },
+  { value: "tool_setup",   label: "Tool Setup",   icon: "🔧" },
+  { value: "code",         label: "Code",         icon: "{ }" },
+  { value: "result",       label: "Result",       icon: "📊" },
+  { value: "comparison",   label: "Comparison",   icon: "↔" },
+  { value: "text",         label: "Text",         icon: "¶" },
+  { value: "image",        label: "Image",        icon: "🖼" },
+  { value: "resource",     label: "Resource",     icon: "🔗" },
+] as const;
+
+// ─── Monospace editor (prompt / agent_config / code / model_params) ──
+
+const MonospaceEditor = ({
+  value, onChange, placeholder,
+}: {
+  value: string; onChange: (v: string) => void; placeholder?: string;
+}) => {
+  const handleCopy = () => { navigator.clipboard.writeText(value); };
+  return (
+    <div style={{ position: "relative" }}>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={6}
+        placeholder={placeholder ?? "Enter content…"}
+        style={{ fontFamily: "'Courier New', monospace", fontSize: 12 }}
+        className="flex min-h-[120px] w-full rounded-xl border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 leading-relaxed resize-y"
+      />
+      <button
+        type="button"
+        onClick={handleCopy}
+        style={{
+          position: "absolute", top: 8, right: 8,
+          fontSize: 10, padding: "2px 8px", borderRadius: 6,
+          background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+          color: "rgba(255,255,255,0.60)", cursor: "pointer",
+        }}
+      >
+        Copy
+      </button>
+    </div>
+  );
+};
+
+// ─── Comparison editor ────────────────────────────────────────
+
+const ComparisonEditor = ({
+  valueA, valueB, onChangeA, onChangeB,
+}: {
+  valueA: string; valueB: string; onChangeA: (v: string) => void; onChangeB: (v: string) => void;
+}) => (
+  <div className="flex gap-3">
+    <div className="flex-1">
+      <Label className="text-[11px] text-muted-foreground mb-1 block">A</Label>
+      <textarea
+        value={valueA}
+        onChange={(e) => onChangeA(e.target.value)}
+        rows={5}
+        placeholder="Version A…"
+        className="flex min-h-[100px] w-full rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring leading-relaxed resize-y"
+      />
+    </div>
+    <div className="flex-1">
+      <Label className="text-[11px] text-muted-foreground mb-1 block">B</Label>
+      <textarea
+        value={valueB}
+        onChange={(e) => onChangeB(e.target.value)}
+        rows={5}
+        placeholder="Version B…"
+        className="flex min-h-[100px] w-full rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring leading-relaxed resize-y"
+      />
+    </div>
+  </div>
+);
+
+// ─── Resource editor ──────────────────────────────────────────
+
+const ResourceEditor = ({
+  url, description, onUrlChange, onDescChange,
+}: {
+  url: string; description: string; onUrlChange: (v: string) => void; onDescChange: (v: string) => void;
+}) => (
+  <div className="space-y-3">
+    <div>
+      <Label className="text-[13px] text-muted-foreground">URL</Label>
+      <Input
+        value={url}
+        onChange={(e) => onUrlChange(e.target.value)}
+        placeholder="https://…"
+        className="bg-background border-border rounded-lg text-sm mt-1"
+      />
+    </div>
+    <div>
+      <Label className="text-[13px] text-muted-foreground">Description (optional)</Label>
+      <Input
+        value={description}
+        onChange={(e) => { if (e.target.value.length <= 200) onDescChange(e.target.value); }}
+        placeholder="What is this resource?"
+        className="bg-background border-border rounded-lg text-sm mt-1"
+        maxLength={200}
+      />
+    </div>
+  </div>
+);
+
 // ─── Block type icon ─────────────────────────────────────────
 
 const BlockTypeIcon = ({ type }: { type: BlockType }) => {
-  if (type === "text") return <Type className="h-4 w-4" />;
+  const opt = BLOCK_TYPE_OPTIONS.find((o) => o.value === type);
+  if (opt) return <span style={{ fontSize: 13 }}>{opt.icon}</span>;
   if (type === "long_text") return <FileText className="h-4 w-4" />;
   if (type === "file") return <Paperclip className="h-4 w-4" />;
   if (type === "github") return <Github className="h-4 w-4" />;
   if (type === "large_file") return <Cloud className="h-4 w-4" />;
-  return <ImageIcon className="h-4 w-4" />;
+  return <Type className="h-4 w-4" />;
 };
 
 const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
+  prompt: "Prompt",
+  agent_config: "Agent Config",
+  workflow: "Workflow",
+  model_params: "Model Params",
+  tool_setup: "Tool Setup",
+  code: "Code",
+  result: "Result",
+  comparison: "Comparison",
   text: "Text",
+  image: "Image",
+  resource: "Resource",
+  // legacy
   long_text: "Article",
   file: "File",
-  image: "Image",
   github: "GitHub",
   large_file: "Large File",
 };
@@ -664,8 +810,57 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
 
               {/* Content area */}
               <div className="p-3">
+                {/* Block type subheading */}
+                {BLOCK_TYPE_OPTIONS.find((o) => o.value === block.type) && (
+                  <div style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.12em",
+                    color: "rgba(255,255,255,0.30)",
+                    marginBottom: 8,
+                    paddingBottom: 6,
+                    borderBottom: "1px solid rgba(255,255,255,0.05)",
+                  }}>
+                    {BLOCK_TYPE_OPTIONS.find((o) => o.value === block.type)?.icon}
+                    {" "}
+                    {BLOCK_TYPE_OPTIONS.find((o) => o.value === block.type)?.label}
+                  </div>
+                )}
                 {showingMain ? (
                   <>
+                    {(block.type === "prompt" || block.type === "agent_config" || block.type === "code" || block.type === "model_params") && (
+                      <MonospaceEditor
+                        value={block.textContent}
+                        onChange={(v) => update(index, { textContent: v })}
+                        placeholder={
+                          block.type === "prompt" ? "Enter your prompt…" :
+                          block.type === "agent_config" ? "Paste agent configuration JSON / YAML…" :
+                          block.type === "code" ? "Paste code snippet…" :
+                          "Enter model parameter settings…"
+                        }
+                      />
+                    )}
+                    {(block.type === "workflow" || block.type === "tool_setup" || block.type === "result") && (
+                      <TextEditor value={block.textContent} formatting={block.formatting} subBlocks={block.subBlocks}
+                        onTextChange={(v) => update(index, { textContent: v })} onFormatChange={(f) => update(index, { formatting: f })} onSubBlocksChange={(s) => update(index, { subBlocks: s })} />
+                    )}
+                    {block.type === "comparison" && (
+                      <ComparisonEditor
+                        valueA={block.comparisonA ?? ""}
+                        valueB={block.comparisonB ?? ""}
+                        onChangeA={(v) => update(index, { comparisonA: v })}
+                        onChangeB={(v) => update(index, { comparisonB: v })}
+                      />
+                    )}
+                    {block.type === "resource" && (
+                      <ResourceEditor
+                        url={block.textContent}
+                        description={block.resourceDescription ?? ""}
+                        onUrlChange={(v) => update(index, { textContent: v })}
+                        onDescChange={(v) => update(index, { resourceDescription: v })}
+                      />
+                    )}
                     {block.type === "text" && (
                       <TextEditor value={block.textContent} formatting={block.formatting} subBlocks={block.subBlocks}
                         onTextChange={(v) => update(index, { textContent: v })} onFormatChange={(f) => update(index, { formatting: f })} onSubBlocksChange={(s) => update(index, { subBlocks: s })} />
@@ -756,25 +951,27 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
             { type: "long_text" as BlockType, label: "+ Long Text" },
             { type: "image" as BlockType, label: "+ Image" },
             { type: "file" as BlockType, label: "+ File" },
-          ]
+          ].map(({ type, label }) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => addBlock(type)}
+              className="flex-shrink-0 h-8 px-2.5 text-xs rounded-lg border border-border bg-card text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground transition-colors whitespace-nowrap"
+            >
+              {label}
+            </button>
+          ))
         ) : (
-          [
-            { type: "text" as BlockType, label: "+ Text" },
-            { type: "long_text" as BlockType, label: "+ Long Text" },
-            { type: "file" as BlockType, label: "+ File" },
-            { type: "image" as BlockType, label: "+ Image" },
-            { type: "github" as BlockType, label: "+ GitHub" },
-            { type: "large_file" as BlockType, label: "+ Large File" },
-          ]
-        )).map(({ type, label }) => (
-          <button
-            key={type}
-            type="button"
-            onClick={() => addBlock(type)}
-            className="flex-shrink-0 h-8 px-2.5 text-xs rounded-lg border border-border bg-card text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground transition-colors whitespace-nowrap"
-          >
-            {label}
-          </button>
+          BLOCK_TYPE_OPTIONS.map(({ value, label, icon }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => addBlock(value as BlockType)}
+              className="flex-shrink-0 h-8 px-2.5 text-xs rounded-lg border border-border bg-card text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground transition-colors whitespace-nowrap"
+            >
+              {icon} + {label}
+            </button>
+          ))
         ))}
       </div>
     </div>
