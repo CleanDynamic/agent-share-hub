@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { FollowButton } from "@/components/FollowButton";
 import { Search } from "lucide-react";
-import { ORDERED_CONTENT_TYPES, TYPE_COLORS, displayContentType } from "@/lib/content-types";
+import { ORDERED_CONTENT_TYPES, TYPE_COLORS, displayContentType, POST_TYPES } from "@/lib/content-types";
 
 /* ---- helpers ---- */
 const CATEGORIES: { name: string; dbType: string; difficulty: string; slug: string; isProject?: boolean }[] = [
@@ -47,8 +47,38 @@ export function RightPanel() {
       {/* Position 1 — Search bar */}
       <SearchSection />
 
-      {/* Position 2 — Content type grid */}
-      <CategoryDirectory navigate={navigate} />
+      {/* Position 2 — Browse by post type */}
+      <div style={{ marginBottom: 20 }}>
+        <div className="ns-right-title" style={{ marginBottom: 12 }}>
+          Browse by type
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {POST_TYPES.map(pt => (
+            <div
+              key={pt.value}
+              className="ns-right-cat"
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate(`/browse?post_type=${pt.value}`)}
+            >
+              <span style={{ fontSize: 18 }}>{pt.emoji}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: 13, fontWeight: 600,
+                  color: pt.color,
+                }}>
+                  {pt.label}
+                </div>
+                <div style={{
+                  fontSize: 11,
+                  color: 'rgba(255,255,255,0.30)',
+                }}>
+                  {pt.description}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Position 3 — Trending */}
       <TrendingSection navigate={navigate} />

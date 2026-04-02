@@ -178,6 +178,9 @@ const Browse = () => {
   // Time period (all tabs)
   const timePeriod = readParam("period", "") as TimePeriod;
 
+  // Post type filter (from right panel nav)
+  const postTypeParam = searchParams.get('post_type');
+
   // Setter that updates URL params
   const setParam = useCallback((key: string, value: string) => {
     const sp = new URLSearchParams(searchParams);
@@ -321,6 +324,7 @@ const Browse = () => {
         const itemTags = allMicrotagsMap.get(item.id) ?? [];
         if (!microtagFilters.every((mt) => itemTags.includes(mt))) return false;
       }
+      if (postTypeParam && (item as any).post_type !== postTypeParam) return false;
       if (timePeriod && !isWithinPeriod(item.approved_at || item.created_at, timePeriod)) return false;
       return true;
     });
@@ -351,7 +355,7 @@ const Browse = () => {
     }
     // recent
     return base.sort((a, b) => new Date(b.approved_at || b.created_at).getTime() - new Date(a.approved_at || a.created_at).getTime());
-  }, [items, search, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, topicFilters, allMicrotagsMap, sortMode, timePeriod]);
+  }, [items, search, typeFilters, difficultyFilter, toolFilters, useCaseFilters, microtagFilters, topicFilters, allMicrotagsMap, sortMode, timePeriod, postTypeParam]);
 
   // ─── BOUNTIES data ────────────────────────────────────────
 
