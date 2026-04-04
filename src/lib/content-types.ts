@@ -171,3 +171,108 @@ export const DIFFICULTY_COLORS: Record<string, {
   'Advanced':     { color: '#EF4444', bg: 'rgba(220,38,38,0.12)',  border: 'rgba(220,38,38,0.30)'  },
   'Any':          { color: '#9CA3AF', bg: 'rgba(75,85,99,0.12)',   border: 'rgba(75,85,99,0.30)'   },
 };
+
+// ─── LEGACY EXPORTS (used by 27+ files) ───
+
+export const ORDERED_CONTENT_TYPES = [
+  'Prompt File',
+  'Agent Blueprint',
+  'AI Agent Install Guide',
+  'Model Config Guide',
+  'Integration Guide',
+  'Workflow Template',
+  'Evaluation Framework',
+  'Agent Stack',
+  'Failure Library',
+  'Blog',
+] as const;
+
+export const BLUEPRINT_CONTENT_TYPES = [
+  'Prompt File',
+  'Agent Blueprint',
+  'AI Agent Install Guide',
+  'Model Config Guide',
+  'Integration Guide',
+  'Workflow Template',
+  'Evaluation Framework',
+  'Agent Stack',
+  'Failure Library',
+  'Blog',
+] as const;
+
+export const BOUNTY_CONTENT_TYPES = [
+  'Open Question',
+  'Challenge',
+] as const;
+
+export const TYPE_COLORS: Record<string, string> = {
+  'Prompt File':           'bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/30',
+  'Agent Blueprint':       'bg-[#7C3AED]/15 text-[#7C3AED] border-[#7C3AED]/30',
+  'AI Agent Install Guide':'bg-[#7C3AED]/15 text-[#7C3AED] border-[#7C3AED]/30',
+  'Workflow Template':     'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30',
+  'Agent Stack':           'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30',
+  'Model Config Guide':    'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30',
+  'Integration Guide':     'bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30',
+  'Evaluation Framework':  'bg-[#EC4899]/15 text-[#EC4899] border-[#EC4899]/30',
+  'Failure Library':       'bg-[#9CA3AF]/15 text-[#9CA3AF] border-[#9CA3AF]/30',
+  'Blog':                  'bg-[#F472B6]/15 text-[#F472B6] border-[#F472B6]/30',
+  'AI Tools (LLMs)':       'bg-[#A78BFA]/15 text-[#A78BFA] border-[#A78BFA]/30',
+  'Open Question':         'bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30',
+  'Challenge':             'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30',
+};
+
+const DISPLAY_LABELS: Record<string, string> = {
+  'Prompt File':           'Prompt',
+  'Agent Blueprint':       'Agent',
+  'AI Agent Install Guide':'Install Guide',
+  'Model Config Guide':    'Config',
+  'Integration Guide':     'Integration',
+  'Workflow Template':     'Workflow',
+  'Evaluation Framework':  'Evaluation',
+  'Agent Stack':           'Stack',
+  'Failure Library':       'Failure Log',
+  'Blog':                  'Blog',
+  'AI Tools (LLMs)':       'AI Tool',
+  'Open Question':         'Open Question',
+  'Challenge':             'Challenge',
+};
+
+export function displayContentType(type: string): string {
+  return DISPLAY_LABELS[type] ?? type;
+}
+
+export const SLUG_TO_TYPE: Record<string, string> = {
+  'prompts':       'Prompt File',
+  'agents':        'Agent Blueprint',
+  'install-guides':'AI Agent Install Guide',
+  'configs':       'Model Config Guide',
+  'integrations':  'Integration Guide',
+  'workflows':     'Workflow Template',
+  'evaluations':   'Evaluation Framework',
+  'stacks':        'Agent Stack',
+  'failures':      'Failure Library',
+  'blog':          'Blog',
+};
+
+export const TOPICS = [
+  'Prompt Engineering',
+  'Autonomous Agents',
+  'RAG',
+  'Fine-Tuning',
+  'LLM Evaluation',
+  'AI Safety',
+  'Multi-Agent Systems',
+  'Tool Use',
+  'Code Generation',
+  'Image Generation',
+  'Voice & Audio',
+  'Embeddings',
+  'Vector Databases',
+  'AI Workflows',
+  'Open Source Models',
+  'Commercial Models',
+  'AI Ethics',
+  'AI News',
+  'Tutorials',
+  'Case Studies',
+] as const;
