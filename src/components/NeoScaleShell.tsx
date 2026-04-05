@@ -881,7 +881,8 @@ export function NeoScaleShell() {
           download_count, comment_count, what_to_expect,
           what_to_expect_blocks,
           profiles!content_items_creator_id_fkey(
-            display_name, username, avatar_url
+            display_name, username, avatar_url,
+            bio, follower_count, following_count, joined_at
           )
         `)
         .eq('status', 'approved')
