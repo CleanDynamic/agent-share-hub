@@ -989,9 +989,35 @@ export function NeoScaleShell() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
-        .select("id, title, description, content_type, post_category, is_reblog, reblog_of_id, reblog_thread_count, reblog_count, creator_id, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, what_to_expect_blocks, what_to_expect, other_tool_name, tool_subtype, model_parameters, custom_tags, profiles!content_items_creator_id_fkey(display_name, username)")
-        .eq("status", "approved")
-        .order("created_at", { ascending: false })
+        .select(`
+          id,
+          title,
+          description,
+          content_type,
+          post_type,
+          difficulty,
+          ai_tools,
+          use_cases,
+          custom_tags,
+          download_count,
+          view_count,
+          comment_count,
+          cover_image_url,
+          created_at,
+          what_to_expect,
+          what_to_expect_blocks,
+          profiles!content_items_creator_id_fkey(
+            display_name,
+            username,
+            avatar_url,
+            bio,
+            follower_count,
+            following_count,
+            joined_at
+          )
+        `)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
         .limit(30);
       if (error) throw error;
       return (data ?? []).map((d: any) => ({ ...d, _feedType: "blueprint" as const }));
