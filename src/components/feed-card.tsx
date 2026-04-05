@@ -33,6 +33,9 @@ export interface FeedPost {
   download_count?: number
   what_to_expect?: string
   what_to_expect_blocks?: Array<{ type: string; content: string }>
+  bounty_enabled?: boolean
+  bounty_amount?: number | null
+  bounty_status?: string | null
   ai_tools?: string[]
   use_cases?: string[]
   custom_tags?: string[]
@@ -186,6 +189,21 @@ export function FeedCard({ post }: { post: FeedPost }) {
               >
                 {displayContentType(post.content_type)}
               </span>
+              {post.bounty_enabled === true && (
+                <>
+                  <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>·</span>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    padding: '1px 8px', borderRadius: 9999,
+                    fontSize: 10, fontWeight: 700,
+                    background: 'rgba(245,158,11,0.15)',
+                    color: '#F59E0B',
+                    border: '1px solid rgba(245,158,11,0.30)',
+                  }}>
+                    🎯 £{post.bounty_amount} Bounty
+                  </span>
+                </>
+              )}
               <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>·</span>
               <span style={{ fontSize: 12, color: "rgba(255,255,255,0.40)" }}>
                 {getTimeAgo(post.created_at)}
@@ -334,17 +352,30 @@ export function FeedCard({ post }: { post: FeedPost }) {
           </button>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <button
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              fontSize: 13, color: "rgba(255,255,255,0.40)",
-              background: "none", border: "none", cursor: "pointer",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Download size={15} />
-            <span>{post.download_count ?? 0}</span>
-          </button>
+          {post.bounty_enabled ? (
+            <button
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                fontSize: 13, color: "#F59E0B", fontWeight: 600,
+                background: "none", border: "none", cursor: "pointer",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              Respond ↗
+            </button>
+          ) : (
+            <button
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                fontSize: 13, color: "rgba(255,255,255,0.40)",
+                background: "none", border: "none", cursor: "pointer",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Download size={15} />
+              <span>{post.download_count ?? 0}</span>
+            </button>
+          )}
           <button
             style={{ color: "rgba(255,255,255,0.40)", background: "none", border: "none", cursor: "pointer" }}
             onClick={(e) => e.stopPropagation()}

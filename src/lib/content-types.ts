@@ -149,6 +149,10 @@ export function resolvePostType(
   if (post_type && ['build','technique','discovery','discussion'].includes(post_type)) {
     return post_type as PostType;
   }
+  // Handle post_category values from the database
+  if (post_type === 'bounty') return 'discussion';
+  if (post_type === 'blueprint') return LEGACY_TYPE_MAP[content_type ?? ''] ?? 'build';
+  if (post_type === 'blog') return 'discussion';
   if (content_type && LEGACY_TYPE_MAP[content_type]) {
     return LEGACY_TYPE_MAP[content_type];
   }
