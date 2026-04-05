@@ -1506,27 +1506,27 @@ export function NeoScaleShell() {
 
                 {/* Feed */}
                 <div className="ns-feed-scroll">
-                  {posts.map((post: any) => {
+                  {(posts as any[]).map((post: any) => {
                     const postProfile = Array.isArray(post.profiles)
                       ? post.profiles[0]
                       : post.profiles;
 
                     const adaptedPost: FeedPost = {
                       id: post.id,
-                      title: post.title,
+                      title: post.title ?? '',
                       description: post.description ?? undefined,
                       content_type: post.content_type ?? 'build',
-                      post_type: (post as any).post_type ?? null,
+                      post_type: post.post_type ?? null,
                       cover_image_url: post.cover_image_url ?? undefined,
                       created_at: post.created_at,
                       view_count: post.view_count ?? 0,
-                      comment_count: (post as any).comment_count ?? 0,
+                      comment_count: post.comment_count ?? 0,
                       download_count: post.download_count ?? 0,
-                      what_to_expect: (post as any).what_to_expect ?? undefined,
-                      what_to_expect_blocks: (post as any).what_to_expect_blocks ?? undefined,
-                      ai_tools: (post as any).ai_tools ?? [],
-                      use_cases: (post as any).use_cases ?? [],
-                      custom_tags: (post as any).custom_tags ?? [],
+                      what_to_expect: post.what_to_expect ?? undefined,
+                      what_to_expect_blocks: post.what_to_expect_blocks ?? undefined,
+                      ai_tools: post.ai_tools ?? [],
+                      use_cases: post.use_cases ?? [],
+                      custom_tags: post.custom_tags ?? [],
                       author: {
                         display_name: postProfile?.display_name ?? 'Unknown',
                         username: postProfile?.username ?? 'user',
@@ -1543,10 +1543,11 @@ export function NeoScaleShell() {
 
                   {posts.length === 0 && (
                     <div style={{
-                      textAlign: 'center', padding: '48px 24px',
+                      textAlign: 'center',
+                      padding: '48px 16px',
                       color: 'rgba(255,255,255,0.25)',
-                      fontFamily: "'Playfair Display', serif",
-                      fontSize: 18,
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                      fontSize: 16,
                     }}>
                       Nothing dispatched yet.
                     </div>
