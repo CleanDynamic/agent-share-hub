@@ -75,6 +75,7 @@ const Upload = () => {
   const { groups: toolGroups } = useGroupedApprovedTools();
   const [step, setStep] = useState(1);
   const totalSteps = 4;
+  const STEP_LABELS = ['Post Type', 'The Story', 'The Archive', 'Details'];
 
   const goNext = () => setStep(s => Math.min(s + 1, totalSteps));
   const goBack = () => setStep(s => Math.max(s - 1, 1));
@@ -978,31 +979,7 @@ const Upload = () => {
             {/* Blog: Co-authors */}
             <CollabInvitePicker invitees={collabInvitees} onChange={setCollabInvitees} />
 
-            {/* Blog: Save Draft + Preview */}
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="ns-btn-silver flex-1 h-10 rounded-full"
-                disabled={savingDraft || submitting}
-                onClick={() => saveDraft(false)}
-              >
-                {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
-              </Button>
-              <Button
-                type="button"
-                size="lg"
-                className="ns-btn-primary flex-1 h-10 rounded-full"
-                disabled={savingDraft || submitting}
-                onClick={async () => {
-                  const id = await saveDraft(false);
-                  if (id) navigate(`/upload/preview/${id}`);
-                }}
-              >
-                Preview Post →
-              </Button>
-            </div>
+            {/* Navigation handled by sticky bar */}
           </form>
         </Form>
         ) : uploadType === "bounty" ? (
@@ -1284,16 +1261,7 @@ const Upload = () => {
             {/* Bounty: Dependencies */}
             <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
 
-            {/* Bounty: Save Draft + Preview */}
-            <div className="flex gap-3">
-              <Button type="button" variant="outline" size="lg" className="ns-btn-silver flex-1 h-10 rounded-full" disabled={savingDraft || submitting} onClick={() => saveDraft(false)}>
-                {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
-              </Button>
-              <Button type="button" size="lg" className="ns-btn-primary flex-1 h-10 rounded-full" disabled={savingDraft || submitting}
-                onClick={async () => { const id = await saveDraft(false); if (id) navigate(`/upload/preview/${id}`); }}>
-                Preview Post →
-              </Button>
-            </div>
+            {/* Navigation handled by sticky bar */}
           </form>
         </Form>
         ) : (
@@ -1924,31 +1892,6 @@ const Upload = () => {
 
             </div>
 
-            {/* Save Draft + Preview */}
-            <div className="flex gap-3" style={{ marginTop: 24 }}>
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="ns-btn-silver flex-1 h-10 rounded-full"
-                disabled={savingDraft || submitting}
-                onClick={() => saveDraft(false)}
-              >
-                {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
-              </Button>
-              <Button
-                type="button"
-                size="lg"
-                className="ns-btn-primary flex-1 h-10 rounded-full"
-                disabled={savingDraft || submitting}
-                onClick={async () => {
-                  const id = await saveDraft(false);
-                  if (id) navigate(`/upload/preview/${id}`);
-                }}
-              >
-                Preview Post →
-              </Button>
-            </div>
             </>)}
           </form>
         </Form>
