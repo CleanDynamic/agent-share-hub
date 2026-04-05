@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { ORDERED_CONTENT_TYPES, SLUG_TO_TYPE, displayContentType, TOPICS } from "@/lib/content-types";
+import { ORDERED_CONTENT_TYPES, SLUG_TO_TYPE, displayContentType, TOPICS, resolvePostType } from "@/lib/content-types";
 
 const ALL = "all";
 const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
@@ -72,7 +72,7 @@ async function fetchApprovedContent() {
   const { data, error } = await supabase
     .from("content_items")
     .select(`
-      id, title, description, content_type, post_type,
+      id, title, description, content_type,
       post_category, difficulty, ai_tools, use_cases, custom_tags,
       custom_use_case_description,
       download_count, view_count, comment_count,
@@ -338,7 +338,7 @@ const Browse = () => {
         const itemTags = allMicrotagsMap.get(item.id) ?? [];
         if (!microtagFilters.every((mt) => itemTags.includes(mt))) return false;
       }
-      if (postTypeParam && (item as any).post_type !== postTypeParam) return false;
+      if (postTypeParam && resolvePostType((item as any).post_type ?? null, item.content_type ?? null) !== postTypeParam) return false;
       if (timePeriod && !isWithinPeriod(item.approved_at || item.created_at, timePeriod)) return false;
       return true;
     });
@@ -1052,7 +1052,10 @@ const Browse = () => {
                     title: item.title,
                     description: item.description ?? undefined,
                     content_type: item.content_type ?? 'build',
-                    post_type: (item as any).post_type ?? null,
+                    post_type: resolvePostType(
+                      (item as any).post_type ?? null,
+                      item.content_type ?? null
+                    ),
                     cover_image_url: item.cover_image_url ?? undefined,
                     created_at: item.created_at,
                     view_count: item.view_count ?? 0,
