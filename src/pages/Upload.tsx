@@ -1319,52 +1319,6 @@ const Upload = () => {
             </button>
           </div>
 
-          {/* GitHub Import */}
-          <div className="mb-5">
-            {!showGithubImport ? (
-              <button type="button" onClick={() => setShowGithubImport(true)}
-                className="text-xs text-primary hover:underline flex items-center gap-1">
-                📥 Import from GitHub
-              </button>
-            ) : (
-              <div className="border border-border rounded-xl p-4 bg-card space-y-3">
-                <p className="text-sm font-semibold text-foreground">Import from GitHub</p>
-                <p className="text-xs text-muted-foreground">Paste a GitHub repo or file URL. We'll fetch the README and pre-fill your Blueprint.</p>
-                <div className="flex gap-2">
-                  <Input
-                    value={githubUrl}
-                    onChange={(e) => setGithubUrl(e.target.value)}
-                    placeholder="https://github.com/owner/repo"
-                    className="bg-background border-border text-sm flex-1"
-                  />
-                  <Button type="button" size="sm" disabled={githubImporting || !githubUrl.includes("github.com")}
-                    onClick={async () => {
-                      setGithubImporting(true);
-                      try {
-                        const { data, error } = await supabase.functions.invoke("import-github-readme", { body: { url: githubUrl } });
-                        if (error || data?.error) throw new Error(data?.error || "Import failed");
-                        if (data.title) form.setValue("title", data.title);
-                        if (data.description) form.setValue("description", data.description);
-                        if (data.markdown) {
-                          setContentBlocks([{ id: crypto.randomUUID(), type: "long_text", textContent: data.markdown, formatting: "paragraph", subBlocks: [], useInstructions: "", file: null, imageFile: null, imageDescription: "", externalFileUrl: "", variations: [], isPreview: false }]);
-                        }
-                        setShowGithubImport(false);
-                        setGithubUrl("");
-                        toast({ title: "Imported!", description: `Pre-filled from ${data.source}` });
-                      } catch (err: any) {
-                        toast({ title: "Import failed", description: err.message, variant: "destructive" });
-                      } finally {
-                        setGithubImporting(false);
-                      }
-                    }}>
-                    {githubImporting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Fetch"}
-                  </Button>
-                </div>
-                <button type="button" onClick={() => { setShowGithubImport(false); setGithubUrl(""); }} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
-              </div>
-            )}
-          </div>
-
           {isProjectMode ? (
             <ProjectUploadForm />
           ) : (
@@ -1589,9 +1543,7 @@ const Upload = () => {
               );
             })()}
 
-            {step >= 3 && (<>
-
-            {/* 6. What to Expect (block builder) — moved into Step 3 layout */}
+            {step === 3 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
               <div>
@@ -1661,206 +1613,319 @@ const Upload = () => {
                 />
               </div>
 
+              {/* Blog: estimated read time */}
+              {isBlogType && (() => {
+                const wordCount = contentBlocks.reduce((sum, b) => {
+                  if (b.type === "text" || b.type === "long_text") return sum + (b.textContent?.split(/\s+/).filter(Boolean).length ?? 0);
+                  return sum;
+                }, 0);
+                const mins = Math.max(1, Math.round(wordCount / 200));
+                return <p className="text-xs text-muted-foreground">Estimated read time: ~{mins} min</p>;
+              })()}
+
             </div>
-
-            {/* Blog: estimated read time */}
-            {isBlogType && (() => {
-              const wordCount = contentBlocks.reduce((sum, b) => {
-                if (b.type === "text" || b.type === "long_text") return sum + (b.textContent?.split(/\s+/).filter(Boolean).length ?? 0);
-                return sum;
-              }, 0);
-              const mins = Math.max(1, Math.round(wordCount / 200));
-              return <p className="text-xs text-muted-foreground">Estimated read time: ~{mins} min</p>;
-            })()}
-
-            {/* 8. Difficulty — hidden for Blog */}
-            {!isBlogType && (
-            <FormField control={form.control} name="difficulty" render={({ field }) => (
-              <FormItem className="space-y-1.5">
-                <FormLabel>Difficulty</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="bg-card border-border rounded-xl"><SelectValue placeholder="Select difficulty" /></SelectTrigger>
-                  </FormControl>
-                  <SelectContent className="bg-card border-border">
-                    {DIFFICULTIES.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <FormDescription>Beginner = anyone. Advanced = technical setup needed.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
             )}
 
-            {/* 9. Works with — hidden for Blog */}
-            {!isBlogType && (
-              <WorksWithPicker
-                value={form.watch("ai_tools") ?? []}
-                onChange={(tools) => form.setValue("ai_tools", tools)}
-                onSubmitToolClick={() => setSubmitToolOpen(true)}
-              />
-            )}
+            {step === 4 && (<>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-            {/* 10. Topics */}
-            <TopicsPicker
-              value={[...(form.watch("use_cases") ?? []), ...selectedTopics]}
-              onChange={(topics) => {
-                form.setValue("use_cases", topics);
-                setSelectedTopics(topics);
-              }}
-            />
-
-            {/* 11. Tags — free-text input */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Tags (optional)</label>
-              <Input
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value.slice(0, 30))}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === ",") {
-                    e.preventDefault();
-                    const raw = tagInput.replace(/,/g, "").replace(/^#/, "").trim().toLowerCase().replace(/\s+/g, "-");
-                    if (raw && raw.length <= 30 && customTags.length < 10 && !customTags.includes(raw)) {
-                      setCustomTags([...customTags, raw]);
-                    }
-                    setTagInput("");
-                  }
-                }}
-                placeholder={customTags.length >= 10 ? "" : "Add a tag and press Enter..."}
-                disabled={customTags.length >= 10}
-                className="bg-card border-border rounded-full"
-                maxLength={30}
-              />
-              {customTags.length >= 10 && (
-                <p className="text-xs text-muted-foreground">Maximum 10 tags</p>
-              )}
-              {customTags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {customTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-2xl"
-                      style={{ backgroundColor: "#1E1E2A", color: "#9999AA" }}
-                    >
-                      #{tag}
-                      <button
-                        type="button"
-                        onClick={() => setCustomTags(customTags.filter((t) => t !== tag))}
-                        className="ml-0.5 hover:text-foreground transition-colors"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-
-            {/* Install Guide helper text */}
-            {watchedContentType === "AI Agent Install Guide" && (
-              <div className="p-3 rounded-xl border border-primary/20 bg-primary/5">
-                <p className="text-xs text-primary">
-                  Install Guides bridge the gap between a Blueprint and actually using it. Include step-by-step setup instructions.
-                </p>
+              <div style={{
+                fontSize: 22, fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                color: '#fff', marginBottom: 0,
+              }}>
+                Final details
               </div>
-            )}
 
-            {/* 12. Monetisation */}
-            <div className="border border-border rounded-xl p-5 bg-card space-y-5">
+              {/* Works With */}
               <div>
-                <h3 className="text-sm font-semibold text-foreground">Monetisation</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Optional — free by default</p>
+                <div style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: 'rgba(255,255,255,0.30)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  marginBottom: 12,
+                }}>
+                  Works with
+                </div>
+                <div style={{
+                  fontSize: 12, color: 'rgba(255,255,255,0.35)',
+                  marginBottom: 12,
+                }}>
+                  Which tools have you tested this with?
+                </div>
+                <WorksWithPicker
+                  value={form.watch("ai_tools") ?? []}
+                  onChange={(tools) => form.setValue("ai_tools", tools)}
+                  onSubmitToolClick={() => setSubmitToolOpen(true)}
+                />
               </div>
-              <div className="space-y-4">
-                {!isBlogType && (["free", "paid"] as const).map((type) => (
-                  <div key={type} className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-foreground">{type === "free" ? "Free download" : "Paid (fixed price)"}</p>
-                      <p className="text-xs text-muted-foreground">{type === "free" ? "Anyone can download for free" : "Set a price in GBP"}</p>
-                    </div>
-                    <Switch
-                      checked={monetisationType === type && !pwywFloor && !(monetisationType === "paid" && form.getValues("price_gbp") === undefined)}
-                      onCheckedChange={(checked) => {
-                        if (checked) { form.setValue("monetisation_type", type); setPwywFloor(0); }
-                        else if (type === monetisationType) form.setValue("monetisation_type", "free");
-                      }}
-                    />
-                  </div>
-                ))}
 
-                {monetisationType === "paid" && (
-                  <FormField control={form.control} name="price_gbp" render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-foreground font-medium">£</span>
-                        <FormControl>
-                          <Input type="number" step="0.01" min="1" placeholder="4.99" className="bg-background border-border rounded-xl w-32" {...field} />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+              {/* Topics */}
+              <div>
+                <div style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: 'rgba(255,255,255,0.30)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  marginBottom: 12,
+                }}>
+                  Topics
+                </div>
+                <TopicsPicker
+                  value={[...(form.watch("use_cases") ?? []), ...selectedTopics]}
+                  onChange={(topics) => {
+                    form.setValue("use_cases", topics);
+                    setSelectedTopics(topics);
+                  }}
+                />
+              </div>
+
+              {/* Tags */}
+              <div>
+                <div style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: 'rgba(255,255,255,0.30)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  marginBottom: 12,
+                }}>
+                  Tags — optional
+                </div>
+                <Input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value.slice(0, 30))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === ",") {
+                      e.preventDefault();
+                      const raw = tagInput.replace(/,/g, "").replace(/^#/, "").trim().toLowerCase().replace(/\s+/g, "-");
+                      if (raw && raw.length <= 30 && customTags.length < 10 && !customTags.includes(raw)) {
+                        setCustomTags([...customTags, raw]);
+                      }
+                      setTagInput("");
+                    }
+                  }}
+                  placeholder={customTags.length >= 10 ? "" : "Add a tag and press Enter..."}
+                  disabled={customTags.length >= 10}
+                  className="bg-card border-border rounded-full"
+                  maxLength={30}
+                />
+                {customTags.length >= 10 && (
+                  <p className="text-xs text-muted-foreground mt-1">Maximum 10 tags</p>
                 )}
-
-                <div className="flex items-center justify-between pt-2 border-t border-border">
-                  <div>
-                    <p className="text-sm text-foreground">Donation button</p>
-                    <p className="text-xs text-muted-foreground">Add a tip button so readers can support your work</p>
+                {customTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {customTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-2xl"
+                        style={{ backgroundColor: "#1E1E2A", color: "#9999AA" }}
+                      >
+                        #{tag}
+                        <button
+                          type="button"
+                          onClick={() => setCustomTags(customTags.filter((t) => t !== tag))}
+                          className="ml-0.5 hover:text-foreground transition-colors"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
                   </div>
-                  <FormField control={form.control} name="donation_enabled" render={({ field }) => (
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                  )} />
+                )}
+              </div>
+
+              {/* Pricing */}
+              <div>
+                <div style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: 'rgba(255,255,255,0.30)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  marginBottom: 12,
+                }}>
+                  Pricing
+                </div>
+                <div className="border border-border rounded-xl p-5 bg-card space-y-5">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Monetisation</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Optional — free by default</p>
+                  </div>
+                  <div className="space-y-4">
+                    {!isBlogType && (["free", "paid"] as const).map((type) => (
+                      <div key={type} className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-foreground">{type === "free" ? "Free download" : "Paid (fixed price)"}</p>
+                          <p className="text-xs text-muted-foreground">{type === "free" ? "Anyone can download for free" : "Set a price in GBP"}</p>
+                        </div>
+                        <Switch
+                          checked={monetisationType === type && !pwywFloor && !(monetisationType === "paid" && form.getValues("price_gbp") === undefined)}
+                          onCheckedChange={(checked) => {
+                            if (checked) { form.setValue("monetisation_type", type); setPwywFloor(0); }
+                            else if (type === monetisationType) form.setValue("monetisation_type", "free");
+                          }}
+                        />
+                      </div>
+                    ))}
+
+                    {monetisationType === "paid" && (
+                      <FormField control={form.control} name="price_gbp" render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-foreground font-medium">£</span>
+                            <FormControl>
+                              <Input type="number" step="0.01" min="1" placeholder="4.99" className="bg-background border-border rounded-xl w-32" {...field} />
+                            </FormControl>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    )}
+
+                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                      <div>
+                        <p className="text-sm text-foreground">Donation button</p>
+                        <p className="text-xs text-muted-foreground">Add a tip button so readers can support your work</p>
+                      </div>
+                      <FormField control={form.control} name="donation_enabled" render={({ field }) => (
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      )} />
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* Co-authors */}
+              <div>
+                <div style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: 'rgba(255,255,255,0.30)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  marginBottom: 12,
+                }}>
+                  Co-authors — optional
+                </div>
+                <CollabInvitePicker invitees={collabInvitees} onChange={setCollabInvitees} />
+              </div>
+
+              {/* Revenue Split — inline after co-authors when paid + co-authors */}
+              {showRevenueSplit && (
+                <div className="border border-border rounded-xl p-5 bg-card space-y-4">
+                  <div className="border-b border-border pb-3">
+                    <h3 className="text-sm font-semibold text-foreground">Split your earnings</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Set how your earnings are split. Co-authors can propose a change after accepting.</p>
+                  </div>
+
+                  {inlineSplits.map((split) => (
+                    <div key={split.userId} className="flex items-center gap-3">
+                      <Avatar className="h-7 w-7 shrink-0">
+                        {split.avatarUrl && <AvatarImage src={split.avatarUrl} />}
+                        <AvatarFallback className="text-[10px] bg-accent text-muted-foreground">
+                          {(split.displayName || split.username).slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm text-foreground min-w-0 truncate">@{split.username}</span>
+                      <div className="flex items-center gap-1 ml-auto shrink-0">
+                        <Input
+                          type="number" min={1} max={89}
+                          value={split.percentage}
+                          onChange={(e) => setInlineSplits((prev) => prev.map((s) => s.userId === split.userId ? { ...s, percentage: Number(e.target.value) || 0 } : s))}
+                          className="w-20 h-8 text-sm bg-background border-border"
+                        />
+                        <span className="text-xs text-muted-foreground">% of your creator share</span>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Live summary */}
+                  <div className={`text-xs ${splitError ? "text-destructive" : "text-muted-foreground"} pt-2 border-t border-border`}>
+                    You keep {keepPct}%
+                    {inlineSplits.map((s) => <span key={s.userId}> · {s.displayName} gets {s.percentage}%</span>)}
+                  </div>
+                  {splitError && <p className="text-xs text-destructive">You must keep at least 10% of your share.</p>}
+                </div>
+              )}
+
+              {/* Dependencies */}
+              <div>
+                <div style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: 'rgba(255,255,255,0.30)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  marginBottom: 12,
+                }}>
+                  Dependencies — optional
+                </div>
+                <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
+              </div>
+
+              {/* Import from GitHub */}
+              <div>
+                <div style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: 'rgba(255,255,255,0.30)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  marginBottom: 12,
+                }}>
+                  Import from GitHub — optional
+                </div>
+                {!showGithubImport ? (
+                  <button type="button" onClick={() => setShowGithubImport(true)}
+                    className="text-xs hover:underline flex items-center gap-1"
+                    style={{ color: 'rgba(255,255,255,0.45)' }}>
+                    📥 Import from GitHub README
+                  </button>
+                ) : (
+                  <div style={{
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: 12,
+                    padding: 16,
+                    background: 'rgba(255,255,255,0.02)',
+                  }} className="space-y-3">
+                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Paste a GitHub repo URL. We'll fetch the README and pre-fill your blocks.</p>
+                    <div className="flex gap-2">
+                      <Input
+                        value={githubUrl}
+                        onChange={(e) => setGithubUrl(e.target.value)}
+                        placeholder="https://github.com/owner/repo"
+                        className="bg-background border-border text-sm flex-1"
+                      />
+                      <Button type="button" size="sm" disabled={githubImporting || !githubUrl.includes("github.com")}
+                        onClick={async () => {
+                          setGithubImporting(true);
+                          try {
+                            const { data, error } = await supabase.functions.invoke("import-github-readme", { body: { url: githubUrl } });
+                            if (error || data?.error) throw new Error(data?.error || "Import failed");
+                            if (data.title) form.setValue("title", data.title);
+                            if (data.description) form.setValue("description", data.description);
+                            if (data.markdown) {
+                              setContentBlocks([{ id: crypto.randomUUID(), type: "long_text", textContent: data.markdown, formatting: "paragraph", subBlocks: [], useInstructions: "", file: null, imageFile: null, imageDescription: "", externalFileUrl: "", variations: [], isPreview: false }]);
+                            }
+                            setShowGithubImport(false);
+                            setGithubUrl("");
+                            toast({ title: "Imported!", description: `Pre-filled from ${data.source}` });
+                          } catch (err: any) {
+                            toast({ title: "Import failed", description: err.message, variant: "destructive" });
+                          } finally {
+                            setGithubImporting(false);
+                          }
+                        }}>
+                        {githubImporting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Fetch"}
+                      </Button>
+                    </div>
+                    <button type="button" onClick={() => { setShowGithubImport(false); setGithubUrl(""); }}
+                      className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Cancel</button>
+                  </div>
+                )}
+              </div>
+
             </div>
 
-            {/* 13. Co-authors */}
-            <CollabInvitePicker invitees={collabInvitees} onChange={setCollabInvitees} />
-
-            {/* Revenue Split — inline after co-authors when paid + co-authors */}
-            {showRevenueSplit && (
-              <div className="border border-border rounded-xl p-5 bg-card space-y-4">
-                <div className="border-b border-border pb-3">
-                  <h3 className="text-sm font-semibold text-foreground">Split your earnings</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Set how your earnings are split. Co-authors can propose a change after accepting.</p>
-                </div>
-
-                {inlineSplits.map((split) => (
-                  <div key={split.userId} className="flex items-center gap-3">
-                    <Avatar className="h-7 w-7 shrink-0">
-                      {split.avatarUrl && <AvatarImage src={split.avatarUrl} />}
-                      <AvatarFallback className="text-[10px] bg-accent text-muted-foreground">
-                        {(split.displayName || split.username).slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm text-foreground min-w-0 truncate">@{split.username}</span>
-                    <div className="flex items-center gap-1 ml-auto shrink-0">
-                      <Input
-                        type="number" min={1} max={89}
-                        value={split.percentage}
-                        onChange={(e) => setInlineSplits((prev) => prev.map((s) => s.userId === split.userId ? { ...s, percentage: Number(e.target.value) || 0 } : s))}
-                        className="w-20 h-8 text-sm bg-background border-border"
-                      />
-                      <span className="text-xs text-muted-foreground">% of your creator share</span>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Live summary */}
-                <div className={`text-xs ${splitError ? "text-destructive" : "text-muted-foreground"} pt-2 border-t border-border`}>
-                  You keep {keepPct}%
-                  {inlineSplits.map((s) => <span key={s.userId}> · {s.displayName} gets {s.percentage}%</span>)}
-                </div>
-                {splitError && <p className="text-xs text-destructive">You must keep at least 10% of your share.</p>}
-              </div>
-            )}
-
-            {/* 14. Dependencies */}
-            <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
-
-            {/* 15. Save Draft + Preview */}
-            <div className="flex gap-3">
+            {/* Save Draft + Preview */}
+            <div className="flex gap-3" style={{ marginTop: 24 }}>
               <Button
                 type="button"
                 variant="outline"
