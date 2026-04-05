@@ -75,6 +75,7 @@ const Upload = () => {
   const { groups: toolGroups } = useGroupedApprovedTools();
   const [step, setStep] = useState(1);
   const totalSteps = 4;
+  const STEP_LABELS = ['Post Type', 'The Story', 'The Archive', 'Details'];
 
   const goNext = () => setStep(s => Math.min(s + 1, totalSteps));
   const goBack = () => setStep(s => Math.max(s - 1, 1));
@@ -978,31 +979,7 @@ const Upload = () => {
             {/* Blog: Co-authors */}
             <CollabInvitePicker invitees={collabInvitees} onChange={setCollabInvitees} />
 
-            {/* Blog: Save Draft + Preview */}
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="ns-btn-silver flex-1 h-10 rounded-full"
-                disabled={savingDraft || submitting}
-                onClick={() => saveDraft(false)}
-              >
-                {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
-              </Button>
-              <Button
-                type="button"
-                size="lg"
-                className="ns-btn-primary flex-1 h-10 rounded-full"
-                disabled={savingDraft || submitting}
-                onClick={async () => {
-                  const id = await saveDraft(false);
-                  if (id) navigate(`/upload/preview/${id}`);
-                }}
-              >
-                Preview Post →
-              </Button>
-            </div>
+            {/* Navigation handled by sticky bar */}
           </form>
         </Form>
         ) : uploadType === "bounty" ? (
@@ -1284,16 +1261,7 @@ const Upload = () => {
             {/* Bounty: Dependencies */}
             <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
 
-            {/* Bounty: Save Draft + Preview */}
-            <div className="flex gap-3">
-              <Button type="button" variant="outline" size="lg" className="ns-btn-silver flex-1 h-10 rounded-full" disabled={savingDraft || submitting} onClick={() => saveDraft(false)}>
-                {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
-              </Button>
-              <Button type="button" size="lg" className="ns-btn-primary flex-1 h-10 rounded-full" disabled={savingDraft || submitting}
-                onClick={async () => { const id = await saveDraft(false); if (id) navigate(`/upload/preview/${id}`); }}>
-                Preview Post →
-              </Button>
-            </div>
+            {/* Navigation handled by sticky bar */}
           </form>
         </Form>
         ) : (
@@ -1924,32 +1892,154 @@ const Upload = () => {
 
             </div>
 
-            {/* Save Draft + Preview */}
-            <div className="flex gap-3" style={{ marginTop: 24 }}>
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="ns-btn-silver flex-1 h-10 rounded-full"
-                disabled={savingDraft || submitting}
-                onClick={() => saveDraft(false)}
-              >
-                {savingDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
-              </Button>
-              <Button
-                type="button"
-                size="lg"
-                className="ns-btn-primary flex-1 h-10 rounded-full"
-                disabled={savingDraft || submitting}
-                onClick={async () => {
-                  const id = await saveDraft(false);
-                  if (id) navigate(`/upload/preview/${id}`);
-                }}
-              >
-                Preview Post →
-              </Button>
-            </div>
             </>)}
+
+            {/* ─── Persistent bottom navigation bar ─── */}
+            <div style={{
+              position: 'sticky',
+              bottom: 0,
+              background: 'rgba(8,8,12,0.95)',
+              backdropFilter: 'blur(20px)',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+              padding: '12px 0 16px 0',
+              marginTop: 24,
+              zIndex: 10,
+            }}>
+              {/* Step indicators */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: 6,
+                marginBottom: 12,
+              }}>
+                {STEP_LABELS.map((label, i) => {
+                  const n = i + 1;
+                  const isActive = step === n;
+                  const isDone = step > n;
+                  return (
+                    <div
+                      key={n}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        cursor: isDone ? 'pointer' : 'default',
+                      }}
+                      onClick={() => isDone && setStep(n)}
+                    >
+                      <div style={{
+                        width: 20, height: 20,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 10,
+                        fontWeight: 700,
+                        background: isDone ? '#22C55E'
+                          : isActive ? '#E8571A'
+                          : 'rgba(255,255,255,0.08)',
+                        color: isDone || isActive ? '#fff'
+                          : 'rgba(255,255,255,0.30)',
+                        transition: 'all 0.2s',
+                      }}>
+                        {isDone ? '✓' : n}
+                      </div>
+                      <span style={{
+                        fontSize: 10,
+                        color: isActive ? 'rgba(255,255,255,0.80)'
+                          : isDone ? 'rgba(255,255,255,0.50)'
+                          : 'rgba(255,255,255,0.25)',
+                        fontFamily: 'Inter',
+                        display: step === 1 ? 'none' : 'block',
+                      }}>
+                        {label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Navigation buttons */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 8,
+              }}>
+                {step > 1 ? (
+                  <button
+                    type="button"
+                    onClick={goBack}
+                    style={{
+                      padding: '9px 18px',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.10)',
+                      borderRadius: 9999,
+                      color: 'rgba(255,255,255,0.65)',
+                      fontSize: 13,
+                      cursor: 'pointer',
+                      fontFamily: 'Inter',
+                    }}
+                  >
+                    ← Back
+                  </button>
+                ) : <div />}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => saveDraft()}
+                    style={{
+                      padding: '9px 18px',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: 9999,
+                      color: 'rgba(255,255,255,0.50)',
+                      fontSize: 13,
+                      cursor: 'pointer',
+                      fontFamily: 'Inter',
+                    }}
+                  >
+                    Save draft
+                  </button>
+                  {step < 4 ? (
+                    <button
+                      type="button"
+                      onClick={goNext}
+                      style={{
+                        padding: '9px 22px',
+                        background: 'linear-gradient(135deg, #E8571A, #f66124)',
+                        border: 'none',
+                        borderRadius: 9999,
+                        color: '#fff',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        fontFamily: 'Inter',
+                      }}
+                    >
+                      Continue →
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      style={{
+                        padding: '9px 22px',
+                        background: 'linear-gradient(135deg, #E8571A, #f66124)',
+                        border: 'none',
+                        borderRadius: 9999,
+                        color: '#fff',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        fontFamily: 'Inter',
+                      }}
+                    >
+                      Publish →
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
           </form>
         </Form>
           )}
