@@ -71,7 +71,20 @@ Object.entries(SLUG_TO_TYPE).forEach(([slug, type]) => { TYPE_TO_SLUG[type] = sl
 async function fetchApprovedContent() {
   const { data, error } = await supabase
     .from("content_items")
-    .select("*, profiles!content_items_creator_id_fkey(display_name, username, avatar_url, bio, follower_count, following_count, joined_at)")
+    .select(`
+      id, title, description, content_type, post_type,
+      post_category, difficulty, ai_tools, use_cases, custom_tags,
+      custom_use_case_description,
+      download_count, view_count, comment_count,
+      cover_image_url, created_at, approved_at,
+      what_to_expect, what_to_expect_blocks,
+      bounty_enabled, bounty_amount, bounty_status, bounty_me_too_count,
+      avg_rating, rating_count,
+      profiles!content_items_creator_id_fkey(
+        display_name, username, avatar_url,
+        bio, follower_count, following_count, joined_at
+      )
+    `)
     .eq("status", "approved")
     .order("created_at", { ascending: false });
   if (error) throw error;
