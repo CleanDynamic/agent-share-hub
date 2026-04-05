@@ -1329,6 +1329,49 @@ export function NeoScaleShell() {
               </div>
             ))}
           </div>
+
+          {/* Bounty CTA */}
+          <div style={{
+            marginTop: 16,
+            paddingTop: 16,
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            padding: '16px 24px 0 24px',
+          }}>
+            <div style={{
+              fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '0.10em', color: 'rgba(255,255,255,0.25)',
+              marginBottom: 10,
+            }}>
+              Or request something from the community
+            </div>
+            <div
+              className="ns-glass-card"
+              style={{
+                cursor: 'pointer', display: 'flex',
+                alignItems: 'center', gap: 14,
+                border: '1px solid rgba(245,158,11,0.20)',
+                background: 'rgba(245,158,11,0.06)',
+              }}
+              onClick={() => navigate('/bounty/new')}
+            >
+              <span style={{ fontSize: 24, flexShrink: 0 }}>🎯</span>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: 14, fontWeight: 700,
+                  color: '#F59E0B', marginBottom: 2,
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                }}>
+                  Post a Bounty
+                </div>
+                <div style={{
+                  fontSize: 12, color: 'rgba(255,255,255,0.35)',
+                }}>
+                  Need a prompt, agent, or workflow? Offer a reward.
+                </div>
+              </div>
+              <span style={{ color: '#F59E0B', fontSize: 16 }}>→</span>
+            </div>
+          </div>
         </div>
       );
     }

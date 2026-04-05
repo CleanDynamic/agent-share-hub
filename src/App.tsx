@@ -44,6 +44,7 @@ import ApiDocs from "./pages/ApiDocs";
 import DraftsPage from "./pages/Drafts";
 import PostPreviewPage from "./pages/PostPreview";
 import ContentEditPage from "./pages/ContentEdit";
+import BountyUpload from "@/pages/BountyUpload";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -93,6 +94,7 @@ const App = () => (
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/my-uploads" element={<ProtectedRoute requireCreator><MyUploads /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute requireCreator><Analytics /></ProtectedRoute>} />
+                <Route path="/bounty/new" element={<ProtectedRoute><BountyUpload /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

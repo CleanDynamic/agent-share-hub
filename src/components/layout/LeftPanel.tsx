@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Home, LayoutGrid, Upload, Library, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, FilePenLine,
+  Home, LayoutGrid, Upload, Library, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, FilePenLine, Target,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     { icon: Library, label: "Library", to: "/library", authOnly: true },
     // Creation
     { icon: Upload, label: "Upload", to: "/upload", divider: true },
+    { icon: Target, label: "Bounties", to: "/browse?bounties=open" },
     { icon: FilePenLine, label: "Drafts", to: "/drafts", authOnly: true, badge: draftBadge },
     // Communication
     { icon: MessageCircle, label: "Messages", to: "/messages", authOnly: true, badge: msgBadge, divider: true },
