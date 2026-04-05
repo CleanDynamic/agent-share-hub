@@ -1371,259 +1371,225 @@ const Upload = () => {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 
-            {/* 2. Title */}
-            <FormField control={form.control} name="title" render={({ field }) => (
-              <FormItem className="space-y-0">
-                <FormControl>
-                  <Input
-                    placeholder="Blueprint title..."
-                    {...field}
-                    className="text-foreground"
-                    style={{
-                      fontSize: 18,
-                      fontWeight: 500,
-                      background: 'transparent',
-                      border: 'none',
-                      borderBottom: '1px solid rgba(255,255,255,0.06)',
-                      borderRadius: 0,
-                      padding: '12px 0',
-                      color: 'rgba(255,255,255,0.90)',
-                      outline: 'none',
-                    }}
-                    onFocus={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.16)'}
-                    onBlur={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.06)'}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            {/* 3. Cover Image */}
-            <div className="space-y-1.5">
-              <Label>Cover image</Label>
-              <p className="text-xs text-muted-foreground">Appears in the feed. 1200×630px recommended.</p>
-              {coverImagePreview ? (
-                <div className="relative">
-                  <img src={coverImagePreview} alt="Cover preview" className="w-full rounded-xl object-cover" style={{ maxHeight: 200 }} />
-                  <button type="button" onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); }} className="absolute top-2 right-2 p-1 rounded-full bg-background/80 text-muted-foreground hover:text-foreground transition-colors">
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <label
-                  className="flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors"
-                  style={{
-                    border: '1.5px dashed rgba(255,255,255,0.10)',
-                    borderRadius: 12,
-                    height: 140,
-                    background: 'transparent',
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.20)'; (e.currentTarget as HTMLLabelElement).style.background = 'rgba(255,255,255,0.01)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLLabelElement).style.background = 'transparent'; }}
-                >
-                  <ImagePlus style={{ width: 22, height: 22, color: 'rgba(255,255,255,0.28)' }} />
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Click to upload cover image (.jpg, .png, .webp — max 3MB)</span>
-                  <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    if (file.size > 3 * 1024 * 1024) { toast({ title: "File too large", description: "Cover image must be under 3MB.", variant: "destructive" }); return; }
-                    setCoverImageFile(file);
-                    setCoverImagePreview(URL.createObjectURL(file));
-                  }} />
-                </label>
-              )}
-            </div>
-
-            {/* 4a. Post Type display */}
-            {(() => {
-              const selectedPostType = getPostType(form.watch('post_type'));
+            {/* ─── Step 2: Narrative Story Layer ─── */}
+            {step === 2 && (() => {
+              const postType = getPostType(form.watch('post_type'));
               return (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '10px 0', marginBottom: 16,
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                }}>
-                  <span style={{ fontSize: 20 }}>{selectedPostType.emoji}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+                  {/* Post type indicator */}
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    padding: '6px 14px',
+                    background: postType.bg,
+                    border: `1px solid ${postType.border}`,
+                    borderRadius: 9999,
+                    alignSelf: 'flex-start',
+                  }}>
+                    <span>{postType.emoji}</span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700,
+                      color: postType.color,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }}>{postType.label}</span>
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      style={{
+                        fontSize: 10, color: postType.color,
+                        background: 'none', border: 'none',
+                        cursor: 'pointer', marginLeft: 4,
+                      }}
+                    >
+                      change
+                    </button>
+                  </div>
+
+                  {/* Cover image */}
                   <div>
                     <div style={{
-                      fontSize: 15, fontWeight: 700,
-                      color: selectedPostType.color,
+                      fontSize: 11, fontWeight: 600,
+                      color: 'rgba(255,255,255,0.30)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.10em',
+                      marginBottom: 8,
                     }}>
-                      {selectedPostType.label}
+                      Cover image — optional
                     </div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
-                      {selectedPostType.description}
+                    {coverImagePreview ? (
+                      <div className="relative">
+                        <img src={coverImagePreview} alt="Cover preview" className="w-full rounded-xl object-cover" style={{ maxHeight: 200 }} />
+                        <button type="button" onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); }} className="absolute top-2 right-2 p-1 rounded-full bg-background/80 text-muted-foreground hover:text-foreground transition-colors">
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label
+                        className="flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors"
+                        style={{
+                          border: '1.5px dashed rgba(255,255,255,0.10)',
+                          borderRadius: 12,
+                          height: 140,
+                          background: 'transparent',
+                        }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.20)'; (e.currentTarget as HTMLLabelElement).style.background = 'rgba(255,255,255,0.01)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLLabelElement).style.background = 'transparent'; }}
+                      >
+                        <ImagePlus style={{ width: 22, height: 22, color: 'rgba(255,255,255,0.28)' }} />
+                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Click to upload cover image (.jpg, .png, .webp — max 3MB)</span>
+                        <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 3 * 1024 * 1024) { toast({ title: "File too large", description: "Cover image must be under 3MB.", variant: "destructive" }); return; }
+                          setCoverImageFile(file);
+                          setCoverImagePreview(URL.createObjectURL(file));
+                        }} />
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Title */}
+                  <div>
+                    <div style={{
+                      fontSize: 11, fontWeight: 600,
+                      color: 'rgba(255,255,255,0.30)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.10em',
+                      marginBottom: 8,
+                    }}>
+                      Title
+                    </div>
+                    <input
+                      {...form.register('title')}
+                      placeholder={
+                        postType.value === 'build'      ? 'What did you build?' :
+                        postType.value === 'technique'  ? 'What technique does this cover?' :
+                        postType.value === 'discovery'  ? 'What did you discover?' :
+                        'What are you discussing?'
+                      }
+                      style={{
+                        width: '100%',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: 10,
+                        padding: '12px 14px',
+                        fontSize: 16,
+                        fontWeight: 600,
+                        color: '#fff',
+                        outline: 'none',
+                        fontFamily: "'Playfair Display', serif",
+                        boxSizing: 'border-box' as const,
+                      }}
+                    />
+                    {form.formState.errors.title && (
+                      <div style={{ fontSize: 12, color: '#EF4444', marginTop: 4 }}>
+                        {form.formState.errors.title.message}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Narrative body */}
+                  <div>
+                    <div style={{
+                      fontSize: 11, fontWeight: 600,
+                      color: 'rgba(255,255,255,0.30)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.10em',
+                      marginBottom: 8,
+                    }}>
+                      Your post
+                    </div>
+                    <div style={{
+                      fontSize: 12,
+                      color: 'rgba(255,255,255,0.30)',
+                      marginBottom: 8,
+                    }}>
+                      {postType.value === 'build'     && 'What did you build and why? What problem does it solve?'}
+                      {postType.value === 'technique' && 'What is the technique? Why does it work?'}
+                      {postType.value === 'discovery' && 'What did you find? Why does it matter?'}
+                      {postType.value === 'discussion'&& 'What is the question or challenge you want to open up?'}
+                    </div>
+                    <textarea
+                      {...form.register('description')}
+                      placeholder="Write like you're sharing this with a colleague..."
+                      rows={5}
+                      style={{
+                        width: '100%',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: 10,
+                        padding: '14px',
+                        fontSize: 15,
+                        color: 'rgba(255,255,255,0.85)',
+                        outline: 'none',
+                        resize: 'vertical' as const,
+                        fontFamily: "'Playfair Display', serif",
+                        lineHeight: 1.6,
+                        boxSizing: 'border-box' as const,
+                      }}
+                    />
+                    <div style={{
+                      fontSize: 11, color: 'rgba(255,255,255,0.25)',
+                      textAlign: 'right', marginTop: 4,
+                    }}>
+                      {(form.watch('description') ?? '').length} / 500
                     </div>
                   </div>
+
+                  {/* Difficulty — only for build and technique */}
+                  {['build','technique'].includes(form.watch('post_type')) && (
+                    <div>
+                      <div style={{
+                        fontSize: 11, fontWeight: 600,
+                        color: 'rgba(255,255,255,0.30)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.10em',
+                        marginBottom: 8,
+                      }}>
+                        Difficulty
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        {['Beginner','Intermediate','Advanced','Any'].map(d => {
+                          const isActive = form.watch('difficulty') === d;
+                          const colors: Record<string,string> = {
+                            Beginner: '#22C55E',
+                            Intermediate: '#F59E0B',
+                            Advanced: '#EF4444',
+                            Any: '#9CA3AF',
+                          };
+                          return (
+                            <button
+                              key={d}
+                              type="button"
+                              onClick={() => form.setValue('difficulty', d)}
+                              style={{
+                                padding: '7px 14px',
+                                borderRadius: 9999,
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                border: `1px solid ${isActive ? colors[d] : 'rgba(255,255,255,0.10)'}`,
+                                background: isActive
+                                  ? `${colors[d]}22`
+                                  : 'rgba(255,255,255,0.04)',
+                                color: isActive ? colors[d] : 'rgba(255,255,255,0.45)',
+                                transition: 'all 0.15s',
+                              }}
+                            >
+                              {d}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               );
             })()}
 
-            {/* 4. Content Type */}
-            <FormField control={form.control} name="content_type" render={({ field }) => (
-              <FormItem className="space-y-1.5">
-                <FormLabel>Type</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="bg-card border-border rounded-xl"><SelectValue placeholder="Select a type" /></SelectTrigger>
-                  </FormControl>
-                  <SelectContent className="bg-card border-border">
-                    {CONTENT_TYPES.map((t) => <SelectItem key={t} value={t}>{displayContentType(t)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <FormDescription>Not sure? Start with Prompt(s).</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            {/* 4b. AI Tools Subtype selector */}
-            {isAIToolsType && (
-              <div className="space-y-2">
-                <Label>What kind of tool is this?</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {([
-                    { value: "api" as const, emoji: "🌐", label: "API / Web Tool", desc: "ChatGPT, Claude, Gemini, Grok etc." },
-                    { value: "local" as const, emoji: "🖥️", label: "Local / Open Source Model", desc: "Hugging Face, Ollama, LM Studio, GGUF files etc." },
-                  ] as const).map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setToolSubtype(opt.value)}
-                      className={`flex flex-col items-start p-4 rounded-xl border-2 transition-colors text-left ${
-                        toolSubtype === opt.value
-                          ? "border-primary bg-primary/5"
-                          : "border-border bg-card hover:border-muted-foreground/40"
-                      }`}
-                    >
-                      <span className="text-lg mb-1">{opt.emoji}</span>
-                      <p className="text-sm font-semibold text-foreground">{opt.label}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 4c. Tool URL / Model page URL */}
-            {isAIToolsType && (
-              <div className="space-y-2">
-                <Label>{toolSubtype === "local" ? "Model page URL" : "Tool URL"}</Label>
-                <Input
-                  value={toolUrl}
-                  onChange={(e) => setToolUrl(e.target.value)}
-                  placeholder={toolSubtype === "local" ? "e.g. https://huggingface.co/Qwen/Qwen3.5-27B" : "e.g. https://chat.openai.com"}
-                  className="bg-card border-border rounded-xl"
-                />
-              </div>
-            )}
-
-            {/* 4d. Local model fields */}
-            {isAIToolsType && toolSubtype === "local" && (
-              <div className="space-y-4 border border-border rounded-xl p-4 bg-card">
-                <h3 className="text-sm font-semibold text-foreground">Model Details</h3>
-
-                {/* Model size */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Model size (optional)</Label>
-                  <Select value={modelParameters} onValueChange={setModelParameters}>
-                    <SelectTrigger className="bg-background border-border rounded-xl">
-                      <SelectValue placeholder="Select size" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {["1B", "3B", "7B", "8B", "13B", "14B", "27B", "30B", "70B", "72B", "Other"].map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Base architecture */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Base architecture (optional)</Label>
-                  <Input
-                    value={modelBaseArchitecture}
-                    onChange={(e) => setModelBaseArchitecture(e.target.value.slice(0, 40))}
-                    placeholder="e.g. Qwen3.5, Llama 3.1, Mistral..."
-                    className="bg-background border-border rounded-xl"
-                    maxLength={40}
-                  />
-                </div>
-
-                {/* File format */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs">File format (optional)</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {["Safetensors", "GGUF", "GGML", "Other"].map((fmt) => (
-                      <button
-                        key={fmt}
-                        type="button"
-                        onClick={() => setModelFormat(modelFormat === fmt ? "" : fmt)}
-                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                          modelFormat === fmt
-                            ? "bg-primary/15 text-primary border-primary/30"
-                            : "bg-background text-muted-foreground border-border hover:border-muted-foreground/40"
-                        }`}
-                      >
-                        {fmt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* License */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs">License (optional)</Label>
-                  <Input
-                    value={modelLicense}
-                    onChange={(e) => setModelLicense(e.target.value.slice(0, 60))}
-                    placeholder="e.g. MIT, Apache 2.0, LGPL-3.0..."
-                    className="bg-background border-border rounded-xl"
-                    maxLength={60}
-                  />
-                </div>
-
-                {/* Runs on */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Runs on (optional)</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {["Ollama", "LM Studio", "Jan.ai", "llama.cpp", "Transformers", "vLLM", "Other"].map((platform) => {
-                      const selected = modelRunWith.includes(platform);
-                      return (
-                        <button
-                          key={platform}
-                          type="button"
-                          onClick={() => setModelRunWith(selected ? modelRunWith.filter((p) => p !== platform) : [...modelRunWith, platform])}
-                          className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                            selected
-                              ? "bg-primary/15 text-primary border-primary/30"
-                              : "bg-background text-muted-foreground border-border hover:border-muted-foreground/40"
-                          }`}
-                        >
-                          {platform}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-            <FormField control={form.control} name="description" render={({ field }) => (
-              <FormItem className="space-y-1.5">
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    placeholder="Turns your AI into a specialist that…"
-                    className="bg-card border-border rounded-xl"
-                    maxLength={500}
-                  />
-                </FormControl>
-                <FormDescription>
-                  <span className="text-muted-foreground">{(field.value ?? "").length}/500</span>
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
+            {step >= 3 && (<>
 
             {/* 6. What to Expect (block builder) */}
             <WhatToExpectBuilder blocks={wteBlocks} onChange={setWteBlocks} helper="What will users get? Keep it concrete." />
@@ -1852,6 +1818,7 @@ const Upload = () => {
                 Preview Post →
               </Button>
             </div>
+            </>)}
           </form>
         </Form>
           )}
