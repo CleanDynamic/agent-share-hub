@@ -1233,6 +1233,11 @@ export function NeoScaleShell() {
     const path = location.pathname;
     const searchParams = new URLSearchParams(location.search);
 
+    if (path === '/') {
+      // Front face is the home feed — render nothing in back face
+      return null;
+    }
+
     /* Page title/subtitle map */
     const pageMeta: Record<string, { title: string; subtitle?: string }> = {
       '/upload':        { title: 'Dispatch Something', subtitle: 'What are you sharing?' },
@@ -1437,14 +1442,41 @@ export function NeoScaleShell() {
             ref={leftRef}
             {...initTilt(leftRef)}
           >
-            <div className="ns-logo" onClick={() => { flipMiddle('left'); handleNav("/"); }}>NeoScale</div>
+            <div className="ns-logo" onClick={() => {
+              // Logo = flip back to front face, no route change
+              const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement;
+              if (flipper) {
+                const nearest360 = Math.round(currentRotation.current / 360) * 360;
+                currentRotation.current = nearest360;
+                isFlipping.current = true;
+                flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+                flipper.style.transform = `rotateY(${nearest360}deg)`;
+                setTimeout(() => { isFlipping.current = false; }, 650);
+              }
+            }}>NeoScale</div>
             <ul className="ns-nav-list">
               {visibleNav.map((item, idx) => (
                 <li key={item.key}>
                   {item.divider && idx > 0 && <div className="ns-nav-divider" />}
                   <div
                     className={`ns-nav-item${navPage === item.key ? " active" : ""}`}
-                    onClick={() => { flipMiddle('left'); handleNav(item.route); }}
+                    onClick={() => {
+                      if (item.key === 'home') {
+                        // Home = flip back to front face, no route change
+                        const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement;
+                        if (flipper) {
+                          const nearest360 = Math.round(currentRotation.current / 360) * 360;
+                          currentRotation.current = nearest360;
+                          isFlipping.current = true;
+                          flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+                          flipper.style.transform = `rotateY(${nearest360}deg)`;
+                          setTimeout(() => { isFlipping.current = false; }, 650);
+                        }
+                      } else {
+                        flipMiddle('left');
+                        handleNav(item.route);
+                      }
+                    }}
                   >
                     <span className="ns-nav-icon">{item.icon}</span>
                     <span className="ns-nav-label">{item.label}</span>
