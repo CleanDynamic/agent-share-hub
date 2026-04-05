@@ -989,9 +989,35 @@ export function NeoScaleShell() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
-        .select("id, title, description, content_type, post_category, is_reblog, reblog_of_id, reblog_thread_count, reblog_count, creator_id, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, what_to_expect_blocks, what_to_expect, other_tool_name, tool_subtype, model_parameters, custom_tags, profiles!content_items_creator_id_fkey(display_name, username)")
-        .eq("status", "approved")
-        .order("created_at", { ascending: false })
+        .select(`
+          id,
+          title,
+          description,
+          content_type,
+          post_type,
+          difficulty,
+          ai_tools,
+          use_cases,
+          custom_tags,
+          download_count,
+          view_count,
+          comment_count,
+          cover_image_url,
+          created_at,
+          what_to_expect,
+          what_to_expect_blocks,
+          profiles!content_items_creator_id_fkey(
+            display_name,
+            username,
+            avatar_url,
+            bio,
+            follower_count,
+            following_count,
+            joined_at
+          )
+        `)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
         .limit(30);
       if (error) throw error;
       return (data ?? []).map((d: any) => ({ ...d, _feedType: "blueprint" as const }));
@@ -1207,6 +1233,11 @@ export function NeoScaleShell() {
     const path = location.pathname;
     const searchParams = new URLSearchParams(location.search);
 
+    if (path === '/') {
+      // Front face is the home feed — render nothing in back face
+      return null;
+    }
+
     /* Page title/subtitle map */
     const pageMeta: Record<string, { title: string; subtitle?: string }> = {
       '/upload':        { title: 'Dispatch Something', subtitle: 'What are you sharing?' },
@@ -1411,14 +1442,41 @@ export function NeoScaleShell() {
             ref={leftRef}
             {...initTilt(leftRef)}
           >
-            <div className="ns-logo" onClick={() => { flipMiddle('left'); handleNav("/"); }}>NeoScale</div>
+            <div className="ns-logo" onClick={() => {
+              // Logo = flip back to front face, no route change
+              const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement;
+              if (flipper) {
+                const nearest360 = Math.round(currentRotation.current / 360) * 360;
+                currentRotation.current = nearest360;
+                isFlipping.current = true;
+                flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+                flipper.style.transform = `rotateY(${nearest360}deg)`;
+                setTimeout(() => { isFlipping.current = false; }, 650);
+              }
+            }}>NeoScale</div>
             <ul className="ns-nav-list">
               {visibleNav.map((item, idx) => (
                 <li key={item.key}>
                   {item.divider && idx > 0 && <div className="ns-nav-divider" />}
                   <div
                     className={`ns-nav-item${navPage === item.key ? " active" : ""}`}
-                    onClick={() => { flipMiddle('left'); handleNav(item.route); }}
+                    onClick={() => {
+                      if (item.key === 'home') {
+                        // Home = flip back to front face, no route change
+                        const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement;
+                        if (flipper) {
+                          const nearest360 = Math.round(currentRotation.current / 360) * 360;
+                          currentRotation.current = nearest360;
+                          isFlipping.current = true;
+                          flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+                          flipper.style.transform = `rotateY(${nearest360}deg)`;
+                          setTimeout(() => { isFlipping.current = false; }, 650);
+                        }
+                      } else {
+                        flipMiddle('left');
+                        handleNav(item.route);
+                      }
+                    }}
                   >
                     <span className="ns-nav-icon">{item.icon}</span>
                     <span className="ns-nav-label">{item.label}</span>
@@ -1480,27 +1538,27 @@ export function NeoScaleShell() {
 
                 {/* Feed */}
                 <div className="ns-feed-scroll">
-                  {posts.map((post: any) => {
+                  {(posts as any[]).map((post: any) => {
                     const postProfile = Array.isArray(post.profiles)
                       ? post.profiles[0]
                       : post.profiles;
 
                     const adaptedPost: FeedPost = {
                       id: post.id,
-                      title: post.title,
+                      title: post.title ?? '',
                       description: post.description ?? undefined,
                       content_type: post.content_type ?? 'build',
-                      post_type: (post as any).post_type ?? null,
+                      post_type: post.post_type ?? null,
                       cover_image_url: post.cover_image_url ?? undefined,
                       created_at: post.created_at,
                       view_count: post.view_count ?? 0,
-                      comment_count: (post as any).comment_count ?? 0,
+                      comment_count: post.comment_count ?? 0,
                       download_count: post.download_count ?? 0,
-                      what_to_expect: (post as any).what_to_expect ?? undefined,
-                      what_to_expect_blocks: (post as any).what_to_expect_blocks ?? undefined,
-                      ai_tools: (post as any).ai_tools ?? [],
-                      use_cases: (post as any).use_cases ?? [],
-                      custom_tags: (post as any).custom_tags ?? [],
+                      what_to_expect: post.what_to_expect ?? undefined,
+                      what_to_expect_blocks: post.what_to_expect_blocks ?? undefined,
+                      ai_tools: post.ai_tools ?? [],
+                      use_cases: post.use_cases ?? [],
+                      custom_tags: post.custom_tags ?? [],
                       author: {
                         display_name: postProfile?.display_name ?? 'Unknown',
                         username: postProfile?.username ?? 'user',
@@ -1517,10 +1575,11 @@ export function NeoScaleShell() {
 
                   {posts.length === 0 && (
                     <div style={{
-                      textAlign: 'center', padding: '48px 24px',
+                      textAlign: 'center',
+                      padding: '48px 16px',
                       color: 'rgba(255,255,255,0.25)',
-                      fontFamily: "'Playfair Display', serif",
-                      fontSize: 18,
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                      fontSize: 16,
                     }}>
                       Nothing dispatched yet.
                     </div>
