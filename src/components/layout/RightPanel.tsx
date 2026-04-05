@@ -47,12 +47,10 @@ export function RightPanel() {
       {/* Position 1 — Search bar */}
       <SearchSection />
 
-      {/* Position 2 — Browse by post type */}
-      <div style={{ marginBottom: 20 }}>
-        <div className="ns-right-title" style={{ marginBottom: 12 }}>
-          Browse by type
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {/* Position 2 — Browse by type */}
+      <div style={{ marginBottom: 16 }}>
+        <div className="ns-section-label">Browse by type</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {POST_TYPES.map(pt => (
             <div
               key={pt.value}
@@ -60,23 +58,42 @@ export function RightPanel() {
               style={{ cursor: 'pointer' }}
               onClick={() => navigate(`/browse?post_type=${pt.value}`)}
             >
-              <span style={{ fontSize: 18 }}>{pt.emoji}</span>
-              <div style={{ flex: 1 }}>
-                <div style={{
-                  fontSize: 13, fontWeight: 600,
-                  color: pt.color,
-                }}>
-                  {pt.label}
-                </div>
-                <div style={{
-                  fontSize: 11,
-                  color: 'rgba(255,255,255,0.30)',
-                }}>
-                  {pt.description}
-                </div>
-              </div>
+              <span style={{ fontSize: 16 }}>{pt.emoji}</span>
+              <span style={{
+                fontSize: 13, fontWeight: 600, color: pt.color
+              }}>
+                {pt.label}s
+              </span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Position 2.5 — Bounties */}
+      <div style={{ marginBottom: 16 }}>
+        <div className="ns-section-label">Bounties</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div
+            className="ns-right-cat"
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/browse?bounties=open')}
+          >
+            <span style={{ fontSize: 16 }}>🎯</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#F59E0B' }}>
+              Open Bounties
+            </span>
+          </div>
+          <div
+            className="ns-right-cat"
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/browse?bounties=solved')}
+          >
+            <span style={{ fontSize: 16 }}>✅</span>
+            <span style={{ fontSize: 13, fontWeight: 600,
+              color: 'rgba(255,255,255,0.50)' }}>
+              Solved Bounties
+            </span>
+          </div>
         </div>
       </div>
 

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { ORDERED_CONTENT_TYPES, SLUG_TO_TYPE, displayContentType, TOPICS, resolvePostType } from "@/lib/content-types";
+import { ORDERED_CONTENT_TYPES, SLUG_TO_TYPE, displayContentType, TOPICS, resolvePostType, POST_TYPES } from "@/lib/content-types";
 
 const ALL = "all";
 const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
@@ -169,13 +169,17 @@ const Browse = () => {
     return v ? v.split(",").filter(Boolean) : [];
   }, [searchParams]);
 
-  const browseTab = (readParam("tab", "blueprints") as BrowseTab);
+  const bountyParamRaw = searchParams.get('bounties');
+  const browseTab = (bountyParamRaw === 'open' || bountyParamRaw === 'solved')
+    ? 'bounties' as BrowseTab
+    : (readParam("tab", "blueprints") as BrowseTab);
   const sortMode = readParam("sort", "recent") as AnySort;
   const search = readParam("q", "");
 
   // Bounty filters
-  const bountiesOnly = readParam("bounties", "") === "true";
-  const bountyStatusFilter = readParam("bounty_status", "");
+  const bountyParam = searchParams.get('bounties');
+  const bountiesOnly = bountyParam === "true" || bountyParam === "open" || bountyParam === "solved";
+  const bountyStatusFilter = bountyParam === "open" || bountyParam === "solved" ? bountyParam : readParam("bounty_status", "");
 
   // Blueprint filters
   const typeFilters = readParamList("type");
@@ -276,7 +280,7 @@ const Browse = () => {
 
   const clearAllFilters = useCallback(() => {
     const sp = new URLSearchParams(searchParams);
-    ["type", "difficulty", "tool", "usecase", "tags", "topic", "size", "contains", "period", "bounties", "bounty_status"].forEach((k) => sp.delete(k));
+    ["type", "difficulty", "tool", "usecase", "tags", "topic", "size", "contains", "period", "bounties", "bounty_status", "post_type"].forEach((k) => sp.delete(k));
     setSearchParams(sp, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -834,7 +838,12 @@ const Browse = () => {
       />
       <div className="mx-auto max-w-5xl">
         {/* Page heading */}
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)', marginBottom: 20 }}>Discover</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)', marginBottom: 20 }}>
+          {bountyParam === 'open' ? '🎯 Open Bounties'
+            : bountyParam === 'solved' ? '✅ Solved Bounties'
+            : postTypeParam ? (POST_TYPES.find(p => p.value === postTypeParam)?.label + 's' ?? 'Discover')
+            : 'Discover'}
+        </h1>
 
         {/* Tab bar — teal active for Browse context */}
         <div
