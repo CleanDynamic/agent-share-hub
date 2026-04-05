@@ -42,7 +42,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const schema = z.object({
   post_type: z.enum(['build','technique','discovery','discussion']).default('build'),
   title: z.string().trim().min(1, "Title is required").max(200),
-  content_type: z.string().min(1, "Select a content type"),
+  content_type: z.string().optional().default(''),
   description: z.string().trim().max(500, "Max 500 characters").optional().or(z.literal("")),
   difficulty: z.string().min(1, "Select a difficulty level"),
   ai_tools: z.array(z.string()),
@@ -70,10 +70,15 @@ const Upload = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const draftId = searchParams.get("draft");
-  const postTypeParam = searchParams.get('post_type');
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const { groups: toolGroups } = useGroupedApprovedTools();
+  const [step, setStep] = useState(1);
+  const totalSteps = 4;
+
+  const goNext = () => setStep(s => Math.min(s + 1, totalSteps));
+  const goBack = () => setStep(s => Math.max(s - 1, 1));
+
   const [uploadType, setUploadType] = useState<"blog" | "single" | "bounty">("single");
   const [isProjectMode, setIsProjectMode] = useState(false);
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([emptyBlock("text")]);
@@ -159,12 +164,12 @@ const Upload = () => {
   }, [isOtherSelected]);
 
   useEffect(() => {
-    if (postTypeParam &&
-        ['build','technique','discovery','discussion']
-          .includes(postTypeParam)) {
-      form.setValue('post_type', postTypeParam as any);
+    const pt = searchParams.get('post_type');
+    if (pt && ['build','technique','discovery','discussion'].includes(pt)) {
+      form.setValue('post_type', pt as any);
+      setStep(2);
     }
-  }, [postTypeParam]);
+  }, []);
 
   // ── Load draft when ?draft= is present ──
   useEffect(() => {
