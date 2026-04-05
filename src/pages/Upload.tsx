@@ -774,6 +774,85 @@ const Upload = () => {
           </div>
         )}
 
+        {/* ─── Step 1: Post Type Selector ─── */}
+        {step === 1 && (() => {
+          const selectedPostType = form.watch('post_type');
+          return (
+            <div style={{ padding: '0 0 24px 0' }}>
+              <div style={{
+                fontSize: 22, fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                color: '#fff', marginBottom: 6,
+              }}>
+                What kind of post is this?
+              </div>
+              <div style={{
+                fontSize: 13, color: 'rgba(255,255,255,0.40)',
+                marginBottom: 24,
+              }}>
+                This shapes how your post appears in the feed
+                and how the community finds it.
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {POST_TYPES.map(pt => {
+                  const isSelected = selectedPostType === pt.value;
+                  return (
+                    <button
+                      key={pt.value}
+                      type="button"
+                      onClick={() => {
+                        form.setValue('post_type', pt.value as any);
+                        setTimeout(() => setStep(2), 220);
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 16,
+                        padding: '16px 20px',
+                        background: isSelected
+                          ? `${pt.bg}`
+                          : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${isSelected ? pt.border : 'rgba(255,255,255,0.07)'}`,
+                        borderRadius: 14,
+                        cursor: 'pointer',
+                        transition: 'all 0.18s ease',
+                        textAlign: 'left' as const,
+                        width: '100%',
+                      }}
+                    >
+                      <span style={{ fontSize: 28, flexShrink: 0 }}>
+                        {pt.emoji}
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontSize: 16, fontWeight: 700,
+                          color: isSelected ? pt.color : '#fff',
+                          fontFamily: "'Playfair Display', serif",
+                          marginBottom: 3,
+                        }}>
+                          {pt.label}
+                        </div>
+                        <div style={{
+                          fontSize: 12,
+                          color: 'rgba(255,255,255,0.40)',
+                        }}>
+                          {pt.description}
+                        </div>
+                      </div>
+                      <span style={{
+                        color: isSelected ? pt.color : 'rgba(255,255,255,0.20)',
+                        fontSize: 18,
+                      }}>→</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ─── Steps 2–4: Existing form sections ─── */}
+        {step >= 2 && (<>
+
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)' }}>
@@ -785,70 +864,6 @@ const Upload = () => {
           <p style={{ fontSize: 13, fontWeight: 300, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
             All submissions are reviewed and tested before going live. We aim to respond within 48 hours.
           </p>
-        </div>
-
-        {/* 1. Post type selector */}
-        <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 10, marginBottom: 32 }}>
-          <button
-            type="button"
-            onClick={() => { setUploadType("blog"); form.setValue("content_type", "Blog"); }}
-            className="flex items-start gap-3 text-left transition-colors"
-            style={{
-              padding: 16,
-              borderRadius: 12,
-              border: uploadType === "blog" ? '1px solid #2EC4B6' : '1px solid rgba(255,255,255,0.06)',
-              background: uploadType === "blog" ? 'rgba(46,196,182,0.04)' : 'rgba(255,255,255,0.025)',
-              flex: 1,
-            }}
-            onMouseEnter={e => { if (uploadType !== "blog") (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.12)'; }}
-            onMouseLeave={e => { if (uploadType !== "blog") (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
-          >
-            <span style={{ fontSize: 20, marginTop: 2, flexShrink: 0 }}>📝</span>
-            <div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>Blog</p>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>A post, opinion, or tutorial in your own words</p>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setUploadType("single"); const ct = form.getValues("content_type"); if (ct === "Blog" || ct === "Failure Library" || ct === "Open Question" || ct === "Challenge") form.setValue("content_type", ""); }}
-            className="flex items-start gap-3 text-left transition-colors"
-            style={{
-              padding: 16,
-              borderRadius: 12,
-              border: uploadType === "single" ? '1px solid #2EC4B6' : '1px solid rgba(255,255,255,0.06)',
-              background: uploadType === "single" ? 'rgba(46,196,182,0.04)' : 'rgba(255,255,255,0.025)',
-              flex: 1,
-            }}
-            onMouseEnter={e => { if (uploadType !== "single") (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.12)'; }}
-            onMouseLeave={e => { if (uploadType !== "single") (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
-          >
-            <span style={{ fontSize: 20, marginTop: 2, flexShrink: 0 }}>🔷</span>
-            <div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>Blueprint</p>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>A prompt, workflow, or guide people can use</p>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setUploadType("bounty"); form.setValue("content_type", ""); }}
-            className="flex items-start gap-3 text-left transition-colors"
-            style={{
-              padding: 16,
-              borderRadius: 12,
-              border: uploadType === "bounty" ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.06)',
-              background: uploadType === "bounty" ? 'rgba(239,68,68,0.04)' : 'rgba(255,255,255,0.025)',
-              flex: 1,
-            }}
-            onMouseEnter={e => { if (uploadType !== "bounty") (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.12)'; }}
-            onMouseLeave={e => { if (uploadType !== "bounty") (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
-          >
-            <span style={{ fontSize: 20, marginTop: 2, flexShrink: 0 }}>🎯</span>
-            <div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>Bounty</p>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>Post a failure or challenge and invite the community to solve it with a Blueprint.</p>
-            </div>
-          </button>
         </div>
 
         {uploadType === "blog" ? (
@@ -1842,6 +1857,8 @@ const Upload = () => {
           )}
         </>
         )}
+
+        </>)}
       </div>
 
       <SubmitToolModal open={submitToolOpen} onOpenChange={setSubmitToolOpen} />
