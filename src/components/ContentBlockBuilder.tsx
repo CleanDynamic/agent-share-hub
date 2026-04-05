@@ -505,6 +505,20 @@ const BLOCK_TYPE_OPTIONS = [
   { value: "resource",     label: "Resource",     icon: "🔗" },
 ] as const;
 
+const NEW_BLOCK_TYPES = [
+  { value: 'prompt',       label: 'Prompt',       emoji: '💬', desc: 'A copyable prompt' },
+  { value: 'agent_config', label: 'Agent Config',  emoji: '🤖', desc: 'System prompt + settings' },
+  { value: 'workflow',     label: 'Workflow',      emoji: '🔄', desc: 'Step-by-step process' },
+  { value: 'model_params', label: 'Model Params',  emoji: '⚙️', desc: 'Temperature, context etc' },
+  { value: 'tool_setup',   label: 'Tool Setup',    emoji: '🔧', desc: 'Configure a tool' },
+  { value: 'code',         label: 'Code',          emoji: '{ }', desc: 'Script or snippet' },
+  { value: 'result',       label: 'Result',        emoji: '📊', desc: 'Output or screenshot' },
+  { value: 'comparison',   label: 'Comparison',    emoji: '↔', desc: 'Side-by-side' },
+  { value: 'text',         label: 'Text',          emoji: '¶', desc: 'Written explanation' },
+  { value: 'image',        label: 'Image',         emoji: '🖼', desc: 'Screenshot or diagram' },
+  { value: 'resource',     label: 'Resource',      emoji: '🔗', desc: 'Link or reference' },
+];
+
 // ─── Monospace editor (prompt / agent_config / code / model_params) ──
 
 const MonospaceEditor = ({
@@ -687,6 +701,83 @@ const ExternalFileSection = ({ externalFileUrl, onChange }: { externalFileUrl: s
   );
 };
 
+// ─── Block type picker (2-column grid) ──────────────────────
+
+const BlockTypePicker = ({ onAdd }: { onAdd: (type: BlockType) => void }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '8px 14px', borderRadius: 10,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          color: 'rgba(255,255,255,0.50)',
+          fontSize: 12, fontWeight: 500,
+          cursor: 'pointer',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        <Plus className="h-3.5 w-3.5" />
+        Add block
+      </button>
+
+      {open && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 6,
+          marginTop: 8,
+          padding: 8,
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 10,
+        }}>
+          {NEW_BLOCK_TYPES.map((bt) => (
+            <button
+              key={bt.value}
+              type="button"
+              onClick={() => { onAdd(bt.value as BlockType); setOpen(false); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '8px 10px',
+                borderRadius: 8,
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.05)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'background 0.15s, border-color 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.10)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.05)';
+              }}
+            >
+              <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>{bt.emoji}</span>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>
+                  {bt.label}
+                </div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.30)', marginTop: 1 }}>
+                  {bt.desc}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Main component ──────────────────────────────────────────
 
 export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
@@ -811,22 +902,19 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
               {/* Content area */}
               <div className="p-3">
                 {/* Block type subheading */}
-                {BLOCK_TYPE_OPTIONS.find((o) => o.value === block.type) && (
-                  <div style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.12em",
-                    color: "rgba(255,255,255,0.30)",
-                    marginBottom: 8,
-                    paddingBottom: 6,
-                    borderBottom: "1px solid rgba(255,255,255,0.05)",
-                  }}>
-                    {BLOCK_TYPE_OPTIONS.find((o) => o.value === block.type)?.icon}
-                    {" "}
-                    {BLOCK_TYPE_OPTIONS.find((o) => o.value === block.type)?.label}
-                  </div>
-                )}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontSize: 10, fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.12em',
+                  color: 'rgba(255,255,255,0.30)',
+                  marginBottom: 8,
+                  paddingBottom: 8,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                }}>
+                  <span>{NEW_BLOCK_TYPES.find(b => b.value === block.type)?.emoji}</span>
+                  <span>{NEW_BLOCK_TYPES.find(b => b.value === block.type)?.label ?? block.type}</span>
+                </div>
                 {showingMain ? (
                   <>
                     {(block.type === "prompt" || block.type === "agent_config" || block.type === "code" || block.type === "model_params") && (
@@ -943,10 +1031,10 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
         })}
       </div>
 
-      {/* Add block buttons — single scrollable row */}
-      <div className="flex gap-1.5 pt-0.5 overflow-x-auto [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
-        {(contentType === "Blog" ? (
-          [
+      {/* Add block picker */}
+      {contentType === "Blog" ? (
+        <div className="flex gap-1.5 pt-0.5 overflow-x-auto [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
+          {[
             { type: "text" as BlockType, label: "+ Text" },
             { type: "long_text" as BlockType, label: "+ Long Text" },
             { type: "image" as BlockType, label: "+ Image" },
@@ -960,20 +1048,11 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
             >
               {label}
             </button>
-          ))
-        ) : (
-          BLOCK_TYPE_OPTIONS.map(({ value, label, icon }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => addBlock(value as BlockType)}
-              className="flex-shrink-0 h-8 px-2.5 text-xs rounded-lg border border-border bg-card text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground transition-colors whitespace-nowrap"
-            >
-              {icon} + {label}
-            </button>
-          ))
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <BlockTypePicker onAdd={addBlock} />
+      )}
     </div>
   );
 }

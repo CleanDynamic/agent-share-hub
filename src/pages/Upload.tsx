@@ -1591,11 +1591,77 @@ const Upload = () => {
 
             {step >= 3 && (<>
 
-            {/* 6. What to Expect (block builder) */}
-            <WhatToExpectBuilder blocks={wteBlocks} onChange={setWteBlocks} helper="What will users get? Keep it concrete." />
+            {/* 6. What to Expect (block builder) — moved into Step 3 layout */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-            {/* 7. Your Blueprint (content block builder) */}
-            <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} contentType={watchedContentType} />
+              <div>
+                <div style={{
+                  fontSize: 22, fontWeight: 700,
+                  fontFamily: "'Playfair Display', serif",
+                  color: '#fff', marginBottom: 6,
+                }}>
+                  Add your blocks
+                </div>
+                <div style={{
+                  fontSize: 13, color: 'rgba(255,255,255,0.40)',
+                  marginBottom: 20,
+                }}>
+                  These are the reusable, structured parts of your post.
+                  Each block gets a labelled subheading so readers know
+                  exactly what they are getting.
+                </div>
+
+                {/* Existing ContentBlockBuilder component */}
+                <ContentBlockBuilder
+                  blocks={contentBlocks}
+                  onChange={setContentBlocks}
+                />
+              </div>
+
+              {/* What to Expect — at the bottom of the archive step */}
+              <div style={{
+                padding: '16px',
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 12,
+              }}>
+                <div style={{
+                  fontSize: 10, fontWeight: 700,
+                  color: 'rgba(255,255,255,0.30)',
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.12em',
+                  marginBottom: 8,
+                }}>
+                  What to expect
+                </div>
+                <div style={{
+                  fontSize: 12, color: 'rgba(255,255,255,0.35)',
+                  marginBottom: 10,
+                }}>
+                  Tell readers what they will be able to do after
+                  reading this. Be concrete and specific.
+                </div>
+                <textarea
+                  {...form.register('what_to_expect')}
+                  placeholder="After reading this, you will be able to..."
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: 8,
+                    padding: '10px 12px',
+                    fontSize: 13,
+                    color: 'rgba(255,255,255,0.75)',
+                    outline: 'none',
+                    resize: 'vertical' as const,
+                    fontFamily: 'Inter, sans-serif',
+                    boxSizing: 'border-box' as const,
+                  }}
+                />
+              </div>
+
+            </div>
 
             {/* Blog: estimated read time */}
             {isBlogType && (() => {
