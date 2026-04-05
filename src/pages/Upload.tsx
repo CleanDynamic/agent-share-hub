@@ -499,7 +499,7 @@ const Upload = () => {
         bounty_enabled: isBountyType ? bountyBlueprintRequired : false,
         bounty_status: isBountyType ? "open" : null,
         bounty_tip_gbp: isBountyType && bountyTipGbp !== null ? bountyTipGbp : null,
-        bounty_closes_at: isBountyType && bountyDeadlineDays !== null
+        bounty_deadline: isBountyType && bountyDeadlineDays !== null
           ? new Date(Date.now() + bountyDeadlineDays * 86400000).toISOString()
           : null,
         bounty_gap: isBountyType && bountyGap.trim() ? bountyGap.trim() : null,
