@@ -666,11 +666,6 @@ const NEOSCALE_CSS = `
   min-width: 0;
 }
 
-/* Ensure cards in the feed have consistent spacing */
-.ns-feed-scroll > * {
-  flex-shrink: 0;
-}
-
 /* Kill any max-width constraints from v0 layout */
 .ns-middle-front .max-w-2xl,
 .ns-middle-front .max-w-xl,
