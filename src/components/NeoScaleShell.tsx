@@ -867,26 +867,60 @@ export function NeoScaleShell() {
   /* ── Fetch feed posts ── */
   useEffect(() => {
     const fetchPosts = async () => {
-      const { data } = await supabase
+      setPosts([]);
+      let query = supabase
         .from('content_items')
         .select(`
           id, title, description, content_type,
           difficulty, ai_tools, use_cases, custom_tags,
-          cover_image_url, created_at, view_count,
-          download_count, comment_count, what_to_expect,
-          what_to_expect_blocks,
+          download_count, view_count, comment_count,
+          cover_image_url, created_at,
+          what_to_expect, what_to_expect_blocks,
+          bounty_enabled, bounty_amount, bounty_status,
+          post_category,
           profiles!content_items_creator_id_fkey(
             display_name, username, avatar_url,
             bio, follower_count, following_count, joined_at
           )
         `)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .eq('status', 'approved');
+
+      if (activeTab === 'For You') {
+        query = query.order('created_at', { ascending: false }).limit(30);
+      }
+      else if (activeTab === 'Trending') {
+        query = query.order('download_count', { ascending: false }).limit(30);
+      }
+      else if (activeTab === 'Recent') {
+        query = query.order('created_at', { ascending: false }).limit(30);
+      }
+      else if (activeTab === 'Bounties') {
+        query = query
+          .eq('bounty_enabled', true)
+          .eq('bounty_status', 'open')
+          .order('created_at', { ascending: false })
+          .limit(30);
+      }
+      else if (activeTab === 'Following') {
+        if (!user) { setPosts([]); return; }
+        const { data: follows } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', user.id);
+        const followedIds = follows?.map(f => f.following_id) ?? [];
+        if (followedIds.length === 0) { setPosts([]); return; }
+        query = query
+          .in('creator_id', followedIds)
+          .order('created_at', { ascending: false })
+          .limit(30);
+      }
+
+      const { data } = await query;
       if (data) setPosts(data);
     };
+
     fetchPosts();
-  }, []);
+  }, [activeTab, user?.id]);
 
   function triggerPulse() {
     setPulsing(false);
@@ -1548,9 +1582,12 @@ export function NeoScaleShell() {
                       description: post.description ?? undefined,
                       content_type: post.content_type ?? 'build',
                       post_type: resolvePostType(
-                        (post as any).post_type ?? null,
+                        (post as any).post_category ?? null,
                         post.content_type ?? null
                       ),
+                      bounty_enabled: (post as any).bounty_enabled ?? false,
+                      bounty_amount: (post as any).bounty_amount ?? null,
+                      bounty_status: (post as any).bounty_status ?? null,
                       cover_image_url: post.cover_image_url ?? undefined,
                       created_at: post.created_at,
                       view_count: post.view_count ?? 0,
