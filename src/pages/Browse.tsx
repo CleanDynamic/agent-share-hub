@@ -4,6 +4,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { Link, useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal, X, Clock, Users, Star, Eye } from "lucide-react";
 import { FeedItem } from "@/components/FeedItem";
+import { FeedCard, type FeedPost } from '@/components/feed-card';
 import { BountyCard } from "@/components/BountyCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -70,7 +71,7 @@ Object.entries(SLUG_TO_TYPE).forEach(([slug, type]) => { TYPE_TO_SLUG[type] = sl
 async function fetchApprovedContent() {
   const { data, error } = await supabase
     .from("content_items")
-    .select("*, profiles!content_items_creator_id_fkey(display_name, username)")
+    .select("*, profiles!content_items_creator_id_fkey(display_name, username, avatar_url, bio, follower_count, following_count, joined_at)")
     .eq("status", "approved")
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -1027,36 +1028,40 @@ const Browse = () => {
         {browseTab === "blueprints" && !blueprintsLoading && !blueprintsError && (
           <>
             {filteredBlueprints.length > 0 ? (
-              <div className="border-t border-border">
+              <div>
                 {filteredBlueprints.map((item) => {
-                  const toolsArr = (item.ai_tools ?? []) as string[];
-                  const useCasesArr = (item.use_cases ?? []) as string[];
-                  return (
-                    <div key={item.id}>
-                      <FeedItem item={item} context="browse" />
-                      {(toolsArr.length > 0 || useCasesArr.length > 0) && (
-                        <div className="px-4 pb-2 -mt-1 border-b border-border">
-                          {toolsArr.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-[2px]">
-                              {toolsArr.slice(0, 4).map((t) => (
-                                <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-accent text-muted-foreground">{t}</span>
-                              ))}
-                              {toolsArr.length > 4 && <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent text-muted-foreground">+{toolsArr.length - 4} more</span>}
-                            </div>
-                          )}
-                          {useCasesArr.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {useCasesArr.slice(0, 3).map((u, i) => {
-                                const label = u === "Other" && (item as any).custom_use_case_description ? (item as any).custom_use_case_description : u;
-                                return <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-accent text-muted-foreground">{label}</span>;
-                              })}
-                              {useCasesArr.length > 3 && <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent text-muted-foreground">+{useCasesArr.length - 3} more</span>}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
+                  const postProfile = Array.isArray((item as any).profiles)
+                    ? (item as any).profiles[0]
+                    : (item as any).profiles;
+
+                  const adaptedPost: FeedPost = {
+                    id: item.id,
+                    title: item.title,
+                    description: item.description ?? undefined,
+                    content_type: item.content_type ?? 'build',
+                    post_type: (item as any).post_type ?? null,
+                    cover_image_url: item.cover_image_url ?? undefined,
+                    created_at: item.created_at,
+                    view_count: item.view_count ?? 0,
+                    comment_count: (item as any).comment_count ?? 0,
+                    download_count: item.download_count ?? 0,
+                    what_to_expect: (item as any).what_to_expect ?? undefined,
+                    what_to_expect_blocks: (item as any).what_to_expect_blocks ?? undefined,
+                    ai_tools: (item.ai_tools ?? []) as string[],
+                    use_cases: (item.use_cases ?? []) as string[],
+                    custom_tags: (item as any).custom_tags ?? [],
+                    author: {
+                      display_name: postProfile?.display_name ?? 'Unknown',
+                      username: postProfile?.username ?? 'user',
+                      avatar_url: postProfile?.avatar_url ?? undefined,
+                      bio: postProfile?.bio ?? undefined,
+                      follower_count: postProfile?.follower_count ?? 0,
+                      following_count: postProfile?.following_count ?? 0,
+                      joined_date: postProfile?.joined_at ?? undefined,
+                    },
+                  };
+
+                  return <FeedCard key={item.id} post={adaptedPost} />;
                 })}
               </div>
             ) : (
