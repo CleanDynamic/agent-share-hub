@@ -14,7 +14,7 @@ import { useNavBadges } from "@/hooks/useNavBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { FollowButton } from "@/components/FollowButton";
-import { displayContentType, POST_TYPES } from "@/lib/content-types";
+import { displayContentType, POST_TYPES, resolvePostType } from "@/lib/content-types";
 import { FeedCard, type FeedPost } from "@/components/feed-card";
 import { ComposerBar } from "@/components/composer-bar";
 import { FeedTabs } from "@/components/feed-tabs";
@@ -870,7 +870,7 @@ export function NeoScaleShell() {
       const { data } = await supabase
         .from('content_items')
         .select(`
-          id, title, description, content_type, post_type,
+          id, title, description, content_type,
           difficulty, ai_tools, use_cases, custom_tags,
           cover_image_url, created_at, view_count,
           download_count, comment_count, what_to_expect,
@@ -994,7 +994,6 @@ export function NeoScaleShell() {
           title,
           description,
           content_type,
-          post_type,
           difficulty,
           ai_tools,
           use_cases,
@@ -1548,7 +1547,10 @@ export function NeoScaleShell() {
                       title: post.title ?? '',
                       description: post.description ?? undefined,
                       content_type: post.content_type ?? 'build',
-                      post_type: post.post_type ?? null,
+                      post_type: resolvePostType(
+                        (post as any).post_type ?? null,
+                        post.content_type ?? null
+                      ),
                       cover_image_url: post.cover_image_url ?? undefined,
                       created_at: post.created_at,
                       view_count: post.view_count ?? 0,
