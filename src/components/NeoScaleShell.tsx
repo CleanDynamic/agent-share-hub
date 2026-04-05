@@ -15,7 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { FollowButton } from "@/components/FollowButton";
 import { displayContentType, POST_TYPES } from "@/lib/content-types";
-import { FeedCard } from "@/components/feed-card";
+import { FeedCard, type FeedPost } from "@/components/feed-card";
 import { ComposerBar } from "@/components/composer-bar";
 import { FeedTabs } from "@/components/feed-tabs";
 
@@ -666,11 +666,6 @@ const NEOSCALE_CSS = `
   min-width: 0;
 }
 
-/* Ensure cards in the feed have consistent spacing */
-.ns-feed-scroll > * {
-  flex-shrink: 0;
-}
-
 /* Kill any max-width constraints from v0 layout */
 .ns-middle-front .max-w-2xl,
 .ns-middle-front .max-w-xl,
@@ -881,7 +876,8 @@ export function NeoScaleShell() {
           download_count, comment_count, what_to_expect,
           what_to_expect_blocks,
           profiles!content_items_creator_id_fkey(
-            display_name, username, avatar_url
+            display_name, username, avatar_url,
+            bio, follower_count, following_count, joined_at
           )
         `)
         .eq('status', 'approved')
@@ -1486,16 +1482,36 @@ export function NeoScaleShell() {
                 <div className="ns-feed-scroll">
                   {posts.map((post: any) => {
                     const postProfile = Array.isArray(post.profiles)
-                      ? post.profiles[0] : post.profiles;
-                    const adaptedPost = {
-                      ...post,
-                      post_type: post.post_type ?? null,
+                      ? post.profiles[0]
+                      : post.profiles;
+
+                    const adaptedPost: FeedPost = {
+                      id: post.id,
+                      title: post.title,
+                      description: post.description ?? undefined,
+                      content_type: post.content_type ?? 'build',
+                      post_type: (post as any).post_type ?? null,
+                      cover_image_url: post.cover_image_url ?? undefined,
+                      created_at: post.created_at,
+                      view_count: post.view_count ?? 0,
+                      comment_count: (post as any).comment_count ?? 0,
+                      download_count: post.download_count ?? 0,
+                      what_to_expect: (post as any).what_to_expect ?? undefined,
+                      what_to_expect_blocks: (post as any).what_to_expect_blocks ?? undefined,
+                      ai_tools: (post as any).ai_tools ?? [],
+                      use_cases: (post as any).use_cases ?? [],
+                      custom_tags: (post as any).custom_tags ?? [],
                       author: {
                         display_name: postProfile?.display_name ?? 'Unknown',
                         username: postProfile?.username ?? 'user',
-                        avatar_url: postProfile?.avatar_url,
-                      }
+                        avatar_url: postProfile?.avatar_url ?? undefined,
+                        bio: postProfile?.bio ?? undefined,
+                        follower_count: postProfile?.follower_count ?? 0,
+                        following_count: postProfile?.following_count ?? 0,
+                        joined_date: postProfile?.joined_at ?? undefined,
+                      },
                     };
+
                     return <FeedCard key={post.id} post={adaptedPost} />;
                   })}
 

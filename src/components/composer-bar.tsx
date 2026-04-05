@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from 'react-router-dom'
 
 interface User {
   display_name: string
@@ -6,6 +7,7 @@ interface User {
 }
 
 export function ComposerBar({ user }: { user?: User }) {
+  const navigate = useNavigate()
   const [isFocused, setIsFocused] = useState(false)
 
   const userInitials = user?.display_name
@@ -40,14 +42,13 @@ export function ComposerBar({ user }: { user?: User }) {
         {userInitials}
       </div>
 
-      {/* Input */}
-      <input
-        type="text"
-        placeholder="Share something..."
-        className="flex-1 bg-transparent text-white placeholder:text-white/30 text-sm focus:outline-none"
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-      />
+      {/* Input replaced with clickable div */}
+      <div
+        onClick={() => navigate('/upload')}
+        style={{ flex: 1, color: "rgba(255,255,255,0.30)", fontSize: 14, cursor: "pointer" }}
+      >
+        Share something...
+      </div>
     </div>
   )
 }
