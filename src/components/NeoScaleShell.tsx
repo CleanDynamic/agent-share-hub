@@ -893,11 +893,9 @@ export function NeoScaleShell() {
         query = query.order('created_at', { ascending: false }).limit(30);
       }
       else if (activeTab === 'Bounties') {
-        query = query
-          .eq('bounty_enabled', true)
-          .eq('bounty_status', 'open')
-          .order('created_at', { ascending: false })
-          .limit(30);
+        // Bounty columns not yet in schema — show empty for now
+        setPosts([]);
+        return;
       }
       else if (activeTab === 'Following') {
         if (!user) { setPosts([]); return; }
