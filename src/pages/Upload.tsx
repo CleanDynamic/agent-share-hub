@@ -250,7 +250,7 @@ const Upload = () => {
             imageDescription: b.image_description || "",
             isPreview: b.is_preview || false,
             variations: [],
-          })));
+          } as any)));
         }
 
         // Load dependencies
@@ -2026,7 +2026,7 @@ const Upload = () => {
                             if (data.title) form.setValue("title", data.title);
                             if (data.description) form.setValue("description", data.description);
                             if (data.markdown) {
-                              setContentBlocks([{ id: crypto.randomUUID(), type: "long_text", textContent: data.markdown, formatting: "paragraph", subBlocks: [], useInstructions: "", file: null, imageFile: null, imageDescription: "", externalFileUrl: "", variations: [], isPreview: false }]);
+                              setContentBlocks([{ id: crypto.randomUUID(), type: "long_text", textContent: data.markdown, formatting: "paragraph", subBlocks: [], useInstructions: "", file: null, imageFile: null, imageDescription: "", externalFileUrl: "", variations: [], isPreview: false } as any]);
                             }
                             setShowGithubImport(false);
                             setGithubUrl("");

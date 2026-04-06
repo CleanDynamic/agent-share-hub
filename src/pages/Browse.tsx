@@ -840,7 +840,7 @@ const Browse = () => {
         <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)', marginBottom: 20 }}>
           {bountyParam === 'open' ? '🎯 Open Bounties'
             : bountyParam === 'solved' ? '✅ Solved Bounties'
-            : postTypeParam ? (POST_TYPES.find(p => p.value === postTypeParam)?.label + 's' ?? 'Discover')
+            : postTypeParam ? ((POST_TYPES.find(p => p.value === postTypeParam)?.label ?? 'Discover') + 's')
             : 'Discover'}
         </h1>
 
