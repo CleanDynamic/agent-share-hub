@@ -1188,7 +1188,7 @@ export function ContentBlockViewer({
             const effectiveType = showingVariation ? showingVariation.variation_type : block.block_type;
 
             return (
-              <div key={block.id} className="relative">
+              <div key={block.id} id={`block-${block.id}`} className="relative">
                 <div
                   className="absolute -left-8 top-4 w-[30px] h-[30px] rounded-full flex items-center justify-center text-xs font-bold text-white z-10"
                   style={{ backgroundColor: "#E8571A" }}
