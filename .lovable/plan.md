@@ -1,36 +1,34 @@
 
 
-# Fix: Restore missing exports in `content-types.ts`
+# Plan: Seed 25 fake posts + fix build error
 
-## Problem
-The file `src/lib/content-types.ts` was recently refactored to a new post-type/block-type system, but it removed several exports that **27 files** still depend on. This causes 45+ build errors, breaking both the preview and publishing.
+## 1. Fix build error in ContentBlockViewer.tsx (line 443)
 
-## Missing exports
-- `TYPE_COLORS` — a `Record<string, string>` mapping old content types to Tailwind badge classes
-- `displayContentType(type: string): string` — returns a human-friendly label for a content type
-- `ORDERED_CONTENT_TYPES` — array of content type strings in display order
-- `SLUG_TO_TYPE` — maps URL slugs to content type names
-- `BLUEPRINT_CONTENT_TYPES` — subset of content types for blueprints
-- `BOUNTY_CONTENT_TYPES` — subset of content types for bounties
-- `TOPICS` — array of topic strings
+Replace `p.replaceAll(...)` with `p.split(...).join(...)` — this avoids the ES2021 `replaceAll` requirement without changing `tsconfig`.
 
-## Plan
+## 2. Seed 25 posts via edge function
 
-**Single file change: `src/lib/content-types.ts`**
+Create a new edge function `supabase/functions/seed-new-posts/index.ts` that:
 
-Add the following legacy exports back to the bottom of the file, after the existing code. Values are reconstructed from usage patterns across the codebase:
+- Picks an existing demo user (queries `profiles` for any demo user like `alex_prompt`, or falls back to the first available profile)
+- Inserts 25 `content_items` rows with `status: 'approved'` covering all content types and post type variations:
+  - ~6 Builds (Agent Blueprint, Workflow Template, Agent Stack, Model Config Guide, Integration Guide)
+  - ~6 Techniques (Prompt File, Evaluation Framework)
+  - ~6 Discoveries (Failure Library, misc)
+  - ~7 Discussions (Blog, Open Question, Challenge)
+- Each post gets: a unique title, short description, difficulty (mix of Beginner/Intermediate/Advanced), ai_tools array, topics, and `approved_at = now()`
+- Optionally inserts 1-2 `content_blocks` per post (text blocks) so the posts have body content
 
-1. **`ORDERED_CONTENT_TYPES`** — array of all original content type strings (Prompt File, Agent Blueprint, AI Agent Install Guide, Model Config Guide, Integration Guide, Workflow Template, Evaluation Framework, Agent Stack, Failure Library, Blog)
-2. **`BLUEPRINT_CONTENT_TYPES`** — the non-bounty subset
-3. **`BOUNTY_CONTENT_TYPES`** — bounty-specific types (Open Question, Challenge)
-4. **`TYPE_COLORS`** — Tailwind class strings for each content type badge
-5. **`displayContentType(type)`** — maps internal type names to shorter display labels
-6. **`SLUG_TO_TYPE`** — URL slug to content type mapping
-7. **`TOPICS`** — array of topic tags
+### Config addition
+Add `[functions.seed-new-posts]` with `verify_jwt = false` to `supabase/config.toml`.
 
-These are purely additive — the new post-type system stays untouched.
+### How to run
+Call it from the Admin panel or directly via the edge function URL. One-time use, idempotent (checks for a marker title).
 
 ## Technical details
 
-All changes are in one file. No database or backend changes needed. This will immediately fix the 45 build errors and restore the preview and publishing.
+**Files changed:**
+- `src/components/ContentBlockViewer.tsx` — line 443: replace `replaceAll` with `split().join()`
+- `supabase/functions/seed-new-posts/index.ts` — new edge function
+- `supabase/config.toml` — add function config block
 
