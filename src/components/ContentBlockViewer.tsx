@@ -440,7 +440,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
   const getFilledPrompt = () => {
     let p = block.text_content ?? '';
     Object.entries(filled).forEach(([k, v]) => {
-      p = p.replaceAll(`{{${k}}}`, v);
+      p = p.split(`{{${k}}}`).join(v);
     });
     return p;
   };

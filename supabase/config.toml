@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.public-api]
 verify_jwt = false
+
+[functions.seed-new-posts]
+verify_jwt = false
