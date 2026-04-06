@@ -876,8 +876,6 @@ export function NeoScaleShell() {
           download_count, view_count, comment_count,
           cover_image_url, created_at,
           what_to_expect, what_to_expect_blocks,
-          bounty_enabled, bounty_amount, bounty_status,
-          post_category,
           profiles!content_items_creator_id_fkey(
             display_name, username, avatar_url,
             bio, follower_count, following_count, joined_at
