@@ -876,8 +876,6 @@ export function NeoScaleShell() {
           download_count, view_count, comment_count,
           cover_image_url, created_at,
           what_to_expect, what_to_expect_blocks,
-          bounty_enabled, bounty_amount, bounty_status,
-          post_category,
           profiles!content_items_creator_id_fkey(
             display_name, username, avatar_url,
             bio, follower_count, following_count, joined_at
@@ -895,11 +893,9 @@ export function NeoScaleShell() {
         query = query.order('created_at', { ascending: false }).limit(30);
       }
       else if (activeTab === 'Bounties') {
-        query = query
-          .eq('bounty_enabled', true)
-          .eq('bounty_status', 'open')
-          .order('created_at', { ascending: false })
-          .limit(30);
+        // Bounty columns not yet in schema — show empty for now
+        setPosts([]);
+        return;
       }
       else if (activeTab === 'Following') {
         if (!user) { setPosts([]); return; }

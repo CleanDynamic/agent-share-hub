@@ -73,12 +73,11 @@ async function fetchApprovedContent() {
     .from("content_items")
     .select(`
       id, title, description, content_type,
-      post_category, difficulty, ai_tools, use_cases, custom_tags,
+      difficulty, ai_tools, use_cases, custom_tags,
       custom_use_case_description,
       download_count, view_count, comment_count,
       cover_image_url, created_at, approved_at,
       what_to_expect, what_to_expect_blocks,
-      bounty_enabled, bounty_amount, bounty_status, bounty_me_too_count,
       avg_rating, rating_count,
       profiles!content_items_creator_id_fkey(
         display_name, username, avatar_url,
@@ -841,7 +840,7 @@ const Browse = () => {
         <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)', marginBottom: 20 }}>
           {bountyParam === 'open' ? '🎯 Open Bounties'
             : bountyParam === 'solved' ? '✅ Solved Bounties'
-            : postTypeParam ? (POST_TYPES.find(p => p.value === postTypeParam)?.label + 's' ?? 'Discover')
+            : postTypeParam ? ((POST_TYPES.find(p => p.value === postTypeParam)?.label ?? 'Discover') + 's')
             : 'Discover'}
         </h1>
 

@@ -1118,10 +1118,10 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                     )}
                     {block.type === "comparison" && (
                       <ComparisonEditor
-                        valueA={block.comparisonA ?? ""}
-                        valueB={block.comparisonB ?? ""}
-                        onChangeA={(v) => update(index, { comparisonA: v })}
-                        onChangeB={(v) => update(index, { comparisonB: v })}
+                        valueA={block.comparisonLabelA ?? ""}
+                        valueB={block.comparisonLabelB ?? ""}
+                        onChangeA={(v) => update(index, { comparisonLabelA: v })}
+                        onChangeB={(v) => update(index, { comparisonLabelB: v })}
                       />
                     )}
                     {block.type === "resource" && (
