@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   Type, Paperclip, ImageIcon, ChevronUp, ChevronDown, Trash2, Plus,
   List, ListOrdered, AlignLeft, ListTree, FileText, Heading, ChevronRight, X,
@@ -797,6 +797,909 @@ const ResourceEditor = ({
   </div>
 );
 
+// ─── Chip input for multi-select tags ────────────────────────
+
+const ChipInput = ({ values, onChange, placeholder }: {
+  values: string[];
+  onChange: (v: string[]) => void;
+  placeholder?: string;
+}) => {
+  const [input, setInput] = React.useState('');
+  const add = () => {
+    const v = input.trim();
+    if (v && !values.includes(v)) onChange([...values, v]);
+    setInput('');
+  };
+  return (
+    <div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+        {values.map(v => (
+          <span key={v} style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            padding: '2px 8px', borderRadius: 9999, fontSize: 12,
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)', color: '#fff',
+          }}>
+            {v}
+            <button type="button" onClick={() => onChange(values.filter(x => x !== v))}
+              style={{ background: 'none', border: 'none', cursor: 'pointer',
+                color: 'rgba(255,255,255,0.40)', fontSize: 14, lineHeight: 1 }}>
+              ×
+            </button>
+          </span>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input value={input} onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), add())}
+          placeholder={placeholder ?? 'Type and press Enter'}
+          style={{
+            flex: 1, background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 8, padding: '6px 10px', fontSize: 13,
+            color: '#fff', outline: 'none',
+          }} />
+        <button type="button" onClick={add} style={{
+          padding: '6px 12px', borderRadius: 8, fontSize: 12,
+          background: 'rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+        }}>Add</button>
+      </div>
+    </div>
+  );
+};
+
+const FieldLabel = ({ children }: { children: React.ReactNode }) => (
+  <div style={{
+    fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+    letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
+    marginBottom: 6, marginTop: 14,
+  }}>{children}</div>
+);
+
+const FieldRow = ({ children }: { children: React.ReactNode }) => (
+  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+    {children}
+  </div>
+);
+
+// ─── Prompt block editor ─────────────────────────────────────
+
+const PromptBlockEditor = ({ block, update, index }: {
+  block: ContentBlock; update: (i: number, p: Partial<ContentBlock>) => void; index: number;
+}) => {
+  const detected = [...(block.textContent.matchAll(/\{\{(\w+)\}\}/g))]
+    .map(m => m[1])
+    .filter((v, i, arr) => arr.indexOf(v) === i);
+
+  return (
+    <div>
+      <FieldLabel>Role</FieldLabel>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+        {(['system','user','assistant','full'] as const).map(r => (
+          <button key={r} type="button"
+            onClick={() => update(index, { promptRole: r })}
+            style={{
+              padding: '4px 12px', borderRadius: 6, fontSize: 11,
+              fontWeight: 600, textTransform: 'uppercase', cursor: 'pointer',
+              background: block.promptRole === r
+                ? 'rgba(232,87,26,0.20)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${block.promptRole === r
+                ? 'rgba(232,87,26,0.50)' : 'rgba(255,255,255,0.08)'}`,
+              color: block.promptRole === r
+                ? '#E8571A' : 'rgba(255,255,255,0.45)',
+            }}>
+            {r === 'full' ? 'Full Conversation' : r}
+          </button>
+        ))}
+      </div>
+
+      <FieldLabel>Model target (optional)</FieldLabel>
+      <input value={block.promptModel}
+        onChange={e => update(index, { promptModel: e.target.value })}
+        placeholder="e.g. Claude Sonnet, GPT-4o, Any"
+        style={{
+          width: '100%', background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8, padding: '7px 10px', fontSize: 13,
+          color: '#fff', outline: 'none', boxSizing: 'border-box',
+        }} />
+
+      <FieldLabel>Prompt</FieldLabel>
+      <div style={{ position: 'relative' }}>
+        <textarea value={block.textContent}
+          onChange={e => update(index, { textContent: e.target.value })}
+          placeholder="Write your prompt. Use {{variable}} for placeholders."
+          rows={7}
+          style={{
+            width: '100%', background: 'rgba(0,0,0,0.30)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: 8, padding: '10px', fontSize: 13,
+            color: 'rgba(255,255,255,0.90)', outline: 'none',
+            resize: 'vertical', fontFamily: 'Courier New, monospace',
+            lineHeight: 1.6, boxSizing: 'border-box',
+          }} />
+        <button type="button"
+          onClick={() => navigator.clipboard.writeText(block.textContent)}
+          style={{
+            position: 'absolute', top: 8, right: 8,
+            fontSize: 10, padding: '2px 8px', borderRadius: 6,
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+          }}>
+          Copy
+        </button>
+      </div>
+
+      {detected.length > 0 && (
+        <div style={{ marginTop: 10 }}>
+          <FieldLabel>Variables detected in prompt</FieldLabel>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {detected.map(v => (
+              <span key={v} style={{
+                padding: '2px 10px', borderRadius: 9999, fontSize: 12,
+                background: 'rgba(46,196,182,0.15)',
+                border: '1px solid rgba(46,196,182,0.30)',
+                color: '#2EC4B6', fontFamily: 'Courier New, monospace',
+              }}>
+                {`{{${v}}}`}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <FieldLabel>Example output (optional)</FieldLabel>
+      <textarea value={block.promptExampleOutput}
+        onChange={e => update(index, { promptExampleOutput: e.target.value })}
+        placeholder="Paste an example of what this prompt produces..."
+        rows={4}
+        style={{
+          width: '100%', background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 8, padding: '8px 10px', fontSize: 13,
+          color: 'rgba(255,255,255,0.60)', outline: 'none',
+          resize: 'vertical', fontFamily: 'Inter, sans-serif',
+          lineHeight: 1.6, boxSizing: 'border-box',
+        }} />
+    </div>
+  );
+};
+
+// ─── Agent config block editor ───────────────────────────────
+
+const AgentBlockEditor = ({ block, update, index }: {
+  block: ContentBlock; update: (i: number, p: Partial<ContentBlock>) => void; index: number;
+}) => {
+  const AGENT_TOOLS = ['Web Search','Code Interpreter','Image Generation',
+    'File Reading','Calculator','Email','Calendar','Browser'];
+
+  return (
+    <div>
+      <FieldLabel>System prompt</FieldLabel>
+      <div style={{ position: 'relative' }}>
+        <textarea value={block.textContent}
+          onChange={e => update(index, { textContent: e.target.value })}
+          placeholder="Paste the full system prompt..."
+          rows={8}
+          style={{
+            width: '100%', background: 'rgba(0,0,0,0.30)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: 8, padding: '10px', fontSize: 13,
+            color: 'rgba(255,255,255,0.90)', outline: 'none',
+            resize: 'vertical', fontFamily: 'Courier New, monospace',
+            lineHeight: 1.6, boxSizing: 'border-box',
+          }} />
+        <button type="button"
+          onClick={() => navigator.clipboard.writeText(block.textContent)}
+          style={{
+            position: 'absolute', top: 8, right: 8, fontSize: 10,
+            padding: '2px 8px', borderRadius: 6,
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+          }}>Copy</button>
+      </div>
+
+      <FieldRow>
+        <div style={{ flex: 2 }}>
+          <FieldLabel>Model</FieldLabel>
+          <input value={block.agentModel}
+            onChange={e => update(index, { agentModel: e.target.value })}
+            placeholder="e.g. claude-sonnet-4-6"
+            style={{
+              width: '100%', background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 8, padding: '7px 10px', fontSize: 13,
+              color: '#fff', outline: 'none', boxSizing: 'border-box',
+            }} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <FieldLabel>Temperature</FieldLabel>
+          <input type="number" min={0} max={2} step={0.1}
+            value={block.agentTemperature}
+            onChange={e => update(index, { agentTemperature: parseFloat(e.target.value) })}
+            style={{
+              width: '100%', background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 8, padding: '7px 10px', fontSize: 13,
+              color: '#fff', outline: 'none', boxSizing: 'border-box',
+            }} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <FieldLabel>Max tokens</FieldLabel>
+          <input type="number" step={100}
+            value={block.agentMaxTokens}
+            onChange={e => update(index, { agentMaxTokens: parseInt(e.target.value) })}
+            style={{
+              width: '100%', background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 8, padding: '7px 10px', fontSize: 13,
+              color: '#fff', outline: 'none', boxSizing: 'border-box',
+            }} />
+        </div>
+      </FieldRow>
+
+      <FieldLabel>Tools enabled</FieldLabel>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {AGENT_TOOLS.map(t => {
+          const active = block.agentTools.includes(t);
+          return (
+            <button key={t} type="button"
+              onClick={() => update(index, {
+                agentTools: active
+                  ? block.agentTools.filter(x => x !== t)
+                  : [...block.agentTools, t]
+              })}
+              style={{
+                padding: '4px 10px', borderRadius: 6, fontSize: 12,
+                cursor: 'pointer',
+                background: active ? 'rgba(46,196,182,0.15)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${active ? 'rgba(46,196,182,0.40)' : 'rgba(255,255,255,0.08)'}`,
+                color: active ? '#2EC4B6' : 'rgba(255,255,255,0.45)',
+              }}>
+              {t}
+            </button>
+          );
+        })}
+      </div>
+
+      <FieldLabel>Memory type</FieldLabel>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {['None','Conversation','External DB','Summary'].map(m => {
+          const active = block.agentMemoryType === m;
+          return (
+            <button key={m} type="button"
+              onClick={() => update(index, { agentMemoryType: m })}
+              style={{
+                padding: '4px 12px', borderRadius: 6, fontSize: 12,
+                cursor: 'pointer',
+                background: active ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${active ? 'rgba(139,92,246,0.40)' : 'rgba(255,255,255,0.08)'}`,
+                color: active ? '#8B5CF6' : 'rgba(255,255,255,0.45)',
+              }}>
+              {m}
+            </button>
+          );
+        })}
+      </div>
+
+      <FieldLabel>Capabilities</FieldLabel>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {block.agentCapabilities.map((cap, ci) => (
+          <div key={cap.id} style={{
+            padding: '10px 12px',
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: 8,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <input value={cap.title}
+                onChange={e => update(index, {
+                  agentCapabilities: block.agentCapabilities.map((c,i) =>
+                    i === ci ? { ...c, title: e.target.value } : c)
+                })}
+                placeholder="Capability name"
+                style={{
+                  flex: 1, background: 'transparent', border: 'none',
+                  borderBottom: '1px solid rgba(255,255,255,0.10)',
+                  fontSize: 13, fontWeight: 600, color: '#fff',
+                  outline: 'none', padding: '2px 0',
+                }} />
+              <button type="button"
+                onClick={() => update(index, {
+                  agentCapabilities: block.agentCapabilities.filter((_,i) => i !== ci)
+                })}
+                style={{ background: 'none', border: 'none',
+                  color: 'rgba(255,255,255,0.30)', cursor: 'pointer', fontSize: 16 }}>
+                ×
+              </button>
+            </div>
+            <textarea value={cap.subPrompt}
+              onChange={e => update(index, {
+                agentCapabilities: block.agentCapabilities.map((c,i) =>
+                  i === ci ? { ...c, subPrompt: e.target.value } : c)
+              })}
+              placeholder="Sub-prompt or instructions for this capability..."
+              rows={3}
+              style={{
+                width: '100%', background: 'rgba(0,0,0,0.20)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 6, padding: '6px 8px', fontSize: 12,
+                color: 'rgba(255,255,255,0.70)', outline: 'none',
+                resize: 'vertical', fontFamily: 'Courier New, monospace',
+                boxSizing: 'border-box',
+              }} />
+          </div>
+        ))}
+        <button type="button"
+          onClick={() => update(index, {
+            agentCapabilities: [...block.agentCapabilities, {
+              id: uid(), title: '', description: '', subPrompt: '',
+            }]
+          })}
+          style={{
+            padding: '6px 12px', borderRadius: 8, fontSize: 12,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            color: 'rgba(255,255,255,0.50)', cursor: 'pointer',
+          }}>
+          + Add Capability
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ─── Workflow block editor ───────────────────────────────────
+
+const STEP_TYPE_CONFIG = {
+  manual:    { color: '#9CA3AF', label: 'Manual',    emoji: '👤' },
+  ai:        { color: '#2EC4B6', label: 'AI',        emoji: '🤖' },
+  automated: { color: '#3B82F6', label: 'Auto',      emoji: '⚡' },
+  decision:  { color: '#F59E0B', label: 'Decision',  emoji: '◆' },
+};
+
+const WorkflowBlockEditor = ({ block, update, index }: {
+  block: ContentBlock; update: (i: number, p: Partial<ContentBlock>) => void; index: number;
+}) => {
+  const addStep = () => update(index, {
+    workflowSteps: [...block.workflowSteps, {
+      id: uid(), title: '', description: '',
+      stepType: 'ai', tool: '',
+      decisionYes: '', decisionNo: '',
+      subBlockType: '', subBlockContent: '',
+    }]
+  });
+
+  const updateStep = (si: number, patch: Partial<WorkflowStep>) =>
+    update(index, {
+      workflowSteps: block.workflowSteps.map((s,i) =>
+        i === si ? { ...s, ...patch } : s)
+    });
+
+  const removeStep = (si: number) =>
+    update(index, {
+      workflowSteps: block.workflowSteps.filter((_,i) => i !== si)
+    });
+
+  return (
+    <div>
+      <FieldLabel>Trigger — what starts this workflow?</FieldLabel>
+      <input value={block.workflowTrigger}
+        onChange={e => update(index, { workflowTrigger: e.target.value })}
+        placeholder="e.g. New email arrives in Gmail, User submits form..."
+        style={{
+          width: '100%', background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8, padding: '8px 10px', fontSize: 13,
+          color: '#fff', outline: 'none', boxSizing: 'border-box',
+        }} />
+
+      <FieldLabel>Steps</FieldLabel>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {block.workflowSteps.map((step, si) => {
+          const cfg = STEP_TYPE_CONFIG[step.stepType];
+          return (
+            <div key={step.id} style={{
+              padding: '12px', borderRadius: 10,
+              background: 'rgba(255,255,255,0.02)',
+              border: `1px solid ${cfg.color}30`,
+              borderLeft: `3px solid ${cfg.color}`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center',
+                gap: 8, marginBottom: 8 }}>
+                <span style={{
+                  width: 22, height: 22, borderRadius: '50%',
+                  background: `${cfg.color}20`, border: `1px solid ${cfg.color}50`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 700, color: cfg.color, flexShrink: 0,
+                }}>
+                  {si + 1}
+                </span>
+                <input value={step.title}
+                  onChange={e => updateStep(si, { title: e.target.value })}
+                  placeholder="Step title"
+                  style={{
+                    flex: 1, background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid rgba(255,255,255,0.10)',
+                    fontSize: 13, fontWeight: 600, color: '#fff',
+                    outline: 'none', padding: '2px 0',
+                  }} />
+                <button type="button"
+                  onClick={() => removeStep(si)}
+                  style={{ background: 'none', border: 'none',
+                    color: 'rgba(255,255,255,0.25)', cursor: 'pointer',
+                    fontSize: 16 }}>×</button>
+              </div>
+
+              <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                {(Object.keys(STEP_TYPE_CONFIG) as Array<WorkflowStep['stepType']>)
+                  .map(t => {
+                    const c = STEP_TYPE_CONFIG[t];
+                    const active = step.stepType === t;
+                    return (
+                      <button key={t} type="button"
+                        onClick={() => updateStep(si, { stepType: t })}
+                        style={{
+                          padding: '2px 8px', borderRadius: 4, fontSize: 11,
+                          cursor: 'pointer',
+                          background: active ? `${c.color}20` : 'transparent',
+                          border: `1px solid ${active ? c.color + '50' : 'rgba(255,255,255,0.08)'}`,
+                          color: active ? c.color : 'rgba(255,255,255,0.35)',
+                        }}>
+                        {c.emoji} {c.label}
+                      </button>
+                    );
+                  })}
+              </div>
+
+              <textarea value={step.description}
+                onChange={e => updateStep(si, { description: e.target.value })}
+                placeholder="Describe what happens in this step..."
+                rows={2}
+                style={{
+                  width: '100%', background: 'rgba(0,0,0,0.15)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 6, padding: '6px 8px', fontSize: 12,
+                  color: 'rgba(255,255,255,0.70)', outline: 'none',
+                  resize: 'vertical', fontFamily: 'Inter, sans-serif',
+                  boxSizing: 'border-box',
+                }} />
+
+              <input value={step.tool ?? ''}
+                onChange={e => updateStep(si, { tool: e.target.value })}
+                placeholder="Tool used (e.g. Make, Claude, Gmail)..."
+                style={{
+                  width: '100%', background: 'transparent',
+                  border: 'none',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  fontSize: 12, color: 'rgba(255,255,255,0.45)',
+                  outline: 'none', padding: '4px 0', marginTop: 6,
+                  boxSizing: 'border-box',
+                }} />
+
+              {step.stepType === 'decision' && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <input value={step.decisionYes ?? ''}
+                    onChange={e => updateStep(si, { decisionYes: e.target.value })}
+                    placeholder="✓ Yes path"
+                    style={{
+                      flex: 1, background: 'rgba(34,197,94,0.08)',
+                      border: '1px solid rgba(34,197,94,0.20)',
+                      borderRadius: 6, padding: '5px 8px', fontSize: 12,
+                      color: '#22C55E', outline: 'none',
+                    }} />
+                  <input value={step.decisionNo ?? ''}
+                    onChange={e => updateStep(si, { decisionNo: e.target.value })}
+                    placeholder="✗ No path"
+                    style={{
+                      flex: 1, background: 'rgba(239,68,68,0.08)',
+                      border: '1px solid rgba(239,68,68,0.20)',
+                      borderRadius: 6, padding: '5px 8px', fontSize: 12,
+                      color: '#EF4444', outline: 'none',
+                    }} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        <button type="button" onClick={addStep} style={{
+          padding: '8px', borderRadius: 8, fontSize: 12,
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px dashed rgba(255,255,255,0.15)',
+          color: 'rgba(255,255,255,0.45)', cursor: 'pointer',
+        }}>
+          + Add step
+        </button>
+      </div>
+
+      <FieldLabel>Output — what does this workflow produce?</FieldLabel>
+      <input value={block.workflowOutput}
+        onChange={e => update(index, { workflowOutput: e.target.value })}
+        placeholder="e.g. Drafted reply email sent to Gmail drafts..."
+        style={{
+          width: '100%', background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8, padding: '8px 10px', fontSize: 13,
+          color: '#fff', outline: 'none', boxSizing: 'border-box',
+        }} />
+    </div>
+  );
+};
+
+// ─── Code block editor ───────────────────────────────────────
+
+const CodeBlockEditor = ({ block, update, index }: {
+  block: ContentBlock; update: (i: number, p: Partial<ContentBlock>) => void; index: number;
+}) => {
+  const LANGS = ['python','javascript','typescript','bash','sql',
+    'json','yaml','rust','go','other'];
+  return (
+    <div>
+      <FieldLabel>Language</FieldLabel>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {LANGS.map(l => (
+          <button key={l} type="button"
+            onClick={() => update(index, { codeLanguage: l })}
+            style={{
+              padding: '3px 10px', borderRadius: 6, fontSize: 12,
+              cursor: 'pointer', textTransform: 'uppercase', fontWeight: 600,
+              background: block.codeLanguage === l
+                ? 'rgba(59,130,246,0.20)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${block.codeLanguage === l
+                ? 'rgba(59,130,246,0.50)' : 'rgba(255,255,255,0.08)'}`,
+              color: block.codeLanguage === l
+                ? '#3B82F6' : 'rgba(255,255,255,0.45)',
+            }}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      <FieldLabel>Code</FieldLabel>
+      <div style={{ position: 'relative' }}>
+        <textarea value={block.textContent}
+          onChange={e => update(index, { textContent: e.target.value })}
+          placeholder="Paste your code here..."
+          rows={10}
+          style={{
+            width: '100%', background: 'rgba(0,0,0,0.40)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: 8, padding: '10px', fontSize: 12,
+            color: '#A5F3FC', outline: 'none', resize: 'vertical',
+            fontFamily: 'Courier New, monospace', lineHeight: 1.5,
+            boxSizing: 'border-box',
+          }} />
+        <button type="button"
+          onClick={() => navigator.clipboard.writeText(block.textContent)}
+          style={{
+            position: 'absolute', top: 8, right: 8, fontSize: 10,
+            padding: '2px 8px', borderRadius: 6,
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+          }}>Copy</button>
+      </div>
+
+      <FieldLabel>Dependencies (pip install / npm install)</FieldLabel>
+      <ChipInput values={block.codeDependencies}
+        onChange={v => update(index, { codeDependencies: v })}
+        placeholder="e.g. requests, anthropic, pandas" />
+
+      <FieldLabel>Run instructions</FieldLabel>
+      <textarea value={block.codeRunInstructions}
+        onChange={e => update(index, { codeRunInstructions: e.target.value })}
+        placeholder="How to run this code..."
+        rows={2}
+        style={{
+          width: '100%', background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 8, padding: '7px 10px', fontSize: 13,
+          color: 'rgba(255,255,255,0.70)', outline: 'none',
+          resize: 'vertical', fontFamily: 'Inter',
+          boxSizing: 'border-box',
+        }} />
+
+      <FieldLabel>Example output (optional)</FieldLabel>
+      <textarea value={block.codeExampleOutput}
+        onChange={e => update(index, { codeExampleOutput: e.target.value })}
+        placeholder="Paste example terminal output..."
+        rows={3}
+        style={{
+          width: '100%', background: 'rgba(0,0,0,0.25)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 8, padding: '7px 10px', fontSize: 12,
+          color: 'rgba(255,255,255,0.55)', outline: 'none',
+          resize: 'vertical', fontFamily: 'Courier New, monospace',
+          boxSizing: 'border-box',
+        }} />
+    </div>
+  );
+};
+
+// ─── Result block editor ─────────────────────────────────────
+
+const ResultBlockEditor = ({ block, update, index }: {
+  block: ContentBlock; update: (i: number, p: Partial<ContentBlock>) => void; index: number;
+}) => (
+  <div>
+    <FieldLabel>Before</FieldLabel>
+    <textarea value={block.resultBefore}
+      onChange={e => update(index, { resultBefore: e.target.value })}
+      placeholder="What was the state before? What prompt / input did you use?"
+      rows={3}
+      style={{
+        width: '100%', background: 'rgba(239,68,68,0.04)',
+        border: '1px solid rgba(239,68,68,0.15)',
+        borderRadius: 8, padding: '8px 10px', fontSize: 13,
+        color: 'rgba(255,255,255,0.80)', outline: 'none',
+        resize: 'vertical', fontFamily: 'Inter',
+        boxSizing: 'border-box',
+      }} />
+
+    <FieldLabel>After — the actual output</FieldLabel>
+    <div style={{ position: 'relative' }}>
+      <textarea value={block.resultAfter}
+        onChange={e => update(index, { resultAfter: e.target.value })}
+        placeholder="Paste the actual AI output here..."
+        rows={6}
+        style={{
+          width: '100%', background: 'rgba(34,197,94,0.04)',
+          border: '1px solid rgba(34,197,94,0.15)',
+          borderRadius: 8, padding: '8px 10px', fontSize: 13,
+          color: 'rgba(255,255,255,0.85)', outline: 'none',
+          resize: 'vertical', fontFamily: 'Inter',
+          boxSizing: 'border-box',
+        }} />
+      <button type="button"
+        onClick={() => navigator.clipboard.writeText(block.resultAfter)}
+        style={{
+          position: 'absolute', top: 8, right: 8, fontSize: 10,
+          padding: '2px 8px', borderRadius: 6,
+          background: 'rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+        }}>Copy</button>
+    </div>
+
+    <FieldLabel>Verdict — what does this result tell us?</FieldLabel>
+    <textarea value={block.resultVerdict}
+      onChange={e => update(index, { resultVerdict: e.target.value })}
+      placeholder="This worked because... / This failed because..."
+      rows={2}
+      style={{
+        width: '100%', background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 8, padding: '7px 10px', fontSize: 13,
+        color: 'rgba(255,255,255,0.70)', outline: 'none',
+        resize: 'vertical', fontFamily: 'Inter',
+        boxSizing: 'border-box',
+      }} />
+
+    <FieldLabel>Your rating of this result</FieldLabel>
+    <div style={{ display: 'flex', gap: 8 }}>
+      {[1,2,3,4,5].map(r => (
+        <button key={r} type="button"
+          onClick={() => update(index, { resultRating: r })}
+          style={{
+            width: 32, height: 32, borderRadius: 6, fontSize: 16,
+            cursor: 'pointer', border: 'none',
+            background: block.resultRating >= r
+              ? 'rgba(245,158,11,0.20)' : 'rgba(255,255,255,0.04)',
+          }}>
+          {block.resultRating >= r ? '★' : '☆'}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+// ─── Comparison block editor ─────────────────────────────────
+
+const ComparisonBlockEditor = ({ block, update, index }: {
+  block: ContentBlock; update: (i: number, p: Partial<ContentBlock>) => void; index: number;
+}) => {
+  const COMPARABLE_TYPES = [
+    { v: 'text', l: 'Text', e: '¶' },
+    { v: 'prompt', l: 'Prompt', e: '💬' },
+    { v: 'code', l: 'Code', e: '{ }' },
+    { v: 'result', l: 'Result', e: '📊' },
+    { v: 'config', l: 'Config', e: '⚙️' },
+  ];
+
+  const SideEditor = ({
+    label, type, content, onLabelChange, onTypeChange, onContentChange
+  }: {
+    label: string; type: string; content: Record<string,any>;
+    onLabelChange: (v: string) => void;
+    onTypeChange: (v: string) => void;
+    onContentChange: (v: Record<string,any>) => void;
+  }) => (
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <input value={label} onChange={e => onLabelChange(e.target.value)}
+        placeholder="Label (e.g. GPT-4o)"
+        style={{
+          width: '100%', background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.10)',
+          borderRadius: 6, padding: '6px 8px', fontSize: 13,
+          fontWeight: 600, color: '#fff', outline: 'none',
+          marginBottom: 8, boxSizing: 'border-box',
+        }} />
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+        {COMPARABLE_TYPES.map(t => (
+          <button key={t.v} type="button"
+            onClick={() => onTypeChange(t.v)}
+            style={{
+              padding: '2px 8px', borderRadius: 4, fontSize: 11,
+              cursor: 'pointer',
+              background: type === t.v
+                ? 'rgba(232,87,26,0.20)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${type === t.v
+                ? 'rgba(232,87,26,0.40)' : 'rgba(255,255,255,0.08)'}`,
+              color: type === t.v
+                ? '#E8571A' : 'rgba(255,255,255,0.40)',
+            }}>
+            {t.e} {t.l}
+          </button>
+        ))}
+      </div>
+      <textarea
+        value={content.text ?? ''}
+        onChange={e => onContentChange({ ...content, text: e.target.value })}
+        placeholder={`${COMPARABLE_TYPES.find(t => t.v === type)?.l ?? 'Content'} goes here...`}
+        rows={6}
+        style={{
+          width: '100%',
+          background: type === 'code' ? 'rgba(0,0,0,0.30)' : 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8, padding: '8px 10px', fontSize: 12,
+          color: type === 'code' ? '#A5F3FC' : 'rgba(255,255,255,0.80)',
+          outline: 'none', resize: 'vertical',
+          fontFamily: type === 'code' || type === 'prompt'
+            ? 'Courier New, monospace' : 'Inter',
+          boxSizing: 'border-box',
+        }} />
+    </div>
+  );
+
+  return (
+    <div>
+      <FieldLabel>What are you comparing?</FieldLabel>
+      <input value={block.comparisonAxis}
+        onChange={e => update(index, { comparisonAxis: e.target.value })}
+        placeholder="e.g. Output quality, Speed, Cost, Tone..."
+        style={{
+          width: '100%', background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8, padding: '7px 10px', fontSize: 13,
+          color: '#fff', outline: 'none',
+          boxSizing: 'border-box', marginBottom: 14,
+        }} />
+
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+        <SideEditor
+          label={block.comparisonLabelA}
+          type={block.comparisonTypeA}
+          content={block.comparisonContentA}
+          onLabelChange={v => update(index, { comparisonLabelA: v })}
+          onTypeChange={v => update(index, { comparisonTypeA: v })}
+          onContentChange={v => update(index, { comparisonContentA: v })}
+        />
+        <div style={{
+          color: 'rgba(255,255,255,0.20)', fontSize: 20,
+          paddingTop: 36, flexShrink: 0,
+        }}>↔</div>
+        <SideEditor
+          label={block.comparisonLabelB}
+          type={block.comparisonTypeB}
+          content={block.comparisonContentB}
+          onLabelChange={v => update(index, { comparisonLabelB: v })}
+          onTypeChange={v => update(index, { comparisonTypeB: v })}
+          onContentChange={v => update(index, { comparisonContentB: v })}
+        />
+      </div>
+
+      <FieldLabel>Verdict</FieldLabel>
+      <textarea value={block.comparisonVerdict}
+        onChange={e => update(index, { comparisonVerdict: e.target.value })}
+        placeholder="Which won and why?"
+        rows={2}
+        style={{
+          width: '100%', background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 8, padding: '7px 10px', fontSize: 13,
+          color: 'rgba(255,255,255,0.70)', outline: 'none',
+          resize: 'vertical', fontFamily: 'Inter',
+          boxSizing: 'border-box',
+        }} />
+    </div>
+  );
+};
+
+// ─── Resource block editor ───────────────────────────────────
+
+const ResourceBlockEditor = ({ block, update, index }: {
+  block: ContentBlock; update: (i: number, p: Partial<ContentBlock>) => void; index: number;
+}) => {
+  const TYPES = ['article','paper','tool','video','course','repo','other'];
+  return (
+    <div>
+      <FieldLabel>URL</FieldLabel>
+      <input value={block.textContent}
+        onChange={e => update(index, { textContent: e.target.value })}
+        placeholder="https://..."
+        type="url"
+        style={{
+          width: '100%', background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8, padding: '8px 10px', fontSize: 13,
+          color: '#fff', outline: 'none', boxSizing: 'border-box',
+        }} />
+
+      <FieldLabel>Title</FieldLabel>
+      <input value={block.resourceTitle}
+        onChange={e => update(index, { resourceTitle: e.target.value })}
+        placeholder="Resource title"
+        style={{
+          width: '100%', background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8, padding: '7px 10px', fontSize: 13,
+          color: '#fff', outline: 'none', boxSizing: 'border-box',
+        }} />
+
+      <FieldLabel>Type</FieldLabel>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {TYPES.map(t => (
+          <button key={t} type="button"
+            onClick={() => update(index, { resourceType: t as any })}
+            style={{
+              padding: '3px 10px', borderRadius: 6, fontSize: 12,
+              cursor: 'pointer', textTransform: 'capitalize',
+              background: block.resourceType === t
+                ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${block.resourceType === t
+                ? 'rgba(139,92,246,0.40)' : 'rgba(255,255,255,0.08)'}`,
+              color: block.resourceType === t
+                ? '#8B5CF6' : 'rgba(255,255,255,0.45)',
+            }}>
+            {t}
+          </button>
+        ))}
+      </div>
+
+      <FieldLabel>Why this matters</FieldLabel>
+      <textarea value={block.resourceAnnotation}
+        onChange={e => update(index, { resourceAnnotation: e.target.value })}
+        placeholder="Why is this resource useful? What will the reader get from it?"
+        rows={3}
+        style={{
+          width: '100%', background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 8, padding: '7px 10px', fontSize: 13,
+          color: 'rgba(255,255,255,0.70)', outline: 'none',
+          resize: 'vertical', fontFamily: 'Inter',
+          boxSizing: 'border-box',
+        }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+        <input type="checkbox" id="paywalled"
+          checked={block.resourceIsPaywalled}
+          onChange={e => update(index, { resourceIsPaywalled: e.target.checked })}
+          style={{ width: 14, height: 14 }} />
+        <label htmlFor="paywalled"
+          style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', cursor: 'pointer' }}>
+          Paywalled / requires account
+        </label>
+      </div>
+    </div>
+  );
+};
+
 // ─── Block type icon ─────────────────────────────────────────
 
 const BlockTypeIcon = ({ type }: { type: BlockType }) => {
@@ -1100,58 +2003,48 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                 </div>
                 {showingMain ? (
                   <>
-                    {(block.type === "prompt" || block.type === "agent_config" || block.type === "code" || block.type === "model_params") && (
+                    {block.type === 'prompt' && (
+                      <PromptBlockEditor block={block} update={update} index={index} />
+                    )}
+                    {block.type === 'agent_config' && (
+                      <AgentBlockEditor block={block} update={update} index={index} />
+                    )}
+                    {block.type === 'workflow' && (
+                      <WorkflowBlockEditor block={block} update={update} index={index} />
+                    )}
+                    {block.type === 'code' && (
+                      <CodeBlockEditor block={block} update={update} index={index} />
+                    )}
+                    {block.type === 'result' && (
+                      <ResultBlockEditor block={block} update={update} index={index} />
+                    )}
+                    {block.type === 'comparison' && (
+                      <ComparisonBlockEditor block={block} update={update} index={index} />
+                    )}
+                    {block.type === 'resource' && (
+                      <ResourceBlockEditor block={block} update={update} index={index} />
+                    )}
+                    {(block.type === 'text' || block.type === 'long_text') && (
+                      <TextEditor value={block.textContent} formatting={block.formatting} subBlocks={block.subBlocks}
+                        onTextChange={(v) => update(index, { textContent: v })} onFormatChange={(f) => update(index, { formatting: f })} onSubBlocksChange={(s) => update(index, { subBlocks: s })} />
+                    )}
+                    {block.type === 'image' && (
+                      <ImagePicker imageFile={block.imageFile} imagePreview={block.imagePreview} imageDescription={block.imageDescription}
+                        onImageChange={(f, preview) => update(index, { imageFile: f, imagePreview: preview })} onDescriptionChange={(v) => update(index, { imageDescription: v })} />
+                    )}
+                    {(block.type === 'model_params' || block.type === 'tool_setup') && (
                       <MonospaceEditor
                         value={block.textContent}
                         onChange={(v) => update(index, { textContent: v })}
-                        placeholder={
-                          block.type === "prompt" ? "Enter your prompt…" :
-                          block.type === "agent_config" ? "Paste agent configuration JSON / YAML…" :
-                          block.type === "code" ? "Paste code snippet…" :
-                          "Enter model parameter settings…"
-                        }
+                        placeholder={block.type === 'model_params'
+                          ? 'Model params...' : 'Tool setup steps...'}
                       />
-                    )}
-                    {(block.type === "workflow" || block.type === "tool_setup" || block.type === "result") && (
-                      <TextEditor value={block.textContent} formatting={block.formatting} subBlocks={block.subBlocks}
-                        onTextChange={(v) => update(index, { textContent: v })} onFormatChange={(f) => update(index, { formatting: f })} onSubBlocksChange={(s) => update(index, { subBlocks: s })} />
-                    )}
-                    {block.type === "comparison" && (
-                      <ComparisonEditor
-                        valueA={block.comparisonLabelA ?? ""}
-                        valueB={block.comparisonLabelB ?? ""}
-                        onChangeA={(v) => update(index, { comparisonLabelA: v })}
-                        onChangeB={(v) => update(index, { comparisonLabelB: v })}
-                      />
-                    )}
-                    {block.type === "resource" && (
-                      <ResourceEditor
-                        url={block.textContent}
-                        description={block.resourceDescription ?? ""}
-                        onUrlChange={(v) => update(index, { textContent: v })}
-                        onDescChange={(v) => update(index, { resourceDescription: v })}
-                      />
-                    )}
-                    {block.type === "text" && (
-                      <TextEditor value={block.textContent} formatting={block.formatting} subBlocks={block.subBlocks}
-                        onTextChange={(v) => update(index, { textContent: v })} onFormatChange={(f) => update(index, { formatting: f })} onSubBlocksChange={(s) => update(index, { subBlocks: s })} />
-                    )}
-                    {block.type === "long_text" && (
-                      <div>
-                        <FormatBar active={block.formatting} onChange={(f) => update(index, { formatting: f })} showHeading />
-                        <MentionInput value={block.textContent} onChange={(v) => update(index, { textContent: v })} rows={10} placeholder="Write your article content… Use # at the start of a line for headings." />
-                        <p className="text-xs text-muted-foreground mt-1">No character limit. Use # prefix for headings.</p>
-                      </div>
                     )}
                     {block.type === "file" && (
                       <>
                         <FilePicker file={block.file} fileName={block.fileName} fileSize={block.fileSize} onFileChange={(f) => update(index, { file: f, fileName: f?.name, fileSize: f?.size })} />
                         <ExternalFileSection externalFileUrl={block.externalFileUrl ?? ""} onChange={(url) => update(index, { externalFileUrl: url })} />
                       </>
-                    )}
-                    {block.type === "image" && (
-                      <ImagePicker imageFile={block.imageFile} imagePreview={block.imagePreview} imageDescription={block.imageDescription}
-                        onImageChange={(f, preview) => update(index, { imageFile: f, imagePreview: preview })} onDescriptionChange={(v) => update(index, { imageDescription: v })} />
                     )}
                     {block.type === "github" && (
                       <GitHubBlockEditor
