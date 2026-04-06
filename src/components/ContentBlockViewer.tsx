@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +38,73 @@ interface BlockRow {
   is_preview: boolean;
   external_file_url: string | null;
   github_url: string | null;
+  subheading?: string | null;
+
+  // Prompt
+  prompt_role?: string | null;
+  prompt_model?: string | null;
+  prompt_variables?: any;
+  prompt_example_output?: string | null;
+
+  // Agent
+  agent_model?: string | null;
+  agent_temperature?: number | null;
+  agent_max_tokens?: number | null;
+  agent_tools?: any;
+  agent_memory_type?: string | null;
+  agent_capabilities?: any;
+
+  // Workflow
+  workflow_trigger?: string | null;
+  workflow_output?: string | null;
+  workflow_steps?: any;
+
+  // Model params
+  model_name?: string | null;
+  model_temperature?: number | null;
+  model_top_p?: number | null;
+  model_max_tokens?: number | null;
+  model_system_prompt?: string | null;
+  model_stop_sequences?: any;
+  model_reasoning?: string | null;
+
+  // Tool setup
+  tool_name?: string | null;
+  tool_url?: string | null;
+  tool_prerequisites?: any;
+  tool_steps?: any;
+  tool_errors?: any;
+  tool_time_estimate?: string | null;
+
+  // Code
+  code_language?: string | null;
+  code_dependencies?: any;
+  code_env_vars?: any;
+  code_run_instructions?: string | null;
+  code_example_output?: string | null;
+
+  // Result
+  result_before?: string | null;
+  result_after?: string | null;
+  result_metrics?: any;
+  result_verdict?: string | null;
+  result_rating?: number | null;
+
+  // Comparison
+  comparison_label_a?: string | null;
+  comparison_label_b?: string | null;
+  comparison_type_a?: string | null;
+  comparison_type_b?: string | null;
+  comparison_content_a?: any;
+  comparison_content_b?: any;
+  comparison_axis?: string | null;
+  comparison_verdict?: string | null;
+
+  // Resource
+  resource_title?: string | null;
+  resource_type?: string | null;
+  resource_annotation?: string | null;
+  resource_is_paywalled?: boolean | null;
 }
 
 interface VariationRow {
@@ -363,6 +430,636 @@ function RenderBlockContent({
   return null;
 }
 
+// ─── Prompt viewer ──────────────────────────────────────────
+
+const PromptViewer = ({ block }: { block: BlockRow }) => {
+  const [copied, setCopied] = React.useState(false);
+  const [filled, setFilled] = React.useState<Record<string, string>>({});
+  const variables = block.prompt_variables ?? [];
+
+  const getFilledPrompt = () => {
+    let p = block.text_content ?? '';
+    Object.entries(filled).forEach(([k, v]) => {
+      p = p.replaceAll(`{{${k}}}`, v);
+    });
+    return p;
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(getFilledPrompt());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  const highlightVars = (text: string) => {
+    return text.replace(
+      /\{\{(\w+)\}\}/g,
+      '<mark style="background:rgba(46,196,182,0.20);color:#2EC4B6;border-radius:3px;padding:1px 4px">{{$1}}</mark>'
+    );
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        {block.prompt_role && (
+          <span style={{
+            padding: '2px 10px', borderRadius: 9999, fontSize: 11,
+            fontWeight: 700, textTransform: 'uppercase',
+            background: 'rgba(232,87,26,0.15)',
+            border: '1px solid rgba(232,87,26,0.30)',
+            color: '#E8571A',
+          }}>
+            {block.prompt_role}
+          </span>
+        )}
+        {block.prompt_model && (
+          <span style={{
+            padding: '2px 10px', borderRadius: 9999, fontSize: 11,
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.60)',
+          }}>
+            {block.prompt_model}
+          </span>
+        )}
+      </div>
+
+      {variables.length > 0 && (
+        <div style={{
+          padding: '10px 12px', marginBottom: 12,
+          background: 'rgba(46,196,182,0.05)',
+          border: '1px solid rgba(46,196,182,0.15)',
+          borderRadius: 8,
+        }}>
+          <div style={{
+            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.10em', color: '#2EC4B6', marginBottom: 8,
+          }}>
+            Fill in variables
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {variables.map((v: { name: string; description: string }) => (
+              <div key={v.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <code style={{
+                  fontSize: 12, color: '#2EC4B6', flexShrink: 0,
+                  fontFamily: 'Courier New, monospace',
+                }}>
+                  {`{{${v.name}}}`}
+                </code>
+                <input
+                  value={filled[v.name] ?? ''}
+                  onChange={e => setFilled(f => ({ ...f, [v.name]: e.target.value }))}
+                  placeholder={v.description || `Enter ${v.name}`}
+                  style={{
+                    flex: 1, background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(46,196,182,0.25)',
+                    borderRadius: 6, padding: '4px 8px', fontSize: 12,
+                    color: '#fff', outline: 'none',
+                  }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ position: 'relative' }}>
+        <div
+          dangerouslySetInnerHTML={{ __html: highlightVars(getFilledPrompt()) }}
+          style={{
+            background: 'rgba(0,0,0,0.35)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: 8, padding: '14px',
+            fontSize: 13, color: 'rgba(255,255,255,0.85)',
+            fontFamily: 'Courier New, monospace',
+            lineHeight: 1.7, whiteSpace: 'pre-wrap',
+            minHeight: 80,
+          }} />
+        <button onClick={handleCopy} style={{
+          position: 'absolute', top: 10, right: 10,
+          padding: '3px 10px', borderRadius: 6, fontSize: 11,
+          background: copied ? 'rgba(34,197,94,0.20)' : 'rgba(255,255,255,0.08)',
+          border: `1px solid ${copied ? 'rgba(34,197,94,0.40)' : 'rgba(255,255,255,0.15)'}`,
+          color: copied ? '#22C55E' : 'rgba(255,255,255,0.60)',
+          cursor: 'pointer', transition: 'all 0.15s',
+        }}>
+          {copied ? '✓ Copied' : 'Copy'}
+        </button>
+      </div>
+
+      {block.prompt_example_output && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{
+            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.10em', color: 'rgba(255,255,255,0.28)',
+            marginBottom: 8,
+          }}>
+            Example output
+          </div>
+          <div style={{
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 8, padding: '10px 12px',
+            fontSize: 13, color: 'rgba(255,255,255,0.55)',
+            lineHeight: 1.65, whiteSpace: 'pre-wrap',
+          }}>
+            {block.prompt_example_output}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Workflow viewer ────────────────────────────────────────
+
+const WorkflowViewer = ({ block }: { block: BlockRow }) => {
+  const steps = block.workflow_steps ?? [];
+  const STEP_COLORS: Record<string, string> = {
+    manual: '#9CA3AF', ai: '#2EC4B6',
+    automated: '#3B82F6', decision: '#F59E0B',
+  };
+  const STEP_EMOJIS: Record<string, string> = {
+    manual: '👤', ai: '🤖', automated: '⚡', decision: '◆',
+  };
+
+  return (
+    <div>
+      {block.workflow_trigger && (
+        <div style={{
+          padding: '10px 14px', marginBottom: 16,
+          background: 'rgba(232,87,26,0.08)',
+          border: '1px solid rgba(232,87,26,0.20)',
+          borderRadius: 8, fontSize: 13,
+          color: 'rgba(255,255,255,0.75)',
+        }}>
+          <span style={{
+            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.10em', color: '#E8571A',
+            display: 'block', marginBottom: 4,
+          }}>
+            Trigger
+          </span>
+          {block.workflow_trigger}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {steps.map((step: any, i: number) => {
+          const color = STEP_COLORS[step.stepType] ?? '#9CA3AF';
+          const emoji = STEP_EMOJIS[step.stepType] ?? '●';
+          const isDecision = step.stepType === 'decision';
+          return (
+            <div key={step.id ?? i}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <div style={{
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', flexShrink: 0,
+                }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: '50%',
+                    background: `${color}20`,
+                    border: `2px solid ${color}50`,
+                    display: 'flex', alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12, fontWeight: 700, color,
+                  }}>
+                    {i + 1}
+                  </div>
+                  {i < steps.length - 1 && (
+                    <div style={{
+                      width: 2, flex: 1, minHeight: 20,
+                      background: `${color}25`, margin: '4px 0',
+                    }} />
+                  )}
+                </div>
+
+                <div style={{
+                  flex: 1, paddingBottom: 16,
+                  borderLeft: `2px solid ${color}15`,
+                  paddingLeft: 12, marginLeft: -12,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 13 }}>{emoji}</span>
+                    <span style={{
+                      fontSize: 14, fontWeight: 600,
+                      color: 'rgba(255,255,255,0.90)',
+                    }}>
+                      {step.title}
+                    </span>
+                    {step.tool && (
+                      <span style={{
+                        fontSize: 11, padding: '1px 8px',
+                        borderRadius: 9999,
+                        background: 'rgba(255,255,255,0.06)',
+                        color: 'rgba(255,255,255,0.40)',
+                      }}>
+                        {step.tool}
+                      </span>
+                    )}
+                  </div>
+                  {step.description && (
+                    <p style={{
+                      fontSize: 13, color: 'rgba(255,255,255,0.55)',
+                      lineHeight: 1.6, margin: '6px 0 0 22px',
+                    }}>
+                      {step.description}
+                    </p>
+                  )}
+                  {isDecision && (step.decisionYes || step.decisionNo) && (
+                    <div style={{
+                      display: 'flex', gap: 8, marginTop: 8, marginLeft: 22,
+                    }}>
+                      {step.decisionYes && (
+                        <div style={{
+                          padding: '4px 10px', borderRadius: 6, fontSize: 12,
+                          background: 'rgba(34,197,94,0.10)',
+                          border: '1px solid rgba(34,197,94,0.25)',
+                          color: '#22C55E',
+                        }}>
+                          ✓ {step.decisionYes}
+                        </div>
+                      )}
+                      {step.decisionNo && (
+                        <div style={{
+                          padding: '4px 10px', borderRadius: 6, fontSize: 12,
+                          background: 'rgba(239,68,68,0.10)',
+                          border: '1px solid rgba(239,68,68,0.25)',
+                          color: '#EF4444',
+                        }}>
+                          ✗ {step.decisionNo}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {block.workflow_output && (
+        <div style={{
+          padding: '10px 14px', marginTop: 8,
+          background: 'rgba(34,197,94,0.08)',
+          border: '1px solid rgba(34,197,94,0.20)',
+          borderRadius: 8, fontSize: 13,
+          color: 'rgba(255,255,255,0.75)',
+        }}>
+          <span style={{
+            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.10em', color: '#22C55E',
+            display: 'block', marginBottom: 4,
+          }}>
+            Output
+          </span>
+          {block.workflow_output}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Code viewer ────────────────────────────────────────────
+
+const CodeViewer = ({ block }: { block: BlockRow }) => {
+  const [copied, setCopied] = React.useState(false);
+  const deps = block.code_dependencies ?? [];
+
+  return (
+    <div>
+      {block.code_language && (
+        <div style={{ marginBottom: 8 }}>
+          <span style={{
+            padding: '2px 10px', borderRadius: 9999, fontSize: 11,
+            fontWeight: 700, textTransform: 'uppercase',
+            background: 'rgba(59,130,246,0.15)',
+            border: '1px solid rgba(59,130,246,0.30)',
+            color: '#3B82F6',
+          }}>
+            {block.code_language}
+          </span>
+        </div>
+      )}
+
+      {deps.length > 0 && (
+        <div style={{
+          padding: '8px 10px', marginBottom: 10,
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 6, fontSize: 12,
+          color: 'rgba(255,255,255,0.50)',
+          fontFamily: 'Courier New, monospace',
+        }}>
+          <span style={{
+            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
+            fontFamily: 'Inter',
+          }}>
+            Install
+          </span>{' '}
+          {deps.join('  ')}
+        </div>
+      )}
+
+      <div style={{ position: 'relative' }}>
+        <pre style={{
+          background: 'rgba(0,0,0,0.45)',
+          border: '1px solid rgba(255,255,255,0.10)',
+          borderRadius: 8, padding: '14px',
+          fontSize: 12, color: '#A5F3FC',
+          fontFamily: 'Courier New, monospace',
+          lineHeight: 1.6, overflowX: 'auto',
+          whiteSpace: 'pre', margin: 0,
+        }}>
+          {block.text_content}
+        </pre>
+        <button onClick={() => {
+          navigator.clipboard.writeText(block.text_content ?? '');
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        }} style={{
+          position: 'absolute', top: 10, right: 10,
+          padding: '3px 10px', borderRadius: 6, fontSize: 11,
+          background: copied ? 'rgba(34,197,94,0.20)' : 'rgba(255,255,255,0.08)',
+          border: `1px solid ${copied ? 'rgba(34,197,94,0.40)' : 'rgba(255,255,255,0.15)'}`,
+          color: copied ? '#22C55E' : 'rgba(255,255,255,0.60)',
+          cursor: 'pointer',
+        }}>
+          {copied ? '✓ Copied' : 'Copy'}
+        </button>
+      </div>
+
+      {block.code_run_instructions && (
+        <div style={{
+          marginTop: 10, fontSize: 13,
+          color: 'rgba(255,255,255,0.55)', lineHeight: 1.6,
+        }}>
+          <span style={{
+            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.10em', color: 'rgba(255,255,255,0.28)',
+            display: 'block', marginBottom: 4,
+          }}>Run</span>
+          {block.code_run_instructions}
+        </div>
+      )}
+
+      {block.code_example_output && (
+        <pre style={{
+          marginTop: 10,
+          background: 'rgba(0,0,0,0.25)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 6, padding: '8px 12px',
+          fontSize: 11, color: 'rgba(255,255,255,0.45)',
+          fontFamily: 'Courier New, monospace',
+          lineHeight: 1.5, overflowX: 'auto',
+          whiteSpace: 'pre',
+        }}>
+          {block.code_example_output}
+        </pre>
+      )}
+    </div>
+  );
+};
+
+// ─── Result viewer ──────────────────────────────────────────
+
+const ResultViewer = ({ block }: { block: BlockRow }) => (
+  <div>
+    {block.result_before && (
+      <div style={{ marginBottom: 10 }}>
+        <div style={{
+          fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+          letterSpacing: '0.10em', color: '#EF4444', marginBottom: 6,
+        }}>Before</div>
+        <div style={{
+          padding: '10px 12px',
+          background: 'rgba(239,68,68,0.05)',
+          border: '1px solid rgba(239,68,68,0.15)',
+          borderRadius: 8, fontSize: 13,
+          color: 'rgba(255,255,255,0.70)',
+          lineHeight: 1.6, whiteSpace: 'pre-wrap',
+        }}>
+          {block.result_before}
+        </div>
+      </div>
+    )}
+    {block.result_after && (
+      <div style={{ marginBottom: 10 }}>
+        <div style={{
+          fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+          letterSpacing: '0.10em', color: '#22C55E', marginBottom: 6,
+        }}>Output</div>
+        <div style={{ position: 'relative' }}>
+          <div style={{
+            padding: '10px 12px',
+            background: 'rgba(34,197,94,0.05)',
+            border: '1px solid rgba(34,197,94,0.15)',
+            borderRadius: 8, fontSize: 13,
+            color: 'rgba(255,255,255,0.85)',
+            lineHeight: 1.65, whiteSpace: 'pre-wrap',
+          }}>
+            {block.result_after}
+          </div>
+          <button onClick={() => navigator.clipboard.writeText(block.result_after ?? '')}
+            style={{
+              position: 'absolute', top: 8, right: 8,
+              padding: '2px 8px', borderRadius: 6, fontSize: 10,
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+            }}>Copy</button>
+        </div>
+      </div>
+    )}
+    {block.result_verdict && (
+      <div style={{
+        padding: '10px 12px',
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 8, fontSize: 13, fontStyle: 'italic',
+        color: 'rgba(255,255,255,0.55)', lineHeight: 1.6,
+      }}>
+        {block.result_verdict}
+      </div>
+    )}
+    {(block.result_rating ?? 0) > 0 && (
+      <div style={{ marginTop: 8, fontSize: 16 }}>
+        {Array.from({ length: 5 }, (_, i) =>
+          i < (block.result_rating ?? 0) ? '★' : '☆'
+        ).join('')}
+      </div>
+    )}
+  </div>
+);
+
+// ─── Comparison viewer ──────────────────────────────────────
+
+const ComparisonViewer = ({ block }: { block: BlockRow }) => {
+  const contentA = block.comparison_content_a ?? {};
+  const contentB = block.comparison_content_b ?? {};
+
+  const SideCard = ({ label, content }: {
+    label: string; content: Record<string, any>;
+  }) => (
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{
+        fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+        letterSpacing: '0.08em', color: 'rgba(255,255,255,0.50)',
+        marginBottom: 8, textAlign: 'center',
+      }}>
+        {label}
+      </div>
+      <div style={{
+        padding: '10px 12px',
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 8, fontSize: 13,
+        color: 'rgba(255,255,255,0.75)',
+        lineHeight: 1.65, whiteSpace: 'pre-wrap',
+        fontFamily: 'Courier New, monospace',
+        minHeight: 80,
+      }}>
+        {content.text ?? ''}
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      {block.comparison_axis && (
+        <div style={{
+          fontSize: 11, color: 'rgba(255,255,255,0.35)',
+          textAlign: 'center', marginBottom: 12,
+          fontStyle: 'italic',
+        }}>
+          Comparing: {block.comparison_axis}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+        <SideCard
+          label={block.comparison_label_a ?? 'Option A'}
+          content={contentA}
+        />
+        <div style={{
+          color: 'rgba(255,255,255,0.20)',
+          fontSize: 20, paddingTop: 28, flexShrink: 0,
+        }}>↔</div>
+        <SideCard
+          label={block.comparison_label_b ?? 'Option B'}
+          content={contentB}
+        />
+      </div>
+      {block.comparison_verdict && (
+        <div style={{
+          marginTop: 12, padding: '10px 14px',
+          background: 'rgba(245,158,11,0.06)',
+          border: '1px solid rgba(245,158,11,0.20)',
+          borderRadius: 8, fontSize: 13, fontStyle: 'italic',
+          color: 'rgba(255,255,255,0.65)',
+        }}>
+          <span style={{
+            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.10em', color: '#F59E0B',
+            display: 'block', marginBottom: 4, fontStyle: 'normal',
+          }}>Verdict</span>
+          {block.comparison_verdict}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Resource viewer ────────────────────────────────────────
+
+const ResourceViewer = ({ block }: { block: BlockRow }) => {
+  const TYPE_ICONS: Record<string, string> = {
+    paper: '📄', tool: '🔧', video: '🎬',
+    course: '🎓', repo: '📦', article: '📰', other: '🔗',
+  };
+
+  return (
+    <a href={block.text_content ?? '#'} target="_blank" rel="noopener"
+      style={{ textDecoration: 'none', display: 'block' }}>
+      <div style={{
+        padding: '14px 16px',
+        background: 'rgba(139,92,246,0.06)',
+        border: '1px solid rgba(139,92,246,0.20)',
+        borderRadius: 10, cursor: 'pointer',
+        transition: 'border-color 0.15s',
+      }}
+        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(139,92,246,0.40)'}
+        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(139,92,246,0.20)'}
+      >
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6,
+        }}>
+          <span style={{ fontSize: 20 }}>
+            {TYPE_ICONS[block.resource_type ?? 'other'] ?? '🔗'}
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: 14, fontWeight: 600,
+              color: 'rgba(255,255,255,0.90)',
+              whiteSpace: 'nowrap', overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+              {block.resource_title || block.text_content}
+            </div>
+            <div style={{
+              fontSize: 11, color: 'rgba(255,255,255,0.35)',
+              whiteSpace: 'nowrap', overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+              {block.text_content}
+            </div>
+          </div>
+          {block.resource_is_paywalled && (
+            <span style={{
+              fontSize: 10, fontWeight: 700,
+              padding: '2px 6px', borderRadius: 4,
+              background: 'rgba(245,158,11,0.15)',
+              border: '1px solid rgba(245,158,11,0.30)',
+              color: '#F59E0B',
+            }}>
+              £ Paid
+            </span>
+          )}
+        </div>
+        {block.resource_annotation && (
+          <p style={{
+            fontSize: 13, color: 'rgba(255,255,255,0.50)',
+            lineHeight: 1.6, margin: '0 0 0 30px',
+          }}>
+            {block.resource_annotation}
+          </p>
+        )}
+      </div>
+    </a>
+  );
+};
+
+// ─── Per-type viewer dispatch ───────────────────────────────
+
+function renderTypedViewer(block: BlockRow): JSX.Element | null {
+  switch (block.block_type) {
+    case 'prompt':
+      return <PromptViewer block={block} />;
+    case 'workflow':
+      return <WorkflowViewer block={block} />;
+    case 'code':
+      return <CodeViewer block={block} />;
+    case 'result':
+      return <ResultViewer block={block} />;
+    case 'comparison':
+      return <ComparisonViewer block={block} />;
+    case 'resource':
+      return <ResourceViewer block={block} />;
+    default:
+      return null;
+  }
+}
+
 // ─── Main component ─────────────────────────────────────────
 
 export function ContentBlockViewer({
@@ -533,14 +1230,29 @@ export function ContentBlockViewer({
                       <span>{getBlockType(effectiveType).label}</span>
                     </div>
                     <div className={isUnblurred ? "" : "blur-[6px] pointer-events-none select-none"} style={{ transition: "filter 0.3s ease" }}>
+                      {block.subheading && !showingVariation && (
+                        <h3 style={{
+                          fontFamily: "'Playfair Display', Georgia, serif",
+                          fontSize: 17, fontWeight: 600,
+                          color: 'rgba(255,255,255,0.92)',
+                          margin: '0 0 12px 0',
+                          paddingBottom: 8,
+                          borderBottom: '1px solid rgba(255,255,255,0.07)',
+                          lineHeight: 1.3,
+                        }}>
+                          {block.subheading}
+                        </h3>
+                      )}
                       {showingVariation ? (
                         <RenderBlockContent type={showingVariation.variation_type} textContent={showingVariation.text_content} formatting={showingVariation.formatting}
                           formattingType={null} subBlocks={null} fileUrl={showingVariation.file_url} fileName={showingVariation.file_name} fileSizeBytes={null}
                           imageUrl={showingVariation.image_url} imageDescription={showingVariation.image_description} contentId={contentId} isBlogContent={isBlog} />
                       ) : (
-                        <RenderBlockContent type={block.block_type} textContent={block.text_content} formatting={block.formatting}
-                          formattingType={block.formatting_type} subBlocks={block.sub_blocks} fileUrl={block.file_url} fileName={block.file_name}
-                          fileSizeBytes={block.file_size_bytes} imageUrl={block.image_url} imageDescription={block.image_description} contentId={contentId} isBlogContent={isBlog} />
+                        renderTypedViewer(block) ?? (
+                          <RenderBlockContent type={block.block_type} textContent={block.text_content} formatting={block.formatting}
+                            formattingType={block.formatting_type} subBlocks={block.sub_blocks} fileUrl={block.file_url} fileName={block.file_name}
+                            fileSizeBytes={block.file_size_bytes} imageUrl={block.image_url} imageDescription={block.image_description} contentId={contentId} isBlogContent={isBlog} />
+                        )
                       )}
                     </div>
 
