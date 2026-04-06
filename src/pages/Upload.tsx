@@ -399,6 +399,84 @@ const Upload = () => {
           is_preview: block.isPreview ?? false,
           use_instructions: block.useInstructions?.trim() || null,
           sub_blocks: block.formatting === "sub_list" && block.subBlocks?.length > 0 ? block.subBlocks : null,
+
+          subheading: block.subheading?.trim() || null,
+
+          // Prompt
+          prompt_role: block.promptRole || null,
+          prompt_model: block.promptModel || null,
+          prompt_variables: block.promptVariables?.length
+            ? block.promptVariables : null,
+          prompt_example_output: block.promptExampleOutput || null,
+
+          // Agent
+          agent_model: block.agentModel || null,
+          agent_temperature: block.agentTemperature ?? null,
+          agent_max_tokens: block.agentMaxTokens || null,
+          agent_tools: block.agentTools?.length ? block.agentTools : null,
+          agent_memory_type: block.agentMemoryType || null,
+          agent_capabilities: block.agentCapabilities?.length
+            ? block.agentCapabilities : null,
+
+          // Workflow
+          workflow_trigger: block.workflowTrigger || null,
+          workflow_output: block.workflowOutput || null,
+          workflow_steps: block.workflowSteps?.length
+            ? block.workflowSteps : null,
+
+          // Model params
+          model_name: block.modelName || null,
+          model_temperature: block.modelTemperature ?? null,
+          model_top_p: block.modelTopP ?? null,
+          model_max_tokens: block.modelMaxTokens || null,
+          model_system_prompt: block.modelSystemPrompt || null,
+          model_stop_sequences: block.modelStopSequences?.length
+            ? block.modelStopSequences : null,
+          model_reasoning: block.modelReasoning || null,
+
+          // Tool setup
+          tool_name: block.toolName || null,
+          tool_url: block.toolUrl || null,
+          tool_prerequisites: block.toolPrerequisites?.length
+            ? block.toolPrerequisites : null,
+          tool_steps: block.toolSteps?.length ? block.toolSteps : null,
+          tool_errors: block.toolErrors?.length ? block.toolErrors : null,
+          tool_time_estimate: block.toolTimeEstimate || null,
+
+          // Code
+          code_language: block.codeLanguage || null,
+          code_dependencies: block.codeDependencies?.length
+            ? block.codeDependencies : null,
+          code_env_vars: block.codeEnvVars?.length
+            ? block.codeEnvVars : null,
+          code_run_instructions: block.codeRunInstructions || null,
+          code_example_output: block.codeExampleOutput || null,
+
+          // Result
+          result_before: block.resultBefore || null,
+          result_after: block.resultAfter || null,
+          result_metrics: block.resultMetrics?.length
+            ? block.resultMetrics : null,
+          result_verdict: block.resultVerdict || null,
+          result_rating: block.resultRating || null,
+
+          // Comparison
+          comparison_label_a: block.comparisonLabelA || null,
+          comparison_label_b: block.comparisonLabelB || null,
+          comparison_type_a: block.comparisonTypeA || null,
+          comparison_type_b: block.comparisonTypeB || null,
+          comparison_content_a: Object.keys(block.comparisonContentA ?? {}).length
+            ? block.comparisonContentA : null,
+          comparison_content_b: Object.keys(block.comparisonContentB ?? {}).length
+            ? block.comparisonContentB : null,
+          comparison_axis: block.comparisonAxis || null,
+          comparison_verdict: block.comparisonVerdict || null,
+
+          // Resource
+          resource_title: block.resourceTitle || null,
+          resource_type: block.resourceType || null,
+          resource_annotation: block.resourceAnnotation || null,
+          resource_is_paywalled: block.resourceIsPaywalled ?? false,
         } as any);
       }
 
@@ -575,6 +653,84 @@ const Upload = () => {
           sub_blocks: subBlocksData,
           external_file_url: block.externalFileUrl?.trim() || null,
           github_url: null,
+
+          subheading: block.subheading?.trim() || null,
+
+          // Prompt
+          prompt_role: block.promptRole || null,
+          prompt_model: block.promptModel || null,
+          prompt_variables: block.promptVariables?.length
+            ? block.promptVariables : null,
+          prompt_example_output: block.promptExampleOutput || null,
+
+          // Agent
+          agent_model: block.agentModel || null,
+          agent_temperature: block.agentTemperature ?? null,
+          agent_max_tokens: block.agentMaxTokens || null,
+          agent_tools: block.agentTools?.length ? block.agentTools : null,
+          agent_memory_type: block.agentMemoryType || null,
+          agent_capabilities: block.agentCapabilities?.length
+            ? block.agentCapabilities : null,
+
+          // Workflow
+          workflow_trigger: block.workflowTrigger || null,
+          workflow_output: block.workflowOutput || null,
+          workflow_steps: block.workflowSteps?.length
+            ? block.workflowSteps : null,
+
+          // Model params
+          model_name: block.modelName || null,
+          model_temperature: block.modelTemperature ?? null,
+          model_top_p: block.modelTopP ?? null,
+          model_max_tokens: block.modelMaxTokens || null,
+          model_system_prompt: block.modelSystemPrompt || null,
+          model_stop_sequences: block.modelStopSequences?.length
+            ? block.modelStopSequences : null,
+          model_reasoning: block.modelReasoning || null,
+
+          // Tool setup
+          tool_name: block.toolName || null,
+          tool_url: block.toolUrl || null,
+          tool_prerequisites: block.toolPrerequisites?.length
+            ? block.toolPrerequisites : null,
+          tool_steps: block.toolSteps?.length ? block.toolSteps : null,
+          tool_errors: block.toolErrors?.length ? block.toolErrors : null,
+          tool_time_estimate: block.toolTimeEstimate || null,
+
+          // Code
+          code_language: block.codeLanguage || null,
+          code_dependencies: block.codeDependencies?.length
+            ? block.codeDependencies : null,
+          code_env_vars: block.codeEnvVars?.length
+            ? block.codeEnvVars : null,
+          code_run_instructions: block.codeRunInstructions || null,
+          code_example_output: block.codeExampleOutput || null,
+
+          // Result
+          result_before: block.resultBefore || null,
+          result_after: block.resultAfter || null,
+          result_metrics: block.resultMetrics?.length
+            ? block.resultMetrics : null,
+          result_verdict: block.resultVerdict || null,
+          result_rating: block.resultRating || null,
+
+          // Comparison
+          comparison_label_a: block.comparisonLabelA || null,
+          comparison_label_b: block.comparisonLabelB || null,
+          comparison_type_a: block.comparisonTypeA || null,
+          comparison_type_b: block.comparisonTypeB || null,
+          comparison_content_a: Object.keys(block.comparisonContentA ?? {}).length
+            ? block.comparisonContentA : null,
+          comparison_content_b: Object.keys(block.comparisonContentB ?? {}).length
+            ? block.comparisonContentB : null,
+          comparison_axis: block.comparisonAxis || null,
+          comparison_verdict: block.comparisonVerdict || null,
+
+          // Resource
+          resource_title: block.resourceTitle || null,
+          resource_type: block.resourceType || null,
+          resource_annotation: block.resourceAnnotation || null,
+          resource_is_paywalled: block.resourceIsPaywalled ?? false,
         } as any).select("id").single();
 
         if (blockError || !insertedBlock) throw new Error(blockError?.message ?? "Block insert failed");

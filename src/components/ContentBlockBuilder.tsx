@@ -47,33 +47,148 @@ export interface BlockVariation {
   imageDescription: string;
 }
 
+export interface WorkflowStep {
+  id: string;
+  title: string;
+  description: string;
+  stepType: 'manual' | 'ai' | 'automated' | 'decision';
+  tool?: string;
+  decisionYes?: string;
+  decisionNo?: string;
+  subBlockType?: string;
+  subBlockContent?: string;
+}
+
+export interface AgentCapability {
+  id: string;
+  title: string;
+  description: string;
+  subPrompt: string;
+}
+
+export interface ToolStep {
+  id: string;
+  title: string;
+  instruction: string;
+  codeSnippet?: string;
+  screenshot?: string;
+}
+
+export interface ToolError {
+  id: string;
+  symptom: string;
+  cause: string;
+  fix: string;
+}
+
+export interface ResultMetric {
+  id: string;
+  label: string;
+  value: string;
+}
+
+export interface EnvVar {
+  id: string;
+  name: string;
+  description: string;
+  example: string;
+}
+
 export interface ContentBlock {
   id: string;
+  subheading?: string;
   type: BlockType;
+
+  // ── Core text (used by text, long_text, prompt,
+  //    agent_config, code, model_params) ──────────
   textContent: string;
   formatting: FormattingType;
   subBlocks: string[];
   useInstructions: string;
+
+  // ── File / image (existing) ────────────────────
   file: File | null;
   fileName?: string;
   fileSize?: number;
   imageFile: File | null;
   imagePreview?: string;
   imageDescription: string;
-  variations: BlockVariation[];
-  isPreview: boolean;
   externalFileUrl?: string;
-  // GitHub block fields
   githubDescription?: string;
-  // Large File block fields
   largeFilePlatform?: string;
   largeFileCustomPlatform?: string;
   largeFileDescription?: string;
   largeFileSizeHint?: string;
-  // Comparison block fields
-  comparisonA?: string;
-  comparisonB?: string;
-  // Resource block fields
+
+  // ── Variations (existing) ──────────────────────
+  variations: BlockVariation[];
+  isPreview: boolean;
+
+  // ── PROMPT ────────────────────────────────────
+  promptRole: 'system' | 'user' | 'assistant' | 'full';
+  promptModel: string;
+  promptVariables: Array<{ name: string; description: string }>;
+  promptExampleOutput: string;
+
+  // ── AGENT CONFIG ──────────────────────────────
+  agentModel: string;
+  agentTemperature: number;
+  agentMaxTokens: number;
+  agentTools: string[];
+  agentMemoryType: string;
+  agentCapabilities: AgentCapability[];
+
+  // ── WORKFLOW ──────────────────────────────────
+  workflowTrigger: string;
+  workflowOutput: string;
+  workflowSteps: WorkflowStep[];
+
+  // ── MODEL PARAMS ──────────────────────────────
+  modelName: string;
+  modelTemperature: number;
+  modelTopP: number;
+  modelMaxTokens: number;
+  modelSystemPrompt: string;
+  modelStopSequences: string[];
+  modelReasoning: string;
+
+  // ── TOOL SETUP ────────────────────────────────
+  toolName: string;
+  toolUrl: string;
+  toolPrerequisites: string[];
+  toolSteps: ToolStep[];
+  toolErrors: ToolError[];
+  toolTimeEstimate: string;
+
+  // ── CODE ──────────────────────────────────────
+  codeLanguage: string;
+  codeDependencies: string[];
+  codeEnvVars: EnvVar[];
+  codeRunInstructions: string;
+  codeExampleOutput: string;
+
+  // ── RESULT ────────────────────────────────────
+  resultBefore: string;
+  resultAfter: string;
+  resultMetrics: ResultMetric[];
+  resultVerdict: string;
+  resultRating: number;
+
+  // ── COMPARISON (enhanced) ─────────────────────
+  comparisonLabelA: string;
+  comparisonLabelB: string;
+  comparisonTypeA: string;
+  comparisonTypeB: string;
+  comparisonContentA: Record<string, any>;
+  comparisonContentB: Record<string, any>;
+  comparisonAxis: string;
+  comparisonVerdict: string;
+
+  // ── RESOURCE (enhanced) ───────────────────────
+  resourceTitle: string;
+  resourceType: 'paper'|'tool'|'video'|'course'|'repo'|'article'|'other';
+  resourceAnnotation: string;
+  resourceIsPaywalled: boolean;
   resourceDescription?: string;
 }
 
@@ -118,25 +233,93 @@ const emptyVariation = (label: string, type: BlockType): BlockVariation => ({
 
 export const emptyBlock = (type: BlockType): ContentBlock => ({
   id: uid(),
+  subheading: '',
   type,
-  textContent: "",
-  formatting: "paragraph",
-  subBlocks: ["", ""],
-  useInstructions: "",
+  textContent: '',
+  formatting: 'paragraph',
+  subBlocks: ['', ''],
+  useInstructions: '',
   file: null,
   imageFile: null,
-  imageDescription: "",
+  imageDescription: '',
   variations: [],
   isPreview: false,
-  externalFileUrl: "",
-  githubDescription: "",
-  largeFilePlatform: "",
-  largeFileCustomPlatform: "",
-  largeFileDescription: "",
-  largeFileSizeHint: "",
-  comparisonA: "",
-  comparisonB: "",
-  resourceDescription: "",
+  externalFileUrl: '',
+  githubDescription: '',
+  largeFilePlatform: '',
+  largeFileCustomPlatform: '',
+  largeFileDescription: '',
+  largeFileSizeHint: '',
+  fileName: undefined,
+  fileSize: undefined,
+  imagePreview: undefined,
+
+  // Prompt
+  promptRole: 'user',
+  promptModel: '',
+  promptVariables: [],
+  promptExampleOutput: '',
+
+  // Agent
+  agentModel: '',
+  agentTemperature: 0.7,
+  agentMaxTokens: 4000,
+  agentTools: [],
+  agentMemoryType: 'conversation',
+  agentCapabilities: [],
+
+  // Workflow
+  workflowTrigger: '',
+  workflowOutput: '',
+  workflowSteps: [],
+
+  // Model params
+  modelName: '',
+  modelTemperature: 0.7,
+  modelTopP: 1.0,
+  modelMaxTokens: 4000,
+  modelSystemPrompt: '',
+  modelStopSequences: [],
+  modelReasoning: '',
+
+  // Tool setup
+  toolName: '',
+  toolUrl: '',
+  toolPrerequisites: [],
+  toolSteps: [],
+  toolErrors: [],
+  toolTimeEstimate: '',
+
+  // Code
+  codeLanguage: 'python',
+  codeDependencies: [],
+  codeEnvVars: [],
+  codeRunInstructions: '',
+  codeExampleOutput: '',
+
+  // Result
+  resultBefore: '',
+  resultAfter: '',
+  resultMetrics: [],
+  resultVerdict: '',
+  resultRating: 0,
+
+  // Comparison
+  comparisonLabelA: 'Option A',
+  comparisonLabelB: 'Option B',
+  comparisonTypeA: 'text',
+  comparisonTypeB: 'text',
+  comparisonContentA: {},
+  comparisonContentB: {},
+  comparisonAxis: '',
+  comparisonVerdict: '',
+
+  // Resource
+  resourceTitle: '',
+  resourceType: 'article',
+  resourceAnnotation: '',
+  resourceIsPaywalled: false,
+  resourceDescription: '',
 });
 
 // ─── Formatting helpers ─────────────────────────────────────
