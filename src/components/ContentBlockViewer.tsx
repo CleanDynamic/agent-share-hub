@@ -134,6 +134,7 @@ interface Props {
   onTriggerPaywall: () => void;
   isEligible?: boolean;
   contentType?: string;
+  postType?: string;
 }
 
 // ─── Ad Modal ───────────────────────────────────────────────
@@ -1068,7 +1069,7 @@ function renderTypedViewer(block: BlockRow): JSX.Element | null {
 
 export function ContentBlockViewer({
   contentId, contentTitle = "", monetisationType, creatorId,
-  useInstructions, onTriggerPaywall, isEligible = false, contentType,
+  useInstructions, onTriggerPaywall, isEligible = false, contentType, postType,
 }: Props) {
   const { isLoggedIn, profile } = useAuth();
   const isBlog = contentType === "Blog";
@@ -1244,38 +1245,54 @@ export function ContentBlockViewer({
             return (
               <div key={block.id} id={`block-${block.id}`} style={{ marginBottom: 24 }}>
                 {/* Step marker separator */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  marginBottom: 14,
-                }}>
-                  {/* Step number */}
-                  <div style={{
-                    width: 22, height: 22, borderRadius: '50%',
-                    background: 'rgba(232,87,26,0.15)',
-                    border: '1px solid rgba(232,87,26,0.30)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 10, fontWeight: 700, color: '#E8571A',
-                    flexShrink: 0,
-                  }}>
-                    {index + 1}
-                  </div>
+                {(() => {
+                  const stepStyle = postType === 'build' ? 'numbered'
+                    : postType === 'discussion' ? 'none'
+                    : 'dot';
+                  return (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      marginBottom: 14,
+                    }}>
+                      {/* Step marker */}
+                      {stepStyle !== 'none' && (
+                        <div style={{
+                          width: stepStyle === 'numbered' ? 22 : 8,
+                          height: stepStyle === 'numbered' ? 22 : 8,
+                          borderRadius: '50%',
+                          background: stepStyle === 'numbered'
+                            ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.15)',
+                          border: stepStyle === 'numbered'
+                            ? '1px solid rgba(232,87,26,0.30)'
+                            : '1px solid rgba(255,255,255,0.20)',
+                          display: 'flex', alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 10, fontWeight: 700,
+                          color: stepStyle === 'numbered' ? '#E8571A' : 'transparent',
+                          flexShrink: 0,
+                        }}>
+                          {stepStyle === 'numbered' ? index + 1 : ''}
+                        </div>
+                      )}
 
-                  {/* Block type label */}
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 5,
-                    fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
-                    letterSpacing: '0.12em', color: 'rgba(255,255,255,0.25)',
-                  }}>
-                    <span>{BLOCK_ICONS[effectiveType] ?? '◆'}</span>
-                    <span>{getBlockType(effectiveType).label}</span>
-                  </div>
+                      {/* Block type label */}
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                        letterSpacing: '0.12em', color: 'rgba(255,255,255,0.25)',
+                      }}>
+                        <span>{BLOCK_ICONS[effectiveType] ?? '◆'}</span>
+                        <span>{getBlockType(effectiveType).label}</span>
+                      </div>
 
-                  {/* Line */}
-                  <div style={{
-                    flex: 1, height: 1,
-                    background: 'rgba(255,255,255,0.05)',
-                  }} />
-                </div>
+                      {/* Line */}
+                      <div style={{
+                        flex: 1, height: 1,
+                        background: 'rgba(255,255,255,0.05)',
+                      }} />
+                    </div>
+                  );
+                })()}
 
                 <div className={`border rounded-xl overflow-hidden ${isPreview ? "border-[#2EC4B6]/40 bg-[#111118]" : "border-[#1E1E2A] bg-[#111118]"}`}>
                   {/* Variation tabs */}
