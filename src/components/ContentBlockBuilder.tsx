@@ -193,9 +193,21 @@ export interface ContentBlock {
   resourceDescription?: string;
 }
 
-interface Props {
+// ─── Group block ─────────────────────────────────────────────
+
+export interface GroupBlock {
+  id: string;
+  type: 'group';
+  title: string;
   blocks: ContentBlock[];
-  onChange: (blocks: ContentBlock[]) => void;
+  isCollapsed: boolean;
+}
+
+export type BlockOrGroup = ContentBlock | GroupBlock;
+
+interface Props {
+  blocks: BlockOrGroup[];
+  onChange: (blocks: BlockOrGroup[]) => void;
   contentType?: string;
 }
 
@@ -321,6 +333,14 @@ export const emptyBlock = (type: BlockType): ContentBlock => ({
   resourceAnnotation: '',
   resourceIsPaywalled: false,
   resourceDescription: '',
+});
+
+export const emptyGroup = (): GroupBlock => ({
+  id: uid(),
+  type: 'group',
+  title: '',
+  blocks: [],
+  isCollapsed: false,
 });
 
 // ─── Formatting helpers ─────────────────────────────────────
@@ -1912,13 +1932,249 @@ const SectionHeadingEditor = ({
 
 // ─── Main component ──────────────────────────────────────────
 
+// ─── Group block editor ─────────────────────────────────────
+
+const GroupBlockEditor = ({
+  group,
+  groupIndex,
+  onUpdateGroup,
+  onDeleteGroup,
+}: {
+  group: GroupBlock;
+  groupIndex: number;
+  onUpdateGroup: (patch: Partial<GroupBlock>) => void;
+  onDeleteGroup: () => void;
+}) => {
+  const addBlockToGroup = (type: BlockType) => {
+    onUpdateGroup({
+      blocks: [...group.blocks, emptyBlock(type)],
+    });
+  };
+
+  const updateBlockInGroup = (
+    blockIndex: number,
+    patch: Partial<ContentBlock>
+  ) => {
+    onUpdateGroup({
+      blocks: group.blocks.map((b, i) =>
+        i === blockIndex ? { ...b, ...patch } : b
+      ),
+    });
+  };
+
+  const deleteBlockFromGroup = (blockIndex: number) => {
+    onUpdateGroup({
+      blocks: group.blocks.filter((_, i) => i !== blockIndex),
+    });
+  };
+
+  return (
+    <div style={{
+      border: '1px dashed rgba(232,87,26,0.30)',
+      borderRadius: 12,
+      marginBottom: 12,
+      overflow: 'hidden',
+    }}>
+      {/* Group header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '10px 12px',
+        background: 'rgba(232,87,26,0.06)',
+        borderBottom: group.isCollapsed
+          ? 'none'
+          : '1px dashed rgba(232,87,26,0.20)',
+      }}>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+          ▤
+        </span>
+        <input
+          value={group.title}
+          onChange={e => onUpdateGroup({ title: e.target.value })}
+          placeholder="Group name (appears in table of contents)..."
+          style={{
+            flex: 1,
+            background: 'transparent', border: 'none',
+            fontSize: 13, fontWeight: 600,
+            fontFamily: "'Playfair Display', Georgia, serif",
+            color: 'rgba(255,255,255,0.80)', outline: 'none',
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => onUpdateGroup({ isCollapsed: !group.isCollapsed })}
+          style={{
+            background: 'none', border: 'none',
+            color: 'rgba(255,255,255,0.30)',
+            cursor: 'pointer', fontSize: 14, padding: '0 4px',
+          }}
+        >
+          {group.isCollapsed ? '▾' : '▴'}
+        </button>
+        <button
+          type="button"
+          onClick={onDeleteGroup}
+          style={{
+            background: 'none', border: 'none',
+            color: 'rgba(255,255,255,0.20)',
+            cursor: 'pointer', fontSize: 16,
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Group body */}
+      {!group.isCollapsed && (
+        <div style={{ padding: '12px 12px 8px 12px' }}>
+          {/* Child blocks */}
+          {group.blocks.length === 0 && (
+            <div style={{
+              textAlign: 'center', padding: '16px',
+              fontSize: 12, color: 'rgba(255,255,255,0.20)',
+              fontStyle: 'italic',
+            }}>
+              No blocks in this group yet. Add blocks below.
+            </div>
+          )}
+
+          {group.blocks.map((block, bi) => (
+            <div key={block.id} style={{
+              padding: '10px 12px',
+              marginBottom: 8,
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 8,
+            }}>
+              {/* Mini block header */}
+              <div style={{
+                display: 'flex', alignItems: 'center',
+                gap: 6, marginBottom: 8,
+                fontSize: 10, fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.10em',
+                color: 'rgba(255,255,255,0.30)',
+              }}>
+                <span>
+                  {NEW_BLOCK_TYPES.find(t => t.value === block.type)?.emoji ?? '◆'}
+                </span>
+                <span>
+                  {NEW_BLOCK_TYPES.find(t => t.value === block.type)?.label ?? block.type}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => deleteBlockFromGroup(bi)}
+                  style={{
+                    marginLeft: 'auto', background: 'none',
+                    border: 'none', color: 'rgba(255,255,255,0.20)',
+                    cursor: 'pointer', fontSize: 14,
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Block content — render the appropriate editor */}
+              {block.type === 'prompt' && (
+                <PromptBlockEditor
+                  block={block}
+                  update={(_, patch) => updateBlockInGroup(bi, patch)}
+                  index={bi}
+                />
+              )}
+              {block.type === 'code' && (
+                <CodeBlockEditor
+                  block={block}
+                  update={(_, patch) => updateBlockInGroup(bi, patch)}
+                  index={bi}
+                />
+              )}
+              {block.type === 'result' && (
+                <ResultBlockEditor
+                  block={block}
+                  update={(_, patch) => updateBlockInGroup(bi, patch)}
+                  index={bi}
+                />
+              )}
+              {block.type === 'image' && (
+                <ImagePicker
+                  imageFile={block.imageFile}
+                  imagePreview={block.imagePreview}
+                  imageDescription={block.imageDescription}
+                  onImageChange={(f, preview) =>
+                    updateBlockInGroup(bi, {
+                      imageFile: f,
+                      imagePreview: preview,
+                    })
+                  }
+                  onDescriptionChange={d =>
+                    updateBlockInGroup(bi, { imageDescription: d })
+                  }
+                />
+              )}
+              {(block.type === 'text' || block.type === 'long_text' ||
+                block.type === 'resource' || block.type === 'comparison' ||
+                block.type === 'workflow' || block.type === 'agent_config' ||
+                block.type === 'model_params' || block.type === 'tool_setup') && (
+                <TextEditor
+                  value={block.textContent}
+                  formatting={block.formatting}
+                  subBlocks={block.subBlocks}
+                  onTextChange={v => updateBlockInGroup(bi, { textContent: v })}
+                  onFormatChange={f => updateBlockInGroup(bi, { formatting: f })}
+                  onSubBlocksChange={s => updateBlockInGroup(bi, { subBlocks: s })}
+                />
+              )}
+            </div>
+          ))}
+
+          {/* Add block to group */}
+          <div style={{ marginTop: 8 }}>
+            <div style={{
+              fontSize: 10, fontWeight: 600,
+              color: 'rgba(255,255,255,0.25)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              marginBottom: 6,
+            }}>
+              Add to group
+            </div>
+            <div style={{
+              display: 'flex', flexWrap: 'wrap', gap: 5,
+            }}>
+              {NEW_BLOCK_TYPES
+                .filter(t => t.value !== 'section_heading')
+                .slice(0, 6)
+                .map(t => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => addBlockToGroup(t.value as BlockType)}
+                    style={{
+                      padding: '3px 9px', borderRadius: 6,
+                      fontSize: 11, cursor: 'pointer',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.10)',
+                      color: 'rgba(255,255,255,0.45)',
+                    }}
+                  >
+                    {t.emoji} {t.label}
+                  </button>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
   const [activeVariationTab, setActiveVariationTab] = useState<Record<string, string>>({});
 
   const update = useCallback(
     (index: number, patch: Partial<ContentBlock>) => {
-      const next = [...blocks];
-      next[index] = { ...next[index], ...patch };
+      const next = [...blocks] as BlockOrGroup[];
+      next[index] = { ...(next[index] as ContentBlock), ...patch };
       onChange(next);
     },
     [blocks, onChange]
@@ -1937,31 +2193,31 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
   const addBlock = (type: BlockType) => onChange([...blocks, emptyBlock(type)]);
 
   const addVariation = (blockIndex: number) => {
-    const block = blocks[blockIndex];
+    const block = blocks[blockIndex] as ContentBlock;
     const label = nextLabel(block.variations);
-    const next = [...blocks];
+    const next = [...blocks] as BlockOrGroup[];
     next[blockIndex] = { ...block, variations: [...block.variations, emptyVariation(label, block.type)] };
     onChange(next);
     setActiveVariationTab((prev) => ({ ...prev, [block.id]: label }));
   };
 
   const updateVariation = (blockIndex: number, varId: string, patch: Partial<BlockVariation>) => {
-    const next = [...blocks];
-    const block = { ...next[blockIndex] };
+    const next = [...blocks] as BlockOrGroup[];
+    const block = { ...(next[blockIndex] as ContentBlock) };
     block.variations = block.variations.map((v) => (v.id === varId ? { ...v, ...patch } : v));
     next[blockIndex] = block;
     onChange(next);
   };
 
   const deleteVariation = (blockIndex: number, varId: string) => {
-    const next = [...blocks];
-    const block = { ...next[blockIndex] };
+    const next = [...blocks] as BlockOrGroup[];
+    const block = { ...(next[blockIndex] as ContentBlock) };
     block.variations = block.variations.filter((v) => v.id !== varId);
     next[blockIndex] = block;
     onChange(next);
     const activeTab = activeVariationTab[block.id];
     if (activeTab) {
-      const removed = blocks[blockIndex].variations.find((v) => v.id === varId);
+      const removed = (blocks[blockIndex] as ContentBlock).variations.find((v) => v.id === varId);
       if (removed && removed.label === activeTab) setActiveVariationTab((prev) => ({ ...prev, [block.id]: "A" }));
     }
   };
@@ -1979,7 +2235,26 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
 
       {/* Block list */}
       <div className="space-y-2">
-        {blocks.map((block, index) => {
+        {blocks.map((item, index) => {
+          if ((item as any).type === 'group') {
+            const group = item as GroupBlock;
+            return (
+              <GroupBlockEditor
+                key={group.id}
+                group={group}
+                groupIndex={index}
+                onUpdateGroup={patch => {
+                  const next = [...blocks] as BlockOrGroup[];
+                  next[index] = { ...group, ...patch };
+                  onChange(next);
+                }}
+                onDeleteGroup={() => {
+                  onChange(blocks.filter((_, i) => i !== index));
+                }}
+              />
+            );
+          }
+          const block = item as ContentBlock;
           const hasVariations = block.variations.length > 0;
           const activeTab = activeVariationTab[block.id] ?? "A";
           const showingMain = activeTab === "A";
@@ -2176,7 +2451,24 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
           ))}
         </div>
       ) : (
-        <BlockTypePicker onAdd={addBlock} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <BlockTypePicker onAdd={addBlock} />
+          </div>
+          <button
+            type="button"
+            onClick={() => onChange([...blocks, emptyGroup()])}
+            style={{
+              padding: '8px 14px', borderRadius: 8, fontSize: 12,
+              background: 'rgba(232,87,26,0.06)',
+              border: '1px dashed rgba(232,87,26,0.30)',
+              color: 'rgba(232,87,26,0.70)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            ▤ Add Group
+          </button>
+        </div>
       )}
     </div>
   );
