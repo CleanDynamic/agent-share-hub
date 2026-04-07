@@ -74,8 +74,14 @@ const Upload = () => {
   const { data: AI_TOOLS } = useApprovedToolNames();
   const { groups: toolGroups } = useGroupedApprovedTools();
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
-  const STEP_LABELS = ['Post Type', 'The Story', 'The Archive', 'Details'];
+  const totalSteps = 5;
+  const STEP_LABELS = [
+    'Post Type',
+    'The Story',
+    'The Blueprint',
+    'What to Expect',
+    'Details',
+  ];
 
   const goNext = () => setStep(s => Math.min(s + 1, totalSteps));
   const goBack = () => setStep(s => Math.max(s - 1, 1));
@@ -1694,49 +1700,6 @@ const Upload = () => {
                 />
               </div>
 
-              {/* What to Expect — at the bottom of the archive step */}
-              <div style={{
-                padding: '16px',
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: 12,
-              }}>
-                <div style={{
-                  fontSize: 10, fontWeight: 700,
-                  color: 'rgba(255,255,255,0.30)',
-                  textTransform: 'uppercase' as const,
-                  letterSpacing: '0.12em',
-                  marginBottom: 8,
-                }}>
-                  What to expect
-                </div>
-                <div style={{
-                  fontSize: 12, color: 'rgba(255,255,255,0.35)',
-                  marginBottom: 10,
-                }}>
-                  Tell readers what they will be able to do after
-                  reading this. Be concrete and specific.
-                </div>
-                <textarea
-                  {...form.register('what_to_expect')}
-                  placeholder="After reading this, you will be able to..."
-                  rows={3}
-                  style={{
-                    width: '100%',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.07)',
-                    borderRadius: 8,
-                    padding: '10px 12px',
-                    fontSize: 13,
-                    color: 'rgba(255,255,255,0.75)',
-                    outline: 'none',
-                    resize: 'vertical' as const,
-                    fontFamily: 'Inter, sans-serif',
-                    boxSizing: 'border-box' as const,
-                  }}
-                />
-              </div>
-
               {/* Blog: estimated read time */}
               {isBlogType && (() => {
                 const wordCount = contentBlocks.reduce((sum, b) => {
@@ -1750,7 +1713,134 @@ const Upload = () => {
             </div>
             )}
 
-            {step === 4 && (<>
+            {step === 4 && (() => {
+              const postType = form.watch('post_type');
+              const WTE_CONFIG: Record<string, {
+                label: string;
+                sublabel: string;
+                placeholder: string;
+                emoji: string;
+                color: string;
+              }> = {
+                build: {
+                  label: 'Outcome',
+                  sublabel: 'What will readers be able to do after following this?',
+                  placeholder: 'After following this, you will be able to build a customer service bot that responds in under 2 seconds using Claude and Make...',
+                  emoji: '🎯',
+                  color: '#E8571A',
+                },
+                technique: {
+                  label: 'The Claim',
+                  sublabel: 'What does this technique actually achieve? Be specific and honest.',
+                  placeholder: 'This technique improves output consistency by forcing the model to reason step by step before committing to a format...',
+                  emoji: '⚡',
+                  color: '#2EC4B6',
+                },
+                discovery: {
+                  label: 'The Finding',
+                  sublabel: 'State what you discovered as clearly as you can. One or two sentences.',
+                  placeholder: 'I found that Claude Sonnet produces significantly shorter but more accurate summaries than GPT-4o on legal documents under 2000 words...',
+                  emoji: '🔍',
+                  color: '#7C3AED',
+                },
+                discussion: {
+                  label: 'What you\'re looking for',
+                  sublabel: 'What kind of responses do you want from the community?',
+                  placeholder: 'I want to hear from people who have tried building agents for non-technical users — specifically what prompting approaches reduced confusion...',
+                  emoji: '💬',
+                  color: '#3B82F6',
+                },
+              };
+              const wteConfig = WTE_CONFIG[postType] ?? WTE_CONFIG.build;
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Type badge */}
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    padding: '6px 14px', borderRadius: 9999, alignSelf: 'flex-start',
+                    background: `${wteConfig.color}18`,
+                    border: `1px solid ${wteConfig.color}35`,
+                  }}>
+                    <span>{wteConfig.emoji}</span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, color: wteConfig.color,
+                      textTransform: 'uppercase', letterSpacing: '0.08em',
+                    }}>
+                      {wteConfig.label}
+                    </span>
+                  </div>
+
+                  {/* Label */}
+                  <div>
+                    <div style={{
+                      fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
+                      marginBottom: 6,
+                    }}>
+                      {wteConfig.label}
+                    </div>
+                    <div style={{
+                      fontSize: 13, color: 'rgba(255,255,255,0.40)',
+                      marginBottom: 12, lineHeight: 1.5,
+                    }}>
+                      {wteConfig.sublabel}
+                    </div>
+                    <textarea
+                      {...form.register('what_to_expect')}
+                      placeholder={wteConfig.placeholder}
+                      rows={5}
+                      style={{
+                        width: '100%',
+                        background: `${wteConfig.color}08`,
+                        border: `1px solid ${wteConfig.color}25`,
+                        borderRadius: 10, padding: '12px 14px',
+                        fontSize: 14, color: '#fff', outline: 'none',
+                        resize: 'vertical', fontFamily: 'Inter, sans-serif',
+                        lineHeight: 1.65, boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+
+                  {/* Character count */}
+                  <div style={{
+                    fontSize: 11, color: 'rgba(255,255,255,0.25)',
+                    textAlign: 'right', marginTop: -8,
+                  }}>
+                    {(form.watch('what_to_expect') ?? '').length} / 2000
+                  </div>
+
+                  {/* For Discussion: also show Call to Action field */}
+                  {postType === 'discussion' && (
+                    <div>
+                      <div style={{
+                        fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                        letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
+                        marginBottom: 6, marginTop: 8,
+                      }}>
+                        Your position (optional)
+                      </div>
+                      <textarea
+                        {...form.register('use_instructions')}
+                        placeholder="Where do you stand on this? Or leave blank to stay neutral..."
+                        rows={3}
+                        style={{
+                          width: '100%',
+                          background: 'rgba(255,255,255,0.03)',
+                          border: '1px solid rgba(255,255,255,0.07)',
+                          borderRadius: 10, padding: '10px 14px',
+                          fontSize: 13, color: 'rgba(255,255,255,0.75)',
+                          outline: 'none', resize: 'vertical',
+                          fontFamily: 'Inter, sans-serif',
+                          lineHeight: 1.6, boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {step === 5 && (<>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
               <div style={{
