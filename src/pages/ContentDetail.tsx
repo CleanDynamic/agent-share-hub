@@ -1799,10 +1799,22 @@ function WhatToExpectSection({ item }: { item: any }) {
           border: '1px solid rgba(255,255,255,0.07)',
           borderRadius: 12, overflow: 'hidden',
         }}>
-          {block.image_url && (
-            <img src={block.image_url} alt={block.text_content || block.content || ''}
-              style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
-          )}
+          {block.image_url && (() => {
+            const isVid = /\.(mp4|webm|mov|ogg)$/i.test(block.image_url);
+            return isVid ? (
+              <video
+                src={block.image_url}
+                autoPlay muted loop playsInline
+                style={{
+                  width: '100%', height: 180,
+                  objectFit: 'cover', display: 'block',
+                }}
+              />
+            ) : (
+              <img src={block.image_url} alt={block.text_content || block.content || ''}
+                style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+            );
+          })()}
           {(block.text_content || block.content) && (
             <p style={{
               fontSize: 13, color: 'rgba(255,255,255,0.65)',
@@ -1846,16 +1858,29 @@ function WhatToExpectSection({ item }: { item: any }) {
         {/* Image area */}
         {hasImages && (
           <div style={{ position: 'relative', height: 180, background: 'rgba(0,0,0,0.30)' }}>
-            {block.image_url ? (
-              <img
-                src={block.image_url}
-                alt={blockText || ''}
-                style={{
-                  width: '100%', height: '100%',
-                  objectFit: 'cover', display: 'block',
-                  transition: 'opacity 0.3s ease',
-                }}
-              />
+            {block.image_url ? (() => {
+              const isVid = /\.(mp4|webm|mov|ogg)$/i.test(block.image_url);
+              return isVid ? (
+                <video
+                  src={block.image_url}
+                  autoPlay muted loop playsInline
+                  style={{
+                    width: '100%', height: '100%',
+                    objectFit: 'cover', display: 'block',
+                  }}
+                />
+              ) : (
+                <img
+                  src={block.image_url}
+                  alt={blockText || ''}
+                  style={{
+                    width: '100%', height: '100%',
+                    objectFit: 'cover', display: 'block',
+                    transition: 'opacity 0.3s ease',
+                  }}
+                />
+              );
+            })()
             ) : (
               <div style={{
                 width: '100%', height: '100%',
