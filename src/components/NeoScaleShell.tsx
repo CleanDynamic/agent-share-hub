@@ -556,29 +556,164 @@ const NEOSCALE_CSS = `
 .ns-search-result-title { font-size: 11px; color: rgba(255,255,255,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .ns-search-result-badge { font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.35); flex-shrink: 0; }
 
-.ns-right-cats {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 8px; margin-bottom: 18px;
+/* ── Right panel tile grid ── */
+.ns-tile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
 }
-.ns-right-cat {
-  border-radius: 10px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.04);
-  padding: 12px 8px;
-  display: flex; flex-direction: column;
-  align-items: center; gap: 6px;
-  cursor: pointer; transition: all 0.2s;
+
+.ns-tile {
   position: relative;
-}
-.ns-right-cat:hover { background: rgba(255,255,255,0.06); }
-.ns-right-cat:hover::after {
-  content: '';
-  position: absolute; inset: 0;
   border-radius: 10px;
-  border: 1px solid rgba(232,87,26,0.25);
+  padding: 12px 8px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: background 0.2s;
+  background: rgba(255,255,255,0.03);
+  border: none;
+  overflow: hidden;
 }
-.ns-right-cat-emoji { font-size: 18px; }
-.ns-right-cat-name { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.4); text-align: center; }
+
+.ns-tile::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 11px;
+  padding: 1px;
+  background: rgba(255,255,255,0.06);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  transition: background 0.2s;
+  z-index: 0;
+}
+
+.ns-tile::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 11px;
+  padding: 1px;
+  background: conic-gradient(
+    var(--tile-hover-color, #E8571A) var(--tile-fill, 0%),
+    transparent var(--tile-fill, 0%)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 0;
+}
+
+.ns-tile:hover {
+  background: rgba(255,255,255,0.055);
+}
+
+.ns-tile:hover::after {
+  opacity: 1;
+  animation: ns-border-fill 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes ns-border-fill {
+  from {
+    background: conic-gradient(
+      var(--tile-hover-color) 0%,
+      transparent 0%
+    );
+  }
+  to {
+    background: conic-gradient(
+      var(--tile-hover-color) 100%,
+      transparent 100%
+    );
+  }
+}
+
+.ns-tile-emoji {
+  font-size: 20px;
+  position: relative;
+  z-index: 1;
+  line-height: 1;
+}
+
+.ns-tile-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.40);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  position: relative;
+  z-index: 1;
+}
+
+.ns-tile-count {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.20);
+  position: relative;
+  z-index: 1;
+}
+
+/* Bounty strip */
+.ns-bounty-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.ns-bounty-tile {
+  position: relative;
+  border-radius: 8px;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.03);
+  border: none;
+  overflow: hidden;
+  transition: background 0.2s;
+}
+
+.ns-bounty-tile::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 9px;
+  padding: 1px;
+  background: conic-gradient(
+    var(--tile-hover-color, #F59E0B) var(--tile-fill, 0%),
+    transparent var(--tile-fill, 0%)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.ns-bounty-tile:hover {
+  background: rgba(255,255,255,0.055);
+}
+
+.ns-bounty-tile:hover::after {
+  opacity: 1;
+  animation: ns-border-fill 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
 .ns-right-divider { height: 1px; background: rgba(255,255,255,0.04); margin: 4px 0 14px; }
 .ns-trending-title {
   font-size: 10px; font-weight: 600;
@@ -686,22 +821,74 @@ const NEOSCALE_CSS = `
 `;
 
 /* ────────────────────────────────────────────────
-   Category data (expanded with missing types)
+   Post type & bounty tile data
 ──────────────────────────────────────────────── */
-const CATEGORIES = [
-  { name: "Prompt(s)",    emoji: "💬", slug: "prompt-file" },
-  { name: "Agent(s)",     emoji: "🤖", slug: "agent-blueprint" },
-  { name: "Workflow",     emoji: "🔄", slug: "workflow-template" },
-  { name: "AI Tools",     emoji: "🧠", slug: "ai-tools-llms" },
-  { name: "Blog",         emoji: "📝", slug: "blog" },
-  { name: "Projects",     emoji: "🗂️",  slug: "projects" },
-  { name: "Evaluation",   emoji: "📊", slug: "evaluation-framework" },
-  { name: "Agent Stack",  emoji: "🏗️",  slug: "agent-stack" },
-  { name: "Install Guide",emoji: "📥", slug: "install-guide" },
-  { name: "Model Config", emoji: "⚙️",  slug: "model-config-guide" },
-  { name: "Integration",  emoji: "🔗", slug: "integration-guide" },
-  { name: "Bounties",     emoji: "🎯", slug: "bounties" },
+const POST_TYPE_TILES = [
+  {
+    value: 'build',
+    label: 'Builds',
+    emoji: '🔨',
+    color: '#E8571A',
+    bg: 'rgba(232,87,26,0.12)',
+    border: 'rgba(232,87,26,0.20)',
+    route: '/browse?post_type=build',
+  },
+  {
+    value: 'technique',
+    label: 'Techniques',
+    emoji: '⚡',
+    color: '#2EC4B6',
+    bg: 'rgba(46,196,182,0.12)',
+    border: 'rgba(46,196,182,0.20)',
+    route: '/browse?post_type=technique',
+  },
+  {
+    value: 'discovery',
+    label: 'Discoveries',
+    emoji: '🔍',
+    color: '#7C3AED',
+    bg: 'rgba(124,58,237,0.12)',
+    border: 'rgba(124,58,237,0.20)',
+    route: '/browse?post_type=discovery',
+  },
+  {
+    value: 'discussion',
+    label: 'Discussions',
+    emoji: '💬',
+    color: '#3B82F6',
+    bg: 'rgba(59,130,246,0.12)',
+    border: 'rgba(59,130,246,0.20)',
+    route: '/browse?post_type=discussion',
+  },
 ];
+
+const BOUNTY_TILES = [
+  {
+    label: 'Open Bounties',
+    emoji: '🎯',
+    color: '#F59E0B',
+    bg: 'rgba(245,158,11,0.12)',
+    border: 'rgba(245,158,11,0.20)',
+    route: '/browse?bounties=open',
+  },
+  {
+    label: 'Solved',
+    emoji: '✅',
+    color: '#22C55E',
+    bg: 'rgba(34,197,94,0.10)',
+    border: 'rgba(34,197,94,0.15)',
+    route: '/browse?bounties=solved',
+  },
+];
+
+// Random colour palette for tile hover borders
+const TILE_HOVER_COLORS = [
+  '#E8571A', '#2EC4B6', '#7C3AED', '#3B82F6',
+  '#F59E0B', '#22C55E', '#EC4899', '#06B6D4',
+  '#A78BFA', '#F97316',
+];
+const randomTileColor = () =>
+  TILE_HOVER_COLORS[Math.floor(Math.random() * TILE_HOVER_COLORS.length)];
 
 /* ────────────────────────────────────────────────
    Route ↔ nav-page mapping
@@ -1748,21 +1935,83 @@ export function NeoScaleShell() {
               </div>
             )}
 
-            {/* Category grid */}
-            <div className="ns-right-cats">
-              {CATEGORIES.map(cat => (
+            {/* ── Section label */}
+            <div style={{
+              fontSize: 10, fontWeight: 700,
+              color: 'rgba(255,255,255,0.28)',
+              letterSpacing: '1.4px',
+              textTransform: 'uppercase' as const,
+              padding: '0 4px',
+              marginBottom: 10,
+            }}>
+              Browse
+            </div>
+
+            {/* ── Post type tile grid */}
+            <div className="ns-tile-grid">
+              {POST_TYPE_TILES.map(tile => (
                 <div
-                  key={cat.slug}
-                  className="ns-right-cat"
+                  key={tile.value}
+                  className="ns-tile"
+                  style={{
+                    '--tile-hover-color': tile.color,
+                  } as React.CSSProperties}
+                  onMouseEnter={e => {
+                    const color = randomTileColor();
+                    (e.currentTarget as HTMLElement).style.setProperty(
+                      '--tile-hover-color', color
+                    );
+                  }}
                   onClick={() => {
                     flipMiddle('right');
-                    if (cat.slug === "projects") navigate("/category/projects");
-                    else if (cat.slug === "bounties") navigate("/browse?tab=bounties");
-                    else navigate(`/category/${cat.slug}`);
+                    navigate(tile.route);
                   }}
                 >
-                  <span className="ns-right-cat-emoji">{cat.emoji}</span>
-                  <span className="ns-right-cat-name">{cat.name}</span>
+                  <span className="ns-tile-emoji">{tile.emoji}</span>
+                  <span className="ns-tile-label">{tile.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* ── Bounties section */}
+            <div style={{
+              fontSize: 10, fontWeight: 700,
+              color: 'rgba(255,255,255,0.28)',
+              letterSpacing: '1.4px',
+              textTransform: 'uppercase' as const,
+              padding: '0 4px',
+              marginBottom: 8,
+            }}>
+              Bounties
+            </div>
+
+            <div className="ns-bounty-strip">
+              {BOUNTY_TILES.map(tile => (
+                <div
+                  key={tile.label}
+                  className="ns-bounty-tile"
+                  style={{
+                    '--tile-hover-color': tile.color,
+                  } as React.CSSProperties}
+                  onMouseEnter={e => {
+                    const color = randomTileColor();
+                    (e.currentTarget as HTMLElement).style.setProperty(
+                      '--tile-hover-color', color
+                    );
+                  }}
+                  onClick={() => {
+                    flipMiddle('right');
+                    navigate(tile.route);
+                  }}
+                >
+                  <span style={{ fontSize: 16, flexShrink: 0 }}>{tile.emoji}</span>
+                  <span style={{
+                    fontSize: 12, fontWeight: 600,
+                    color: tile.color,
+                    position: 'relative', zIndex: 1,
+                  }}>
+                    {tile.label}
+                  </span>
                 </div>
               ))}
             </div>
