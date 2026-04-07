@@ -1023,9 +1023,9 @@ const Upload = () => {
   }
 
   return (
-    <div style={{ paddingTop: 28, paddingBottom: 48, paddingLeft: 24, paddingRight: 24 }}>
+    <div style={{ display: 'flex', flexDirection: 'column' as const, height: '100%', overflowY: 'auto' as const, paddingTop: 0, paddingBottom: 80, paddingLeft: 0, paddingRight: 0 }}>
       <SeoHead title="Upload — NeoScale AI" description="Share your AI assistants, blueprints and workflows with the community." path="/upload" />
-      <div className="mx-auto max-w-2xl">
+      <div>
         {/* Draft banner */}
         {draftMeta && (
           <div
@@ -1121,20 +1121,8 @@ const Upload = () => {
         })()}
 
         {/* ─── Steps 2–4: Existing form sections ─── */}
-        {step >= 2 && (<>
+        {step >= 2 && (<div style={{ flex: 1, overflowY: 'auto' as const, padding: '20px 24px 0 24px', minHeight: 0 }}>
 
-        {/* Header */}
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)' }}>
-            {uploadType === "blog" ? "Write a Post"
-              : uploadType === "bounty" ? "Post a Bounty"
-              : isProjectMode ? "Share a Project"
-              : "Share a Blueprint"}
-          </h1>
-          <p style={{ fontSize: 13, fontWeight: 300, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
-            All submissions are reviewed and tested before going live. We aim to respond within 48 hours.
-          </p>
-        </div>
 
         {uploadType === "blog" ? (
         <Form {...form}>
@@ -1535,26 +1523,38 @@ const Upload = () => {
         </Form>
         ) : (
         <>
-          {/* Project toggle */}
-          <div
-            className="mb-5 flex items-center justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3.5"
-            style={{ borderRadius: 12 }}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-xl">📁</span>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Make this a Project</p>
-                <p className="text-xs text-muted-foreground">Group multiple Blueprints into one post</p>
-              </div>
+          {/* Project toggle — compact chip */}
+          {!isBountyType && !isBlogType && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              marginBottom: 12,
+            }}>
+              <button
+                type="button"
+                onClick={() => setIsProjectMode(p => !p)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '4px 12px', borderRadius: 9999, fontSize: 11,
+                  fontWeight: 600, cursor: 'pointer',
+                  background: isProjectMode
+                    ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${isProjectMode
+                    ? 'rgba(232,87,26,0.35)' : 'rgba(255,255,255,0.09)'}`,
+                  color: isProjectMode
+                    ? '#E8571A' : 'rgba(255,255,255,0.35)',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <span style={{ fontSize: 13 }}>📁</span>
+                {isProjectMode ? 'Project mode ON' : 'Make this a Project'}
+              </button>
+              {isProjectMode && (
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.30)' }}>
+                  Groups multiple posts together
+                </span>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={() => setIsProjectMode((v) => !v)}
-              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${isProjectMode ? "bg-primary" : "bg-muted"}`}
-            >
-              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${isProjectMode ? "translate-x-4" : "translate-x-1"}`} />
-            </button>
-          </div>
+          )}
 
           {isProjectMode ? (
             <ProjectUploadForm />
@@ -1568,79 +1568,7 @@ const Upload = () => {
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-                  {/* Post type indicator */}
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 8,
-                    padding: '6px 14px',
-                    background: postType.bg,
-                    border: `1px solid ${postType.border}`,
-                    borderRadius: 9999,
-                    alignSelf: 'flex-start',
-                  }}>
-                    <span>{postType.emoji}</span>
-                    <span style={{
-                      fontSize: 11, fontWeight: 700,
-                      color: postType.color,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                    }}>{postType.label}</span>
-                    <button
-                      type="button"
-                      onClick={() => setStep(1)}
-                      style={{
-                        fontSize: 10, color: postType.color,
-                        background: 'none', border: 'none',
-                        cursor: 'pointer', marginLeft: 4,
-                      }}
-                    >
-                      change
-                    </button>
-                  </div>
-
-                  {/* Cover image */}
-                  <div>
-                    <div style={{
-                      fontSize: 11, fontWeight: 600,
-                      color: 'rgba(255,255,255,0.30)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.10em',
-                      marginBottom: 8,
-                    }}>
-                      Cover image — optional
-                    </div>
-                    {coverImagePreview ? (
-                      <div className="relative">
-                        <img src={coverImagePreview} alt="Cover preview" className="w-full rounded-xl object-cover" style={{ maxHeight: 200 }} />
-                        <button type="button" onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); }} className="absolute top-2 right-2 p-1 rounded-full bg-background/80 text-muted-foreground hover:text-foreground transition-colors">
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label
-                        className="flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors"
-                        style={{
-                          border: '1.5px dashed rgba(255,255,255,0.10)',
-                          borderRadius: 12,
-                          height: 140,
-                          background: 'transparent',
-                        }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.20)'; (e.currentTarget as HTMLLabelElement).style.background = 'rgba(255,255,255,0.01)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLLabelElement).style.background = 'transparent'; }}
-                      >
-                        <ImagePlus style={{ width: 22, height: 22, color: 'rgba(255,255,255,0.28)' }} />
-                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Click to upload cover image (.jpg, .png, .webp — max 3MB)</span>
-                        <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          if (file.size > 3 * 1024 * 1024) { toast({ title: "File too large", description: "Cover image must be under 3MB.", variant: "destructive" }); return; }
-                          setCoverImageFile(file);
-                          setCoverImagePreview(URL.createObjectURL(file));
-                        }} />
-                      </label>
-                    )}
-                  </div>
-
-                  {/* Title */}
+                  {/* Title — first action is typing the title */}
                   <div>
                     <div style={{
                       fontSize: 11, fontWeight: 600,
@@ -1676,6 +1604,103 @@ const Upload = () => {
                     {form.formState.errors.title && (
                       <div style={{ fontSize: 12, color: '#EF4444', marginTop: 4 }}>
                         {form.formState.errors.title.message}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Post type chip + cover image — compact metadata row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    {/* Post type indicator */}
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 8,
+                      padding: '6px 14px',
+                      background: postType.bg,
+                      border: `1px solid ${postType.border}`,
+                      borderRadius: 9999,
+                    }}>
+                      <span>{postType.emoji}</span>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700,
+                        color: postType.color,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                      }}>{postType.label}</span>
+                      <button
+                        type="button"
+                        onClick={() => setStep(1)}
+                        style={{
+                          fontSize: 10, color: postType.color,
+                          background: 'none', border: 'none',
+                          cursor: 'pointer', marginLeft: 4,
+                        }}
+                      >
+                        change
+                      </button>
+                    </div>
+
+                    {/* Cover image — compact */}
+                    {!coverImagePreview ? (
+                      <label style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '6px 14px', borderRadius: 8, fontSize: 12,
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px dashed rgba(255,255,255,0.12)',
+                        color: 'rgba(255,255,255,0.40)', cursor: 'pointer',
+                        transition: 'all 0.15s',
+                      }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.25)';
+                          (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.65)';
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)';
+                          (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.40)';
+                        }}
+                      >
+                        🖼 Upload cover image
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          style={{ display: 'none' }}
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            if (file.size > 3 * 1024 * 1024) {
+                              toast({ title: 'Image too large', description: 'Max 3MB', variant: 'destructive' });
+                              return;
+                            }
+                            setCoverImageFile(file);
+                            const reader = new FileReader();
+                            reader.onload = ev => setCoverImagePreview(ev.target?.result as string);
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                      </label>
+                    ) : (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                      }}>
+                        <img
+                          src={coverImagePreview}
+                          alt="cover"
+                          style={{
+                            width: 64, height: 40, objectFit: 'cover',
+                            borderRadius: 6, border: '1px solid rgba(255,255,255,0.10)',
+                          }}
+                        />
+                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)' }}>
+                          Cover image added
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); }}
+                          style={{
+                            fontSize: 11, color: 'rgba(255,255,255,0.30)',
+                            background: 'none', border: 'none', cursor: 'pointer',
+                          }}
+                        >
+                          Remove
+                        </button>
                       </div>
                     )}
                   </div>
@@ -2399,7 +2424,7 @@ const Upload = () => {
         </>
         )}
 
-        </>)}
+        </div>)}
       </div>
 
       <SubmitToolModal open={submitToolOpen} onOpenChange={setSubmitToolOpen} />
