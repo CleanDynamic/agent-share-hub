@@ -40,6 +40,53 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { TYPE_COLORS, displayContentType, resolvePostType } from "@/lib/content-types";
+
+const POST_TYPE_DISPLAY = {
+  build: {
+    label: 'Build',
+    emoji: '🔨',
+    color: '#E8571A',
+    bg: 'rgba(232,87,26,0.12)',
+    border: 'rgba(232,87,26,0.25)',
+    wteLabel: 'Outcome',
+    blueprintLabel: 'The Blueprint',
+    stepStyle: 'numbered',
+    actionLabel: 'Copy & Build',
+  },
+  technique: {
+    label: 'Technique',
+    emoji: '⚡',
+    color: '#2EC4B6',
+    bg: 'rgba(46,196,182,0.12)',
+    border: 'rgba(46,196,182,0.25)',
+    wteLabel: 'The Claim',
+    blueprintLabel: 'The Technique',
+    stepStyle: 'dot',
+    actionLabel: 'Use This Technique',
+  },
+  discovery: {
+    label: 'Discovery',
+    emoji: '🔍',
+    color: '#7C3AED',
+    bg: 'rgba(124,58,237,0.12)',
+    border: 'rgba(124,58,237,0.25)',
+    wteLabel: 'The Finding',
+    blueprintLabel: 'Evidence',
+    stepStyle: 'dot',
+    actionLabel: 'Reproduce This',
+  },
+  discussion: {
+    label: 'Discussion',
+    emoji: '💬',
+    color: '#3B82F6',
+    bg: 'rgba(59,130,246,0.12)',
+    border: 'rgba(59,130,246,0.25)',
+    wteLabel: "What I'm Looking For",
+    blueprintLabel: 'Context',
+    stepStyle: 'none',
+    actionLabel: 'Join Discussion',
+  },
+};
 import { BountyResponseComposer } from "@/components/BountyResponseComposer";
 import { insertNotification } from "@/lib/notifications";
 import { ReblogDetailView } from "@/components/ReblogDetailView";
@@ -152,6 +199,12 @@ const ContentDetail = () => {
   });
 
   const creator = item?.profiles as { id: string; username: string; display_name: string | null; bio: string | null } | null;
+
+  const resolvedPostType = resolvePostType(
+    (item as any)?.post_category ?? null,
+    item?.content_type ?? null
+  );
+  const ptConfig = POST_TYPE_DISPLAY[resolvedPostType] ?? POST_TYPE_DISPLAY.build;
 
   // ─── TOC blocks (lightweight fetch for table of contents) ──
   const { data: tocBlocks } = useQuery({
@@ -770,9 +823,21 @@ const ContentDetail = () => {
 
         {/* 2. Badges */}
         <div className="flex flex-wrap items-center gap-2 mb-2.5">
-          <Badge variant="outline" className={`text-[10px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
-            {displayContentType(item.content_type)}
-          </Badge>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '3px 12px', borderRadius: 9999,
+            background: ptConfig.bg,
+            border: `1px solid ${ptConfig.border}`,
+          }}>
+            <span style={{ fontSize: 12 }}>{ptConfig.emoji}</span>
+            <span style={{
+              fontSize: 10, fontWeight: 700,
+              color: ptConfig.color,
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+            }}>
+              {ptConfig.label}
+            </span>
+          </div>
           <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(item.difficulty)}`}>
             {item.difficulty}
           </Badge>
@@ -800,6 +865,42 @@ const ContentDetail = () => {
             ratingCount={(item as any).rating_count ?? 0}
           />
         )}
+
+        {/* 4. WTE callout (text-only, non-discussion) — above description */}
+        {(() => {
+          const wteBlocks = ((item as any).what_to_expect_blocks as any[] | null) ?? [];
+          const hasImageBlocks = wteBlocks.some((b: any) => b.image_url);
+          const wteText = (item as any).what_to_expect as string | null;
+          if (!hasImageBlocks && wteText && resolvedPostType !== 'discussion') {
+            return (
+              <div style={{
+                padding: '12px 16px',
+                marginBottom: 16,
+                background: ptConfig.bg,
+                border: `1px solid ${ptConfig.border}`,
+                borderLeft: `3px solid ${ptConfig.color}`,
+                borderRadius: 10,
+              }}>
+                <div style={{
+                  fontSize: 10, fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  color: ptConfig.color,
+                  marginBottom: 6,
+                }}>
+                  {ptConfig.wteLabel}
+                </div>
+                <p style={{
+                  fontSize: 13, color: 'rgba(255,255,255,0.70)',
+                  lineHeight: 1.65, margin: 0,
+                }}>
+                  {wteText}
+                </p>
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         {/* 4. Description — only if it doesn't duplicate the first block */}
         {showDescription && (
@@ -987,12 +1088,41 @@ const ContentDetail = () => {
           </div>
         )}
 
-        {/* 7. WHAT TO EXPECT — always visible, never blurred */}
-        <WhatToExpectSection item={item} />
+        {/* 7. WHAT TO EXPECT — carousel only when image blocks exist */}
+        {(() => {
+          const wteBlocks = ((item as any).what_to_expect_blocks as any[] | null) ?? [];
+          const hasImageBlocks = wteBlocks.some((b: any) => b.image_url);
+          return hasImageBlocks ? <WhatToExpectSection item={item} /> : null;
+        })()}
 
         {/* 8. BLUEPRINT — inline, always visible */}
         {(!isSub || subscriberUnlocked) && (
           <div className="mb-4">
+            {tocBlocks && tocBlocks.length > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                marginBottom: 16,
+              }}>
+                <div style={{
+                  height: 1, flex: 1,
+                  background: 'rgba(255,255,255,0.06)',
+                }} />
+                <div style={{
+                  fontSize: 10, fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.12em',
+                  color: 'rgba(255,255,255,0.25)',
+                  padding: '0 8px',
+                  flexShrink: 0,
+                }}>
+                  {ptConfig.blueprintLabel}
+                </div>
+                <div style={{
+                  height: 1, flex: 1,
+                  background: 'rgba(255,255,255,0.06)',
+                }} />
+              </div>
+            )}
             <ContentBlockViewer
               contentId={item.id}
               contentTitle={item.title}
@@ -1002,6 +1132,7 @@ const ContentDetail = () => {
               onTriggerPaywall={handleDownload}
               isEligible={isEligible}
               contentType={item.content_type}
+              postType={resolvedPostType}
             />
           </div>
         )}
@@ -1236,6 +1367,7 @@ const ContentDetail = () => {
                     onTriggerPaywall={handleDownload}
                     isEligible={isEligible}
                     contentType={item.content_type}
+                    postType={resolvedPostType}
                   />
                 </div>
               )}
