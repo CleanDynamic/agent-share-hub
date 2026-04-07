@@ -1484,7 +1484,6 @@ export function NeoScaleShell() {
 
     /* Page title/subtitle map */
     const pageMeta: Record<string, { title: string; subtitle?: string }> = {
-      '/upload':        { title: 'Dispatch Something', subtitle: 'What are you sharing?' },
       '/profile':       { title: 'Your Profile' },
       '/messages':      { title: 'Messages' },
       '/library':       { title: 'Your Archives', subtitle: 'Everything you\'ve saved' },
@@ -1500,12 +1499,6 @@ export function NeoScaleShell() {
           <button className="ns-back-btn" onClick={() => navigate(-1)}>
             ← Back
           </button>
-          <div className="ns-page-header">
-            <div className="ns-page-title">Dispatch Something</div>
-            <div className="ns-page-subtitle">
-              What fragment are you releasing into the feed?
-            </div>
-          </div>
           <div className="ns-page-body" style={{ padding: '20px 24px' }}>
             {POST_TYPES.map(pt => (
               <div
