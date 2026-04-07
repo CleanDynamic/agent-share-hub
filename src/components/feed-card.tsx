@@ -239,17 +239,49 @@ export function FeedCard({ post }: { post: FeedPost }) {
         </p>
       )}
 
-      {/* Cover image */}
-      {post.cover_image_url && (
-        <div style={{ position: "relative", marginTop: 14, borderRadius: 10, overflow: "hidden" }}>
-          <img
-            src={post.cover_image_url}
-            alt={post.title}
-            style={{ width: "100%", height: 160, objectFit: "cover", opacity: 0.8, display: "block" }}
-          />
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }} />
-        </div>
-      )}
+      {/* Cover image / video */}
+      {post.cover_image_url && (() => {
+        const isVideo = /\.(mp4|webm|mov|ogg)$/i.test(
+          post.cover_image_url
+        ) || post.cover_image_url.includes('/video/');
+
+        return (
+          <div style={{
+            position: 'relative', marginTop: 14,
+            borderRadius: 10, overflow: 'hidden',
+          }}>
+            {isVideo ? (
+              <video
+                src={post.cover_image_url}
+                autoPlay
+                muted
+                loop
+                playsInline
+                style={{
+                  width: '100%', height: 160,
+                  objectFit: 'cover', display: 'block',
+                }}
+              />
+            ) : (
+              <img
+                src={post.cover_image_url}
+                alt={post.title}
+                style={{
+                  width: '100%', height: 160,
+                  objectFit: 'cover', opacity: 0.85,
+                  display: 'block',
+                  transition: 'transform 0.7s ease',
+                }}
+              />
+            )}
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)',
+              pointerEvents: 'none',
+            }} />
+          </div>
+        );
+      })()}
 
       {/* Stage 1: Remaining description */}
       {hasMoreContent && (
