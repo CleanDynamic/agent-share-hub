@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -7,36 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { FollowButton } from "@/components/FollowButton";
 import { Search } from "lucide-react";
-import { ORDERED_CONTENT_TYPES, TYPE_COLORS, displayContentType, POST_TYPES } from "@/lib/content-types";
-
-/* ---- helpers ---- */
-const CATEGORIES: { name: string; dbType: string; difficulty: string; slug: string; isProject?: boolean }[] = [
-  { name: "Prompt(s)", dbType: "Prompt File", difficulty: "Beginner", slug: "prompt-file" },
-  { name: "Agent(s)", dbType: "Agent Blueprint", difficulty: "Beginner", slug: "agent-blueprint" },
-  { name: "Model Config Guide", dbType: "Model Config Guide", difficulty: "Beginner", slug: "model-config-guide" },
-  { name: "Integration Guide", dbType: "Integration Guide", difficulty: "Beginner", slug: "integration-guide" },
-  { name: "Workflow Template", dbType: "Workflow Template", difficulty: "Intermediate", slug: "workflow-template" },
-  { name: "Evaluation Framework", dbType: "Evaluation Framework", difficulty: "Intermediate", slug: "evaluation-framework" },
-  { name: "Agent Stack", dbType: "Agent Stack", difficulty: "Advanced", slug: "agent-stack" },
-  { name: "Blog", dbType: "Blog", difficulty: "Any", slug: "blog" },
-  { name: "Projects", dbType: "", difficulty: "Any", slug: "projects", isProject: true },
-  { name: "AI Tools Tutorials", dbType: "AI Tools (LLMs)", difficulty: "Any", slug: "ai-tools-llms" },
-  { name: "Install Guide", dbType: "AI Agent Install Guide", difficulty: "Any", slug: "install-guide" },
-];
-
-const BOUNTY_CATEGORIES: { name: string; slug: string; typeSlug: string }[] = [
-  { name: "🎯 All Bounties", slug: "all-bounties", typeSlug: "" },
-  { name: "Failure Library", slug: "failure-library", typeSlug: "failure-library" },
-  { name: "Open Question", slug: "open-question", typeSlug: "open-question" },
-  { name: "Challenge", slug: "challenge", typeSlug: "challenge" },
-];
-
-const diffColor: Record<string, string> = {
-  Beginner: "text-slate-400 bg-[#353439]/40 border-white/8",
-  Intermediate: "text-[#55e0d2] bg-[#55e0d2]/10 border-[#55e0d2]/25",
-  Advanced: "text-[#ffb59c] bg-[#cb4300]/15 border-[#cb4300]/25",
-  Any: "text-slate-500 bg-[#353439]/20 border-white/5",
-};
+import { POST_TYPES, resolvePostType, getPostType } from "@/lib/content-types";
 
 export function RightPanel() {
   const navigate = useNavigate();
@@ -238,13 +209,21 @@ function SearchSection() {
           {content.length > 0 && (
             <div className="p-2 border-t border-white/5">
               <p className="px-2 pb-1 text-[10px] font-bold uppercase text-slate-500 tracking-widest">Content</p>
-              {content.map((c: any) => (
-                <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-[#353439]/60 transition-colors">
-                  <span className="shrink-0 rounded bg-[#353439] px-1.5 py-0.5 text-[10px] font-medium text-slate-300">{displayContentType(c.content_type)}</span>
-                  <span className="truncate text-slate-200">{c.title}</span>
-                  {c.profiles?.username && <span className="ml-auto text-xs text-slate-500">@{c.profiles.username}</span>}
-                </button>
-              ))}
+              {content.map((c: any) => {
+                const pt = getPostType(resolvePostType(null, c.content_type));
+                return (
+                  <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-[#353439]/60 transition-colors">
+                    <span
+                      className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
+                      style={{ background: pt.bg, color: pt.color }}
+                    >
+                      {pt.emoji} {pt.label}
+                    </span>
+                    <span className="truncate text-slate-200">{c.title}</span>
+                    {c.profiles?.username && <span className="ml-auto text-xs text-slate-500">@{c.profiles.username}</span>}
+                  </button>
+                );
+              })}
             </div>
           )}
           {query.length >= 2 && !loading && (
@@ -263,134 +242,7 @@ function SearchSection() {
   );
 }
 
-/* ---- Section 1: Category Directory ---- */
-function CategoryDirectory({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
-  const location = useLocation();
-
-  // Determine active slug from URL — single source of truth
-  const getActiveSlug = (): string | null => {
-    // Match /category/:slug routes
-    const catMatch = location.pathname.match(/^\/category\/(.+)$/);
-    if (catMatch) return catMatch[1];
-    // Match /browse or /category/projects
-    if (location.pathname === "/browse") {
-      const params = new URLSearchParams(location.search);
-      if (params.get("tab") === "projects") return "projects";
-      if (params.get("tab") === "bounties") {
-        const type = params.get("type");
-        return type ? type : "all-bounties";
-      }
-    }
-    // Any other page: no card active
-    return null;
-  };
-  const activeSlug = getActiveSlug();
-
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {CATEGORIES.map((cat) => {
-        const isAITools = cat.dbType === "AI Tools (LLMs)";
-
-        // Strict equality — only highlight when slug explicitly matches
-        const isActive = activeSlug !== null && activeSlug !== "" && activeSlug === cat.slug;
-
-        const handleClick = () => {
-          if (isActive) {
-            navigate("/browse");
-          } else if (cat.isProject) {
-            navigate("/category/projects");
-          } else {
-            navigate(`/category/${cat.slug}`);
-          }
-        };
-
-        const accentBorders: Record<string, string> = {
-          "prompt-file": "rgba(232, 87, 26, 0.7)",
-          "prompt-tutorial": "rgba(46, 196, 182, 0.7)",
-          "agent-blueprint": "rgba(124, 58, 237, 0.7)",
-          "model-config-guide": "rgba(22, 163, 74, 0.7)",
-          "integration-guide": "rgba(217, 119, 6, 0.7)",
-          "workflow-template": "rgba(37, 99, 235, 0.7)",
-          "evaluation-framework": "rgba(219, 39, 119, 0.7)",
-          "agent-stack": "rgba(220, 38, 38, 0.7)",
-          "failure-library": "rgba(75, 85, 99, 0.7)",
-          "blog": "rgba(244, 114, 182, 0.7)",
-          "projects": "rgba(46, 196, 182, 0.7)",
-          "ai-tools-llms": "rgba(167, 139, 250, 0.7)",
-          "install-guide": "rgba(6, 182, 212, 0.7)",
-        };
-        const activeBorder = accentBorders[cat.slug] ?? "rgba(232, 87, 26, 0.7)";
-
-        return (
-          <button
-            key={cat.slug}
-            onClick={handleClick}
-            data-visual-slot="category-card"
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-card)',
-              padding: '14px',
-              cursor: 'pointer',
-              transition: 'border-color 0.15s ease',
-            }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
-          >
-            <p className="text-sm font-semibold text-slate-200 leading-tight">{cat.name}</p>
-            {cat.difficulty && (
-              <span className={`mt-1.5 inline-block rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${diffColor[cat.difficulty] || diffColor.Any}`}>
-                {cat.difficulty}
-              </span>
-            )}
-          </button>
-        );
-      })}
-
-      {/* Bounties group */}
-      <div className="col-span-2 mt-1">
-        <p className="text-[10px] text-slate-500 tracking-[0.2em] font-bold uppercase px-1 mb-2">Bounties</p>
-        <div className="grid grid-cols-2 gap-2">
-          {BOUNTY_CATEGORIES.map((bcat) => {
-            const isActive = activeSlug === bcat.slug || (bcat.slug === "all-bounties" && activeSlug === "all-bounties");
-            const handleClick = () => {
-              if (bcat.slug === "all-bounties") {
-                navigate("/browse?tab=bounties");
-              } else {
-                navigate(`/browse?tab=bounties&type=${bcat.typeSlug}`);
-              }
-            };
-            const borderColor = bcat.slug === "all-bounties" ? "rgba(239,68,68,0.7)" : "rgba(75,85,99,0.7)";
-            return (
-              <button
-                key={bcat.slug}
-                onClick={handleClick}
-                data-visual-slot="category-card"
-                style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-card)',
-                  padding: '14px',
-                  cursor: 'pointer',
-                  transition: 'border-color 0.15s ease',
-                }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
-              >
-                <p className="text-sm font-semibold text-slate-200 leading-tight">{bcat.name}</p>
-                <span className={`mt-1.5 inline-block rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${diffColor.Any}`}>
-                  Any
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ---- Section 2: Trending ---- */
+/* ---- Trending ---- */
 function TrendingSection({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
   const { data: trending } = useQuery({
     queryKey: ["right_panel_trending"],
@@ -423,28 +275,34 @@ function TrendingSection({ navigate }: { navigate: ReturnType<typeof useNavigate
     <div>
       <p className="text-[10px] text-slate-500 tracking-[0.2em] font-bold uppercase px-1 mb-3">Trending Now</p>
       <div className="space-y-1">
-        {trending.map((item, i) => (
-          <button
-            key={item.id}
-            onClick={() => navigate(`/content/${item.id}`)}
-            className="glass-level-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all hover:scale-[1.02] border border-white/5"
-          >
-            <span className="shrink-0 w-6 text-xl font-light text-slate-600 text-center">{String(i + 1).padStart(2, "0")}</span>
-            <div className="flex-1 overflow-hidden">
-              <span className="block text-[8px] uppercase tracking-tighter text-[#55e0d2] bg-[#55e0d2]/10 px-1.5 py-0.5 rounded w-fit mb-1">
-                {displayContentType(item.content_type)}
-              </span>
-              <span className="block truncate text-sm font-medium text-slate-200">{item.title}</span>
-              <span className="block text-[10px] text-slate-500 mt-0.5">{item.download_count} downloads</span>
-            </div>
-          </button>
-        ))}
+        {trending.map((item, i) => {
+          const pt = getPostType(resolvePostType(null, item.content_type));
+          return (
+            <button
+              key={item.id}
+              onClick={() => navigate(`/content/${item.id}`)}
+              className="glass-level-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all hover:scale-[1.02] border border-white/5"
+            >
+              <span className="shrink-0 w-6 text-xl font-light text-slate-600 text-center">{String(i + 1).padStart(2, "0")}</span>
+              <div className="flex-1 overflow-hidden">
+                <span
+                  className="inline-block text-[8px] uppercase tracking-tighter px-1.5 py-0.5 rounded w-fit mb-1"
+                  style={{ background: pt.bg, color: pt.color }}
+                >
+                  {pt.emoji} {pt.label}
+                </span>
+                <span className="block truncate text-sm font-medium text-slate-200">{item.title}</span>
+                <span className="block text-[10px] text-slate-500 mt-0.5">{item.download_count} downloads</span>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-/* ---- Section 3: Who to Follow ---- */
+/* ---- Who to Follow ---- */
 function WhoToFollow({ userId }: { userId: string }) {
   const { data: suggestions } = useQuery({
     queryKey: ["who_to_follow", userId],
@@ -499,7 +357,7 @@ function WhoToFollow({ userId }: { userId: string }) {
   );
 }
 
-/* ---- Section: Curator Picks ---- */
+/* ---- Curator Picks ---- */
 function CuratorPicksSection({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
   const { data: picks } = useQuery({
     queryKey: ["right_panel_curator_picks"],
@@ -537,6 +395,7 @@ function CuratorPicksSection({ navigate }: { navigate: ReturnType<typeof useNavi
         {picks.map((pick: any) => {
           const curator = pick.curators?.profiles;
           const initials = (curator?.display_name || curator?.username || "?").slice(0, 2).toUpperCase();
+          const pt = getPostType(resolvePostType(null, pick.content?.content_type));
           return (
             <button
               key={pick.id}
@@ -544,8 +403,11 @@ function CuratorPicksSection({ navigate }: { navigate: ReturnType<typeof useNavi
               className="w-full text-left rounded-xl px-3 py-2 transition-colors hover:bg-[#353439]/50 glass-level-1 border border-white/5"
             >
               <div className="flex items-center gap-1.5 mb-1">
-                <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${TYPE_COLORS[pick.content?.content_type] || "bg-muted text-muted-foreground"}`}>
-                  {displayContentType(pick.content?.content_type ?? "")}
+                <span
+                  className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
+                  style={{ background: pt.bg, color: pt.color }}
+                >
+                  {pt.emoji} {pt.label}
                 </span>
                 <span className="flex-1 truncate text-[13px] font-bold text-foreground">{pick.content?.title}</span>
               </div>
@@ -564,7 +426,7 @@ function CuratorPicksSection({ navigate }: { navigate: ReturnType<typeof useNavi
   );
 }
 
-/* ---- Section: Featured Collections ---- */
+/* ---- Featured Collections ---- */
 function FeaturedCollectionsSection({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
   const { data: collections } = useQuery({
     queryKey: ["right_panel_featured_collections"],
