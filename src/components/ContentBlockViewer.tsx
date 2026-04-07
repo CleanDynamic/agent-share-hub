@@ -1172,8 +1172,7 @@ export function ContentBlockViewer({
     <div>
       <AdModal open={!!adModal} onComplete={handleAdComplete} label="Your content unblurs in" countdownSeconds={3} />
 
-      <div className="relative pl-8">
-        <div className="absolute left-[15px] top-4 bottom-4 w-[2px]" style={{ backgroundColor: "#2EC4B6" }} />
+      <div>
         <div className="space-y-4">
           {blocks.map((block, index) => {
             const blockVariations = (variations ?? []).filter((v) => v.block_id === block.id);
@@ -1188,12 +1187,39 @@ export function ContentBlockViewer({
             const effectiveType = showingVariation ? showingVariation.variation_type : block.block_type;
 
             return (
-              <div key={block.id} id={`block-${block.id}`} className="relative">
-                <div
-                  className="absolute -left-8 top-4 w-[30px] h-[30px] rounded-full flex items-center justify-center text-xs font-bold text-white z-10"
-                  style={{ backgroundColor: "#E8571A" }}
-                >
-                  {block.position}
+              <div key={block.id} id={`block-${block.id}`} style={{ marginBottom: 24 }}>
+                {/* Step marker separator */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  marginBottom: 14,
+                }}>
+                  {/* Step number */}
+                  <div style={{
+                    width: 22, height: 22, borderRadius: '50%',
+                    background: 'rgba(232,87,26,0.15)',
+                    border: '1px solid rgba(232,87,26,0.30)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 10, fontWeight: 700, color: '#E8571A',
+                    flexShrink: 0,
+                  }}>
+                    {index + 1}
+                  </div>
+
+                  {/* Block type label */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                    letterSpacing: '0.12em', color: 'rgba(255,255,255,0.25)',
+                  }}>
+                    <span>{BLOCK_ICONS[effectiveType] ?? '◆'}</span>
+                    <span>{getBlockType(effectiveType).label}</span>
+                  </div>
+
+                  {/* Line */}
+                  <div style={{
+                    flex: 1, height: 1,
+                    background: 'rgba(255,255,255,0.05)',
+                  }} />
                 </div>
 
                 <div className={`border rounded-xl overflow-hidden ${isPreview ? "border-[#2EC4B6]/40 bg-[#111118]" : "border-[#1E1E2A] bg-[#111118]"}`}>
@@ -1213,22 +1239,6 @@ export function ContentBlockViewer({
 
                   {/* Block content with blur */}
                   <div className="p-5 relative min-h-[80px]">
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.12em',
-                      color: 'rgba(255,255,255,0.28)',
-                      marginBottom: 10,
-                      paddingBottom: 8,
-                      borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    }}>
-                      <span>{BLOCK_ICONS[effectiveType] ?? '¶'}</span>
-                      <span>{getBlockType(effectiveType).label}</span>
-                    </div>
                     <div className={isUnblurred ? "" : "blur-[6px] pointer-events-none select-none"} style={{ transition: "filter 0.3s ease" }}>
                       {block.subheading && !showingVariation && (
                         <h3 style={{
