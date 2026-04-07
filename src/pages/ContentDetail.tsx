@@ -91,14 +91,19 @@ function DetailSkeleton() {
 }
 
 const buildTOC = (blocks: any[]) => {
-  return blocks
-    .filter(b => b.subheading || b.block_type)
-    .map((b, i) => ({
-      id: `block-${b.id}`,
-      label: b.subheading || (b.block_type ?? "").replace(/_/g, ' '),
-      index: i + 1,
-      blockType: b.block_type,
-    }));
+  return blocks.map((b, i) => ({
+    id: `block-${b.id}`,
+    label: b.subheading?.trim() ||
+      (b.block_type ?? 'section').replace(/_/g, ' '),
+    index: i + 1,
+    blockType: b.block_type,
+    emoji: {
+      prompt: '💬', agent_config: '🤖', workflow: '🔄',
+      model_params: '⚙️', tool_setup: '🔧', code: '{ }',
+      result: '📊', comparison: '↔', text: '¶',
+      image: '🖼', resource: '🔗', long_text: '¶',
+    }[b.block_type ?? 'text'] ?? '◆',
+  }));
 };
 
 const ContentDetail = () => {
@@ -176,8 +181,9 @@ const ContentDetail = () => {
     enabled: !!id,
   });
 
-  const showDescription = item?.description &&
-    item.description.trim() !== (firstBlock?.text_content ?? "").trim();
+  const showDescription = item?.description?.trim() &&
+    item.description.trim().substring(0, 100) !==
+    (firstBlock?.text_content ?? '').trim().substring(0, 100);
 
   // ─── View tracking ──────────────────────────────────────
   useEffect(() => {
@@ -794,7 +800,15 @@ const ContentDetail = () => {
 
         {/* 4. Description — only if it doesn't duplicate the first block */}
         {showDescription && (
-          <p className="text-[16px] text-[#CCCCCC] leading-[1.5] font-normal mt-2 mb-3"><MentionText text={item.description} /></p>
+          <p style={{
+            fontSize: 15,
+            color: 'rgba(255,255,255,0.62)',
+            lineHeight: 1.75,
+            marginBottom: 16,
+            fontFamily: 'Inter, sans-serif',
+          }}>
+            {item.description}
+          </p>
         )}
 
         {/* BOUNTY — Failure detail + gap */}
@@ -851,13 +865,24 @@ const ContentDetail = () => {
             {count.toLocaleString()} copies
           </span>
 
-          {/* Tools chips */}
+          {/* Tools + tags chips */}
           {(item.ai_tools ?? []).slice(0, 3).map((t: string) => (
             <span key={t} style={{
               padding: '2px 8px', borderRadius: 9999, fontSize: 11,
               background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.10)',
               color: 'rgba(255,255,255,0.45)',
+            }}>
+              {t}
+            </span>
+          ))}
+          {[...(item.ai_tools ?? []), ...(item.use_cases ?? []),
+            ...((item as any).custom_tags ?? [])].slice(0, 4).map((t: string) => (
+            <span key={t} style={{
+              padding: '2px 7px', borderRadius: 9999, fontSize: 10,
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.09)',
+              color: 'rgba(255,255,255,0.35)',
             }}>
               {t}
             </span>
@@ -941,7 +966,7 @@ const ContentDetail = () => {
                       minWidth: 16,
                       textAlign: 'right',
                     }}>
-                      {entry.index}.
+                      {(entry as any).emoji ?? '◆'}
                     </span>
                     <span style={{ textTransform: 'capitalize' }}>
                       {entry.label}
@@ -1050,22 +1075,7 @@ const ContentDetail = () => {
           </div>
         )}
 
-        {/* 9. Use Cases — moved above tabs */}
-        {item.use_cases && item.use_cases.length > 0 && (
-          <div className="mb-3">
-            <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Use Cases</h3>
-            <div className="flex flex-wrap gap-2">
-              {item.use_cases.map((uc) => (
-                <span key={uc} className="text-xs px-2 py-1 rounded-lg border border-border text-muted-foreground">{uc}</span>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* 10. Tags */}
-        <div className="mb-3">
-          <DetailMicrotags contentId={item.id} itemTags={(item as any).custom_tags ?? (item as any).tags} />
-        </div>
 
         {/* Dependencies */}
         <DependencyDisplay contentId={item.id} />
@@ -1412,189 +1422,6 @@ const ContentDetail = () => {
         </div>
         {/* ── END MAIN CONTENT ── */}
 
-        {/* ── RIGHT SIDEBAR ── */}
-        <div style={{
-          width: 260,
-          flexShrink: 0,
-          position: 'sticky',
-          top: 0,
-          padding: '20px 16px 20px 0',
-          maxHeight: '100vh',
-          overflowY: 'auto',
-        }}>
-
-          {/* Primary CTA — bounty submit only */}
-          {isBounty && isLoggedIn && !isPoster && (item as any).bounty_status !== "solved" &&
-           !(bountyResponses ?? []).some((r: any) => r.responder_id === user?.id) && (
-            <button
-              onClick={() => setComposerOpen(true)}
-              style={{
-                width: '100%',
-                padding: '10px 16px',
-                borderRadius: 100,
-                background: '#E8571A',
-                border: '1px solid rgba(255,255,255,0.10)',
-                color: '#FFFFFF',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                marginBottom: 16,
-              }}
-            >
-              Submit a Blueprint →
-            </button>
-          )}
-
-          {/* Author card */}
-          {creator && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{
-                fontSize: 10,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.10em',
-                color: 'rgba(255,255,255,0.28)',
-                marginBottom: 10,
-              }}>
-                Author
-              </div>
-              <Link
-                to={`/creator/${creator.username}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  textDecoration: 'none',
-                }}
-              >
-                <div style={{
-                  height: 36,
-                  width: 36,
-                  borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.06)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: 'rgba(255,255,255,0.80)',
-                  flexShrink: 0,
-                }}>
-                  {(creator.display_name || creator.username || "?")[0].toUpperCase()}
-                </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: 'rgba(255,255,255,0.90)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}>
-                    {creator.display_name || creator.username}
-                  </div>
-                  <div style={{
-                    fontSize: 11,
-                    color: 'rgba(255,255,255,0.45)',
-                  }}>
-                    @{creator.username}
-                  </div>
-                </div>
-              </Link>
-            </div>
-          )}
-
-          <hr style={{
-            border: 'none',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            margin: '0 0 16px 0',
-          }} />
-
-          {/* Details */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{
-              fontSize: 10,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.10em',
-              color: 'rgba(255,255,255,0.28)',
-              marginBottom: 10,
-            }}>
-              Details
-            </div>
-            {[
-              { label: 'Type', value: resolvePostType((item as any).post_type ?? null, item?.content_type ?? null) },
-              { label: 'Difficulty', value: item?.difficulty },
-              { label: 'Published', value: formatDate(item?.approved_at ?? item?.created_at) },
-            ].filter(r => r.value).map(r => (
-              <div key={r.label} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '5px 0',
-                borderBottom: '1px solid rgba(255,255,255,0.04)',
-              }}>
-                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.30)' }}>
-                  {r.label}
-                </span>
-                <span style={{
-                  fontSize: 12,
-                  color: 'rgba(255,255,255,0.65)',
-                  textAlign: 'right',
-                  textTransform: 'capitalize',
-                }}>
-                  {r.value}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <hr style={{
-            border: 'none',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            margin: '0 0 16px 0',
-          }} />
-
-          {/* Stats */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{
-              fontSize: 10,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.10em',
-              color: 'rgba(255,255,255,0.28)',
-              marginBottom: 10,
-            }}>
-              Stats
-            </div>
-            {[
-              { label: '↓ Downloads', value: count.toLocaleString() },
-              { label: '★ Rating', value: (item as any)?.avg_rating ? `${Number((item as any).avg_rating).toFixed(1)} (${(item as any).rating_count ?? 0})` : '—' },
-              { label: '👁 Views', value: ((item as any)?.view_count ?? 0).toLocaleString() },
-            ].map(r => (
-              <div key={r.label} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '5px 0',
-                borderBottom: '1px solid rgba(255,255,255,0.04)',
-              }}>
-                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.30)' }}>
-                  {r.label}
-                </span>
-                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)' }}>
-                  {r.value}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Bookmark + Collection buttons */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <BookmarkButton contentId={item.id} />
-            <AddToCollectionButton contentId={item.id} contentTitle={item.title} />
-          </div>
-
-        </div>
-        {/* ── END SIDEBAR ── */}
 
       </div>
       {/* ── END TWO-COLUMN LAYOUT ── */}
