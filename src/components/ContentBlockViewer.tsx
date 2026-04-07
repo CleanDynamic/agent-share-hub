@@ -424,10 +424,55 @@ function RenderBlockContent({
   }
 
   if (type === "image") {
+    const effectiveUrl = signedUrl ?? imageUrl;
+    const isVideo = effectiveUrl
+      ? /\.(mp4|webm|mov|ogg)$/i.test(effectiveUrl) || effectiveUrl.includes('/video/')
+      : false;
+
     return (
-      <div>
-        {signedUrl ? <img src={signedUrl} alt={imageDescription ?? ""} className="w-full rounded-lg object-contain" /> : <Skeleton className="w-full h-48 rounded-lg" />}
-        {imageDescription && <p className="text-xs text-muted-foreground mt-2 italic">{imageDescription}</p>}
+      <div style={{ position: 'relative' }}>
+        {effectiveUrl ? (
+          isVideo ? (
+            <video
+              src={effectiveUrl}
+              controls
+              playsInline
+              style={{
+                width: '100%',
+                maxHeight: 400,
+                borderRadius: 8,
+                background: 'rgba(0,0,0,0.40)',
+                display: 'block',
+              }}
+            />
+          ) : (
+            <img
+              src={effectiveUrl}
+              alt={imageDescription ?? ''}
+              style={{
+                width: '100%',
+                maxHeight: 400,
+                objectFit: 'contain',
+                borderRadius: 8,
+                display: 'block',
+                background: 'rgba(0,0,0,0.20)',
+              }}
+            />
+          )
+        ) : (
+          <Skeleton className="w-full h-48 rounded-lg" />
+        )}
+        {imageDescription && (
+          <p style={{
+            fontSize: 12,
+            color: 'rgba(255,255,255,0.35)',
+            fontStyle: 'italic',
+            marginTop: 6, marginBottom: 0,
+            lineHeight: 1.5,
+          }}>
+            {imageDescription}
+          </p>
+        )}
       </div>
     );
   }
@@ -1294,7 +1339,14 @@ export function ContentBlockViewer({
                   );
                 })()}
 
-                <div className={`border rounded-xl overflow-hidden ${isPreview ? "border-[#2EC4B6]/40 bg-[#111118]" : "border-[#1E1E2A] bg-[#111118]"}`}>
+                <div style={{
+                  position: 'relative',
+                  marginBottom: 8,
+                  paddingLeft: isPreview ? 12 : 0,
+                  borderLeft: isPreview
+                    ? '2px solid rgba(46,196,182,0.40)'
+                    : 'none',
+                }}>
                   {/* Variation tabs */}
                   {hasVars && (
                     <div className="flex gap-1 px-4 pt-3 pb-1">
@@ -1310,20 +1362,62 @@ export function ContentBlockViewer({
                   )}
 
                   {/* Block content with blur */}
-                  <div className="p-5 relative min-h-[80px]">
+                  <div style={{
+                    position: 'relative',
+                    minHeight: 40,
+                    padding: 0,
+                  }}>
                     <div className={isUnblurred ? "" : "blur-[6px] pointer-events-none select-none"} style={{ transition: "filter 0.3s ease" }}>
-                      {block.subheading && !showingVariation && (
-                        <h3 style={{
-                          fontFamily: "'Playfair Display', Georgia, serif",
-                          fontSize: 17, fontWeight: 600,
-                          color: 'rgba(255,255,255,0.92)',
-                          margin: '0 0 12px 0',
-                          paddingBottom: 8,
-                          borderBottom: '1px solid rgba(255,255,255,0.07)',
-                          lineHeight: 1.3,
-                        }}>
-                          {block.subheading}
-                        </h3>
+                      {!showingVariation && (
+                        <div style={{ marginBottom: 14 }}>
+                          {block.subheading ? (
+                            /* Has a custom title — show title + type pill */
+                            <div style={{
+                              display: 'flex', alignItems: 'baseline',
+                              gap: 10, flexWrap: 'wrap',
+                            }}>
+                              <h3 style={{
+                                fontFamily: "'Playfair Display', Georgia, serif",
+                                fontSize: 17, fontWeight: 600,
+                                color: 'rgba(255,255,255,0.90)',
+                                margin: 0, lineHeight: 1.3,
+                              }}>
+                                {block.subheading}
+                              </h3>
+                              <span style={{
+                                fontSize: 9, fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.10em',
+                                color: 'rgba(255,255,255,0.22)',
+                                padding: '2px 7px',
+                                borderRadius: 4,
+                                background: 'rgba(255,255,255,0.04)',
+                                border: '1px solid rgba(255,255,255,0.06)',
+                                flexShrink: 0,
+                                alignSelf: 'center',
+                              }}>
+                                {BLOCK_ICONS[effectiveType] ?? '◆'}{' '}
+                                {getBlockType(effectiveType).label}
+                              </span>
+                            </div>
+                          ) : (
+                            /* No custom title — show type label only,
+                               but only if NOT a plain text block to avoid
+                               redundancy. */
+                            effectiveType !== 'text' && effectiveType !== 'long_text' && (
+                              <div style={{
+                                fontSize: 10, fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.10em',
+                                color: 'rgba(255,255,255,0.28)',
+                                marginBottom: 8,
+                              }}>
+                                {BLOCK_ICONS[effectiveType] ?? '◆'}{' '}
+                                {getBlockType(effectiveType).label}
+                              </div>
+                            )
+                          )}
+                        </div>
                       )}
                       {showingVariation ? (
                         <RenderBlockContent type={showingVariation.variation_type} textContent={showingVariation.text_content} formatting={showingVariation.formatting}
