@@ -590,27 +590,27 @@ const MessagesPage = () => {
   // Thread actions
   const togglePin = async (thread: Thread) => {
     const field = thread.is_a ? "is_pinned_a" : "is_pinned_b";
-    await supabase.from("dm_threads").update({ [field]: !thread.is_pinned }).eq("id", thread.id);
+    await supabase.from("dm_threads").update({ [field]: !thread.is_pinned } as any).eq("id", thread.id);
     queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
   };
 
   const toggleMute = async (thread: Thread) => {
     const field = thread.is_a ? "is_muted_a" : "is_muted_b";
-    await supabase.from("dm_threads").update({ [field]: !thread.is_muted }).eq("id", thread.id);
+    await supabase.from("dm_threads").update({ [field]: !thread.is_muted } as any).eq("id", thread.id);
     queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
   };
 
   const markUnread = async (thread: Thread) => {
     const field = thread.is_a ? "unread_count_a" : "unread_count_b";
     if (thread.unread_count === 0) {
-      await supabase.from("dm_threads").update({ [field]: 1 }).eq("id", thread.id);
+      await supabase.from("dm_threads").update({ [field]: 1 } as any).eq("id", thread.id);
       queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
     }
   };
 
   const deleteThread = async (thread: Thread) => {
     const field = thread.is_a ? "is_deleted_a" : "is_deleted_b";
-    await supabase.from("dm_threads").update({ [field]: true }).eq("id", thread.id);
+    await supabase.from("dm_threads").update({ [field]: true } as any).eq("id", thread.id);
     queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
     if (activeThreadId === thread.id) handleBack();
   };
@@ -622,7 +622,7 @@ const MessagesPage = () => {
 
   const declineRequest = async (thread: Thread) => {
     const field = thread.is_a ? "is_deleted_a" : "is_deleted_b";
-    await supabase.from("dm_threads").update({ [field]: true }).eq("id", thread.id);
+    await supabase.from("dm_threads").update({ [field]: true } as any).eq("id", thread.id);
     queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
   };
 
