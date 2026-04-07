@@ -93,16 +93,19 @@ function DetailSkeleton() {
 const buildTOC = (blocks: any[]) => {
   return blocks.map((b, i) => ({
     id: `block-${b.id}`,
-    label: b.subheading?.trim() ||
-      (b.block_type ?? 'section').replace(/_/g, ' '),
+    label: b.block_type === 'section_heading'
+      ? (b.text_content ?? b.subheading ?? 'Section')
+      : (b.subheading?.trim() ||
+         (b.block_type ?? 'section').replace(/_/g, ' ')),
     index: i + 1,
     blockType: b.block_type,
-    emoji: {
+    isHeading: b.block_type === 'section_heading',
+    emoji: b.block_type === 'section_heading' ? null : ({
       prompt: '💬', agent_config: '🤖', workflow: '🔄',
       model_params: '⚙️', tool_setup: '🔧', code: '{ }',
       result: '📊', comparison: '↔', text: '¶',
       image: '🖼', resource: '🔗', long_text: '¶',
-    }[b.block_type ?? 'text'] ?? '◆',
+    }[b.block_type ?? 'text'] ?? '◆'),
   }));
 };
 
@@ -156,7 +159,7 @@ const ContentDetail = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("content_blocks")
-        .select("id, block_type, subheading, position")
+        .select("id, block_type, subheading, position, text_content")
         .eq("content_id", id!)
         .order("position");
       return (data ?? []) as any[];
@@ -953,21 +956,27 @@ const ContentDetail = () => {
                       gap: 8,
                       padding: '4px 0',
                       textDecoration: 'none',
-                      color: 'rgba(255,255,255,0.55)',
-                      fontSize: 13,
+                      fontWeight: (entry as any).isHeading ? 700 : 400,
+                      color: (entry as any).isHeading
+                        ? 'rgba(255,255,255,0.75)'
+                        : 'rgba(255,255,255,0.45)',
+                      paddingLeft: (entry as any).isHeading ? 0 : 14,
+                      fontSize: (entry as any).isHeading ? 13 : 12,
                       transition: 'color 0.15s',
                     }}
                     onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#fff')}
-                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.55)')}
+                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = (entry as any).isHeading ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.45)')}
                   >
-                    <span style={{
-                      fontSize: 11,
-                      color: 'rgba(255,255,255,0.25)',
-                      minWidth: 16,
-                      textAlign: 'right',
-                    }}>
-                      {(entry as any).emoji ?? '◆'}
-                    </span>
+                    {!(entry as any).isHeading && (
+                      <span style={{
+                        fontSize: 11,
+                        color: 'rgba(255,255,255,0.25)',
+                        minWidth: 16,
+                        textAlign: 'right',
+                      }}>
+                        {(entry as any).emoji ?? '◆'}
+                      </span>
+                    )}
                     <span style={{ textTransform: 'capitalize' }}>
                       {entry.label}
                     </span>

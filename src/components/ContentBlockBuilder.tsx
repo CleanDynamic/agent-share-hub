@@ -27,6 +27,7 @@ export type BlockType =
   | "text"
   | "image"
   | "resource"
+  | "section_heading"
   // legacy types kept for backward compatibility
   | "long_text"
   | "file"
@@ -689,6 +690,7 @@ const BLOCK_TYPE_OPTIONS = [
 ] as const;
 
 const NEW_BLOCK_TYPES = [
+  { value: 'section_heading', label: 'Section Heading', emoji: '§', desc: 'A named section — creates a TOC entry' },
   { value: 'prompt',       label: 'Prompt',       emoji: '💬', desc: 'A copyable prompt' },
   { value: 'agent_config', label: 'Agent Config',  emoji: '🤖', desc: 'System prompt + settings' },
   { value: 'workflow',     label: 'Workflow',      emoji: '🔄', desc: 'Step-by-step process' },
@@ -1713,6 +1715,7 @@ const BlockTypeIcon = ({ type }: { type: BlockType }) => {
 };
 
 const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
+  section_heading: "Section Heading",
   prompt: "Prompt",
   agent_config: "Agent Config",
   workflow: "Workflow",
@@ -1864,6 +1867,49 @@ const BlockTypePicker = ({ onAdd }: { onAdd: (type: BlockType) => void }) => {
   );
 };
 
+// ─── Section Heading editor ─────────────────────────────────
+
+const SectionHeadingEditor = ({
+  block, update, index
+}: {
+  block: ContentBlock;
+  update: (i: number, p: Partial<ContentBlock>) => void;
+  index: number;
+}) => (
+  <div style={{ padding: '4px 0 8px 0' }}>
+    <input
+      value={block.textContent}
+      onChange={e => update(index, { textContent: e.target.value })}
+      placeholder="Section heading..."
+      style={{
+        width: '100%',
+        background: 'transparent',
+        border: 'none',
+        borderBottom: '2px solid rgba(232,87,26,0.35)',
+        fontSize: 18,
+        fontWeight: 700,
+        fontFamily: "'Playfair Display', Georgia, serif",
+        color: 'rgba(255,255,255,0.90)',
+        outline: 'none',
+        padding: '4px 0',
+        boxSizing: 'border-box',
+      }}
+      onFocus={e => {
+        e.currentTarget.style.borderBottomColor = 'rgba(232,87,26,0.70)';
+      }}
+      onBlur={e => {
+        e.currentTarget.style.borderBottomColor = 'rgba(232,87,26,0.35)';
+      }}
+    />
+    <div style={{
+      fontSize: 11, color: 'rgba(255,255,255,0.25)',
+      marginTop: 6,
+    }}>
+      This heading will appear in the table of contents
+    </div>
+  </div>
+);
+
 // ─── Main component ──────────────────────────────────────────
 
 export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
@@ -1921,8 +1967,8 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
   };
 
   // Determine if block type supports preview toggle & variations
-  const supportsPreview = (type: BlockType) => type !== "github";
-  const supportsVariations = (type: BlockType) => type !== "github" && type !== "large_file";
+  const supportsPreview = (type: BlockType) => type !== "github" && type !== "section_heading";
+  const supportsVariations = (type: BlockType) => type !== "github" && type !== "large_file" && type !== "section_heading";
 
   return (
     <div className="space-y-2">
@@ -2003,6 +2049,9 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                 </div>
                 {showingMain ? (
                   <>
+                    {block.type === 'section_heading' && (
+                      <SectionHeadingEditor block={block} update={update} index={index} />
+                    )}
                     {block.type === 'prompt' && (
                       <PromptBlockEditor block={block} update={update} index={index} />
                     )}

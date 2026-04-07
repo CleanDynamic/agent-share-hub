@@ -16,7 +16,7 @@ const BLOCK_ICONS: Record<string, string> = {
   prompt: '💬', agent_config: '🤖', workflow: '🔄',
   model_params: '⚙️', tool_setup: '🔧', code: '{ }',
   result: '📊', comparison: '↔', text: '¶',
-  image: '🖼', resource: '🔗',
+  image: '🖼', resource: '🔗', section_heading: '§',
 };
 
 // ─── Types ──────────────────────────────────────────────────
@@ -1185,6 +1185,33 @@ export function ContentBlockViewer({
 
             const showingVariation = currentTab !== "A" ? blockVariations.find((v) => v.variation_label === currentTab) : null;
             const effectiveType = showingVariation ? showingVariation.variation_type : block.block_type;
+
+            if (block.block_type === 'section_heading') {
+              return (
+                <div
+                  key={block.id}
+                  id={`block-${block.id}`}
+                  style={{ margin: '28px 0 16px 0' }}
+                >
+                  {/* Hairline above */}
+                  <div style={{
+                    height: 1,
+                    background: 'rgba(255,255,255,0.07)',
+                    marginBottom: 14,
+                  }} />
+                  <h2 style={{
+                    fontFamily: "'Playfair Display', Georgia, serif",
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color: 'rgba(255,255,255,0.92)',
+                    margin: 0,
+                    lineHeight: 1.25,
+                  }}>
+                    {block.text_content}
+                  </h2>
+                </div>
+              );
+            }
 
             return (
               <div key={block.id} id={`block-${block.id}`} style={{ marginBottom: 24 }}>
