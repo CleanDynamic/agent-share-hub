@@ -28,7 +28,7 @@ import {
 import { SubmitToolModal } from "@/components/SubmitToolModal";
 import { WorksWithPicker } from "@/components/WorksWithPicker";
 import { TopicsPicker } from "@/components/TopicsPicker";
-import { ContentBlockBuilder, emptyBlock, type ContentBlock } from "@/components/ContentBlockBuilder";
+import { ContentBlockBuilder, emptyBlock, type ContentBlock, type BlockOrGroup, type GroupBlock } from "@/components/ContentBlockBuilder";
 import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
 import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, POST_TYPES, getPostType } from "@/lib/content-types";
@@ -66,6 +66,103 @@ interface InlineSplit {
   percentage: number;
 }
 
+// Flatten groups into a linear list of ContentBlocks for DB storage.
+// Each group produces: a section_heading (for the group title) + its child
+// blocks, all tagged with groupId and groupTitle.
+type FlatBlock = ContentBlock & { groupId?: string; groupTitle?: string; position: number };
+const flattenBlocks = (items: BlockOrGroup[]): FlatBlock[] => {
+  const result: FlatBlock[] = [];
+  items.forEach((item, i) => {
+    if ((item as any).type === 'group') {
+      const group = item as GroupBlock;
+      // Insert the group heading as a section_heading
+      result.push({
+        id: group.id,
+        subheading: group.title,
+        type: 'section_heading',
+        textContent: group.title,
+        formatting: 'paragraph',
+        subBlocks: [],
+        useInstructions: '',
+        file: null,
+        imageFile: null,
+        imageDescription: '',
+        variations: [],
+        isPreview: false,
+        externalFileUrl: '',
+        githubDescription: '',
+        largeFilePlatform: '',
+        largeFileCustomPlatform: '',
+        largeFileDescription: '',
+        largeFileSizeHint: '',
+        promptRole: 'user',
+        promptModel: '',
+        promptVariables: [],
+        promptExampleOutput: '',
+        agentModel: '',
+        agentTemperature: 0.7,
+        agentMaxTokens: 4000,
+        agentTools: [],
+        agentMemoryType: '',
+        agentCapabilities: [],
+        workflowTrigger: '',
+        workflowOutput: '',
+        workflowSteps: [],
+        modelName: '',
+        modelTemperature: 0.7,
+        modelTopP: 1.0,
+        modelMaxTokens: 4000,
+        modelSystemPrompt: '',
+        modelStopSequences: [],
+        modelReasoning: '',
+        toolName: '',
+        toolUrl: '',
+        toolPrerequisites: [],
+        toolSteps: [],
+        toolErrors: [],
+        toolTimeEstimate: '',
+        codeLanguage: 'python',
+        codeDependencies: [],
+        codeEnvVars: [],
+        codeRunInstructions: '',
+        codeExampleOutput: '',
+        resultBefore: '',
+        resultAfter: '',
+        resultMetrics: [],
+        resultVerdict: '',
+        resultRating: 0,
+        comparisonLabelA: 'Option A',
+        comparisonLabelB: 'Option B',
+        comparisonTypeA: 'text',
+        comparisonTypeB: 'text',
+        comparisonContentA: {},
+        comparisonContentB: {},
+        comparisonAxis: '',
+        comparisonVerdict: '',
+        resourceTitle: '',
+        resourceType: 'article',
+        resourceAnnotation: '',
+        resourceIsPaywalled: false,
+        resourceDescription: '',
+        groupId: group.id,
+        groupTitle: group.title,
+        position: i * 100 - 1,
+      });
+      group.blocks.forEach((b, bi) => {
+        result.push({
+          ...b,
+          groupId: group.id,
+          groupTitle: group.title,
+          position: i * 100 + bi,
+        });
+      });
+    } else {
+      result.push({ ...(item as ContentBlock), position: i * 100 } as FlatBlock);
+    }
+  });
+  return result.sort((a, b) => a.position - b.position);
+};
+
 const Upload = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -88,7 +185,7 @@ const Upload = () => {
 
   const [uploadType, setUploadType] = useState<"blog" | "single" | "bounty">("single");
   const [isProjectMode, setIsProjectMode] = useState(false);
-  const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([emptyBlock("text")]);
+  const [contentBlocks, setContentBlocks] = useState<BlockOrGroup[]>([emptyBlock("text")]);
   const [wteBlocks, setWteBlocks] = useState<WteBlock[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -323,7 +420,11 @@ const Upload = () => {
   const saveDraft = useCallback(async (silent = false): Promise<string | null> => {
     const values = form.getValues();
     // Don't create empty drafts
-    const hasContent = values.title || values.content_type || values.description || contentBlocks.some(b => b.textContent || b.file || b.imageFile);
+    const hasContent = values.title || values.content_type || values.description || contentBlocks.some(b => {
+      if ((b as any).type === 'group') return (b as GroupBlock).blocks.length > 0 || (b as GroupBlock).title;
+      const cb = b as ContentBlock;
+      return cb.textContent || cb.file || cb.imageFile;
+    });
     if (!hasContent) return currentDraftId;
 
     if (!silent) setSavingDraft(true);
@@ -389,11 +490,14 @@ const Upload = () => {
 
       // Re-insert blocks: delete existing then re-insert
       await supabase.from("content_blocks").delete().eq("content_id", draftIdToUse!);
-      for (let i = 0; i < contentBlocks.length; i++) {
-        const block = contentBlocks[i];
+      const draftFlatBlocks = flattenBlocks(contentBlocks);
+      for (let i = 0; i < draftFlatBlocks.length; i++) {
+        const block = draftFlatBlocks[i];
         await supabase.from("content_blocks").insert({
           content_id: draftIdToUse,
           position: i + 1,
+          group_id: block.groupId || null,
+          group_title: block.groupTitle || null,
           block_type: block.type === "long_text" ? "long_text" : block.type,
           text_content: (block.type === "text" || block.type === "long_text") ? block.textContent : null,
           formatting: (block.type === "text" || block.type === "long_text") ? { type: block.formatting } : null,
@@ -511,7 +615,8 @@ const Upload = () => {
   }, [saveDraft]);
 
   async function onSubmit(values: FormValues) {
-    if (!isBountyType && contentBlocks.length === 0) {
+    const submitFlatBlocks = flattenBlocks(contentBlocks);
+    if (!isBountyType && submitFlatBlocks.length === 0) {
       toast({ title: "Add content", description: "Please add at least one content block.", variant: "destructive" });
       return;
     }
@@ -551,7 +656,7 @@ const Upload = () => {
       // Auto-generate description for blogs from first text block
       let finalDescription = values.description;
       if (isBlogType) {
-        const firstTextBlock = contentBlocks.find(b => (b.type === "text" || b.type === "long_text") && b.textContent?.trim());
+        const firstTextBlock = submitFlatBlocks.find(b => (b.type === "text" || b.type === "long_text") && b.textContent?.trim());
         finalDescription = firstTextBlock ? firstTextBlock.textContent!.trim().slice(0, 160) : "";
       }
 
@@ -600,8 +705,8 @@ const Upload = () => {
 
       // ── Insert content_blocks + variations IMMEDIATELY after content_items ──
       // Prevents RLS failures from stale auth tokens during later async work.
-      for (let i = 0; i < contentBlocks.length; i++) {
-        const block = contentBlocks[i];
+      for (let i = 0; i < submitFlatBlocks.length; i++) {
+        const block = submitFlatBlocks[i];
         const position = i + 1;
 
         let fileUrl: string | null = null;
@@ -643,6 +748,8 @@ const Upload = () => {
         const { data: insertedBlock, error: blockError } = await supabase.from("content_blocks").insert({
           content_id: contentId,
           position,
+          group_id: block.groupId || null,
+          group_title: block.groupTitle || null,
           block_type: block.type,
           text_content: (block.type === "text" || block.type === "long_text") ? block.textContent
             : (block.type === "github" || block.type === "large_file") ? block.textContent

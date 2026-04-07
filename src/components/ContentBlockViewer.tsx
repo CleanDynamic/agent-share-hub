@@ -105,6 +105,10 @@ interface BlockRow {
   resource_type?: string | null;
   resource_annotation?: string | null;
   resource_is_paywalled?: boolean | null;
+
+  // Group binding
+  group_id?: string | null;
+  group_title?: string | null;
 }
 
 interface VariationRow {
@@ -1168,14 +1172,38 @@ export function ContentBlockViewer({
     );
   }
 
-  return (
-    <div>
-      <AdModal open={!!adModal} onComplete={handleAdComplete} label="Your content unblurs in" countdownSeconds={3} />
+  // Group consecutive child blocks that share a group_id into a single
+  // RenderItem. The group heading (section_heading with group_id) is skipped
+  // because the group container renders the title itself.
+  type RenderItem =
+    | { kind: 'block'; block: BlockRow }
+    | { kind: 'group'; title: string; groupId: string; blocks: BlockRow[] };
 
-      <div>
-        <div className="space-y-4">
-          {blocks.map((block, index) => {
-            const blockVariations = (variations ?? []).filter((v) => v.block_id === block.id);
+  const groupedItems: RenderItem[] = [];
+  const seenGroups = new Set<string>();
+  (blocks ?? []).forEach((block) => {
+    if (block.group_id && block.block_type !== 'section_heading') {
+      if (!seenGroups.has(block.group_id)) {
+        seenGroups.add(block.group_id);
+        const groupBlocks = (blocks ?? []).filter(
+          (b) => b.group_id === block.group_id && b.block_type !== 'section_heading'
+        );
+        groupedItems.push({
+          kind: 'group',
+          title: block.group_title ?? '',
+          groupId: block.group_id,
+          blocks: groupBlocks,
+        });
+      }
+    } else if (block.block_type === 'section_heading' && block.group_id) {
+      // Skip — the group heading is rendered by the group container.
+    } else {
+      groupedItems.push({ kind: 'block', block });
+    }
+  });
+
+  const renderBlockRow = (block: BlockRow, index: number): JSX.Element => {
+    const blockVariations = (variations ?? []).filter((v) => v.block_id === block.id);
             const hasVars = blockVariations.length > 0;
             const currentTab = activeTab[block.id] ?? "A";
             const isPreview = !!block.is_preview;
@@ -1355,6 +1383,110 @@ export function ContentBlockViewer({
                 </div>
               </div>
             );
+  };
+
+  return (
+    <div>
+      <AdModal open={!!adModal} onComplete={handleAdComplete} label="Your content unblurs in" countdownSeconds={3} />
+
+      <div>
+        <div className="space-y-4">
+          {groupedItems.map((item, idx) => {
+            if (item.kind === 'group') {
+              return (
+                <div
+                  key={item.groupId}
+                  id={`block-${item.groupId}`}
+                  style={{
+                    margin: '24px 0',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* Group heading */}
+                  <div style={{
+                    padding: '12px 16px',
+                    background: 'rgba(255,255,255,0.02)',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  }}>
+                    <div style={{
+                      fontSize: 10, fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.12em',
+                      color: 'rgba(255,255,255,0.25)',
+                      marginBottom: 3,
+                    }}>
+                      ▤ Group
+                    </div>
+                    <h3 style={{
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                      fontSize: 16, fontWeight: 700,
+                      color: 'rgba(255,255,255,0.88)',
+                      margin: 0, lineHeight: 1.3,
+                    }}>
+                      {item.title}
+                    </h3>
+                  </div>
+
+                  {/* Group child blocks */}
+                  <div style={{
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 16,
+                  }}>
+                    {item.blocks.map((block, bi) => (
+                      <div key={block.id}>
+                        {/* Step marker inside group */}
+                        <div style={{
+                          display: 'flex', alignItems: 'center',
+                          gap: 8, marginBottom: 10,
+                        }}>
+                          <div style={{
+                            width: 18, height: 18, borderRadius: '50%',
+                            background: 'rgba(255,255,255,0.06)',
+                            border: '1px solid rgba(255,255,255,0.12)',
+                            display: 'flex', alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 9, fontWeight: 700,
+                            color: 'rgba(255,255,255,0.35)', flexShrink: 0,
+                          }}>
+                            {bi + 1}
+                          </div>
+                          <span style={{
+                            fontSize: 9, fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.10em',
+                            color: 'rgba(255,255,255,0.22)',
+                          }}>
+                            {BLOCK_ICONS[block.block_type] ?? '◆'}{' '}
+                            {block.block_type?.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                        {renderTypedViewer(block) ?? (
+                          <RenderBlockContent
+                            type={block.block_type}
+                            textContent={block.text_content}
+                            formatting={block.formatting}
+                            formattingType={block.formatting_type}
+                            subBlocks={block.sub_blocks}
+                            fileUrl={block.file_url}
+                            fileName={block.file_name}
+                            fileSizeBytes={block.file_size_bytes}
+                            imageUrl={block.image_url}
+                            imageDescription={block.image_description}
+                            contentId={contentId}
+                            isBlogContent={isBlog}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            return renderBlockRow(item.block, idx);
           })}
         </div>
       </div>
