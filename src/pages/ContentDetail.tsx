@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, Link, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -159,6 +159,25 @@ const ContentDetail = () => {
     enabled: !!id,
   });
   const toc = useMemo(() => buildTOC(tocBlocks ?? []), [tocBlocks]);
+
+  // ─── First block (for description dedup) ────────────────
+  const { data: firstBlock } = useQuery({
+    queryKey: ["first_block", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("content_blocks")
+        .select("text_content")
+        .eq("content_id", id!)
+        .order("position")
+        .limit(1)
+        .single();
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const showDescription = item?.description &&
+    item.description.trim() !== (firstBlock?.text_content ?? "").trim();
 
   // ─── View tracking ──────────────────────────────────────
   useEffect(() => {
@@ -773,8 +792,8 @@ const ContentDetail = () => {
           />
         )}
 
-        {/* 4. Description */}
-        {item.description && (
+        {/* 4. Description — only if it doesn't duplicate the first block */}
+        {showDescription && (
           <p className="text-[16px] text-[#CCCCCC] leading-[1.5] font-normal mt-2 mb-3"><MentionText text={item.description} /></p>
         )}
 
@@ -789,96 +808,79 @@ const ContentDetail = () => {
           </div>
         )}
 
-        {/* 5. Meta row */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4 text-[13px] text-muted-foreground">
+        {/* 5. Meta row — author chip + stats + tools + fork */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          marginBottom: 16, flexWrap: 'wrap',
+        }}>
+          {/* Author avatar chip */}
           {creator && (
-            <>
-              {collaborators && collaborators.length > 1 ? (
-                <div className="flex items-center gap-2">
-                  <div className="flex -space-x-2">
-                    {collaborators.slice(0, 4).map((c: any) => (
-                      <Link
-                        key={c.collaborator_id}
-                        to={`/creator/${c.profiles?.username}`}
-                        className="h-5 w-5 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[8px] font-medium text-muted-foreground overflow-hidden hover:z-10 relative"
-                      >
-                        {c.profiles?.avatar_url ? (
-                          <img src={c.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          (c.profiles?.display_name || c.profiles?.username || "?")[0].toUpperCase()
-                        )}
-                      </Link>
-                    ))}
-                  </div>
-                  <span>
-                    {collaborators.map((c: any, i: number) => (
-                      <span key={c.collaborator_id}>
-                        {i > 0 && ", "}
-                        <Link to={`/creator/${c.profiles?.username}`} className="hover:text-foreground transition-colors">
-                          {c.profiles?.display_name || c.profiles?.username}
-                        </Link>
-                      </span>
-                    ))}
-                  </span>
-                </div>
-              ) : (
-                <Link to={`/creator/${creator.username}`} className="flex items-center gap-1 hover:text-foreground transition-colors">
-                  <User className="h-3 w-3" />
-                  <span>By {creator.display_name || creator.username}</span>
-                </Link>
-              )}
-              <span className="text-muted-foreground/40">·</span>
-            </>
+            <Link to={`/creator/${creator.username}`} style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              textDecoration: 'none',
+            }}>
+              <div style={{
+                width: 26, height: 26, borderRadius: '50%',
+                background: 'rgba(232,87,26,0.20)',
+                border: '1px solid rgba(232,87,26,0.30)',
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11, fontWeight: 700, color: '#E8571A',
+              }}>
+                {(creator.display_name || creator.username || '?')[0].toUpperCase()}
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>
+                {creator.display_name || creator.username}
+              </span>
+            </Link>
           )}
 
-          {pendingInvites && pendingInvites.length > 0 && (
-            <>
-              {pendingInvites.map((inv: any) => (
-                <span key={inv.invitee_id} className="italic text-muted-foreground/60">
-                  {inv.profiles?.display_name || inv.profiles?.username} (pending)
-                </span>
-              ))}
-              <span className="text-muted-foreground/40">·</span>
-            </>
-          )}
+          <span style={{ color: 'rgba(255,255,255,0.20)', fontSize: 12 }}>·</span>
 
-          <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{viewCount.toLocaleString()} views</span>
-          <span className="text-muted-foreground/40">·</span>
-          <span className="flex items-center gap-1"><Download className="h-3 w-3" />{count.toLocaleString()} downloads</span>
-          <span className="text-muted-foreground/40">·</span>
-          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDate(item.approved_at ?? item.created_at)}</span>
-          {(item as any).fork_count > 0 && (
-            <>
-              <span className="text-muted-foreground/40">·</span>
-              <button onClick={() => setForksModalOpen(true)} className="flex items-center gap-1 hover:text-foreground transition-colors">
-                <GitFork className="h-3 w-3" />{(item as any).fork_count} fork{(item as any).fork_count !== 1 ? "s" : ""}
-              </button>
-            </>
-          )}
-          {user && collaborators?.some((c: any) => c.collaborator_id === user.id && !c.is_primary_author) && (
-            <>
-              <span className="text-muted-foreground/40">·</span>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button className="text-[11px] text-muted-foreground hover:text-destructive transition-colors">Leave collab</button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="bg-card border-border">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Leave collaboration?</AlertDialogTitle>
-                    <AlertDialogDescription>This content will no longer appear on your profile.</AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={async () => {
-                      await supabase.from("content_collaborators").delete().eq("collaborator_id", user.id).eq("content_id", item.id);
-                      refetchCollabs();
-                      toast({ title: "Left collaboration" });
-                    }}>Leave</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+            {formatDate(item.approved_at ?? item.created_at)}
+          </span>
+
+          <span style={{ color: 'rgba(255,255,255,0.20)', fontSize: 12 }}>·</span>
+
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+            {viewCount.toLocaleString()} views
+          </span>
+          <span style={{ color: 'rgba(255,255,255,0.20)', fontSize: 12 }}>·</span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+            {count.toLocaleString()} copies
+          </span>
+
+          {/* Tools chips */}
+          {(item.ai_tools ?? []).slice(0, 3).map((t: string) => (
+            <span key={t} style={{
+              padding: '2px 8px', borderRadius: 9999, fontSize: 11,
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              color: 'rgba(255,255,255,0.45)',
+            }}>
+              {t}
+            </span>
+          ))}
+
+          {/* Fork button — top right aligned */}
+          <div style={{ marginLeft: 'auto' }}>
+            <button
+              onClick={() => { if (!isLoggedIn) { setAccountGateOpen(true); return; } setForkModalOpen(true); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                fontSize: 12, color: 'rgba(255,255,255,0.40)',
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: '4px 8px',
+                borderRadius: 6,
+                transition: 'color 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.80)'}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.40)'}
+            >
+              <GitFork style={{ width: 12, height: 12 }} /> Fork
+            </button>
+          </div>
         </div>
 
         {/* Fork attribution */}
@@ -957,9 +959,6 @@ const ContentDetail = () => {
         {/* 8. BLUEPRINT — inline, always visible */}
         {(!isSub || subscriberUnlocked) && (
           <div className="mb-4">
-            {item.content_type !== "Blog" && (
-              <h2 className="text-lg font-semibold text-foreground mb-3">Blueprint:</h2>
-            )}
             <ContentBlockViewer
               contentId={item.id}
               contentTitle={item.title}
@@ -986,30 +985,24 @@ const ContentDetail = () => {
           </div>
         )}
 
-        {/* 9. ACTION BOX — inline, full width */}
-        <div className="rounded-xl border border-border bg-card mb-4" style={{ padding: "12px 16px" }}>
-          {/* Single row: ratings left, icons right */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <StarRating
-                contentId={item.id}
-                contentTitle={item.title}
-                avgRating={Number((item as any).avg_rating) || 0}
-                ratingCount={(item as any).rating_count ?? 0}
-                isEligible={isEligible}
-              />
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <BookmarkButton contentId={item.id} />
-              <AddToCollectionButton contentId={item.id} contentTitle={item.title} />
-            </div>
-          </div>
-
-          {/* Secondary links row */}
-          <div className="flex flex-wrap items-center gap-4 mt-2">
-            {isPaid && (
-              <span className="text-[11px] text-muted-foreground">£{(item.price_gbp ?? 0).toFixed(2)} — one-time payment</span>
-            )}
+        {/* 9. ACTION ROW — compact, after blocks */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '14px 0',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          marginBottom: 20, marginTop: 4,
+        }}>
+          <StarRating
+            contentId={item.id}
+            contentTitle={item.title}
+            avgRating={Number((item as any).avg_rating) || 0}
+            ratingCount={(item as any).rating_count ?? 0}
+            isEligible={isEligible}
+          />
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <BookmarkButton contentId={item.id} />
+            <AddToCollectionButton contentId={item.id} contentTitle={item.title} />
             {item.donation_enabled && creator && (
               <TipSelector
                 creatorId={creator.id}
@@ -1018,81 +1011,9 @@ const ContentDetail = () => {
                 cancelUrl={`${window.location.origin}/content/${item.id}`}
               />
             )}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    className="text-[12px] text-[hsl(var(--secondary))] hover:underline transition-colors flex items-center gap-1"
-                    onClick={() => {
-                      if (!isLoggedIn) { window.location.href = "/signup"; return; }
-                      setForkModalOpen(true);
-                    }}
-                  >
-                    <GitFork className="h-3 w-3" /> Fork this ↗
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent><p>Clone to your drafts and make it your own</p></TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            {isCurator && (
-              <button
-                className="text-[12px] text-[hsl(var(--secondary))] hover:underline flex items-center gap-1"
-                onClick={() => setCuratorModalOpen(true)}
-              >
-                <ShieldCheck className="h-3 w-3" /> Add recommendation
-              </button>
-            )}
           </div>
         </div>
 
-        {/* Curator Picks — inline */}
-        {curatorRecs && curatorRecs.length > 0 && (
-          <div className="mb-4">
-            <CuratorPicksCard recs={curatorRecs} />
-          </div>
-        )}
-
-        {/* 9. CREATED BY — inline horizontal card */}
-        {creator && (
-          <div className="flex items-center gap-3 py-3 mb-4 border-t border-b border-border">
-            <Link to={`/creator/${creator.username}`} className="shrink-0">
-              <div className="h-11 w-11 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground overflow-hidden">
-                {(creator.display_name || creator.username || "?")[0].toUpperCase()}
-              </div>
-            </Link>
-            <div className="flex-1 min-w-0">
-              <Link to={`/creator/${creator.username}`} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
-                {creator.display_name || creator.username}
-              </Link>
-              <p className="text-xs text-muted-foreground">@{creator.username}</p>
-              {creator.bio && <p className="text-[13px] text-muted-foreground line-clamp-1 mt-0.5">{creator.bio}</p>}
-              {revenueSplits && revenueSplits.length > 0 && revenueSplits.some((s: any) => s.is_contested) && (
-                <p className="text-xs text-amber-400 mt-1">Revenue split pending agreement</p>
-              )}
-            </div>
-            <div className="shrink-0 text-right">
-              {creatorStats && (
-                <p className="text-[11px] text-muted-foreground mb-1">{creatorStats.totalItems} published · {creatorStats.totalDownloads.toLocaleString()} downloads</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 8. Works With — pill fallback + compatibility table */}
-        {item.ai_tools && item.ai_tools.length > 0 && (
-          <div className="mb-3">
-            <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Works with</h3>
-            <div className="flex flex-wrap gap-2">
-              {item.ai_tools.map((tool) => {
-                const label = tool === "Other" && (item as any)?.other_tool_name ? (item as any).other_tool_name : tool;
-                return <span key={tool} className="text-xs px-2 py-1 rounded-lg bg-accent text-muted-foreground">{label}</span>;
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Compatibility Table */}
-        <CompatibilityTable contentId={item.id} creatorId={item.creator_id} />
 
         {/* 8b. Model specs for local AI Tools */}
         {item.content_type === "AI Tools (LLMs)" && (item as any).tool_subtype === "local" && (
@@ -1149,19 +1070,6 @@ const ContentDetail = () => {
         {/* Dependencies */}
         <DependencyDisplay contentId={item.id} />
 
-        {/* Compatibility */}
-        <CompatibilityBadge
-          contentId={item.id}
-          creatorId={item.creator_id}
-          compatibilityStatus={(item as any).compatibility_status}
-          lastVerifiedAt={(item as any).last_verified_at}
-          variant="detail"
-        />
-
-        {/* 11. Version History compact row */}
-        <div className="mb-5">
-          <VersionHistory contentId={item.id} currentVersion={item.current_version} />
-        </div>
 
         {/* Subscriber gate */}
         {isSub && !subscriberUnlocked && creator && (
@@ -1500,47 +1408,6 @@ const ContentDetail = () => {
           </>
         )}
 
-        {/* 14. Related Content — horizontal scroll at bottom */}
-        {related && related.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-base font-semibold text-foreground mb-3">Related</h2>
-            <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
-              {related.slice(0, 4).map((r) => {
-                const accent = TYPE_COLORS[r.content_type]?.match(/text-\[([^\]]+)\]/)?.[1] || "#9999AA";
-                return (
-                  <Link
-                    key={r.id}
-                    to={`/content/${r.id}`}
-                    state={{ from: "related" }}
-                    className="w-[200px] flex-shrink-0 rounded-[10px] border border-border bg-card overflow-hidden hover:border-primary/30 transition-colors group"
-                  >
-                    <div className="h-[90px] w-full overflow-hidden">
-                      {(r as any).cover_image_url ? (
-                        <img src={(r as any).cover_image_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-accent/50">
-                          <span className="text-2xl font-bold text-muted-foreground">{r.content_type[0]}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-2.5">
-                      <div className="flex gap-1 mb-1">
-                        <Badge variant="outline" className={`text-[9px] font-medium ${TYPE_COLORS[r.content_type] ?? ""}`}>
-                          {displayContentType(r.content_type)}
-                        </Badge>
-                        <Badge variant="outline" className={`text-[9px] font-medium ${difficultyColor(r.difficulty)}`}>
-                          {r.difficulty}
-                        </Badge>
-                      </div>
-                      <p className="text-[13px] font-semibold text-foreground leading-tight line-clamp-2 group-hover:text-primary transition-colors">{r.title}</p>
-                      <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1"><Eye className="h-3 w-3" />{(r.view_count ?? 0).toLocaleString()}</p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         </div>
         {/* ── END MAIN CONTENT ── */}
@@ -1556,9 +1423,9 @@ const ContentDetail = () => {
           overflowY: 'auto',
         }}>
 
-          {/* Primary CTA */}
+          {/* Primary CTA — bounty submit only */}
           {isBounty && isLoggedIn && !isPoster && (item as any).bounty_status !== "solved" &&
-           !(bountyResponses ?? []).some((r: any) => r.responder_id === user?.id) ? (
+           !(bountyResponses ?? []).some((r: any) => r.responder_id === user?.id) && (
             <button
               onClick={() => setComposerOpen(true)}
               style={{
@@ -1571,41 +1438,12 @@ const ContentDetail = () => {
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',
+                marginBottom: 16,
               }}
             >
               Submit a Blueprint →
             </button>
-          ) : (
-            <button
-              onClick={handleDownload}
-              disabled={downloading}
-              data-visual-slot="btn-primary"
-              style={{
-                width: '100%',
-                padding: '10px 16px',
-                borderRadius: 100,
-                background: 'linear-gradient(160deg,#111 0%,#1C1C1C 50%,#0A0A0A 100%)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                color: '#FFFFFF',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: downloading ? 'wait' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-              }}
-            >
-              {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-              {label}
-            </button>
           )}
-
-          <hr style={{
-            border: 'none',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            margin: '16px 0',
-          }} />
 
           {/* Author card */}
           {creator && (
@@ -1937,94 +1775,198 @@ function DetailMicrotags({ contentId, itemTags }: { contentId: string; itemTags?
   );
 }
 
-/* ---- What to Expect Section — always visible, never blurred ---- */
+/* ---- What to Expect Section — carousel ---- */
 function WhatToExpectSection({ item }: { item: any }) {
-  const blocks = item.what_to_expect_blocks as any[] | null;
-  const fallbackText = item.what_to_expect as string | null;
+  const blocks = (item.what_to_expect_blocks as any[] | null) ?? [];
+  const fallbackText = (item.what_to_expect as string | null) ?? '';
+  const [current, setCurrent] = React.useState(0);
+  const [paused, setPaused] = React.useState(false);
 
-  if (!blocks?.length && !fallbackText) return null;
+  // Auto-advance every 5 seconds
+  React.useEffect(() => {
+    if (blocks.length <= 1 || paused) return;
+    const t = setInterval(() => {
+      setCurrent(c => (c + 1) % blocks.length);
+    }, 5000);
+    return () => clearInterval(t);
+  }, [blocks.length, paused]);
+
+  if (!blocks.length && !fallbackText) return null;
+
+  // Text-only fallback (no blocks)
+  if (!blocks.length) {
+    return (
+      <div style={{ marginBottom: 20 }}>
+        <div style={{
+          fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+          letterSpacing: '0.12em', color: 'rgba(255,255,255,0.30)',
+          marginBottom: 10,
+        }}>
+          What to expect
+        </div>
+        <p style={{
+          fontSize: 14, color: 'rgba(255,255,255,0.60)',
+          lineHeight: 1.7,
+        }}>
+          {fallbackText}
+        </p>
+      </div>
+    );
+  }
+
+  // Single block — no carousel needed
+  if (blocks.length === 1) {
+    const block = blocks[0];
+    return (
+      <div style={{ marginBottom: 20 }}>
+        <div style={{
+          fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+          letterSpacing: '0.12em', color: 'rgba(255,255,255,0.30)',
+          marginBottom: 10,
+        }}>
+          What to expect
+        </div>
+        <div style={{
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 12, overflow: 'hidden',
+        }}>
+          {block.image_url && (
+            <img src={block.image_url} alt={block.text_content || block.content || ''}
+              style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+          )}
+          {(block.text_content || block.content) && (
+            <p style={{
+              fontSize: 13, color: 'rgba(255,255,255,0.65)',
+              lineHeight: 1.65, padding: '12px 14px', margin: 0,
+            }}>
+              {block.text_content || block.content}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Multi-block carousel
+  const hasImages = blocks.some((b: any) => b.image_url);
+  const block = blocks[current];
+  const blockText = block.text_content || block.content;
 
   return (
-    <div className="mb-4">
-      <h2 className="text-base font-semibold text-foreground mb-2.5">What to Expect</h2>
+    <div style={{ marginBottom: 20 }}>
+      <div style={{
+        fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+        letterSpacing: '0.12em', color: 'rgba(255,255,255,0.30)',
+        marginBottom: 10,
+      }}>
+        What to expect
+      </div>
+
+      {/* Carousel card */}
       <div
-        className="rounded-xl p-4 space-y-3"
         style={{
-          backgroundColor: "rgba(46,196,182,0.04)",
-          borderLeft: "2px solid rgba(46,196,182,0.3)",
+          position: 'relative',
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 12, overflow: 'hidden',
+          userSelect: 'none',
         }}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
       >
-        {blocks && blocks.length > 0 ? (
-          blocks
-            .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
-            .map((block: any, idx: number) => (
-              <WhatToExpectBlock key={block.id || idx} block={block} />
-            ))
-        ) : (
-          <p className="text-sm text-muted-foreground leading-relaxed">{fallbackText}</p>
+        {/* Image area */}
+        {hasImages && (
+          <div style={{ position: 'relative', height: 180, background: 'rgba(0,0,0,0.30)' }}>
+            {block.image_url ? (
+              <img
+                src={block.image_url}
+                alt={blockText || ''}
+                style={{
+                  width: '100%', height: '100%',
+                  objectFit: 'cover', display: 'block',
+                  transition: 'opacity 0.3s ease',
+                }}
+              />
+            ) : (
+              <div style={{
+                width: '100%', height: '100%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 32, color: 'rgba(255,255,255,0.10)',
+              }}>
+                ◆
+              </div>
+            )}
+          </div>
         )}
+
+        {/* Text content */}
+        {blockText && (
+          <p style={{
+            fontSize: 13, color: 'rgba(255,255,255,0.65)',
+            lineHeight: 1.65, padding: '12px 14px', margin: 0,
+          }}>
+            {blockText}
+          </p>
+        )}
+
+        {/* Left/Right arrows */}
+        <button
+          onClick={() => setCurrent(c => (c - 1 + blocks.length) % blocks.length)}
+          style={{
+            position: 'absolute', left: 8,
+            top: hasImages ? 80 : '50%',
+            transform: 'translateY(-50%)',
+            width: 28, height: 28, borderRadius: '50%',
+            background: 'rgba(0,0,0,0.50)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            color: '#fff', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 14, zIndex: 2,
+          }}
+        >
+          ‹
+        </button>
+        <button
+          onClick={() => setCurrent(c => (c + 1) % blocks.length)}
+          style={{
+            position: 'absolute', right: 8,
+            top: hasImages ? 80 : '50%',
+            transform: 'translateY(-50%)',
+            width: 28, height: 28, borderRadius: '50%',
+            background: 'rgba(0,0,0,0.50)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            color: '#fff', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 14, zIndex: 2,
+          }}
+        >
+          ›
+        </button>
+      </div>
+
+      {/* Dot indicators */}
+      <div style={{
+        display: 'flex', justifyContent: 'center',
+        gap: 5, marginTop: 8,
+      }}>
+        {blocks.map((_: any, i: number) => (
+          <button
+            key={i}
+            onClick={() => setCurrent(i)}
+            style={{
+              width: i === current ? 16 : 6,
+              height: 6, borderRadius: 3,
+              background: i === current
+                ? '#E8571A' : 'rgba(255,255,255,0.20)',
+              border: 'none', cursor: 'pointer', padding: 0,
+              transition: 'all 0.25s ease',
+            }}
+          />
+        ))}
       </div>
     </div>
   );
-}
-
-function WhatToExpectBlock({ block }: { block: any }) {
-  const fmt = block.formatting_type || "paragraph";
-  const text = block.text_content || "";
-
-  if (block.block_type === "image" && block.image_url) {
-    return (
-      <div>
-        <img src={block.image_url} alt={block.image_description || ""} className="w-full rounded-lg" />
-        {block.image_description && <p className="text-xs text-muted-foreground mt-1">{block.image_description}</p>}
-      </div>
-    );
-  }
-
-  if (fmt === "sublist" || fmt === "sub_list") {
-    const subBlocks = (block.sub_blocks as string[]) || [];
-    return (
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">{text}</p>
-        {subBlocks.map((sub, i) => (
-          <p key={i} className="text-sm text-muted-foreground" style={{ paddingLeft: 24 }}>
-            <span className="text-muted-foreground/60">↳</span> {sub}
-          </p>
-        ))}
-      </div>
-    );
-  }
-
-  const lines = text.split("\n").filter((l: string) => l.trim());
-
-  if (fmt === "bullets") {
-    return (
-      <ul className="space-y-1">
-        {lines.map((line: string, i: number) => (
-          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
-            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[hsl(var(--secondary))] shrink-0" />
-            {line}
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  if (fmt === "numbered") {
-    return (
-      <ol className="space-y-1">
-        {lines.map((line: string, i: number) => (
-          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
-            <span className="text-muted-foreground/60 shrink-0 font-medium">{i + 1}.</span>
-            {line}
-          </li>
-        ))}
-      </ol>
-    );
-  }
-
-  // paragraph
-  return <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{text}</p>;
 }
 
 export default ContentDetail;
