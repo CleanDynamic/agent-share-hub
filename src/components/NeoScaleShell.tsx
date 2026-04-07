@@ -1166,6 +1166,34 @@ export function NeoScaleShell() {
     };
   }
 
+  /* ── Auto-flip on route change ── */
+  useEffect(() => {
+    if (isMobile) return;
+    const flipper = document.querySelector('.ns-middle-flipper') as HTMLElement | null;
+    if (!flipper) return;
+
+    const onHome = location.pathname === '/';
+    // Determine if currently showing front (rotation divisible by 360)
+    const showingFront = Math.round(currentRotation.current / 180) % 2 === 0;
+
+    if (!onHome && showingFront) {
+      // Need to flip to back face
+      currentRotation.current += 180;
+      isFlipping.current = true;
+      flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+      flipper.style.transform = `rotateY(${currentRotation.current}deg)`;
+      setTimeout(() => { isFlipping.current = false; }, 650);
+    } else if (onHome && !showingFront) {
+      // Need to flip back to front face
+      const nearest360 = Math.round(currentRotation.current / 360) * 360;
+      currentRotation.current = nearest360;
+      isFlipping.current = true;
+      flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+      flipper.style.transform = `rotateY(${nearest360}deg)`;
+      setTimeout(() => { isFlipping.current = false; }, 650);
+    }
+  }, [location.pathname, isMobile]);
+
   /* ── Directional flip ── */
   function flipMiddle(source: 'left' | 'right') {
     if (isFlipping.current) return;
