@@ -46,20 +46,12 @@ export default function BountyUpload() {
         title: what,
         description: context,
         content_type: need || 'Prompt File',
-        post_category: 'bounty',
-        bounty_enabled: true,
-        bounty_status: 'open',
-        bounty_gap: what,
-        bounty_amount: parseFloat(amount) || 0,
         what_to_expect: criteria,
         ai_tools: tools,
         difficulty: 'Any',
         status: 'approved',
         approved_at: new Date().toISOString(),
         monetisation_type: 'free',
-        bounty_deadline: deadline > 0
-          ? new Date(Date.now() + deadline * 86400000).toISOString()
-          : null,
       })
       .select('id')
       .single()

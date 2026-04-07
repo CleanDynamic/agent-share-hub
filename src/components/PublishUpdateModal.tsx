@@ -93,7 +93,7 @@ export function PublishUpdateModal({
       }
       const { error: updateError } = await supabase
         .from("content_items")
-        .update(updatePayload)
+        .update(updatePayload as any)
         .eq("id", contentId);
       if (updateError) throw updateError;
 

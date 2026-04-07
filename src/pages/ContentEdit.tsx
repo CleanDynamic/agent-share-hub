@@ -213,7 +213,7 @@ export default function ContentEditPage() {
 
       // Apply content_items updates if any
       if (Object.keys(updatePayload).length > 0) {
-        await supabase.from("content_items").update(updatePayload).eq("id", id!);
+        await supabase.from("content_items").update(updatePayload as any).eq("id", id!);
       }
 
       // 2. Insert changelog entry
