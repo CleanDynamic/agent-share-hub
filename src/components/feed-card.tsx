@@ -32,7 +32,11 @@ export interface FeedPost {
   comment_count?: number
   download_count?: number
   what_to_expect?: string
-  what_to_expect_blocks?: Array<{ type: string; content: string }>
+  what_to_expect_blocks?: Array<{
+    type: string;
+    content: string;
+    position?: number;
+  }>
   bounty_enabled?: boolean
   bounty_amount?: number | null
   bounty_status?: string | null
@@ -118,7 +122,8 @@ export function FeedCard({ post }: { post: FeedPost }) {
   }
 
   const displayContentType = (type: string) => {
-    return (post.post_type || type).toUpperCase().replace(/-/g, " ")
+    if (post.post_type === 'discussion') return 'DISCUSSION';
+    return (post.post_type || type).toUpperCase().replace(/-/g, ' ');
   }
 
   return (
@@ -237,6 +242,65 @@ export function FeedCard({ post }: { post: FeedPost }) {
         }}>
           {previewText}
         </p>
+      )}
+
+      {/* Discussion thread preview */}
+      {post.post_type === 'discussion' &&
+       post.what_to_expect_blocks &&
+       post.what_to_expect_blocks.length > 0 && (
+        <div style={{ marginTop: 10, marginBottom: 4 }}>
+          {post.what_to_expect_blocks.slice(0, 2).map((thread, i) => (
+            <div key={i} style={{
+              display: 'flex', gap: 10,
+              marginTop: i === 0 ? 0 : 6,
+            }}>
+              {/* Thread line */}
+              <div style={{
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', width: 28, flexShrink: 0,
+              }}>
+                {i === 0 && (
+                  <div style={{
+                    width: 1, height: 8,
+                    background: 'rgba(59,130,246,0.20)',
+                  }} />
+                )}
+                <div style={{
+                  width: 20, height: 20, borderRadius: '50%',
+                  background: 'rgba(59,130,246,0.10)',
+                  border: '1px solid rgba(59,130,246,0.20)',
+                  flexShrink: 0,
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 8, color: 'rgba(59,130,246,0.60)',
+                  fontWeight: 700,
+                }}>
+                  {i + 2}
+                </div>
+              </div>
+              <p style={{
+                fontSize: 12,
+                color: 'rgba(255,255,255,0.40)',
+                lineHeight: 1.55, margin: 0,
+                flex: 1, minWidth: 0,
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+              }}>
+                {thread.content}
+              </p>
+            </div>
+          ))}
+          {post.what_to_expect_blocks.length > 2 && (
+            <div style={{
+              fontSize: 11, color: 'rgba(59,130,246,0.50)',
+              marginTop: 6, paddingLeft: 38,
+            }}>
+              +{post.what_to_expect_blocks.length - 2} more in thread
+            </div>
+          )}
+        </div>
       )}
 
       {/* Cover image / video */}
