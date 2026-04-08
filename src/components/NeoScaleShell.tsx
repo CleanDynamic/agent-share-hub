@@ -1134,17 +1134,14 @@ export function NeoScaleShell() {
           id, title, description, content_type,
           difficulty, ai_tools, use_cases, custom_tags,
           download_count, view_count, comment_count,
-          cover_image_url, created_at,
+          cover_image_url, created_at, approved_at,
           what_to_expect, what_to_expect_blocks,
-          is_reblog,
-          reblog_of_id,
-          reblog_count,
-          post_category,
-          bounty_enabled,
-          bounty_amount,
-          bounty_status,
+          avg_rating, rating_count, creator_id,
+          custom_use_case_description, other_tool_name,
+          topics, estimated_read_minutes, tool_subtype,
+          model_parameters,
           profiles!content_items_creator_id_fkey(
-            display_name, username, avatar_url,
+            id, display_name, username, avatar_url,
             bio, follower_count, following_count, joined_at
           )
         `)
