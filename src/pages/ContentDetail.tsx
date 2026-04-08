@@ -661,11 +661,10 @@ const ContentDetail = () => {
 
   return (
     <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
+      padding: '16px 20px 80px 20px',
       overflowY: 'auto',
-      padding: '0',
+      height: '100%',
+      boxSizing: 'border-box',
     }}>
       <SeoHead
         title={`${item.title} — NeoScale AI`}
@@ -673,37 +672,24 @@ const ContentDetail = () => {
         path={`/content/${item.id}`}
         jsonLd={jsonLd}
       />
-      <div style={{ padding: '20px 24px 0 24px' }}>
-        {/* Back button */}
-        {(() => {
-          const state = location.state as { from?: string; name?: string } | null;
-          let backLabel = "Back";
-          if (state?.from === "browse") backLabel = "Back to Discover";
-          else if (state?.from === "feed") backLabel = "Back to Feed";
-          else if (state?.from === "profile" && state.name) backLabel = `Back to ${state.name}`;
-          else if (state?.from === "category" && state.name) backLabel = `Back to ${state.name}`;
-          else if (state?.from === "related") backLabel = "Back";
-          return (
-            <button
-              onClick={() => navigate(-1)}
-              className="inline-flex items-center transition-colors"
-              style={{
-                fontSize: 13,
-                fontWeight: 400,
-                color: 'rgba(255,255,255,0.45)',
-                marginBottom: 16,
-                cursor: 'pointer',
-                background: 'transparent',
-                border: 'none',
-                padding: 0,
-              }}
-              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.75)'}
-              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.45)'}
-            >
-              <ArrowLeft style={{ width: 14, height: 14, marginRight: 4 }} /> {backLabel}
-            </button>
-          );
-        })()}
+      <div>
+        {/* Back button — inline, not sticky */}
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            fontSize: 12, color: 'rgba(255,255,255,0.30)',
+            background: 'none', border: 'none',
+            cursor: 'pointer', padding: '0 0 16px 0',
+            transition: 'color 0.15s',
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLButtonElement)
+            .style.color = 'rgba(255,255,255,0.65)'}
+          onMouseLeave={e => (e.currentTarget as HTMLButtonElement)
+            .style.color = 'rgba(255,255,255,0.30)'}
+        >
+          ← Back
+        </button>
 
         {paymentSuccess && (
           <div className="flex items-center gap-3 p-4 mb-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
@@ -794,19 +780,17 @@ const ContentDetail = () => {
         })()}
       </div>
 
-      {/* Two-column layout */}
+      {/* Main content */}
       <div style={{
         display: 'flex',
         gap: 0,
         alignItems: 'flex-start',
-        padding: '0 0 40px 0',
       }}>
 
         {/* ── MAIN CONTENT ── */}
         <div style={{
           flex: 1,
           minWidth: 0,
-          padding: '20px 24px 40px 24px',
         }}>
 
         {/* 1. Cover image */}
@@ -856,7 +840,17 @@ const ContentDetail = () => {
         </div>
 
         {/* 3. Title */}
-        <h1 className="text-[26px] font-bold text-foreground leading-[1.25] mb-2">{item.title}</h1>
+        <h1 style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontSize: 22,
+          fontWeight: 700,
+          color: 'rgba(255,255,255,0.95)',
+          lineHeight: 1.25,
+          margin: '10px 0 8px 0',
+          letterSpacing: '-0.3px',
+        }}>
+          {item.title}
+        </h1>
 
         {/* 3.5 Rating display (read-only, hidden for blogs) */}
         {item.content_type !== "Blog" && (
@@ -906,9 +900,10 @@ const ContentDetail = () => {
         {showDescription && (
           <p style={{
             fontSize: 15,
-            color: 'rgba(255,255,255,0.62)',
+            fontWeight: 400,
+            color: 'rgba(255,255,255,0.65)',
             lineHeight: 1.75,
-            marginBottom: 16,
+            margin: '0 0 18px 0',
             fontFamily: 'Inter, sans-serif',
           }}>
             {item.description}

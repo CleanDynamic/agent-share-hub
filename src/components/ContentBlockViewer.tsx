@@ -270,45 +270,78 @@ function RenderBlockContent({
     const text = textContent ?? "";
     const isLong = type === "long_text";
 
+    const bodyStyle: React.CSSProperties = {
+      fontSize: 15,
+      color: 'rgba(255,255,255,0.72)',
+      lineHeight: 1.75,
+      whiteSpace: 'pre-wrap',
+      margin: 0,
+      fontFamily: 'Inter, sans-serif',
+    };
+
     if (isLong) {
       const paragraphs = text.split("\n\n").filter(Boolean);
       return (
-        <div className="max-w-full" style={{ lineHeight: isBlogContent ? 1.85 : 1.8 }}>
+        <div className="max-w-full">
           {paragraphs.map((p, i) => {
             if (p.startsWith("# ") || (formatting?.type === "heading" && i === 0))
-              return <h3 key={i} className={`font-bold text-foreground mt-4 mb-2 ${isBlogContent ? "text-xl" : "text-lg"}`}>{p.replace(/^#\s*/, "")}</h3>;
-            return <p key={i} className={`text-muted-foreground whitespace-pre-wrap ${isBlogContent ? "text-base mb-[1.4em]" : "text-sm mb-[1.2em]"}`}><MentionText text={p} /></p>;
+              return (
+                <h3 key={i} style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontSize: isBlogContent ? 20 : 18,
+                  fontWeight: 700,
+                  color: 'rgba(255,255,255,0.92)',
+                  marginTop: 16,
+                  marginBottom: 10,
+                  lineHeight: 1.3,
+                }}>{p.replace(/^#\s*/, "")}</h3>
+              );
+            return (
+              <p key={i} style={{
+                ...bodyStyle,
+                fontSize: isBlogContent ? 16 : 15,
+                marginBottom: '1.4em',
+              }}><MentionText text={p} /></p>
+            );
           })}
         </div>
       );
     }
 
-    if (fmt === "paragraph") return <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap"><MentionText text={text} /></p>;
+    if (fmt === "paragraph") return <p style={bodyStyle}><MentionText text={text} /></p>;
     if (fmt === "bullets") return (
-      <ul className="list-disc list-inside space-y-1">
-        {(items.length > 0 ? items : text.split("\n").filter(Boolean)).map((line, i) => <li key={i} className="text-sm text-muted-foreground"><MentionText text={line} /></li>)}
+      <ul style={{ listStyle: 'disc', paddingLeft: 22, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {(items.length > 0 ? items : text.split("\n").filter(Boolean)).map((line, i) => (
+          <li key={i} style={bodyStyle}><MentionText text={line} /></li>
+        ))}
       </ul>
     );
     if (fmt === "numbers") return (
-      <ol className="list-decimal list-inside space-y-1">
-        {(items.length > 0 ? items : text.split("\n").filter(Boolean)).map((line, i) => <li key={i} className="text-sm text-muted-foreground"><MentionText text={line} /></li>)}
+      <ol style={{ listStyle: 'decimal', paddingLeft: 22, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {(items.length > 0 ? items : text.split("\n").filter(Boolean)).map((line, i) => (
+          <li key={i} style={bodyStyle}><MentionText text={line} /></li>
+        ))}
       </ol>
     );
     if (fmt === "sub_list") {
       const parentLabel = text;
       const subs: string[] = Array.isArray(subBlocks) ? subBlocks : [];
       return (
-        <div className="space-y-1">
-          <p className="text-sm text-foreground font-medium"><MentionText text={parentLabel} /></p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <p style={{ ...bodyStyle, color: 'rgba(255,255,255,0.88)', fontWeight: 500 }}><MentionText text={parentLabel} /></p>
           {subs.length > 0 && (
-            <div className="ml-6 space-y-0.5">
-              {subs.map((s, si) => <p key={si} className="text-sm text-muted-foreground"><span className="text-muted-foreground/60 mr-1.5">↳</span>{s}</p>)}
+            <div style={{ marginLeft: 22, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {subs.map((s, si) => (
+                <p key={si} style={bodyStyle}>
+                  <span style={{ color: 'rgba(255,255,255,0.35)', marginRight: 6 }}>↳</span>{s}
+                </p>
+              ))}
             </div>
           )}
         </div>
       );
     }
-    return <p className="text-sm text-muted-foreground whitespace-pre-wrap"><MentionText text={text} /></p>;
+    return <p style={bodyStyle}><MentionText text={text} /></p>;
   }
 
   if (type === "file") {
@@ -346,14 +379,30 @@ function RenderBlockContent({
       });
     };
     return (
-      <div style={{ position: 'relative', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: 14 }}>
+      <div style={{
+        position: 'relative',
+        background: 'rgba(0,0,0,0.35)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderLeft: '3px solid rgba(232,87,26,0.50)',
+        borderRadius: 8,
+        padding: '14px 16px',
+      }}>
         <button
           onClick={handleCopy}
-          style={{ position: 'absolute', top: 10, right: 10, fontSize: 11, padding: '2px 8px', borderRadius: 4, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.60)', cursor: 'pointer' }}
+          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)', color: copied ? '#22C55E' : 'rgba(255,255,255,0.50)', cursor: 'pointer', fontFamily: 'Inter' }}
         >
-          {copied ? 'Copied!' : 'Copy to clipboard'}
+          {copied ? 'Copied!' : 'Copy'}
         </button>
-        <pre style={{ fontFamily: "'Courier New', monospace", fontSize: 13, color: 'rgba(255,255,255,0.80)', whiteSpace: 'pre-wrap', margin: 0, paddingRight: 110 }}>{textContent ?? ""}</pre>
+        <pre style={{
+          fontFamily: "'Courier New', monospace",
+          fontSize: 13,
+          color: 'rgba(255,255,255,0.88)',
+          lineHeight: 1.65,
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          margin: 0,
+          paddingRight: 60,
+        }}>{textContent ?? ""}</pre>
       </div>
     );
   }
@@ -367,17 +416,33 @@ function RenderBlockContent({
       });
     };
     return (
-      <div style={{ position: 'relative', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: 14 }}>
+      <div style={{
+        position: 'relative',
+        background: 'rgba(0,0,0,0.35)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderLeft: '3px solid rgba(59,130,246,0.50)',
+        borderRadius: 8,
+        padding: '14px 16px',
+      }}>
         {lang && (
           <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', display: 'block', marginBottom: 8 }}>{lang}</span>
         )}
         <button
           onClick={handleCopy}
-          style={{ position: 'absolute', top: 10, right: 10, fontSize: 11, padding: '2px 8px', borderRadius: 4, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.60)', cursor: 'pointer' }}
+          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)', color: copied ? '#22C55E' : 'rgba(255,255,255,0.50)', cursor: 'pointer', fontFamily: 'Inter' }}
         >
-          {copied ? 'Copied!' : 'Copy to clipboard'}
+          {copied ? 'Copied!' : 'Copy'}
         </button>
-        <pre style={{ fontFamily: "'Courier New', monospace", fontSize: 13, color: 'rgba(255,255,255,0.80)', whiteSpace: 'pre-wrap', margin: 0, paddingRight: 110 }}>{textContent ?? ""}</pre>
+        <pre style={{
+          fontFamily: "'Courier New', monospace",
+          fontSize: 13,
+          color: 'rgba(255,255,255,0.88)',
+          lineHeight: 1.65,
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          margin: 0,
+          paddingRight: 60,
+        }}>{textContent ?? ""}</pre>
       </div>
     );
   }
@@ -1288,47 +1353,65 @@ export function ContentBlockViewer({
             }
 
             return (
-              <div key={block.id} id={`block-${block.id}`} style={{ marginBottom: 24 }}>
+              <div key={block.id} id={`block-${block.id}`}>
                 {/* Step marker separator */}
                 {(() => {
                   const stepStyle = postType === 'build' ? 'numbered'
                     : postType === 'discussion' ? 'none'
                     : 'dot';
+
+                  const typeLabel = getBlockType(effectiveType).label;
+                  const typeEmoji = BLOCK_ICONS[effectiveType] ?? '◆';
+
                   return (
                     <div style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      marginBottom: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      marginBottom: 16,
+                      marginTop: index === 0 ? 0 : 28,
                     }}>
                       {/* Step marker */}
-                      {stepStyle !== 'none' && (
+                      {stepStyle === 'numbered' && (
                         <div style={{
-                          width: stepStyle === 'numbered' ? 22 : 8,
-                          height: stepStyle === 'numbered' ? 22 : 8,
+                          width: 24, height: 24,
                           borderRadius: '50%',
-                          background: stepStyle === 'numbered'
-                            ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.15)',
-                          border: stepStyle === 'numbered'
-                            ? '1px solid rgba(232,87,26,0.30)'
-                            : '1px solid rgba(255,255,255,0.20)',
+                          background: 'rgba(232,87,26,0.12)',
+                          border: '1px solid rgba(232,87,26,0.28)',
                           display: 'flex', alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: 10, fontWeight: 700,
-                          color: stepStyle === 'numbered' ? '#E8571A' : 'transparent',
-                          flexShrink: 0,
+                          fontSize: 11, fontWeight: 700,
+                          color: '#E8571A', flexShrink: 0,
                         }}>
-                          {stepStyle === 'numbered' ? index + 1 : ''}
+                          {index + 1}
                         </div>
                       )}
+                      {stepStyle === 'dot' && (
+                        <div style={{
+                          width: 6, height: 6,
+                          borderRadius: '50%',
+                          background: 'rgba(255,255,255,0.20)',
+                          flexShrink: 0,
+                        }} />
+                      )}
 
-                      {/* Block type label */}
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 5,
-                        fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
-                        letterSpacing: '0.12em', color: 'rgba(255,255,255,0.25)',
+                      {/* Type chip — readable size */}
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.10em',
+                        color: 'rgba(255,255,255,0.35)',
+                        padding: '2px 8px',
+                        borderRadius: 4,
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.07)',
                       }}>
-                        <span>{BLOCK_ICONS[effectiveType] ?? '◆'}</span>
-                        <span>{getBlockType(effectiveType).label}</span>
-                      </div>
+                        {typeEmoji} {typeLabel}
+                      </span>
 
                       {/* Line */}
                       <div style={{
@@ -1341,15 +1424,15 @@ export function ContentBlockViewer({
 
                 <div style={{
                   position: 'relative',
-                  marginBottom: 8,
-                  paddingLeft: isPreview ? 12 : 0,
+                  paddingLeft: isPreview ? 14 : 0,
                   borderLeft: isPreview
-                    ? '2px solid rgba(46,196,182,0.40)'
+                    ? '2px solid rgba(46,196,182,0.45)'
                     : 'none',
                 }}>
+                  <div style={{ position: 'relative' }}>
                   {/* Variation tabs */}
                   {hasVars && (
-                    <div className="flex gap-1 px-4 pt-3 pb-1">
+                    <div className="flex gap-1 pb-2">
                       <button type="button" onClick={() => setActiveTab((p) => ({ ...p, [block.id]: "A" }))}
                         className={`text-xs px-3 py-1 rounded-md transition-colors ${currentTab === "A" ? "font-medium border-b-2" : "text-muted-foreground hover:text-foreground"}`}
                         style={currentTab === "A" ? { color: "#E8571A", borderColor: "#E8571A" } : {}}>A</button>
@@ -1362,62 +1445,39 @@ export function ContentBlockViewer({
                   )}
 
                   {/* Block content with blur */}
-                  <div style={{
-                    position: 'relative',
-                    minHeight: 40,
-                    padding: 0,
-                  }}>
+                  <div style={{ position: 'relative' }}>
                     <div className={isUnblurred ? "" : "blur-[6px] pointer-events-none select-none"} style={{ transition: "filter 0.3s ease" }}>
                       {!showingVariation && (
-                        <div style={{ marginBottom: 14 }}>
+                        <>
                           {block.subheading ? (
-                            /* Has a custom title — show title + type pill */
-                            <div style={{
-                              display: 'flex', alignItems: 'baseline',
-                              gap: 10, flexWrap: 'wrap',
+                            /* Custom title — Playfair heading */
+                            <h3 style={{
+                              fontFamily: "'Playfair Display', Georgia, serif",
+                              fontSize: 18,
+                              fontWeight: 700,
+                              color: 'rgba(255,255,255,0.92)',
+                              margin: '0 0 14px 0',
+                              lineHeight: 1.3,
                             }}>
-                              <h3 style={{
-                                fontFamily: "'Playfair Display', Georgia, serif",
-                                fontSize: 17, fontWeight: 600,
-                                color: 'rgba(255,255,255,0.90)',
-                                margin: 0, lineHeight: 1.3,
-                              }}>
-                                {block.subheading}
-                              </h3>
-                              <span style={{
-                                fontSize: 9, fontWeight: 700,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.10em',
-                                color: 'rgba(255,255,255,0.22)',
-                                padding: '2px 7px',
-                                borderRadius: 4,
-                                background: 'rgba(255,255,255,0.04)',
-                                border: '1px solid rgba(255,255,255,0.06)',
-                                flexShrink: 0,
-                                alignSelf: 'center',
-                              }}>
-                                {BLOCK_ICONS[effectiveType] ?? '◆'}{' '}
-                                {getBlockType(effectiveType).label}
-                              </span>
-                            </div>
+                              {block.subheading}
+                            </h3>
                           ) : (
-                            /* No custom title — show type label only,
-                               but only if NOT a plain text block to avoid
-                               redundancy. */
-                            effectiveType !== 'text' && effectiveType !== 'long_text' && (
+                            /* No custom title — show subtle type heading
+                               for technical blocks; nothing for text blocks
+                               (the type chip in the separator is enough) */
+                            !['text', 'long_text'].includes(effectiveType) && (
                               <div style={{
-                                fontSize: 10, fontWeight: 700,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.10em',
-                                color: 'rgba(255,255,255,0.28)',
-                                marginBottom: 8,
+                                fontSize: 13,
+                                fontWeight: 600,
+                                color: 'rgba(255,255,255,0.45)',
+                                marginBottom: 12,
+                                fontFamily: 'Inter, sans-serif',
                               }}>
-                                {BLOCK_ICONS[effectiveType] ?? '◆'}{' '}
                                 {getBlockType(effectiveType).label}
                               </div>
                             )
                           )}
-                        </div>
+                        </>
                       )}
                       {showingVariation ? (
                         <RenderBlockContent type={showingVariation.variation_type} textContent={showingVariation.text_content} formatting={showingVariation.formatting}
@@ -1490,6 +1550,7 @@ export function ContentBlockViewer({
                         )}
                       </div>
                     )}
+                  </div>
                   </div>
                 </div>
               </div>
