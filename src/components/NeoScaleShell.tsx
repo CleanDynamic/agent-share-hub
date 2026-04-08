@@ -1028,6 +1028,7 @@ export function NeoScaleShell() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchPeopleResults, setSearchPeopleResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
   const [filterPostType, setFilterPostType] = useState<string | null>(null);
@@ -1447,7 +1448,7 @@ export function NeoScaleShell() {
     setSearchQuery(q);
     setSearchOpen(q.length >= 2);
     clearTimeout(searchDebounce.current);
-    if (q.length < 2) { setSearchResults([]); return; }
+    if (q.length < 2) { setSearchResults([]); setSearchPeopleResults([]); return; }
     searchDebounce.current = setTimeout(async () => {
       setSearchLoading(true);
       const { data } = await supabase
@@ -1457,6 +1458,13 @@ export function NeoScaleShell() {
         .eq("status", "approved")
         .limit(6);
       setSearchResults(data ?? []);
+      const { data: pData } = await supabase
+        .from("profiles")
+        .select("id, username, display_name")
+        .or(`display_name.ilike.%${q}%,username.ilike.%${q}%`)
+        .limit(2);
+      if (pData) setSearchPeopleResults(pData);
+      else setSearchPeopleResults([]);
       setSearchLoading(false);
     }, 300);
   }
@@ -1977,10 +1985,9 @@ export function NeoScaleShell() {
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && searchQuery.trim().length >= 1) {
-                    setSearchOpen(false);
-                    setSearchQuery("");
                     flipMiddle('right');
                     navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                    setSearchOpen(false);
                   }
                 }}
               />
@@ -1988,7 +1995,70 @@ export function NeoScaleShell() {
             {searchOpen && (
               <div className="ns-right-search-results">
                 {searchLoading && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>Searching…</div>}
-                {!searchLoading && searchResults.length === 0 && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>No results</div>}
+                {!searchLoading && searchResults.length === 0 && searchPeopleResults.length === 0 && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>No results</div>}
+
+                {/* People results */}
+                {searchPeopleResults && searchPeopleResults.length > 0 && (
+                  <>
+                    <div style={{
+                      fontSize: 9, fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.10em',
+                      color: 'rgba(255,255,255,0.25)',
+                      padding: '4px 10px 2px 10px',
+                    }}>
+                      People
+                    </div>
+                    {searchPeopleResults.slice(0,2).map((p: any) => (
+                      <div
+                        key={p.id}
+                        className="ns-search-result"
+                        style={{ display: 'flex', alignItems: 'center',
+                          gap: 8, padding: '6px 10px' }}
+                        onClick={() => {
+                          navigate(`/creator/${p.username}`);
+                          setSearchOpen(false);
+                          setSearchQuery('');
+                        }}
+                      >
+                        <div style={{
+                          width: 20, height: 20, borderRadius: '50%',
+                          background: 'rgba(232,87,26,0.15)',
+                          border: '1px solid rgba(232,87,26,0.25)',
+                          display: 'flex', alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 9, fontWeight: 700, color: '#E8571A',
+                          flexShrink: 0,
+                        }}>
+                          {(p.display_name ?? p.username)[0].toUpperCase()}
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 11,
+                            color: 'rgba(255,255,255,0.70)',
+                            overflow: 'hidden', textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap' }}>
+                            {p.display_name}
+                          </div>
+                          <div style={{ fontSize: 10,
+                            color: 'rgba(255,255,255,0.30)' }}>
+                            @{p.username}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{
+                      fontSize: 9, fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.10em',
+                      color: 'rgba(255,255,255,0.25)',
+                      padding: '4px 10px 2px 10px',
+                      marginTop: 4,
+                    }}>
+                      Posts
+                    </div>
+                  </>
+                )}
+
                 {searchResults.map((r: any) => (
                   <div key={r.id} className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); flipMiddle('right'); navigate(`/content/${r.id}`); }}>
                     <span className="ns-search-result-badge">{displayContentType(r.content_type)}</span>
@@ -1996,7 +2066,12 @@ export function NeoScaleShell() {
                   </div>
                 ))}
                 {searchQuery.length >= 2 && !searchLoading && (
-                  <div className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); flipMiddle('right'); navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`); }}>
+                  <div className="ns-search-result" onClick={() => {
+                    flipMiddle('right');
+                    navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                    setSearchOpen(false);
+                    setSearchQuery("");
+                  }}>
                     <span style={{ fontSize: 10, color: "#55e0d2" }}>See all results →</span>
                   </div>
                 )}
