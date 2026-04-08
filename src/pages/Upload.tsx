@@ -32,7 +32,45 @@ import { ContentBlockBuilder, emptyBlock, type ContentBlock, type BlockOrGroup, 
 import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
 import { DiscussionCompose } from "@/components/DiscussionCompose";
-import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, getPostType } from "@/lib/content-types";
+import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, getPostType, getPrimaryTypeLabel } from "@/lib/content-types";
+
+// ─── Post type display config (mirrors ContentDetail) ─────────
+const POST_TYPE_DISPLAY: Record<string, {
+  label: string; emoji: string; color: string;
+  bg: string; border: string;
+  blueprintLabel: string;
+}> = {
+  build: {
+    label: 'Build', emoji: '🔨', color: '#E8571A',
+    bg: 'rgba(232,87,26,0.12)', border: 'rgba(232,87,26,0.25)',
+    blueprintLabel: 'The Blueprint',
+  },
+  technique: {
+    label: 'Technique', emoji: '⚡', color: '#2EC4B6',
+    bg: 'rgba(46,196,182,0.12)', border: 'rgba(46,196,182,0.25)',
+    blueprintLabel: 'The Technique',
+  },
+  discovery: {
+    label: 'Discovery', emoji: '🔍', color: '#7C3AED',
+    bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.25)',
+    blueprintLabel: 'Evidence',
+  },
+  discussion: {
+    label: 'Discussion', emoji: '💬', color: '#3B82F6',
+    bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.25)',
+    blueprintLabel: 'Context',
+  },
+};
+
+// ─── Block icon map for TOC and chips ─────────
+const BLOCK_ICON_MAP: Record<string, string> = {
+  prompt: '💬', code: '{ }', result: '📊',
+  image: '🖼', text: '¶', long_text: '¶',
+  agent_config: '🤖', workflow: '🔄',
+  model_params: '⚙️', tool_setup: '🔧',
+  comparison: '↔', resource: '🔗',
+  section_heading: '§',
+};
 
 const CONTENT_TYPES = BLUEPRINT_CONTENT_TYPES;
 const DIFFICULTIES = [...DIFF_LIST, "Any"];
@@ -171,19 +209,8 @@ const Upload = () => {
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const { groups: toolGroups } = useGroupedApprovedTools();
-  const [step, setStep] = useState(1);
-  const totalSteps = 5;
-  const STEP_LABELS = [
-    'Post Type',
-    'The Story',
-    'The Blueprint',
-    'What to Expect',
-    'Details',
-  ];
-
-  const goNext = () => setStep(s => Math.min(s + 1, totalSteps));
-  const goBack = () => setStep(s => Math.max(s - 1, 1));
-
+  const [showTypeChooser, setShowTypeChooser] = useState(true);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [uploadType, setUploadType] = useState<"blog" | "single" | "bounty">("single");
   const [isProjectMode, setIsProjectMode] = useState(false);
   const [contentBlocks, setContentBlocks] = useState<BlockOrGroup[]>([emptyBlock("text")]);
@@ -252,10 +279,6 @@ const Upload = () => {
   const isOtherSelected = watchedAiTools?.includes("Other");
   const watchedPostType = form.watch('post_type');
   const isDiscussion = watchedPostType === 'discussion';
-  const effectiveTotalSteps = isDiscussion ? 2 : totalSteps;
-  const STEP_LABELS_DISPLAY = isDiscussion
-    ? ['Post Type', 'Your Post']
-    : STEP_LABELS;
 
   useEffect(() => {
     if (isAIToolsType || isBlogType) form.setValue("difficulty", "Any");
@@ -279,9 +302,14 @@ const Upload = () => {
     const pt = searchParams.get('post_type');
     if (pt && ['build','technique','discovery','discussion'].includes(pt)) {
       form.setValue('post_type', pt as any);
-      setStep(2);
+      setShowTypeChooser(false);
     }
   }, []);
+
+  // When a draft is loaded, skip the type chooser
+  useEffect(() => {
+    if (draftId) setShowTypeChooser(false);
+  }, [draftId]);
 
   // ── Load draft when ?draft= is present ──
   useEffect(() => {
@@ -612,7 +640,7 @@ const Upload = () => {
     }
   }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast, isBountyType, isBlogType, bountyBlueprintRequired, bountyGap, bountyTipGbp]);
 
-  // ── Autosave every 60 seconds ──
+  // ── Autosave every 60 seconds (fallback) ──
   useEffect(() => {
     autosaveTimer.current = setInterval(() => {
       saveDraft(true);
@@ -621,6 +649,26 @@ const Upload = () => {
       if (autosaveTimer.current) clearInterval(autosaveTimer.current);
     };
   }, [saveDraft]);
+
+  // ── Debounced autosave: save 2.5s after any canvas change ──
+  const watchedTitle = form.watch('title');
+  const watchedDescription = form.watch('description');
+  const watchedWte = form.watch('what_to_expect');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (watchedTitle?.trim()) {
+        saveDraft(true);
+      }
+    }, 2500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedTitle, watchedDescription, watchedWte, contentBlocks]);
+
+  // ── Scroll to a block by id inside the canvas ──
+  const scrollToBlock = useCallback((blockId: string) => {
+    const el = document.getElementById(`canvas-block-${blockId}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   async function onSubmit(values: FormValues) {
     const isDiscussionSubmit = values.post_type === 'discussion';
@@ -1088,11 +1136,11 @@ const Upload = () => {
           </div>
         )}
 
-        {/* ─── Step 1: Upload Type Selector ─── */}
+        {/* ─── Type chooser — shown initially, replaces step 1 ─── */}
         {/* Three primary tiles: Blueprint / Blog / Bounty.
             Blueprint expands to a sub-type picker
             (build / technique / discovery). */}
-        {step === 1 && (() => {
+        {showTypeChooser && (() => {
           const selectedPostType = form.watch('post_type');
           const blueprintSubtypes = ['build', 'technique', 'discovery'];
           const isBlueprintSelected =
@@ -1176,11 +1224,11 @@ const Upload = () => {
                           } else if (ut.value === 'blog') {
                             form.setValue('post_type', 'discussion' as any);
                             setUploadType('blog');
-                            setTimeout(() => setStep(2), 220);
+                            setTimeout(() => setShowTypeChooser(false), 220);
                           } else {
                             // bounty
                             setUploadType('bounty');
-                            setTimeout(() => setStep(2), 220);
+                            setTimeout(() => setShowTypeChooser(false), 220);
                           }
                         }}
                         style={{
@@ -1237,7 +1285,7 @@ const Upload = () => {
                                 type="button"
                                 onClick={() => {
                                   form.setValue('post_type', sub.value as any);
-                                  setTimeout(() => setStep(2), 220);
+                                  setTimeout(() => setShowTypeChooser(false), 220);
                                 }}
                                 title={sub.desc}
                                 style={{
@@ -1283,8 +1331,8 @@ const Upload = () => {
           );
         })()}
 
-        {/* ─── Steps 2–4: Existing form sections ─── */}
-        {step >= 2 && (<div style={{ flex: 1, overflowY: 'auto' as const, padding: '20px 24px 0 24px', minHeight: 0 }}>
+        {/* ─── Canvas body — shown after type is chosen ─── */}
+        {!showTypeChooser && (<div style={{ flex: 1, overflowY: 'auto' as const, padding: '20px 24px 0 24px', minHeight: 0 }}>
 
 
         {uploadType === "blog" ? (
@@ -1725,8 +1773,8 @@ const Upload = () => {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 
-            {/* ─── Step 2: Discussion tweet-compose ─── */}
-            {step === 2 && isDiscussion && (
+            {/* ─── Discussion tweet-compose ─── */}
+            {isDiscussion && (
               <DiscussionCompose
                 form={form}
                 threads={discussionThreads}
@@ -1736,88 +1784,100 @@ const Upload = () => {
               />
             )}
 
-            {/* ─── Step 2: Narrative Story Layer ─── */}
-            {step === 2 && !isDiscussion && (() => {
-              const postType = getPostType(form.watch('post_type'));
+            {/* ─── Canvas header: badges, title, description (mirrors ContentDetail) ─── */}
+            {!isDiscussion && (() => {
+              const postType = form.watch('post_type');
+              const ptConfig = POST_TYPE_DISPLAY[postType] ?? POST_TYPE_DISPLAY.build;
+              const typeInfo = getPrimaryTypeLabel(postType);
+              const diff = form.watch('difficulty');
+              const diffColors: Record<string,string> = {
+                Beginner: '#22C55E',
+                Intermediate: '#F59E0B',
+                Advanced: '#EF4444',
+                Any: '#9CA3AF',
+              };
+              const cycleDiff = () => {
+                const order = ['Beginner','Intermediate','Advanced','Any'];
+                const i = order.indexOf(diff);
+                const next = order[(i + 1) % order.length];
+                form.setValue('difficulty', next);
+              };
               return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-                  {/* Title — first action is typing the title */}
-                  <div>
-                    <div style={{
-                      fontSize: 11, fontWeight: 600,
-                      color: 'rgba(255,255,255,0.30)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.10em',
-                      marginBottom: 8,
-                    }}>
-                      Title
-                    </div>
-                    <input
-                      {...form.register('title')}
-                      placeholder={
-                        postType.value === 'build'      ? 'What did you build?' :
-                        postType.value === 'technique'  ? 'What technique does this cover?' :
-                        postType.value === 'discovery'  ? 'What did you discover?' :
-                        'What are you discussing?'
-                      }
+                <div>
+                  {/* ── SECTION 1: Badges row ── */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center',
+                    gap: 8, flexWrap: 'wrap', marginBottom: 14,
+                  }}>
+                    {/* Post type badge — click to change type */}
+                    <button
+                      type="button"
+                      onClick={() => setShowTypeChooser(true)}
+                      title="Click to change post type"
                       style={{
-                        width: '100%',
-                        background: 'rgba(255,255,255,0.04)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: 10,
-                        padding: '12px 14px',
-                        fontSize: 16,
-                        fontWeight: 600,
-                        color: '#fff',
-                        outline: 'none',
-                        fontFamily: "'Playfair Display', serif",
-                        boxSizing: 'border-box' as const,
+                        display: 'inline-flex', alignItems: 'center',
+                        gap: 6, padding: '3px 12px', borderRadius: 9999,
+                        background: ptConfig.bg,
+                        border: `1px solid ${ptConfig.border}`,
+                        cursor: 'pointer',
                       }}
-                    />
-                    {form.formState.errors.title && (
-                      <div style={{ fontSize: 12, color: '#EF4444', marginTop: 4 }}>
-                        {form.formState.errors.title.message}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Post type chip + cover image — compact metadata row */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    {/* Post type indicator */}
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 8,
-                      padding: '6px 14px',
-                      background: postType.bg,
-                      border: `1px solid ${postType.border}`,
-                      borderRadius: 9999,
-                    }}>
-                      <span>{postType.emoji}</span>
+                    >
+                      <span style={{ fontSize: 12 }}>{typeInfo.emoji}</span>
                       <span style={{
-                        fontSize: 11, fontWeight: 700,
-                        color: postType.color,
+                        fontSize: 10, fontWeight: 700,
+                        color: ptConfig.color,
                         textTransform: 'uppercase',
                         letterSpacing: '0.08em',
-                      }}>{postType.label}</span>
+                      }}>
+                        {typeInfo.label}
+                      </span>
+                      {typeInfo.sub && (
+                        <span style={{
+                          fontSize: 9,
+                          color: 'rgba(255,255,255,0.35)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          borderLeft: '1px solid rgba(255,255,255,0.15)',
+                          paddingLeft: 6, marginLeft: 2,
+                        }}>
+                          {typeInfo.sub}
+                        </span>
+                      )}
+                      <span style={{
+                        fontSize: 9, color: 'rgba(255,255,255,0.30)',
+                        marginLeft: 2,
+                      }}>↕</span>
+                    </button>
+
+                    {/* Difficulty badge — click to cycle */}
+                    {['build','technique'].includes(postType) && (
                       <button
                         type="button"
-                        onClick={() => setStep(1)}
+                        onClick={cycleDiff}
+                        title="Click to cycle difficulty"
                         style={{
-                          fontSize: 10, color: postType.color,
-                          background: 'none', border: 'none',
-                          cursor: 'pointer', marginLeft: 4,
+                          padding: '3px 12px', borderRadius: 9999,
+                          fontSize: 10, fontWeight: 700,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          cursor: 'pointer',
+                          background: diff ? `${diffColors[diff] ?? '#9CA3AF'}22` : 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${diff ? (diffColors[diff] ?? '#9CA3AF') : 'rgba(255,255,255,0.10)'}40`,
+                          color: diff ? (diffColors[diff] ?? '#9CA3AF') : 'rgba(255,255,255,0.45)',
                         }}
                       >
-                        change
+                        {diff || 'Set difficulty'}
                       </button>
-                    </div>
+                    )}
 
-                    {/* Cover image — compact */}
+                    {/* Cover image chip */}
                     {!coverImagePreview ? (
                       <label style={{
                         display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '6px 14px', borderRadius: 8, fontSize: 12,
-                        background: 'rgba(255,255,255,0.04)',
+                        padding: '3px 12px', borderRadius: 9999, fontSize: 10,
+                        fontWeight: 700, textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        background: 'rgba(255,255,255,0.03)',
                         border: '1px dashed rgba(255,255,255,0.12)',
                         color: 'rgba(255,255,255,0.40)', cursor: 'pointer',
                         transition: 'all 0.15s',
@@ -1831,7 +1891,7 @@ const Upload = () => {
                           (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.40)';
                         }}
                       >
-                        🖼 Upload cover image
+                        🖼 Add cover
                         <input
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
@@ -1852,310 +1912,260 @@ const Upload = () => {
                       </label>
                     ) : (
                       <div style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '2px 4px 2px 8px', borderRadius: 9999,
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
                       }}>
                         <img
                           src={coverImagePreview}
                           alt="cover"
                           style={{
-                            width: 64, height: 40, objectFit: 'cover',
-                            borderRadius: 6, border: '1px solid rgba(255,255,255,0.10)',
+                            width: 20, height: 20, objectFit: 'cover',
+                            borderRadius: '50%',
                           }}
                         />
-                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)' }}>
-                          Cover image added
+                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.55)' }}>
+                          Cover
                         </span>
                         <button
                           type="button"
                           onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); }}
                           style={{
-                            fontSize: 11, color: 'rgba(255,255,255,0.30)',
+                            fontSize: 12, color: 'rgba(255,255,255,0.35)',
                             background: 'none', border: 'none', cursor: 'pointer',
+                            padding: '0 6px',
                           }}
                         >
-                          Remove
+                          ×
                         </button>
                       </div>
                     )}
                   </div>
 
-                  {/* Narrative body */}
-                  <div>
-                    <div style={{
-                      fontSize: 11, fontWeight: 600,
-                      color: 'rgba(255,255,255,0.30)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.10em',
-                      marginBottom: 8,
-                    }}>
-                      Your post
-                    </div>
-                    <div style={{
-                      fontSize: 12,
-                      color: 'rgba(255,255,255,0.30)',
-                      marginBottom: 8,
-                    }}>
-                      {postType.value === 'build'     && 'What did you build and why? What problem does it solve?'}
-                      {postType.value === 'technique' && 'What is the technique? Why does it work?'}
-                      {postType.value === 'discovery' && 'What did you find? Why does it matter?'}
-                      {postType.value === 'discussion'&& 'What is the question or challenge you want to open up?'}
-                    </div>
-                    <textarea
-                      {...form.register('description')}
-                      placeholder="Write like you're sharing this with a colleague..."
-                      rows={5}
-                      style={{
-                        width: '100%',
-                        background: 'rgba(255,255,255,0.04)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: 10,
-                        padding: '14px',
-                        fontSize: 15,
-                        color: 'rgba(255,255,255,0.85)',
-                        outline: 'none',
-                        resize: 'vertical' as const,
-                        fontFamily: "'Playfair Display', serif",
-                        lineHeight: 1.6,
-                        boxSizing: 'border-box' as const,
-                      }}
-                    />
-                    <div style={{
-                      fontSize: 11, color: 'rgba(255,255,255,0.25)',
-                      textAlign: 'right', marginTop: 4,
-                    }}>
-                      {(form.watch('description') ?? '').length} / 500
-                    </div>
-                  </div>
-
-                  {/* Difficulty — only for build and technique */}
-                  {['build','technique'].includes(form.watch('post_type')) && (
-                    <div>
-                      <div style={{
-                        fontSize: 11, fontWeight: 600,
-                        color: 'rgba(255,255,255,0.30)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.10em',
-                        marginBottom: 8,
-                      }}>
-                        Difficulty
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        {['Beginner','Intermediate','Advanced','Any'].map(d => {
-                          const isActive = form.watch('difficulty') === d;
-                          const colors: Record<string,string> = {
-                            Beginner: '#22C55E',
-                            Intermediate: '#F59E0B',
-                            Advanced: '#EF4444',
-                            Any: '#9CA3AF',
-                          };
-                          return (
-                            <button
-                              key={d}
-                              type="button"
-                              onClick={() => form.setValue('difficulty', d)}
-                              style={{
-                                padding: '7px 14px',
-                                borderRadius: 9999,
-                                fontSize: 12,
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                border: `1px solid ${isActive ? colors[d] : 'rgba(255,255,255,0.10)'}`,
-                                background: isActive
-                                  ? `${colors[d]}22`
-                                  : 'rgba(255,255,255,0.04)',
-                                color: isActive ? colors[d] : 'rgba(255,255,255,0.45)',
-                                transition: 'all 0.15s',
-                              }}
-                            >
-                              {d}
-                            </button>
-                          );
-                        })}
-                      </div>
+                  {/* ── SECTION 2: Title (inline H1) ── */}
+                  <input
+                    {...form.register('title')}
+                    placeholder={
+                      postType === 'build'      ? 'Title your Blueprint...' :
+                      postType === 'technique'  ? 'Name this technique...' :
+                      postType === 'discovery'  ? 'What did you discover?' :
+                      'Title your post...'
+                    }
+                    maxLength={200}
+                    style={{
+                      width: '100%',
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                      fontSize: 22, fontWeight: 700,
+                      color: 'rgba(255,255,255,0.95)',
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: '1px solid rgba(255,255,255,0.06)',
+                      outline: 'none',
+                      padding: '4px 0 10px 0',
+                      marginBottom: 16, lineHeight: 1.25,
+                      letterSpacing: '-0.3px',
+                      boxSizing: 'border-box' as const,
+                    }}
+                    onFocus={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)')}
+                    onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.06)')}
+                  />
+                  {form.formState.errors.title && (
+                    <div style={{ fontSize: 12, color: '#EF4444', marginTop: -12, marginBottom: 12 }}>
+                      {form.formState.errors.title.message}
                     </div>
                   )}
 
+                  {/* ── SECTION 3: Description (inline paragraph) ── */}
+                  <textarea
+                    {...form.register('description')}
+                    placeholder="Describe what this is and why it matters..."
+                    rows={3}
+                    maxLength={500}
+                    style={{
+                      width: '100%',
+                      fontSize: 15, fontWeight: 400,
+                      color: 'rgba(255,255,255,0.65)',
+                      lineHeight: 1.75,
+                      background: 'transparent',
+                      border: 'none', outline: 'none',
+                      resize: 'none' as const, padding: 0,
+                      marginBottom: 6,
+                      fontFamily: 'Inter, sans-serif',
+                      boxSizing: 'border-box' as const,
+                    }}
+                  />
+                  <div style={{
+                    fontSize: 10, color: 'rgba(255,255,255,0.20)',
+                    textAlign: 'right' as const, marginBottom: 18,
+                  }}>
+                    {(form.watch('description') ?? '').length} / 500
+                  </div>
+
+                  {/* ── SECTION 4: Blueprint divider (hairlines with centered label) ── */}
+                  {contentBlocks.length > 0 && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center',
+                      gap: 8, margin: '24px 0 20px 0',
+                    }}>
+                      <div style={{
+                        height: 1, flex: 1,
+                        background: 'rgba(255,255,255,0.06)',
+                      }} />
+                      <div style={{
+                        fontSize: 10, fontWeight: 700,
+                        textTransform: 'uppercase' as const,
+                        letterSpacing: '0.12em',
+                        color: 'rgba(255,255,255,0.25)',
+                        padding: '0 8px', flexShrink: 0,
+                      }}>
+                        {ptConfig.blueprintLabel}
+                      </div>
+                      <div style={{
+                        height: 1, flex: 1,
+                        background: 'rgba(255,255,255,0.06)',
+                      }} />
+                    </div>
+                  )}
                 </div>
               );
             })()}
 
-            {step === 3 && (
+            {!isDiscussion && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-              <div>
-                <div style={{
-                  fontSize: 22, fontWeight: 700,
-                  fontFamily: "'Playfair Display', serif",
-                  color: '#fff', marginBottom: 6,
-                }}>
-                  Add your blocks
-                </div>
-                <div style={{
-                  fontSize: 13, color: 'rgba(255,255,255,0.40)',
-                  marginBottom: 20,
-                }}>
-                  These are the reusable, structured parts of your post.
-                  Each block gets a labelled subheading so readers know
-                  exactly what they are getting.
-                </div>
-
-                {/* Existing ContentBlockBuilder component */}
-                <ContentBlockBuilder
-                  blocks={contentBlocks}
-                  onChange={setContentBlocks}
-                />
-              </div>
-
-              {/* Blog: estimated read time */}
-              {isBlogType && (() => {
-                const wordCount = contentBlocks.reduce((sum, b) => {
-                  if (b.type === "text" || b.type === "long_text") return sum + (b.textContent?.split(/\s+/).filter(Boolean).length ?? 0);
-                  return sum;
-                }, 0);
-                const mins = Math.max(1, Math.round(wordCount / 200));
-                return <p className="text-xs text-muted-foreground">Estimated read time: ~{mins} min</p>;
-              })()}
-
+              {/* Block canvas — live document-style block editor */}
+              <ContentBlockBuilder
+                blocks={contentBlocks}
+                onChange={setContentBlocks}
+              />
             </div>
             )}
 
-            {step === 4 && (() => {
+            {/* ─── What to Expect — inline document section ─── */}
+            {!isDiscussion && (() => {
               const postType = form.watch('post_type');
               const WTE_CONFIG: Record<string, {
                 label: string;
-                sublabel: string;
                 placeholder: string;
                 emoji: string;
                 color: string;
               }> = {
                 build: {
                   label: 'Outcome',
-                  sublabel: 'What will readers be able to do after following this?',
-                  placeholder: 'After following this, you will be able to build a customer service bot that responds in under 2 seconds using Claude and Make...',
+                  placeholder: 'Outcome: What will readers be able to do after following this?',
                   emoji: '🎯',
                   color: '#E8571A',
                 },
                 technique: {
                   label: 'The Claim',
-                  sublabel: 'What does this technique actually achieve? Be specific and honest.',
-                  placeholder: 'This technique improves output consistency by forcing the model to reason step by step before committing to a format...',
+                  placeholder: 'The Claim: What does this technique actually achieve?',
                   emoji: '⚡',
                   color: '#2EC4B6',
                 },
                 discovery: {
                   label: 'The Finding',
-                  sublabel: 'State what you discovered as clearly as you can. One or two sentences.',
-                  placeholder: 'I found that Claude Sonnet produces significantly shorter but more accurate summaries than GPT-4o on legal documents under 2000 words...',
+                  placeholder: 'The Finding: State what you discovered as clearly as you can.',
                   emoji: '🔍',
                   color: '#7C3AED',
                 },
                 discussion: {
-                  label: 'What you\'re looking for',
-                  sublabel: 'What kind of responses do you want from the community?',
-                  placeholder: 'I want to hear from people who have tried building agents for non-technical users — specifically what prompting approaches reduced confusion...',
+                  label: "What you're looking for",
+                  placeholder: "What you're looking for: What kind of responses do you want?",
                   emoji: '💬',
                   color: '#3B82F6',
                 },
               };
-              const wteConfig = WTE_CONFIG[postType] ?? WTE_CONFIG.build;
+              const cfg = WTE_CONFIG[postType] ?? WTE_CONFIG.build;
               return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {/* Type badge */}
+                <div style={{ margin: '32px 0 8px 0' }}>
+                  {/* Section divider */}
                   <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 8,
-                    padding: '6px 14px', borderRadius: 9999, alignSelf: 'flex-start',
-                    background: `${wteConfig.color}18`,
-                    border: `1px solid ${wteConfig.color}35`,
+                    display: 'flex', alignItems: 'center',
+                    gap: 8, marginBottom: 14,
                   }}>
-                    <span>{wteConfig.emoji}</span>
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, color: wteConfig.color,
-                      textTransform: 'uppercase', letterSpacing: '0.08em',
-                    }}>
-                      {wteConfig.label}
-                    </span>
-                  </div>
-
-                  {/* Label */}
-                  <div>
                     <div style={{
-                      fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-                      letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
-                      marginBottom: 6,
+                      height: 1, flex: 1,
+                      background: 'rgba(255,255,255,0.06)',
+                    }} />
+                    <div style={{
+                      fontSize: 10, fontWeight: 700,
+                      textTransform: 'uppercase' as const,
+                      letterSpacing: '0.12em',
+                      color: cfg.color,
+                      padding: '0 8px',
+                      opacity: 0.70,
                     }}>
-                      {wteConfig.label}
+                      {cfg.emoji} {cfg.label}
                     </div>
                     <div style={{
-                      fontSize: 13, color: 'rgba(255,255,255,0.40)',
-                      marginBottom: 12, lineHeight: 1.5,
-                    }}>
-                      {wteConfig.sublabel}
-                    </div>
-                    <textarea
-                      {...form.register('what_to_expect')}
-                      placeholder={wteConfig.placeholder}
-                      rows={5}
-                      style={{
-                        width: '100%',
-                        background: `${wteConfig.color}08`,
-                        border: `1px solid ${wteConfig.color}25`,
-                        borderRadius: 10, padding: '12px 14px',
-                        fontSize: 14, color: '#fff', outline: 'none',
-                        resize: 'vertical', fontFamily: 'Inter, sans-serif',
-                        lineHeight: 1.65, boxSizing: 'border-box',
-                      }}
-                    />
+                      height: 1, flex: 1,
+                      background: 'rgba(255,255,255,0.06)',
+                    }} />
                   </div>
 
-                  {/* Character count */}
+                  <textarea
+                    {...form.register('what_to_expect')}
+                    placeholder={cfg.placeholder}
+                    rows={3}
+                    maxLength={2000}
+                    style={{
+                      width: '100%',
+                      background: `${cfg.color}08`,
+                      border: `1px solid ${cfg.color}20`,
+                      borderLeft: `3px solid ${cfg.color}50`,
+                      borderRadius: 8, padding: '12px 14px',
+                      fontSize: 14, color: 'rgba(255,255,255,0.72)',
+                      outline: 'none', resize: 'vertical' as const,
+                      fontFamily: 'Inter, sans-serif',
+                      lineHeight: 1.65, boxSizing: 'border-box' as const,
+                    }}
+                  />
                   <div style={{
-                    fontSize: 11, color: 'rgba(255,255,255,0.25)',
-                    textAlign: 'right', marginTop: -8,
+                    fontSize: 10, color: 'rgba(255,255,255,0.20)',
+                    textAlign: 'right' as const, marginTop: 4,
                   }}>
                     {(form.watch('what_to_expect') ?? '').length} / 2000
                   </div>
-
-                  {/* For Discussion: also show Call to Action field */}
-                  {postType === 'discussion' && (
-                    <div>
-                      <div style={{
-                        fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-                        letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
-                        marginBottom: 6, marginTop: 8,
-                      }}>
-                        Your position (optional)
-                      </div>
-                      <textarea
-                        {...form.register('use_instructions')}
-                        placeholder="Where do you stand on this? Or leave blank to stay neutral..."
-                        rows={3}
-                        style={{
-                          width: '100%',
-                          background: 'rgba(255,255,255,0.03)',
-                          border: '1px solid rgba(255,255,255,0.07)',
-                          borderRadius: 10, padding: '10px 14px',
-                          fontSize: 13, color: 'rgba(255,255,255,0.75)',
-                          outline: 'none', resize: 'vertical',
-                          fontFamily: 'Inter, sans-serif',
-                          lineHeight: 1.6, boxSizing: 'border-box',
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
               );
             })()}
 
-            {step === 5 && (<>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-              <div style={{
-                fontSize: 22, fontWeight: 700,
-                fontFamily: "'Playfair Display', serif",
-                color: '#fff', marginBottom: 0,
-              }}>
-                Final details
-              </div>
+            {/* ─── Details accordion — collapsed by default ─── */}
+            {!isDiscussion && (<>
+            <div style={{ marginTop: 24 }}>
+              <button
+                type="button"
+                onClick={() => setDetailsOpen(o => !o)}
+                style={{
+                  display: 'flex', alignItems: 'center',
+                  gap: 8, width: '100%',
+                  background: 'none', border: 'none',
+                  cursor: 'pointer',
+                  padding: '10px 0',
+                  borderTop: '1px solid rgba(255,255,255,0.05)',
+                }}
+              >
+                <span style={{
+                  fontSize: 10, fontWeight: 700,
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.12em',
+                  color: 'rgba(255,255,255,0.25)',
+                }}>
+                  Details
+                </span>
+                <div style={{
+                  flex: 1, height: 1,
+                  background: 'rgba(255,255,255,0.05)',
+                }} />
+                <span style={{
+                  fontSize: 12, color: 'rgba(255,255,255,0.25)',
+                }}>
+                  {detailsOpen ? '▴' : '▾'}
+                </span>
+              </button>
+            </div>
+            {detailsOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 16 }}>
 
               {/* Works With */}
               <div>
@@ -2443,11 +2453,11 @@ const Upload = () => {
               </div>
 
             </div>
-
+            )}
             </>)}
 
-            {/* ─── Persistent bottom navigation bar ─── */}
-            {!(step === 2 && isDiscussion) && (
+            {/* ─── Upload Action Bar — sticky bottom ─── */}
+            {!isDiscussion && (
             <div style={{
               position: 'sticky',
               bottom: 0,
@@ -2458,143 +2468,57 @@ const Upload = () => {
               marginTop: 24,
               zIndex: 10,
             }}>
-              {/* Step indicators */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                gap: 6,
-                marginBottom: 12,
-              }}>
-                {STEP_LABELS_DISPLAY.map((label, i) => {
-                  const n = i + 1;
-                  const isActive = step === n;
-                  const isDone = step > n;
-                  return (
-                    <div
-                      key={n}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        cursor: isDone ? 'pointer' : 'default',
-                      }}
-                      onClick={() => isDone && setStep(n)}
-                    >
-                      <div style={{
-                        width: 20, height: 20,
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 10,
-                        fontWeight: 700,
-                        background: isDone ? '#22C55E'
-                          : isActive ? '#E8571A'
-                          : 'rgba(255,255,255,0.08)',
-                        color: isDone || isActive ? '#fff'
-                          : 'rgba(255,255,255,0.30)',
-                        transition: 'all 0.2s',
-                      }}>
-                        {isDone ? '✓' : n}
-                      </div>
-                      <span style={{
-                        fontSize: 10,
-                        color: isActive ? 'rgba(255,255,255,0.80)'
-                          : isDone ? 'rgba(255,255,255,0.50)'
-                          : 'rgba(255,255,255,0.25)',
-                        fontFamily: 'Inter',
-                        display: step === 1 ? 'none' : 'block',
-                      }}>
-                        {label}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Navigation buttons */}
+              {/* Action bar: autosave indicator + save/publish */}
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: 8,
+                gap: 12,
+                padding: '0 8px',
               }}>
-                {step > 1 ? (
+                <div style={{
+                  fontSize: 11,
+                  color: 'rgba(255,255,255,0.30)',
+                }}>
+                  {savingDraft ? (
+                    <span>Saving…</span>
+                  ) : draftMeta ? (
+                    <span>Draft saved</span>
+                  ) : (
+                    <span>Changes unsaved</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <button
                     type="button"
-                    onClick={goBack}
+                    onClick={() => saveDraft(false)}
+                    disabled={savingDraft}
                     style={{
-                      padding: '9px 18px',
+                      padding: '8px 16px', borderRadius: 8,
+                      fontSize: 12, cursor: 'pointer',
                       background: 'rgba(255,255,255,0.05)',
                       border: '1px solid rgba(255,255,255,0.10)',
-                      borderRadius: 9999,
-                      color: 'rgba(255,255,255,0.65)',
-                      fontSize: 13,
-                      cursor: 'pointer',
-                      fontFamily: 'Inter',
-                    }}
-                  >
-                    ← Back
-                  </button>
-                ) : <div />}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    type="button"
-                    onClick={() => saveDraft()}
-                    style={{
-                      padding: '9px 18px',
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: 9999,
-                      color: 'rgba(255,255,255,0.50)',
-                      fontSize: 13,
-                      cursor: 'pointer',
+                      color: 'rgba(255,255,255,0.55)',
                       fontFamily: 'Inter',
                     }}
                   >
                     Save draft
                   </button>
-                  {step < (isDiscussion ? effectiveTotalSteps : 4) ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isDiscussion && step >= effectiveTotalSteps) {
-                          onSubmit(form.getValues() as any);
-                        } else {
-                          goNext();
-                        }
-                      }}
-                      style={{
-                        padding: '9px 22px',
-                        background: 'linear-gradient(135deg, #E8571A, #f66124)',
-                        border: 'none',
-                        borderRadius: 9999,
-                        color: '#fff',
-                        fontSize: 13,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        fontFamily: 'Inter',
-                      }}
-                    >
-                      Continue →
-                    </button>
-                  ) : (
-                    <button
-                      type="submit"
-                      style={{
-                        padding: '9px 22px',
-                        background: 'linear-gradient(135deg, #E8571A, #f66124)',
-                        border: 'none',
-                        borderRadius: 9999,
-                        color: '#fff',
-                        fontSize: 13,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        fontFamily: 'Inter',
-                      }}
-                    >
-                      Publish →
-                    </button>
-                  )}
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    style={{
+                      padding: '8px 20px', borderRadius: 8,
+                      fontSize: 12, fontWeight: 700,
+                      cursor: submitting ? 'default' : 'pointer',
+                      background: submitting
+                        ? 'rgba(232,87,26,0.40)' : '#E8571A',
+                      border: 'none', color: '#fff',
+                      fontFamily: 'Inter',
+                    }}
+                  >
+                    {submitting ? 'Publishing…' : 'Publish'}
+                  </button>
                 </div>
               </div>
             </div>
