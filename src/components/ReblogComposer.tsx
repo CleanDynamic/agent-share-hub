@@ -458,8 +458,8 @@ export function ReblogComposer({ open, onOpenChange, original, onSuccess }: Rebl
             </div>
 
             <ContentBlockBuilder
-              blocks={blocks}
-              onChange={setBlocks}
+              blocks={blocks as any}
+              onChange={setBlocks as any}
               contentType={contentType || (postCategory === "blog" ? "Blog" : "")}
             />
           </div>

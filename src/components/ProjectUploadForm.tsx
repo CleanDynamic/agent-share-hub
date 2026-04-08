@@ -264,7 +264,7 @@ function BlueprintSlotCard({
           helper="Preview of what this blueprint produces." />
 
         {/* f. Blueprint block builder */}
-        <ContentBlockBuilder blocks={slot.blocks} onChange={(b) => onChange({ blocks: b })} />
+        <ContentBlockBuilder blocks={slot.blocks as any} onChange={(b: any) => onChange({ blocks: b })} />
 
         {/* g. Difficulty */}
         <div className="space-y-1.5">

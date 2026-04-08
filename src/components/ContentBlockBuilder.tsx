@@ -201,6 +201,7 @@ export interface GroupBlock {
   title: string;
   blocks: ContentBlock[];
   isCollapsed: boolean;
+  isPreview?: boolean;
 }
 
 export type BlockOrGroup = ContentBlock | GroupBlock;
