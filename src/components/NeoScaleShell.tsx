@@ -560,7 +560,7 @@ const NEOSCALE_CSS = `
 /* ── Right panel tile grid ── */
 .ns-tile-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
   margin-bottom: 14px;
 }
@@ -822,63 +822,33 @@ const NEOSCALE_CSS = `
 `;
 
 /* ────────────────────────────────────────────────
-   Post type & bounty tile data
+   Post type tile data — three primary tiles:
+   Blueprint / Blog / Bounty
 ──────────────────────────────────────────────── */
 const POST_TYPE_TILES = [
   {
-    value: 'build',
-    label: 'Builds',
-    emoji: '🔨',
+    value: 'blueprint',
+    label: 'Blueprints',
+    emoji: '🔷',
     color: '#E8571A',
     bg: 'rgba(232,87,26,0.12)',
     border: 'rgba(232,87,26,0.20)',
-    route: '/browse?post_type=build',
   },
   {
-    value: 'technique',
-    label: 'Techniques',
-    emoji: '⚡',
-    color: '#2EC4B6',
-    bg: 'rgba(46,196,182,0.12)',
-    border: 'rgba(46,196,182,0.20)',
-    route: '/browse?post_type=technique',
-  },
-  {
-    value: 'discovery',
-    label: 'Discoveries',
-    emoji: '🔍',
-    color: '#7C3AED',
-    bg: 'rgba(124,58,237,0.12)',
-    border: 'rgba(124,58,237,0.20)',
-    route: '/browse?post_type=discovery',
-  },
-  {
-    value: 'discussion',
-    label: 'Discussions',
-    emoji: '💬',
+    value: 'blog',
+    label: 'Blogs',
+    emoji: '📝',
     color: '#3B82F6',
     bg: 'rgba(59,130,246,0.12)',
     border: 'rgba(59,130,246,0.20)',
-    route: '/browse?post_type=discussion',
   },
-];
-
-const BOUNTY_TILES = [
   {
-    label: 'Open Bounties',
+    value: 'bounty',
+    label: 'Bounties',
     emoji: '🎯',
     color: '#F59E0B',
     bg: 'rgba(245,158,11,0.12)',
     border: 'rgba(245,158,11,0.20)',
-    route: '/browse?bounties=open',
-  },
-  {
-    label: 'Solved',
-    emoji: '✅',
-    color: '#22C55E',
-    bg: 'rgba(34,197,94,0.10)',
-    border: 'rgba(34,197,94,0.15)',
-    route: '/browse?bounties=solved',
   },
 ];
 
@@ -1137,32 +1107,26 @@ export function NeoScaleShell() {
           .limit(30);
       }
 
-      // Apply type filter from right panel tile
+      // Apply type filter from right panel tile.
+      // Three primary buckets: blueprint / discussion (blog) / bounty.
       if (filterPostType) {
         if (filterPostType === 'bounty') {
           query = (query as any).eq('bounty_enabled', true);
-        } else {
-          const typeMap: Record<string, string[]> = {
-            build: [
-              'Agent Blueprint', 'Agent Stack',
-              'Workflow Template', 'AI Agent Install Guide',
-              'Integration Guide', 'Model Config Guide',
-              'AI Tools (LLMs)', 'Prompt File',
-              'Prompt(s)', 'Agent(s)', 'Install Guide',
-            ],
-            technique: ['Evaluation Framework', 'Failure Library'],
-            discussion: [
-              'Open Question', 'Challenge', 'Blog',
-            ],
-            discovery: [],
-          };
-          const types = typeMap[filterPostType];
-          if (types && types.length > 0) {
-            query = query.in('content_type', types);
-          }
-          // For discovery, no content_type filter exists yet
-          // so we just show all posts (will be fixed when
-          // post_type column is confirmed in DB)
+        } else if (filterPostType === 'blueprint') {
+          // Blueprint = build + technique + discovery content types
+          const blueprintTypes = [
+            'Agent Blueprint', 'Agent Stack',
+            'Workflow Template', 'AI Agent Install Guide',
+            'Integration Guide', 'Model Config Guide',
+            'AI Tools (LLMs)', 'Prompt File',
+            'Prompt(s)', 'Agent(s)', 'Install Guide',
+            'Evaluation Framework', 'Failure Library',
+          ];
+          query = query.in('content_type', blueprintTypes);
+        } else if (filterPostType === 'discussion') {
+          // Blog = discussion content types
+          const blogTypes = ['Open Question', 'Challenge', 'Blog'];
+          query = query.in('content_type', blogTypes);
         }
       }
 
@@ -1893,7 +1857,13 @@ export function NeoScaleShell() {
                     display_name: profile?.display_name ?? 'You',
                     avatar_url: profile?.avatar_url
                   }} />
-                  {filterPostType && (
+                  {filterPostType && (() => {
+                    const filterBannerLabel =
+                      filterPostType === 'blueprint' ? '🔷 Blueprints'
+                      : filterPostType === 'discussion' ? '📝 Blogs'
+                      : filterPostType === 'bounty' ? '🎯 Bounties'
+                      : '';
+                    return (
                     <div style={{
                       display: 'flex', alignItems: 'center',
                       justifyContent: 'space-between',
@@ -1904,13 +1874,12 @@ export function NeoScaleShell() {
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: 8,
                       }}>
-                        <span style={{ fontSize: 16 }}>{filterEmoji}</span>
                         <span style={{
                           fontSize: 13, fontWeight: 700,
                           color: filterColor,
                           fontFamily: "'Playfair Display', Georgia, serif",
                         }}>
-                          {filterLabel}
+                          {filterBannerLabel}
                         </span>
                       </div>
                       <button
@@ -1929,7 +1898,8 @@ export function NeoScaleShell() {
                         ✕ Clear
                       </button>
                     </div>
-                  )}
+                    );
+                  })()}
                   <FeedTabs activeTab={activeTab} onTabChange={setActiveTab} filteredTabs={!!filterPostType} />
                 </div>
 
@@ -2085,7 +2055,7 @@ export function NeoScaleShell() {
               Browse
             </div>
 
-            {/* ── Post type tile grid */}
+            {/* ── Post type tile grid — 3 primary tiles */}
             <div className="ns-tile-grid">
               {POST_TYPE_TILES.map(tile => (
                 <div
@@ -2101,7 +2071,18 @@ export function NeoScaleShell() {
                     );
                   }}
                   onClick={() => {
-                    setFilterPostType(tile.value);
+                    // Map tile value → filterPostType value used by fetch
+                    let filterValue: string;
+                    if (tile.value === 'blueprint') {
+                      // Blueprint = build + technique + discovery
+                      filterValue = 'blueprint';
+                    } else if (tile.value === 'blog') {
+                      // Blog maps to discussion content types
+                      filterValue = 'discussion';
+                    } else {
+                      filterValue = 'bounty';
+                    }
+                    setFilterPostType(filterValue);
                     setFilterLabel(tile.label);
                     setFilterEmoji(tile.emoji);
                     setFilterColor(tile.color);
@@ -2125,67 +2106,6 @@ export function NeoScaleShell() {
                 >
                   <span className="ns-tile-emoji">{tile.emoji}</span>
                   <span className="ns-tile-label">{tile.label}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* ── Bounties section */}
-            <div style={{
-              fontSize: 10, fontWeight: 700,
-              color: 'rgba(255,255,255,0.28)',
-              letterSpacing: '1.4px',
-              textTransform: 'uppercase' as const,
-              padding: '0 4px',
-              marginBottom: 8,
-            }}>
-              Bounties
-            </div>
-
-            <div className="ns-bounty-strip">
-              {BOUNTY_TILES.map(tile => (
-                <div
-                  key={tile.label}
-                  className="ns-bounty-tile"
-                  style={{
-                    '--tile-hover-color': tile.color,
-                  } as React.CSSProperties}
-                  onMouseEnter={e => {
-                    const color = randomTileColor();
-                    (e.currentTarget as HTMLElement).style.setProperty(
-                      '--tile-hover-color', color
-                    );
-                  }}
-                  onClick={() => {
-                    setFilterPostType('bounty');
-                    setFilterLabel(tile.label);
-                    setFilterEmoji(tile.emoji);
-                    setFilterColor(tile.color);
-                    setActiveTab('For You');
-                    // Flip back to front face to show the filtered feed
-                    const flipper = document.querySelector(
-                      '.ns-middle-flipper'
-                    ) as HTMLElement;
-                    if (flipper) {
-                      const nearest360 = Math.round(
-                        currentRotation.current / 360
-                      ) * 360;
-                      currentRotation.current = nearest360;
-                      isFlipping.current = true;
-                      flipper.style.transition =
-                        'transform 0.6s cubic-bezier(0.23,1,0.32,1)';
-                      flipper.style.transform = `rotateY(${nearest360}deg)`;
-                      setTimeout(() => { isFlipping.current = false; }, 650);
-                    }
-                  }}
-                >
-                  <span style={{ fontSize: 16, flexShrink: 0 }}>{tile.emoji}</span>
-                  <span style={{
-                    fontSize: 12, fontWeight: 600,
-                    color: tile.color,
-                    position: 'relative', zIndex: 1,
-                  }}>
-                    {tile.label}
-                  </span>
                 </div>
               ))}
             </div>
