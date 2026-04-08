@@ -989,51 +989,13 @@ function renderFeedEntry(entry: any) {
     ? entry.profiles[0]
     : entry.profiles;
 
-  // REBLOG — route to ReblogFeedCard
-  if (entry.is_reblog) {
-    const reblogPost: ReblogPost = {
-      id: entry.id,
-      created_at: entry.created_at,
-      description: entry.description ?? undefined,
-      view_count: entry.view_count ?? 0,
-      comment_count: entry.comment_count ?? 0,
-      download_count: entry.download_count ?? 0,
-      reblog_count: entry.reblog_count ?? 0,
-      author: {
-        display_name:
-          postProfile?.display_name ?? 'Unknown',
-        username: postProfile?.username ?? 'user',
-        avatar_url: postProfile?.avatar_url ?? undefined,
-        bio: postProfile?.bio ?? undefined,
-        follower_count: postProfile?.follower_count ?? 0,
-        following_count: postProfile?.following_count ?? 0,
-        joined_date: postProfile?.joined_at ?? undefined,
-      },
-      original: null, // will be fetched in ReblogFeedCard
-                      // via reblog_of_id if needed
-    };
-    // Pass reblog_of_id so ReblogFeedCard can fetch original
-    return (
-      <ReblogFeedCard
-        key={entry.id}
-        post={{ ...reblogPost, reblogOfId: entry.reblog_of_id }}
-      />
-    );
-  }
-
   // REGULAR POST — route to FeedCard
   const adaptedPost: FeedPost = {
     id: entry.id,
     title: entry.title ?? '',
     description: entry.description ?? undefined,
     content_type: entry.content_type ?? 'build',
-    post_type: resolvePostType(
-      entry.post_category ?? null,
-      entry.content_type ?? null
-    ),
-    bounty_enabled: entry.bounty_enabled ?? false,
-    bounty_amount: entry.bounty_amount ?? null,
-    bounty_status: entry.bounty_status ?? null,
+    post_type: resolvePostType(null, entry.content_type ?? null),
     cover_image_url: entry.cover_image_url ?? undefined,
     created_at: entry.created_at,
     view_count: entry.view_count ?? 0,
