@@ -1,4 +1,4 @@
-const tabs = [
+const ALL_TABS = [
   { label: "For You", value: "For You" },
   { label: "Following", value: "Following" },
   { label: "Trending", value: "Trending" },
@@ -6,12 +6,19 @@ const tabs = [
   { label: "🎯 Bounties", value: "Bounties" },
 ]
 
+const FILTERED_TABS = [
+  { label: "For You", value: "For You" },
+  { label: "Recent", value: "Recent" },
+]
+
 interface FeedTabsProps {
   activeTab: string
   onTabChange: (tab: string) => void
+  filteredTabs?: boolean
 }
 
-export function FeedTabs({ activeTab, onTabChange }: FeedTabsProps) {
+export function FeedTabs({ activeTab, onTabChange, filteredTabs }: FeedTabsProps) {
+  const tabs = filteredTabs ? FILTERED_TABS : ALL_TABS
   return (
     <div className="flex items-center border-b border-white/5 mb-6">
       {tabs.map((tab) => {

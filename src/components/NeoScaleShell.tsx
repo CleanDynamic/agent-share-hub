@@ -1030,6 +1030,10 @@ export function NeoScaleShell() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
+  const [filterPostType, setFilterPostType] = useState<string | null>(null);
+  const [filterLabel, setFilterLabel] = useState<string>('');
+  const [filterEmoji, setFilterEmoji] = useState<string>('');
+  const [filterColor, setFilterColor] = useState<string>('');
 
   const isMobile = useIsMobile();
   const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
@@ -1098,12 +1102,41 @@ export function NeoScaleShell() {
           .limit(30);
       }
 
+      // Apply type filter from right panel tile
+      if (filterPostType) {
+        if (filterPostType === 'bounty') {
+          query = query.eq('bounty_enabled', true);
+        } else {
+          const typeMap: Record<string, string[]> = {
+            build: [
+              'Agent Blueprint', 'Agent Stack',
+              'Workflow Template', 'AI Agent Install Guide',
+              'Integration Guide', 'Model Config Guide',
+              'AI Tools (LLMs)', 'Prompt File',
+              'Prompt(s)', 'Agent(s)', 'Install Guide',
+            ],
+            technique: ['Evaluation Framework', 'Failure Library'],
+            discussion: [
+              'Open Question', 'Challenge', 'Blog',
+            ],
+            discovery: [],
+          };
+          const types = typeMap[filterPostType];
+          if (types && types.length > 0) {
+            query = query.in('content_type', types);
+          }
+          // For discovery, no content_type filter exists yet
+          // so we just show all posts (will be fixed when
+          // post_type column is confirmed in DB)
+        }
+      }
+
       const { data } = await query;
       if (data) setPosts(data);
     };
 
     fetchPosts();
-  }, [activeTab, user?.id]);
+  }, [activeTab, user?.id, filterPostType]);
 
   function triggerPulse() {
     setPulsing(false);
@@ -1818,7 +1851,44 @@ export function NeoScaleShell() {
                     display_name: profile?.display_name ?? 'You',
                     avatar_url: profile?.avatar_url
                   }} />
-                  <FeedTabs activeTab={activeTab} onTabChange={setActiveTab} />
+                  {filterPostType && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 16px',
+                      background: `${filterColor}10`,
+                      borderBottom: `1px solid ${filterColor}25`,
+                    }}>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                      }}>
+                        <span style={{ fontSize: 16 }}>{filterEmoji}</span>
+                        <span style={{
+                          fontSize: 13, fontWeight: 700,
+                          color: filterColor,
+                          fontFamily: "'Playfair Display', Georgia, serif",
+                        }}>
+                          {filterLabel}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setFilterPostType(null);
+                          setFilterLabel('');
+                          setFilterEmoji('');
+                          setFilterColor('');
+                        }}
+                        style={{
+                          fontSize: 11, color: 'rgba(255,255,255,0.35)',
+                          background: 'none', border: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✕ Clear
+                      </button>
+                    </div>
+                  )}
+                  <FeedTabs activeTab={activeTab} onTabChange={setActiveTab} filteredTabs={!!filterPostType} />
                 </div>
 
                 {/* Feed */}
@@ -1961,8 +2031,26 @@ export function NeoScaleShell() {
                     );
                   }}
                   onClick={() => {
-                    flipMiddle('right');
-                    navigate(tile.route);
+                    setFilterPostType(tile.value);
+                    setFilterLabel(tile.label);
+                    setFilterEmoji(tile.emoji);
+                    setFilterColor(tile.color);
+                    setActiveTab('For You');
+                    // Flip back to front face to show the filtered feed
+                    const flipper = document.querySelector(
+                      '.ns-middle-flipper'
+                    ) as HTMLElement;
+                    if (flipper) {
+                      const nearest360 = Math.round(
+                        currentRotation.current / 360
+                      ) * 360;
+                      currentRotation.current = nearest360;
+                      isFlipping.current = true;
+                      flipper.style.transition =
+                        'transform 0.6s cubic-bezier(0.23,1,0.32,1)';
+                      flipper.style.transform = `rotateY(${nearest360}deg)`;
+                      setTimeout(() => { isFlipping.current = false; }, 650);
+                    }
                   }}
                 >
                   <span className="ns-tile-emoji">{tile.emoji}</span>
@@ -1998,8 +2086,26 @@ export function NeoScaleShell() {
                     );
                   }}
                   onClick={() => {
-                    flipMiddle('right');
-                    navigate(tile.route);
+                    setFilterPostType('bounty');
+                    setFilterLabel(tile.label);
+                    setFilterEmoji(tile.emoji);
+                    setFilterColor(tile.color);
+                    setActiveTab('For You');
+                    // Flip back to front face to show the filtered feed
+                    const flipper = document.querySelector(
+                      '.ns-middle-flipper'
+                    ) as HTMLElement;
+                    if (flipper) {
+                      const nearest360 = Math.round(
+                        currentRotation.current / 360
+                      ) * 360;
+                      currentRotation.current = nearest360;
+                      isFlipping.current = true;
+                      flipper.style.transition =
+                        'transform 0.6s cubic-bezier(0.23,1,0.32,1)';
+                      flipper.style.transform = `rotateY(${nearest360}deg)`;
+                      setTimeout(() => { isFlipping.current = false; }, 650);
+                    }
                   }}
                 >
                   <span style={{ fontSize: 16, flexShrink: 0 }}>{tile.emoji}</span>
