@@ -31,6 +31,7 @@ import { TopicsPicker } from "@/components/TopicsPicker";
 import { ContentBlockBuilder, emptyBlock, type ContentBlock, type BlockOrGroup, type GroupBlock } from "@/components/ContentBlockBuilder";
 import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
+import { DiscussionCompose } from "@/components/DiscussionCompose";
 import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, POST_TYPES, getPostType } from "@/lib/content-types";
 
 const CONTENT_TYPES = BLUEPRINT_CONTENT_TYPES;
@@ -222,6 +223,7 @@ const Upload = () => {
   const [bountyDeadlineDays, setBountyDeadlineDays] = useState<number | null>(null);
   const [bountyGap, setBountyGap] = useState("");
   const [bountyBlueprintRequired, setBountyBlueprintRequired] = useState(true);
+  const [discussionThreads, setDiscussionThreads] = useState<string[]>(['']);
   const autosaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastAutosaveRef = useRef<Date | null>(null);
   const form = useForm<FormValues>({
@@ -248,6 +250,12 @@ const Upload = () => {
   const isBountyType = uploadType === "bounty";
   const watchedAiTools = form.watch("ai_tools");
   const isOtherSelected = watchedAiTools?.includes("Other");
+  const watchedPostType = form.watch('post_type');
+  const isDiscussion = watchedPostType === 'discussion';
+  const effectiveTotalSteps = isDiscussion ? 2 : totalSteps;
+  const STEP_LABELS_DISPLAY = isDiscussion
+    ? ['Post Type', 'Your Post']
+    : STEP_LABELS;
 
   useEffect(() => {
     if (isAIToolsType || isBlogType) form.setValue("difficulty", "Any");
@@ -615,8 +623,25 @@ const Upload = () => {
   }, [saveDraft]);
 
   async function onSubmit(values: FormValues) {
+    const isDiscussionSubmit = values.post_type === 'discussion';
+    if (isDiscussionSubmit) {
+      // Discussion posts collect only the description; derive title and
+      // satisfy other required fields so the DB insert succeeds.
+      if (!values.description?.trim()) {
+        toast({ title: "Write something", description: "Share a thought to start a discussion.", variant: "destructive" });
+        return;
+      }
+      const derivedTitle = values.description.trim().split(/\r?\n/)[0].slice(0, 200);
+      values = {
+        ...values,
+        title: derivedTitle,
+        difficulty: 'Any',
+        ai_tools: values.ai_tools?.length ? values.ai_tools : ['Any Tool'],
+        content_type: values.content_type || 'Open Question',
+      };
+    }
     const submitFlatBlocks = flattenBlocks(contentBlocks);
-    if (!isBountyType && submitFlatBlocks.length === 0) {
+    if (!isBountyType && !isDiscussionSubmit && submitFlatBlocks.length === 0) {
       toast({ title: "Add content", description: "Please add at least one content block.", variant: "destructive" });
       return;
     }
@@ -934,6 +959,25 @@ const Upload = () => {
           if (urlData?.publicUrl) {
             await supabase.from("content_items").update({ cover_image_url: urlData.publicUrl } as any).eq("id", contentId);
           }
+        }
+      }
+
+      // Save discussion threads as what_to_expect_blocks
+      if (isDiscussionSubmit) {
+        const threadBlocks = discussionThreads
+          .filter(t => t.trim())
+          .map((t, i) => ({
+            type: 'text',
+            content: t,
+            position: i + 1,
+          }));
+
+        if (threadBlocks.length > 0) {
+          await supabase.from('content_items')
+            .update({
+              what_to_expect_blocks: threadBlocks as any,
+            } as any)
+            .eq('id', contentId);
         }
       }
 
@@ -1562,8 +1606,19 @@ const Upload = () => {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 
+            {/* ─── Step 2: Discussion tweet-compose ─── */}
+            {step === 2 && isDiscussion && (
+              <DiscussionCompose
+                form={form}
+                threads={discussionThreads}
+                setThreads={setDiscussionThreads}
+                onPost={() => onSubmit(form.getValues() as any)}
+                submitting={submitting}
+              />
+            )}
+
             {/* ─── Step 2: Narrative Story Layer ─── */}
-            {step === 2 && (() => {
+            {step === 2 && !isDiscussion && (() => {
               const postType = getPostType(form.watch('post_type'));
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -2273,6 +2328,7 @@ const Upload = () => {
             </>)}
 
             {/* ─── Persistent bottom navigation bar ─── */}
+            {!(step === 2 && isDiscussion) && (
             <div style={{
               position: 'sticky',
               bottom: 0,
@@ -2290,7 +2346,7 @@ const Upload = () => {
                 gap: 6,
                 marginBottom: 12,
               }}>
-                {STEP_LABELS.map((label, i) => {
+                {STEP_LABELS_DISPLAY.map((label, i) => {
                   const n = i + 1;
                   const isActive = step === n;
                   const isDone = step > n;
@@ -2378,10 +2434,16 @@ const Upload = () => {
                   >
                     Save draft
                   </button>
-                  {step < 4 ? (
+                  {step < (isDiscussion ? effectiveTotalSteps : 4) ? (
                     <button
                       type="button"
-                      onClick={goNext}
+                      onClick={() => {
+                        if (isDiscussion && step >= effectiveTotalSteps) {
+                          onSubmit(form.getValues() as any);
+                        } else {
+                          goNext();
+                        }
+                      }}
                       style={{
                         padding: '9px 22px',
                         background: 'linear-gradient(135deg, #E8571A, #f66124)',
@@ -2417,6 +2479,7 @@ const Upload = () => {
                 </div>
               </div>
             </div>
+            )}
 
           </form>
         </Form>
