@@ -16,6 +16,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { FollowButton } from "@/components/FollowButton";
 import { displayContentType, POST_TYPES, resolvePostType } from "@/lib/content-types";
 import { FeedCard, type FeedPost } from "@/components/feed-card";
+import { ReblogFeedCard, type ReblogPost } from "@/components/ReblogFeedCard";
 import { ComposerBar } from "@/components/composer-bar";
 import { FeedTabs } from "@/components/feed-tabs";
 
@@ -984,10 +985,77 @@ function getTimeAgo(dateStr: string): string {
    Feed renderer helper
 ──────────────────────────────────────────────── */
 function renderFeedEntry(entry: any) {
-  if (entry._feedType === "collection") return <CollectionFeedCard key={`col-${entry.id}`} item={entry} />;
-  if (entry._feedType === "project")    return <ProjectFeedCard key={`proj-${entry.id}`} item={entry} />;
-  if (entry.is_reblog)                  return <ReblogCard key={entry.id} item={entry} />;
-  return <FeedItem key={entry.id} item={entry} />;
+  const postProfile = Array.isArray(entry.profiles)
+    ? entry.profiles[0]
+    : entry.profiles;
+
+  // REBLOG — route to ReblogFeedCard
+  if (entry.is_reblog) {
+    const reblogPost: ReblogPost = {
+      id: entry.id,
+      created_at: entry.created_at,
+      description: entry.description ?? undefined,
+      view_count: entry.view_count ?? 0,
+      comment_count: entry.comment_count ?? 0,
+      download_count: entry.download_count ?? 0,
+      reblog_count: entry.reblog_count ?? 0,
+      author: {
+        display_name:
+          postProfile?.display_name ?? 'Unknown',
+        username: postProfile?.username ?? 'user',
+        avatar_url: postProfile?.avatar_url ?? undefined,
+        bio: postProfile?.bio ?? undefined,
+        follower_count: postProfile?.follower_count ?? 0,
+        following_count: postProfile?.following_count ?? 0,
+        joined_date: postProfile?.joined_at ?? undefined,
+      },
+      original: null, // will be fetched in ReblogFeedCard
+                      // via reblog_of_id if needed
+    };
+    // Pass reblog_of_id so ReblogFeedCard can fetch original
+    return (
+      <ReblogFeedCard
+        key={entry.id}
+        post={{ ...reblogPost, reblogOfId: entry.reblog_of_id }}
+      />
+    );
+  }
+
+  // REGULAR POST — route to FeedCard
+  const adaptedPost: FeedPost = {
+    id: entry.id,
+    title: entry.title ?? '',
+    description: entry.description ?? undefined,
+    content_type: entry.content_type ?? 'build',
+    post_type: resolvePostType(
+      entry.post_category ?? null,
+      entry.content_type ?? null
+    ),
+    bounty_enabled: entry.bounty_enabled ?? false,
+    bounty_amount: entry.bounty_amount ?? null,
+    bounty_status: entry.bounty_status ?? null,
+    cover_image_url: entry.cover_image_url ?? undefined,
+    created_at: entry.created_at,
+    view_count: entry.view_count ?? 0,
+    comment_count: entry.comment_count ?? 0,
+    download_count: entry.download_count ?? 0,
+    what_to_expect: entry.what_to_expect ?? undefined,
+    what_to_expect_blocks:
+      entry.what_to_expect_blocks ?? undefined,
+    ai_tools: entry.ai_tools ?? [],
+    use_cases: entry.use_cases ?? [],
+    custom_tags: entry.custom_tags ?? [],
+    author: {
+      display_name: postProfile?.display_name ?? 'Unknown',
+      username: postProfile?.username ?? 'user',
+      avatar_url: postProfile?.avatar_url ?? undefined,
+      bio: postProfile?.bio ?? undefined,
+      follower_count: postProfile?.follower_count ?? 0,
+      following_count: postProfile?.following_count ?? 0,
+      joined_date: postProfile?.joined_at ?? undefined,
+    },
+  };
+  return <FeedCard key={entry.id} post={adaptedPost} />;
 }
 
 /* ────────────────────────────────────────────────
@@ -1068,6 +1136,13 @@ export function NeoScaleShell() {
           download_count, view_count, comment_count,
           cover_image_url, created_at,
           what_to_expect, what_to_expect_blocks,
+          is_reblog,
+          reblog_of_id,
+          reblog_count,
+          post_category,
+          bounty_enabled,
+          bounty_amount,
+          bounty_status,
           profiles!content_items_creator_id_fkey(
             display_name, username, avatar_url,
             bio, follower_count, following_count, joined_at
@@ -1901,46 +1976,7 @@ export function NeoScaleShell() {
 
                 {/* Feed */}
                 <div className="ns-feed-scroll">
-                  {(posts as any[]).map((post: any) => {
-                    const postProfile = Array.isArray(post.profiles)
-                      ? post.profiles[0]
-                      : post.profiles;
-
-                    const adaptedPost: FeedPost = {
-                      id: post.id,
-                      title: post.title ?? '',
-                      description: post.description ?? undefined,
-                      content_type: post.content_type ?? 'build',
-                      post_type: resolvePostType(
-                        (post as any).post_category ?? null,
-                        post.content_type ?? null
-                      ),
-                      bounty_enabled: (post as any).bounty_enabled ?? false,
-                      bounty_amount: (post as any).bounty_amount ?? null,
-                      bounty_status: (post as any).bounty_status ?? null,
-                      cover_image_url: post.cover_image_url ?? undefined,
-                      created_at: post.created_at,
-                      view_count: post.view_count ?? 0,
-                      comment_count: post.comment_count ?? 0,
-                      download_count: post.download_count ?? 0,
-                      what_to_expect: post.what_to_expect ?? undefined,
-                      what_to_expect_blocks: post.what_to_expect_blocks ?? undefined,
-                      ai_tools: post.ai_tools ?? [],
-                      use_cases: post.use_cases ?? [],
-                      custom_tags: post.custom_tags ?? [],
-                      author: {
-                        display_name: postProfile?.display_name ?? 'Unknown',
-                        username: postProfile?.username ?? 'user',
-                        avatar_url: postProfile?.avatar_url ?? undefined,
-                        bio: postProfile?.bio ?? undefined,
-                        follower_count: postProfile?.follower_count ?? 0,
-                        following_count: postProfile?.following_count ?? 0,
-                        joined_date: postProfile?.joined_at ?? undefined,
-                      },
-                    };
-
-                    return <FeedCard key={post.id} post={adaptedPost} />;
-                  })}
+                  {(posts as any[]).map(entry => renderFeedEntry(entry))}
 
                   {posts.length === 0 && (
                     <div style={{
