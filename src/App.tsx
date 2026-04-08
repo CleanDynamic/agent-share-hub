@@ -37,7 +37,7 @@ import MessagesPage from "./pages/Messages";
 import CollectionDetail from "./pages/CollectionDetail";
 // LearningPathDetail removed from UI
 import Analytics from "./pages/Analytics";
-import SearchPage from "./pages/SearchPage";
+import Search from "@/pages/Search";
 import Category from "./pages/Category";
 import ApiDocs from "./pages/ApiDocs";
 
@@ -66,7 +66,7 @@ const App = () => (
                 <Route path="/browse" element={<Browse />} />
                 <Route path="/recent" element={<RecentPage />} />
                 <Route path="/fyp" element={<FYPPage />} />
-                <Route path="/search" element={<SearchPage />} />
+                <Route path="/search" element={<Search />} />
                 <Route path="/category/:slug" element={<Category />} />
                 <Route path="/upload" element={<Upload />} />
                 <Route path="/about" element={<About />} />
