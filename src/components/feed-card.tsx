@@ -1,7 +1,12 @@
 import { useState } from "react"
 import { useNavigate } from 'react-router-dom'
-import { Heart, MessageCircle, Download, ExternalLink, MoreHorizontal } from "lucide-react"
+import { Heart, Repeat2, Download, ExternalLink, MoreHorizontal } from "lucide-react"
 import { AccountHoverCard } from "@/components/account-hover-card"
+import { useAuth } from "@/contexts/AuthContext"
+import { useQuery } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
+import { ReblogComposer, type ReblogComposerOriginal } from "@/components/ReblogComposer"
+import { useToast } from "@/hooks/use-toast"
 
 const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
   prompt: { bg: "rgba(232, 87, 26, 0.15)", color: "#E8571A", border: "rgba(232, 87, 26, 0.3)" },
@@ -82,9 +87,55 @@ function getAvatarStyle(name: string) {
 
 export function FeedCard({ post }: { post: FeedPost }) {
   const navigate = useNavigate()
+  const { isLoggedIn, user } = useAuth()
+  const { toast } = useToast()
   const [expandStage, setExpandStage] = useState(0)
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.view_count ?? 0)
+  const [reblogOpen, setReblogOpen] = useState(false)
+
+  // Reblog count
+  const { data: reblogCount } = useQuery({
+    queryKey: ["reblog_count", post.id],
+    queryFn: async () => {
+      const { count } = await (supabase
+        .from("content_items")
+        .select("id", { count: "exact", head: true }) as any)
+        .eq("reblog_of_id", post.id)
+        .eq("is_reblog", true)
+        .eq("status", "approved");
+      return count ?? 0;
+    },
+    staleTime: 60_000,
+    enabled: !!post.id,
+  });
+
+  const { data: userHasReblogged } = useQuery({
+    queryKey: ["user_has_reblogged", post.id, user?.id],
+    queryFn: async () => {
+      const { data } = await (supabase
+        .from("content_items")
+        .select("id") as any)
+        .eq("reblog_of_id", post.id)
+        .eq("creator_id", user!.id)
+        .eq("is_reblog", true)
+        .maybeSingle();
+      return !!data;
+    },
+    staleTime: 60_000,
+    enabled: !!post.id && !!user?.id,
+  });
+
+  const original: ReblogComposerOriginal = {
+    id: post.id,
+    title: post.title,
+    creatorId: "",
+    creatorUsername: post.author.username,
+    creatorDisplayName: post.author.display_name,
+    contentType: post.content_type,
+    viewCount: post.view_count ?? 0,
+    downloadCount: post.download_count ?? 0,
+  };
 
   const badgeKey = post.post_type?.toLowerCase() || post.content_type?.toLowerCase() || 'default'
   const contentTypeStyle = CONTENT_TYPE_COLORS[badgeKey] || CONTENT_TYPE_COLORS.default
@@ -437,14 +488,24 @@ export function FeedCard({ post }: { post: FeedPost }) {
           <button
             style={{
               display: "flex", alignItems: "center", gap: 6,
-              fontSize: 13, color: "rgba(255,255,255,0.40)",
+              fontSize: 13,
+              color: userHasReblogged ? "#2EC4B6" : "rgba(255,255,255,0.40)",
               background: "none", border: "none", cursor: "pointer",
               transition: "color 0.15s",
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (!isLoggedIn) return
+              if (userHasReblogged) {
+                toast({ title: "You've already reblogged this" })
+              } else {
+                setReblogOpen(true)
+              }
+            }}
+            title={userHasReblogged ? "You reblogged this" : "Reblog"}
           >
-            <MessageCircle size={15} />
-            <span>{post.comment_count ?? 0}</span>
+            <Repeat2 size={15} />
+            {(reblogCount ?? 0) > 0 && <span>{reblogCount}</span>}
           </button>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -480,6 +541,16 @@ export function FeedCard({ post }: { post: FeedPost }) {
           </button>
         </div>
       </div>
+
+      {reblogOpen && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ReblogComposer
+            original={original}
+            open={reblogOpen}
+            onOpenChange={setReblogOpen}
+          />
+        </div>
+      )}
     </article>
   )
 }
