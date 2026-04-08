@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { ReblogComposer, type ReblogComposerOriginal } from "@/components/ReblogComposer"
 import { useToast } from "@/hooks/use-toast"
+import { getPrimaryTypeLabel } from "@/lib/content-types"
 
 const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
   prompt: { bg: "rgba(232, 87, 26, 0.15)", color: "#E8571A", border: "rgba(232, 87, 26, 0.3)" },
@@ -137,7 +138,8 @@ export function FeedCard({ post }: { post: FeedPost }) {
     downloadCount: post.download_count ?? 0,
   };
 
-  const badgeKey = post.post_type?.toLowerCase() || post.content_type?.toLowerCase() || 'default'
+  const typeInfo = getPrimaryTypeLabel(post.post_type ?? null)
+  const badgeKey = typeInfo.label === 'Blog' ? 'blog' : 'build'
   const contentTypeStyle = CONTENT_TYPE_COLORS[badgeKey] || CONTENT_TYPE_COLORS.default
   const avatarStyle = post.author.avatar_url ? null : getAvatarStyle(post.author.display_name)
   const initials = getInitials(post.author.display_name)
@@ -170,11 +172,6 @@ export function FeedCard({ post }: { post: FeedPost }) {
     else if (expandStage === 0 && !hasMoreContent && hasWTE) setExpandStage(2)
     else if (expandStage === 1 && hasWTE) setExpandStage(2)
     else setExpandStage(0)
-  }
-
-  const displayContentType = (type: string) => {
-    if (post.post_type === 'discussion') return 'DISCUSSION';
-    return (post.post_type || type).toUpperCase().replace(/-/g, ' ');
   }
 
   return (
@@ -234,7 +231,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
               <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>·</span>
               <span
                 style={{
-                  display: "inline-flex", alignItems: "center",
+                  display: "inline-flex", alignItems: "center", gap: 4,
                   padding: "1px 6px", borderRadius: 4,
                   fontSize: 9, fontWeight: 700,
                   textTransform: "uppercase", letterSpacing: "0.05em",
@@ -243,7 +240,17 @@ export function FeedCard({ post }: { post: FeedPost }) {
                   border: `1px solid ${contentTypeStyle.border}`,
                 }}
               >
-                {displayContentType(post.content_type)}
+                <span>{typeInfo.label.toUpperCase()}</span>
+                {typeInfo.sub && (
+                  <span style={{
+                    color: 'rgba(255,255,255,0.45)',
+                    fontWeight: 600,
+                    borderLeft: '1px solid rgba(255,255,255,0.20)',
+                    paddingLeft: 4,
+                  }}>
+                    {typeInfo.sub.toUpperCase()}
+                  </span>
+                )}
               </span>
               {post.bounty_enabled === true && (
                 <>

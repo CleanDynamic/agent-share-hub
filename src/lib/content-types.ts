@@ -45,6 +45,27 @@ export function getPostType(value: string) {
   return POST_TYPES.find(p => p.value === value) ?? POST_TYPES[0];
 }
 
+// ─── Primary type label (Blueprint / Blog) ───
+// Build / Technique / Discovery all roll up to "Blueprint"
+// at the primary badge level, with the sub-type kept as a
+// secondary distinguisher. Discussion becomes "Blog".
+export function getPrimaryTypeLabel(
+  postType: string | null
+): { label: string; sub: string | null; emoji: string } {
+  switch (postType) {
+    case 'build':
+      return { label: 'Blueprint', sub: 'Build', emoji: '🔷' };
+    case 'technique':
+      return { label: 'Blueprint', sub: 'Technique', emoji: '🔷' };
+    case 'discovery':
+      return { label: 'Blueprint', sub: 'Discovery', emoji: '🔷' };
+    case 'discussion':
+      return { label: 'Blog', sub: null, emoji: '📝' };
+    default:
+      return { label: 'Blueprint', sub: null, emoji: '🔷' };
+  }
+}
+
 // ─── BLOCK TYPES (what lives INSIDE a post as subheadings) ───
 
 export const BLOCK_TYPES = [

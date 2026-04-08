@@ -39,7 +39,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { TYPE_COLORS, displayContentType, resolvePostType } from "@/lib/content-types";
+import { TYPE_COLORS, displayContentType, resolvePostType, getPrimaryTypeLabel } from "@/lib/content-types";
 
 const POST_TYPE_DISPLAY = {
   build: {
@@ -807,21 +807,38 @@ const ContentDetail = () => {
 
         {/* 2. Badges */}
         <div className="flex flex-wrap items-center gap-2 mb-2.5">
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '3px 12px', borderRadius: 9999,
-            background: ptConfig.bg,
-            border: `1px solid ${ptConfig.border}`,
-          }}>
-            <span style={{ fontSize: 12 }}>{ptConfig.emoji}</span>
-            <span style={{
-              fontSize: 10, fontWeight: 700,
-              color: ptConfig.color,
-              textTransform: 'uppercase', letterSpacing: '0.08em',
-            }}>
-              {ptConfig.label}
-            </span>
-          </div>
+          {(() => {
+            const typeInfo = getPrimaryTypeLabel(resolvedPostType);
+            return (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '3px 12px', borderRadius: 9999,
+                background: ptConfig.bg,
+                border: `1px solid ${ptConfig.border}`,
+              }}>
+                <span style={{ fontSize: 12 }}>{typeInfo.emoji}</span>
+                <span style={{
+                  fontSize: 10, fontWeight: 700,
+                  color: ptConfig.color,
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                }}>
+                  {typeInfo.label}
+                </span>
+                {typeInfo.sub && (
+                  <span style={{
+                    fontSize: 9,
+                    color: 'rgba(255,255,255,0.35)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    borderLeft: '1px solid rgba(255,255,255,0.15)',
+                    paddingLeft: 6, marginLeft: 2,
+                  }}>
+                    {typeInfo.sub}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
           <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(item.difficulty)}`}>
             {item.difficulty}
           </Badge>
