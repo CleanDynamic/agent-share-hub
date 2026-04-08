@@ -1181,7 +1181,7 @@ export function NeoScaleShell() {
       // Apply type filter from right panel tile
       if (filterPostType) {
         if (filterPostType === 'bounty') {
-          query = query.eq('bounty_enabled', true);
+          query = (query as any).eq('bounty_enabled', true);
         } else {
           const typeMap: Record<string, string[]> = {
             build: [

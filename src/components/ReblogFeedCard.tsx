@@ -76,7 +76,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
         .from('content_items')
         .select(`
           id, title, description, content_type,
-          post_category, cover_image_url,
+          cover_image_url,
           profiles!content_items_creator_id_fkey(
             display_name, username
           )

@@ -28,12 +28,11 @@ export default function Search() {
         .from('content_items')
         .select(`
           id, title, description, content_type,
-          post_category, difficulty, ai_tools,
+          difficulty, ai_tools,
           use_cases, custom_tags, download_count,
           view_count, comment_count, cover_image_url,
           created_at, what_to_expect,
           what_to_expect_blocks,
-          bounty_enabled, bounty_amount, bounty_status,
           profiles!content_items_creator_id_fkey(
             display_name, username, avatar_url,
             bio, follower_count, following_count, joined_at
@@ -56,12 +55,11 @@ export default function Search() {
         .from('content_items')
         .select(`
           id, title, description, content_type,
-          post_category, difficulty, ai_tools,
+          difficulty, ai_tools,
           use_cases, custom_tags, download_count,
           view_count, comment_count, cover_image_url,
           created_at, what_to_expect,
           what_to_expect_blocks,
-          bounty_enabled, bounty_amount, bounty_status,
           profiles!content_items_creator_id_fkey(
             display_name, username, avatar_url,
             bio, follower_count, following_count, joined_at
@@ -124,10 +122,7 @@ export default function Search() {
       title: post.title ?? '',
       description: post.description ?? undefined,
       content_type: post.content_type ?? 'build',
-      post_type: resolvePostType(
-        post.post_category ?? null,
-        post.content_type ?? null
-      ),
+      post_type: null,
       cover_image_url: post.cover_image_url ?? undefined,
       created_at: post.created_at,
       view_count: post.view_count ?? 0,
@@ -139,8 +134,8 @@ export default function Search() {
       ai_tools: post.ai_tools ?? [],
       use_cases: post.use_cases ?? [],
       custom_tags: post.custom_tags ?? [],
-      bounty_enabled: post.bounty_enabled ?? false,
-      bounty_amount: post.bounty_amount ?? null,
+      bounty_enabled: false,
+      bounty_amount: null,
       author: {
         display_name: profile?.display_name ?? 'Unknown',
         username: profile?.username ?? 'user',
