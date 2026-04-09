@@ -1515,7 +1515,6 @@ export function NeoScaleShell() {
 
     /* Page title/subtitle map */
     const pageMeta: Record<string, { title: string; subtitle?: string }> = {
-      '/profile':       { title: 'Your Profile' },
       '/messages':      { title: 'Messages' },
       '/library':       { title: 'Your Archives', subtitle: 'Everything you\'ve saved' },
       '/drafts':        { title: 'Drafts', subtitle: 'Work in progress' },
@@ -1606,83 +1605,6 @@ export function NeoScaleShell() {
               </div>
               <span style={{ color: '#F59E0B', fontSize: 16 }}>→</span>
             </div>
-          </div>
-        </div>
-      );
-    }
-
-    /* /profile → glass profile header */
-    if (path === '/profile') {
-      return (
-        <div className="ns-page-shell">
-          <button className="ns-back-btn" onClick={() => navigate(-1)}>← Back</button>
-
-          {/* Profile card */}
-          <div style={{ padding: '20px 24px 0 24px' }}>
-            <div className="ns-glass-card" style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-                <div style={{
-                  width: 64, height: 64, borderRadius: '50%',
-                  background: '#E8571A', flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 22, fontWeight: 700, color: '#fff',
-                  border: '2px solid rgba(232,87,26,0.30)',
-                }}>
-                  {getInitials(profile?.display_name ?? 'U')}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 2,
-                  }}>
-                    {profile?.display_name ?? 'Your Name'}
-                  </div>
-                  <div style={{
-                    fontFamily: 'Inter', fontSize: 13,
-                    color: 'rgba(255,255,255,0.35)', marginBottom: 12,
-                  }}>
-                    @{profile?.username ?? 'username'}
-                  </div>
-                  <button
-                    className="ns-btn-ghost"
-                    onClick={() => navigate('/profile/edit')}
-                  >
-                    Edit Profile
-                  </button>
-                </div>
-              </div>
-
-              {/* Stats row */}
-              <div style={{
-                display: 'flex', gap: 32, marginTop: 20,
-                paddingTop: 16,
-                borderTop: '1px solid rgba(255,255,255,0.05)',
-              }}>
-                {[
-                  { label: 'Dispatches', value: '—' },
-                  { label: 'Downloads', value: '—' },
-                  { label: 'Following', value: '—' },
-                  { label: 'Followers', value: '—' },
-                ].map(s => (
-                  <div key={s.label} style={{ textAlign: 'center' }}>
-                    <div style={{
-                      fontFamily: "'Playfair Display', serif",
-                      fontSize: 18, fontWeight: 700, color: '#fff',
-                    }}>{s.value}</div>
-                    <div style={{
-                      fontFamily: 'Inter', fontSize: 10,
-                      color: 'rgba(255,255,255,0.30)',
-                      textTransform: 'uppercase', letterSpacing: '0.08em',
-                      marginTop: 2,
-                    }}>{s.label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="ns-page-body">
-            <Outlet />
           </div>
         </div>
       );
