@@ -186,59 +186,104 @@ export function CanvasShell(props: CanvasShellProps) {
     return () => window.removeEventListener('keydown', handler);
   }, [mode, selectedBlockId, doc, zoom]);
 
-  // ── Arrow drawing state ───────────────────────────
-  const [drawingFrom, setDrawingFrom] = useState<{
-    blockId: string;
-    edge: 'top'|'right'|'bottom'|'left';
-  } | null>(null);
-  const [mousePos, setMousePos] = useState<{
-    x: number; y: number;
-  } | null>(null);
-  const [pendingArrow, setPendingArrow] = useState<{
+  // ── Arrow drawing state (new waypoint system) ──────
+  const [arrowDrawing, setArrowDrawing] = useState<{
     fromBlockId: string;
-    fromEdge: 'top'|'right'|'bottom'|'left';
+    waypoints: { x: number; y: number }[];  // max 2 locked waypoints
+    cursorSnapped: { x: number; y: number } | null;
   } | null>(null);
 
   const handleCanvasMouseMove = (
     e: React.MouseEvent<HTMLDivElement>
   ) => {
-    if (!drawingFrom) return;
-    const rect = (
-      e.currentTarget as HTMLDivElement
-    ).getBoundingClientRect();
-    setMousePos({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+    if (!arrowDrawing || colWidth === 0) return;
+    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+    const rawX = (e.clientX - rect.left) / zoom;
+    const rawY = (e.clientY - rect.top) / zoom;
+    const snapped = snapToGridDot(rawX, rawY, colWidth, doc.rowHeight);
+    setArrowDrawing(prev => prev ? { ...prev, cursorSnapped: snapped } : null);
+  };
+
+  // Start drawing from a block
+  const handleArrowDrawStart = (blockId: string) => {
+    setArrowDrawing({
+      fromBlockId: blockId,
+      waypoints: [],
+      cursorSnapped: null,
     });
   };
 
-  const handleArrowDrawStart = (
-    blockId: string,
-    edge: 'top'|'right'|'bottom'|'left'
-  ) => {
-    setDrawingFrom({ blockId, edge });
-    setPendingArrow({ fromBlockId: blockId,
-      fromEdge: edge });
+  // Click on the canvas grid → lock a waypoint (max 2)
+  const handleCanvasClickForArrow = (e: React.MouseEvent) => {
+    if (!arrowDrawing || colWidth === 0) return;
+    // If clicking on a block, that's handled by onArrowDrawEnd
+    if ((e.target as HTMLElement).closest('[data-canvas-block]')) return;
+    if (arrowDrawing.waypoints.length >= 2) return; // max 2 waypoints
+
+    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+    const rawX = (e.clientX - rect.left) / zoom;
+    const rawY = (e.clientY - rect.top) / zoom;
+    const snapped = snapToGridDot(rawX, rawY, colWidth, doc.rowHeight);
+
+    setArrowDrawing(prev => prev ? {
+      ...prev,
+      waypoints: [...prev.waypoints, snapped],
+    } : null);
   };
 
-  const handleArrowDrawEnd = (
-    toBlockId: string,
-    toEdge: 'top'|'right'|'bottom'|'left'
-  ) => {
-    if (!pendingArrow) return;
-    if (pendingArrow.fromBlockId !== toBlockId) {
-      doc.addArrow(
-        pendingArrow.fromBlockId,
-        toBlockId,
-        pendingArrow.fromEdge,
-        toEdge,
-        'produces'
-      );
+  // Complete the arrow by clicking a target block
+  const handleArrowDrawEnd = (toBlockId: string) => {
+    if (!arrowDrawing) return;
+    if (arrowDrawing.fromBlockId === toBlockId) {
+      // Cancel if clicking the same block
+      setArrowDrawing(null);
+      return;
     }
-    setDrawingFrom(null);
-    setMousePos(null);
-    setPendingArrow(null);
+
+    const fromBlock = doc.blocks.find(b => b.id === arrowDrawing.fromBlockId);
+    const toBlock = doc.blocks.find(b => b.id === toBlockId);
+    if (!fromBlock || !toBlock) { setArrowDrawing(null); return; }
+
+    // Auto-detect edges based on first/last waypoint or block centers
+    const firstWaypoint = arrowDrawing.waypoints[0]
+      ?? getEdgeMidpoint(toBlock.position, 'left', colWidth, doc.rowHeight);
+    const lastWaypoint = arrowDrawing.waypoints[arrowDrawing.waypoints.length - 1]
+      ?? getEdgeMidpoint(fromBlock.position, 'right', colWidth, doc.rowHeight);
+
+    const fromEdge = nearestEdge(firstWaypoint, fromBlock.position, colWidth, doc.rowHeight);
+    const toEdge = nearestEdge(lastWaypoint, toBlock.position, colWidth, doc.rowHeight);
+
+    doc.addArrow(
+      arrowDrawing.fromBlockId,
+      toBlockId,
+      fromEdge,
+      toEdge,
+      'produces'
+    );
+    setArrowDrawing(null);
   };
+
+  // Cancel arrow drawing on Escape
+  useEffect(() => {
+    if (!arrowDrawing) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setArrowDrawing(null);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [arrowDrawing]);
+
+  // Build the live drawing path for ArrowOverlay
+  const drawingPath = (() => {
+    if (!arrowDrawing || !arrowDrawing.cursorSnapped || colWidth === 0) return null;
+    const fromBlock = doc.blocks.find(b => b.id === arrowDrawing.fromBlockId);
+    if (!fromBlock) return null;
+    const firstWp = arrowDrawing.waypoints[0] ?? arrowDrawing.cursorSnapped;
+    const fromEdge = nearestEdge(firstWp, fromBlock.position, colWidth, doc.rowHeight);
+    const startPt = getEdgeMidpoint(fromBlock.position, fromEdge, colWidth, doc.rowHeight);
+    const points = [startPt, ...arrowDrawing.waypoints, arrowDrawing.cursorSnapped];
+    return polylinePath(points);
+  })();
 
   useEffect(() => {
     if (!containerRef.current) return;
