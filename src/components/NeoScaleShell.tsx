@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FeedItem } from "@/components/FeedItem";
 import { CollectionFeedCard } from "@/components/CollectionFeedCard";
@@ -262,8 +262,7 @@ const NEOSCALE_CSS = `
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   border-radius: 20px;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   padding: 0;
   background: linear-gradient(165deg,
     rgba(255,255,255,0.06) 0%,
@@ -1024,7 +1023,7 @@ export function NeoScaleShell() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchPeopleResults, setSearchPeopleResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [posts, setPosts] = useState<any[]>([]);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const [filterPostType, setFilterPostType] = useState<string | null>(null);
   const [filterLabel, setFilterLabel] = useState<string>('');
   const [filterEmoji, setFilterEmoji] = useState<string>('');
@@ -1050,10 +1049,23 @@ export function NeoScaleShell() {
     return () => { document.head.removeChild(tag); };
   }, [isMobile]);
 
-  /* ── Fetch feed posts ── */
-  useEffect(() => {
-    const fetchPosts = async () => {
-      setPosts([]);
+  /* ── Fetch feed posts (infinite scroll) ── */
+  const INITIAL_PAGE = 50;
+  const NEXT_PAGE = 25;
+
+  const {
+    data: feedData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: feedLoading,
+  } = useInfiniteQuery({
+    queryKey: ['shell_feed', activeTab, user?.id, filterPostType],
+    queryFn: async ({ pageParam = 0 }) => {
+      const pageSize = pageParam === 0 ? INITIAL_PAGE : NEXT_PAGE;
+
+      if (activeTab === 'Bounties') return [];
+
       let query = supabase
         .from('content_items')
         .select(`
@@ -1073,41 +1085,27 @@ export function NeoScaleShell() {
         `)
         .eq('status', 'approved');
 
-      if (activeTab === 'For You') {
-        query = query.order('created_at', { ascending: false }).limit(30);
-      }
-      else if (activeTab === 'Trending') {
-        query = query.order('download_count', { ascending: false }).limit(30);
-      }
-      else if (activeTab === 'Recent') {
-        query = query.order('created_at', { ascending: false }).limit(30);
-      }
-      else if (activeTab === 'Bounties') {
-        // Bounty columns not yet in schema — show empty for now
-        setPosts([]);
-        return;
-      }
-      else if (activeTab === 'Following') {
-        if (!user) { setPosts([]); return; }
+      if (activeTab === 'For You' || activeTab === 'Recent') {
+        query = query.order('created_at', { ascending: false });
+      } else if (activeTab === 'Trending') {
+        query = query.order('download_count', { ascending: false });
+      } else if (activeTab === 'Following') {
+        if (!user) return [];
         const { data: follows } = await supabase
           .from('follows')
           .select('following_id')
           .eq('follower_id', user.id);
         const followedIds = follows?.map(f => f.following_id) ?? [];
-        if (followedIds.length === 0) { setPosts([]); return; }
+        if (followedIds.length === 0) return [];
         query = query
           .in('creator_id', followedIds)
-          .order('created_at', { ascending: false })
-          .limit(30);
+          .order('created_at', { ascending: false });
       }
 
-      // Apply type filter from right panel tile.
-      // Three primary buckets: blueprint / discussion (blog) / bounty.
       if (filterPostType) {
         if (filterPostType === 'bounty') {
           query = (query as any).eq('bounty_enabled', true);
         } else if (filterPostType === 'blueprint') {
-          // Blueprint = build + technique + discovery content types
           const blueprintTypes = [
             'Agent Blueprint', 'Agent Stack',
             'Workflow Template', 'AI Agent Install Guide',
@@ -1118,18 +1116,41 @@ export function NeoScaleShell() {
           ];
           query = query.in('content_type', blueprintTypes);
         } else if (filterPostType === 'discussion') {
-          // Blog = discussion content types
           const blogTypes = ['Open Question', 'Challenge', 'Blog'];
           query = query.in('content_type', blogTypes);
         }
       }
 
+      query = query.range(pageParam, pageParam + pageSize - 1);
       const { data } = await query;
-      if (data) setPosts(data);
-    };
+      return data ?? [];
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const totalLoaded = allPages.flat().length;
+      const expectedSize = allPages.length === 1 ? INITIAL_PAGE : NEXT_PAGE;
+      if (lastPage.length < expectedSize) return undefined;
+      return totalLoaded;
+    },
+    initialPageParam: 0,
+  });
 
-    fetchPosts();
-  }, [activeTab, user?.id, filterPostType]);
+  const posts = feedData?.pages.flat() ?? [];
+
+  // IntersectionObserver for infinite scroll sentinel
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   function triggerPulse() {
     setPulsing(false);
