@@ -1854,9 +1854,14 @@ export function NeoScaleShell() {
 
                 {/* Feed */}
                 <div className="ns-feed-scroll">
-                  {(posts as any[]).map(entry => renderFeedEntry(entry))}
+                  {feedLoading && (
+                    <div className="ns-feed-loading">
+                      {[1,2,3,4,5].map(n => <div key={n} className="ns-feed-skeleton" />)}
+                    </div>
+                  )}
+                  {!feedLoading && (posts as any[]).map(entry => renderFeedEntry(entry))}
 
-                  {posts.length === 0 && (
+                  {!feedLoading && posts.length === 0 && (
                     <div style={{
                       textAlign: 'center',
                       padding: '48px 16px',
@@ -1865,6 +1870,19 @@ export function NeoScaleShell() {
                       fontSize: 16,
                     }}>
                       Nothing dispatched yet.
+                    </div>
+                  )}
+
+                  {/* Infinite scroll sentinel */}
+                  <div ref={sentinelRef} style={{ height: 1 }} />
+                  {isFetchingNextPage && (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '16px',
+                      color: 'rgba(255,255,255,0.3)',
+                      fontSize: 11,
+                    }}>
+                      Loading more…
                     </div>
                   )}
                 </div>
