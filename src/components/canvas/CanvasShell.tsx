@@ -35,6 +35,7 @@ interface CanvasShellProps {
   onPublish?: () => void;
   saving?: boolean;
   submitting?: boolean;
+  onBack?: () => void;
 }
 
 export function CanvasShell(props: CanvasShellProps) {
@@ -357,6 +358,8 @@ export function CanvasShell(props: CanvasShellProps) {
           annotationCount={doc.blocks.filter(
             b => b.creatorAnnotation
           ).length}
+          onBack={props.onBack}
+          blockCount={doc.blocks.length}
         />
       )}
 

@@ -1160,9 +1160,21 @@ const Upload = () => {
           saveDraft(false);
           canvasDoc.saveDocument(currentDraftId ?? '');
         }}
-        onPublish={form.handleSubmit(onSubmit)}
+        onPublish={() => {
+          const title = form.getValues('title');
+          if (!title || !title.trim()) {
+            toast({ title: 'Title required', description: 'Add a title before publishing.', variant: 'destructive' });
+            return;
+          }
+          if (canvasDoc.blocks.length === 0) {
+            toast({ title: 'Add at least one block', description: 'Your blueprint needs content before publishing.', variant: 'destructive' });
+            return;
+          }
+          form.handleSubmit(onSubmit)();
+        }}
         saving={savingDraft}
         submitting={submitting}
+        onBack={() => setShowTypeChooser(true)}
       />
     );
   }
