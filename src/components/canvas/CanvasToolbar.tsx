@@ -7,6 +7,7 @@ interface CanvasToolbarProps {
   onPublish?: () => void;
   saving?: boolean;
   submitting?: boolean;
+  onTemplates?: () => void;
 }
 
 export function CanvasToolbar(_props: CanvasToolbarProps) {
