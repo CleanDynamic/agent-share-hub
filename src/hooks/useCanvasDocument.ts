@@ -213,15 +213,17 @@ export function useCanvasDocument(
     (type: string, position?: Partial<BlockPosition>) => {
       pushUndo();
       const nextRow = getNextRow(blocksRaw);
+      const colSpan = position?.colSpan ?? 4;
+      const centerCol = Math.max(1, Math.floor((columnCount - colSpan) / 2) + 1);
       const newBlock: CanvasBlock = {
         id: crypto.randomUUID(),
         type,
         textContent: '',
         subheading: null,
         position: {
-          col: position?.col ?? 1,
+          col: position?.col ?? centerCol,
           row: position?.row ?? nextRow,
-          colSpan: position?.colSpan ?? 4,
+          colSpan,
           rowSpan: position?.rowSpan ?? 2,
         },
         stageId: null,
@@ -234,7 +236,7 @@ export function useCanvasDocument(
       setBlocks(prev => [...prev, newBlock]);
       return newBlock.id;
     },
-    [blocksRaw, setBlocks, pushUndo]
+    [blocksRaw, setBlocks, pushUndo, columnCount]
   );
 
   const updateBlock = useCallback(
