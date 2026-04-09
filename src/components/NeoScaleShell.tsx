@@ -1531,84 +1531,100 @@ export function NeoScaleShell() {
           <button className="ns-back-btn" onClick={() => navigate(-1)}>
             ← Back
           </button>
-          <div className="ns-page-body" style={{ padding: '20px 24px' }}>
-            {POST_TYPES.map(pt => (
+            <div className="ns-page-body" style={{ padding: '20px 24px' }}>
+              <div style={{
+                fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '0.10em', color: 'rgba(255,255,255,0.25)',
+                marginBottom: 10,
+              }}>
+                Blueprints
+              </div>
+              {POST_TYPES.filter(pt => ['build','technique','discovery'].includes(pt.value)).map(pt => (
+                <div
+                  key={pt.value}
+                  className="ns-glass-card"
+                  style={{
+                    marginBottom: 10,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 16,
+                  }}
+                  onClick={() => navigate(`/upload?post_type=${pt.value}`)}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: 15, fontWeight: 700,
+                      color: pt.color,
+                    }}>
+                      {pt.label}
+                    </div>
+                  </div>
+                  <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 18 }}>→</span>
+                </div>
+              ))}
+
+              <div style={{
+                fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '0.10em', color: 'rgba(255,255,255,0.25)',
+                marginTop: 20, marginBottom: 10,
+              }}>
+                Writing
+              </div>
               <div
-                key={pt.value}
                 className="ns-glass-card"
                 style={{
-                  marginBottom: 12,
+                  marginBottom: 10,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 16,
                 }}
-                onClick={() => navigate(`/upload?post_type=${pt.value}`)}
+                onClick={() => navigate('/upload?post_type=discussion')}
               >
-                <span style={{ fontSize: 28, flexShrink: 0 }}>{pt.emoji}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{
                     fontFamily: "'Playfair Display', serif",
-                    fontSize: 16, fontWeight: 700,
-                    color: pt.color, marginBottom: 3,
+                    fontSize: 15, fontWeight: 700,
+                    color: '#3B82F6',
                   }}>
-                    {pt.label}
-                  </div>
-                  <div style={{
-                    fontFamily: 'Inter', fontSize: 12,
-                    color: 'rgba(255,255,255,0.40)',
-                  }}>
-                    {pt.description}
+                    Blog
                   </div>
                 </div>
                 <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 18 }}>→</span>
               </div>
-            ))}
-          </div>
 
-          {/* Bounty CTA */}
-          <div style={{
-            marginTop: 16,
-            paddingTop: 16,
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            padding: '16px 24px 0 24px',
-          }}>
-            <div style={{
-              fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.10em', color: 'rgba(255,255,255,0.25)',
-              marginBottom: 10,
-            }}>
-              Or request something from the community
-            </div>
-            <div
-              className="ns-glass-card"
-              style={{
-                cursor: 'pointer', display: 'flex',
-                alignItems: 'center', gap: 14,
-                border: '1px solid rgba(245,158,11,0.20)',
-                background: 'rgba(245,158,11,0.06)',
-              }}
-              onClick={() => navigate('/bounty/new')}
-            >
-              <span style={{ fontSize: 24, flexShrink: 0 }}>🎯</span>
-              <div style={{ flex: 1 }}>
-                <div style={{
-                  fontSize: 14, fontWeight: 700,
-                  color: '#F59E0B', marginBottom: 2,
-                  fontFamily: "'Playfair Display', Georgia, serif",
-                }}>
-                  Post a Bounty
-                </div>
-                <div style={{
-                  fontSize: 12, color: 'rgba(255,255,255,0.35)',
-                }}>
-                  Need a prompt, agent, or workflow? Offer a reward.
-                </div>
+              <div style={{
+                fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '0.10em', color: 'rgba(255,255,255,0.25)',
+                marginTop: 20, marginBottom: 10,
+              }}>
+                Community
               </div>
-              <span style={{ color: '#F59E0B', fontSize: 16 }}>→</span>
+              <div
+                className="ns-glass-card"
+                style={{
+                  cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', gap: 16,
+                  border: '1px solid rgba(245,158,11,0.20)',
+                  background: 'rgba(245,158,11,0.06)',
+                }}
+                onClick={() => navigate('/bounty/new')}
+              >
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontSize: 15, fontWeight: 700,
+                    color: '#F59E0B',
+                    fontFamily: "'Playfair Display', Georgia, serif",
+                  }}>
+                    Post a Bounty
+                  </div>
+                </div>
+                <span style={{ color: '#F59E0B', fontSize: 18 }}>→</span>
+              </div>
             </div>
           </div>
-        </div>
       );
     }
 
