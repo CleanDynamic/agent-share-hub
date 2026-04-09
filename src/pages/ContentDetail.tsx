@@ -10,6 +10,8 @@ import { TipSelector } from "@/components/TipSelector";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
 import { AccountGateModal } from "@/components/AccountGateModal";
 import { ContentBlockViewer } from "@/components/ContentBlockViewer";
+import { useCanvasDocument } from '@/hooks/useCanvasDocument';
+import { CanvasShell } from '@/components/canvas/CanvasShell';
 import { StarRating } from "@/components/StarRating";
 import { RatingDisplay } from "@/components/RatingDisplay";
 import { CommentsSection } from "@/components/CommentsSection";
@@ -261,6 +263,9 @@ const ContentDetail = () => {
     item?.content_type ?? null
   );
   const ptConfig = POST_TYPE_DISPLAY[resolvedPostType] ?? POST_TYPE_DISPLAY.build;
+
+  // ─── Canvas document (blocks with positions, arrows, stages) ──
+  const canvasDoc = useCanvasDocument(item?.id ?? null);
 
   // ─── TOC blocks (lightweight fetch for table of contents) ──
   const { data: tocBlocks } = useQuery({
@@ -1165,46 +1170,31 @@ const ContentDetail = () => {
           return hasImageBlocks ? <WhatToExpectSection item={item} /> : null;
         })()}
 
-        {/* 8. BLUEPRINT — inline, always visible */}
+        {/* 8. CANVAS — spatial block grid in view mode */}
         {(!isSub || subscriberUnlocked) && (
-          <div className="mb-4">
-            {tocBlocks && tocBlocks.length > 0 && (
+          <>
+            {!canvasDoc.loading && (
+              <CanvasShell
+                mode="view"
+                doc={canvasDoc}
+                title={item.title ?? ''}
+                description={item.description ?? ''}
+                postType={resolvedPostType}
+                difficulty={item.difficulty ?? null}
+                coverPreview={(item as any).cover_image_url ?? null}
+                hideHeader={true}
+              />
+            )}
+            {canvasDoc.loading && (
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                marginBottom: 16,
+                padding: '40px', textAlign: 'center',
+                color: 'rgba(255,255,255,0.20)',
+                fontSize: 13,
               }}>
-                <div style={{
-                  height: 1, flex: 1,
-                  background: 'rgba(255,255,255,0.06)',
-                }} />
-                <div style={{
-                  fontSize: 10, fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.12em',
-                  color: 'rgba(255,255,255,0.25)',
-                  padding: '0 8px',
-                  flexShrink: 0,
-                }}>
-                  {ptConfig.blueprintLabel}
-                </div>
-                <div style={{
-                  height: 1, flex: 1,
-                  background: 'rgba(255,255,255,0.06)',
-                }} />
+                Loading…
               </div>
             )}
-            <ContentBlockViewer
-              contentId={item.id}
-              contentTitle={item.title}
-              monetisationType={item.monetisation_type}
-              creatorId={item.creator_id}
-              useInstructions={item.use_instructions}
-              onTriggerPaywall={handleDownload}
-              isEligible={isEligible}
-              contentType={item.content_type}
-              postType={resolvedPostType}
-            />
-          </div>
+          </>
         )}
 
         {/* 9a. Local model CTA */}
