@@ -450,7 +450,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadVi
   // Realtime — play sound on incoming messages
   useEffect(() => {
     if (!threadId || !user) return;
-    const channelName = `dm-view-${threadId}-${Date.now()}`;
+    const channelName = `dm-view-${threadId}-${crypto.randomUUID()}`;
     const channel = supabase
       .channel(channelName)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "dm_messages", filter: `thread_id=eq.${threadId}` }, (payload) => {
