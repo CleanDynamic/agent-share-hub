@@ -16,6 +16,7 @@ import {
   ToolSetupEditor,
   ResourceEditor,
   TutorialStepEditor,
+  emptyBlock,
 } from '@/components/ContentBlockBuilder';
 
 interface BlockInlineEditorProps {
@@ -30,6 +31,11 @@ export function BlockInlineEditor({
   // (index, patch) signature. We adapt here.
   const update = (_: number, patch: any) =>
     onChange(patch);
+
+  // Merge defaults from emptyBlock so editors
+  // never access undefined array/string fields
+  const defaults = emptyBlock(block.type as any);
+  const safeBlock = { ...defaults, ...block } as any;
 
   // Subheading input — shown above all editors
   // except section_heading (which IS a heading)
