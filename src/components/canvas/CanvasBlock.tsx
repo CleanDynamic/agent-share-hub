@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { GripVertical } from 'lucide-react';
 import { gridToPixels, positionsOverlap } from '@/lib/canvas-utils';
 import type { CanvasBlock as CanvasBlockType, CanvasStage, BlockPosition } from '@/lib/canvas-types';
 import { BlockInlineEditor } from './BlockInlineEditor';
@@ -53,15 +54,15 @@ export function CanvasBlock({
   });
 
   const px = gridToPixels(block.position, colWidth, rowHeight);
+  // Inset for spacing between blocks
+  const inset = 6;
 
   // ── Drag ─────────────────────────────────────────
   const handleDragMouseDown = (e: React.MouseEvent) => {
     if (mode !== 'edit') return;
+    // Only drag from the grip handle
     const target = e.target as HTMLElement;
-    if (target.closest(
-      '.block-editor-area, .resize-handle,' +
-      '.connection-point, .block-toolbar-btn'
-    )) return;
+    if (!target.closest('.drag-grip')) return;
 
     e.preventDefault();
     setDragging(true);
@@ -230,12 +231,12 @@ export function CanvasBlock({
         onMouseDown={handleDragMouseDown}
         style={{
           position: 'absolute',
-          left: px.x, top: px.y,
-          width: px.w,
-          minHeight: px.h,
+          left: px.x + inset, top: px.y + inset,
+          width: px.w - inset * 2,
+          minHeight: px.h - inset * 2,
           zIndex: dragging ? 20 : 10,
           opacity: dragging ? 0.4 : 1,
-          cursor: mode === 'edit' ? 'grab' : 'default',
+          cursor: 'default',
           boxSizing: 'border-box',
         }}
       >
@@ -405,7 +406,7 @@ export function CanvasBlock({
           {/* Block content */}
           <div
             className="block-editor-area"
-            style={{ padding: 16 }}
+            style={{ padding: 12 }}
           >
             {/* Section heading renders differently */}
             {block.type === 'section_heading' ? (
