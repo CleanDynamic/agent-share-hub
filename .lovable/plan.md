@@ -1,61 +1,40 @@
 
 
-## Keyboard Shortcuts, Undo, Stage Bug Fix, and Draft-on-Exit
+## Clean Up Canvas Grid: Zoom, Drag, Block Positioning, and Visual Polish
 
-### 1. Keyboard shortcuts on the canvas grid (`CanvasShell.tsx`)
+### Problem
+The canvas grid feels overwhelming on first load. Blocks are too large, zoom defaults to 100% which makes the grid feel cramped, dragging requires finding a tiny grip handle, and new blocks always start at column 1 instead of centered.
 
-Add a `selectedBlockId` state. Blocks get a visual selection ring when clicked. Then wire up these keyboard handlers:
+### Changes
 
-- **Backspace / Delete** — delete the selected block (with no confirmation, since it's undoable)
-- **Ctrl/Cmd + Z** — undo last action
-- **Ctrl/Cmd + Shift + Z** — redo
-- **Ctrl/Cmd + D** — duplicate selected block
-- **Ctrl/Cmd + A** — select all blocks (multi-select)
-- **Escape** — deselect all
-- **Arrow keys** — nudge selected block by 1 grid unit (col or row)
-- **Tab** — cycle selection to next block in reading order
+**1. Make 50% the new "100%" — default zoom to 0.5** (`CanvasShell.tsx`)
+- Change `useState(1.0)` to `useState(0.5)` for the zoom state
+- Keep the zoom controls and display as-is (they'll show "50%" which is fine, or relabel to show "100%" when at 0.5 — but simpler to just keep the raw percentage)
 
-Pass `selectedBlockId` and `onSelect` to `CanvasBlock` so clicking a block selects it (separate from opening the edit modal — single click selects, double click opens modal).
+**2. New blocks start centered below the lowest block** (`useCanvasDocument.ts`)
+- In `addBlock`, calculate the center column: `Math.max(1, Math.floor((columnCount - colSpan) / 2) + 1)`
+- Use this as the default `col` when no explicit position is given (instead of `col: 1`)
+- Also update the toolbar's `onInsertBlock` call in `CanvasToolbar.tsx` to not hardcode `col: 1`
 
-### 2. Undo/Redo system (`useCanvasDocument.ts`)
+**3. Drag from anywhere on the block, not just the grip** (`CanvasBlock.tsx`)
+- Remove the `if (!target.closest('.drag-grip')) return;` guard from `handleDragMouseDown`
+- Keep the grip icon as a visual affordance but make the entire block surface draggable
+- Only prevent drag when clicking toolbar buttons (stop propagation already handles this)
+- Change cursor to `grab` on the block card, `grabbing` while dragging
 
-Add an undo stack to the canvas document hook:
-- Maintain `undoStack: CanvasSnapshot[]` and `redoStack: CanvasSnapshot[]` as refs
-- Before every mutation (addBlock, deleteBlock, moveBlock, updateBlock), push the current `{blocks, arrows, stages}` snapshot onto the undo stack and clear the redo stack
-- `undo()` — pop from undo stack, push current state to redo stack, restore the popped snapshot
-- `redo()` — pop from redo stack, push current to undo, restore
-- Cap undo stack at 50 entries
-- Expose `undo`, `redo`, `canUndo`, `canRedo` from the hook
-
-Add an Undo button to `CanvasToolbar.tsx` (next to Save).
-
-### 3. Fix stage tab bug (`CanvasShell.tsx`)
-
-The bug: when a stage is selected but all its blocks are filtered out (or stage is newly created with no blocks), `filteredBlocks` is empty and the canvas shows nothing. Also, blocks added while a stage tab is active don't get assigned to that stage.
-
-Fix:
-- When `activeStageTab` is set and a new block is inserted via the toolbar, auto-assign it to the active stage
-- If a stage tab is selected but has no blocks, show an empty state message ("No blocks in this stage yet — add one or drag blocks here")
-- When a stage is deleted, reset `activeStageTab` to null
-- Pass `activeStageTab` to the toolbar's `onInsertBlock` so new blocks auto-get the stage assignment
-
-### 4. Save-to-drafts on exit (`Upload.tsx`)
-
-When the user navigates away from the upload page:
-- Intercept with `beforeunload` event for browser back/close
-- Intercept with react-router navigation using `useBlocker` (react-router v6.4+) or a custom prompt
-- Show a confirmation dialog: "Save as draft before leaving?" with three options: **Save Draft**, **Discard**, **Cancel**
-- If "Save Draft" — trigger the existing draft save logic, then navigate
-- If "Discard" — delete the draft row if it was auto-created, then navigate
-- If "Cancel" — stay on the page
+**4. Clean up the upload page's initial canvas appearance** (`CanvasHeader.tsx` + `CanvasShell.tsx`)
+- Tighten header padding: reduce from `24px` to `16px`
+- Make the dot grid subtler: reduce dot opacity
+- Reduce the empty canvas minimum height from `600` to `400`
+- Make the TOC sidebar start collapsed when no blocks exist (change `useState(true)` to `useState(false)` or conditional on block count)
 
 ### Files to edit
 
 | File | What |
 |------|------|
-| `src/hooks/useCanvasDocument.ts` | Add undo/redo stack, expose undo/redo/canUndo/canRedo |
-| `src/components/canvas/CanvasShell.tsx` | Add selectedBlockId state, keyboard event handler, pass selection props to blocks, fix stage tab assignment |
-| `src/components/canvas/CanvasBlock.tsx` | Add selection visual (ring), change single-click to select, double-click to open modal |
-| `src/components/canvas/CanvasToolbar.tsx` | Add Undo/Redo buttons |
-| `src/pages/Upload.tsx` | Add beforeunload + navigation blocker with save/discard/cancel dialog |
+| `src/components/canvas/CanvasShell.tsx` | Default zoom to 0.5, start TOC collapsed, reduce min canvas height |
+| `src/hooks/useCanvasDocument.ts` | Center new blocks horizontally |
+| `src/components/canvas/CanvasBlock.tsx` | Allow drag from entire block surface, update cursor |
+| `src/components/canvas/CanvasToolbar.tsx` | Remove hardcoded `col: 1` from insert |
+| `src/components/canvas/CanvasHeader.tsx` | Tighten padding |
 
