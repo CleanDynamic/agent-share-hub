@@ -273,8 +273,8 @@ export function CanvasShell(props: CanvasShellProps) {
     return () => window.removeEventListener('keydown', handler);
   }, [arrowDrawing]);
 
-  // Build the live drawing path for ArrowOverlay
-  const drawingPath = (() => {
+  // Build the live drawing path for ArrowOverlay (computed in render, after colWidth)
+  const getDrawingPathStr = () => {
     if (!arrowDrawing || !arrowDrawing.cursorSnapped || colWidth === 0) return null;
     const fromBlock = doc.blocks.find(b => b.id === arrowDrawing.fromBlockId);
     if (!fromBlock) return null;
@@ -283,7 +283,7 @@ export function CanvasShell(props: CanvasShellProps) {
     const startPt = getEdgeMidpoint(fromBlock.position, fromEdge, colWidth, doc.rowHeight);
     const points = [startPt, ...arrowDrawing.waypoints, arrowDrawing.cursorSnapped];
     return polylinePath(points);
-  })();
+  };
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -459,18 +459,18 @@ export function CanvasShell(props: CanvasShellProps) {
         <div
           ref={containerRef}
           onMouseMove={handleCanvasMouseMove}
-          onMouseUp={() => {
-            setDrawingFrom(null);
-            setMousePos(null);
+          onClick={(e) => {
+            handleCanvasClickForArrow(e);
+            handleCanvasClick(e);
           }}
-          onClick={handleCanvasClick}
           style={{
             position: 'relative',
             flex: 1,
-        minHeight: canvasHeight / zoom,
+            minHeight: canvasHeight / zoom,
             width: `${100 / zoom}%`,
             transform: `scale(${zoom})`,
             transformOrigin: 'top left',
+            cursor: arrowDrawing ? 'crosshair' : undefined,
           }}
         >
           {/* Dot grid — edit mode only */}
@@ -542,9 +542,9 @@ export function CanvasShell(props: CanvasShellProps) {
                 doc.updateBlock(block.id, patch)
               }
               onDelete={() => doc.deleteBlock(block.id)}
-              onArrowDrawStart={handleArrowDrawStart}
-              isArrowDrawing={drawingFrom !== null}
-              onArrowDrawEnd={handleArrowDrawEnd}
+              onArrowDrawStart={() => handleArrowDrawStart(block.id)}
+              isArrowDrawing={arrowDrawing !== null}
+              onArrowDrawEnd={() => handleArrowDrawEnd(block.id)}
               onAssignStage={(blockId, stageId) =>
                 doc.assignBlockToStage(blockId, stageId)
               }
@@ -571,9 +571,8 @@ export function CanvasShell(props: CanvasShellProps) {
               canvasWidth={containerWidth}
               canvasHeight={canvasHeight}
               mode={mode}
-              drawingFrom={drawingFrom}
-              mousePos={mousePos}
-              onArrowComplete={handleArrowDrawEnd}
+              drawingPathStr={getDrawingPathStr()}
+              drawingWaypoints={arrowDrawing?.waypoints ?? []}
               onArrowDelete={id =>
                 doc.setArrows(prev =>
                   prev.filter(a => a.id !== id)
