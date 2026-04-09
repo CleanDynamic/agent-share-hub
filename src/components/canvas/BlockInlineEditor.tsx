@@ -1,8 +1,4 @@
 import type { CanvasBlock } from '@/lib/canvas-types';
-
-// Import all existing editor components from
-// ContentBlockBuilder.tsx — these are already
-// built and tested. Import them as named exports.
 import {
   PromptBlockEditor,
   CodeBlockEditor,
@@ -24,179 +20,85 @@ interface BlockInlineEditorProps {
   onChange: (patch: Partial<CanvasBlock>) => void;
 }
 
-export function BlockInlineEditor({
-  block, onChange,
-}: BlockInlineEditorProps) {
-  // Adapter: ContentBlockBuilder editors expect
-  // (index, patch) signature. We adapt here.
-  const update = (_: number, patch: any) =>
-    onChange(patch);
-
-  // Merge defaults from emptyBlock so editors
-  // never access undefined array/string fields
+export function BlockInlineEditor({ block, onChange }: BlockInlineEditorProps) {
+  const update = (_: number, patch: any) => onChange(patch);
   const defaults = emptyBlock(block.type as any);
   const safeBlock = { ...defaults, ...block } as any;
-
-  // Subheading input — shown above all editors
-  // except section_heading (which IS a heading)
-  const showSubheading =
-    block.type !== 'section_heading';
+  const showSubheading = block.type !== 'section_heading';
 
   return (
-    <div className="canvas-compact-editor" style={{ fontSize: 12 }}>
-      <style>{`
-        .canvas-compact-editor textarea { font-size: 11px !important; max-height: 120px !important; min-height: 32px !important; padding: 6px 8px !important; line-height: 1.5 !important; }
-        .canvas-compact-editor input { font-size: 11px !important; padding: 4px 6px !important; }
-        .canvas-compact-editor label { font-size: 10px !important; margin-bottom: 2px !important; }
-        .canvas-compact-editor select { font-size: 11px !important; padding: 4px 6px !important; }
-        .canvas-compact-editor .block-field-group { margin-bottom: 6px !important; }
-      `}</style>
+    <div style={{ fontSize: 13 }}>
       {showSubheading && (
         <input
           value={block.subheading ?? ''}
-          onChange={e => onChange({
-            subheading: e.target.value || null
-          })}
+          onChange={e => onChange({ subheading: e.target.value || null })}
           placeholder="Block title (optional)..."
           style={{
             width: '100%',
-            fontFamily:
-              "'Playfair Display', Georgia, serif",
-            fontSize: 15, fontWeight: 600,
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 16, fontWeight: 600,
             color: 'rgba(255,255,255,0.88)',
             background: 'transparent',
             border: 'none', outline: 'none',
-            borderBottom:
-              block.subheading
-                ? '1px solid rgba(255,255,255,0.10)'
-                : '1px solid transparent',
-            padding: '2px 0 8px 0',
-            marginBottom:
-              block.subheading ? 12 : 4,
+            borderBottom: '1px solid rgba(255,255,255,0.10)',
+            padding: '4px 0 10px 0',
+            marginBottom: 14,
             boxSizing: 'border-box',
-            transition: 'border-color 0.15s',
-          }}
-          onFocus={e => {
-            e.target.style.borderBottomColor =
-              'rgba(255,255,255,0.20)';
-          }}
-          onBlur={e => {
-            e.target.style.borderBottomColor =
-              block.subheading
-                ? 'rgba(255,255,255,0.10)'
-                : 'transparent';
           }}
         />
       )}
 
-      {/* Route to correct editor by block type */}
-      {block.type === 'text' ||
-       block.type === 'long_text' ? (
+      {block.type === 'text' || block.type === 'long_text' ? (
         <TextEditor
           value={safeBlock.textContent}
           formatting={safeBlock.formatting}
           subBlocks={safeBlock.subBlocks}
-          onTextChange={v =>
-            onChange({ textContent: v })
-          }
-          onFormatChange={f =>
-            onChange({ formatting: f })
-          }
-          onSubBlocksChange={s =>
-            onChange({ subBlocks: s })
-          }
+          onTextChange={v => onChange({ textContent: v })}
+          onFormatChange={f => onChange({ formatting: f })}
+          onSubBlocksChange={s => onChange({ subBlocks: s })}
         />
       ) : block.type === 'prompt' ? (
-        <PromptBlockEditor
-          block={safeBlock}
-          update={update}
-          index={0}
-        />
+        <PromptBlockEditor block={safeBlock} update={update} index={0} />
       ) : block.type === 'code' ? (
-        <CodeBlockEditor
-          block={safeBlock}
-          update={update}
-          index={0}
-        />
+        <CodeBlockEditor block={safeBlock} update={update} index={0} />
       ) : block.type === 'image' ? (
         <ImagePicker
           imageFile={safeBlock.imageFile}
           imagePreview={safeBlock.imagePreview}
           imageDescription={safeBlock.imageDescription}
-          onImageChange={(f, preview) =>
-            onChange({
-              imageFile: f,
-              imagePreview: preview,
-            })
-          }
-          onDescriptionChange={d =>
-            onChange({ imageDescription: d })
-          }
+          onImageChange={(f, preview) => onChange({ imageFile: f, imagePreview: preview })}
+          onDescriptionChange={d => onChange({ imageDescription: d })}
         />
       ) : block.type === 'result' ? (
-        <ResultBlockEditor
-          block={safeBlock}
-          update={update}
-          index={0}
-        />
+        <ResultBlockEditor block={safeBlock} update={update} index={0} />
       ) : block.type === 'comparison' ? (
-        <ComparisonEditor
-          block={safeBlock}
-          update={update}
-          index={0}
-        />
+        <ComparisonEditor block={safeBlock} update={update} index={0} />
       ) : block.type === 'agent_config' ? (
-        <AgentConfigEditor
-          block={safeBlock}
-          update={update}
-          index={0}
-        />
+        <AgentConfigEditor block={safeBlock} update={update} index={0} />
       ) : block.type === 'workflow' ? (
-        <WorkflowEditor
-          block={safeBlock}
-          update={update}
-          index={0}
-        />
+        <WorkflowEditor block={safeBlock} update={update} index={0} />
       ) : block.type === 'model_params' ? (
-        <ModelParamsEditor
-          block={safeBlock}
-          update={update}
-          index={0}
-        />
+        <ModelParamsEditor block={safeBlock} update={update} index={0} />
       ) : block.type === 'tool_setup' ? (
-        <ToolSetupEditor
-          block={safeBlock}
-          update={update}
-          index={0}
-        />
+        <ToolSetupEditor block={safeBlock} update={update} index={0} />
       ) : block.type === 'resource' ? (
-        <ResourceEditor
-          block={safeBlock}
-          update={update}
-          index={0}
-        />
+        <ResourceEditor block={safeBlock} update={update} index={0} />
       ) : block.type === 'tutorial_step' ? (
-        <TutorialStepEditor
-          block={safeBlock}
-          update={update}
-          index={0}
-        />
+        <TutorialStepEditor block={safeBlock} update={update} index={0} />
       ) : (
-        /* Fallback for unknown types */
         <textarea
           value={safeBlock.textContent}
-          onChange={e =>
-            onChange({ textContent: e.target.value })
-          }
+          onChange={e => onChange({ textContent: e.target.value })}
           placeholder="Enter content..."
           style={{
             width: '100%', background: 'transparent',
-            border: 'none', outline: 'none',
-            fontSize: 14,
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 6, outline: 'none', fontSize: 14,
             color: 'rgba(255,255,255,0.70)',
-            lineHeight: 1.65, resize: 'none',
+            lineHeight: 1.65, resize: 'vertical',
             fontFamily: 'Inter, sans-serif',
-            minHeight: 80, boxSizing: 'border-box',
+            minHeight: 100, padding: 10,
+            boxSizing: 'border-box',
           }}
         />
       )}
