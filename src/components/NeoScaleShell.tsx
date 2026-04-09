@@ -558,41 +558,42 @@ const NEOSCALE_CSS = `
 
 /* ── Right panel tile grid ── */
 .ns-tile-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   margin-bottom: 14px;
 }
 
 .ns-tile {
   position: relative;
-  border-radius: 10px;
-  padding: 12px 8px 10px 8px;
+  border-radius: 8px;
+  padding: 10px 14px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 5px;
+  gap: 10px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.15s;
   background: rgba(255,255,255,0.03);
   border: none;
   overflow: hidden;
+  width: 100%;
+  text-align: left;
 }
 
 .ns-tile::before {
   content: '';
   position: absolute;
-  inset: -1px;
-  border-radius: 11px;
-  padding: 1px;
-  background: rgba(255,255,255,0.06);
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  transition: background 0.2s;
-  z-index: 0;
+  left: 0; top: 20%; bottom: 20%;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--tile-hover-color, rgba(255,255,255,0.15));
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.ns-tile:hover::before {
+  opacity: 1;
 }
 
 .ns-tile::after {
@@ -640,14 +641,12 @@ const NEOSCALE_CSS = `
 }
 
 .ns-tile-label {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
-  color: rgba(255,255,255,0.40);
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  position: relative;
-  z-index: 1;
+  color: rgba(255,255,255,0.55);
+  text-transform: none;
+  letter-spacing: 0;
+  flex: 1;
 }
 
 .ns-tile-count {
@@ -662,22 +661,25 @@ const NEOSCALE_CSS = `
 .ns-bounty-strip {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 14px;
 }
 
 .ns-bounty-tile {
   position: relative;
   border-radius: 8px;
-  padding: 9px 12px;
+  padding: 10px 14px;
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 10px;
   cursor: pointer;
   background: rgba(255,255,255,0.03);
   border: none;
   overflow: hidden;
-  transition: background 0.2s;
+  transition: background 0.15s;
+  width: 100%;
+  text-align: left;
 }
 
 .ns-bounty-tile::after {
@@ -2015,6 +2017,12 @@ export function NeoScaleShell() {
                   }}
                 >
                   <span className="ns-tile-label">{tile.label}</span>
+                  <span style={{
+                    fontSize: 11,
+                    color: 'rgba(255,255,255,0.18)',
+                    marginLeft: 'auto',
+                    flexShrink: 0,
+                  }}>→</span>
                 </div>
               ))}
             </div>
