@@ -33,6 +33,8 @@ import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
 import { DiscussionCompose } from "@/components/DiscussionCompose";
 import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, getPostType, getPrimaryTypeLabel } from "@/lib/content-types";
+import { CanvasShell } from '@/components/canvas/CanvasShell';
+import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -202,6 +204,15 @@ const flattenBlocks = (items: BlockOrGroup[]): FlatBlock[] => {
   return result.sort((a, b) => a.position - b.position);
 };
 
+function defaultSubType(uploadType: string): string {
+  switch (uploadType) {
+    case 'blueprint': return 'build';
+    case 'blog': return 'discussion';
+    case 'bounty': return 'build';
+    default: return 'build';
+  }
+}
+
 const Upload = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -254,6 +265,8 @@ const Upload = () => {
   const [discussionThreads, setDiscussionThreads] = useState<string[]>(['']);
   const autosaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastAutosaveRef = useRef<Date | null>(null);
+  const canvasDoc = useCanvasDocument(currentDraftId);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -651,19 +664,14 @@ const Upload = () => {
     };
   }, [saveDraft]);
 
-  // ── Debounced autosave: save 2.5s after any canvas change ──
-  const watchedTitle = form.watch('title');
-  const watchedDescription = form.watch('description');
-  const watchedWte = form.watch('what_to_expect');
+  // ── Autosave: when form fields change, save draft silently ──
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (watchedTitle?.trim()) {
-        saveDraft(true);
-      }
-    }, 2500);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedTitle, watchedDescription, watchedWte, contentBlocks]);
+    if (!currentDraftId) return;
+    const sub = form.watch((values) => {
+      if (currentDraftId) saveDraft(true);
+    });
+    return () => sub.unsubscribe();
+  }, [currentDraftId, form, saveDraft]);
 
   // ── Scroll to a block by id inside the canvas ──
   const scrollToBlock = useCallback((blockId: string) => {
@@ -689,8 +697,9 @@ const Upload = () => {
         content_type: values.content_type || 'Open Question',
       };
     }
+    const blocksToSave = canvasDoc.blocks;
     const submitFlatBlocks = flattenBlocks(contentBlocks);
-    if (!isBountyType && !isDiscussionSubmit && submitFlatBlocks.length === 0) {
+    if (!isBountyType && !isDiscussionSubmit && blocksToSave.length === 0 && submitFlatBlocks.length === 0) {
       toast({ title: "Add content", description: "Please add at least one content block.", variant: "destructive" });
       return;
     }
@@ -958,6 +967,26 @@ const Upload = () => {
         }
       }
 
+      // ── Save canvas document (blocks with positions, arrows, stages) ──
+      if (blocksToSave.length > 0) {
+        for (const block of blocksToSave) {
+          await supabase.from('content_blocks').insert({
+            content_id: contentId,
+            block_type: block.type,
+            text_content: block.textContent,
+            subheading: block.subheading,
+            canvas_col: block.position.col,
+            canvas_row: block.position.row,
+            canvas_col_span: block.position.colSpan,
+            canvas_row_span: block.position.rowSpan,
+            stage_id: block.stageId,
+            stage_index: block.stageIndex,
+            position: block.position.row * 100 + block.position.col,
+          } as any);
+        }
+        await canvasDoc.saveDocument(contentId);
+      }
+
       // ── Remaining metadata updates (safe to run after blocks are saved) ──
       const metaUpdates: any = {};
       // Blog: compute estimated read time
@@ -1107,6 +1136,37 @@ const Upload = () => {
     );
   }
 
+  // ── Canvas mode: after type is chosen, render CanvasShell as the editor ──
+  if (!showTypeChooser && !success) {
+    return (
+      <CanvasShell
+        mode="edit"
+        doc={canvasDoc}
+        title={form.watch('title') ?? ''}
+        description={form.watch('description') ?? ''}
+        postType={form.watch('post_type') ?? 'build'}
+        difficulty={form.watch('difficulty') ?? null}
+        coverPreview={coverImagePreview}
+        onTitleChange={v => form.setValue('title', v)}
+        onDescriptionChange={v => form.setValue('description', v)}
+        onCoverChange={(f, p) => {
+          setCoverImageFile(f);
+          setCoverImagePreview(p);
+        }}
+        onPostTypeClick={() => {
+          setShowTypeChooser(true);
+        }}
+        onSave={() => {
+          saveDraft(false);
+          canvasDoc.saveDocument(currentDraftId ?? '');
+        }}
+        onPublish={form.handleSubmit(onSubmit)}
+        saving={savingDraft}
+        submitting={submitting}
+      />
+    );
+  }
+
   async function discardDraft() {
     if (!draftId) return;
     await supabase.from("content_blocks").delete().eq("content_id", draftId);
@@ -1147,7 +1207,11 @@ const Upload = () => {
             if (blueprintExpanded && !['build','technique','discovery'].includes(form.getValues('post_type'))) {
               form.setValue('post_type', 'build');
             }
-            setTimeout(() => setShowTypeChooser(false), 220);
+            // Create a draft immediately so the canvas can start autosaving
+            saveDraft(true).then(id => {
+              if (id) setTimeout(() => setShowTypeChooser(false), 220);
+              else setTimeout(() => setShowTypeChooser(false), 220);
+            });
           };
 
           const UPLOAD_TYPES = [
@@ -1232,6 +1296,7 @@ const Upload = () => {
                           } else {
                             setBlueprintExpanded(false);
                             setUploadType(type.value as any);
+                            form.setValue('post_type', defaultSubType(type.value) as any);
                             goNext();
                           }
                         }}
