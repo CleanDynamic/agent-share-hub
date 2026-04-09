@@ -53,6 +53,8 @@ export function CanvasShell(props: CanvasShellProps) {
     useState(false);
   const [annotationsOpen, setAnnotationsOpen] =
     useState(false);
+  const [activeStageTab, setActiveStageTab] =
+    useState<string | null>(null); // null = "All"
 
   // Zoom
   const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25];
@@ -143,13 +145,18 @@ export function CanvasShell(props: CanvasShellProps) {
     return () => ro.disconnect();
   }, []);
 
+  // Filter blocks by active stage tab
+  const filteredBlocks = activeStageTab
+    ? doc.blocks.filter(b => b.stageId === activeStageTab)
+    : doc.blocks;
+
   // Total canvas height: extent of all blocks + buffer
-  const canvasHeight = doc.blocks.length === 0
+  const canvasHeight = filteredBlocks.length === 0
     ? 600
     : Math.max(
         600,
         Math.max(
-          ...doc.blocks.map(b =>
+          ...filteredBlocks.map(b =>
             (b.position.row + b.position.rowSpan - 1)
             * doc.rowHeight
           )
@@ -211,6 +218,55 @@ export function CanvasShell(props: CanvasShellProps) {
           onCoverChange={props.onCoverChange}
         />}
 
+        {/* Stage tab bar */}
+        {mode === 'edit' && doc.stages.length > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 2,
+            padding: '6px 12px',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            flexShrink: 0,
+            overflowX: 'auto',
+          }}>
+            <button
+              onClick={() => setActiveStageTab(null)}
+              style={{
+                padding: '4px 12px', fontSize: 11, fontWeight: 600,
+                borderRadius: 6, border: 'none', cursor: 'pointer',
+                background: !activeStageTab ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.04)',
+                color: !activeStageTab ? '#E8571A' : 'rgba(255,255,255,0.40)',
+                transition: 'all 0.15s',
+              }}
+            >
+              All
+            </button>
+            {doc.stages.map(s => (
+              <button
+                key={s.id}
+                onClick={() => setActiveStageTab(s.id)}
+                style={{
+                  padding: '4px 12px', fontSize: 11, fontWeight: 600,
+                  borderRadius: 6, border: 'none', cursor: 'pointer',
+                  background: activeStageTab === s.id ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.04)',
+                  color: activeStageTab === s.id ? '#E8571A' : 'rgba(255,255,255,0.40)',
+                  transition: 'all 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {s.stageNumber}. {s.title}
+              </button>
+            ))}
+            <button
+              onClick={() => doc.addStage(`Stage ${doc.stages.length + 1}`)}
+              style={{
+                padding: '4px 8px', fontSize: 11, border: 'none', cursor: 'pointer',
+                background: 'none', color: 'rgba(255,255,255,0.25)',
+              }}
+            >
+              + Stage
+            </button>
+          </div>
+        )}
+
         {/* The grid */}
         <div
           ref={containerRef}
@@ -241,7 +297,7 @@ export function CanvasShell(props: CanvasShellProps) {
 
           {/* Stage zones — coloured backgrounds */}
           {doc.stages.map(stage => {
-            const stageBlocks = doc.blocks.filter(
+            const stageBlocks = filteredBlocks.filter(
               b => b.stageId === stage.id
             );
             if (stageBlocks.length === 0) return null;
@@ -277,7 +333,7 @@ export function CanvasShell(props: CanvasShellProps) {
           })}
 
           {/* Blocks */}
-          {colWidth > 0 && doc.blocks.map(block => (
+          {colWidth > 0 && filteredBlocks.map(block => (
             <CanvasBlock
               key={block.id}
               block={block}
