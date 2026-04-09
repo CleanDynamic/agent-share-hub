@@ -52,9 +52,9 @@ export function BlockViewerInCanvas({
       case 'tool_setup':
         return block.textContent ?? '';
       case 'result':
-        return block.resultAfter
+        return (block.resultAfter
           || block.resultBefore
-          || block.textContent ?? '';
+          || block.textContent) ?? '';
       case 'workflow':
         return block.textContent ?? '';
       case 'text':

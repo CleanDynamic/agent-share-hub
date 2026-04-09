@@ -366,20 +366,23 @@ export function CanvasShell(props: CanvasShellProps) {
         onClose={() => setTemplateLibOpen(false)}
         currentBlocks={doc.blocks}
         onApply={(newBlocks, newArrows) => {
-          doc.setBlocks(prev => [
-            ...prev,
-            ...newBlocks.map(b => ({
-              ...b,
-              id: b.id ?? crypto.randomUUID(),
-            })),
-          ]);
-          doc.setArrows(prev => [
-            ...prev,
-            ...newArrows.map(a => ({
-              ...a,
-              id: crypto.randomUUID(),
-            })),
-          ]);
+          doc.restoreSnapshot({
+            blocks: [
+              ...doc.blocks,
+              ...newBlocks.map(b => ({
+                ...b,
+                id: b.id ?? crypto.randomUUID(),
+              })),
+            ],
+            arrows: [
+              ...doc.arrows,
+              ...newArrows.map(a => ({
+                ...a,
+                id: crypto.randomUUID(),
+              })),
+            ],
+            stages: doc.stages,
+          });
         }}
       />
 
