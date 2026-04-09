@@ -53,6 +53,8 @@ export function CanvasShell(props: CanvasShellProps) {
     useState(false);
   const [annotationsOpen, setAnnotationsOpen] =
     useState(false);
+  const [activeStageTab, setActiveStageTab] =
+    useState<string | null>(null); // null = "All"
 
   // Zoom
   const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25];
