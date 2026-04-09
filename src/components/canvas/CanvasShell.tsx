@@ -4,6 +4,8 @@ import { CanvasTOC } from './CanvasTOC';
 import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasHeader } from './CanvasHeader';
 import { DotGrid } from './DotGrid';
+import { CanvasBlock } from './CanvasBlock';
+import { CanvasInsertZone } from './CanvasInsertZone';
 
 interface CanvasShellProps {
   mode: 'edit' | 'view';
@@ -171,9 +173,44 @@ export function CanvasShell(props: CanvasShellProps) {
             );
           })}
 
-          {/* Blocks — rendered in Prompt 3 */}
+          {/* Blocks */}
+          {colWidth > 0 && doc.blocks.map(block => (
+            <CanvasBlock
+              key={block.id}
+              block={block}
+              mode={mode}
+              colWidth={colWidth}
+              rowHeight={doc.rowHeight}
+              columnCount={doc.columnCount}
+              allBlocks={doc.blocks}
+              postType={postType}
+              onPositionChange={pos =>
+                doc.moveBlock(block.id, pos)
+              }
+              onBlockChange={patch =>
+                doc.updateBlock(block.id, patch)
+              }
+              onDelete={() => doc.deleteBlock(block.id)}
+              onArrowDrawStart={() => {}}
+              isArrowDrawing={false}
+              onArrowDrawEnd={() => {}}
+            />
+          ))}
+
           {/* Arrows — rendered in Prompt 4 */}
-          {/* Insert zones — rendered in Prompt 3 */}
+
+          {/* Insert zones — edit mode only */}
+          {mode === 'edit' && colWidth > 0 && (
+            <CanvasInsertZone
+              blocks={doc.blocks}
+              colWidth={colWidth}
+              rowHeight={doc.rowHeight}
+              columnCount={doc.columnCount}
+              onInsert={(type, position) =>
+                doc.addBlock(type, position)
+              }
+            />
+          )}
 
         </div>
       </div>
