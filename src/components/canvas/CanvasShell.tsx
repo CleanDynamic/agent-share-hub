@@ -26,6 +26,7 @@ interface CanvasShellProps {
     f: File | null, p: string | null
   ) => void;
   onPostTypeClick?: () => void;
+  hideHeader?: boolean;
   // Edit mode actions
   onSave?: () => void;
   onPublish?: () => void;
@@ -165,7 +166,7 @@ export function CanvasShell(props: CanvasShellProps) {
       }}>
 
         {/* Document header */}
-        <CanvasHeader
+        {!props.hideHeader && <CanvasHeader
           mode={mode}
           title={title}
           description={description}
@@ -178,7 +179,7 @@ export function CanvasShell(props: CanvasShellProps) {
           }
           onPostTypeClick={props.onPostTypeClick}
           onCoverChange={props.onCoverChange}
-        />
+        />}
 
         {/* The grid */}
         <div

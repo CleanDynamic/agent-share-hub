@@ -81,7 +81,36 @@ export function useCanvasDocument(
       ]);
 
       if (blockData) {
-        setBlocksRaw((blockData as any[]).map(adaptDbBlock));
+        const adapted = (blockData as any[]).map(adaptDbBlock);
+        // Check if all blocks are at default position
+        // (old linear posts never had canvas positions set)
+        const allDefault = adapted.length > 0 && adapted.every(
+          b => b.position.col === 1
+            && b.position.row === 1
+            && b.position.colSpan === 12
+        );
+
+        if (allDefault) {
+          // Auto-assign sequential row positions
+          const linearLayout = adapted
+            .sort((a, b) => {
+              const aPos = (a as any).position ?? 0;
+              const bPos = (b as any).position ?? 0;
+              return aPos - bPos;
+            })
+            .map((block, i) => ({
+              ...block,
+              position: {
+                col: 1,
+                row: i * 4 + 1,
+                colSpan: 12,
+                rowSpan: 3,
+              },
+            }));
+          setBlocksRaw(linearLayout);
+        } else {
+          setBlocksRaw(adapted);
+        }
       }
       if (arrowData) {
         setArrows((arrowData as any[]).map(adaptDbArrow));
