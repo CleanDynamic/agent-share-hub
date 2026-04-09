@@ -56,7 +56,7 @@ const POST_TYPE_DISPLAY: Record<string, {
     blueprintLabel: 'Evidence',
   },
   discussion: {
-    label: 'Discussion', emoji: '💬', color: '#3B82F6',
+    label: 'Blog', emoji: '💬', color: '#3B82F6',
     bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.25)',
     blueprintLabel: 'Context',
   },
@@ -250,6 +250,7 @@ const Upload = () => {
   const [bountyDeadlineDays, setBountyDeadlineDays] = useState<number | null>(null);
   const [bountyGap, setBountyGap] = useState("");
   const [bountyBlueprintRequired, setBountyBlueprintRequired] = useState(true);
+  const [blueprintExpanded, setBlueprintExpanded] = useState(false);
   const [discussionThreads, setDiscussionThreads] = useState<string[]>(['']);
   const autosaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastAutosaveRef = useRef<Date | null>(null);
@@ -1141,7 +1142,13 @@ const Upload = () => {
             Blueprint expands to a sub-type picker
             (build / technique / discovery). */}
         {showTypeChooser && (() => {
-          const goNext = () => setTimeout(() => setShowTypeChooser(false), 220);
+          const goNext = () => {
+            // Default to 'build' if blueprint was chosen but no sub-type explicitly set
+            if (blueprintExpanded && !['build','technique','discovery'].includes(form.getValues('post_type'))) {
+              form.setValue('post_type', 'build');
+            }
+            setTimeout(() => setShowTypeChooser(false), 220);
+          };
 
           const UPLOAD_TYPES = [
             {
@@ -1162,6 +1169,12 @@ const Upload = () => {
               description: 'A challenge with a reward attached',
               color: '#F59E0B',
             },
+          ];
+
+          const BLUEPRINT_SUBTYPES = [
+            { value: 'build',     label: 'Build',     description: 'Something you made' },
+            { value: 'technique', label: 'Technique', description: 'A proven method' },
+            { value: 'discovery', label: 'Discovery', description: 'Something you found' },
           ];
 
           return (
@@ -1197,92 +1210,153 @@ const Upload = () => {
                 </div>
               </div>
 
-              {/* Three equal tiles — vertical stack */}
+              {/* Tiles — vertical stack with Blueprint sub-type expansion */}
               <div style={{
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 10,
               }}>
                 {UPLOAD_TYPES.map(type => {
-                  const isSelected = uploadType === type.value;
+                  const isBlueprintTile = type.value === 'blueprint';
+                  const isSelected = isBlueprintTile
+                    ? blueprintExpanded
+                    : uploadType === type.value;
                   return (
-                    <button
-                      key={type.value}
-                      type="button"
-                      onClick={() => {
-                        setUploadType(type.value as any);
-                        goNext();
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 16,
-                        padding: '18px 20px',
-                        borderRadius: 12,
-                        background: isSelected
-                          ? `${type.color}12`
-                          : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${isSelected
-                          ? type.color + '35'
-                          : 'rgba(255,255,255,0.07)'}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                        textAlign: 'left',
-                      }}
-                      onMouseEnter={e => {
-                        if (!isSelected) {
-                          (e.currentTarget as HTMLElement)
-                            .style.background =
-                            'rgba(255,255,255,0.05)';
-                          (e.currentTarget as HTMLElement)
-                            .style.borderColor =
-                            'rgba(255,255,255,0.12)';
-                        }
-                      }}
-                      onMouseLeave={e => {
-                        if (!isSelected) {
-                          (e.currentTarget as HTMLElement)
-                            .style.background =
-                            'rgba(255,255,255,0.03)';
-                          (e.currentTarget as HTMLElement)
-                            .style.borderColor =
-                            'rgba(255,255,255,0.07)';
-                        }
-                      }}
-                    >
-                      {/* Left: text */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          fontSize: 15, fontWeight: 700,
+                    <div key={type.value}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isBlueprintTile) {
+                            setUploadType('single');
+                            setBlueprintExpanded(true);
+                          } else {
+                            setBlueprintExpanded(false);
+                            setUploadType(type.value as any);
+                            goNext();
+                          }
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 16,
+                          padding: '18px 20px',
+                          borderRadius: 12,
+                          width: '100%',
+                          background: isSelected
+                            ? `${type.color}12`
+                            : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${isSelected
+                            ? type.color + '35'
+                            : 'rgba(255,255,255,0.07)'}`,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                          textAlign: 'left',
+                        }}
+                        onMouseEnter={e => {
+                          if (!isSelected) {
+                            (e.currentTarget as HTMLElement)
+                              .style.background =
+                              'rgba(255,255,255,0.05)';
+                            (e.currentTarget as HTMLElement)
+                              .style.borderColor =
+                              'rgba(255,255,255,0.12)';
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          if (!isSelected) {
+                            (e.currentTarget as HTMLElement)
+                              .style.background =
+                              'rgba(255,255,255,0.03)';
+                            (e.currentTarget as HTMLElement)
+                              .style.borderColor =
+                              'rgba(255,255,255,0.07)';
+                          }
+                        }}
+                      >
+                        {/* Left: text */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{
+                            fontSize: 15, fontWeight: 700,
+                            color: isSelected
+                              ? type.color
+                              : 'rgba(255,255,255,0.80)',
+                            marginBottom: 3,
+                            fontFamily:
+                              "'Playfair Display', Georgia, serif",
+                          }}>
+                            {type.label}
+                          </div>
+                          <div style={{
+                            fontSize: 12,
+                            color: 'rgba(255,255,255,0.35)',
+                            lineHeight: 1.5,
+                          }}>
+                            {type.description}
+                          </div>
+                        </div>
+
+                        {/* Right: arrow */}
+                        <span style={{
+                          fontSize: 16,
                           color: isSelected
                             ? type.color
-                            : 'rgba(255,255,255,0.80)',
-                          marginBottom: 3,
-                          fontFamily:
-                            "'Playfair Display', Georgia, serif",
+                            : 'rgba(255,255,255,0.20)',
+                          flexShrink: 0,
                         }}>
-                          {type.label}
-                        </div>
-                        <div style={{
-                          fontSize: 12,
-                          color: 'rgba(255,255,255,0.35)',
-                          lineHeight: 1.5,
-                        }}>
-                          {type.description}
-                        </div>
-                      </div>
+                          →
+                        </span>
+                      </button>
 
-                      {/* Right: arrow */}
-                      <span style={{
-                        fontSize: 16,
-                        color: isSelected
-                          ? type.color
-                          : 'rgba(255,255,255,0.20)',
-                        flexShrink: 0,
-                      }}>
-                        →
-                      </span>
-                    </button>
+                      {/* Blueprint sub-type picker — expands directly below Blueprint tile */}
+                      {isBlueprintTile && blueprintExpanded && (
+                        <div style={{
+                          marginLeft: 12,
+                          borderLeft: '2px solid rgba(232,87,26,0.25)',
+                          paddingLeft: 12,
+                          marginTop: 8,
+                          marginBottom: 2,
+                        }}>
+                          {BLUEPRINT_SUBTYPES.map(sub => {
+                            const subSelected = watchedPostType === sub.value;
+                            return (
+                              <button
+                                key={sub.value}
+                                type="button"
+                                onClick={() => {
+                                  form.setValue('post_type', sub.value as any);
+                                  goNext();
+                                }}
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  textAlign: 'left',
+                                  padding: '8px 12px',
+                                  borderRadius: 8,
+                                  fontSize: 13,
+                                  cursor: 'pointer',
+                                  marginBottom: 4,
+                                  background: subSelected
+                                    ? 'rgba(232,87,26,0.10)' : 'transparent',
+                                  border: subSelected
+                                    ? '1px solid rgba(232,87,26,0.25)'
+                                    : '1px solid transparent',
+                                  color: subSelected
+                                    ? '#E8571A' : 'rgba(255,255,255,0.55)',
+                                  transition: 'all 0.12s',
+                                }}
+                              >
+                                <div style={{ fontWeight: 600, marginBottom: 1 }}>
+                                  {sub.label}
+                                </div>
+                                <div style={{ fontSize: 11, opacity: 0.7 }}>
+                                  {sub.description}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -1715,7 +1789,6 @@ const Upload = () => {
                   transition: 'all 0.15s',
                 }}
               >
-                <span style={{ fontSize: 13 }}>📁</span>
                 {isProjectMode ? 'Project mode ON' : 'Make this a Project'}
               </button>
               {isProjectMode && (
@@ -1781,7 +1854,6 @@ const Upload = () => {
                         cursor: 'pointer',
                       }}
                     >
-                      <span style={{ fontSize: 12 }}>{typeInfo.emoji}</span>
                       <span style={{
                         fontSize: 10, fontWeight: 700,
                         color: ptConfig.color,
@@ -1850,7 +1922,7 @@ const Upload = () => {
                           (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.40)';
                         }}
                       >
-                        🖼 Add cover
+                        Add cover
                         <input
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
@@ -2054,7 +2126,7 @@ const Upload = () => {
                       padding: '0 8px',
                       opacity: 0.70,
                     }}>
-                      {cfg.emoji} {cfg.label}
+                      {cfg.label}
                     </div>
                     <div style={{
                       height: 1, flex: 1,
