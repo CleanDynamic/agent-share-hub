@@ -47,8 +47,8 @@ export function ExecutionPanel({
     null
   );
 
-  const promptText = block.textContent
-    || block.text_content ?? '';
+  const promptText = (block.textContent
+    || block.text_content) ?? '';
 
   const handleRun = async () => {
     if (!promptText.trim()) return;

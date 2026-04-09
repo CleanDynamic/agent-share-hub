@@ -37,14 +37,14 @@ export function VersionHistory({
   }, [open, contentId]);
 
   const loadVersions = async () => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('canvas_versions')
       .select('*')
       .eq('content_id', contentId)
       .order('version_number', { ascending: false })
       .limit(30);
     if (data) {
-      setVersions(data.map(v => ({
+      setVersions((data as any[]).map((v: any) => ({
         id: v.id,
         versionNumber: v.version_number,
         label: v.label ?? `v${v.version_number}`,

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { useNavigate } from 'react-router-dom'
-import { Heart, Repeat2 } from "lucide-react"
+import { Heart, Repeat2, MoreHorizontal } from "lucide-react"
 import { AccountHoverCard } from "@/components/account-hover-card"
 import { useAuth } from "@/contexts/AuthContext"
 import { useQuery } from "@tanstack/react-query"
@@ -167,7 +167,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
   // Load initial saved state
   useEffect(() => {
     if (!user) return;
-    supabase
+    (supabase as any)
       .from('saved_items')
       .select('id')
       .eq('user_id', user.id)
@@ -575,14 +575,14 @@ export function FeedCard({ post }: { post: FeedPost }) {
               return;
             }
             if (saved) {
-              await supabase
+              await (supabase as any)
                 .from('saved_items')
                 .delete()
                 .eq('user_id', user.id)
                 .eq('content_id', post.id);
               setSaved(false);
             } else {
-              await supabase
+              await (supabase as any)
                 .from('saved_items')
                 .insert({
                   user_id: user.id,
