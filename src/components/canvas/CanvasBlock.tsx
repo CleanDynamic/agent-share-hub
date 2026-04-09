@@ -7,37 +7,20 @@ import { BlockViewerInCanvas } from './BlockViewerInCanvas';
 import { ExecutionPanel } from './ExecutionPanel';
 
 const BLOCK_TYPE_LABELS: Record<string, string> = {
-  prompt: 'Prompt',
-  code: 'Code',
-  text: 'Text',
-  long_text: 'Long Text',
-  image: 'Image',
-  result: 'Result',
-  comparison: 'Comparison',
-  agent_config: 'Agent Config',
-  workflow: 'Workflow',
-  model_params: 'Model Params',
-  tool_setup: 'Tool Setup',
-  resource: 'Resource',
-  tutorial_step: 'Tutorial Step',
+  prompt: 'Prompt', code: 'Code', text: 'Text', long_text: 'Long Text',
+  image: 'Image', result: 'Result', comparison: 'Comparison',
+  agent_config: 'Agent Config', workflow: 'Workflow', model_params: 'Model Params',
+  tool_setup: 'Tool Setup', resource: 'Resource', tutorial_step: 'Tutorial Step',
   section_heading: 'Heading',
 };
 
 const BLOCK_ICONS: Record<string, React.ReactNode> = {
-  prompt: <Zap size={14} />,
-  code: <Code2 size={14} />,
-  text: <FileText size={14} />,
-  long_text: <FileText size={14} />,
-  image: <Image size={14} />,
-  result: <ListChecks size={14} />,
-  comparison: <GitCompare size={14} />,
-  agent_config: <Bot size={14} />,
-  workflow: <Workflow size={14} />,
-  model_params: <SlidersHorizontal size={14} />,
-  tool_setup: <Wrench size={14} />,
-  resource: <BookOpen size={14} />,
-  tutorial_step: <ListChecks size={14} />,
-  section_heading: <Type size={14} />,
+  prompt: <Zap size={14} />, code: <Code2 size={14} />, text: <FileText size={14} />,
+  long_text: <FileText size={14} />, image: <Image size={14} />, result: <ListChecks size={14} />,
+  comparison: <GitCompare size={14} />, agent_config: <Bot size={14} />,
+  workflow: <Workflow size={14} />, model_params: <SlidersHorizontal size={14} />,
+  tool_setup: <Wrench size={14} />, resource: <BookOpen size={14} />,
+  tutorial_step: <ListChecks size={14} />, section_heading: <Type size={14} />,
 };
 
 interface CanvasBlockProps {
@@ -50,6 +33,8 @@ interface CanvasBlockProps {
   stages: CanvasStage[];
   postType: string;
   showAnnotations?: boolean;
+  selected?: boolean;
+  onSelect?: () => void;
   onPositionChange: (p: BlockPosition) => void;
   onBlockChange: (patch: Partial<CanvasBlockType>) => void;
   onDelete: () => void;
@@ -63,6 +48,7 @@ interface CanvasBlockProps {
 export function CanvasBlock({
   block, mode, colWidth, rowHeight, columnCount,
   allBlocks, stages, postType, showAnnotations,
+  selected, onSelect,
   onPositionChange, onBlockChange, onDelete,
   onArrowDrawStart, isArrowDrawing, onArrowDrawEnd,
   onAssignStage, onInsertResultBlock,
@@ -80,7 +66,6 @@ export function CanvasBlock({
   const px = gridToPixels(block.position, colWidth, rowHeight);
   const inset = 4;
 
-  // Block type colour for accent
   const BLOCK_ACCENT: Record<string, string> = {
     prompt: '#E8571A', code: '#3B82F6', result: '#22C55E',
     agent_config: '#7C3AED', workflow: '#2EC4B6', comparison: '#EC4899',
@@ -157,10 +142,13 @@ export function CanvasBlock({
 
   const ghostPx = ghost ? gridToPixels(ghost, colWidth, rowHeight) : null;
 
-  // Preview snippet for compact card
-  const previewText = block.subheading || block.textContent?.slice(0, 60) || '';
   const typeLabel = BLOCK_TYPE_LABELS[block.type] ?? block.type;
   const icon = BLOCK_ICONS[block.type] ?? <FileText size={14} />;
+
+  // Selection ring style
+  const selectionBorder = selected
+    ? '2px solid rgba(232,87,26,0.70)'
+    : hovered ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(255,255,255,0.06)';
 
   return (
     <>
@@ -177,10 +165,20 @@ export function CanvasBlock({
 
       {/* The block */}
       <div
+        data-canvas-block
         id={`canvas-block-${block.id}`}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => { setHovered(false); setStagePickerOpen(false); }}
         onMouseDown={handleDragMouseDown}
+        onClick={(e) => {
+          if (mode === 'edit') {
+            e.stopPropagation();
+            onSelect?.();
+          }
+        }}
+        onDoubleClick={() => {
+          if (mode === 'edit') setEditModalOpen(true);
+        }}
         style={{
           position: 'absolute',
           left: px.x + inset, top: px.y + inset,
@@ -194,16 +192,17 @@ export function CanvasBlock({
         {mode === 'edit' ? (
           /* ── EDIT MODE: Compact card ── */
           <div
-            onClick={() => setEditModalOpen(true)}
             style={{
               height: '100%',
-              background: 'rgba(14,14,20,0.85)',
-              border: hovered ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(255,255,255,0.06)',
+              background: selected ? 'rgba(232,87,26,0.06)' : 'rgba(14,14,20,0.85)',
+              border: selectionBorder,
               borderRadius: 8,
               overflow: 'hidden',
               cursor: 'pointer',
               transition: 'border-color 0.15s, box-shadow 0.15s',
-              boxShadow: hovered ? '0 4px 20px rgba(0,0,0,0.3)' : 'none',
+              boxShadow: selected
+                ? '0 0 0 1px rgba(232,87,26,0.30), 0 4px 20px rgba(0,0,0,0.3)'
+                : hovered ? '0 4px 20px rgba(0,0,0,0.3)' : 'none',
               display: 'flex',
               flexDirection: 'column',
               position: 'relative',
@@ -252,7 +251,7 @@ export function CanvasBlock({
               </div>
             </div>
 
-            {/* Optional grid note — shown below title row if block has text content */}
+            {/* Optional grid note */}
             {block.textContent && (
               <div style={{
                 padding: '0 8px 4px 30px',
@@ -265,7 +264,7 @@ export function CanvasBlock({
             )}
 
             {/* Hover toolbar */}
-            {hovered && (
+            {(hovered || selected) && (
               <div
                 onClick={e => e.stopPropagation()}
                 style={{
@@ -292,6 +291,18 @@ export function CanvasBlock({
                   }}
                 >
                   {deleteConfirm ? '✕' : 'Del'}
+                </button>
+
+                {/* Edit button */}
+                <button
+                  onClick={e => { e.stopPropagation(); setEditModalOpen(true); }}
+                  style={{
+                    background: 'none', border: 'none',
+                    color: 'rgba(255,255,255,0.35)',
+                    cursor: 'pointer', fontSize: 10, padding: '1px 4px',
+                  }}
+                >
+                  Edit
                 </button>
 
                 {stages.length > 0 && (
@@ -357,7 +368,6 @@ export function CanvasBlock({
             backdropFilter: 'blur(4px)',
             position: 'relative',
           }}>
-            {/* Annotation indicator */}
             {showAnnotations && block.creatorAnnotation && (
               <div title={block.creatorAnnotation} style={{
                 position: 'absolute', top: 8, right: 8, width: 18, height: 18,
@@ -377,7 +387,6 @@ export function CanvasBlock({
               )}
             </div>
 
-            {/* Locked overlay */}
             {block.isLocked && block.lockType === 'blur' && (
               <div style={{
                 position: 'absolute', inset: 0, backdropFilter: 'blur(8px)',
@@ -396,24 +405,24 @@ export function CanvasBlock({
             <div onMouseDown={handleResizeRight} style={{
               position: 'absolute', right: -2, top: '20%', height: '60%', width: 5,
               cursor: 'ew-resize', background: 'rgba(232,87,26,0.60)', borderRadius: 2, zIndex: 25,
-              opacity: hovered ? 1 : 0.2, transition: 'opacity 0.15s',
+              opacity: hovered || selected ? 1 : 0.2, transition: 'opacity 0.15s',
             }} />
             <div onMouseDown={handleResizeBottom} style={{
               position: 'absolute', bottom: -2, left: '20%', width: '60%', height: 5,
               cursor: 'ns-resize', background: 'rgba(232,87,26,0.60)', borderRadius: 2, zIndex: 25,
-              opacity: hovered ? 1 : 0.2, transition: 'opacity 0.15s',
+              opacity: hovered || selected ? 1 : 0.2, transition: 'opacity 0.15s',
             }} />
             <div onMouseDown={e => { handleResizeRight(e); handleResizeBottom(e); }} style={{
               position: 'absolute', bottom: -3, right: -3, width: 7, height: 7,
               cursor: 'se-resize', background: '#E8571A', borderRadius: '50%', zIndex: 26,
               border: '2px solid rgba(6,6,10,0.80)',
-              opacity: hovered ? 1 : 0.25, transition: 'opacity 0.15s',
+              opacity: hovered || selected ? 1 : 0.25, transition: 'opacity 0.15s',
             }} />
           </>
         )}
 
         {/* ── Connection points for arrows ── */}
-        {mode === 'edit' && hovered && (
+        {mode === 'edit' && (hovered || selected) && (
           <>
             {(['top', 'right', 'bottom', 'left'] as const).map(edge => {
               const edgeStyle = {

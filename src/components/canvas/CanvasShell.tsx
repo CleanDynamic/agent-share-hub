@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { CanvasTOC } from './CanvasTOC';
 import { CanvasToolbar } from './CanvasToolbar';
@@ -12,11 +12,11 @@ import { TemplateLibrary } from './TemplateLibrary';
 import { VersionHistory } from './VersionHistory';
 import { AnnotationsList } from './AnnotationsList';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
+import { readingOrder } from '@/lib/canvas-utils';
 
 interface CanvasShellProps {
   mode: 'edit' | 'view';
   doc: ReturnType<typeof useCanvasDocument>;
-  // Header props
   title: string;
   description: string;
   postType: string;
@@ -30,7 +30,6 @@ interface CanvasShellProps {
   onPostTypeClick?: () => void;
   hideHeader?: boolean;
   showAnnotations?: boolean;
-  // Edit mode actions
   onSave?: () => void;
   onPublish?: () => void;
   saving?: boolean;
@@ -44,17 +43,15 @@ export function CanvasShell(props: CanvasShellProps) {
   } = props;
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] =
-    useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
   const [tocOpen, setTocOpen] = useState(true);
-  const [templateLibOpen, setTemplateLibOpen] =
-    useState(false);
-  const [versionHistoryOpen, setVersionHistoryOpen] =
-    useState(false);
-  const [annotationsOpen, setAnnotationsOpen] =
-    useState(false);
-  const [activeStageTab, setActiveStageTab] =
-    useState<string | null>(null); // null = "All"
+  const [templateLibOpen, setTemplateLibOpen] = useState(false);
+  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
+  const [annotationsOpen, setAnnotationsOpen] = useState(false);
+  const [activeStageTab, setActiveStageTab] = useState<string | null>(null);
+
+  // ── Selection ───────────────────────────────────
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
   // Zoom
   const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25];
@@ -68,16 +65,126 @@ export function CanvasShell(props: CanvasShellProps) {
     return i > 0 ? ZOOM_LEVELS[i - 1] : z;
   });
 
+  // ── Keyboard shortcuts ──────────────────────────
   useEffect(() => {
+    if (mode !== 'edit') return;
+
     const handler = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey)) return;
-      if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomIn(); }
-      if (e.key === '-') { e.preventDefault(); zoomOut(); }
-      if (e.key === '0') { e.preventDefault(); setZoom(1.0); }
+      const meta = e.metaKey || e.ctrlKey;
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
+      // Zoom shortcuts (always active)
+      if (meta) {
+        if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomIn(); return; }
+        if (e.key === '-') { e.preventDefault(); zoomOut(); return; }
+        if (e.key === '0') { e.preventDefault(); setZoom(1.0); return; }
+      }
+
+      // Don't handle block shortcuts if typing in an input
+      if (isInput) return;
+
+      // Undo / Redo
+      if (meta && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        doc.undo();
+        return;
+      }
+      if (meta && e.key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        doc.redo();
+        return;
+      }
+
+      // Escape — deselect
+      if (e.key === 'Escape') {
+        setSelectedBlockId(null);
+        return;
+      }
+
+      // Select all
+      if (meta && e.key === 'a') {
+        e.preventDefault();
+        // Just select first block for now (multi-select is complex)
+        if (filteredBlocks.length > 0) {
+          setSelectedBlockId(filteredBlocks[0].id);
+        }
+        return;
+      }
+
+      if (!selectedBlockId) {
+        // Tab to select first block
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const sorted = readingOrder([...filteredBlocks]);
+          if (sorted.length > 0) setSelectedBlockId(sorted[0].id);
+        }
+        return;
+      }
+
+      // Backspace / Delete — delete selected block
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        doc.deleteBlock(selectedBlockId);
+        setSelectedBlockId(null);
+        return;
+      }
+
+      // Ctrl+D — duplicate
+      if (meta && e.key === 'd') {
+        e.preventDefault();
+        const newId = doc.duplicateBlock(selectedBlockId);
+        if (newId) setSelectedBlockId(newId);
+        return;
+      }
+
+      // Arrow keys — nudge
+      const block = doc.blocks.find(b => b.id === selectedBlockId);
+      if (!block) return;
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        const newCol = Math.min(doc.columnCount - block.position.colSpan + 1, block.position.col + 1);
+        if (newCol !== block.position.col) {
+          doc.moveBlock(block.id, { ...block.position, col: newCol });
+        }
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const newCol = Math.max(1, block.position.col - 1);
+        if (newCol !== block.position.col) {
+          doc.moveBlock(block.id, { ...block.position, col: newCol });
+        }
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        doc.moveBlock(block.id, { ...block.position, row: block.position.row + 1 });
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const newRow = Math.max(1, block.position.row - 1);
+        doc.moveBlock(block.id, { ...block.position, row: newRow });
+        return;
+      }
+
+      // Tab — cycle to next block
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const sorted = readingOrder([...filteredBlocks]);
+        const idx = sorted.findIndex(b => b.id === selectedBlockId);
+        const next = e.shiftKey
+          ? sorted[(idx - 1 + sorted.length) % sorted.length]
+          : sorted[(idx + 1) % sorted.length];
+        if (next) setSelectedBlockId(next.id);
+        return;
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []);
+  }, [mode, selectedBlockId, doc, zoom]);
 
   // ── Arrow drawing state ───────────────────────────
   const [drawingFrom, setDrawingFrom] = useState<{
@@ -92,7 +199,6 @@ export function CanvasShell(props: CanvasShellProps) {
     fromEdge: 'top'|'right'|'bottom'|'left';
   } | null>(null);
 
-  // Track mouse position for live arrow drawing
   const handleCanvasMouseMove = (
     e: React.MouseEvent<HTMLDivElement>
   ) => {
@@ -150,7 +256,23 @@ export function CanvasShell(props: CanvasShellProps) {
     ? doc.blocks.filter(b => b.stageId === activeStageTab)
     : doc.blocks;
 
-  // Total canvas height: extent of all blocks + buffer
+  // When a stage is deleted, reset tab
+  useEffect(() => {
+    if (activeStageTab && !doc.stages.find(s => s.id === activeStageTab)) {
+      setActiveStageTab(null);
+    }
+  }, [doc.stages, activeStageTab]);
+
+  // Handle inserting block with stage auto-assignment
+  const handleInsertBlock = useCallback((type: string, position: Partial<CanvasBlockType['position']>) => {
+    const id = doc.addBlock(type, position);
+    if (activeStageTab) {
+      doc.assignBlockToStage(id, activeStageTab);
+    }
+    return id;
+  }, [doc, activeStageTab]);
+
+  // Total canvas height
   const canvasHeight = filteredBlocks.length === 0
     ? 600
     : Math.max(
@@ -165,6 +287,12 @@ export function CanvasShell(props: CanvasShellProps) {
 
   const colWidth = containerWidth > 0
     ? containerWidth / doc.columnCount : 0;
+
+  // Deselect when clicking empty canvas
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('[data-canvas-block]')) return;
+    setSelectedBlockId(null);
+  };
 
   return (
     <div style={{
@@ -183,6 +311,7 @@ export function CanvasShell(props: CanvasShellProps) {
         blocks={doc.blocks}
         mode={mode}
         onBlockClick={blockId => {
+          setSelectedBlockId(blockId);
           document.getElementById(`canvas-block-${blockId}`)
             ?.scrollIntoView({
               behavior: 'smooth', block: 'center'
@@ -267,6 +396,20 @@ export function CanvasShell(props: CanvasShellProps) {
           </div>
         )}
 
+        {/* Empty stage state */}
+        {mode === 'edit' && activeStageTab && filteredBlocks.length === 0 && (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', padding: '60px 20px', gap: 8,
+            color: 'rgba(255,255,255,0.30)', fontSize: 13,
+          }}>
+            <div>No blocks in this stage yet</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)' }}>
+              Add a block from the toolbar or assign existing blocks to this stage
+            </div>
+          </div>
+        )}
+
         {/* The grid */}
         <div
           ref={containerRef}
@@ -275,6 +418,7 @@ export function CanvasShell(props: CanvasShellProps) {
             setDrawingFrom(null);
             setMousePos(null);
           }}
+          onClick={handleCanvasClick}
           style={{
             position: 'relative',
             flex: 1,
@@ -345,6 +489,8 @@ export function CanvasShell(props: CanvasShellProps) {
               stages={doc.stages}
               postType={postType}
               showAnnotations={props.showAnnotations}
+              selected={selectedBlockId === block.id}
+              onSelect={() => setSelectedBlockId(block.id)}
               onPositionChange={pos =>
                 doc.moveBlock(block.id, pos)
               }
@@ -419,7 +565,7 @@ export function CanvasShell(props: CanvasShellProps) {
               rowHeight={doc.rowHeight}
               columnCount={doc.columnCount}
               onInsert={(type, position) =>
-                doc.addBlock(type, position)
+                handleInsertBlock(type, position)
               }
             />
           )}
@@ -444,8 +590,10 @@ export function CanvasShell(props: CanvasShellProps) {
           onBack={props.onBack}
           blockCount={doc.blocks.length}
           onInsertBlock={(type, position) =>
-            doc.addBlock(type, position)
+            handleInsertBlock(type, position)
           }
+          onUndo={doc.canUndo ? doc.undo : undefined}
+          onRedo={doc.canRedo ? doc.redo : undefined}
         />
       )}
 

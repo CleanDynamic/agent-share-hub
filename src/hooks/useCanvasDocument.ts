@@ -12,6 +12,14 @@ import {
   readingOrder, positionsOverlap,
 } from '@/lib/canvas-utils';
 
+interface CanvasSnapshot {
+  blocks: CanvasBlock[];
+  arrows: BlockArrow[];
+  stages: CanvasStage[];
+}
+
+const MAX_UNDO = 50;
+
 export function useCanvasDocument(
   contentId: string | null
 ) {
@@ -33,6 +41,58 @@ export function useCanvasDocument(
   const autosaveTimer = useRef<ReturnType<
     typeof setTimeout
   > | null>(null);
+
+  // ── Undo / Redo ─────────────────────────────────
+  const undoStack = useRef<CanvasSnapshot[]>([]);
+  const redoStack = useRef<CanvasSnapshot[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  const pushUndo = useCallback(() => {
+    undoStack.current.push({
+      blocks: [...blocksRaw],
+      arrows: [...arrows],
+      stages: [...stages],
+    });
+    if (undoStack.current.length > MAX_UNDO) {
+      undoStack.current.shift();
+    }
+    redoStack.current = [];
+    setCanUndo(true);
+    setCanRedo(false);
+  }, [blocksRaw, arrows, stages]);
+
+  const undo = useCallback(() => {
+    const snap = undoStack.current.pop();
+    if (!snap) return;
+    redoStack.current.push({
+      blocks: [...blocksRaw],
+      arrows: [...arrows],
+      stages: [...stages],
+    });
+    setBlocksRaw(snap.blocks);
+    setArrows(snap.arrows);
+    setStages(snap.stages);
+    setIsDirty(true);
+    setCanUndo(undoStack.current.length > 0);
+    setCanRedo(true);
+  }, [blocksRaw, arrows, stages]);
+
+  const redo = useCallback(() => {
+    const snap = redoStack.current.pop();
+    if (!snap) return;
+    undoStack.current.push({
+      blocks: [...blocksRaw],
+      arrows: [...arrows],
+      stages: [...stages],
+    });
+    setBlocksRaw(snap.blocks);
+    setArrows(snap.arrows);
+    setStages(snap.stages);
+    setIsDirty(true);
+    setCanRedo(redoStack.current.length > 0);
+    setCanUndo(true);
+  }, [blocksRaw, arrows, stages]);
 
   // Derived: blocks with stage indices assigned
   const blocks = useMemo(
@@ -82,8 +142,6 @@ export function useCanvasDocument(
 
       if (blockData) {
         const adapted = (blockData as any[]).map(adaptDbBlock);
-        // Check if all blocks are at default position
-        // (old linear posts never had canvas positions set)
         const allDefault = adapted.length > 0 && adapted.every(
           b => b.position.col === 1
             && b.position.row === 1
@@ -91,7 +149,6 @@ export function useCanvasDocument(
         );
 
         if (allDefault) {
-          // Auto-assign sequential row positions
           const linearLayout = adapted
             .sort((a, b) => {
               const aPos = (a as any).position ?? 0;
@@ -130,6 +187,11 @@ export function useCanvasDocument(
           item.canvas_layout_mode ?? 'freeform'
         );
       }
+      // Clear undo/redo on load
+      undoStack.current = [];
+      redoStack.current = [];
+      setCanUndo(false);
+      setCanRedo(false);
     } finally {
       setLoading(false);
     }
@@ -149,6 +211,7 @@ export function useCanvasDocument(
 
   const addBlock = useCallback(
     (type: string, position?: Partial<BlockPosition>) => {
+      pushUndo();
       const nextRow = getNextRow(blocksRaw);
       const newBlock: CanvasBlock = {
         id: crypto.randomUUID(),
@@ -171,22 +234,24 @@ export function useCanvasDocument(
       setBlocks(prev => [...prev, newBlock]);
       return newBlock.id;
     },
-    [blocksRaw, setBlocks]
+    [blocksRaw, setBlocks, pushUndo]
   );
 
   const updateBlock = useCallback(
     (id: string, patch: Partial<CanvasBlock>) => {
+      pushUndo();
       setBlocks(prev =>
         prev.map(b =>
           b.id === id ? { ...b, ...patch } : b
         )
       );
     },
-    [setBlocks]
+    [setBlocks, pushUndo]
   );
 
   const deleteBlock = useCallback(
     (id: string) => {
+      pushUndo();
       setBlocks(prev => prev.filter(b => b.id !== id));
       setArrows(prev =>
         prev.filter(
@@ -201,7 +266,7 @@ export function useCanvasDocument(
         }))
       );
     },
-    [setBlocks]
+    [setBlocks, pushUndo]
   );
 
   const moveBlock = useCallback(
@@ -211,14 +276,36 @@ export function useCanvasDocument(
           positionsOverlap(position, b.position)
       );
       if (wouldCollide) return false;
+      pushUndo();
       updateBlock(id, { position });
       return true;
     },
-    [blocksRaw, updateBlock]
+    [blocksRaw, updateBlock, pushUndo]
+  );
+
+  // ── Duplicate block ───────────────────────────────
+  const duplicateBlock = useCallback(
+    (id: string) => {
+      const source = blocksRaw.find(b => b.id === id);
+      if (!source) return null;
+      pushUndo();
+      const newBlock: CanvasBlock = {
+        ...source,
+        id: crypto.randomUUID(),
+        position: {
+          ...source.position,
+          row: source.position.row + source.position.rowSpan + 1,
+        },
+      };
+      setBlocks(prev => [...prev, newBlock]);
+      return newBlock.id;
+    },
+    [blocksRaw, setBlocks, pushUndo]
   );
 
   // ── Stage operations ──────────────────────────────
   const addStage = useCallback((title: string) => {
+    pushUndo();
     const newStage: CanvasStage = {
       id: crypto.randomUUID(),
       contentId: contentId ?? '',
@@ -234,11 +321,21 @@ export function useCanvasDocument(
     };
     setStages(prev => [...prev, newStage]);
     setIsDirty(true);
-  }, [stages, contentId]);
+  }, [stages, contentId, pushUndo]);
+
+  const deleteStage = useCallback((stageId: string) => {
+    pushUndo();
+    // Unassign blocks from this stage
+    setBlocksRaw(prev => prev.map(b =>
+      b.stageId === stageId ? { ...b, stageId: null } : b
+    ));
+    setStages(prev => prev.filter(s => s.id !== stageId));
+    setIsDirty(true);
+  }, [pushUndo]);
 
   const assignBlockToStage = useCallback(
     (blockId: string, stageId: string | null) => {
-      // Remove from all stages first
+      pushUndo();
       setStages(prev =>
         prev.map(s => ({
           ...s,
@@ -247,7 +344,6 @@ export function useCanvasDocument(
           ),
         }))
       );
-      // Add to target stage
       if (stageId) {
         setStages(prev =>
           prev.map(s =>
@@ -260,7 +356,7 @@ export function useCanvasDocument(
       updateBlock(blockId, { stageId });
       setIsDirty(true);
     },
-    [updateBlock]
+    [updateBlock, pushUndo]
   );
 
   // ── Arrow operations ──────────────────────────────
@@ -272,6 +368,7 @@ export function useCanvasDocument(
       toEdge: BlockArrow['toEdge'],
       arrowType: ArrowType = 'produces'
     ) => {
+      pushUndo();
       const meta = ARROW_TYPE_META[arrowType];
       const arrow: BlockArrow = {
         id: crypto.randomUUID(),
@@ -287,7 +384,7 @@ export function useCanvasDocument(
       setIsDirty(true);
       return arrow.id;
     },
-    []
+    [pushUndo]
   );
 
   // ── Save ──────────────────────────────────────────
@@ -304,7 +401,6 @@ export function useCanvasDocument(
     id: string,
     silent = false
   ) => {
-    // Upsert all blocks with canvas positions
     for (const block of blocks) {
       await supabase
         .from('content_blocks')
@@ -330,7 +426,6 @@ export function useCanvasDocument(
         } as any);
     }
 
-    // Rebuild arrows
     await supabase
       .from('canvas_arrows' as any)
       .delete()
@@ -346,7 +441,6 @@ export function useCanvasDocument(
         );
     }
 
-    // Rebuild stages
     await supabase
       .from('canvas_stages' as any)
       .delete()
@@ -369,7 +463,6 @@ export function useCanvasDocument(
         );
     }
 
-    // Update content_items canvas config
     await supabase
       .from('content_items')
       .update({
@@ -445,13 +538,16 @@ export function useCanvasDocument(
     updateBlock,
     deleteBlock,
     moveBlock,
+    duplicateBlock,
     addStage,
+    deleteStage,
     assignBlockToStage,
     addArrow,
     saveDocument,
     saveVersion,
     restoreSnapshot,
     loadDocument,
+    undo, redo, canUndo, canRedo,
   };
 }
 
@@ -485,7 +581,6 @@ function adaptDbBlock(row: any): CanvasBlock {
     mobileOrder: row.mobile_order ?? null,
     creatorAnnotation:
       row.creator_annotation ?? null,
-    // Spread all other DB columns
     ...row,
   };
 }
