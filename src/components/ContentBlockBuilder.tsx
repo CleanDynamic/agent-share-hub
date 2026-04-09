@@ -1769,6 +1769,7 @@ const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   file: "File",
   github: "GitHub",
   large_file: "Large File",
+  tutorial_step: "Tutorial Step",
 };
 
 // ─── Per-block use instructions toggle ──────────────────────
