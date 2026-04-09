@@ -569,8 +569,8 @@ const ImagePicker = ({ imageFile, imagePreview, imageDescription, onImageChange,
           <input type="file" accept={ACCEPTED_IMAGE_TYPES} onChange={handleChange} className="hidden" />
         </label>
       )}
-      <Input value={imageDescription} onChange={(e) => { if (e.target.value.length <= DESC_MAX) onDescriptionChange(e.target.value); }} placeholder="Describe what this image shows" className="bg-background border-border rounded-xl text-sm" maxLength={DESC_MAX} />
-      <span className="text-xs text-muted-foreground">{imageDescription.length} / {DESC_MAX}</span>
+      <Input value={imageDescription ?? ''} onChange={(e) => { if (e.target.value.length <= DESC_MAX) onDescriptionChange(e.target.value); }} placeholder="Describe what this image shows" className="bg-background border-border rounded-xl text-sm" maxLength={DESC_MAX} />
+      <span className="text-xs text-muted-foreground">{(imageDescription ?? '').length} / {DESC_MAX}</span>
     </div>
   );
 };
@@ -1009,9 +1009,20 @@ const PromptBlockEditor = ({ block, update, index }: {
 
 // ─── Agent config block editor ───────────────────────────────
 
-const AgentBlockEditor = ({ block, update, index }: {
+const AgentBlockEditor = ({ block: rawBlock, update, index }: {
   block: ContentBlock; update: (i: number, p: Partial<ContentBlock>) => void; index: number;
 }) => {
+  // Defensive defaults for fields that may be undefined when used from canvas
+  const block = {
+    ...rawBlock,
+    agentTools: rawBlock.agentTools ?? [],
+    agentCapabilities: rawBlock.agentCapabilities ?? [],
+    agentModel: rawBlock.agentModel ?? '',
+    agentTemperature: rawBlock.agentTemperature ?? 0.7,
+    agentMaxTokens: rawBlock.agentMaxTokens ?? 4000,
+    agentMemoryType: rawBlock.agentMemoryType ?? 'conversation',
+    textContent: rawBlock.textContent ?? '',
+  };
   const AGENT_TOOLS = ['Web Search','Code Interpreter','Image Generation',
     'File Reading','Calculator','Email','Calendar','Browser'];
 
@@ -1201,9 +1212,16 @@ const STEP_TYPE_CONFIG = {
   decision:  { color: '#F59E0B', label: 'Decision',  emoji: '◆' },
 };
 
-const WorkflowBlockEditor = ({ block, update, index }: {
+const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
   block: ContentBlock; update: (i: number, p: Partial<ContentBlock>) => void; index: number;
 }) => {
+  // Defensive defaults for fields that may be undefined when used from canvas
+  const block = {
+    ...rawBlock,
+    workflowSteps: rawBlock.workflowSteps ?? [],
+    workflowTrigger: rawBlock.workflowTrigger ?? '',
+    workflowOutput: rawBlock.workflowOutput ?? '',
+  };
   const addStep = () => update(index, {
     workflowSteps: [...block.workflowSteps, {
       id: uid(), title: '', description: '',

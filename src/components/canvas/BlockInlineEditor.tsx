@@ -16,6 +16,7 @@ import {
   ToolSetupEditor,
   ResourceEditor,
   TutorialStepEditor,
+  emptyBlock,
 } from '@/components/ContentBlockBuilder';
 
 interface BlockInlineEditorProps {
@@ -30,6 +31,11 @@ export function BlockInlineEditor({
   // (index, patch) signature. We adapt here.
   const update = (_: number, patch: any) =>
     onChange(patch);
+
+  // Merge defaults from emptyBlock so editors
+  // never access undefined array/string fields
+  const defaults = emptyBlock(block.type as any);
+  const safeBlock = { ...defaults, ...block } as any;
 
   // Subheading input — shown above all editors
   // except section_heading (which IS a heading)
@@ -80,9 +86,9 @@ export function BlockInlineEditor({
       {block.type === 'text' ||
        block.type === 'long_text' ? (
         <TextEditor
-          value={block.textContent}
-          formatting={block.formatting}
-          subBlocks={block.subBlocks}
+          value={safeBlock.textContent}
+          formatting={safeBlock.formatting}
+          subBlocks={safeBlock.subBlocks}
           onTextChange={v =>
             onChange({ textContent: v })
           }
@@ -95,21 +101,21 @@ export function BlockInlineEditor({
         />
       ) : block.type === 'prompt' ? (
         <PromptBlockEditor
-          block={block as any}
+          block={safeBlock}
           update={update}
           index={0}
         />
       ) : block.type === 'code' ? (
         <CodeBlockEditor
-          block={block as any}
+          block={safeBlock}
           update={update}
           index={0}
         />
       ) : block.type === 'image' ? (
         <ImagePicker
-          imageFile={block.imageFile}
-          imagePreview={block.imagePreview}
-          imageDescription={block.imageDescription}
+          imageFile={safeBlock.imageFile}
+          imagePreview={safeBlock.imagePreview}
+          imageDescription={safeBlock.imageDescription}
           onImageChange={(f, preview) =>
             onChange({
               imageFile: f,
@@ -122,56 +128,56 @@ export function BlockInlineEditor({
         />
       ) : block.type === 'result' ? (
         <ResultBlockEditor
-          block={block as any}
+          block={safeBlock}
           update={update}
           index={0}
         />
       ) : block.type === 'comparison' ? (
         <ComparisonEditor
-          block={block as any}
+          block={safeBlock}
           update={update}
           index={0}
         />
       ) : block.type === 'agent_config' ? (
         <AgentConfigEditor
-          block={block as any}
+          block={safeBlock}
           update={update}
           index={0}
         />
       ) : block.type === 'workflow' ? (
         <WorkflowEditor
-          block={block as any}
+          block={safeBlock}
           update={update}
           index={0}
         />
       ) : block.type === 'model_params' ? (
         <ModelParamsEditor
-          block={block as any}
+          block={safeBlock}
           update={update}
           index={0}
         />
       ) : block.type === 'tool_setup' ? (
         <ToolSetupEditor
-          block={block as any}
+          block={safeBlock}
           update={update}
           index={0}
         />
       ) : block.type === 'resource' ? (
         <ResourceEditor
-          block={block as any}
+          block={safeBlock}
           update={update}
           index={0}
         />
       ) : block.type === 'tutorial_step' ? (
         <TutorialStepEditor
-          block={block as any}
+          block={safeBlock}
           update={update}
           index={0}
         />
       ) : (
         /* Fallback for unknown types */
         <textarea
-          value={block.textContent}
+          value={safeBlock.textContent}
           onChange={e =>
             onChange({ textContent: e.target.value })
           }
