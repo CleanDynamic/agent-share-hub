@@ -20,6 +20,51 @@ const BLOCK_ICONS: Record<string, string> = {
   image: '🖼', resource: '🔗', section_heading: '§',
 };
 
+// ─── Copyable block types ──────────────────────────────────
+
+const COPYABLE_TYPES = new Set([
+  'prompt', 'code', 'text', 'long_text',
+  'result', 'agent_config', 'workflow',
+  'model_params', 'tool_setup',
+]);
+
+// ─── Copy button ───────────────────────────────────────────
+
+function CopyButton({
+  getText
+}: { getText: () => string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={async () => {
+        await navigator.clipboard.writeText(getText());
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }}
+      style={{
+        position: 'absolute',
+        top: 12, right: 12,
+        fontSize: 10, padding: '3px 10px',
+        borderRadius: 5, cursor: 'pointer',
+        background: copied
+          ? 'rgba(34,197,94,0.15)'
+          : 'rgba(255,255,255,0.06)',
+        border: `1px solid ${copied
+          ? 'rgba(34,197,94,0.35)'
+          : 'rgba(255,255,255,0.10)'}`,
+        color: copied
+          ? '#22C55E' : 'rgba(255,255,255,0.45)',
+        fontWeight: 600,
+        fontFamily: 'Inter, sans-serif',
+        transition: 'all 0.15s',
+        zIndex: 5,
+      }}
+    >
+      {copied ? 'Copied' : 'Copy'}
+    </button>
+  );
+}
+
 // ─── Types ──────────────────────────────────────────────────
 
 interface BlockRow {
@@ -246,7 +291,7 @@ function RenderLargeFileBlock({ textContent, subBlocks }: { textContent: string 
 
 // ─── Block content renderer ─────────────────────────────────
 
-function RenderBlockContent({
+export function RenderBlockContent({
   type, textContent, formatting, formattingType, subBlocks,
   fileUrl, fileName, fileSizeBytes, imageUrl, imageDescription, contentId, isBlogContent,
 }: {
@@ -1572,6 +1617,11 @@ export function ContentBlockViewer({
 
                   {/* Block content with blur */}
                   <div style={{ position: 'relative' }}>
+                    {isUnblurred && COPYABLE_TYPES.has(block.block_type ?? '') && (
+                      <CopyButton
+                        getText={() => block.text_content ?? ''}
+                      />
+                    )}
                     <div className={isUnblurred ? "" : "blur-[6px] pointer-events-none select-none"} style={{ transition: "filter 0.3s ease" }}>
                       {!showingVariation && (
                         <>
@@ -1735,7 +1785,12 @@ export function ContentBlockViewer({
                     gap: 16,
                   }}>
                     {item.blocks.map((block, bi) => (
-                      <div key={block.id}>
+                      <div key={block.id} style={{ position: 'relative' }}>
+                        {COPYABLE_TYPES.has(block.block_type ?? '') && (
+                          <CopyButton
+                            getText={() => block.text_content ?? ''}
+                          />
+                        )}
                         {/* Step marker inside group */}
                         <div style={{
                           display: 'flex', alignItems: 'center',
