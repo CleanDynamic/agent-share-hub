@@ -569,8 +569,8 @@ const ImagePicker = ({ imageFile, imagePreview, imageDescription, onImageChange,
           <input type="file" accept={ACCEPTED_IMAGE_TYPES} onChange={handleChange} className="hidden" />
         </label>
       )}
-      <Input value={imageDescription} onChange={(e) => { if (e.target.value.length <= DESC_MAX) onDescriptionChange(e.target.value); }} placeholder="Describe what this image shows" className="bg-background border-border rounded-xl text-sm" maxLength={DESC_MAX} />
-      <span className="text-xs text-muted-foreground">{imageDescription.length} / {DESC_MAX}</span>
+      <Input value={imageDescription ?? ''} onChange={(e) => { if (e.target.value.length <= DESC_MAX) onDescriptionChange(e.target.value); }} placeholder="Describe what this image shows" className="bg-background border-border rounded-xl text-sm" maxLength={DESC_MAX} />
+      <span className="text-xs text-muted-foreground">{(imageDescription ?? '').length} / {DESC_MAX}</span>
     </div>
   );
 };
