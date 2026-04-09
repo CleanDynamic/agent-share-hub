@@ -43,7 +43,14 @@ export function BlockInlineEditor({
     block.type !== 'section_heading';
 
   return (
-    <div>
+    <div className="canvas-compact-editor" style={{ fontSize: 12 }}>
+      <style>{`
+        .canvas-compact-editor textarea { font-size: 11px !important; max-height: 120px !important; min-height: 32px !important; padding: 6px 8px !important; line-height: 1.5 !important; }
+        .canvas-compact-editor input { font-size: 11px !important; padding: 4px 6px !important; }
+        .canvas-compact-editor label { font-size: 10px !important; margin-bottom: 2px !important; }
+        .canvas-compact-editor select { font-size: 11px !important; padding: 4px 6px !important; }
+        .canvas-compact-editor .block-field-group { margin-bottom: 6px !important; }
+      `}</style>
       {showSubheading && (
         <input
           value={block.subheading ?? ''}
