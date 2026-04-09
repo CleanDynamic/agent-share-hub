@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Save, Send, Loader2, Plus, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Save, Send, Loader2, Plus, ChevronUp, Undo2, Redo2 } from 'lucide-react';
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import type { BlockPosition } from '@/lib/canvas-types';
 
@@ -32,6 +32,8 @@ interface CanvasToolbarProps {
   onBack?: () => void;
   blockCount?: number;
   onInsertBlock?: (type: string, position: Partial<BlockPosition>) => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 export function CanvasToolbar(props: CanvasToolbarProps) {
@@ -39,7 +41,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
     doc, onSave, onPublish, saving, submitting,
     onTemplates, onHistory, onAnnotations,
     annotationCount = 0, onBack, blockCount = 0,
-    onInsertBlock,
+    onInsertBlock, onUndo, onRedo,
   } = props;
 
   const [addBlockOpen, setAddBlockOpen] = useState(false);
@@ -73,9 +75,15 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
     whiteSpace: 'nowrap',
   };
 
+  const disabledBtn: React.CSSProperties = {
+    ...btnBase,
+    opacity: 0.3,
+    cursor: 'not-allowed',
+  };
+
   return (
     <>
-      {/* Add Block dropdown (opens upward from toolbar) */}
+      {/* Add Block dropdown */}
       {addBlockOpen && (
         <>
           <div
@@ -167,6 +175,28 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             <Divider />
           </>
         )}
+
+        {/* Undo / Redo */}
+        <button
+          type="button"
+          onClick={onUndo}
+          disabled={!onUndo}
+          title="Undo (Ctrl+Z)"
+          style={onUndo ? btnBase : disabledBtn}
+        >
+          <Undo2 size={13} />
+        </button>
+        <button
+          type="button"
+          onClick={onRedo}
+          disabled={!onRedo}
+          title="Redo (Ctrl+Shift+Z)"
+          style={onRedo ? btnBase : disabledBtn}
+        >
+          <Redo2 size={13} />
+        </button>
+
+        <Divider />
 
         {/* Add Block */}
         <button
