@@ -165,7 +165,7 @@ export function CanvasShell(props: CanvasShellProps) {
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        overflowX: 'hidden',
+        overflowX: 'auto',
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
@@ -199,6 +199,7 @@ export function CanvasShell(props: CanvasShellProps) {
             position: 'relative',
             flex: 1,
             minHeight: canvasHeight,
+            minWidth: 1200,
             width: '100%',
           }}
         >
@@ -360,6 +361,9 @@ export function CanvasShell(props: CanvasShellProps) {
           ).length}
           onBack={props.onBack}
           blockCount={doc.blocks.length}
+          onInsertBlock={(type, position) =>
+            doc.addBlock(type, position)
+          }
         />
       )}
 

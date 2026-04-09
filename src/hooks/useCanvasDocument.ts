@@ -23,7 +23,7 @@ export function useCanvasDocument(
     useState<CanvasStage[]>([]);
   const [columnCount, setColumnCount] =
     useState(12);
-  const [rowHeight, setRowHeight] = useState(32);
+  const [rowHeight, setRowHeight] = useState(24);
   const [layoutMode, setLayoutMode] =
     useState<'freeform' | 'pipeline'>('freeform');
   const [isDirty, setIsDirty] = useState(false);
@@ -158,8 +158,8 @@ export function useCanvasDocument(
         position: {
           col: position?.col ?? 1,
           row: position?.row ?? nextRow,
-          colSpan: position?.colSpan ?? 12,
-          rowSpan: position?.rowSpan ?? 1,
+          colSpan: position?.colSpan ?? 6,
+          rowSpan: position?.rowSpan ?? 4,
         },
         stageId: null,
         stageIndex: null,

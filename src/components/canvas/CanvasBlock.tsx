@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { GripVertical } from 'lucide-react';
 import { gridToPixels, positionsOverlap } from '@/lib/canvas-utils';
 import type { CanvasBlock as CanvasBlockType, CanvasStage, BlockPosition } from '@/lib/canvas-types';
 import { BlockInlineEditor } from './BlockInlineEditor';
@@ -53,15 +54,15 @@ export function CanvasBlock({
   });
 
   const px = gridToPixels(block.position, colWidth, rowHeight);
+  // Inset for spacing between blocks
+  const inset = 6;
 
   // ── Drag ─────────────────────────────────────────
   const handleDragMouseDown = (e: React.MouseEvent) => {
     if (mode !== 'edit') return;
+    // Only drag from the grip handle
     const target = e.target as HTMLElement;
-    if (target.closest(
-      '.block-editor-area, .resize-handle,' +
-      '.connection-point, .block-toolbar-btn'
-    )) return;
+    if (!target.closest('.drag-grip')) return;
 
     e.preventDefault();
     setDragging(true);
@@ -230,12 +231,12 @@ export function CanvasBlock({
         onMouseDown={handleDragMouseDown}
         style={{
           position: 'absolute',
-          left: px.x, top: px.y,
-          width: px.w,
-          minHeight: px.h,
+          left: px.x + inset, top: px.y + inset,
+          width: px.w - inset * 2,
+          minHeight: px.h - inset * 2,
           zIndex: dragging ? 20 : 10,
           opacity: dragging ? 0.4 : 1,
-          cursor: mode === 'edit' ? 'grab' : 'default',
+          cursor: 'default',
           boxSizing: 'border-box',
         }}
       >
@@ -262,6 +263,29 @@ export function CanvasBlock({
             : 'none',
           position: 'relative',
         }}>
+
+          {/* Drag grip handle — edit mode */}
+          {mode === 'edit' && (
+            <div
+              className="drag-grip"
+              title="Drag to move"
+              style={{
+                position: 'absolute',
+                top: 6, left: 6,
+                width: 20, height: 20,
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'grab',
+                color: hovered ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.15)',
+                zIndex: 30,
+                borderRadius: 4,
+                background: hovered ? 'rgba(255,255,255,0.06)' : 'transparent',
+                transition: 'all 0.15s',
+              }}
+            >
+              <GripVertical size={14} />
+            </div>
+          )}
 
           {/* Stage index badge */}
           {block.stageIndex && (
@@ -405,7 +429,7 @@ export function CanvasBlock({
           {/* Block content */}
           <div
             className="block-editor-area"
-            style={{ padding: 16 }}
+            style={{ padding: 12 }}
           >
             {/* Section heading renders differently */}
             {block.type === 'section_heading' ? (
@@ -627,8 +651,8 @@ export function CanvasBlock({
           )}
         </div>
 
-        {/* ── Resize handles (edit only) ─────────── */}
-        {mode === 'edit' && hovered && (
+        {/* ── Resize handles (edit only, always visible) ─── */}
+        {mode === 'edit' && (
           <>
             {/* Right edge resize */}
             <div
@@ -636,11 +660,13 @@ export function CanvasBlock({
               onMouseDown={handleResizeRight}
               style={{
                 position: 'absolute',
-                right: -4, top: '20%',
-                height: '60%', width: 8,
+                right: -3, top: '20%',
+                height: '60%', width: 6,
                 cursor: 'ew-resize',
                 background: 'rgba(232,87,26,0.60)',
-                borderRadius: 4, zIndex: 25,
+                borderRadius: 3, zIndex: 25,
+                opacity: hovered ? 1 : 0.25,
+                transition: 'opacity 0.15s',
               }}
             />
 
@@ -650,11 +676,13 @@ export function CanvasBlock({
               onMouseDown={handleResizeBottom}
               style={{
                 position: 'absolute',
-                bottom: -4, left: '20%',
-                width: '60%', height: 8,
+                bottom: -3, left: '20%',
+                width: '60%', height: 6,
                 cursor: 'ns-resize',
                 background: 'rgba(232,87,26,0.60)',
-                borderRadius: 4, zIndex: 25,
+                borderRadius: 3, zIndex: 25,
+                opacity: hovered ? 1 : 0.25,
+                transition: 'opacity 0.15s',
               }}
             />
 
@@ -667,12 +695,14 @@ export function CanvasBlock({
               }}
               style={{
                 position: 'absolute',
-                bottom: -5, right: -5,
-                width: 10, height: 10,
+                bottom: -4, right: -4,
+                width: 8, height: 8,
                 cursor: 'se-resize',
                 background: '#E8571A',
                 borderRadius: '50%', zIndex: 26,
                 border: '2px solid rgba(6,6,10,0.80)',
+                opacity: hovered ? 1 : 0.3,
+                transition: 'opacity 0.15s',
               }}
             />
           </>
