@@ -353,6 +353,29 @@ export function useCanvasDocument(
     setIsDirty(false);
   };
 
+  // ── Restore snapshot ──────────────────────────────
+  const restoreSnapshot = useCallback(
+    (snapshot: any) => {
+      if (snapshot.blocks) {
+        setBlocksRaw(snapshot.blocks);
+      }
+      if (snapshot.arrows) {
+        setArrows(snapshot.arrows);
+      }
+      if (snapshot.stages) {
+        setStages(snapshot.stages);
+      }
+      if (snapshot.columnCount) {
+        setColumnCount(snapshot.columnCount);
+      }
+      if (snapshot.layoutMode) {
+        setLayoutMode(snapshot.layoutMode);
+      }
+      setIsDirty(true);
+    },
+    []
+  );
+
   // ── Version snapshot ──────────────────────────────
   const saveVersion = async (
     id: string,
@@ -379,6 +402,7 @@ export function useCanvasDocument(
   };
 
   return {
+    contentId,
     blocks,
     arrows, setArrows,
     stages, setStages,
@@ -387,6 +411,7 @@ export function useCanvasDocument(
     layoutMode, setLayoutMode,
     isDirty,
     loading,
+    versionNumber,
     addBlock,
     updateBlock,
     deleteBlock,
@@ -396,6 +421,7 @@ export function useCanvasDocument(
     addArrow,
     saveDocument,
     saveVersion,
+    restoreSnapshot,
     loadDocument,
   };
 }
