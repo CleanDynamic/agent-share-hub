@@ -145,13 +145,18 @@ export function CanvasShell(props: CanvasShellProps) {
     return () => ro.disconnect();
   }, []);
 
+  // Filter blocks by active stage tab
+  const filteredBlocks = activeStageTab
+    ? doc.blocks.filter(b => b.stageId === activeStageTab)
+    : doc.blocks;
+
   // Total canvas height: extent of all blocks + buffer
-  const canvasHeight = doc.blocks.length === 0
+  const canvasHeight = filteredBlocks.length === 0
     ? 600
     : Math.max(
         600,
         Math.max(
-          ...doc.blocks.map(b =>
+          ...filteredBlocks.map(b =>
             (b.position.row + b.position.rowSpan - 1)
             * doc.rowHeight
           )
