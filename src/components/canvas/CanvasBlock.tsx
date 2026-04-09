@@ -213,49 +213,56 @@ export function CanvasBlock({
             <div style={{ height: 2, background: accent, flexShrink: 0 }} />
 
             {/* Card body */}
-            <div style={{ flex: 1, padding: '8px 10px', display: 'flex', alignItems: 'flex-start', gap: 8, minHeight: 0, overflow: 'hidden' }}>
+            <div style={{ flex: 1, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 6, minHeight: 0, overflow: 'hidden' }}>
               {/* Drag grip */}
               <div
                 className="drag-grip"
                 title="Drag to move"
                 onClick={e => e.stopPropagation()}
                 style={{
-                  flexShrink: 0, width: 18, height: 18,
+                  flexShrink: 0, width: 16, height: 16,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'grab', color: hovered ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.15)',
-                  borderRadius: 3, marginTop: 1,
+                  borderRadius: 3,
                 }}
               >
-                <GripVertical size={12} />
+                <GripVertical size={10} />
               </div>
 
               {/* Icon */}
-              <div style={{ flexShrink: 0, color: accent, marginTop: 1 }}>
+              <div style={{ flexShrink: 0, color: accent }}>
                 {icon}
               </div>
 
-              {/* Label + preview */}
+              {/* Title + type label */}
               <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.85)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.85)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {block.subheading || typeLabel}
                 </div>
-                {previewText && block.subheading && (
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {block.subheading && (
+                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.30)', marginTop: 1, whiteSpace: 'nowrap' }}>
                     {typeLabel}
-                  </div>
-                )}
-                {block.textContent && (
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.30)', marginTop: 3, lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                    {block.textContent.slice(0, 100)}
                   </div>
                 )}
               </div>
 
               {/* Open indicator */}
-              <div style={{ flexShrink: 0, color: 'rgba(255,255,255,0.15)', marginTop: 1 }}>
-                <ChevronRight size={12} />
+              <div style={{ flexShrink: 0, color: 'rgba(255,255,255,0.12)' }}>
+                <ChevronRight size={10} />
               </div>
             </div>
+
+            {/* Optional grid note — shown below title row if block has text content */}
+            {block.textContent && (
+              <div style={{
+                padding: '0 8px 4px 30px',
+                fontSize: 9, color: 'rgba(255,255,255,0.22)',
+                lineHeight: 1.3,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {block.textContent.slice(0, 100)}
+              </div>
+            )}
 
             {/* Hover toolbar */}
             {hovered && (
