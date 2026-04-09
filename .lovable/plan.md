@@ -1,34 +1,33 @@
 
 
-# Plan: Seed 25 fake posts + fix build error
+## Fix Build Errors
 
-## 1. Fix build error in ContentBlockViewer.tsx (line 443)
+There are 5 distinct issues across 4 files preventing the build from loading.
 
-Replace `p.replaceAll(...)` with `p.split(...).join(...)` — this avoids the ES2021 `replaceAll` requirement without changing `tsconfig`.
+### 1. Mixed `||` and `??` operators (2 files)
+**Files:** `BlockViewerInCanvas.tsx` line 55-57, `ExecutionPanel.tsx` line 50-51
 
-## 2. Seed 25 posts via edge function
+JS doesn't allow mixing `||` and `??` without parentheses. Fix by wrapping the `||` chain in parens:
+- `(block.resultAfter || block.textContent) ?? ''`
+- `(block.textContent || block.text_content) ?? ''`
 
-Create a new edge function `supabase/functions/seed-new-posts/index.ts` that:
+### 2. `setBlocks` doesn't exist on canvas document hook
+**File:** `CanvasShell.tsx` line 369
 
-- Picks an existing demo user (queries `profiles` for any demo user like `alex_prompt`, or falls back to the first available profile)
-- Inserts 25 `content_items` rows with `status: 'approved'` covering all content types and post type variations:
-  - ~6 Builds (Agent Blueprint, Workflow Template, Agent Stack, Model Config Guide, Integration Guide)
-  - ~6 Techniques (Prompt File, Evaluation Framework)
-  - ~6 Discoveries (Failure Library, misc)
-  - ~7 Discussions (Blog, Open Question, Challenge)
-- Each post gets: a unique title, short description, difficulty (mix of Beginner/Intermediate/Advanced), ai_tools array, topics, and `approved_at = now()`
-- Optionally inserts 1-2 `content_blocks` per post (text blocks) so the posts have body content
+The `useCanvasDocument` hook doesn't expose `setBlocks` in its return value. The template apply logic should use the existing `addBlock` method or call `restoreSnapshot` with a merged snapshot. Simplest fix: iterate `newBlocks` through `doc.addBlock` or use the internal `setBlocksRaw` by exposing `setBlocks` in the hook's return.
 
-### Config addition
-Add `[functions.seed-new-posts]` with `verify_jwt = false` to `supabase/config.toml`.
+### 3. `canvas_versions` table not in Supabase types
+**File:** `canvas/VersionHistory.tsx` lines 41-52
 
-### How to run
-Call it from the Admin panel or directly via the edge function URL. One-time use, idempotent (checks for a marker title).
+The `canvas_versions` table doesn't exist in the generated types. Fix by casting the query with `.from('canvas_versions' as any)` and typing the response manually, or create the table via migration.
 
-## Technical details
+### 4. `saved_items` table not in Supabase types + missing import
+**File:** `feed-card.tsx` lines 171, 303, 579-586
 
-**Files changed:**
-- `src/components/ContentBlockViewer.tsx` — line 443: replace `replaceAll` with `split().join()`
-- `supabase/functions/seed-new-posts/index.ts` — new edge function
-- `supabase/config.toml` — add function config block
+Same issue — `saved_items` isn't in the generated types. Fix with `as any` casts. Also, `MoreHorizontal` icon is used but not imported from lucide-react.
+
+### Technical details
+- All `as any` casts are a pragmatic fix for tables that exist at runtime but aren't yet reflected in the auto-generated type file
+- No database migrations needed — the tables likely already exist
+- All fixes are straightforward edits, no architectural changes
 
