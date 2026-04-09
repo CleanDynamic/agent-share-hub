@@ -16,6 +16,7 @@ import { MentionInput } from "@/components/MentionInput";
 
 export type FormattingType = "paragraph" | "bullets" | "numbers" | "sub_list";
 export type BlockType =
+  | "tutorial_step"
   | "prompt"
   | "agent_config"
   | "workflow"
@@ -191,6 +192,13 @@ export interface ContentBlock {
   resourceAnnotation: string;
   resourceIsPaywalled: boolean;
   resourceDescription?: string;
+
+  // ── TUTORIAL STEP ─────────────────────────────
+  tutorialMedia?: 'video' | 'voicenote' | 'carousel' | 'image' | 'text' | null;
+  tutorialMediaUrl?: string | null;
+  tutorialCarouselUrls?: string[];
+  tutorialText?: string | null;
+  tutorialRefBlockId?: string | null;
 }
 
 // ─── Group block ─────────────────────────────────────────────
@@ -334,6 +342,13 @@ export const emptyBlock = (type: BlockType): ContentBlock => ({
   resourceAnnotation: '',
   resourceIsPaywalled: false,
   resourceDescription: '',
+
+  // Tutorial Step
+  tutorialMedia: 'text',
+  tutorialMediaUrl: null,
+  tutorialCarouselUrls: [],
+  tutorialText: null,
+  tutorialRefBlockId: null,
 });
 
 export const emptyGroup = (): GroupBlock => ({
@@ -711,6 +726,7 @@ const BLOCK_TYPE_OPTIONS = [
 ] as const;
 
 const NEW_BLOCK_TYPES = [
+  { value: 'tutorial_step', label: 'Tutorial Step', emoji: '🎬', desc: 'A guided step with media + instructions' },
   { value: 'section_heading', label: 'Section Heading', emoji: '§', desc: 'A named section — creates a TOC entry' },
   { value: 'prompt',       label: 'Prompt',       emoji: '💬', desc: 'A copyable prompt' },
   { value: 'agent_config', label: 'Agent Config',  emoji: '🤖', desc: 'System prompt + settings' },
@@ -1888,6 +1904,168 @@ const BlockTypePicker = ({ onAdd }: { onAdd: (type: BlockType) => void }) => {
   );
 };
 
+// ─── Tutorial Step editor ────────────────────────────────────
+
+const TutorialStepEditor = ({ block, update, index }: {
+  block: ContentBlock;
+  update: (i: number, p: Partial<ContentBlock>) => void;
+  index: number;
+}) => {
+  const mediaType = block.tutorialMedia ?? 'text';
+
+  const MEDIA_OPTIONS = [
+    { value: 'text', label: 'Text', emoji: '¶' },
+    { value: 'image', label: 'Image', emoji: '🖼' },
+    { value: 'video', label: 'Video', emoji: '🎬' },
+    { value: 'carousel', label: 'Carousel', emoji: '⊞' },
+    { value: 'voicenote', label: 'Voice', emoji: '🎙' },
+  ];
+
+  return (
+    <div style={{
+      border: '1px solid rgba(232,87,26,0.20)',
+      borderLeft: '3px solid rgba(232,87,26,0.50)',
+      borderRadius: 8,
+      padding: '12px 14px',
+      background: 'rgba(232,87,26,0.04)',
+    }}>
+      {/* Media type picker */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+        {MEDIA_OPTIONS.map(opt => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => update(index, { tutorialMedia: opt.value as any })}
+            style={{
+              padding: '4px 10px', borderRadius: 6,
+              fontSize: 11, cursor: 'pointer',
+              background: mediaType === opt.value
+                ? 'rgba(232,87,26,0.20)'
+                : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${mediaType === opt.value
+                ? 'rgba(232,87,26,0.40)'
+                : 'rgba(255,255,255,0.08)'}`,
+              color: mediaType === opt.value
+                ? '#E8571A' : 'rgba(255,255,255,0.45)',
+            }}
+          >
+            {opt.emoji} {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Media input */}
+      {(mediaType === 'video' || mediaType === 'image' || mediaType === 'voicenote') && (
+        <div style={{ marginBottom: 10 }}>
+          <label style={{
+            fontSize: 10, fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'rgba(255,255,255,0.30)',
+            display: 'block', marginBottom: 6,
+          }}>
+            {mediaType === 'voicenote' ? 'Audio URL or upload' : 'Media URL or upload'}
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              value={block.tutorialMediaUrl ?? ''}
+              onChange={e => update(index, { tutorialMediaUrl: e.target.value })}
+              placeholder={`Paste ${mediaType} URL...`}
+              style={{
+                flex: 1, background: 'rgba(0,0,0,0.20)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 6, padding: '6px 10px',
+                fontSize: 12, color: '#fff', outline: 'none',
+              }}
+            />
+            <label style={{
+              padding: '6px 12px', borderRadius: 6,
+              fontSize: 11, cursor: 'pointer',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              color: 'rgba(255,255,255,0.50)',
+            }}>
+              Upload
+              <input type="file"
+                accept={mediaType === 'voicenote'
+                  ? 'audio/*'
+                  : mediaType === 'video'
+                    ? 'video/*' : 'image/*'}
+                style={{ display: 'none' }}
+                onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  const url = URL.createObjectURL(f);
+                  update(index, { tutorialMediaUrl: url });
+                }}
+              />
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* Carousel: multiple image URLs */}
+      {mediaType === 'carousel' && (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{
+            fontSize: 10, fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'rgba(255,255,255,0.30)',
+            marginBottom: 6,
+          }}>
+            Carousel images (paste URLs, one per line)
+          </div>
+          <textarea
+            value={(block.tutorialCarouselUrls ?? []).join('\n')}
+            onChange={e => update(index, {
+              tutorialCarouselUrls: e.target.value.split('\n').filter(u => u.trim())
+            })}
+            placeholder="https://... (one per line)"
+            rows={3}
+            style={{
+              width: '100%',
+              background: 'rgba(0,0,0,0.20)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 6, padding: '8px 10px',
+              fontSize: 12, color: '#fff', outline: 'none',
+              resize: 'vertical', boxSizing: 'border-box',
+              fontFamily: 'monospace',
+            }}
+          />
+        </div>
+      )}
+
+      {/* Instruction text */}
+      <div style={{
+        fontSize: 10, fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+        color: 'rgba(255,255,255,0.30)',
+        marginBottom: 6,
+      }}>
+        Instruction
+      </div>
+      <textarea
+        value={block.tutorialText ?? ''}
+        onChange={e => update(index, { tutorialText: e.target.value })}
+        placeholder="Explain this step in plain language..."
+        rows={3}
+        style={{
+          width: '100%',
+          background: 'transparent',
+          border: 'none',
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          fontSize: 14, color: 'rgba(255,255,255,0.70)',
+          outline: 'none', resize: 'none', padding: '4px 0',
+          fontFamily: 'Inter, sans-serif', lineHeight: 1.65,
+          boxSizing: 'border-box',
+        }}
+      />
+    </div>
+  );
+};
+
 // ─── Section Heading editor ─────────────────────────────────
 
 const SectionHeadingEditor = ({
@@ -2325,6 +2503,9 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                 </div>
                 {showingMain ? (
                   <>
+                    {block.type === 'tutorial_step' && (
+                      <TutorialStepEditor block={block} update={update} index={index} />
+                    )}
                     {block.type === 'section_heading' && (
                       <SectionHeadingEditor block={block} update={update} index={index} />
                     )}
