@@ -38,9 +38,9 @@ interface CanvasBlockProps {
   onPositionChange: (p: BlockPosition) => void;
   onBlockChange: (patch: Partial<CanvasBlockType>) => void;
   onDelete: () => void;
-  onArrowDrawStart: (blockId: string, edge: 'top' | 'right' | 'bottom' | 'left') => void;
+  onArrowDrawStart: () => void;
   isArrowDrawing: boolean;
-  onArrowDrawEnd: (blockId: string, edge: 'top' | 'right' | 'bottom' | 'left') => void;
+  onArrowDrawEnd: () => void;
   onAssignStage: (blockId: string, stageId: string | null) => void;
   onInsertResultBlock?: (block: Partial<CanvasBlockType>) => void;
 }
@@ -174,7 +174,11 @@ export function CanvasBlock({
         onClick={(e) => {
           if (mode === 'edit') {
             e.stopPropagation();
-            onSelect?.();
+            if (isArrowDrawing) {
+              onArrowDrawEnd();
+            } else {
+              onSelect?.();
+            }
           }
         }}
         onDoubleClick={() => {
