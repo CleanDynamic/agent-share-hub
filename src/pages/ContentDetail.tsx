@@ -156,6 +156,62 @@ const buildTOC = (blocks: any[]) => {
   }));
 };
 
+function SaveButton({ contentId }: { contentId: string }) {
+  const { user } = useAuth();
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('user_library')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('content_id', contentId)
+      .maybeSingle()
+      .then(({ data }) => setSaved(!!data));
+  }, [contentId, user?.id]);
+
+  const toggle = async () => {
+    if (!user) return;
+    if (saved) {
+      await supabase
+        .from('user_library')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('content_id', contentId);
+      setSaved(false);
+    } else {
+      await supabase
+        .from('user_library')
+        .insert({ user_id: user.id, content_id: contentId } as any);
+      setSaved(true);
+    }
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      style={{
+        display: 'flex', alignItems: 'center',
+        gap: 5, fontSize: 13,
+        color: saved ? '#E8571A' : 'rgba(255,255,255,0.40)',
+        background: 'none', border: 'none',
+        cursor: 'pointer', padding: '4px 8px',
+        borderRadius: 6, transition: 'color 0.15s',
+      }}
+      title={saved ? 'Unsave' : 'Save'}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24"
+        fill={saved ? 'currentColor' : 'none'}
+        stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+      </svg>
+      {saved ? 'Saved' : 'Save'}
+    </button>
+  );
+}
+
 const ContentDetail = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
@@ -1005,7 +1061,7 @@ const ContentDetail = () => {
           ))}
 
           {/* Fork button — top right aligned */}
-          <div style={{ marginLeft: 'auto' }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
               onClick={() => { if (!isLoggedIn) { setAccountGateOpen(true); return; } setForkModalOpen(true); }}
               style={{
@@ -1021,6 +1077,8 @@ const ContentDetail = () => {
             >
               <GitFork style={{ width: 12, height: 12 }} /> Fork
             </button>
+            {/* Save button */}
+            <SaveButton contentId={item.id} />
           </div>
         </div>
 
