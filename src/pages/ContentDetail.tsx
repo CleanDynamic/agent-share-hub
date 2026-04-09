@@ -1170,19 +1170,14 @@ const ContentDetail = () => {
           return hasImageBlocks ? <WhatToExpectSection item={item} /> : null;
         })()}
 
-        {/* 8. CANVAS — spatial block grid in view mode */}
+        {/* 8. CANVAS — timeline view with stages */}
         {(!isSub || subscriberUnlocked) && (
           <>
-            {!canvasDoc.loading && (
-              <CanvasShell
-                mode="view"
-                doc={canvasDoc}
-                title={item.title ?? ''}
-                description={item.description ?? ''}
+            {!canvasDoc.loading && canvasDoc.blocks.length > 0 && (
+              <StageTimeline
+                stages={canvasDoc.stages}
+                blocks={canvasDoc.blocks}
                 postType={resolvedPostType}
-                difficulty={item.difficulty ?? null}
-                coverPreview={(item as any).cover_image_url ?? null}
-                hideHeader={true}
                 showAnnotations={isPoster}
               />
             )}
