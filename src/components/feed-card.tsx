@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useNavigate } from 'react-router-dom'
-import { Heart, Repeat2, Download, ExternalLink, MoreHorizontal } from "lucide-react"
+import { Heart, Repeat2 } from "lucide-react"
 import { AccountHoverCard } from "@/components/account-hover-card"
 import { useAuth } from "@/contexts/AuthContext"
 import { useQuery } from "@tanstack/react-query"
@@ -91,9 +91,13 @@ export function FeedCard({ post }: { post: FeedPost }) {
   const { isLoggedIn, user } = useAuth()
   const { toast } = useToast()
   const [expandStage, setExpandStage] = useState(0)
-  const [isLiked, setIsLiked] = useState(false)
+  const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.view_count ?? 0)
   const [reblogOpen, setReblogOpen] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   // Reblog count
   const { data: reblogCount } = useQuery({
@@ -160,11 +164,28 @@ export function FeedCard({ post }: { post: FeedPost }) {
     ...(post.custom_tags ?? []),
   ].slice(0, 5)
 
-  const handleLike = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setIsLiked(!isLiked)
-    setLikeCount((prev) => (isLiked ? prev - 1 : prev + 1))
-  }
+  // Load initial saved state
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('saved_items')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('content_id', post.id)
+      .maybeSingle()
+      .then(({ data }) => setSaved(!!data));
+  }, [post.id, user?.id]);
+
+  // Close 3-dot menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
 
   const handleStageClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -475,77 +496,225 @@ export function FeedCard({ post }: { post: FeedPost }) {
 
       {/* Footer */}
       <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
+        display: "flex", alignItems: "center",
         marginTop: 14, paddingTop: 10,
         borderTop: "1px solid rgba(255,255,255,0.05)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+        {/* Like */}
+        <button
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            fontSize: 13, background: "none", border: "none", cursor: "pointer",
+            color: liked ? "#ef4444" : "rgba(255,255,255,0.40)",
+            transition: "color 0.15s",
+            padding: '4px 6px', borderRadius: 5,
+          }}
+          onClick={e => {
+            e.stopPropagation();
+            setLiked(p => !p);
+            setLikeCount(p => liked ? p - 1 : p + 1);
+          }}
+        >
+          <Heart size={15} fill={liked ? "currentColor" : "none"} />
+          <span>{likeCount}</span>
+        </button>
+
+        {/* Comment */}
+        <button
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            fontSize: 13, background: "none", border: "none", cursor: "pointer",
+            color: "rgba(255,255,255,0.40)",
+            transition: "color 0.15s",
+            padding: '4px 6px', borderRadius: 5,
+            marginLeft: 14,
+          }}
+          onClick={e => {
+            e.stopPropagation();
+            navigate(`/content/${post.id}#comments`);
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span>{post.comment_count ?? 0}</span>
+        </button>
+
+        {/* Reblog */}
+        <button
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            fontSize: 13,
+            color: userHasReblogged ? "#2EC4B6" : "rgba(255,255,255,0.40)",
+            background: "none", border: "none", cursor: "pointer",
+            transition: "color 0.15s",
+            padding: '4px 6px', borderRadius: 5,
+            marginLeft: 14,
+          }}
+          onClick={(e) => {
+            e.stopPropagation()
+            if (!isLoggedIn) return
+            if (userHasReblogged) {
+              toast({ title: "You've already reblogged this" })
+            } else {
+              setReblogOpen(true)
+            }
+          }}
+          title={userHasReblogged ? "You reblogged this" : "Reblog"}
+        >
+          <Repeat2 size={15} />
+          {(reblogCount ?? 0) > 0 && <span>{reblogCount}</span>}
+        </button>
+
+        {/* Save */}
+        <button
+          onClick={async e => {
+            e.stopPropagation();
+            if (!user) {
+              navigate('/login');
+              return;
+            }
+            if (saved) {
+              await supabase
+                .from('saved_items')
+                .delete()
+                .eq('user_id', user.id)
+                .eq('content_id', post.id);
+              setSaved(false);
+            } else {
+              await supabase
+                .from('saved_items')
+                .insert({
+                  user_id: user.id,
+                  content_id: post.id,
+                } as any);
+              setSaved(true);
+            }
+          }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            fontSize: 13, background: 'none', border: 'none',
+            cursor: 'pointer',
+            color: saved ? '#E8571A' : 'rgba(255,255,255,0.35)',
+            transition: 'color 0.15s',
+            padding: '4px 6px', borderRadius: 5,
+            marginLeft: 14,
+          }}
+          title={saved ? 'Unsave' : 'Save'}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24"
+            fill={saved ? 'currentColor' : 'none'}
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+        </button>
+
+        {/* Share */}
+        <button
+          onClick={e => {
+            e.stopPropagation();
+            const url = `${window.location.origin}/content/${post.id}`;
+            navigator.clipboard.writeText(url).then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1800);
+            });
+          }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            fontSize: 13, background: 'none', border: 'none',
+            cursor: 'pointer',
+            color: copied ? '#2EC4B6' : 'rgba(255,255,255,0.35)',
+            transition: 'color 0.15s',
+            padding: '4px 6px', borderRadius: 5,
+            marginLeft: 14,
+          }}
+          title="Copy link"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+            <polyline points="16 6 12 2 8 6"/>
+            <line x1="12" y1="2" x2="12" y2="15"/>
+          </svg>
+        </button>
+
+        {/* 3-dot menu */}
+        <div ref={menuRef} style={{ position: 'relative', marginLeft: 'auto' }}>
           <button
+            onClick={e => {
+              e.stopPropagation();
+              setMenuOpen(o => !o);
+            }}
             style={{
-              display: "flex", alignItems: "center", gap: 6,
-              fontSize: 13, background: "none", border: "none", cursor: "pointer",
-              color: isLiked ? "#ef4444" : "rgba(255,255,255,0.40)",
-              transition: "color 0.15s",
+              background: 'none', border: 'none',
+              color: 'rgba(255,255,255,0.30)',
+              cursor: 'pointer', fontSize: 16,
+              padding: '4px 6px', borderRadius: 5,
+              display: 'flex', alignItems: 'center',
+              letterSpacing: '0.05em',
             }}
-            onClick={handleLike}
           >
-            <Heart size={15} fill={isLiked ? "currentColor" : "none"} />
-            <span>{likeCount}</span>
+            ···
           </button>
-          <button
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              fontSize: 13,
-              color: userHasReblogged ? "#2EC4B6" : "rgba(255,255,255,0.40)",
-              background: "none", border: "none", cursor: "pointer",
-              transition: "color 0.15s",
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (!isLoggedIn) return
-              if (userHasReblogged) {
-                toast({ title: "You've already reblogged this" })
-              } else {
-                setReblogOpen(true)
-              }
-            }}
-            title={userHasReblogged ? "You reblogged this" : "Reblog"}
-          >
-            <Repeat2 size={15} />
-            {(reblogCount ?? 0) > 0 && <span>{reblogCount}</span>}
-          </button>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          {post.bounty_enabled ? (
-            <button
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                fontSize: 13, color: "#F59E0B", fontWeight: 600,
-                background: "none", border: "none", cursor: "pointer",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              Respond ↗
-            </button>
-          ) : (
-            <button
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                fontSize: 13, color: "rgba(255,255,255,0.40)",
-                background: "none", border: "none", cursor: "pointer",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Download size={15} />
-              <span>{post.download_count ?? 0}</span>
-            </button>
+
+          {menuOpen && (
+            <div style={{
+              position: 'absolute',
+              bottom: '100%', right: 0,
+              marginBottom: 6,
+              background: 'rgba(14,14,20,0.98)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              borderRadius: 8,
+              padding: '4px 0',
+              minWidth: 160,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.50)',
+              zIndex: 100,
+            }}>
+              {[
+                { label: 'Copy link', action: () => {
+                  navigator.clipboard.writeText(
+                    `${window.location.origin}/content/${post.id}`
+                  );
+                  setMenuOpen(false);
+                }},
+                { label: 'View author', action: () => {
+                  navigate(`/creator/${post.author?.username}`);
+                  setMenuOpen(false);
+                }},
+                { label: 'Report', action: () => {
+                  setMenuOpen(false);
+                }},
+              ].map(item => (
+                <button
+                  key={item.label}
+                  onClick={e => {
+                    e.stopPropagation();
+                    item.action();
+                  }}
+                  style={{
+                    display: 'block', width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 14px',
+                    background: 'none', border: 'none',
+                    fontSize: 13,
+                    color: 'rgba(255,255,255,0.60)',
+                    cursor: 'pointer',
+                    transition: 'background 0.1s',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.background = 'transparent';
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           )}
-          <button
-            style={{ color: "rgba(255,255,255,0.40)", background: "none", border: "none", cursor: "pointer" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ExternalLink size={15} />
-          </button>
         </div>
       </div>
 
