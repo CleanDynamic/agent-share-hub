@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useSearchParams, useBlocker } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -689,41 +689,44 @@ const Upload = () => {
     return () => window.removeEventListener('beforeunload', handler);
   }, [canvasDoc.isDirty, form.formState.isDirty]);
 
-  // React Router blocker
-  const blocker = useBlocker(({ currentLocation, nextLocation }) => {
-    if (currentLocation.pathname === nextLocation.pathname) return false;
-    if (success) return false; // Don't block after successful publish
-    const hasContent = form.getValues('title') || canvasDoc.blocks.length > 0;
-    return hasContent && !exitDialogOpen;
-  });
+  // Navigation guard flag — set to true to skip the exit prompt
+  const skipExitGuardRef = useRef(false);
 
-  useEffect(() => {
-    if (blocker.state === 'blocked') {
-      pendingNavigationRef.current = () => blocker.proceed();
-      setExitDialogOpen(true);
+  // Wrapped navigate that triggers exit dialog
+  const guardedNavigate = useCallback((to: string) => {
+    if (skipExitGuardRef.current || success) {
+      navigate(to);
+      return;
     }
-  }, [blocker.state]);
+    const hasContent = form.getValues('title') || canvasDoc.blocks.length > 0;
+    if (!hasContent) {
+      navigate(to);
+      return;
+    }
+    pendingNavigationRef.current = () => navigate(to);
+    setExitDialogOpen(true);
+  }, [navigate, success, form, canvasDoc.blocks.length]);
 
   const handleExitSave = async () => {
     await saveDraft(false);
     setExitDialogOpen(false);
+    skipExitGuardRef.current = true;
     pendingNavigationRef.current?.();
     pendingNavigationRef.current = null;
   };
 
   const handleExitDiscard = async () => {
-    // If draft was auto-created and has no meaningful content, delete it
     if (currentDraftId && !draftId) {
       await supabase.from('content_items').delete().eq('id', currentDraftId).eq('status', 'draft');
     }
     setExitDialogOpen(false);
+    skipExitGuardRef.current = true;
     pendingNavigationRef.current?.();
     pendingNavigationRef.current = null;
   };
 
   const handleExitCancel = () => {
     setExitDialogOpen(false);
-    if (blocker.state === 'blocked') blocker.reset();
     pendingNavigationRef.current = null;
   };
 
