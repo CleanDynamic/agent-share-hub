@@ -1,66 +1,45 @@
 
 
-## Canvas Editor Fluidity Overhaul
+## Fix Canvas Block Sizing, Scrolling, and Zoom
 
-### Problems from screenshots
-1. **Add Block picker** appears as a floating popover to the side — should be a dropdown in the toolbar
-2. **No horizontal scroll** — canvas is locked to viewport width, blocks get crammed
-3. **Blocks too large** — default `colSpan: 12` (full width) and `rowHeight: 32` make everything oversized
-4. **Move handle not obvious** — entire block is drag-target but cursor doesn't indicate this clearly; needs a visible grip handle
-5. **Resize handles only appear on hover** — not discoverable enough
-6. **Canvas feels crammed** — no padding/gaps between blocks, everything edge-to-edge
+### Root cause
+The block editors (CodeBlockEditor, PromptBlockEditor, etc.) were designed for a full-page upload form — they have `rows={10}` textareas, multiple labeled sections, and no height constraints. When rendered inside a canvas grid cell that's only `4 × 24px = 96px`, they overflow massively, making one block fill the entire panel.
 
 ### Changes
 
-**1. Move "Add Block" into toolbar dropdown** (`CanvasToolbar.tsx`)
-- Add an "Add Block" button with a `+` icon to the toolbar
-- On click, show a dropdown (anchored upward from toolbar) listing all block types with accent colors and descriptions
-- Clicking a type inserts a block at the next available row
-- Remove the floating `+` button from `CanvasInsertZone.tsx` (keep the component for the block type data export only)
+**1. Constrain block content to its grid cell** (`CanvasBlock.tsx`)
+- Set block height to the exact grid cell height (not `minHeight`)
+- Add `overflow-y: auto` on the `.block-editor-area` div so content scrolls within the block
+- Add a subtle scrollbar styled to match the dark theme
+- This way each block is a fixed-size card on the canvas; users scroll inside it to edit
 
-**2. Enable horizontal scrolling** (`CanvasShell.tsx`)
-- Change `overflowX: 'hidden'` to `overflowX: 'auto'` on the main scroll area
-- Set a minimum canvas width of `1200px` so the grid always has room, even on narrow viewports
-- This lets users pan horizontally when blocks extend beyond the viewport
+**2. Increase default block rowSpan** (`CanvasToolbar.tsx` + `useCanvasDocument.ts`)
+- Change default `rowSpan` from `4` to `8` (gives `8 × 24 = 192px` — enough for a compact editor)
+- For code blocks specifically, default to `rowSpan: 12` (~288px) since they need more room
+- This makes blocks appropriately sized without taking over the screen
 
-**3. Reduce default proportions** (`useCanvasDocument.ts` + `CanvasInsertZone.tsx`)
-- Change default `rowHeight` from `32` to `24` — tighter vertical grid
-- When inserting blocks, default `colSpan` from `12` to `6` (half-width) and `rowSpan` from `1` to `4` — blocks start at a usable but not overwhelming size
-- Add `8px` padding/gap around blocks by insetting their pixel position by 4px on each side in `CanvasBlock.tsx`
+**3. Add canvas zoom control** (`CanvasShell.tsx`)
+- Add a zoom level state (`0.5`, `0.75`, `1.0`, `1.25`) defaulting to `1.0`
+- Apply `transform: scale(zoom)` and `transform-origin: top left` to the grid container
+- Adjust `minWidth` and `minHeight` by `1/zoom` so the scroll area stays correct
+- Add zoom buttons (−/+) and a percentage label to the bottom-right corner, separate from the toolbar
+- Keyboard shortcuts: `Ctrl/Cmd + =` zoom in, `Ctrl/Cmd + -` zoom out, `Ctrl/Cmd + 0` reset
 
-**4. Add visible move grip** (`CanvasBlock.tsx`)
-- Add a persistent small grip icon (⠿ or `GripVertical` from lucide) at the top-left of every block in edit mode
-- Only this grip triggers drag — stop the entire block surface from being a drag target (prevents accidental drags while editing)
-- Style: subtle, becomes more visible on hover
+**4. Compact the inline editors for canvas context** (`BlockInlineEditor.tsx`)
+- Add a `compact` mode wrapper that reduces font sizes, padding, and textarea rows
+- Reduce `FieldLabel` font size and margins
+- Override textarea `rows` to smaller values (code: 5 instead of 10, others: 2 instead of 3)
+- Since we can't modify ContentBlockBuilder directly (it's shared), wrap each editor in a container with CSS that targets textareas and inputs: smaller font, tighter padding, reduced row count via `max-height`
 
-**5. Make resize handles always visible in edit mode** (`CanvasBlock.tsx`)
-- Show right, bottom, and corner resize handles at reduced opacity (0.3) always in edit mode
-- Full opacity on hover (existing behavior)
-- This addresses Heuristic 1 (visibility) and 6 (recognition)
-
-**6. Block spacing/padding** (`CanvasBlock.tsx`)
-- Add 6px inset on all sides so blocks don't touch each other edge-to-edge
-- Reduce inner content padding from `16px` to `12px`
-
-### Heuristic mapping
-
-| # | Heuristic | How addressed |
-|---|-----------|---------------|
-| 1 | System status | Resize handles always visible; grip handle shows block is movable |
-| 2 | Real world | Block types in toolbar dropdown with plain descriptions |
-| 3 | User control | Horizontal scroll, explicit move grip, resize from any edge |
-| 4 | Consistency | All blocks follow same sizing, spacing, handle patterns |
-| 5 | Error prevention | Drag only via grip (no accidental moves while editing) |
-| 6 | Recognition | Persistent resize handles, labeled block type dropdown |
-| 7 | Flexibility | Horizontal scroll for wide layouts, half-width default blocks allow side-by-side |
-| 8 | Minimalist | Smaller default blocks, less cramming, breathing room |
-| 9 | Error recovery | Ghost overlay during drag already shows valid/invalid positions |
-| 10 | Help | Block type descriptions in toolbar dropdown |
+**5. Fix vertical scroll extent** (`CanvasShell.tsx`)
+- The canvas height calculation already adds 200px buffer, but the outer container may clip
+- Remove `overflow: hidden` from the outermost shell div
+- Ensure the scroll container uses `flex: 1; min-height: 0` so it properly fills and scrolls
 
 ### Files to edit
-- `src/components/canvas/CanvasToolbar.tsx` — add "Add Block" dropdown
-- `src/components/canvas/CanvasShell.tsx` — enable horizontal scroll, pass `onInsert` to toolbar, set min canvas width
-- `src/components/canvas/CanvasBlock.tsx` — add grip handle, persistent resize handles, spacing inset, reduce padding
-- `src/components/canvas/CanvasInsertZone.tsx` — remove floating `+` button (export block types only)
-- `src/hooks/useCanvasDocument.ts` — reduce default `rowHeight` to 24
+- `src/components/canvas/CanvasBlock.tsx` — fixed height, overflow scroll
+- `src/components/canvas/CanvasShell.tsx` — zoom controls, scroll fix
+- `src/components/canvas/CanvasToolbar.tsx` — larger default rowSpan per block type
+- `src/components/canvas/BlockInlineEditor.tsx` — compact wrapper CSS
+- `src/hooks/useCanvasDocument.ts` — default rowSpan adjustment
 
