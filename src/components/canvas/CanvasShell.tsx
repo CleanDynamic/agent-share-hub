@@ -7,6 +7,7 @@ import { DotGrid } from './DotGrid';
 import { CanvasBlock } from './CanvasBlock';
 import { CanvasInsertZone } from './CanvasInsertZone';
 import { ArrowOverlay } from './ArrowOverlay';
+import { TemplateLibrary } from './TemplateLibrary';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
 
 interface CanvasShellProps {
@@ -40,6 +41,8 @@ export function CanvasShell(props: CanvasShellProps) {
   const [containerWidth, setContainerWidth] =
     useState(0);
   const [tocOpen, setTocOpen] = useState(true);
+  const [templateLibOpen, setTemplateLibOpen] =
+    useState(false);
 
   // ── Arrow drawing state ───────────────────────────
   const [drawingFrom, setDrawingFrom] = useState<{
@@ -328,8 +331,32 @@ export function CanvasShell(props: CanvasShellProps) {
           onPublish={props.onPublish}
           saving={props.saving}
           submitting={props.submitting}
+          onTemplates={() => setTemplateLibOpen(true)}
         />
       )}
+
+      {/* Template library panel */}
+      <TemplateLibrary
+        open={templateLibOpen}
+        onClose={() => setTemplateLibOpen(false)}
+        currentBlocks={doc.blocks}
+        onApply={(newBlocks, newArrows) => {
+          doc.setBlocks(prev => [
+            ...prev,
+            ...newBlocks.map(b => ({
+              ...b,
+              id: b.id ?? crypto.randomUUID(),
+            })),
+          ]);
+          doc.setArrows(prev => [
+            ...prev,
+            ...newArrows.map(a => ({
+              ...a,
+              id: crypto.randomUUID(),
+            })),
+          ]);
+        }}
+      />
     </div>
   );
 }
