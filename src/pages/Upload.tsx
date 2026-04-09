@@ -2641,6 +2641,49 @@ const Upload = () => {
       </div>
 
       <SubmitToolModal open={submitToolOpen} onOpenChange={setSubmitToolOpen} />
+
+      {/* Exit confirmation dialog */}
+      {exitDialogOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div onClick={handleExitCancel} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.60)', backdropFilter: 'blur(4px)' }} />
+          <div style={{
+            position: 'relative', zIndex: 1, background: 'rgba(14,14,20,0.98)',
+            border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16,
+            padding: '28px 32px', maxWidth: 400, width: '90%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.60)',
+          }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.90)', margin: '0 0 8px' }}>
+              Save before leaving?
+            </h3>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: '0 0 24px', lineHeight: 1.5 }}>
+              You have unsaved changes. Would you like to save this as a draft?
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={handleExitDiscard} style={{
+                padding: '8px 16px', fontSize: 12, fontWeight: 600, borderRadius: 8,
+                background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.25)',
+                color: 'rgba(239,68,68,0.80)', cursor: 'pointer',
+              }}>
+                Discard
+              </button>
+              <button onClick={handleExitCancel} style={{
+                padding: '8px 16px', fontSize: 12, fontWeight: 600, borderRadius: 8,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+              }}>
+                Cancel
+              </button>
+              <button onClick={handleExitSave} style={{
+                padding: '8px 16px', fontSize: 12, fontWeight: 700, borderRadius: 8,
+                background: 'rgba(232,87,26,0.85)', border: '1px solid rgba(232,87,26,0.50)',
+                color: '#fff', cursor: 'pointer',
+              }}>
+                Save Draft
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
