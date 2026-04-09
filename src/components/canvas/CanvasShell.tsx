@@ -116,7 +116,7 @@ export function CanvasShell(props: CanvasShellProps) {
         // Tab to select first block
         if (e.key === 'Tab') {
           e.preventDefault();
-          const sorted = [...filteredBlocks].sort(readingOrder);
+          const sorted = readingOrder([...filteredBlocks]);
           if (sorted.length > 0) setSelectedBlockId(sorted[0].id);
         }
         return;
@@ -173,7 +173,7 @@ export function CanvasShell(props: CanvasShellProps) {
       // Tab — cycle to next block
       if (e.key === 'Tab') {
         e.preventDefault();
-        const sorted = [...filteredBlocks].sort(readingOrder);
+        const sorted = readingOrder([...filteredBlocks]);
         const idx = sorted.findIndex(b => b.id === selectedBlockId);
         const next = e.shiftKey
           ? sorted[(idx - 1 + sorted.length) % sorted.length]
