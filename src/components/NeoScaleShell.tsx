@@ -1624,6 +1624,7 @@ export function NeoScaleShell() {
                 <span style={{ color: '#F59E0B', fontSize: 18 }}>→</span>
               </div>
             </div>
+          </div>
       );
     }
 
