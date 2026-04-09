@@ -1183,6 +1183,7 @@ const ContentDetail = () => {
                 difficulty={item.difficulty ?? null}
                 coverPreview={(item as any).cover_image_url ?? null}
                 hideHeader={true}
+                showAnnotations={isPoster}
               />
             )}
             {canvasDoc.loading && (

@@ -10,6 +10,7 @@ import { CanvasInsertZone } from './CanvasInsertZone';
 import { ArrowOverlay } from './ArrowOverlay';
 import { TemplateLibrary } from './TemplateLibrary';
 import { VersionHistory } from './VersionHistory';
+import { AnnotationsList } from './AnnotationsList';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
 
 interface CanvasShellProps {
@@ -28,6 +29,7 @@ interface CanvasShellProps {
   ) => void;
   onPostTypeClick?: () => void;
   hideHeader?: boolean;
+  showAnnotations?: boolean;
   // Edit mode actions
   onSave?: () => void;
   onPublish?: () => void;
@@ -47,6 +49,8 @@ export function CanvasShell(props: CanvasShellProps) {
   const [templateLibOpen, setTemplateLibOpen] =
     useState(false);
   const [versionHistoryOpen, setVersionHistoryOpen] =
+    useState(false);
+  const [annotationsOpen, setAnnotationsOpen] =
     useState(false);
 
   // ── Arrow drawing state ───────────────────────────
@@ -256,6 +260,7 @@ export function CanvasShell(props: CanvasShellProps) {
               allBlocks={doc.blocks}
               stages={doc.stages}
               postType={postType}
+              showAnnotations={props.showAnnotations}
               onPositionChange={pos =>
                 doc.moveBlock(block.id, pos)
               }
@@ -348,6 +353,10 @@ export function CanvasShell(props: CanvasShellProps) {
           submitting={props.submitting}
           onTemplates={() => setTemplateLibOpen(true)}
           onHistory={() => setVersionHistoryOpen(true)}
+          onAnnotations={() => setAnnotationsOpen(true)}
+          annotationCount={doc.blocks.filter(
+            b => b.creatorAnnotation
+          ).length}
         />
       )}
 
@@ -372,6 +381,22 @@ export function CanvasShell(props: CanvasShellProps) {
             })),
           ]);
         }}
+      />
+
+      {/* Annotations list panel */}
+      <AnnotationsList
+        open={annotationsOpen}
+        onClose={() => setAnnotationsOpen(false)}
+        blocks={doc.blocks}
+        onBlockFocus={blockId => {
+          document.getElementById(
+            `canvas-block-${blockId}`
+          )?.scrollIntoView({ behavior: 'smooth' });
+          setAnnotationsOpen(false);
+        }}
+        onBlockChange={(id, patch) =>
+          doc.updateBlock(id, patch)
+        }
       />
 
       {/* Version history panel */}
