@@ -1,43 +1,61 @@
 
 
-## Plan: Infinite Scroll, Fix Scroll, and Address API Key Concern
+## Refine Upload Page — Nielsen's 10 Heuristics
 
-### 1. Infinite scroll with 50 initial posts
+Applying all 10 usability heuristics to the canvas-based upload editor.
 
-**File: `src/components/NeoScaleShell.tsx`**
+### Issues identified
 
-Replace the current `useEffect` fetch (lines 1053-1132) with `useInfiniteQuery` from `@tanstack/react-query`:
-- Initial page loads 50 posts (`PAGE_SIZE = 50`)
-- Subsequent pages load 25 at a time
-- Add an `IntersectionObserver` sentinel div at the bottom of `ns-feed-scroll` that triggers `fetchNextPage` when scrolled into view
-- Remove the `setPosts([])` flash — `useInfiniteQuery` handles cache/stale data natively
-- Flatten pages into the existing `posts` render loop
+1. **No Save/Publish buttons** — The toolbar shows Templates/History/Notes but no way to save or publish. Users have no clear path to completion.
+2. **No system status** — No progress indicator, no autosave feedback, no block count. Users don't know where they are in the process.
+3. **No undo/back** — Can't return to the type chooser or undo block deletions. No "back" button once in the canvas.
+4. **Block picker cuts off screen** — Already partially fixed but still uses fixed positioning that can clip.
+5. **No confirmation before destructive actions** — Delete block has no confirmation.
+6. **No inline help or tooltips** — Block types have no descriptions; new users don't know what "Agent" or "Model" means.
+7. **No validation before publish** — Can publish with empty title or no blocks. No error messages guiding the user.
+8. **Toolbar lacks visual hierarchy** — Save and Publish should be prominent, not hidden or missing entirely.
+9. **No keyboard shortcuts** — No accelerators for power users (Ctrl+S to save, etc.).
+10. **"unsaved" label is too subtle** — Dirty state indicator is barely visible.
 
-State changes:
-- Remove `const [posts, setPosts] = useState<any[]>([])` 
-- Replace with `useInfiniteQuery` returning `data.pages.flat()`
-- Add a `ref` for the scroll sentinel
+### Changes
 
-### 2. Fix scroll on main container
+**File: `src/components/canvas/CanvasToolbar.tsx`** — Full rewrite
+- Add **Save Draft** button (secondary style) and **Publish** button (primary, orange accent)
+- Show saving/submitting spinners (Heuristic 1: visibility of system status)
+- Show block count badge (e.g. "4 blocks")
+- Show autosave status: "Saved" / "Saving..." / "unsaved" with appropriate colors
+- Add a **Back** button (← arrow) to return to type chooser (Heuristic 3: user control)
+- Add keyboard shortcut Ctrl/Cmd+S for save (Heuristic 7: flexibility)
+- Add a subtle divider between navigation actions (Back) and content actions (Save/Publish)
+- Wrap toolbar in a glass-card pill for visual grounding
 
-The `ns-middle-front` has both `overflow-y: auto` (line 265) AND contains `ns-feed-scroll` which also has `overflow-y: auto` (line 315). This creates nested scroll containers — the outer one captures scroll events before the inner feed can scroll properly.
+**File: `src/components/canvas/CanvasShell.tsx`**
+- Pass `onBack` prop through to toolbar
+- Add `blockCount` to toolbar props
 
-Fix: Remove `overflow-y: auto` from `.ns-middle-front` CSS (line 265), keep it only on `.ns-feed-scroll`. The front face uses `display: flex; flex-direction: column` so the feed scroll container will fill remaining space via `flex: 1`.
+**File: `src/pages/Upload.tsx`**
+- Pass `onBack={() => setShowTypeChooser(true)}` to CanvasShell
+- Add pre-publish validation: require title (min 1 char) and at least 1 block, show toast errors (Heuristic 5, 9: error prevention and recovery)
 
-### 3. API key in request headers — not a vulnerability
+**File: `src/components/canvas/CanvasInsertZone.tsx`**
+- Add short tooltip descriptions to each block type in the picker (e.g. "Prompt — Write an AI prompt", "Agent — Configure an AI agent") (Heuristic 6: recognition over recall, Heuristic 10: help)
+- Ensure picker is viewport-clamped on all edges
 
-The `apikey` header contains the Supabase **anon (publishable) key**. This is by design — it's equivalent to a public API key and is already visible in the client bundle. It cannot be hidden from network requests.
+**File: `src/components/canvas/CanvasBlock.tsx`**
+- Add a confirmation step to the Delete button: first click shows "Confirm?", second click deletes (Heuristic 5: error prevention)
 
-Security is enforced by **Row Level Security (RLS) policies** on each table. The anon key only grants access that RLS allows. To verify protection is solid, I'll check that `content_items` has proper DELETE policies (users should only be able to delete their own posts).
+### Heuristic coverage
 
-No code changes needed for this — the key is intentionally public. If the `authorization` header (Bearer token) concerns you, that's a per-session JWT that expires and can't be reused by others.
-
-### Technical summary
-
-| Change | File | What |
-|--------|------|------|
-| Infinite scroll | `NeoScaleShell.tsx` | Replace `useEffect`+`setPosts` with `useInfiniteQuery` + `IntersectionObserver` sentinel |
-| Initial load size | `NeoScaleShell.tsx` | First page = 50, subsequent = 25 |
-| Fix nested scroll | `NeoScaleShell.tsx` CSS | Remove `overflow-y: auto` from `.ns-middle-front`, keep on `.ns-feed-scroll` only |
-| API key | No change | Anon key is a publishable key by design; RLS enforces security |
+| # | Heuristic | How addressed |
+|---|-----------|---------------|
+| 1 | System status | Save state indicator, saving spinners, block count |
+| 2 | Match real world | Block type tooltips use plain language |
+| 3 | User control | Back button, undo-delete confirmation |
+| 4 | Consistency | Toolbar follows same glass-card style as rest of UI |
+| 5 | Error prevention | Delete confirmation, pre-publish validation |
+| 6 | Recognition > recall | Block type descriptions in picker |
+| 7 | Flexibility | Ctrl+S shortcut |
+| 8 | Aesthetic minimalism | Clean toolbar with clear visual hierarchy |
+| 9 | Error recovery | Toast messages with specific guidance on what's missing |
+| 10 | Help | Tooltips on block types |
 
