@@ -114,118 +114,49 @@ export function getEdgeMidpoint(
   }
 }
 
-// Snap a value to the nearest grid line
-function snapVal(v: number, step: number): number {
-  return Math.round(v / step) * step;
-}
-
-// Generate an orthogonal (Manhattan) path snapped to grid dots.
-// The path leaves `from` in the direction of `fromEdge`, turns
-// at right angles along grid lines, and arrives at `to` from
-// the direction of `toEdge`.
-export function orthogonalPath(
-  from: { x: number; y: number },
-  to: { x: number; y: number },
-  fromEdge: string,
-  toEdge: string,
-  gridX: number,  // colWidth  (horizontal grid spacing)
-  gridY: number   // rowHeight (vertical grid spacing)
-): string {
-  const GAP = Math.max(gridX, gridY); // clearance before first turn
-
-  // Step out from the edge by one grid unit
-  const stepOut = (pt: { x: number; y: number }, edge: string, dist: number) => {
-    switch (edge) {
-      case 'top':    return { x: pt.x, y: pt.y - dist };
-      case 'bottom': return { x: pt.x, y: pt.y + dist };
-      case 'left':   return { x: pt.x - dist, y: pt.y };
-      case 'right':  return { x: pt.x + dist, y: pt.y };
-      default:       return pt;
-    }
+// Snap a pixel position to the nearest grid dot
+export function snapToGridDot(
+  x: number, y: number,
+  colWidth: number, rowHeight: number
+): { x: number; y: number } {
+  return {
+    x: Math.round(x / colWidth) * colWidth,
+    y: Math.round(y / rowHeight) * rowHeight,
   };
-
-  const a = stepOut(from, fromEdge, GAP);
-  const b = stepOut(to, toEdge, GAP);
-
-  // Snap waypoints to grid
-  const ax = snapVal(a.x, gridX);
-  const ay = snapVal(a.y, gridY);
-  const bx = snapVal(b.x, gridX);
-  const by = snapVal(b.y, gridY);
-
-  // Build the polyline waypoints
-  const pts: { x: number; y: number }[] = [from];
-
-  const isVerticalFrom = fromEdge === 'top' || fromEdge === 'bottom';
-  const isVerticalTo   = toEdge === 'top'  || toEdge === 'bottom';
-
-  if (isVerticalFrom && isVerticalTo) {
-    // Both vertical: go out vertically, across horizontally, in vertically
-    const midY = snapVal((ay + by) / 2, gridY);
-    pts.push({ x: from.x, y: midY });
-    pts.push({ x: to.x,   y: midY });
-  } else if (!isVerticalFrom && !isVerticalTo) {
-    // Both horizontal: go out horizontally, across vertically, in horizontally
-    const midX = snapVal((ax + bx) / 2, gridX);
-    pts.push({ x: midX, y: from.y });
-    pts.push({ x: midX, y: to.y });
-  } else if (isVerticalFrom && !isVerticalTo) {
-    // Vertical out, horizontal in
-    pts.push({ x: from.x, y: by });
-  } else {
-    // Horizontal out, vertical in
-    pts.push({ x: bx, y: from.y });
-  }
-
-  pts.push(to);
-
-  // Build SVG path with rounded corners
-  const R = Math.min(gridX, gridY) * 0.4; // corner radius
-  let d = `M ${pts[0].x} ${pts[0].y}`;
-
-  for (let i = 1; i < pts.length - 1; i++) {
-    const prev = pts[i - 1];
-    const curr = pts[i];
-    const next = pts[i + 1];
-
-    // Vectors to prev and next
-    const dx1 = curr.x - prev.x;
-    const dy1 = curr.y - prev.y;
-    const dx2 = next.x - curr.x;
-    const dy2 = next.y - curr.y;
-
-    const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
-    const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
-
-    if (len1 === 0 || len2 === 0) {
-      d += ` L ${curr.x} ${curr.y}`;
-      continue;
-    }
-
-    const r = Math.min(R, len1 / 2, len2 / 2);
-
-    const startX = curr.x - (dx1 / len1) * r;
-    const startY = curr.y - (dy1 / len1) * r;
-    const endX   = curr.x + (dx2 / len2) * r;
-    const endY   = curr.y + (dy2 / len2) * r;
-
-    d += ` L ${startX} ${startY}`;
-    d += ` Q ${curr.x} ${curr.y} ${endX} ${endY}`;
-  }
-
-  d += ` L ${pts[pts.length - 1].x} ${pts[pts.length - 1].y}`;
-  return d;
 }
 
-// Legacy alias kept for the live-drawing preview line (cursor follow)
-export function bezierPath(
-  from: { x: number; y: number },
-  to: { x: number; y: number },
-  _fromEdge: string,
-  _toEdge: string
+// Determine which edge of a block is closest to a given point
+export function nearestEdge(
+  point: { x: number; y: number },
+  position: BlockPosition,
+  colWidth: number,
+  rowHeight: number
+): 'top' | 'right' | 'bottom' | 'left' {
+  const edges: Array<{ edge: 'top' | 'right' | 'bottom' | 'left'; pt: { x: number; y: number } }> = [
+    { edge: 'top',    pt: getEdgeMidpoint(position, 'top', colWidth, rowHeight) },
+    { edge: 'right',  pt: getEdgeMidpoint(position, 'right', colWidth, rowHeight) },
+    { edge: 'bottom', pt: getEdgeMidpoint(position, 'bottom', colWidth, rowHeight) },
+    { edge: 'left',   pt: getEdgeMidpoint(position, 'left', colWidth, rowHeight) },
+  ];
+  let best = edges[0];
+  let bestDist = Infinity;
+  for (const e of edges) {
+    const d = Math.hypot(e.pt.x - point.x, e.pt.y - point.y);
+    if (d < bestDist) { bestDist = d; best = e; }
+  }
+  return best.edge;
+}
+
+// Build a polyline SVG path through a set of points (straight segments)
+export function polylinePath(
+  points: { x: number; y: number }[]
 ): string {
-  // Simple straight line for live drawing feedback
-  return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
+  if (points.length === 0) return '';
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length; i++) {
+    d += ` L ${points[i].x} ${points[i].y}`;
+  }
+  return d;
 }
 
 // Build TOC entries from stages and blocks

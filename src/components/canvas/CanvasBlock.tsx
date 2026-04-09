@@ -38,9 +38,9 @@ interface CanvasBlockProps {
   onPositionChange: (p: BlockPosition) => void;
   onBlockChange: (patch: Partial<CanvasBlockType>) => void;
   onDelete: () => void;
-  onArrowDrawStart: (blockId: string, edge: 'top' | 'right' | 'bottom' | 'left') => void;
+  onArrowDrawStart: () => void;
   isArrowDrawing: boolean;
-  onArrowDrawEnd: (blockId: string, edge: 'top' | 'right' | 'bottom' | 'left') => void;
+  onArrowDrawEnd: () => void;
   onAssignStage: (blockId: string, stageId: string | null) => void;
   onInsertResultBlock?: (block: Partial<CanvasBlockType>) => void;
 }
@@ -174,7 +174,11 @@ export function CanvasBlock({
         onClick={(e) => {
           if (mode === 'edit') {
             e.stopPropagation();
-            onSelect?.();
+            if (isArrowDrawing) {
+              onArrowDrawEnd();
+            } else {
+              onSelect?.();
+            }
           }
         }}
         onDoubleClick={() => {
@@ -306,6 +310,18 @@ export function CanvasBlock({
                   Edit
                 </button>
 
+                {/* Arrow/link button */}
+                <button
+                  onClick={e => { e.stopPropagation(); onArrowDrawStart(); }}
+                  style={{
+                    background: 'none', border: 'none',
+                    color: 'rgba(255,255,255,0.35)',
+                    cursor: 'pointer', fontSize: 10, padding: '1px 4px',
+                  }}
+                >
+                  →
+                </button>
+
                 {stages.length > 0 && (
                   <div style={{ position: 'relative' }}>
                     <button
@@ -422,29 +438,13 @@ export function CanvasBlock({
           </>
         )}
 
-        {/* ── Connection points for arrows ── */}
-        {mode === 'edit' && (hovered || selected) && (
-          <>
-            {(['top', 'right', 'bottom', 'left'] as const).map(edge => {
-              const edgeStyle = {
-                top: { top: -5, left: '50%', transform: 'translateX(-50%)' },
-                right: { right: -5, top: '50%', transform: 'translateY(-50%)' },
-                bottom: { bottom: -5, left: '50%', transform: 'translateX(-50%)' },
-                left: { left: -5, top: '50%', transform: 'translateY(-50%)' },
-              }[edge];
-              return (
-                <div key={edge}
-                  onMouseDown={e => { e.stopPropagation(); onArrowDrawStart(block.id, edge); }}
-                  onMouseUp={e => { e.stopPropagation(); if (isArrowDrawing) onArrowDrawEnd(block.id, edge); }}
-                  style={{
-                    position: 'absolute', width: 10, height: 10, borderRadius: '50%',
-                    background: 'rgba(232,87,26,0.80)', border: '2px solid rgba(6,6,10,0.90)',
-                    zIndex: 27, cursor: 'crosshair', ...edgeStyle,
-                  }}
-                />
-              );
-            })}
-          </>
+        {/* Arrow drawing indicator — glow when arrow mode active */}
+        {mode === 'edit' && isArrowDrawing && (
+          <div style={{
+            position: 'absolute', inset: -2,
+            border: '2px dashed rgba(232,87,26,0.40)',
+            borderRadius: 10, pointerEvents: 'none', zIndex: 26,
+          }} />
         )}
       </div>
 

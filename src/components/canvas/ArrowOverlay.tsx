@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { BlockArrow, CanvasBlock,
   ArrowType } from '@/lib/canvas-types';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
-import { getEdgeMidpoint, orthogonalPath, bezierPath }
+import { getEdgeMidpoint, polylinePath }
   from '@/lib/canvas-utils';
 
 interface ArrowOverlayProps {
@@ -13,16 +13,9 @@ interface ArrowOverlayProps {
   canvasWidth: number;
   canvasHeight: number;
   mode: 'edit' | 'view';
-  // Arrow drawing state from parent
-  drawingFrom: {
-    blockId: string;
-    edge: 'top'|'right'|'bottom'|'left'
-  } | null;
-  mousePos: { x: number; y: number } | null;
-  onArrowComplete: (
-    toBlockId: string,
-    toEdge: 'top'|'right'|'bottom'|'left'
-  ) => void;
+  // Live drawing
+  drawingPathStr: string | null;
+  drawingWaypoints: { x: number; y: number }[];
   onArrowDelete: (id: string) => void;
   onArrowTypeChange: (id: string, type: ArrowType)
     => void;
@@ -33,9 +26,8 @@ interface ArrowOverlayProps {
 export function ArrowOverlay({
   arrows, blocks, colWidth, rowHeight,
   canvasWidth, canvasHeight, mode,
-  drawingFrom, mousePos,
-  onArrowComplete, onArrowDelete,
-  onArrowTypeChange, onArrowLabelChange,
+  drawingPathStr, drawingWaypoints,
+  onArrowDelete, onArrowTypeChange, onArrowLabelChange,
 }: ArrowOverlayProps) {
 
   const [selectedArrow, setSelectedArrow] =
@@ -50,7 +42,7 @@ export function ArrowOverlay({
     blocks.map(b => [b.id, b])
   );
 
-  // Calculate arrow path between two blocks
+  // Calculate arrow path between two blocks using straight segments
   const getArrowPath = (arrow: BlockArrow) => {
     const fromBlock = blockMap.get(arrow.fromBlockId);
     const toBlock = blockMap.get(arrow.toBlockId);
@@ -66,33 +58,12 @@ export function ArrowOverlay({
       arrow.toEdge,
       colWidth, rowHeight
     );
-    const path = orthogonalPath(
-      from, to, arrow.fromEdge, arrow.toEdge,
-      colWidth, rowHeight
-    );
+    const path = polylinePath([from, to]);
     const midX = (from.x + to.x) / 2;
     const midY = (from.y + to.y) / 2;
 
     return { path, from, to, midX, midY };
   };
-
-  // Live drawing line from connection point to cursor
-  const getDrawingPath = () => {
-    if (!drawingFrom || !mousePos) return null;
-    const fromBlock = blockMap.get(drawingFrom.blockId);
-    if (!fromBlock) return null;
-    const from = getEdgeMidpoint(
-      fromBlock.position,
-      drawingFrom.edge,
-      colWidth, rowHeight
-    );
-    return bezierPath(
-      from, mousePos,
-      drawingFrom.edge, 'left'
-    );
-  };
-
-  const drawingPath = getDrawingPath();
 
   return (
     <svg
@@ -218,16 +189,31 @@ export function ArrowOverlay({
       })}
 
       {/* Live drawing path */}
-      {drawingPath && (
-        <path
-          d={drawingPath}
-          fill="none"
-          stroke="rgba(232,87,26,0.60)"
-          strokeWidth={2}
-          strokeDasharray="6,4"
-          markerEnd="url(#arrow-drawing)"
-          pointerEvents="none"
-        />
+      {drawingPathStr && (
+        <>
+          <path
+            d={drawingPathStr}
+            fill="none"
+            stroke="rgba(232,87,26,0.60)"
+            strokeWidth={2}
+            strokeDasharray="6,4"
+            markerEnd="url(#arrow-drawing)"
+            pointerEvents="none"
+          />
+          {/* Locked waypoint dots */}
+          {drawingWaypoints.map((wp, i) => (
+            <circle
+              key={i}
+              cx={wp.x}
+              cy={wp.y}
+              r={4}
+              fill="#E8571A"
+              stroke="rgba(6,6,10,0.90)"
+              strokeWidth={2}
+              pointerEvents="none"
+            />
+          ))}
+        </>
       )}
 
       {/* Arrow type picker tooltip */}
