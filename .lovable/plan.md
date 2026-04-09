@@ -1,45 +1,78 @@
 
 
-## Fix Canvas Block Sizing, Scrolling, and Zoom
+## Canvas Editor Overhaul: Modal Block Editing + Compact Grid Cards + Stage Tabs + Timeline View
 
-### Root cause
-The block editors (CodeBlockEditor, PromptBlockEditor, etc.) were designed for a full-page upload form — they have `rows={10}` textareas, multiple labeled sections, and no height constraints. When rendered inside a canvas grid cell that's only `4 × 24px = 96px`, they overflow massively, making one block fill the entire panel.
+### Core concept change
+
+Instead of embedding full editors inside grid blocks (which causes sizing/overflow issues), switch to a two-layer model:
+
+1. **Grid cards** — Small, fixed-size cards on the canvas showing only block type icon + name/title. Clicking opens a modal.
+2. **Modal editor** — A centered dialog where the user fills out block content with the full editor (no size constraints).
+
+This also adds stage tabs in the upload editor and a timeline view on the content detail page.
 
 ### Changes
 
-**1. Constrain block content to its grid cell** (`CanvasBlock.tsx`)
-- Set block height to the exact grid cell height (not `minHeight`)
-- Add `overflow-y: auto` on the `.block-editor-area` div so content scrolls within the block
-- Add a subtle scrollbar styled to match the dark theme
-- This way each block is a fixed-size card on the canvas; users scroll inside it to edit
+**1. Block grid cards — compact representation** (`CanvasBlock.tsx`)
+- In edit mode, replace the inline `BlockInlineEditor` with a compact card showing:
+  - Block type icon/color accent bar
+  - Block name (subheading or type label, e.g. "Prompt" / "My API Call")
+  - A small preview snippet (first ~40 chars of textContent, truncated)
+  - Click anywhere on the card opens the edit modal
+- Keep the drag grip, resize handles, and delete button as-is
+- Remove the `canvas-block-scroll` overflow approach — cards are now naturally small
+- Default `rowSpan` can drop to 3-4 since cards are just labels
 
-**2. Increase default block rowSpan** (`CanvasToolbar.tsx` + `useCanvasDocument.ts`)
-- Change default `rowSpan` from `4` to `8` (gives `8 × 24 = 192px` — enough for a compact editor)
-- For code blocks specifically, default to `rowSpan: 12` (~288px) since they need more room
-- This makes blocks appropriately sized without taking over the screen
+**2. Modal block editor** (`CanvasBlock.tsx` or new `BlockEditModal.tsx`)
+- On click, open a dialog/modal centered on screen (max-width 600px, max-height 80vh, scrollable)
+- Render `BlockInlineEditor` inside the modal at full size (no compact CSS overrides needed)
+- "Done" button closes the modal and applies changes
+- This completely solves the sizing problem — editors get proper space, grid stays clean
 
-**3. Add canvas zoom control** (`CanvasShell.tsx`)
-- Add a zoom level state (`0.5`, `0.75`, `1.0`, `1.25`) defaulting to `1.0`
-- Apply `transform: scale(zoom)` and `transform-origin: top left` to the grid container
-- Adjust `minWidth` and `minHeight` by `1/zoom` so the scroll area stays correct
-- Add zoom buttons (−/+) and a percentage label to the bottom-right corner, separate from the toolbar
-- Keyboard shortcuts: `Ctrl/Cmd + =` zoom in, `Ctrl/Cmd + -` zoom out, `Ctrl/Cmd + 0` reset
+**3. Stage tabs in upload editor** (`CanvasShell.tsx`)
+- If stages exist, render a tab bar above the canvas grid (one tab per stage + "All" tab)
+- Selecting a stage tab filters visible blocks to only those assigned to that stage
+- "All" tab shows everything (default)
+- Add a "+" tab to create a new stage
+- This gives structure to the editing flow without cluttering the canvas
 
-**4. Compact the inline editors for canvas context** (`BlockInlineEditor.tsx`)
-- Add a `compact` mode wrapper that reduces font sizes, padding, and textarea rows
-- Reduce `FieldLabel` font size and margins
-- Override textarea `rows` to smaller values (code: 5 instead of 10, others: 2 instead of 3)
-- Since we can't modify ContentBlockBuilder directly (it's shared), wrap each editor in a container with CSS that targets textareas and inputs: smaller font, tighter padding, reduced row count via `max-height`
+**4. Timeline view on ContentDetail** (`ContentDetail.tsx`)
+- Replace the flat canvas view with a vertical timeline layout when stages exist
+- Each stage becomes a timeline node with:
+  - Stage number + title as a heading
+  - Blocks rendered sequentially underneath (using existing `ContentBlockViewer`)
+  - A vertical line connecting stages
+- If no stages, fall back to current linear block rendering
+- Remove the spatial canvas grid from the detail page (it's an authoring tool, not a reading tool)
 
-**5. Fix vertical scroll extent** (`CanvasShell.tsx`)
-- The canvas height calculation already adds 200px buffer, but the outer container may clip
-- Remove `overflow: hidden` from the outermost shell div
-- Ensure the scroll container uses `flex: 1; min-height: 0` so it properly fills and scrolls
+**5. Reduce default block sizes** (`useCanvasDocument.ts` + `CanvasToolbar.tsx`)
+- Default `rowSpan`: 3 (cards are just type + name)
+- Default `colSpan`: 4 (fits 3 blocks per row on a 12-col grid)
+- This makes the canvas feel spacious with room for arrangement
 
 ### Files to edit
-- `src/components/canvas/CanvasBlock.tsx` — fixed height, overflow scroll
-- `src/components/canvas/CanvasShell.tsx` — zoom controls, scroll fix
-- `src/components/canvas/CanvasToolbar.tsx` — larger default rowSpan per block type
-- `src/components/canvas/BlockInlineEditor.tsx` — compact wrapper CSS
-- `src/hooks/useCanvasDocument.ts` — default rowSpan adjustment
+
+| File | What |
+|------|------|
+| `src/components/canvas/CanvasBlock.tsx` | Replace inline editor with compact card + click-to-open modal |
+| `src/components/canvas/BlockInlineEditor.tsx` | Remove compact CSS overrides (no longer needed — modal has full space) |
+| `src/components/canvas/CanvasShell.tsx` | Add stage tab bar above canvas, filter blocks by active stage |
+| `src/pages/ContentDetail.tsx` | Replace CanvasShell view-mode with vertical timeline per stage |
+| `src/components/canvas/CanvasToolbar.tsx` | Update default rowSpan/colSpan for new compact cards |
+| `src/hooks/useCanvasDocument.ts` | Adjust default rowSpan to 3 |
+
+### Heuristic coverage
+
+| # | Heuristic | How |
+|---|-----------|-----|
+| 1 | System status | Card shows block type + name at a glance |
+| 2 | Real world | Timeline on detail page matches mental model of sequential steps |
+| 3 | User control | Modal can be closed without saving; stage tabs filter without deleting |
+| 4 | Consistency | All blocks use same compact card pattern |
+| 5 | Error prevention | Modal editing prevents accidental drag-while-typing |
+| 6 | Recognition | Block type + color accent immediately identifies what each card is |
+| 7 | Flexibility | Stage tabs for organized editing; "All" tab for overview |
+| 8 | Minimalist | Grid shows only essential info; detail in modal on demand |
+| 9 | Error recovery | Modal has cancel/done; changes apply on close |
+| 10 | Help | Block type labels and color coding serve as inline documentation |
 
