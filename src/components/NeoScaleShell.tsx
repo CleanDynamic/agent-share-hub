@@ -1734,12 +1734,12 @@ export function NeoScaleShell() {
     }
 
     /* Fallback — all other routes.
-       Content detail pages render their own inline back button,
+       Content detail pages and upload render their own inline back button,
        so suppress the sticky ns-back-btn there to reclaim header height. */
-    const isContentDetail = path.startsWith('/content/');
     return (
       <div className="ns-page-shell">
-        {!isContentDetail && (
+        {!path.startsWith('/upload') &&
+         !path.startsWith('/content/') && (
           <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
         )}
         <div className="ns-page-body">

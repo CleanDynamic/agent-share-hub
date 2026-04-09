@@ -213,7 +213,7 @@ const Upload = () => {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [uploadType, setUploadType] = useState<"blog" | "single" | "bounty">("single");
   const [isProjectMode, setIsProjectMode] = useState(false);
-  const [contentBlocks, setContentBlocks] = useState<BlockOrGroup[]>([emptyBlock("text")]);
+  const [contentBlocks, setContentBlocks] = useState<BlockOrGroup[]>([]);
   const [wteBlocks, setWteBlocks] = useState<WteBlock[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -1141,189 +1141,148 @@ const Upload = () => {
             Blueprint expands to a sub-type picker
             (build / technique / discovery). */}
         {showTypeChooser && (() => {
-          const selectedPostType = form.watch('post_type');
-          const blueprintSubtypes = ['build', 'technique', 'discovery'];
-          const isBlueprintSelected =
-            blueprintSubtypes.includes(selectedPostType);
-          const isBlogSelected = selectedPostType === 'discussion';
-          const isBountySelected = uploadType === 'bounty';
+          const goNext = () => setTimeout(() => setShowTypeChooser(false), 220);
 
           const UPLOAD_TYPES = [
             {
               value: 'blueprint',
               label: 'Blueprint',
-              emoji: '🔷',
               description: 'A build, technique, or discovery',
               color: '#E8571A',
-              bg: 'rgba(232,87,26,0.12)',
-              border: 'rgba(232,87,26,0.25)',
-              selected: isBlueprintSelected,
             },
             {
               value: 'blog',
               label: 'Blog',
-              emoji: '📝',
-              description: 'A thought, question, or discussion',
+              description: 'A thought, question, or open discussion',
               color: '#3B82F6',
-              bg: 'rgba(59,130,246,0.12)',
-              border: 'rgba(59,130,246,0.25)',
-              selected: isBlogSelected,
             },
             {
               value: 'bounty',
               label: 'Bounty',
-              emoji: '🎯',
-              description: 'A challenge with a reward',
+              description: 'A challenge with a reward attached',
               color: '#F59E0B',
-              bg: 'rgba(245,158,11,0.12)',
-              border: 'rgba(245,158,11,0.25)',
-              selected: isBountySelected,
             },
           ];
 
-          const BLUEPRINT_SUBTYPES = [
-            { value: 'build', label: 'Build',
-              desc: 'Something you made that others can replicate' },
-            { value: 'technique', label: 'Technique',
-              desc: 'A proven method with evidence' },
-            { value: 'discovery', label: 'Discovery',
-              desc: 'Something surprising you found' },
-          ];
-
           return (
-            <div style={{ padding: '0 0 24px 0' }}>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              padding: '24px 20px',
+              boxSizing: 'border-box',
+              justifyContent: 'center',
+            }}>
+
+              {/* Heading */}
               <div style={{
-                fontSize: 22, fontWeight: 700,
-                fontFamily: "'Playfair Display', serif",
-                color: '#fff', marginBottom: 6,
+                marginBottom: 32,
               }}>
-                What kind of post is this?
-              </div>
-              <div style={{
-                fontSize: 13, color: 'rgba(255,255,255,0.40)',
-                marginBottom: 24,
-              }}>
-                This shapes how your post appears in the feed
-                and how the community finds it.
+                <div style={{
+                  fontSize: 11, fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.12em',
+                  color: 'rgba(255,255,255,0.28)',
+                  marginBottom: 8,
+                }}>
+                  What are you sharing?
+                </div>
+                <div style={{
+                  fontSize: 22, fontWeight: 700,
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  color: 'rgba(255,255,255,0.88)',
+                  lineHeight: 1.2,
+                }}>
+                  Start a post
+                </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {UPLOAD_TYPES.map(ut => {
-                  const isSelected = ut.selected;
+              {/* Three equal tiles — vertical stack */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+              }}>
+                {UPLOAD_TYPES.map(type => {
+                  const isSelected = uploadType === type.value;
                   return (
-                    <div key={ut.value}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (ut.value === 'blueprint') {
-                            // Default sub-type to 'build' when first picked
-                            if (!isBlueprintSelected) {
-                              form.setValue('post_type', 'build' as any);
-                            }
-                            setUploadType('single');
-                          } else if (ut.value === 'blog') {
-                            form.setValue('post_type', 'discussion' as any);
-                            setUploadType('blog');
-                            setTimeout(() => setShowTypeChooser(false), 220);
-                          } else {
-                            // bounty
-                            setUploadType('bounty');
-                            setTimeout(() => setShowTypeChooser(false), 220);
-                          }
-                        }}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 16,
-                          padding: '16px 20px',
-                          background: isSelected
-                            ? `${ut.bg}`
-                            : 'rgba(255,255,255,0.03)',
-                          border: `1px solid ${isSelected ? ut.border : 'rgba(255,255,255,0.07)'}`,
-                          borderRadius: 14,
-                          cursor: 'pointer',
-                          transition: 'all 0.18s ease',
-                          textAlign: 'left' as const,
-                          width: '100%',
-                        }}
-                      >
-                        <span style={{ fontSize: 28, flexShrink: 0 }}>
-                          {ut.emoji}
-                        </span>
-                        <div style={{ flex: 1 }}>
-                          <div style={{
-                            fontSize: 16, fontWeight: 700,
-                            color: isSelected ? ut.color : '#fff',
-                            fontFamily: "'Playfair Display', serif",
-                            marginBottom: 3,
-                          }}>
-                            {ut.label}
-                          </div>
-                          <div style={{
-                            fontSize: 12,
-                            color: 'rgba(255,255,255,0.40)',
-                          }}>
-                            {ut.description}
-                          </div>
-                        </div>
-                        <span style={{
-                          color: isSelected ? ut.color : 'rgba(255,255,255,0.20)',
-                          fontSize: 18,
-                        }}>→</span>
-                      </button>
-
-                      {/* Blueprint sub-type chips — appear when blueprint is selected */}
-                      {ut.value === 'blueprint' && isBlueprintSelected && (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() => {
+                        setUploadType(type.value as any);
+                        goNext();
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 16,
+                        padding: '18px 20px',
+                        borderRadius: 12,
+                        background: isSelected
+                          ? `${type.color}12`
+                          : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${isSelected
+                          ? type.color + '35'
+                          : 'rgba(255,255,255,0.07)'}`,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        textAlign: 'left',
+                      }}
+                      onMouseEnter={e => {
+                        if (!isSelected) {
+                          (e.currentTarget as HTMLElement)
+                            .style.background =
+                            'rgba(255,255,255,0.05)';
+                          (e.currentTarget as HTMLElement)
+                            .style.borderColor =
+                            'rgba(255,255,255,0.12)';
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (!isSelected) {
+                          (e.currentTarget as HTMLElement)
+                            .style.background =
+                            'rgba(255,255,255,0.03)';
+                          (e.currentTarget as HTMLElement)
+                            .style.borderColor =
+                            'rgba(255,255,255,0.07)';
+                        }
+                      }}
+                    >
+                      {/* Left: text */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
-                          display: 'flex', gap: 8,
-                          padding: '12px 8px 4px 8px',
-                          flexWrap: 'wrap' as const,
+                          fontSize: 15, fontWeight: 700,
+                          color: isSelected
+                            ? type.color
+                            : 'rgba(255,255,255,0.80)',
+                          marginBottom: 3,
+                          fontFamily:
+                            "'Playfair Display', Georgia, serif",
                         }}>
-                          {BLUEPRINT_SUBTYPES.map(sub => {
-                            const subSelected = selectedPostType === sub.value;
-                            return (
-                              <button
-                                key={sub.value}
-                                type="button"
-                                onClick={() => {
-                                  form.setValue('post_type', sub.value as any);
-                                  setTimeout(() => setShowTypeChooser(false), 220);
-                                }}
-                                title={sub.desc}
-                                style={{
-                                  flex: '1 1 30%',
-                                  minWidth: 120,
-                                  padding: '10px 14px',
-                                  background: subSelected
-                                    ? 'rgba(232,87,26,0.12)'
-                                    : 'rgba(255,255,255,0.03)',
-                                  border: `1px solid ${subSelected
-                                    ? 'rgba(232,87,26,0.30)'
-                                    : 'rgba(255,255,255,0.07)'}`,
-                                  borderRadius: 10,
-                                  cursor: 'pointer',
-                                  transition: 'all 0.15s ease',
-                                  textAlign: 'left' as const,
-                                }}
-                              >
-                                <div style={{
-                                  fontSize: 12, fontWeight: 700,
-                                  color: subSelected ? '#E8571A' : 'rgba(255,255,255,0.85)',
-                                  marginBottom: 2,
-                                }}>
-                                  {sub.label}
-                                </div>
-                                <div style={{
-                                  fontSize: 10,
-                                  color: 'rgba(255,255,255,0.35)',
-                                  lineHeight: 1.35,
-                                }}>
-                                  {sub.desc}
-                                </div>
-                              </button>
-                            );
-                          })}
+                          {type.label}
                         </div>
-                      )}
-                    </div>
+                        <div style={{
+                          fontSize: 12,
+                          color: 'rgba(255,255,255,0.35)',
+                          lineHeight: 1.5,
+                        }}>
+                          {type.description}
+                        </div>
+                      </div>
+
+                      {/* Right: arrow */}
+                      <span style={{
+                        fontSize: 16,
+                        color: isSelected
+                          ? type.color
+                          : 'rgba(255,255,255,0.20)',
+                        flexShrink: 0,
+                      }}>
+                        →
+                      </span>
+                    </button>
                   );
                 })}
               </div>
