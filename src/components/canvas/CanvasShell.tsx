@@ -6,6 +6,8 @@ import { CanvasHeader } from './CanvasHeader';
 import { DotGrid } from './DotGrid';
 import { CanvasBlock } from './CanvasBlock';
 import { CanvasInsertZone } from './CanvasInsertZone';
+import { ArrowOverlay } from './ArrowOverlay';
+import { ARROW_TYPE_META } from '@/lib/canvas-types';
 
 interface CanvasShellProps {
   mode: 'edit' | 'view';
@@ -38,6 +40,61 @@ export function CanvasShell(props: CanvasShellProps) {
   const [containerWidth, setContainerWidth] =
     useState(0);
   const [tocOpen, setTocOpen] = useState(true);
+
+  // ── Arrow drawing state ───────────────────────────
+  const [drawingFrom, setDrawingFrom] = useState<{
+    blockId: string;
+    edge: 'top'|'right'|'bottom'|'left';
+  } | null>(null);
+  const [mousePos, setMousePos] = useState<{
+    x: number; y: number;
+  } | null>(null);
+  const [pendingArrow, setPendingArrow] = useState<{
+    fromBlockId: string;
+    fromEdge: 'top'|'right'|'bottom'|'left';
+  } | null>(null);
+
+  // Track mouse position for live arrow drawing
+  const handleCanvasMouseMove = (
+    e: React.MouseEvent<HTMLDivElement>
+  ) => {
+    if (!drawingFrom) return;
+    const rect = (
+      e.currentTarget as HTMLDivElement
+    ).getBoundingClientRect();
+    setMousePos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
+
+  const handleArrowDrawStart = (
+    blockId: string,
+    edge: 'top'|'right'|'bottom'|'left'
+  ) => {
+    setDrawingFrom({ blockId, edge });
+    setPendingArrow({ fromBlockId: blockId,
+      fromEdge: edge });
+  };
+
+  const handleArrowDrawEnd = (
+    toBlockId: string,
+    toEdge: 'top'|'right'|'bottom'|'left'
+  ) => {
+    if (!pendingArrow) return;
+    if (pendingArrow.fromBlockId !== toBlockId) {
+      doc.addArrow(
+        pendingArrow.fromBlockId,
+        toBlockId,
+        pendingArrow.fromEdge,
+        toEdge,
+        'produces'
+      );
+    }
+    setDrawingFrom(null);
+    setMousePos(null);
+    setPendingArrow(null);
+  };
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -119,6 +176,11 @@ export function CanvasShell(props: CanvasShellProps) {
         {/* The grid */}
         <div
           ref={containerRef}
+          onMouseMove={handleCanvasMouseMove}
+          onMouseUp={() => {
+            setDrawingFrom(null);
+            setMousePos(null);
+          }}
           style={{
             position: 'relative',
             flex: 1,
@@ -191,13 +253,51 @@ export function CanvasShell(props: CanvasShellProps) {
                 doc.updateBlock(block.id, patch)
               }
               onDelete={() => doc.deleteBlock(block.id)}
-              onArrowDrawStart={() => {}}
-              isArrowDrawing={false}
-              onArrowDrawEnd={() => {}}
+              onArrowDrawStart={handleArrowDrawStart}
+              isArrowDrawing={drawingFrom !== null}
+              onArrowDrawEnd={handleArrowDrawEnd}
             />
           ))}
 
-          {/* Arrows — rendered in Prompt 4 */}
+          {/* Arrow overlay */}
+          {colWidth > 0 && (
+            <ArrowOverlay
+              arrows={doc.arrows}
+              blocks={doc.blocks}
+              colWidth={colWidth}
+              rowHeight={doc.rowHeight}
+              canvasWidth={containerWidth}
+              canvasHeight={canvasHeight}
+              mode={mode}
+              drawingFrom={drawingFrom}
+              mousePos={mousePos}
+              onArrowComplete={handleArrowDrawEnd}
+              onArrowDelete={id =>
+                doc.setArrows(prev =>
+                  prev.filter(a => a.id !== id)
+                )
+              }
+              onArrowTypeChange={(id, type) => {
+                const meta = ARROW_TYPE_META[type];
+                doc.setArrows(prev =>
+                  prev.map(a =>
+                    a.id === id
+                      ? { ...a, arrowType: type,
+                          label: meta.label,
+                          color: meta.color }
+                      : a
+                  )
+                );
+              }}
+              onArrowLabelChange={(id, label) =>
+                doc.setArrows(prev =>
+                  prev.map(a =>
+                    a.id === id ? { ...a, label } : a
+                  )
+                )
+              }
+            />
+          )}
 
           {/* Insert zones — edit mode only */}
           {mode === 'edit' && colWidth > 0 && (
