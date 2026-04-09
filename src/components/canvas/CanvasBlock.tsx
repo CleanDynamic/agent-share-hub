@@ -233,7 +233,7 @@ export function CanvasBlock({
           position: 'absolute',
           left: px.x + inset, top: px.y + inset,
           width: px.w - inset * 2,
-          minHeight: px.h - inset * 2,
+          height: px.h - inset * 2,
           zIndex: dragging ? 20 : 10,
           opacity: dragging ? 0.4 : 1,
           cursor: 'default',
@@ -428,8 +428,13 @@ export function CanvasBlock({
 
           {/* Block content */}
           <div
-            className="block-editor-area"
-            style={{ padding: 12 }}
+            className="block-editor-area canvas-block-scroll"
+            style={{
+              padding: 12,
+              overflowY: 'auto',
+              maxHeight: 'calc(100% - 4px)',
+              boxSizing: 'border-box',
+            }}
           >
             {/* Section heading renders differently */}
             {block.type === 'section_heading' ? (

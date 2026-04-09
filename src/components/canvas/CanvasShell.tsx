@@ -54,6 +54,29 @@ export function CanvasShell(props: CanvasShellProps) {
   const [annotationsOpen, setAnnotationsOpen] =
     useState(false);
 
+  // Zoom
+  const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25];
+  const [zoom, setZoom] = useState(1.0);
+  const zoomIn = () => setZoom(z => {
+    const i = ZOOM_LEVELS.indexOf(z);
+    return i < ZOOM_LEVELS.length - 1 ? ZOOM_LEVELS[i + 1] : z;
+  });
+  const zoomOut = () => setZoom(z => {
+    const i = ZOOM_LEVELS.indexOf(z);
+    return i > 0 ? ZOOM_LEVELS[i - 1] : z;
+  });
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomIn(); }
+      if (e.key === '-') { e.preventDefault(); zoomOut(); }
+      if (e.key === '0') { e.preventDefault(); setZoom(1.0); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   // ── Arrow drawing state ───────────────────────────
   const [drawingFrom, setDrawingFrom] = useState<{
     blockId: string;
@@ -169,6 +192,7 @@ export function CanvasShell(props: CanvasShellProps) {
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
+        minHeight: 0,
       }}>
 
         {/* Document header */}
@@ -198,9 +222,11 @@ export function CanvasShell(props: CanvasShellProps) {
           style={{
             position: 'relative',
             flex: 1,
-            minHeight: canvasHeight,
+            minHeight: canvasHeight / zoom,
             minWidth: 1200,
             width: '100%',
+            transform: `scale(${zoom})`,
+            transformOrigin: 'top left',
           }}
         >
           {/* Dot grid — edit mode only */}
@@ -408,6 +434,25 @@ export function CanvasShell(props: CanvasShellProps) {
           doc.updateBlock(id, patch)
         }
       />
+
+      {/* Zoom controls */}
+      {mode === 'edit' && (
+        <div style={{
+          position: 'fixed',
+          bottom: 16, right: 16,
+          display: 'flex', alignItems: 'center', gap: 4,
+          background: 'rgba(10,10,16,0.85)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8, padding: '3px 6px',
+          zIndex: 100,
+          fontSize: 11, color: 'rgba(255,255,255,0.45)',
+        }}>
+          <button onClick={zoomOut} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 14, padding: '2px 6px' }}>−</button>
+          <span style={{ minWidth: 36, textAlign: 'center', fontWeight: 600 }}>{Math.round(zoom * 100)}%</span>
+          <button onClick={zoomIn} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 14, padding: '2px 6px' }}>+</button>
+        </div>
+      )}
 
       {/* Version history panel */}
       <VersionHistory
