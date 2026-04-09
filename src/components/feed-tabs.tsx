@@ -3,7 +3,7 @@ const ALL_TABS = [
   { label: "Following", value: "Following" },
   { label: "Trending", value: "Trending" },
   { label: "Recent", value: "Recent" },
-  { label: "🎯 Bounties", value: "Bounties" },
+  { label: "Bounties", value: "Bounties" },
 ]
 
 const FILTERED_TABS = [

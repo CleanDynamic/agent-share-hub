@@ -17,7 +17,6 @@ import { FollowButton } from "@/components/FollowButton";
 import { displayContentType, POST_TYPES, resolvePostType } from "@/lib/content-types";
 import { FeedCard, type FeedPost } from "@/components/feed-card";
 import { ReblogFeedCard, type ReblogPost } from "@/components/ReblogFeedCard";
-import { ComposerBar } from "@/components/composer-bar";
 import { FeedTabs } from "@/components/feed-tabs";
 
 /* ────────────────────────────────────────────────
@@ -638,13 +637,6 @@ const NEOSCALE_CSS = `
       transparent 100%
     );
   }
-}
-
-.ns-tile-emoji {
-  font-size: 20px;
-  position: relative;
-  z-index: 1;
-  line-height: 1;
 }
 
 .ns-tile-label {
@@ -1851,17 +1843,13 @@ export function NeoScaleShell() {
               {/* FRONT FACE — home feed */}
               <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
 
-                {/* Compose area + tabs — padded header strip */}
+                {/* Tabs + filter banner — padded header strip */}
                 <div style={{ padding: '16px 16px 0' }}>
-                  <ComposerBar user={{
-                    display_name: profile?.display_name ?? 'You',
-                    avatar_url: profile?.avatar_url
-                  }} />
                   {filterPostType && (() => {
                     const filterBannerLabel =
-                      filterPostType === 'blueprint' ? '🔷 Blueprints'
-                      : filterPostType === 'discussion' ? '📝 Blogs'
-                      : filterPostType === 'bounty' ? '🎯 Bounties'
+                      filterPostType === 'blueprint' ? 'Blueprints'
+                      : filterPostType === 'discussion' ? 'Blogs'
+                      : filterPostType === 'bounty' ? 'Bounties'
                       : '';
                     return (
                     <div style={{
@@ -2104,7 +2092,6 @@ export function NeoScaleShell() {
                     }
                   }}
                 >
-                  <span className="ns-tile-emoji">{tile.emoji}</span>
                   <span className="ns-tile-label">{tile.label}</span>
                 </div>
               ))}
