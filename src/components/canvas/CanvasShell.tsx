@@ -297,7 +297,7 @@ export function CanvasShell(props: CanvasShellProps) {
 
           {/* Stage zones — coloured backgrounds */}
           {doc.stages.map(stage => {
-            const stageBlocks = doc.blocks.filter(
+            const stageBlocks = filteredBlocks.filter(
               b => b.stageId === stage.id
             );
             if (stageBlocks.length === 0) return null;
@@ -333,7 +333,7 @@ export function CanvasShell(props: CanvasShellProps) {
           })}
 
           {/* Blocks */}
-          {colWidth > 0 && doc.blocks.map(block => (
+          {colWidth > 0 && filteredBlocks.map(block => (
             <CanvasBlock
               key={block.id}
               block={block}
