@@ -158,8 +158,8 @@ export function useCanvasDocument(
         position: {
           col: position?.col ?? 1,
           row: position?.row ?? nextRow,
-          colSpan: position?.colSpan ?? 6,
-          rowSpan: position?.rowSpan ?? 8,
+          colSpan: position?.colSpan ?? 4,
+          rowSpan: position?.rowSpan ?? 3,
         },
         stageId: null,
         stageIndex: null,
