@@ -46,6 +46,7 @@ export function CanvasBlock({
   const [annotationOpen, setAnnotationOpen] = useState(false);
   const [stagePickerOpen, setStagePickerOpen] = useState(false);
   const [executionOpen, setExecutionOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const dragStartRef = useRef({
     x: 0, y: 0, origCol: 0, origRow: 0,
@@ -474,16 +475,26 @@ export function CanvasBlock({
                 className="block-toolbar-btn"
                 onClick={e => {
                   e.stopPropagation();
-                  onDelete();
+                  if (deleteConfirm) {
+                    onDelete();
+                    setDeleteConfirm(false);
+                  } else {
+                    setDeleteConfirm(true);
+                    setTimeout(() => setDeleteConfirm(false), 2500);
+                  }
                 }}
+                onMouseLeave={() => setDeleteConfirm(false)}
                 style={{
-                  background: 'none', border: 'none',
-                  color: 'rgba(255,255,255,0.35)',
+                  background: deleteConfirm ? 'rgba(239,68,68,0.15)' : 'none',
+                  border: deleteConfirm ? '1px solid rgba(239,68,68,0.3)' : 'none',
+                  color: deleteConfirm ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.35)',
                   cursor: 'pointer', fontSize: 12,
                   padding: '2px 5px',
+                  borderRadius: 4,
+                  transition: 'all 0.15s',
                 }}
               >
-                Delete
+                {deleteConfirm ? 'Confirm?' : 'Delete'}
               </button>
               <button
                 className="block-toolbar-btn"

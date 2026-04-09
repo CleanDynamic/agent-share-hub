@@ -14,19 +14,19 @@ interface CanvasInsertZoneProps {
 }
 
 const QUICK_BLOCK_TYPES = [
-  { type: 'text', label: 'Text', accent: 'rgba(255,255,255,0.20)' },
-  { type: 'prompt', label: 'Prompt', accent: '#E8571A' },
-  { type: 'code', label: 'Code', accent: '#3B82F6' },
-  { type: 'result', label: 'Result', accent: '#22C55E' },
-  { type: 'image', label: 'Image', accent: '#F59E0B' },
-  { type: 'agent_config', label: 'Agent', accent: '#7C3AED' },
-  { type: 'workflow', label: 'Workflow', accent: '#2EC4B6' },
-  { type: 'comparison', label: 'Compare', accent: '#EC4899' },
-  { type: 'tool_setup', label: 'Tool', accent: '#06B6D4' },
-  { type: 'model_params', label: 'Model', accent: '#A78BFA' },
-  { type: 'tutorial_step', label: 'Tutorial', accent: '#E8571A' },
-  { type: 'section_heading', label: 'Heading', accent: 'rgba(255,255,255,0.40)' },
-  { type: 'resource', label: 'Resource', accent: '#64748B' },
+  { type: 'text', label: 'Text', accent: 'rgba(255,255,255,0.20)', desc: 'Plain text or notes' },
+  { type: 'prompt', label: 'Prompt', accent: '#E8571A', desc: 'Write an AI prompt' },
+  { type: 'code', label: 'Code', accent: '#3B82F6', desc: 'Code snippet or script' },
+  { type: 'result', label: 'Result', accent: '#22C55E', desc: 'Output or outcome' },
+  { type: 'image', label: 'Image', accent: '#F59E0B', desc: 'Screenshot or visual' },
+  { type: 'agent_config', label: 'Agent', accent: '#7C3AED', desc: 'Configure an AI agent' },
+  { type: 'workflow', label: 'Workflow', accent: '#2EC4B6', desc: 'Multi-step process' },
+  { type: 'comparison', label: 'Compare', accent: '#EC4899', desc: 'Side-by-side comparison' },
+  { type: 'tool_setup', label: 'Tool', accent: '#06B6D4', desc: 'Tool setup instructions' },
+  { type: 'model_params', label: 'Model', accent: '#A78BFA', desc: 'Model configuration' },
+  { type: 'tutorial_step', label: 'Tutorial', accent: '#E8571A', desc: 'Step-by-step guide' },
+  { type: 'section_heading', label: 'Heading', accent: 'rgba(255,255,255,0.40)', desc: 'Section divider' },
+  { type: 'resource', label: 'Resource', accent: '#64748B', desc: 'Link or reference' },
 ];
 
 export function CanvasInsertZone({
@@ -126,6 +126,7 @@ export function CanvasInsertZone({
               <button
                 key={bt.type}
                 type="button"
+                title={bt.desc}
                 onClick={() => {
                   onInsert(bt.type, {
                     col: 1,
@@ -144,9 +145,15 @@ export function CanvasInsertZone({
                   color: bt.accent,
                   fontWeight: 600,
                   transition: 'all 0.10s',
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'flex-start', gap: 1,
                 }}
               >
-                {bt.label}
+                <span>{bt.label}</span>
+                <span style={{
+                  fontSize: 9, fontWeight: 400,
+                  opacity: 0.6, whiteSpace: 'nowrap',
+                }}>{bt.desc}</span>
               </button>
             ))}
           </div>
