@@ -66,8 +66,9 @@ export function ArrowOverlay({
       arrow.toEdge,
       colWidth, rowHeight
     );
-    const path = bezierPath(
-      from, to, arrow.fromEdge, arrow.toEdge
+    const path = orthogonalPath(
+      from, to, arrow.fromEdge, arrow.toEdge,
+      colWidth, rowHeight
     );
     const midX = (from.x + to.x) / 2;
     const midY = (from.y + to.y) / 2;
