@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Save, Send, Loader2, Plus, ChevronUp, Undo2, Redo2 } from 'lucide-react';
+import { ArrowLeft, Save, Send, Loader2, Plus, ChevronUp, Undo2, Redo2, MoreHorizontal, Minus } from 'lucide-react';
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import type { BlockPosition } from '@/lib/canvas-types';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 const QUICK_BLOCK_TYPES = [
   { type: 'text', label: 'Text', accent: 'rgba(255,255,255,0.20)', desc: 'Plain text or notes' },
@@ -34,14 +35,18 @@ interface CanvasToolbarProps {
   onInsertBlock?: (type: string, position: Partial<BlockPosition>) => void;
   onUndo?: () => void;
   onRedo?: () => void;
+  zoom?: number;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
 }
 
 export function CanvasToolbar(props: CanvasToolbarProps) {
   const {
     doc, onSave, onPublish, saving, submitting,
     onTemplates, onHistory, onAnnotations,
-    annotationCount = 0, onBack, blockCount = 0,
+    annotationCount = 0, onBack,
     onInsertBlock, onUndo, onRedo,
+    zoom = 1, onZoomIn, onZoomOut,
   } = props;
 
   const [addBlockOpen, setAddBlockOpen] = useState(false);
@@ -58,14 +63,9 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  const statusLabel = saving ? 'Saving…' : doc.isDirty ? 'Unsaved' : 'Saved';
-  const statusColor = saving
-    ? 'rgba(245,158,11,0.7)'
-    : doc.isDirty ? 'rgba(239,68,68,0.6)' : 'rgba(34,197,94,0.5)';
-
   const btnBase: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 4,
-    padding: '5px 10px',
+    padding: '5px 8px',
     background: 'rgba(255,255,255,0.04)',
     border: '1px solid rgba(255,255,255,0.09)',
     borderRadius: 8,
@@ -156,7 +156,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
         left: '50%',
         transform: 'translateX(-50%)',
         display: 'flex',
-        gap: 5,
+        gap: 3,
         alignItems: 'center',
         zIndex: 100,
         background: 'rgba(10,10,16,0.85)',
@@ -165,12 +165,13 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
         borderRadius: 14,
         padding: '5px 8px',
         boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        maxWidth: 'calc(100vw - 32px)',
       }}>
         {/* Back */}
         {onBack && (
           <>
             <button type="button" onClick={onBack} title="Back" style={btnBase}>
-              <ArrowLeft size={13} /> Back
+              <ArrowLeft size={13} />
             </button>
             <Divider />
           </>
@@ -218,53 +219,63 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
           }} />
         </button>
 
-        {/* Templates */}
-        {onTemplates && (
-          <button type="button" onClick={onTemplates} title="Browse templates" style={btnBase}>
-            Templates
-          </button>
-        )}
+        <Divider />
 
-        {/* History */}
-        <button type="button" onClick={onHistory} title="Version history" style={btnBase}>
-          History
-        </button>
-
-        {/* Notes */}
-        {onAnnotations && (
-          <button
-            type="button"
-            onClick={onAnnotations}
-            title="Creator annotations"
-            style={{
-              ...btnBase,
-              ...(annotationCount > 0 ? {
-                background: 'rgba(245,158,11,0.10)',
-                border: '1px solid rgba(245,158,11,0.25)',
-                color: 'rgba(245,158,11,0.70)',
-              } : {}),
-            }}
-          >
-            Notes{annotationCount > 0 ? ` (${annotationCount})` : ''}
+        {/* Zoom controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <button type="button" onClick={onZoomOut} title="Zoom out" style={{ ...btnBase, padding: '5px 5px' }}>
+            <Minus size={11} />
           </button>
-        )}
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.40)', fontWeight: 600, minWidth: 32, textAlign: 'center' }}>
+            {Math.round(zoom * 100)}%
+          </span>
+          <button type="button" onClick={onZoomIn} title="Zoom in" style={{ ...btnBase, padding: '5px 5px' }}>
+            <Plus size={11} />
+          </button>
+        </div>
 
         <Divider />
 
-        {/* Block count + status */}
-        <div style={{
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', gap: 1, minWidth: 50,
-        }}>
-          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: 500 }}>
-            {blockCount} block{blockCount !== 1 ? 's' : ''}
-          </span>
-          <span style={{
-            fontSize: 9, color: statusColor, fontWeight: 600, transition: 'color 0.2s',
-          }}>
-            {statusLabel}
-          </span>
-        </div>
+        {/* Overflow menu: Templates, History, Notes */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button type="button" title="More options" style={{
+              ...btnBase,
+              position: 'relative',
+            }}>
+              <MoreHorizontal size={14} />
+              {annotationCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: -2, right: -2,
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: 'rgba(245,158,11,0.8)',
+                }} />
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="top"
+            sideOffset={8}
+            className="w-auto p-1 bg-[rgba(10,10,16,0.98)] border-[rgba(255,255,255,0.12)]"
+            style={{ minWidth: 140 }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {onTemplates && (
+                <button type="button" onClick={onTemplates} style={menuItemStyle}>
+                  Templates
+                </button>
+              )}
+              <button type="button" onClick={onHistory} style={menuItemStyle}>
+                History
+              </button>
+              {onAnnotations && (
+                <button type="button" onClick={onAnnotations} style={menuItemStyle}>
+                  Notes{annotationCount > 0 ? ` (${annotationCount})` : ''}
+                </button>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
 
         <Divider />
 
@@ -276,11 +287,11 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
           title="Save draft (Ctrl+S)"
           style={{
             ...btnBase,
-            padding: '5px 12px',
+            padding: '5px 10px',
             background: 'rgba(255,255,255,0.06)',
             border: '1px solid rgba(255,255,255,0.12)',
             color: 'rgba(255,255,255,0.65)',
-            fontSize: 12, fontWeight: 600,
+            fontSize: 11, fontWeight: 600,
             cursor: saving ? 'not-allowed' : 'pointer',
             opacity: saving ? 0.6 : 1,
           }}
@@ -297,11 +308,11 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
           title="Publish"
           style={{
             ...btnBase,
-            padding: '5px 14px',
+            padding: '5px 12px',
             background: submitting ? 'rgba(232,87,26,0.3)' : 'rgba(232,87,26,0.85)',
             border: '1px solid rgba(232,87,26,0.5)',
             color: '#fff',
-            fontSize: 12, fontWeight: 700,
+            fontSize: 11, fontWeight: 700,
             cursor: submitting ? 'not-allowed' : 'pointer',
             opacity: submitting ? 0.7 : 1,
           }}
@@ -313,6 +324,19 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
     </>
   );
 }
+
+const menuItemStyle: React.CSSProperties = {
+  padding: '6px 12px',
+  fontSize: 11,
+  fontWeight: 500,
+  color: 'rgba(255,255,255,0.55)',
+  background: 'none',
+  border: 'none',
+  borderRadius: 6,
+  cursor: 'pointer',
+  textAlign: 'left',
+  transition: 'background 0.1s',
+};
 
 function Divider() {
   return (

@@ -324,7 +324,7 @@ export function CanvasShell(props: CanvasShellProps) {
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        overflowX: 'auto',
+        overflowX: 'hidden',
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
@@ -422,9 +422,8 @@ export function CanvasShell(props: CanvasShellProps) {
           style={{
             position: 'relative',
             flex: 1,
-            minHeight: canvasHeight / zoom,
-            minWidth: 1200,
-            width: '100%',
+        minHeight: canvasHeight / zoom,
+            width: `${100 / zoom}%`,
             transform: `scale(${zoom})`,
             transformOrigin: 'top left',
           }}
@@ -594,6 +593,9 @@ export function CanvasShell(props: CanvasShellProps) {
           }
           onUndo={doc.canUndo ? doc.undo : undefined}
           onRedo={doc.canRedo ? doc.redo : undefined}
+          zoom={zoom}
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
         />
       )}
 
@@ -639,24 +641,6 @@ export function CanvasShell(props: CanvasShellProps) {
         }
       />
 
-      {/* Zoom controls */}
-      {mode === 'edit' && (
-        <div style={{
-          position: 'fixed',
-          bottom: 16, right: 16,
-          display: 'flex', alignItems: 'center', gap: 4,
-          background: 'rgba(10,10,16,0.85)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 8, padding: '3px 6px',
-          zIndex: 100,
-          fontSize: 11, color: 'rgba(255,255,255,0.45)',
-        }}>
-          <button onClick={zoomOut} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 14, padding: '2px 6px' }}>−</button>
-          <span style={{ minWidth: 36, textAlign: 'center', fontWeight: 600 }}>{Math.round(zoom * 100)}%</span>
-          <button onClick={zoomIn} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 14, padding: '2px 6px' }}>+</button>
-        </div>
-      )}
 
       {/* Version history panel */}
       <VersionHistory
