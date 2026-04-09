@@ -145,6 +145,7 @@ export function CanvasShell(props: CanvasShellProps) {
               behavior: 'smooth', block: 'center'
             });
         }}
+        onStageAdd={title => doc.addStage(title)}
       />
 
       {/* Main scroll area */}
@@ -245,6 +246,7 @@ export function CanvasShell(props: CanvasShellProps) {
               rowHeight={doc.rowHeight}
               columnCount={doc.columnCount}
               allBlocks={doc.blocks}
+              stages={doc.stages}
               postType={postType}
               onPositionChange={pos =>
                 doc.moveBlock(block.id, pos)
@@ -256,6 +258,9 @@ export function CanvasShell(props: CanvasShellProps) {
               onArrowDrawStart={handleArrowDrawStart}
               isArrowDrawing={drawingFrom !== null}
               onArrowDrawEnd={handleArrowDrawEnd}
+              onAssignStage={(blockId, stageId) =>
+                doc.assignBlockToStage(blockId, stageId)
+              }
             />
           ))}
 
