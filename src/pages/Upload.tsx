@@ -1215,30 +1215,11 @@ const Upload = () => {
           };
 
           const UPLOAD_TYPES = [
-            {
-              value: 'blueprint',
-              label: 'Blueprint',
-              description: 'A build, technique, or discovery',
-              color: '#E8571A',
-            },
-            {
-              value: 'blog',
-              label: 'Blog',
-              description: 'A thought, question, or open discussion',
-              color: '#3B82F6',
-            },
-            {
-              value: 'bounty',
-              label: 'Bounty',
-              description: 'A challenge with a reward attached',
-              color: '#F59E0B',
-            },
-          ];
-
-          const BLUEPRINT_SUBTYPES = [
-            { value: 'build',     label: 'Build',     description: 'Something you made' },
-            { value: 'technique', label: 'Technique', description: 'A proven method' },
-            { value: 'discovery', label: 'Discovery', description: 'Something you found' },
+            { value: 'build',     label: 'Build',     color: '#E8571A', postType: 'build' },
+            { value: 'technique', label: 'Technique', color: '#2EC4B6', postType: 'technique' },
+            { value: 'discovery', label: 'Discovery', color: '#7C3AED', postType: 'discovery' },
+            { value: 'blog',      label: 'Blog',      color: '#3B82F6', postType: 'discussion' },
+            { value: 'bounty',    label: 'Bounty',    color: '#F59E0B', postType: null },
           ];
 
           return (
@@ -1252,9 +1233,7 @@ const Upload = () => {
             }}>
 
               {/* Heading */}
-              <div style={{
-                marginBottom: 32,
-              }}>
+              <div style={{ marginBottom: 32 }}>
                 <div style={{
                   fontSize: 11, fontWeight: 700,
                   textTransform: 'uppercase',
@@ -1274,156 +1253,122 @@ const Upload = () => {
                 </div>
               </div>
 
-              {/* Tiles — vertical stack with Blueprint sub-type expansion */}
+              {/* Tiles */}
               <div style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 10,
+                gap: 8,
               }}>
-                {UPLOAD_TYPES.map(type => {
-                  const isBlueprintTile = type.value === 'blueprint';
-                  const isSelected = isBlueprintTile
-                    ? blueprintExpanded
-                    : uploadType === type.value;
-                  return (
-                    <div key={type.value}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isBlueprintTile) {
-                            setUploadType('single');
-                            setBlueprintExpanded(true);
-                          } else {
-                            setBlueprintExpanded(false);
-                            setUploadType(type.value as any);
-                            form.setValue('post_type', defaultSubType(type.value) as any);
-                            goNext();
-                          }
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 16,
-                          padding: '18px 20px',
-                          borderRadius: 12,
-                          width: '100%',
-                          background: isSelected
-                            ? `${type.color}12`
-                            : 'rgba(255,255,255,0.03)',
-                          border: `1px solid ${isSelected
-                            ? type.color + '35'
-                            : 'rgba(255,255,255,0.07)'}`,
-                          cursor: 'pointer',
-                          transition: 'all 0.15s',
-                          textAlign: 'left',
-                        }}
-                        onMouseEnter={e => {
-                          if (!isSelected) {
-                            (e.currentTarget as HTMLElement)
-                              .style.background =
-                              'rgba(255,255,255,0.05)';
-                            (e.currentTarget as HTMLElement)
-                              .style.borderColor =
-                              'rgba(255,255,255,0.12)';
-                          }
-                        }}
-                        onMouseLeave={e => {
-                          if (!isSelected) {
-                            (e.currentTarget as HTMLElement)
-                              .style.background =
-                              'rgba(255,255,255,0.03)';
-                            (e.currentTarget as HTMLElement)
-                              .style.borderColor =
-                              'rgba(255,255,255,0.07)';
-                          }
-                        }}
-                      >
-                        {/* Left: text */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{
-                            fontSize: 15, fontWeight: 700,
-                            color: isSelected
-                              ? type.color
-                              : 'rgba(255,255,255,0.80)',
-                            marginBottom: 3,
-                            fontFamily:
-                              "'Playfair Display', Georgia, serif",
-                          }}>
-                            {type.label}
-                          </div>
-                          <div style={{
-                            fontSize: 12,
-                            color: 'rgba(255,255,255,0.35)',
-                            lineHeight: 1.5,
-                          }}>
-                            {type.description}
-                          </div>
-                        </div>
+                {/* Blueprint label */}
+                <div style={{
+                  fontSize: 10, fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  color: 'rgba(255,255,255,0.22)',
+                  marginBottom: 2,
+                }}>
+                  Blueprints
+                </div>
 
-                        {/* Right: arrow */}
-                        <span style={{
-                          fontSize: 16,
-                          color: isSelected
-                            ? type.color
-                            : 'rgba(255,255,255,0.20)',
-                          flexShrink: 0,
-                        }}>
-                          →
-                        </span>
-                      </button>
+                {UPLOAD_TYPES.filter(t => t.value !== 'bounty').map(type => (
+                  <button
+                    key={type.value}
+                    type="button"
+                    onClick={() => {
+                      if (type.value === 'blog') {
+                        setBlueprintExpanded(false);
+                        setUploadType('blog');
+                        form.setValue('post_type', 'discussion' as any);
+                      } else {
+                        setUploadType('single');
+                        setBlueprintExpanded(false);
+                        form.setValue('post_type', type.postType as any);
+                      }
+                      goNext();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '14px 18px',
+                      borderRadius: 10,
+                      width: '100%',
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                      textAlign: 'left',
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLElement).style.background = `${type.color}12`;
+                      (e.currentTarget as HTMLElement).style.borderColor = `${type.color}35`;
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
+                      (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)';
+                    }}
+                  >
+                    <span style={{
+                      fontSize: 14, fontWeight: 600,
+                      color: type.color,
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                    }}>
+                      {type.label}
+                    </span>
+                    <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.20)' }}>→</span>
+                  </button>
+                ))}
 
-                      {/* Blueprint sub-type picker — expands directly below Blueprint tile */}
-                      {isBlueprintTile && blueprintExpanded && (
-                        <div style={{
-                          marginLeft: 12,
-                          borderLeft: '2px solid rgba(232,87,26,0.25)',
-                          paddingLeft: 12,
-                          marginTop: 8,
-                          marginBottom: 2,
-                        }}>
-                          {BLUEPRINT_SUBTYPES.map(sub => {
-                            const subSelected = watchedPostType === sub.value;
-                            return (
-                              <button
-                                key={sub.value}
-                                type="button"
-                                onClick={() => {
-                                  form.setValue('post_type', sub.value as any);
-                                  goNext();
-                                }}
-                                style={{
-                                  display: 'block',
-                                  width: '100%',
-                                  textAlign: 'left',
-                                  padding: '8px 12px',
-                                  borderRadius: 8,
-                                  fontSize: 13,
-                                  cursor: 'pointer',
-                                  marginBottom: 4,
-                                  background: subSelected
-                                    ? 'rgba(232,87,26,0.10)' : 'transparent',
-                                  border: subSelected
-                                    ? '1px solid rgba(232,87,26,0.25)'
-                                    : '1px solid transparent',
-                                  color: subSelected
-                                    ? '#E8571A' : 'rgba(255,255,255,0.55)',
-                                  transition: 'all 0.12s',
-                                }}
-                              >
-                                <div style={{ fontWeight: 600, marginBottom: 1 }}>
-                                  {sub.label}
-                                </div>
-                                <div style={{ fontSize: 11, opacity: 0.7 }}>
-                                  {sub.description}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {/* Bounty separator */}
+                <div style={{
+                  fontSize: 10, fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  color: 'rgba(255,255,255,0.22)',
+                  marginTop: 16, marginBottom: 2,
+                }}>
+                  Or request something
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBlueprintExpanded(false);
+                    setUploadType('bounty');
+                    form.setValue('post_type', 'build' as any);
+                    goNext();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '14px 18px',
+                    borderRadius: 10,
+                    width: '100%',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    textAlign: 'left',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(245,158,11,0.08)';
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(245,158,11,0.30)';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)';
+                  }}
+                >
+                  <span style={{
+                    fontSize: 14, fontWeight: 600,
+                    color: '#F59E0B',
+                    fontFamily: "'Playfair Display', Georgia, serif",
+                  }}>
+                    Post a Bounty
+                  </span>
+                  <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.20)' }}>→</span>
+                </button>
               </div>
             </div>
           );
