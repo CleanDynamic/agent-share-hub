@@ -13,6 +13,7 @@ import { FileText, Download, Loader2, Eye, MessageCircle, ChevronRight, Clipboar
 // ─── Block icons ────────────────────────────────────────────
 
 const BLOCK_ICONS: Record<string, string> = {
+  tutorial_step: '🎬',
   prompt: '💬', agent_config: '🤖', workflow: '🔄',
   model_params: '⚙️', tool_setup: '🔧', code: '{ }',
   result: '📊', comparison: '↔', text: '¶',
@@ -109,6 +110,13 @@ interface BlockRow {
   // Group binding
   group_id?: string | null;
   group_title?: string | null;
+
+  // Tutorial step
+  tutorial_media?: string | null;
+  tutorial_media_url?: string | null;
+  tutorial_carousel_urls?: string[] | null;
+  tutorial_text?: string | null;
+  tutorial_ref_block_id?: string | null;
 }
 
 interface VariationRow {
@@ -1154,9 +1162,127 @@ const ResourceViewer = ({ block }: { block: BlockRow }) => {
   );
 };
 
+// ─── Tutorial Carousel ──────────────────────────────────────
+
+function TutorialCarousel({ images }: { images: string[] }) {
+  const [current, setCurrent] = useState(0);
+  return (
+    <div style={{ position: 'relative' }}>
+      <img
+        src={images[current]}
+        style={{ width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }}
+      />
+      {images.length > 1 && (
+        <div style={{
+          position: 'absolute', bottom: 8,
+          left: 0, right: 0,
+          display: 'flex', justifyContent: 'center',
+          gap: 6,
+        }}>
+          {images.map((_, i) => (
+            <button key={i}
+              onClick={() => setCurrent(i)}
+              style={{
+                width: i === current ? 20 : 6,
+                height: 6, borderRadius: 3,
+                background: i === current ? '#E8571A' : 'rgba(255,255,255,0.30)',
+                border: 'none', cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            />
+          ))}
+        </div>
+      )}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={() => setCurrent(p => (p - 1 + images.length) % images.length)}
+            style={{
+              position: 'absolute', left: 8,
+              top: '50%', transform: 'translateY(-50%)',
+              background: 'rgba(0,0,0,0.50)',
+              border: 'none', borderRadius: '50%',
+              width: 28, height: 28,
+              color: '#fff', cursor: 'pointer',
+              fontSize: 12,
+            }}
+          >
+            ‹
+          </button>
+          <button
+            onClick={() => setCurrent(p => (p + 1) % images.length)}
+            style={{
+              position: 'absolute', right: 8,
+              top: '50%', transform: 'translateY(-50%)',
+              background: 'rgba(0,0,0,0.50)',
+              border: 'none', borderRadius: '50%',
+              width: 28, height: 28,
+              color: '#fff', cursor: 'pointer',
+              fontSize: 12,
+            }}
+          >
+            ›
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Per-type viewer dispatch ───────────────────────────────
 
 function renderTypedViewer(block: BlockRow): JSX.Element | null {
+  if (block.block_type === 'tutorial_step') {
+    const mediaType = block.tutorial_media;
+    const mediaUrl = block.tutorial_media_url;
+    const carouselUrls = block.tutorial_carousel_urls ?? [];
+    const tutorialText = block.tutorial_text ?? block.text_content;
+
+    return (
+      <div style={{
+        border: '1px solid rgba(232,87,26,0.18)',
+        borderLeft: '3px solid rgba(232,87,26,0.45)',
+        borderRadius: 8,
+        overflow: 'hidden',
+        background: 'rgba(232,87,26,0.03)',
+      }}>
+        {/* Media */}
+        {mediaUrl && mediaType === 'video' && (
+          <video
+            src={mediaUrl}
+            controls playsInline
+            style={{ width: '100%', maxHeight: 300, display: 'block', background: 'rgba(0,0,0,0.40)' }}
+          />
+        )}
+        {mediaUrl && mediaType === 'voicenote' && (
+          <div style={{ padding: '12px 16px' }}>
+            <audio controls src={mediaUrl} style={{ width: '100%' }} />
+          </div>
+        )}
+        {mediaUrl && mediaType === 'image' && (
+          <img src={mediaUrl}
+            style={{ width: '100%', maxHeight: 300, objectFit: 'cover', display: 'block' }} />
+        )}
+        {mediaType === 'carousel' && carouselUrls.length > 0 && (
+          <TutorialCarousel images={carouselUrls} />
+        )}
+
+        {/* Instruction text */}
+        {tutorialText && (
+          <div style={{ padding: '14px 16px' }}>
+            <p style={{
+              fontSize: 14, lineHeight: 1.70,
+              color: 'rgba(255,255,255,0.72)',
+              margin: 0, fontFamily: 'Inter, sans-serif',
+            }}>
+              {tutorialText}
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   switch (block.block_type) {
     case 'prompt':
       return <PromptViewer block={block} />;
