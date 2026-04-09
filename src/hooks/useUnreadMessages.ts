@@ -40,8 +40,9 @@ export function useUnreadMessages() {
   // Realtime: listen for thread updates
   useEffect(() => {
     if (!isLoggedIn || !user) return;
+    const channelName = `dm-unread-badge-${user.id}-${Date.now()}`;
     const channel = supabase
-      .channel("dm-unread-badge")
+      .channel(channelName)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "dm_threads" },
