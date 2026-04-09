@@ -40,7 +40,7 @@ export function useUnreadMessages() {
   // Realtime: listen for thread updates
   useEffect(() => {
     if (!isLoggedIn || !user) return;
-    const channelName = `dm-unread-badge-${user.id}-${Date.now()}`;
+    const channelName = `dm-unread-badge-${user.id}-${crypto.randomUUID()}`;
     const channel = supabase
       .channel(channelName)
       .on(
