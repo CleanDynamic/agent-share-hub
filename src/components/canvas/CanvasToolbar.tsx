@@ -9,6 +9,8 @@ interface CanvasToolbarProps {
   submitting?: boolean;
   onTemplates?: () => void;
   onHistory?: () => void;
+  onAnnotations?: () => void;
+  annotationCount?: number;
 }
 
 export function CanvasToolbar(props: CanvasToolbarProps) {
@@ -51,6 +53,30 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
       >
         History
       </button>
+      {props.onAnnotations && (
+        <button
+          type="button"
+          onClick={props.onAnnotations}
+          style={{
+            padding: '5px 12px',
+            background: (props.annotationCount ?? 0) > 0
+              ? 'rgba(245,158,11,0.10)'
+              : 'rgba(255,255,255,0.04)',
+            border: (props.annotationCount ?? 0) > 0
+              ? '1px solid rgba(245,158,11,0.25)'
+              : '1px solid rgba(255,255,255,0.09)',
+            borderRadius: 7,
+            color: (props.annotationCount ?? 0) > 0
+              ? 'rgba(245,158,11,0.70)'
+              : 'rgba(255,255,255,0.40)',
+            fontSize: 11, cursor: 'pointer',
+          }}
+        >
+          Notes{(props.annotationCount ?? 0) > 0
+            ? ` (${props.annotationCount})`
+            : ''}
+        </button>
+      )}
       {props.doc.isDirty && (
         <div style={{
           fontSize: 10,

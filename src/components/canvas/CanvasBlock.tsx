@@ -14,6 +14,7 @@ interface CanvasBlockProps {
   allBlocks: CanvasBlockType[];
   stages: CanvasStage[];
   postType: string;
+  showAnnotations?: boolean;
   onPositionChange: (p: BlockPosition) => void;
   onBlockChange: (patch: Partial<CanvasBlockType>) => void;
   onDelete: () => void;
@@ -32,7 +33,7 @@ interface CanvasBlockProps {
 
 export function CanvasBlock({
   block, mode, colWidth, rowHeight, columnCount,
-  allBlocks, stages, postType,
+  allBlocks, stages, postType, showAnnotations,
   onPositionChange, onBlockChange, onDelete,
   onArrowDrawStart, isArrowDrawing, onArrowDrawEnd,
   onAssignStage, onInsertResultBlock,
@@ -280,6 +281,27 @@ export function CanvasBlock({
             </div>
           )}
 
+          {/* View-mode annotation indicator (creator only) */}
+          {showAnnotations && block.creatorAnnotation && mode === 'view' && (
+            <div
+              title={block.creatorAnnotation}
+              style={{
+                position: 'absolute',
+                top: 8, right: 8,
+                width: 18, height: 18,
+                background: 'rgba(245,158,11,0.20)',
+                border: '1px solid rgba(245,158,11,0.40)',
+                borderRadius: 3,
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 10, cursor: 'help',
+                zIndex: 2,
+              }}
+            >
+              ✎
+            </div>
+          )}
+
           {/* Annotation indicator */}
           {block.creatorAnnotation && mode === 'edit' && (
             <button
@@ -304,34 +326,78 @@ export function CanvasBlock({
 
           {/* Annotation popover */}
           {annotationOpen && (
-            <div style={{
-              position: 'absolute',
-              top: 32, right: 8,
-              width: 220, zIndex: 50,
-              background: 'rgba(10,10,16,0.98)',
-              border: '1px solid rgba(245,158,11,0.30)',
-              borderRadius: 8, padding: 10,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.50)',
-            }}>
+            <div
+              style={{
+                position: 'absolute',
+                top: 40, right: 0,
+                width: 240, zIndex: 60,
+                background: 'rgba(10,10,16,0.99)',
+                border:
+                  '1px solid rgba(245,158,11,0.25)',
+                borderRadius: 10, padding: 12,
+                boxShadow: '0 12px 32px rgba(0,0,0,0.60)',
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div style={{
+                fontSize: 9, fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.10em',
+                color: 'rgba(245,158,11,0.70)',
+                marginBottom: 8,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}>
+                <span>Private Note</span>
+                {block.creatorAnnotation && (
+                  <button
+                    onClick={() =>
+                      onBlockChange({ creatorAnnotation: null })
+                    }
+                    style={{
+                      background: 'none', border: 'none',
+                      color: 'rgba(239,68,68,0.60)',
+                      cursor: 'pointer', fontSize: 10,
+                    }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {/* Annotation textarea */}
               <textarea
+                autoFocus
                 value={block.creatorAnnotation ?? ''}
                 onChange={e =>
                   onBlockChange({
-                    creatorAnnotation: e.target.value
+                    creatorAnnotation:
+                      e.target.value || null
                   })
                 }
-                placeholder="Creator note (private)..."
-                rows={3}
+                placeholder="Your private note about this block..."
+                rows={4}
                 style={{
                   width: '100%', background: 'transparent',
-                  border: 'none', outline: 'none',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 6, padding: '8px 10px',
                   fontSize: 12,
-                  color: 'rgba(255,255,255,0.65)',
-                  resize: 'none',
+                  color: 'rgba(255,255,255,0.70)',
+                  resize: 'none', outline: 'none',
                   fontFamily: 'Inter, sans-serif',
-                  boxSizing: 'border-box',
+                  lineHeight: 1.60, boxSizing: 'border-box',
                 }}
               />
+
+              <div style={{
+                marginTop: 6, fontSize: 10,
+                color: 'rgba(255,255,255,0.18)',
+                lineHeight: 1.5,
+              }}>
+                Visible only to you. Never shown to readers.
+              </div>
             </div>
           )}
 
