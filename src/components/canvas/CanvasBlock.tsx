@@ -310,7 +310,18 @@ export function CanvasBlock({
                   Edit
                 </button>
 
-                {stages.length > 0 && (
+                {/* Arrow/link button */}
+                <button
+                  onClick={e => { e.stopPropagation(); onArrowDrawStart(); }}
+                  style={{
+                    background: 'none', border: 'none',
+                    color: 'rgba(255,255,255,0.35)',
+                    cursor: 'pointer', fontSize: 10, padding: '1px 4px',
+                  }}
+                >
+                  →
+                </button>
+
                   <div style={{ position: 'relative' }}>
                     <button
                       onClick={e => { e.stopPropagation(); setStagePickerOpen(o => !o); }}
