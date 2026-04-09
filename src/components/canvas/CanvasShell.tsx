@@ -8,6 +8,7 @@ import { CanvasBlock } from './CanvasBlock';
 import { CanvasInsertZone } from './CanvasInsertZone';
 import { ArrowOverlay } from './ArrowOverlay';
 import { TemplateLibrary } from './TemplateLibrary';
+import { VersionHistory } from './VersionHistory';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
 
 interface CanvasShellProps {
@@ -42,6 +43,8 @@ export function CanvasShell(props: CanvasShellProps) {
     useState(0);
   const [tocOpen, setTocOpen] = useState(true);
   const [templateLibOpen, setTemplateLibOpen] =
+    useState(false);
+  const [versionHistoryOpen, setVersionHistoryOpen] =
     useState(false);
 
   // ── Arrow drawing state ───────────────────────────
@@ -332,6 +335,7 @@ export function CanvasShell(props: CanvasShellProps) {
           saving={props.saving}
           submitting={props.submitting}
           onTemplates={() => setTemplateLibOpen(true)}
+          onHistory={() => setVersionHistoryOpen(true)}
         />
       )}
 
@@ -356,6 +360,18 @@ export function CanvasShell(props: CanvasShellProps) {
             })),
           ]);
         }}
+      />
+
+      {/* Version history panel */}
+      <VersionHistory
+        open={versionHistoryOpen}
+        onClose={() => setVersionHistoryOpen(false)}
+        contentId={doc.contentId ?? ''}
+        currentVersion={doc.versionNumber}
+        onRestore={doc.restoreSnapshot}
+        onSaveVersion={label =>
+          doc.saveVersion(doc.contentId ?? '', label)
+        }
       />
     </div>
   );
