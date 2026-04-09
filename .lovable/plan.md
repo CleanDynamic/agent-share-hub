@@ -1,40 +1,35 @@
 
 
-## Clean Up Canvas Grid: Zoom, Drag, Block Positioning, and Visual Polish
+## Fix Bottom Toolbar Overflow and Page Horizontal Scroll
 
-### Problem
-The canvas grid feels overwhelming on first load. Blocks are too large, zoom defaults to 100% which makes the grid feel cramped, dragging requires finding a tiny grip handle, and new blocks always start at column 1 instead of centered.
+### Problems
+1. **Toolbar pill is too wide** — it has too many items (Back, Undo, Redo, + Block, Templates, History, Notes, block count, Save, Publish, plus zoom controls in a separate pill) all in a single row. On the user's 1102px viewport it overflows and clips.
+2. **Horizontal page scroll to dead space** — the grid div has `minWidth: 1200` which forces the scroll area wider than the viewport. Combined with `transform: scale(0.5)`, the browser still allocates 1200px of layout width before scaling, creating a scrollbar to empty space.
 
 ### Changes
 
-**1. Make 50% the new "100%" — default zoom to 0.5** (`CanvasShell.tsx`)
-- Change `useState(1.0)` to `useState(0.5)` for the zoom state
-- Keep the zoom controls and display as-is (they'll show "50%" which is fine, or relabel to show "100%" when at 0.5 — but simpler to just keep the raw percentage)
+**1. Fix horizontal overflow on the canvas** (`CanvasShell.tsx`)
+- Remove `minWidth: 1200` from the grid container
+- Instead, set `width: ${100 / zoom}%` so at 50% zoom the content fills the viewport naturally without forcing a scrollbar
+- Set `overflowX: 'hidden'` on the main scroll area to prevent any dead-space scroll
 
-**2. New blocks start centered below the lowest block** (`useCanvasDocument.ts`)
-- In `addBlock`, calculate the center column: `Math.max(1, Math.floor((columnCount - colSpan) / 2) + 1)`
-- Use this as the default `col` when no explicit position is given (instead of `col: 1`)
-- Also update the toolbar's `onInsertBlock` call in `CanvasToolbar.tsx` to not hardcode `col: 1`
+**2. Consolidate and slim down the toolbar** (`CanvasToolbar.tsx`)
+- Remove the separate zoom controls from `CanvasShell.tsx` — merge zoom −/+/% into the toolbar pill (replacing the block-count/status area which is low-value)
+- Drop the text labels from Undo/Redo (icon-only buttons are clear enough)
+- Drop the "Templates" and "History" text buttons — move them into a `⋯` overflow menu (three-dot button that opens a small popover with Templates, History, Notes)
+- Keep the primary actions visible: Back, Undo, Redo, + Block, Save, Publish
+- Add `max-width: calc(100vw - 32px)` to the toolbar pill so it never exceeds the viewport
+- Reduce gap from 5 to 3px between items
 
-**3. Drag from anywhere on the block, not just the grip** (`CanvasBlock.tsx`)
-- Remove the `if (!target.closest('.drag-grip')) return;` guard from `handleDragMouseDown`
-- Keep the grip icon as a visual affordance but make the entire block surface draggable
-- Only prevent drag when clicking toolbar buttons (stop propagation already handles this)
-- Change cursor to `grab` on the block card, `grabbing` while dragging
-
-**4. Clean up the upload page's initial canvas appearance** (`CanvasHeader.tsx` + `CanvasShell.tsx`)
-- Tighten header padding: reduce from `24px` to `16px`
-- Make the dot grid subtler: reduce dot opacity
-- Reduce the empty canvas minimum height from `600` to `400`
-- Make the TOC sidebar start collapsed when no blocks exist (change `useState(true)` to `useState(false)` or conditional on block count)
+**3. Merge zoom into toolbar** (`CanvasToolbar.tsx` + `CanvasShell.tsx`)
+- Pass `zoom`, `onZoomIn`, `onZoomOut` as props to `CanvasToolbar`
+- Render a compact `− 50% +` control inline in the toolbar
+- Remove the separate fixed-position zoom widget from `CanvasShell.tsx`
 
 ### Files to edit
 
 | File | What |
 |------|------|
-| `src/components/canvas/CanvasShell.tsx` | Default zoom to 0.5, start TOC collapsed, reduce min canvas height |
-| `src/hooks/useCanvasDocument.ts` | Center new blocks horizontally |
-| `src/components/canvas/CanvasBlock.tsx` | Allow drag from entire block surface, update cursor |
-| `src/components/canvas/CanvasToolbar.tsx` | Remove hardcoded `col: 1` from insert |
-| `src/components/canvas/CanvasHeader.tsx` | Tighten padding |
+| `src/components/canvas/CanvasShell.tsx` | Remove `minWidth: 1200`, set `overflowX: 'hidden'`, remove standalone zoom widget, pass zoom props to toolbar |
+| `src/components/canvas/CanvasToolbar.tsx` | Add `max-width`, merge zoom controls in, move Templates/History/Notes into overflow menu, slim down layout |
 
