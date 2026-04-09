@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Smile, X, Plus } from "lucide-react";
 import { PublishCollectionModal } from "@/components/PublishCollectionModal";
-import { LibraryHeader } from "@/components/library/LibraryHeader";
 import { LibraryControls } from "@/components/library/LibraryControls";
 import { LibraryCategoryFilter } from "@/components/library/LibraryCategoryFilter";
 import { LibraryGrid } from "@/components/library/LibraryGrid";
@@ -159,12 +158,6 @@ export default function LibraryPage() {
     <div style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24 }}>
       <SeoHead title="Your Library — NeoScale AI" description="Your personal content library on NeoScale AI." path="/library" noIndex />
       <div className="mx-auto max-w-5xl">
-        {/* Header */}
-        <LibraryHeader
-          itemCount={libraryItems?.length ?? 0}
-          updateCount={updateCount}
-        />
-
         {/* Controls */}
         <LibraryControls
           search={search}

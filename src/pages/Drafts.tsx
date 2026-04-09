@@ -81,16 +81,7 @@ export default function DraftsPage() {
     <div style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24 }}>
       <SeoHead title="Drafts — NeoScale AI" description="Manage your draft posts." path="/drafts" noIndex />
       <div className="mx-auto max-w-3xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)', marginBottom: 4 }}>Drafts</h1>
-            {drafts && (
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>
-                {drafts.length} draft{drafts.length !== 1 ? "s" : ""}
-              </p>
-            )}
-          </div>
+        <div className="flex justify-end mb-6">
           <Button size="sm" className="min-h-[44px]" onClick={() => navigate("/upload")}>
             <Plus className="h-4 w-4 mr-1.5" /> New draft
           </Button>

@@ -732,9 +732,8 @@ const MessagesPage = () => {
   /* ═══════════ Thread List ═══════════ */
   const ThreadList = () => (
     <div className="h-full flex flex-col" style={{ width: isMobileView ? "100%" : 360 }}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 shrink-0" style={{ height: 52 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.90)' }}>Messages</h2>
+      {/* Compose button */}
+      <div className="flex items-center justify-end px-4 shrink-0" style={{ height: 52 }}>
         <button
           onClick={() => setComposeOpen(true)}
           style={{ padding: 8, color: 'rgba(255,255,255,0.45)', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: 8 }}

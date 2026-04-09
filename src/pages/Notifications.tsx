@@ -524,14 +524,13 @@ const NotificationsPage = () => {
     <div style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24 }}>
       <SeoHead title="Notifications — NeoScale AI" description="Your notifications" path="/notifications" />
       <div className="mx-auto max-w-2xl">
-        <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)' }}>Notifications</h1>
-          {allNotifications.some((n) => !n.is_read) && (
+        {allNotifications.some((n) => !n.is_read) && (
+          <div className="flex justify-end" style={{ marginBottom: 12 }}>
             <button onClick={markAllRead} disabled={markingAll} style={{ fontSize: 13, color: '#2EC4B6', background: 'none', border: 'none', cursor: 'pointer', opacity: markingAll ? 0.5 : 1 }}>
               {markingAll ? "Marking…" : "Mark all as read"}
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         <PendingCollabInvites />
 
