@@ -1,61 +1,66 @@
 
 
-## Refine Upload Page — Nielsen's 10 Heuristics
+## Canvas Editor Fluidity Overhaul
 
-Applying all 10 usability heuristics to the canvas-based upload editor.
-
-### Issues identified
-
-1. **No Save/Publish buttons** — The toolbar shows Templates/History/Notes but no way to save or publish. Users have no clear path to completion.
-2. **No system status** — No progress indicator, no autosave feedback, no block count. Users don't know where they are in the process.
-3. **No undo/back** — Can't return to the type chooser or undo block deletions. No "back" button once in the canvas.
-4. **Block picker cuts off screen** — Already partially fixed but still uses fixed positioning that can clip.
-5. **No confirmation before destructive actions** — Delete block has no confirmation.
-6. **No inline help or tooltips** — Block types have no descriptions; new users don't know what "Agent" or "Model" means.
-7. **No validation before publish** — Can publish with empty title or no blocks. No error messages guiding the user.
-8. **Toolbar lacks visual hierarchy** — Save and Publish should be prominent, not hidden or missing entirely.
-9. **No keyboard shortcuts** — No accelerators for power users (Ctrl+S to save, etc.).
-10. **"unsaved" label is too subtle** — Dirty state indicator is barely visible.
+### Problems from screenshots
+1. **Add Block picker** appears as a floating popover to the side — should be a dropdown in the toolbar
+2. **No horizontal scroll** — canvas is locked to viewport width, blocks get crammed
+3. **Blocks too large** — default `colSpan: 12` (full width) and `rowHeight: 32` make everything oversized
+4. **Move handle not obvious** — entire block is drag-target but cursor doesn't indicate this clearly; needs a visible grip handle
+5. **Resize handles only appear on hover** — not discoverable enough
+6. **Canvas feels crammed** — no padding/gaps between blocks, everything edge-to-edge
 
 ### Changes
 
-**File: `src/components/canvas/CanvasToolbar.tsx`** — Full rewrite
-- Add **Save Draft** button (secondary style) and **Publish** button (primary, orange accent)
-- Show saving/submitting spinners (Heuristic 1: visibility of system status)
-- Show block count badge (e.g. "4 blocks")
-- Show autosave status: "Saved" / "Saving..." / "unsaved" with appropriate colors
-- Add a **Back** button (← arrow) to return to type chooser (Heuristic 3: user control)
-- Add keyboard shortcut Ctrl/Cmd+S for save (Heuristic 7: flexibility)
-- Add a subtle divider between navigation actions (Back) and content actions (Save/Publish)
-- Wrap toolbar in a glass-card pill for visual grounding
+**1. Move "Add Block" into toolbar dropdown** (`CanvasToolbar.tsx`)
+- Add an "Add Block" button with a `+` icon to the toolbar
+- On click, show a dropdown (anchored upward from toolbar) listing all block types with accent colors and descriptions
+- Clicking a type inserts a block at the next available row
+- Remove the floating `+` button from `CanvasInsertZone.tsx` (keep the component for the block type data export only)
 
-**File: `src/components/canvas/CanvasShell.tsx`**
-- Pass `onBack` prop through to toolbar
-- Add `blockCount` to toolbar props
+**2. Enable horizontal scrolling** (`CanvasShell.tsx`)
+- Change `overflowX: 'hidden'` to `overflowX: 'auto'` on the main scroll area
+- Set a minimum canvas width of `1200px` so the grid always has room, even on narrow viewports
+- This lets users pan horizontally when blocks extend beyond the viewport
 
-**File: `src/pages/Upload.tsx`**
-- Pass `onBack={() => setShowTypeChooser(true)}` to CanvasShell
-- Add pre-publish validation: require title (min 1 char) and at least 1 block, show toast errors (Heuristic 5, 9: error prevention and recovery)
+**3. Reduce default proportions** (`useCanvasDocument.ts` + `CanvasInsertZone.tsx`)
+- Change default `rowHeight` from `32` to `24` — tighter vertical grid
+- When inserting blocks, default `colSpan` from `12` to `6` (half-width) and `rowSpan` from `1` to `4` — blocks start at a usable but not overwhelming size
+- Add `8px` padding/gap around blocks by insetting their pixel position by 4px on each side in `CanvasBlock.tsx`
 
-**File: `src/components/canvas/CanvasInsertZone.tsx`**
-- Add short tooltip descriptions to each block type in the picker (e.g. "Prompt — Write an AI prompt", "Agent — Configure an AI agent") (Heuristic 6: recognition over recall, Heuristic 10: help)
-- Ensure picker is viewport-clamped on all edges
+**4. Add visible move grip** (`CanvasBlock.tsx`)
+- Add a persistent small grip icon (⠿ or `GripVertical` from lucide) at the top-left of every block in edit mode
+- Only this grip triggers drag — stop the entire block surface from being a drag target (prevents accidental drags while editing)
+- Style: subtle, becomes more visible on hover
 
-**File: `src/components/canvas/CanvasBlock.tsx`**
-- Add a confirmation step to the Delete button: first click shows "Confirm?", second click deletes (Heuristic 5: error prevention)
+**5. Make resize handles always visible in edit mode** (`CanvasBlock.tsx`)
+- Show right, bottom, and corner resize handles at reduced opacity (0.3) always in edit mode
+- Full opacity on hover (existing behavior)
+- This addresses Heuristic 1 (visibility) and 6 (recognition)
 
-### Heuristic coverage
+**6. Block spacing/padding** (`CanvasBlock.tsx`)
+- Add 6px inset on all sides so blocks don't touch each other edge-to-edge
+- Reduce inner content padding from `16px` to `12px`
+
+### Heuristic mapping
 
 | # | Heuristic | How addressed |
 |---|-----------|---------------|
-| 1 | System status | Save state indicator, saving spinners, block count |
-| 2 | Match real world | Block type tooltips use plain language |
-| 3 | User control | Back button, undo-delete confirmation |
-| 4 | Consistency | Toolbar follows same glass-card style as rest of UI |
-| 5 | Error prevention | Delete confirmation, pre-publish validation |
-| 6 | Recognition > recall | Block type descriptions in picker |
-| 7 | Flexibility | Ctrl+S shortcut |
-| 8 | Aesthetic minimalism | Clean toolbar with clear visual hierarchy |
-| 9 | Error recovery | Toast messages with specific guidance on what's missing |
-| 10 | Help | Tooltips on block types |
+| 1 | System status | Resize handles always visible; grip handle shows block is movable |
+| 2 | Real world | Block types in toolbar dropdown with plain descriptions |
+| 3 | User control | Horizontal scroll, explicit move grip, resize from any edge |
+| 4 | Consistency | All blocks follow same sizing, spacing, handle patterns |
+| 5 | Error prevention | Drag only via grip (no accidental moves while editing) |
+| 6 | Recognition | Persistent resize handles, labeled block type dropdown |
+| 7 | Flexibility | Horizontal scroll for wide layouts, half-width default blocks allow side-by-side |
+| 8 | Minimalist | Smaller default blocks, less cramming, breathing room |
+| 9 | Error recovery | Ghost overlay during drag already shows valid/invalid positions |
+| 10 | Help | Block type descriptions in toolbar dropdown |
+
+### Files to edit
+- `src/components/canvas/CanvasToolbar.tsx` — add "Add Block" dropdown
+- `src/components/canvas/CanvasShell.tsx` — enable horizontal scroll, pass `onInsert` to toolbar, set min canvas width
+- `src/components/canvas/CanvasBlock.tsx` — add grip handle, persistent resize handles, spacing inset, reduce padding
+- `src/components/canvas/CanvasInsertZone.tsx` — remove floating `+` button (export block types only)
+- `src/hooks/useCanvasDocument.ts` — reduce default `rowHeight` to 24
 
