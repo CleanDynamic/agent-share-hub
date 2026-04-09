@@ -44,7 +44,7 @@ export function CanvasShell(props: CanvasShellProps) {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
-  const [tocOpen, setTocOpen] = useState(true);
+  const [tocOpen, setTocOpen] = useState(false);
   const [templateLibOpen, setTemplateLibOpen] = useState(false);
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [annotationsOpen, setAnnotationsOpen] = useState(false);
@@ -55,7 +55,7 @@ export function CanvasShell(props: CanvasShellProps) {
 
   // Zoom
   const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25];
-  const [zoom, setZoom] = useState(1.0);
+  const [zoom, setZoom] = useState(0.5);
   const zoomIn = () => setZoom(z => {
     const i = ZOOM_LEVELS.indexOf(z);
     return i < ZOOM_LEVELS.length - 1 ? ZOOM_LEVELS[i + 1] : z;
@@ -274,9 +274,9 @@ export function CanvasShell(props: CanvasShellProps) {
 
   // Total canvas height
   const canvasHeight = filteredBlocks.length === 0
-    ? 600
+    ? 400
     : Math.max(
-        600,
+        400,
         Math.max(
           ...filteredBlocks.map(b =>
             (b.position.row + b.position.rowSpan - 1)

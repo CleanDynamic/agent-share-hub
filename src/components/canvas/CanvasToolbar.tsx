@@ -125,7 +125,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                 onClick={() => {
                   const span = bt.type === 'section_heading' ? 1 : 2;
                   onInsertBlock?.(bt.type, {
-                    col: 1, colSpan: 4, rowSpan: span,
+                    colSpan: 4, rowSpan: span,
                   });
                   setAddBlockOpen(false);
                 }}

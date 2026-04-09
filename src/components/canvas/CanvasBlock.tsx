@@ -80,7 +80,8 @@ export function CanvasBlock({
   const handleDragMouseDown = (e: React.MouseEvent) => {
     if (mode !== 'edit') return;
     const target = e.target as HTMLElement;
-    if (!target.closest('.drag-grip')) return;
+    // Don't start drag from toolbar buttons
+    if (target.closest('button') || target.closest('[data-no-drag]')) return;
     e.preventDefault();
     setDragging(true);
     dragStartRef.current = { x: e.clientX, y: e.clientY, origCol: block.position.col, origRow: block.position.row };
@@ -185,7 +186,7 @@ export function CanvasBlock({
           width: px.w - inset * 2, height: px.h - inset * 2,
           zIndex: dragging ? 20 : 10,
           opacity: dragging ? 0.4 : 1,
-          cursor: 'default',
+          cursor: mode === 'edit' ? (dragging ? 'grabbing' : 'grab') : 'default',
           boxSizing: 'border-box',
         }}
       >
