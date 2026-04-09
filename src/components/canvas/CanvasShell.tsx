@@ -218,6 +218,55 @@ export function CanvasShell(props: CanvasShellProps) {
           onCoverChange={props.onCoverChange}
         />}
 
+        {/* Stage tab bar */}
+        {mode === 'edit' && doc.stages.length > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 2,
+            padding: '6px 12px',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            flexShrink: 0,
+            overflowX: 'auto',
+          }}>
+            <button
+              onClick={() => setActiveStageTab(null)}
+              style={{
+                padding: '4px 12px', fontSize: 11, fontWeight: 600,
+                borderRadius: 6, border: 'none', cursor: 'pointer',
+                background: !activeStageTab ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.04)',
+                color: !activeStageTab ? '#E8571A' : 'rgba(255,255,255,0.40)',
+                transition: 'all 0.15s',
+              }}
+            >
+              All
+            </button>
+            {doc.stages.map(s => (
+              <button
+                key={s.id}
+                onClick={() => setActiveStageTab(s.id)}
+                style={{
+                  padding: '4px 12px', fontSize: 11, fontWeight: 600,
+                  borderRadius: 6, border: 'none', cursor: 'pointer',
+                  background: activeStageTab === s.id ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.04)',
+                  color: activeStageTab === s.id ? '#E8571A' : 'rgba(255,255,255,0.40)',
+                  transition: 'all 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {s.stageNumber}. {s.title}
+              </button>
+            ))}
+            <button
+              onClick={() => doc.addStage(`Stage ${doc.stages.length + 1}`)}
+              style={{
+                padding: '4px 8px', fontSize: 11, border: 'none', cursor: 'pointer',
+                background: 'none', color: 'rgba(255,255,255,0.25)',
+              }}
+            >
+              + Stage
+            </button>
+          </div>
+        )}
+
         {/* The grid */}
         <div
           ref={containerRef}
