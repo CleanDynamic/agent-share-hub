@@ -322,6 +322,7 @@ export function CanvasBlock({
                   →
                 </button>
 
+                {stages.length > 0 && (
                   <div style={{ position: 'relative' }}>
                     <button
                       onClick={e => { e.stopPropagation(); setStagePickerOpen(o => !o); }}
