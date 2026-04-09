@@ -114,6 +114,51 @@ export function getEdgeMidpoint(
   }
 }
 
+// Snap a pixel position to the nearest grid dot
+export function snapToGridDot(
+  x: number, y: number,
+  colWidth: number, rowHeight: number
+): { x: number; y: number } {
+  return {
+    x: Math.round(x / colWidth) * colWidth,
+    y: Math.round(y / rowHeight) * rowHeight,
+  };
+}
+
+// Determine which edge of a block is closest to a given point
+export function nearestEdge(
+  point: { x: number; y: number },
+  position: BlockPosition,
+  colWidth: number,
+  rowHeight: number
+): 'top' | 'right' | 'bottom' | 'left' {
+  const edges: Array<{ edge: 'top' | 'right' | 'bottom' | 'left'; pt: { x: number; y: number } }> = [
+    { edge: 'top',    pt: getEdgeMidpoint(position, 'top', colWidth, rowHeight) },
+    { edge: 'right',  pt: getEdgeMidpoint(position, 'right', colWidth, rowHeight) },
+    { edge: 'bottom', pt: getEdgeMidpoint(position, 'bottom', colWidth, rowHeight) },
+    { edge: 'left',   pt: getEdgeMidpoint(position, 'left', colWidth, rowHeight) },
+  ];
+  let best = edges[0];
+  let bestDist = Infinity;
+  for (const e of edges) {
+    const d = Math.hypot(e.pt.x - point.x, e.pt.y - point.y);
+    if (d < bestDist) { bestDist = d; best = e; }
+  }
+  return best.edge;
+}
+
+// Build a polyline SVG path through a set of points (straight segments)
+export function polylinePath(
+  points: { x: number; y: number }[]
+): string {
+  if (points.length === 0) return '';
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length; i++) {
+    d += ` L ${points[i].x} ${points[i].y}`;
+  }
+  return d;
+}
+
 // Snap a value to the nearest grid line
 function snapVal(v: number, step: number): number {
   return Math.round(v / step) * step;

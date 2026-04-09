@@ -12,7 +12,7 @@ import { TemplateLibrary } from './TemplateLibrary';
 import { VersionHistory } from './VersionHistory';
 import { AnnotationsList } from './AnnotationsList';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
-import { readingOrder } from '@/lib/canvas-utils';
+import { readingOrder, snapToGridDot, nearestEdge, getEdgeMidpoint, polylinePath } from '@/lib/canvas-utils';
 
 interface CanvasShellProps {
   mode: 'edit' | 'view';
