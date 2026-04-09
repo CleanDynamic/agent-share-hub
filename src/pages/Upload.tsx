@@ -673,6 +673,60 @@ const Upload = () => {
     return () => sub.unsubscribe();
   }, [currentDraftId, form, saveDraft]);
 
+  // ── Navigation guard: save-to-draft on exit ──
+  const [exitDialogOpen, setExitDialogOpen] = useState(false);
+  const pendingNavigationRef = useRef<(() => void) | null>(null);
+
+  // Browser close / back
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (canvasDoc.isDirty || form.formState.isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [canvasDoc.isDirty, form.formState.isDirty]);
+
+  // React Router blocker
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => {
+    if (currentLocation.pathname === nextLocation.pathname) return false;
+    if (success) return false; // Don't block after successful publish
+    const hasContent = form.getValues('title') || canvasDoc.blocks.length > 0;
+    return hasContent && !exitDialogOpen;
+  });
+
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      pendingNavigationRef.current = () => blocker.proceed();
+      setExitDialogOpen(true);
+    }
+  }, [blocker.state]);
+
+  const handleExitSave = async () => {
+    await saveDraft(false);
+    setExitDialogOpen(false);
+    pendingNavigationRef.current?.();
+    pendingNavigationRef.current = null;
+  };
+
+  const handleExitDiscard = async () => {
+    // If draft was auto-created and has no meaningful content, delete it
+    if (currentDraftId && !draftId) {
+      await supabase.from('content_items').delete().eq('id', currentDraftId).eq('status', 'draft');
+    }
+    setExitDialogOpen(false);
+    pendingNavigationRef.current?.();
+    pendingNavigationRef.current = null;
+  };
+
+  const handleExitCancel = () => {
+    setExitDialogOpen(false);
+    if (blocker.state === 'blocked') blocker.reset();
+    pendingNavigationRef.current = null;
+  };
+
   // ── Scroll to a block by id inside the canvas ──
   const scrollToBlock = useCallback((blockId: string) => {
     const el = document.getElementById(`canvas-block-${blockId}`);
