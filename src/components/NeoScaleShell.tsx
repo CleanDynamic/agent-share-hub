@@ -1247,7 +1247,7 @@ export function NeoScaleShell() {
   }, [isMobile]);
 
   /* ── Supabase: recent feed ── */
-  const { data: feedItems, isLoading: feedLoading } = useQuery({
+  const { data: feedItems, isLoading: feedItemsLoading } = useQuery({
     queryKey: ["ns_home_recent"],
     enabled: !isMobile,
     queryFn: async () => {
