@@ -2656,3 +2656,47 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
     </div>
   );
 }
+
+// ─── Named exports for canvas BlockInlineEditor ───────────────
+
+export {
+  TextEditor,
+  ImagePicker,
+  PromptBlockEditor,
+  CodeBlockEditor,
+  ResultBlockEditor,
+  TutorialStepEditor,
+};
+
+export { AgentBlockEditor as AgentConfigEditor };
+export { WorkflowBlockEditor as WorkflowEditor };
+export { ComparisonBlockEditor as ComparisonEditor };
+export { ResourceBlockEditor as ResourceEditor };
+
+export const ModelParamsEditor = ({
+  block, update, index,
+}: {
+  block: ContentBlock;
+  update: (i: number, p: Partial<ContentBlock>) => void;
+  index: number;
+}) => (
+  <MonospaceEditor
+    value={block.textContent}
+    onChange={v => update(index, { textContent: v })}
+    placeholder="Model params..."
+  />
+);
+
+export const ToolSetupEditor = ({
+  block, update, index,
+}: {
+  block: ContentBlock;
+  update: (i: number, p: Partial<ContentBlock>) => void;
+  index: number;
+}) => (
+  <MonospaceEditor
+    value={block.textContent}
+    onChange={v => update(index, { textContent: v })}
+    placeholder="Tool setup steps..."
+  />
+);
