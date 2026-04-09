@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { gridToPixels, positionsOverlap } from '@/lib/canvas-utils';
-import type { CanvasBlock as CanvasBlockType, BlockPosition } from '@/lib/canvas-types';
+import type { CanvasBlock as CanvasBlockType, CanvasStage, BlockPosition } from '@/lib/canvas-types';
 import { BlockInlineEditor } from './BlockInlineEditor';
 import { BlockViewerInCanvas } from './BlockViewerInCanvas';
 
@@ -11,6 +11,7 @@ interface CanvasBlockProps {
   rowHeight: number;
   columnCount: number;
   allBlocks: CanvasBlockType[];
+  stages: CanvasStage[];
   postType: string;
   onPositionChange: (p: BlockPosition) => void;
   onBlockChange: (patch: Partial<CanvasBlockType>) => void;
@@ -24,13 +25,15 @@ interface CanvasBlockProps {
     blockId: string,
     edge: 'top' | 'right' | 'bottom' | 'left'
   ) => void;
+  onAssignStage: (blockId: string, stageId: string | null) => void;
 }
 
 export function CanvasBlock({
   block, mode, colWidth, rowHeight, columnCount,
-  allBlocks, postType,
+  allBlocks, stages, postType,
   onPositionChange, onBlockChange, onDelete,
   onArrowDrawStart, isArrowDrawing, onArrowDrawEnd,
+  onAssignStage,
 }: CanvasBlockProps) {
 
   const [hovered, setHovered] = useState(false);
@@ -38,6 +41,7 @@ export function CanvasBlock({
   const [ghost, setGhost] = useState<BlockPosition | null>(null);
   const [ghostValid, setGhostValid] = useState(true);
   const [annotationOpen, setAnnotationOpen] = useState(false);
+  const [stagePickerOpen, setStagePickerOpen] = useState(false);
 
   const dragStartRef = useRef({
     x: 0, y: 0, origCol: 0, origRow: 0,
@@ -427,6 +431,77 @@ export function CanvasBlock({
               >
                 Note
               </button>
+
+              {stages.length > 0 && (
+                <div style={{ position: 'relative' }}>
+                  <button
+                    className="block-toolbar-btn"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setStagePickerOpen(o => !o);
+                    }}
+                    style={{
+                      background: 'none', border: 'none',
+                      color: 'rgba(255,255,255,0.35)',
+                      cursor: 'pointer', fontSize: 12,
+                      padding: '2px 5px',
+                    }}
+                  >
+                    {block.stageId ? 'Stage' : '+ Stage'}
+                  </button>
+
+                  {stagePickerOpen && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0,
+                      background: 'rgba(10,10,16,0.98)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: 8, padding: '6px 0',
+                      minWidth: 140, zIndex: 50,
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.50)',
+                    }}>
+                      {/* None option */}
+                      <button
+                        onClick={() => {
+                          onAssignStage(block.id, null);
+                          setStagePickerOpen(false);
+                        }}
+                        style={{
+                          display: 'block', width: '100%',
+                          textAlign: 'left',
+                          padding: '6px 12px', background: 'none',
+                          border: 'none', fontSize: 12,
+                          color: 'rgba(255,255,255,0.40)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        No stage
+                      </button>
+                      {stages.map(s => (
+                        <button
+                          key={s.id}
+                          onClick={() => {
+                            onAssignStage(block.id, s.id);
+                            setStagePickerOpen(false);
+                          }}
+                          style={{
+                            display: 'block', width: '100%',
+                            textAlign: 'left',
+                            padding: '6px 12px', background: 'none',
+                            border: 'none', fontSize: 12,
+                            color: block.stageId === s.id
+                              ? '#E8571A'
+                              : 'rgba(255,255,255,0.60)',
+                            cursor: 'pointer',
+                            fontWeight: block.stageId === s.id ? 700 : 400,
+                          }}
+                        >
+                          {s.stageNumber}. {s.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
