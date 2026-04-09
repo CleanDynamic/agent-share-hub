@@ -540,7 +540,7 @@ const MessagesPage = () => {
   useEffect(() => {
     if (!activeThreadId) return;
     const channel = supabase
-      .channel(`dm-${activeThreadId}`)
+      .channel(`dm-${activeThreadId}-${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "dm_messages", filter: `thread_id=eq.${activeThreadId}` },
@@ -557,7 +557,7 @@ const MessagesPage = () => {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("dm-threads-list")
+      .channel(`dm-threads-list-${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "dm_threads" },
