@@ -67,6 +67,56 @@ export function readingOrder(
   );
 }
 
+// Auto-arrange blocks into a horizontal pipeline flow
+export function arrangePipelineLayout(
+  blocks: CanvasBlock[],
+  columnCount: number
+): CanvasBlock[] {
+  if (blocks.length === 0) return blocks;
+
+  // Sort by current reading order
+  const sorted = readingOrder(blocks);
+
+  // Assign positions in a horizontal pipeline
+  // Each block gets colSpan based on count
+  const blockWidth = Math.max(
+    3,
+    Math.floor(columnCount / Math.min(
+      blocks.length, 4
+    ))
+  );
+
+  let currentRow = 1;
+  let currentCol = 1;
+  let rowBlockCount = 0;
+  const blocksPerRow = Math.floor(
+    columnCount / blockWidth
+  );
+
+  return sorted.map(block => {
+    if (rowBlockCount >= blocksPerRow) {
+      currentRow += 4; // move to next row
+      currentCol = 1;
+      rowBlockCount = 0;
+    }
+
+    const newBlock = {
+      ...block,
+      position: {
+        col: currentCol,
+        row: currentRow,
+        colSpan: blockWidth,
+        rowSpan: 3,
+      },
+    };
+
+    currentCol += blockWidth;
+    rowBlockCount++;
+
+    return newBlock;
+  });
+}
+
 // Assign stage indices (1a, 1b, 2a…) to all blocks
 export function assignStageIndices(
   stages: CanvasStage[],

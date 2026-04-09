@@ -9,6 +9,7 @@ import { CanvasInsertZone } from './CanvasInsertZone';
 import { ArrowOverlay } from './ArrowOverlay';
 import { TemplateLibrary } from './TemplateLibrary';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
+import { arrangePipelineLayout } from '@/lib/canvas-utils';
 
 interface CanvasShellProps {
   mode: 'edit' | 'view';
@@ -110,6 +111,16 @@ export function CanvasShell(props: CanvasShellProps) {
     return () => ro.disconnect();
   }, []);
 
+  // Auto-arrange blocks when switching to pipeline mode
+  useEffect(() => {
+    if (doc.layoutMode === 'pipeline') {
+      doc.setBlocks(prev =>
+        arrangePipelineLayout(prev, doc.columnCount)
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doc.layoutMode]);
+
   // Total canvas height: extent of all blocks + buffer
   const canvasHeight = doc.blocks.length === 0
     ? 600
@@ -200,6 +211,28 @@ export function CanvasShell(props: CanvasShellProps) {
               width={containerWidth}
               height={canvasHeight}
             />
+          )}
+
+          {/* Pipeline flow lane indicator */}
+          {doc.layoutMode === 'pipeline' && (
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}>
+              {/* Horizontal flow lane lines */}
+              {[1, 2, 3].map(row => (
+                <div key={row} style={{
+                  position: 'absolute',
+                  left: 0, right: 0,
+                  top: (row - 1) * doc.rowHeight * 5 - 1,
+                  height: 1,
+                  background:
+                    'rgba(232,87,26,0.06)',
+                }} />
+              ))}
+            </div>
           )}
 
           {/* Stage zones — coloured backgrounds */}
@@ -331,6 +364,7 @@ export function CanvasShell(props: CanvasShellProps) {
           onPublish={props.onPublish}
           saving={props.saving}
           submitting={props.submitting}
+          isDirty={doc.isDirty}
           onTemplates={() => setTemplateLibOpen(true)}
         />
       )}

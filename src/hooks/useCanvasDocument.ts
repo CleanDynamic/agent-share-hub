@@ -379,7 +379,7 @@ export function useCanvasDocument(
   };
 
   return {
-    blocks,
+    blocks, setBlocks,
     arrows, setArrows,
     stages, setStages,
     columnCount, setColumnCount,
