@@ -5,6 +5,7 @@ import { CanvasToolbar } from './CanvasToolbar';
 import { CanvasHeader } from './CanvasHeader';
 import { DotGrid } from './DotGrid';
 import { CanvasBlock } from './CanvasBlock';
+import type { CanvasBlock as CanvasBlockType } from '@/lib/canvas-types';
 import { CanvasInsertZone } from './CanvasInsertZone';
 import { ArrowOverlay } from './ArrowOverlay';
 import { TemplateLibrary } from './TemplateLibrary';
@@ -268,6 +269,16 @@ export function CanvasShell(props: CanvasShellProps) {
               onAssignStage={(blockId, stageId) =>
                 doc.assignBlockToStage(blockId, stageId)
               }
+              onInsertResultBlock={(blockData: Partial<CanvasBlockType>) => {
+                const id = doc.addBlock(
+                  blockData.type ?? 'result',
+                  blockData.position
+                );
+                doc.updateBlock(id, {
+                  textContent: blockData.textContent,
+                  subheading: blockData.subheading,
+                });
+              }}
             />
           ))}
 

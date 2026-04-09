@@ -3,6 +3,7 @@ import { gridToPixels, positionsOverlap } from '@/lib/canvas-utils';
 import type { CanvasBlock as CanvasBlockType, CanvasStage, BlockPosition } from '@/lib/canvas-types';
 import { BlockInlineEditor } from './BlockInlineEditor';
 import { BlockViewerInCanvas } from './BlockViewerInCanvas';
+import { ExecutionPanel } from './ExecutionPanel';
 
 interface CanvasBlockProps {
   block: CanvasBlockType;
@@ -26,6 +27,7 @@ interface CanvasBlockProps {
     edge: 'top' | 'right' | 'bottom' | 'left'
   ) => void;
   onAssignStage: (blockId: string, stageId: string | null) => void;
+  onInsertResultBlock?: (block: Partial<CanvasBlockType>) => void;
 }
 
 export function CanvasBlock({
@@ -33,7 +35,7 @@ export function CanvasBlock({
   allBlocks, stages, postType,
   onPositionChange, onBlockChange, onDelete,
   onArrowDrawStart, isArrowDrawing, onArrowDrawEnd,
-  onAssignStage,
+  onAssignStage, onInsertResultBlock,
 }: CanvasBlockProps) {
 
   const [hovered, setHovered] = useState(false);
@@ -42,6 +44,7 @@ export function CanvasBlock({
   const [ghostValid, setGhostValid] = useState(true);
   const [annotationOpen, setAnnotationOpen] = useState(false);
   const [stagePickerOpen, setStagePickerOpen] = useState(false);
+  const [executionOpen, setExecutionOpen] = useState(false);
 
   const dragStartRef = useRef({
     x: 0, y: 0, origCol: 0, origRow: 0,
@@ -502,6 +505,26 @@ export function CanvasBlock({
                   )}
                 </div>
               )}
+
+              {(block.type === 'prompt' ||
+                block.type === 'code') && (
+                <button
+                  className="block-toolbar-btn"
+                  onClick={e => {
+                    e.stopPropagation();
+                    setExecutionOpen(true);
+                  }}
+                  style={{
+                    background: 'rgba(34,197,94,0.12)',
+                    border: '1px solid rgba(34,197,94,0.25)',
+                    borderRadius: 4, padding: '2px 8px',
+                    color: '#22C55E', fontSize: 11,
+                    fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  Run
+                </button>
+              )}
             </div>
           )}
 
@@ -634,6 +657,29 @@ export function CanvasBlock({
           </>
         )}
       </div>
+
+      {executionOpen && (
+        <ExecutionPanel
+          block={block}
+          mode={mode}
+          onClose={() => setExecutionOpen(false)}
+          onAcceptResult={result => {
+            onInsertResultBlock?.({
+              textContent: result,
+              type: 'result',
+              subheading: 'Generated Output',
+              position: {
+                col: block.position.col,
+                row: block.position.row
+                  + block.position.rowSpan + 1,
+                colSpan: block.position.colSpan,
+                rowSpan: 3,
+              },
+            });
+            setExecutionOpen(false);
+          }}
+        />
+      )}
     </>
   );
 }
