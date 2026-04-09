@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { BlockArrow, CanvasBlock,
   ArrowType } from '@/lib/canvas-types';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
-import { getEdgeMidpoint, bezierPath }
+import { getEdgeMidpoint, orthogonalPath, bezierPath }
   from '@/lib/canvas-utils';
 
 interface ArrowOverlayProps {
@@ -66,8 +66,9 @@ export function ArrowOverlay({
       arrow.toEdge,
       colWidth, rowHeight
     );
-    const path = bezierPath(
-      from, to, arrow.fromEdge, arrow.toEdge
+    const path = orthogonalPath(
+      from, to, arrow.fromEdge, arrow.toEdge,
+      colWidth, rowHeight
     );
     const midX = (from.x + to.x) / 2;
     const midY = (from.y + to.y) / 2;
