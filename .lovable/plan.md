@@ -1,28 +1,59 @@
 
 
-## Fix: Panels Disappeared Due to liquid-glass-react Layout
+## Fix: LiquidGlass Panels Invisible
 
-### Root Cause
+### Problem
 
-The `liquid-glass-react` `LiquidGlass` component renders children inside a `div` with:
-- `display: inline-flex` — collapses to content size
-- `overflow: hidden` — clips all scrollable content
-- `padding` and fixed font styles — overrides panel styling
-- Absolute-positioned backdrop filter overlay
+The `LiquidGlass` component from `liquid-glass-react` renders a WebGL canvas overlay and wraps children in a container with `display: inline-flex`, `overflow: hidden`, and zero effective dimensions. The `useEffect` override in `LiquidGlassPanel` tries to fix this by querying the first child and patching its styles — but this is fragile and race-prone. The library's internal render may happen after the effect, undoing or ignoring the patches. Result: all three panels collapse to 0×0 and are invisible.
 
-This component is designed for small glass buttons/badges, **not** for wrapping 775px-tall scrollable panels. The panels collapse to near-zero visible area with clipped content.
+### Solution
 
-### Fix
-
-**Revert `LiquidGlassPanel.tsx` back to a CSS-only glass effect.** The `liquid-glass-react` library is architecturally incompatible with wrapping large layout panels. Use CSS `backdrop-filter` to achieve a similar frosted-glass look that works with scrollable content.
+Use a `MutationObserver` instead of a one-shot `useEffect` to continuously enforce layout overrides on the library's internal container. This catches any re-renders by the library that reset styles.
 
 ### Changes
 
-**`src/components/LiquidGlassPanel.tsx`** — Replace `LiquidGlass` with a plain `<div>` using:
-- `backdropFilter: 'blur(20px) saturate(1.4)'`
-- `background: 'rgba(255,255,255,0.04)'`
-- `borderRadius` from the `cornerRadius` prop
-- `overflow: 'auto'`, `width: '100%'`, `height: '100%'`
+**`src/components/LiquidGlassPanel.tsx`**
 
-This is the same CSS fallback from earlier — it's not a workaround, it's the correct approach since the library doesn't support panel-sized containers.
+Replace the `useEffect` with a `MutationObserver` approach:
+
+```tsx
+useEffect(() => {
+  const wrapper = wrapperRef.current;
+  if (!wrapper) return;
+
+  function applyOverrides() {
+    const el = wrapper!.querySelector(':scope > div > div') as HTMLElement | null;
+    // Also try the direct child
+    const direct = wrapper!.querySelector(':scope > div') as HTMLElement | null;
+    
+    for (const target of [direct, el]) {
+      if (!target) continue;
+      target.style.display = 'flex';
+      target.style.flexDirection = 'column';
+      target.style.overflow = 'auto';
+      target.style.width = '100%';
+      target.style.height = '100%';
+      target.style.padding = '0';
+      target.style.fontFamily = 'inherit';
+      target.style.fontSize = 'inherit';
+      target.style.lineHeight = 'inherit';
+      target.style.position = 'relative';
+    }
+  }
+
+  applyOverrides();
+
+  const observer = new MutationObserver(() => applyOverrides());
+  observer.observe(wrapper, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+
+  return () => observer.disconnect();
+}, []);
+```
+
+This ensures that every time `LiquidGlass` re-renders or mutates its internal DOM, the layout overrides are immediately re-applied, preventing the panels from collapsing.
+
+### Files
+| File | Action |
+|------|--------|
+| `src/components/LiquidGlassPanel.tsx` | Replace `useEffect` with `MutationObserver`-based style enforcement |
 
