@@ -101,7 +101,10 @@ const NEOSCALE_CSS = `
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  overflow: hidden;
+  scrollbar-width: none;
 }
+.ns-left-panel::-webkit-scrollbar { display: none; }
 .ns-logo {
   font-size: 15px;
   font-weight: 700;
@@ -239,27 +242,14 @@ const NEOSCALE_CSS = `
   padding: 0;
 }
 .ns-middle-back {
-  position: absolute;
-  top: 0; left: 0;
+  position: relative;
   width: 100%; height: 100%;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  border-radius: 20px;
-  transform: rotateY(180deg);
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
   padding: 0;
-  background: linear-gradient(165deg,
-    rgba(255,255,255,0.06) 0%,
-    rgba(255,255,255,0.02) 50%,
-    rgba(255,255,255,0.04) 100%);
-  border: 1px solid rgba(255,255,255,0.06);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  box-shadow: 0 30px 80px rgba(0,0,0,0.5),
-    inset 0 0 0 1px rgba(255,255,255,0.03),
-    inset 0 1px 0 rgba(255,255,255,0.05);
 }
+.ns-middle-back::-webkit-scrollbar { display: none; }
 .ns-middle-front::before, .ns-middle-back::before {
   content: '';
   position: absolute;
@@ -474,9 +464,9 @@ const NEOSCALE_CSS = `
   will-change: transform;
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
 }
-.ns-right-panel::-webkit-scrollbar { width: 3px; }
-.ns-right-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+.ns-right-panel::-webkit-scrollbar { display: none; }
 
 .ns-right-title {
   font-size: 11px; font-weight: 600;
@@ -1856,11 +1846,13 @@ export function NeoScaleShell() {
               </LiquidGlassPanel>
 
               {/* BACK FACE — router outlet */}
-              <div className={`ns-middle-back${flipDir === -1 ? " rtl" : ""}`}>
-                <div className="ns-outlet-wrap">
-                  {renderBackFaceContent()}
+              <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderRadius: 20 }}>
+                <div className={`ns-middle-back${flipDir === -1 ? " rtl" : ""}`}>
+                  <div className="ns-outlet-wrap">
+                    {renderBackFaceContent()}
+                  </div>
                 </div>
-              </div>
+              </LiquidGlassPanel>
 
             </div>
           </div>
