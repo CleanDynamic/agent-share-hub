@@ -37,6 +37,7 @@ export default function LiquidGlassPanel({
         height: '100%',
         borderRadius: cornerRadius,
         overflow: 'hidden',
+        border: '1px solid rgba(255, 255, 255, 0.12)',
         ...style,
       }}
     >
@@ -75,6 +76,8 @@ export default function LiquidGlassPanel({
           overflow: 'auto',
           display: 'flex',
           flexDirection: 'column',
+          background: 'rgba(200, 200, 210, 0.08)',
+          backdropFilter: 'blur(2px) saturate(1.2)',
         }}
       >
         {children}
