@@ -528,7 +528,7 @@ const NEOSCALE_CSS = `
   gap: 10px;
   cursor: pointer;
   transition: background 0.15s;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.03);
   border: none;
   overflow: hidden;
   width: 100%;
@@ -541,7 +541,7 @@ const NEOSCALE_CSS = `
   left: 0; top: 20%; bottom: 20%;
   width: 2px;
   border-radius: 0 2px 2px 0;
-  background: var(--tile-hover-color, rgba(255,255,255,0.15));
+  background: var(--tile-hover-color, rgba(0,0,0,0.15));
   opacity: 0;
   transition: opacity 0.15s;
 }
@@ -571,7 +571,7 @@ const NEOSCALE_CSS = `
 }
 
 .ns-tile:hover {
-  background: rgba(255,255,255,0.055);
+  background: rgba(0,0,0,0.05);
 }
 
 .ns-tile:hover::after {
@@ -597,7 +597,7 @@ const NEOSCALE_CSS = `
 .ns-tile-label {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255,255,255,0.55);
+  color: rgba(0,0,0,0.55);
   text-transform: none;
   letter-spacing: 0;
   flex: 1;
@@ -606,7 +606,7 @@ const NEOSCALE_CSS = `
 .ns-tile-count {
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255,255,255,0.20);
+  color: rgba(0,0,0,0.20);
   position: relative;
   z-index: 1;
 }
