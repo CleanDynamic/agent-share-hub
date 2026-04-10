@@ -1361,30 +1361,22 @@ export function NeoScaleShell() {
     };
   }
 
-  /* ── Flip helpers ── */
-  function isShowingFront() {
-    return Math.round(currentRotation.current / 180) % 2 === 0;
-  }
+  /* ── Flip helper ── */
+  const showingFront = useRef(true);
 
-  function flipToFront() {
+  function doFlip(target: 'front' | 'back', direction: 'left' | 'right') {
     if (isFlipping.current) return;
-    if (isShowingFront()) return; // already on front
     const flipper = flipperRef.current;
     if (!flipper) return;
-    const nearest360 = Math.round(currentRotation.current / 360) * 360;
-    currentRotation.current = nearest360;
-    isFlipping.current = true;
-    flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-    flipper.style.transform = `rotateY(${nearest360}deg)`;
-    setTimeout(() => { isFlipping.current = false; }, 650);
-  }
-
-  function flipToBack(direction: 'left' | 'right') {
-    if (isFlipping.current) return;
-    if (!isShowingFront()) return; // already on back
-    const flipper = flipperRef.current;
-    if (!flipper) return;
-    const delta = direction === 'left' ? 180 : -180;
+    const onTarget = (target === 'front' && showingFront.current) || (target === 'back' && !showingFront.current);
+    let delta: number;
+    if (onTarget) {
+      // Already on target face — do a full 360 so user sees animation
+      delta = direction === 'left' ? 360 : -360;
+    } else {
+      delta = direction === 'left' ? 180 : -180;
+      showingFront.current = target === 'front';
+    }
     currentRotation.current += delta;
     isFlipping.current = true;
     flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
