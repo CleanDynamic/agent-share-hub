@@ -404,20 +404,20 @@ const NEOSCALE_CSS = `
 
 /* ── Ghost button ── */
 .ns-btn-ghost {
-  background: rgba(255,255,255,0.04);
-  color: rgba(255,255,255,0.70);
+  background: rgba(0,0,0,0.04);
+  color: rgba(0,0,0,0.65);
   padding: 8px 20px;
   border-radius: 9999px;
   font-family: 'Inter', sans-serif;
   font-size: 12px;
   font-weight: 600;
-  border: 1px solid rgba(255,255,255,0.10);
+  border: 1px solid rgba(0,0,0,0.10);
   cursor: pointer;
   transition: all 0.15s;
 }
 .ns-btn-ghost:hover {
-  background: rgba(255,255,255,0.08);
-  color: #fff;
+  background: rgba(0,0,0,0.08);
+  color: #1a1a1a;
 }
 
 /* ── Section label (trending, categories etc) ── */
@@ -427,7 +427,7 @@ const NEOSCALE_CSS = `
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(255,255,255,0.30);
+  color: rgba(0,0,0,0.35);
   margin-bottom: 16px;
 }
 
@@ -438,19 +438,19 @@ const NEOSCALE_CSS = `
 }
 .ns-page-body .text-foreground,
 .ns-page-body [class*="text-foreground"] {
-  color: rgba(255,255,255,0.90) !important;
+  color: rgba(0,0,0,0.85) !important;
   font-family: 'Inter', sans-serif !important;
 }
 .ns-page-body .text-muted-foreground,
 .ns-page-body [class*="text-muted-foreground"] {
-  color: rgba(255,255,255,0.40) !important;
+  color: rgba(0,0,0,0.45) !important;
 }
 .ns-page-body .border-border,
 .ns-page-body [class*="border-border"] {
-  border-color: rgba(255,255,255,0.05) !important;
+  border-color: rgba(0,0,0,0.08) !important;
 }
 .ns-page-body .sticky {
-  background: rgba(8,8,12,0.90) !important;
+  background: rgba(237,237,239,0.90) !important;
   backdrop-filter: blur(20px) !important;
 }
 
