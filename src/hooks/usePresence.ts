@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
  */
 export function usePresence() {
   const { isLoggedIn, user } = useAuth();
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   useEffect(() => {
     if (!isLoggedIn || !user) return;
