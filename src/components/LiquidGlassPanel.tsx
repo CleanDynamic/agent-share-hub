@@ -28,6 +28,7 @@ export default function LiquidGlassPanel({
   elasticity,
   overLight,
   mouseContainer,
+  disableEffect = false,
 }: LiquidGlassPanelProps) {
   return (
     <div
