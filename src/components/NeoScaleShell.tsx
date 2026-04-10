@@ -1677,7 +1677,7 @@ export function NeoScaleShell() {
         <div className="ns-app-container" ref={containerRef}>
 
           {/* ═══ LEFT PANEL ═══ */}
-          <LiquidGlassPanel cornerRadius={20} elasticity={0.15} cursorEffect="vertical-expand" style={{ width: 200, height: 775, flexShrink: 0 }}>
+          <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ width: 200, height: 775, flexShrink: 0 }}>
           <div
             className={`ns-left-panel${pulsing ? " pulse" : ""}`}
             ref={leftRef}
@@ -1866,7 +1866,7 @@ export function NeoScaleShell() {
           </div>
 
           {/* ═══ RIGHT PANEL ═══ */}
-          <LiquidGlassPanel cornerRadius={20} elasticity={0.15} cursorEffect="vertical-expand" style={{ width: 220, height: 775, flexShrink: 0 }}>
+          <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ width: 220, height: 775, flexShrink: 0 }}>
           <div
             className="ns-right-panel"
             ref={rightRef}
