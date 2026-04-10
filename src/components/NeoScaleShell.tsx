@@ -63,15 +63,6 @@ const NEOSCALE_CSS = `
   z-index: 10;
 }
 
-.ns-grid-bg {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  z-index: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-.ns-grid-bg canvas { width: 100%; height: 100%; display: block; }
 
 .ns-scale-wrapper {
   display: flex;
@@ -967,7 +958,7 @@ const ICONS = {
 export function NeoScaleShell() {
   const location   = useLocation();
   const navigate   = useNavigate();
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
+  
   const flipperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRef    = useRef<HTMLDivElement>(null);
@@ -1119,74 +1110,6 @@ export function NeoScaleShell() {
     setTimeout(() => setPulsing(false), 600);
   }
 
-  /* ── Canvas grid background ── */
-  useEffect(() => {
-    if (isMobile) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d")!;
-    let w = 0, h = 0, raf = 0;
-    let t = 0;
-
-    function resize() {
-      const dpr = window.devicePixelRatio || 1;
-      w = window.innerWidth; h = window.innerHeight;
-      canvas!.width  = w * dpr;
-      canvas!.height = h * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    window.addEventListener("resize", resize);
-    resize();
-
-    const gs = 48;
-    function draw() {
-      ctx.clearRect(0, 0, w, h);
-      const cols = Math.ceil(w / gs) + 1;
-      const rows = Math.ceil(h / gs) + 1;
-      const cx1 = w * 0.5 + Math.cos(t * 0.3) * w * 0.35;
-      const cy1 = h * 0.5 + Math.sin(t * 0.4) * h * 0.3;
-      const cx2 = w * 0.5 + Math.sin(t * 0.25) * w * 0.3;
-      const cy2 = h * 0.5 + Math.cos(t * 0.35) * h * 0.35;
-      const cx3 = w * 0.5 + Math.cos(t * 0.5 + 2) * w * 0.25;
-      const cy3 = h * 0.5 + Math.sin(t * 0.45 + 1) * h * 0.25;
-      const maxD = Math.sqrt(w * w + h * h) * 0.5;
-
-      for (let i = 0; i <= cols; i++) {
-        const x = i * gs, my = h * 0.5;
-        const d1 = Math.hypot(x - cx1, my - cy1);
-        const d2 = Math.hypot(x - cx2, my - cy2);
-        const d3 = Math.hypot(x - cx3, my - cy3);
-        const intensity = Math.max(0.03,
-          0.14 * Math.max(0, 1 - d1 / maxD) +
-          0.10 * Math.max(0, 1 - d2 / maxD) +
-          0.08 * Math.max(0, 1 - d3 / maxD));
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h);
-        ctx.strokeStyle = `rgba(255,255,255,${intensity})`; ctx.lineWidth = 0.5; ctx.stroke();
-      }
-      for (let j = 0; j <= rows; j++) {
-        const y = j * gs, mx = w * 0.5;
-        const d1 = Math.hypot(mx - cx1, y - cy1);
-        const d2 = Math.hypot(mx - cx2, y - cy2);
-        const d3 = Math.hypot(mx - cx3, y - cy3);
-        const intensity = Math.max(0.03,
-          0.14 * Math.max(0, 1 - d1 / maxD) +
-          0.10 * Math.max(0, 1 - d2 / maxD) +
-          0.08 * Math.max(0, 1 - d3 / maxD));
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y);
-        ctx.strokeStyle = `rgba(255,255,255,${intensity})`; ctx.lineWidth = 0.5; ctx.stroke();
-      }
-      const g1 = ctx.createRadialGradient(cx1, cy1, 0, cx1, cy1, 280);
-      g1.addColorStop(0, "rgba(232,87,26,0.03)"); g1.addColorStop(1, "rgba(232,87,26,0)");
-      ctx.fillStyle = g1; ctx.fillRect(0, 0, w, h);
-      const g2 = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, 250);
-      g2.addColorStop(0, "rgba(88,140,255,0.02)"); g2.addColorStop(1, "rgba(88,140,255,0)");
-      ctx.fillStyle = g2; ctx.fillRect(0, 0, w, h);
-      t += 0.008;
-      raf = requestAnimationFrame(draw);
-    }
-    draw();
-    return () => { window.removeEventListener("resize", resize); cancelAnimationFrame(raf); };
-  }, [isMobile]);
 
   /* ── Responsive scale ── */
   useEffect(() => {
@@ -1619,10 +1542,6 @@ export function NeoScaleShell() {
   /* ── Render ── */
   return (
     <div className="ns-root">
-      {/* Animated grid background */}
-      <div className="ns-grid-bg">
-        <canvas ref={canvasRef} id="nsGridCanvas" />
-      </div>
 
       <div className="ns-scale-wrapper">
         <div className="ns-app-container" ref={containerRef}>
