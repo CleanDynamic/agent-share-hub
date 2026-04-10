@@ -628,7 +628,7 @@ const NEOSCALE_CSS = `
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.03);
   border: none;
   overflow: hidden;
   transition: background 0.15s;
@@ -656,17 +656,17 @@ const NEOSCALE_CSS = `
 }
 
 .ns-bounty-tile:hover {
-  background: rgba(255,255,255,0.055);
+  background: rgba(0,0,0,0.05);
 }
 
 .ns-bounty-tile:hover::after {
   opacity: 1;
   animation: ns-border-fill 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
-.ns-right-divider { height: 1px; background: rgba(255,255,255,0.04); margin: 4px 0 14px; }
+.ns-right-divider { height: 1px; background: rgba(0,0,0,0.06); margin: 4px 0 14px; }
 .ns-trending-title {
   font-size: 10px; font-weight: 600;
-  color: rgba(255,255,255,0.35);
+  color: rgba(0,0,0,0.40);
   letter-spacing: 1.2px; text-transform: uppercase;
   padding: 0 4px; margin-bottom: 10px;
 }
@@ -678,23 +678,23 @@ const NEOSCALE_CSS = `
   padding: 8px 8px; border-radius: 8px;
   cursor: pointer; transition: background 0.2s;
 }
-.ns-trending-item:hover { background: rgba(255,255,255,0.05); }
-.ns-trending-rank { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.15); width: 16px; text-align: center; }
+.ns-trending-item:hover { background: rgba(0,0,0,0.04); }
+.ns-trending-rank { font-size: 11px; font-weight: 600; color: rgba(0,0,0,0.20); width: 16px; text-align: center; }
 .ns-trending-info { flex: 1; min-width: 0; }
-.ns-trending-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.55); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ns-trending-name { font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.55); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ns-trending-badge {
   display: inline-block; padding: 2px 7px;
   border-radius: 4px; font-size: 9px; font-weight: 600; letter-spacing: 0.3px;
 }
-.ns-badge-beginner { background: rgba(46,204,113,0.12); color: #2ecc71; }
-.ns-badge-intermediate { background: rgba(243,156,18,0.12); color: #f39c12; }
-.ns-badge-advanced { background: rgba(231,76,60,0.12); color: #e74c3c; }
-.ns-badge-any { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.35); }
+.ns-badge-beginner { background: rgba(46,204,113,0.12); color: #1a8a4a; }
+.ns-badge-intermediate { background: rgba(243,156,18,0.12); color: #b87100; }
+.ns-badge-advanced { background: rgba(231,76,60,0.12); color: #c0392b; }
+.ns-badge-any { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.40); }
 
 /* ── Right panel sections ── */
 .ns-section-title {
   font-size: 10px; font-weight: 600;
-  color: rgba(255,255,255,0.35);
+  color: rgba(0,0,0,0.40);
   letter-spacing: 1.2px; text-transform: uppercase;
   padding: 0 4px; margin: 14px 0 8px;
 }
