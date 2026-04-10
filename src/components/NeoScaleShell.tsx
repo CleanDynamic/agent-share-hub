@@ -1361,30 +1361,22 @@ export function NeoScaleShell() {
     };
   }
 
-  /* ── Flip helpers ── */
-  function isShowingFront() {
-    return Math.round(currentRotation.current / 180) % 2 === 0;
-  }
+  /* ── Flip helper ── */
+  const showingFront = useRef(true);
 
-  function flipToFront() {
+  function doFlip(target: 'front' | 'back', direction: 'left' | 'right') {
     if (isFlipping.current) return;
-    if (isShowingFront()) return; // already on front
     const flipper = flipperRef.current;
     if (!flipper) return;
-    const nearest360 = Math.round(currentRotation.current / 360) * 360;
-    currentRotation.current = nearest360;
-    isFlipping.current = true;
-    flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-    flipper.style.transform = `rotateY(${nearest360}deg)`;
-    setTimeout(() => { isFlipping.current = false; }, 650);
-  }
-
-  function flipToBack(direction: 'left' | 'right') {
-    if (isFlipping.current) return;
-    if (!isShowingFront()) return; // already on back
-    const flipper = flipperRef.current;
-    if (!flipper) return;
-    const delta = direction === 'left' ? 180 : -180;
+    const onTarget = (target === 'front' && showingFront.current) || (target === 'back' && !showingFront.current);
+    let delta: number;
+    if (onTarget) {
+      // Already on target face — do a full 360 so user sees animation
+      delta = direction === 'left' ? 360 : -360;
+    } else {
+      delta = direction === 'left' ? 180 : -180;
+      showingFront.current = target === 'front';
+    }
     currentRotation.current += delta;
     isFlipping.current = true;
     flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
@@ -1449,7 +1441,7 @@ export function NeoScaleShell() {
 
   /* ── Back-face flip-to-front button handler ── */
   function handleBackBtn() {
-    flipToFront();
+    doFlip('front', 'left');
     navigate("/");
   }
 
@@ -1648,7 +1640,7 @@ export function NeoScaleShell() {
             {...initTilt(leftRef)}
           >
             <div className="ns-logo" onClick={() => {
-              flipToFront();
+              doFlip('front', 'left');
               navigate("/");
             }}>NeoScale</div>
             <ul className="ns-nav-list">
@@ -1659,10 +1651,10 @@ export function NeoScaleShell() {
                     className={`ns-nav-item${navPage === item.key ? " active" : ""}`}
                     onClick={() => {
                       if (item.key === 'home') {
-                        flipToFront();
+                        doFlip('front', 'left');
                         navigate("/");
                       } else {
-                        flipToBack('left');
+                        doFlip('back', 'left');
                         navigate(item.route);
                       }
                     }}
@@ -1702,8 +1694,8 @@ export function NeoScaleShell() {
                 </>
               ) : (
                 <div className="ns-auth-btns">
-                  <button className="ns-auth-btn signin" onClick={() => { flipToBack('left'); navigate("/login"); }}>Sign in</button>
-                  <button className="ns-auth-btn join" onClick={() => { flipToBack('left'); navigate("/signup"); }}>Join free</button>
+                  <button className="ns-auth-btn signin" onClick={() => { doFlip('back', 'left'); navigate("/login"); }}>Sign in</button>
+                  <button className="ns-auth-btn join" onClick={() => { doFlip('back', 'left'); navigate("/signup"); }}>Join free</button>
                 </div>
               )}
             </div>
@@ -1833,7 +1825,7 @@ export function NeoScaleShell() {
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && searchQuery.trim().length >= 1) {
-                    flipToBack('right');
+                    doFlip('back', 'right');
                     navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
                     setSearchOpen(false);
                   }
@@ -1864,6 +1856,7 @@ export function NeoScaleShell() {
                         style={{ display: 'flex', alignItems: 'center',
                           gap: 8, padding: '6px 10px' }}
                         onClick={() => {
+                          doFlip('back', 'right');
                           navigate(`/creator/${p.username}`);
                           setSearchOpen(false);
                           setSearchQuery('');
@@ -1908,14 +1901,14 @@ export function NeoScaleShell() {
                 )}
 
                 {searchResults.map((r: any) => (
-                  <div key={r.id} className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); flipToBack('right'); navigate(`/content/${r.id}`); }}>
+                  <div key={r.id} className="ns-search-result" onClick={() => { setSearchOpen(false); setSearchQuery(""); doFlip('back', 'right'); navigate(`/content/${r.id}`); }}>
                     <span className="ns-search-result-badge">{displayContentType(r.content_type)}</span>
                     <span className="ns-search-result-title">{r.title}</span>
                   </div>
                 ))}
                 {searchQuery.length >= 2 && !searchLoading && (
                   <div className="ns-search-result" onClick={() => {
-                    flipToBack('right');
+                    doFlip('back', 'right');
                     navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
                     setSearchOpen(false);
                     setSearchQuery("");
@@ -1971,7 +1964,7 @@ export function NeoScaleShell() {
                     setFilterColor(tile.color);
                     setActiveTab('For You');
                     // Flip back to front face to show the filtered feed
-                    flipToFront();
+                    doFlip('front', 'right');
                     navigate("/");
                   }}
                 >
@@ -1995,7 +1988,7 @@ export function NeoScaleShell() {
                 <div
                   key={item.id}
                   className="ns-trending-item"
-                  onClick={() => { flipToBack('right'); navigate(`/content/${item.id}`); }}
+                  onClick={() => { doFlip('back', 'right'); navigate(`/content/${item.id}`); }}
                 >
                   <span className="ns-trending-rank">{i + 1}</span>
                   <div className="ns-trending-info">
@@ -2021,7 +2014,7 @@ export function NeoScaleShell() {
                   const content = pick.content_items;
                   const curator = pick.curators?.profiles;
                   return (
-                    <div key={pick.id} className="ns-curator-item" onClick={() => { if (content) { flipToBack('right'); navigate(`/content/${content.id}`); } }}>
+                    <div key={pick.id} className="ns-curator-item" onClick={() => { if (content) { doFlip('back', 'right'); navigate(`/content/${content.id}`); } }}>
                       <div className="ns-curator-avatar">
                         {curator?.avatar_url ? <img src={curator.avatar_url} alt="" /> : <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>✦</span>}
                       </div>
@@ -2040,7 +2033,7 @@ export function NeoScaleShell() {
               <>
                 <div className="ns-section-title">Collections</div>
                 {featuredCollections.map((col: any) => (
-                  <div key={col.id} className="ns-collection-item" onClick={() => { flipToBack('right'); navigate(`/collection/${col.slug || col.id}`); }}>
+                  <div key={col.id} className="ns-collection-item" onClick={() => { doFlip('back', 'right'); navigate(`/collection/${col.slug || col.id}`); }}>
                     <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>{col.title}</div>
                     <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>
                       {(col.profiles as any)?.display_name || (col.profiles as any)?.username || "Creator"} · {col.item_count} items
@@ -2056,10 +2049,10 @@ export function NeoScaleShell() {
                 <div className="ns-section-title">Who to Follow</div>
                 {followSuggestions.map((s: any) => (
                   <div key={s.id} className="ns-follow-item">
-                    <div className="ns-follow-avatar" style={{ cursor: "pointer" }} onClick={() => { flipToBack('right'); navigate(`/creator/${s.username}`); }}>
+                    <div className="ns-follow-avatar" style={{ cursor: "pointer" }} onClick={() => { doFlip('back', 'right'); navigate(`/creator/${s.username}`); }}>
                       {s.avatar_url ? <img src={s.avatar_url} alt="" /> : <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>{(s.display_name || "?")[0]}</span>}
                     </div>
-                    <div className="ns-follow-info" style={{ cursor: "pointer" }} onClick={() => { flipToBack('right'); navigate(`/creator/${s.username}`); }}>
+                    <div className="ns-follow-info" style={{ cursor: "pointer" }} onClick={() => { doFlip('back', 'right'); navigate(`/creator/${s.username}`); }}>
                       <div className="ns-follow-name">{s.display_name || s.username}</div>
                       <div className="ns-follow-handle">@{s.username}</div>
                     </div>
@@ -2073,15 +2066,15 @@ export function NeoScaleShell() {
             {!isLoggedIn && (
               <div style={{ marginTop: 16 }}>
                 <div className="ns-auth-btns">
-                  <button className="ns-auth-btn signin" onClick={() => { flipToBack('right'); navigate("/login"); }}>Sign in</button>
-                  <button className="ns-auth-btn join" onClick={() => { flipToBack('right'); navigate("/signup"); }}>Join free</button>
+                  <button className="ns-auth-btn signin" onClick={() => { doFlip('back', 'right'); navigate("/login"); }}>Sign in</button>
+                  <button className="ns-auth-btn join" onClick={() => { doFlip('back', 'right'); navigate("/signup"); }}>Join free</button>
                 </div>
               </div>
             )}
 
             {/* Footer links */}
             <div className="ns-footer-links">
-              <span className="ns-footer-link" onClick={() => { flipToBack('right'); navigate("/about"); }}>About NeoScale AI →</span>
+              <span className="ns-footer-link" onClick={() => { doFlip('back', 'right'); navigate("/about"); }}>About NeoScale AI →</span>
               <a className="ns-footer-link" href="https://twitter.com/neoscaleai" target="_blank" rel="noopener noreferrer">Twitter @neoscaleai →</a>
             </div>
           </div>
