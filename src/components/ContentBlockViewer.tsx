@@ -1276,7 +1276,7 @@ function TutorialCarousel({ images }: { images: string[] }) {
 
 // ─── Per-type viewer dispatch ───────────────────────────────
 
-function renderTypedViewer(block: BlockRow): JSX.Element | null {
+function renderTypedViewer(block: BlockRow): React.JSX.Element | null {
   if (block.block_type === 'tutorial_step') {
     const mediaType = block.tutorial_media;
     const mediaUrl = block.tutorial_media_url;
@@ -1484,7 +1484,7 @@ export function ContentBlockViewer({
     }
   });
 
-  const renderBlockRow = (block: BlockRow, index: number): JSX.Element => {
+  const renderBlockRow = (block: BlockRow, index: number): React.JSX.Element => {
     const blockVariations = (variations ?? []).filter((v) => v.block_id === block.id);
             const hasVars = blockVariations.length > 0;
             const currentTab = activeTab[block.id] ?? "A";
