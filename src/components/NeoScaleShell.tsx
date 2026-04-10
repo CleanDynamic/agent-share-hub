@@ -169,7 +169,7 @@ const NEOSCALE_CSS = `
 /* ── User section at bottom of left panel ── */
 .ns-user-section {
   padding: 12px 8px 4px;
-  border-top: 1px solid rgba(255,255,255,0.05);
+  border-top: 1px solid rgba(0,0,0,0.06);
   margin-top: 8px;
 }
 .ns-user-btn {
@@ -178,7 +178,7 @@ const NEOSCALE_CSS = `
   cursor: pointer; transition: background 0.2s;
   border: none; background: none; text-align: left;
 }
-.ns-user-btn:hover { background: rgba(255,255,255,0.04); }
+.ns-user-btn:hover { background: rgba(0,0,0,0.04); }
 .ns-user-avatar {
   width: 28px; height: 28px; border-radius: 50%;
   background: #E8571A; color: #fff;
@@ -188,14 +188,15 @@ const NEOSCALE_CSS = `
 }
 .ns-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ns-user-name {
-  font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.6);
+  font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.6);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
 }
-.ns-user-dots { color: rgba(255,255,255,0.2); font-size: 16px; }
+.ns-user-dots { color: rgba(0,0,0,0.25); font-size: 16px; }
 .ns-user-menu {
   position: absolute; bottom: 56px; left: 8px; right: 8px;
-  background: rgba(8,8,12,0.95); border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.95); border: 1px solid rgba(0,0,0,0.10);
   border-radius: 10px; padding: 4px; z-index: 10;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
 }
 .ns-user-menu button {
   display: flex; align-items: center; gap: 8px;
@@ -203,7 +204,7 @@ const NEOSCALE_CSS = `
   border-radius: 8px; cursor: pointer; font-size: 12px; color: #e74c3c;
   transition: background 0.15s;
 }
-.ns-user-menu button:hover { background: rgba(255,255,255,0.04); }
+.ns-user-menu button:hover { background: rgba(0,0,0,0.05); }
 .ns-auth-btns { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
 .ns-auth-btn {
   display: flex; align-items: center; justify-content: center;
@@ -211,14 +212,14 @@ const NEOSCALE_CSS = `
   cursor: pointer; transition: all 0.2s; border: none;
 }
 .ns-auth-btn.signin {
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.6);
+  background: rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.10);
+  color: rgba(0,0,0,0.6);
 }
-.ns-auth-btn.signin:hover { background: rgba(255,255,255,0.08); }
+.ns-auth-btn.signin:hover { background: rgba(0,0,0,0.08); }
 .ns-auth-btn.join {
-  background: #111; border: 1px solid rgba(255,255,255,0.1); color: #fff;
+  background: #1a1a1a; border: 1px solid rgba(0,0,0,0.15); color: #fff;
 }
-.ns-auth-btn.join:hover { background: #1a1a1a; }
+.ns-auth-btn.join:hover { background: #333; }
 
 /* ── Middle panel ── */
 .ns-middle-wrapper { width: 600px; height: 775px; perspective: 1400px; flex-shrink: 0; }
@@ -255,7 +256,7 @@ const NEOSCALE_CSS = `
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,0.06), transparent);
 }
 .ns-middle-back.rtl {
   transform: rotateY(-180deg);
@@ -273,14 +274,14 @@ const NEOSCALE_CSS = `
   box-sizing: border-box;
 }
 .ns-feed-scroll::-webkit-scrollbar { width: 3px; }
-.ns-feed-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+.ns-feed-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 3px; }
 
 .ns-feed-loading {
   display: flex; flex-direction: column; gap: 12px; padding: 4px 0;
 }
 .ns-feed-skeleton {
   height: 80px; border-radius: 12px;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.04);
   animation: nsPulse 1.5s ease-in-out infinite;
 }
 @keyframes nsPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }
