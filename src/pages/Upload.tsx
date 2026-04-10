@@ -263,6 +263,11 @@ const Upload = () => {
   const [bountyBlueprintRequired, setBountyBlueprintRequired] = useState(true);
   const [blueprintExpanded, setBlueprintExpanded] = useState(false);
   const [discussionThreads, setDiscussionThreads] = useState<string[]>(['']);
+  // Evidence state
+  const [evidenceMediaType, setEvidenceMediaType] = useState<'photos' | 'video' | 'written'>('written');
+  const [evidenceMediaFiles, setEvidenceMediaFiles] = useState<File[]>([]);
+  const [evidenceMediaPreviews, setEvidenceMediaPreviews] = useState<string[]>([]);
+  const [evidenceCaption, setEvidenceCaption] = useState('');
   const autosaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastAutosaveRef = useRef<Date | null>(null);
   const canvasDoc = useCanvasDocument(currentDraftId);
@@ -1232,6 +1237,16 @@ const Upload = () => {
         saving={savingDraft}
         submitting={submitting}
         onBack={() => setShowTypeChooser(true)}
+        evidenceMediaType={evidenceMediaType}
+        evidenceMediaFiles={evidenceMediaFiles}
+        evidenceMediaPreviews={evidenceMediaPreviews}
+        evidenceCaption={evidenceCaption}
+        onEvidenceMediaTypeChange={setEvidenceMediaType}
+        onEvidenceMediaFilesChange={(files, previews) => {
+          setEvidenceMediaFiles(files);
+          setEvidenceMediaPreviews(previews);
+        }}
+        onEvidenceCaptionChange={setEvidenceCaption}
       />
     );
   }

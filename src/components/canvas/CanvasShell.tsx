@@ -14,6 +14,8 @@ import { AnnotationsList } from './AnnotationsList';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
 import { readingOrder, snapToGridDot, nearestEdge, getEdgeMidpoint, polylinePath } from '@/lib/canvas-utils';
 
+import type { EvidenceMediaType } from './CanvasHeader';
+
 interface CanvasShellProps {
   mode: 'edit' | 'view';
   doc: ReturnType<typeof useCanvasDocument>;
@@ -35,6 +37,14 @@ interface CanvasShellProps {
   saving?: boolean;
   submitting?: boolean;
   onBack?: () => void;
+  // Evidence
+  evidenceMediaType?: EvidenceMediaType;
+  evidenceMediaFiles?: File[];
+  evidenceMediaPreviews?: string[];
+  evidenceCaption?: string;
+  onEvidenceMediaTypeChange?: (t: EvidenceMediaType) => void;
+  onEvidenceMediaFilesChange?: (files: File[], previews: string[]) => void;
+  onEvidenceCaptionChange?: (v: string) => void;
 }
 
 export function CanvasShell(props: CanvasShellProps) {
@@ -385,11 +395,16 @@ export function CanvasShell(props: CanvasShellProps) {
           difficulty={props.difficulty}
           coverPreview={props.coverPreview}
           onTitleChange={props.onTitleChange}
-          onDescriptionChange={
-            props.onDescriptionChange
-          }
+          onDescriptionChange={props.onDescriptionChange}
           onPostTypeClick={props.onPostTypeClick}
           onCoverChange={props.onCoverChange}
+          evidenceMediaType={props.evidenceMediaType}
+          evidenceMediaFiles={props.evidenceMediaFiles}
+          evidenceMediaPreviews={props.evidenceMediaPreviews}
+          evidenceCaption={props.evidenceCaption}
+          onEvidenceMediaTypeChange={props.onEvidenceMediaTypeChange}
+          onEvidenceMediaFilesChange={props.onEvidenceMediaFilesChange}
+          onEvidenceCaptionChange={props.onEvidenceCaptionChange}
         />}
 
         {/* Stage tab bar */}
