@@ -55,7 +55,7 @@ const NEOSCALE_CSS = `
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #08080C;
+  background: #EDEDEF;
   font-family: 'Inter', sans-serif;
   overflow: hidden;
   position: fixed;
