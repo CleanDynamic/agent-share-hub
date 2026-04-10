@@ -31,21 +31,35 @@ export default function LiquidGlassPanel({
 }: LiquidGlassPanelProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Override the library's inline styles that break panel layout
   useEffect(() => {
-    const el = wrapperRef.current?.querySelector(':scope > *') as HTMLElement | null;
-    if (!el) return;
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
 
-    // The library sets display:inline-flex and overflow:hidden which collapses panels
-    el.style.display = 'flex';
-    el.style.flexDirection = 'column';
-    el.style.overflow = 'auto';
-    el.style.width = '100%';
-    el.style.height = '100%';
-    el.style.padding = '0';
-    el.style.fontFamily = 'inherit';
-    el.style.fontSize = 'inherit';
-    el.style.lineHeight = 'inherit';
+    function applyOverrides() {
+      const el = wrapper!.querySelector(':scope > div > div') as HTMLElement | null;
+      const direct = wrapper!.querySelector(':scope > div') as HTMLElement | null;
+
+      for (const target of [direct, el]) {
+        if (!target) continue;
+        target.style.display = 'flex';
+        target.style.flexDirection = 'column';
+        target.style.overflow = 'auto';
+        target.style.width = '100%';
+        target.style.height = '100%';
+        target.style.padding = '0';
+        target.style.fontFamily = 'inherit';
+        target.style.fontSize = 'inherit';
+        target.style.lineHeight = 'inherit';
+        target.style.position = 'relative';
+      }
+    }
+
+    applyOverrides();
+
+    const observer = new MutationObserver(() => applyOverrides());
+    observer.observe(wrapper, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+
+    return () => observer.disconnect();
   }, []);
 
   return (
