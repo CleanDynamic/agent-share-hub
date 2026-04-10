@@ -308,10 +308,12 @@ export function useCanvasDocument(
   // ── Stage operations ──────────────────────────────
   const addStage = useCallback((title: string) => {
     pushUndo();
+    const stageId = crypto.randomUUID();
+    const stageNum = stages.length + 1;
     const newStage: CanvasStage = {
-      id: crypto.randomUUID(),
+      id: stageId,
       contentId: contentId ?? '',
-      stageNumber: stages.length + 1,
+      stageNumber: stageNum,
       title,
       description: null,
       estimatedMinutes: null,
@@ -322,8 +324,43 @@ export function useCanvasDocument(
       ],
     };
     setStages(prev => [...prev, newStage]);
+
+    // Auto-create a tutorial_step block for this stage
+    const nextRow = getNextRow(blocksRaw);
+    const colSpan = 4;
+    const centerCol = Math.max(1, Math.floor((columnCount - colSpan) / 2) + 1);
+    const tutorialBlock: CanvasBlock = {
+      id: crypto.randomUUID(),
+      type: 'tutorial_step',
+      textContent: '',
+      subheading: `Stage ${stageNum}: ${title}`,
+      position: {
+        col: centerCol,
+        row: nextRow,
+        colSpan,
+        rowSpan: 2,
+      },
+      stageId,
+      stageIndex: null,
+      isLocked: false,
+      lockType: 'none',
+      mobileOrder: null,
+      creatorAnnotation: null,
+      tutorialMedia: 'text',
+      tutorialText: null,
+    };
+    setBlocks(prev => [...prev, tutorialBlock]);
+    // Also assign block to stage
+    setStages(prev =>
+      prev.map(s =>
+        s.id === stageId
+          ? { ...s, blockIds: [...s.blockIds, tutorialBlock.id] }
+          : s
+      )
+    );
+
     setIsDirty(true);
-  }, [stages, contentId, pushUndo]);
+  }, [stages, contentId, pushUndo, blocksRaw, columnCount, setBlocks]);
 
   const deleteStage = useCallback((stageId: string) => {
     pushUndo();

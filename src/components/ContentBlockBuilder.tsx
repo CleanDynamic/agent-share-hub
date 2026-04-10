@@ -1973,38 +1973,39 @@ const TutorialStepEditor = ({ block, update, index }: {
         ))}
       </div>
 
-      {/* Media input */}
+      {/* Media input — file upload first */}
       {(mediaType === 'video' || mediaType === 'image' || mediaType === 'voicenote') && (
         <div style={{ marginBottom: 10 }}>
-          <label style={{
-            fontSize: 10, fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            color: 'rgba(255,255,255,0.30)',
-            display: 'block', marginBottom: 6,
-          }}>
-            {mediaType === 'voicenote' ? 'Audio URL or upload' : 'Media URL or upload'}
-          </label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              value={block.tutorialMediaUrl ?? ''}
-              onChange={e => update(index, { tutorialMediaUrl: e.target.value })}
-              placeholder={`Paste ${mediaType} URL...`}
-              style={{
-                flex: 1, background: 'rgba(0,0,0,0.20)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 6, padding: '6px 10px',
-                fontSize: 12, color: '#fff', outline: 'none',
-              }}
-            />
+          {/* Preview */}
+          {block.tutorialMediaUrl && (
+            <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+              {mediaType === 'image' && (
+                <img src={block.tutorialMediaUrl} style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid rgba(255,255,255,0.10)' }} />
+              )}
+              {mediaType === 'video' && (
+                <video src={block.tutorialMediaUrl} style={{ width: 80, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid rgba(255,255,255,0.10)' }} />
+              )}
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)' }}>
+                {mediaType === 'image' ? 'Image' : mediaType === 'video' ? 'Video' : 'Audio'} added
+              </span>
+              <button type="button" onClick={() => update(index, { tutorialMediaUrl: null })}
+                style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                Remove
+              </button>
+            </div>
+          )}
+          {/* Upload button (primary) */}
+          {!block.tutorialMediaUrl && (
             <label style={{
-              padding: '6px 12px', borderRadius: 6,
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 14px', borderRadius: 6,
               fontSize: 11, cursor: 'pointer',
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              color: 'rgba(255,255,255,0.50)',
+              background: 'rgba(232,87,26,0.12)',
+              border: '1px solid rgba(232,87,26,0.30)',
+              color: '#E8571A', fontWeight: 600,
+              marginBottom: 6,
             }}>
-              Upload
+              Upload {mediaType === 'voicenote' ? 'audio' : mediaType}
               <input type="file"
                 accept={mediaType === 'voicenote'
                   ? 'audio/*'
@@ -2019,11 +2020,30 @@ const TutorialStepEditor = ({ block, update, index }: {
                 }}
               />
             </label>
-          </div>
+          )}
+          {/* Or paste URL (secondary) */}
+          {!block.tutorialMediaUrl && (
+            <div style={{ marginTop: 6 }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.20)', marginBottom: 4 }}>or paste URL</div>
+              <input
+                value=""
+                onChange={e => {
+                  if (e.target.value.trim()) update(index, { tutorialMediaUrl: e.target.value });
+                }}
+                placeholder={`Paste ${mediaType} URL...`}
+                style={{
+                  width: '100%', background: 'rgba(0,0,0,0.15)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 6, padding: '5px 10px',
+                  fontSize: 11, color: '#fff', outline: 'none',
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
 
-      {/* Carousel: multiple image URLs */}
+      {/* Carousel: multi-file upload first */}
       {mediaType === 'carousel' && (
         <div style={{ marginBottom: 10 }}>
           <div style={{
@@ -2033,25 +2053,77 @@ const TutorialStepEditor = ({ block, update, index }: {
             color: 'rgba(255,255,255,0.30)',
             marginBottom: 6,
           }}>
-            Carousel images (paste URLs, one per line)
+            Carousel images
           </div>
-          <textarea
-            value={(block.tutorialCarouselUrls ?? []).join('\n')}
-            onChange={e => update(index, {
-              tutorialCarouselUrls: e.target.value.split('\n').filter(u => u.trim())
-            })}
-            placeholder="https://... (one per line)"
-            rows={3}
-            style={{
-              width: '100%',
-              background: 'rgba(0,0,0,0.20)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 6, padding: '8px 10px',
-              fontSize: 12, color: '#fff', outline: 'none',
-              resize: 'vertical', boxSizing: 'border-box',
-              fontFamily: 'monospace',
-            }}
-          />
+          {/* Thumbnail strip */}
+          {(block.tutorialCarouselUrls ?? []).length > 0 && (
+            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 8, paddingBottom: 4 }}>
+              {(block.tutorialCarouselUrls ?? []).map((url, i) => (
+                <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
+                  <img src={url} style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)' }} />
+                  <button type="button"
+                    onClick={() => {
+                      const next = [...(block.tutorialCarouselUrls ?? [])];
+                      next.splice(i, 1);
+                      update(index, { tutorialCarouselUrls: next });
+                    }}
+                    style={{
+                      position: 'absolute', top: -4, right: -4,
+                      width: 16, height: 16, borderRadius: '50%',
+                      background: 'rgba(0,0,0,0.70)', border: 'none',
+                      color: '#fff', fontSize: 10, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >×</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Upload multiple */}
+          <label style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            padding: '5px 12px', borderRadius: 6, fontSize: 11,
+            cursor: 'pointer', background: 'rgba(232,87,26,0.12)',
+            border: '1px solid rgba(232,87,26,0.30)',
+            color: '#E8571A', fontWeight: 600,
+          }}>
+            + Upload images
+            <input type="file" accept="image/*" multiple style={{ display: 'none' }}
+              onChange={e => {
+                const files = Array.from(e.target.files ?? []);
+                const urls = files.map(f => URL.createObjectURL(f));
+                update(index, {
+                  tutorialCarouselUrls: [...(block.tutorialCarouselUrls ?? []), ...urls],
+                });
+                e.target.value = '';
+              }}
+            />
+          </label>
+          {/* Or paste URLs fallback */}
+          <div style={{ marginTop: 6 }}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.20)', marginBottom: 4 }}>or paste URLs (one per line)</div>
+            <textarea
+              value=""
+              onChange={e => {
+                const newUrls = e.target.value.split('\n').filter(u => u.trim());
+                if (newUrls.length) {
+                  update(index, {
+                    tutorialCarouselUrls: [...(block.tutorialCarouselUrls ?? []), ...newUrls],
+                  });
+                }
+              }}
+              placeholder="https://... (one per line)"
+              rows={2}
+              style={{
+                width: '100%', background: 'rgba(0,0,0,0.15)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 6, padding: '6px 10px',
+                fontSize: 11, color: '#fff', outline: 'none',
+                resize: 'none', boxSizing: 'border-box',
+                fontFamily: 'monospace',
+              }}
+            />
+          </div>
         </div>
       )}
 
