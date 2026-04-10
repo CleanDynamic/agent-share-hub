@@ -20,6 +20,7 @@ export default function LiquidGlassPanel({
   children,
   className,
   style,
+  contentStyle,
   cornerRadius = 20,
   displacementScale,
   blurAmount,
@@ -80,6 +81,7 @@ export default function LiquidGlassPanel({
           flexDirection: 'column',
           background: 'rgba(200, 200, 210, 0.08)',
           backdropFilter: 'blur(2px) saturate(1.2)',
+          ...contentStyle,
         }}
       >
         {children}
