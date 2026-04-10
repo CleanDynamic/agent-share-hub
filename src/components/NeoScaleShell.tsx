@@ -242,17 +242,14 @@ const NEOSCALE_CSS = `
   padding: 0;
 }
 .ns-middle-back {
-  position: absolute;
-  top: 0; left: 0;
+  position: relative;
   width: 100%; height: 100%;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  border-radius: 20px;
-  transform: rotateY(180deg);
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
   padding: 0;
 }
+.ns-middle-back::-webkit-scrollbar { display: none; }
 .ns-middle-front::before, .ns-middle-back::before {
   content: '';
   position: absolute;
@@ -467,9 +464,9 @@ const NEOSCALE_CSS = `
   will-change: transform;
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
 }
-.ns-right-panel::-webkit-scrollbar { width: 3px; }
-.ns-right-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+.ns-right-panel::-webkit-scrollbar { display: none; }
 
 .ns-right-title {
   font-size: 11px; font-weight: 600;
