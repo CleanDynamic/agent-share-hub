@@ -724,6 +724,9 @@ export type Database = {
           draft_saved_at: string | null
           embedding: string | null
           estimated_read_minutes: number | null
+          evidence_caption: string | null
+          evidence_media_type: string | null
+          evidence_media_urls: string[] | null
           file_url: string | null
           fork_count: number
           fork_of_content_id: string | null
@@ -782,6 +785,9 @@ export type Database = {
           draft_saved_at?: string | null
           embedding?: string | null
           estimated_read_minutes?: number | null
+          evidence_caption?: string | null
+          evidence_media_type?: string | null
+          evidence_media_urls?: string[] | null
           file_url?: string | null
           fork_count?: number
           fork_of_content_id?: string | null
@@ -840,6 +846,9 @@ export type Database = {
           draft_saved_at?: string | null
           embedding?: string | null
           estimated_read_minutes?: number | null
+          evidence_caption?: string | null
+          evidence_media_type?: string | null
+          evidence_media_urls?: string[] | null
           file_url?: string | null
           fork_count?: number
           fork_of_content_id?: string | null
