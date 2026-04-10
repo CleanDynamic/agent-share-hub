@@ -1,35 +1,52 @@
 
 
-## Fix Bottom Toolbar Overflow and Page Horizontal Scroll
+## Add "User Evidence" Section, Auto-Create Tutorial Blocks for Stages, File Uploads in Tutorials, and Collapsible Header Fields
 
-### Problems
-1. **Toolbar pill is too wide** — it has too many items (Back, Undo, Redo, + Block, Templates, History, Notes, block count, Save, Publish, plus zoom controls in a separate pill) all in a single row. On the user's 1102px viewport it overflows and clips.
-2. **Horizontal page scroll to dead space** — the grid div has `minWidth: 1200` which forces the scroll area wider than the viewport. Combined with `transform: scale(0.5)`, the browser still allocates 1200px of layout width before scaling, creating a scrollbar to empty space.
+### What changes
 
-### Changes
+**1. Collapsible Title, Description, and Evidence sections in CanvasHeader**
+Currently title and description are always-visible inputs taking up vertical space. Convert them into collapsible dropdown toggles (chevron + label) that expand/collapse on click. All three sections (Title, Description, User Evidence) start collapsed but are marked mandatory (Title/Description show a red dot if empty). This keeps the canvas area maximized on load.
 
-**1. Fix horizontal overflow on the canvas** (`CanvasShell.tsx`)
-- Remove `minWidth: 1200` from the grid container
-- Instead, set `width: ${100 / zoom}%` so at 50% zoom the content fills the viewport naturally without forcing a scrollbar
-- Set `overflowX: 'hidden'` on the main scroll area to prevent any dead-space scroll
+**2. Add "User Evidence" collapsible section** (`CanvasHeader.tsx`)
+Below Description, add a new collapsible "Your Results" section with:
+- A media type toggle: **Photo(s)**, **Video**, or **Written only**
+- **Photo(s)**: file input accepting `image/*`, multiple files, rendered as a small horizontal thumbnail strip (carousel-like, max ~5). Uses `URL.createObjectURL` for local preview.
+- **Video**: file input accepting `video/*`, single file, shows a small video thumbnail preview.
+- **Written only**: just the caption.
+- A **caption** textarea (max 500 chars) with character counter, shared across all media types.
+- The entire section is compact — collapsed it's a single 32px row; expanded it's ~120px max.
 
-**2. Consolidate and slim down the toolbar** (`CanvasToolbar.tsx`)
-- Remove the separate zoom controls from `CanvasShell.tsx` — merge zoom −/+/% into the toolbar pill (replacing the block-count/status area which is low-value)
-- Drop the text labels from Undo/Redo (icon-only buttons are clear enough)
-- Drop the "Templates" and "History" text buttons — move them into a `⋯` overflow menu (three-dot button that opens a small popover with Templates, History, Notes)
-- Keep the primary actions visible: Back, Undo, Redo, + Block, Save, Publish
-- Add `max-width: calc(100vw - 32px)` to the toolbar pill so it never exceeds the viewport
-- Reduce gap from 5 to 3px between items
+Pass new props up through `CanvasShellProps`: `evidenceMedia`, `onEvidenceMediaChange`, `evidenceCaption`, `onEvidenceCaptionChange`.
 
-**3. Merge zoom into toolbar** (`CanvasToolbar.tsx` + `CanvasShell.tsx`)
-- Pass `zoom`, `onZoomIn`, `onZoomOut` as props to `CanvasToolbar`
-- Render a compact `− 50% +` control inline in the toolbar
-- Remove the separate fixed-position zoom widget from `CanvasShell.tsx`
+**3. Auto-create a tutorial_step block when a stage is added** (`useCanvasDocument.ts`)
+In `addStage`, after creating the stage, automatically call `addBlock('tutorial_step', ...)` with the block's `stageId` set to the new stage and `subheading` set to `"Stage N: {title}"`. The block is centered on the grid at the next available row.
+
+**4. Tutorial block: support actual file uploads, not just URLs** (`ContentBlockBuilder.tsx` — `TutorialStepEditor`)
+- For Image and Video media types, replace the URL-first approach with a file-upload-first approach:
+  - Primary action: file picker button (`Upload image` / `Upload video`)
+  - Secondary: small "or paste URL" text input below
+  - Store the file object on the block as `tutorialMediaFile` and preview via `URL.createObjectURL`
+- For Carousel: replace "paste URLs one per line" with a multi-file picker (`input multiple accept="image/*"`), showing thumbnails. Keep an "or paste URLs" fallback textarea.
+
+**5. State management in Upload.tsx**
+Add `evidenceMediaFiles` (File[]), `evidenceMediaType` ('photos' | 'video' | 'written'), and `evidenceCaption` (string) state. Pass through to `CanvasShell` → `CanvasHeader`. On save/publish, upload evidence files to storage bucket and store URLs in the draft's `content_items` row (new columns: `evidence_media_urls text[]`, `evidence_media_type text`, `evidence_caption text`).
 
 ### Files to edit
 
 | File | What |
 |------|------|
-| `src/components/canvas/CanvasShell.tsx` | Remove `minWidth: 1200`, set `overflowX: 'hidden'`, remove standalone zoom widget, pass zoom props to toolbar |
-| `src/components/canvas/CanvasToolbar.tsx` | Add `max-width`, merge zoom controls in, move Templates/History/Notes into overflow menu, slim down layout |
+| `src/components/canvas/CanvasHeader.tsx` | Convert title/description to collapsible toggles, add collapsible "Your Results" evidence section |
+| `src/components/canvas/CanvasShell.tsx` | Pass evidence props through to CanvasHeader |
+| `src/hooks/useCanvasDocument.ts` | Auto-create tutorial_step block when stage is added |
+| `src/components/ContentBlockBuilder.tsx` | Update TutorialStepEditor to prioritize file uploads over URLs for image/video/carousel |
+| `src/pages/Upload.tsx` | Add evidence state, pass to CanvasShell, save evidence on draft save |
+
+### Database migration
+Add three columns to `content_items`:
+```sql
+ALTER TABLE public.content_items
+  ADD COLUMN IF NOT EXISTS evidence_media_urls text[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS evidence_media_type text DEFAULT 'written',
+  ADD COLUMN IF NOT EXISTS evidence_caption text DEFAULT '';
+```
 
