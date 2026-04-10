@@ -74,6 +74,7 @@ export default function LiquidGlassPanel({
           width: '100%',
           height: '100%',
           overflow: 'auto',
+          scrollbarWidth: 'none',
           display: 'flex',
           flexDirection: 'column',
           background: 'rgba(200, 200, 210, 0.08)',
