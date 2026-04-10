@@ -345,20 +345,20 @@ const NEOSCALE_CSS = `
   background: transparent;
   padding: 0;
   box-sizing: border-box;
-  color: rgba(255,255,255,0.90);
+  color: rgba(0,0,0,0.85);
   font-family: 'Inter', sans-serif;
 }
 .ns-outlet-wrap::-webkit-scrollbar { width: 3px; }
-.ns-outlet-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+.ns-outlet-wrap::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 3px; }
 
 /* ── Glass input (forms, search) ── */
 .ns-glass-input {
   width: 100%;
-  background: rgba(27,27,32,0.5);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.10);
   border-radius: 12px;
   padding: 10px 16px;
-  color: #fff;
+  color: #1a1a1a;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   outline: none;
@@ -369,21 +369,21 @@ const NEOSCALE_CSS = `
   border-color: rgba(232,87,26,0.50);
   box-shadow: 0 0 0 3px rgba(232,87,26,0.08);
 }
-.ns-glass-input::placeholder { color: rgba(255,255,255,0.25); }
+.ns-glass-input::placeholder { color: rgba(0,0,0,0.30); }
 
 /* ── Glass card (reusable smaller card) ── */
 .ns-glass-card {
-  background: rgba(27,27,32,0.4);
+  background: rgba(255,255,255,0.6);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255,255,255,0.05);
-  border-top: 1px solid rgba(255,255,255,0.08);
-  border-left: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-top: 1px solid rgba(0,0,0,0.06);
+  border-left: 1px solid rgba(0,0,0,0.06);
   border-radius: 16px;
   padding: 20px;
   transition: border-color 0.2s;
 }
-.ns-glass-card:hover { border-color: rgba(255,255,255,0.10); }
+.ns-glass-card:hover { border-color: rgba(0,0,0,0.15); }
 
 /* ── Orange button (primary CTA) ── */
 .ns-btn-orange {
