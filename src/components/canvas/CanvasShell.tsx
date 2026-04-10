@@ -354,7 +354,7 @@ export function CanvasShell(props: CanvasShellProps) {
       display: 'flex',
       height: '100%',
       overflow: 'hidden',
-      background: 'rgba(6,6,10,1)',
+      background: 'rgba(6,6,10,0.65)',
       position: 'relative',
     }}>
 

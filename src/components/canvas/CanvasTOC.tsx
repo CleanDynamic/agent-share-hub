@@ -53,7 +53,8 @@ export function CanvasTOC({
         flexDirection: 'column',
         borderRight: '1px solid rgba(255,255,255,0.05)',
         overflow: 'hidden',
-        background: 'rgba(6,6,10,0.95)',
+        background: 'rgba(6,6,10,0.55)',
+        backdropFilter: 'blur(16px)',
         position: 'relative',
       }}>
 
