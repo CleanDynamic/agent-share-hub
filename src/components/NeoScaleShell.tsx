@@ -1856,6 +1856,7 @@ export function NeoScaleShell() {
                         style={{ display: 'flex', alignItems: 'center',
                           gap: 8, padding: '6px 10px' }}
                         onClick={() => {
+                          doFlip('back', 'right');
                           navigate(`/creator/${p.username}`);
                           setSearchOpen(false);
                           setSearchQuery('');
