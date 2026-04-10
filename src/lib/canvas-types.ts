@@ -28,6 +28,8 @@ export interface BlockArrow {
   label: string | null;
   arrowType: ArrowType;
   color: string;     // derived from arrowType
+  waypoints?: { x: number; y: number }[];   // user-placed waypoints for manual routing
+  toBlockIds?: string[];                     // multi-target arrow fan-out
 }
 
 // ─── Stage (numbered section / chapter) ──────────

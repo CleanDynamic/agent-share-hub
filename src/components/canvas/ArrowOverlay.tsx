@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { BlockArrow, CanvasBlock,
   ArrowType } from '@/lib/canvas-types';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
-import { getEdgeMidpoint, polylinePath }
+import { getEdgeMidpoint, nearestEdge, orthogonalPath }
   from '@/lib/canvas-utils';
 
 interface ArrowOverlayProps {
@@ -42,27 +42,87 @@ export function ArrowOverlay({
     blocks.map(b => [b.id, b])
   );
 
-  // Calculate arrow path between two blocks using straight segments
-  const getArrowPath = (arrow: BlockArrow) => {
+  // Calculate orthogonal arrow path between two blocks
+  const getArrowPath = (
+    arrow: BlockArrow,
+    overrideToBlockId?: string,
+    overrideToEdge?: BlockArrow['toEdge'],
+  ) => {
     const fromBlock = blockMap.get(arrow.fromBlockId);
-    const toBlock = blockMap.get(arrow.toBlockId);
+    const toId = overrideToBlockId ?? arrow.toBlockId;
+    const toBlock = blockMap.get(toId);
     if (!fromBlock || !toBlock) return null;
+
+    const fromEdge = arrow.fromEdge;
+    const toEdge = overrideToEdge ?? arrow.toEdge;
 
     const from = getEdgeMidpoint(
       fromBlock.position,
-      arrow.fromEdge,
+      fromEdge,
       colWidth, rowHeight
     );
     const to = getEdgeMidpoint(
       toBlock.position,
-      arrow.toEdge,
+      toEdge,
       colWidth, rowHeight
     );
-    const path = polylinePath([from, to]);
+    const wps = arrow.waypoints ?? [];
+    const path = orthogonalPath(
+      from, fromEdge, to, toEdge, wps, rowHeight
+    );
     const midX = (from.x + to.x) / 2;
     const midY = (from.y + to.y) / 2;
 
     return { path, from, to, midX, midY };
+  };
+
+  // Render a single arrow path (visible + hit area)
+  const renderArrowPath = (
+    arrow: BlockArrow,
+    pathStr: string,
+    midX: number,
+    midY: number,
+    meta: { color: string; dash: string },
+    keySuffix = '',
+  ) => {
+    const isSelected = selectedArrow === arrow.id;
+    return (
+      <g key={`${arrow.id}${keySuffix}`}>
+        {/* Invisible thick hit area */}
+        <path
+          d={pathStr}
+          fill="none"
+          stroke="transparent"
+          strokeWidth={30}
+          style={{ cursor: 'pointer' }}
+          onClick={e => {
+            e.stopPropagation();
+            setSelectedArrow(
+              isSelected ? null : arrow.id
+            );
+            setTypePicker(
+              isSelected ? null : {
+                arrowId: arrow.id,
+                x: midX,
+                y: midY,
+              }
+            );
+          }}
+        />
+
+        {/* Visible arrow path */}
+        <path
+          d={pathStr}
+          fill="none"
+          stroke={arrow.color ?? meta.color}
+          strokeWidth={isSelected ? 4.5 : 3}
+          strokeDasharray={meta.dash}
+          markerEnd={`url(#arrow-${arrow.arrowType})`}
+          style={{ transition: 'stroke-width 0.1s' }}
+          opacity={0.80}
+        />
+      </g>
+    );
   };
 
   return (
@@ -88,8 +148,8 @@ export function ArrowOverlay({
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
-              markerWidth="6"
-              markerHeight="6"
+              markerWidth="10"
+              markerHeight="10"
               orient="auto-start-reverse"
             >
               <path
@@ -104,7 +164,7 @@ export function ArrowOverlay({
           id="arrow-drawing"
           viewBox="0 0 10 10"
           refX="9" refY="5"
-          markerWidth="6" markerHeight="6"
+          markerWidth="10" markerHeight="10"
           orient="auto-start-reverse"
         >
           <path
@@ -116,46 +176,125 @@ export function ArrowOverlay({
 
       {/* Rendered arrows */}
       {arrows.map(arrow => {
-        const computed = getArrowPath(arrow);
-        if (!computed) return null;
         const meta = ARROW_TYPE_META[arrow.arrowType];
         const isSelected = selectedArrow === arrow.id;
 
+        // Multi-target arrows
+        if (arrow.toBlockIds && arrow.toBlockIds.length > 0) {
+          const fromBlock = blockMap.get(arrow.fromBlockId);
+          if (!fromBlock) return null;
+
+          // Calculate fork point: last waypoint, or exit stub
+          const from = getEdgeMidpoint(
+            fromBlock.position,
+            arrow.fromEdge,
+            colWidth, rowHeight
+          );
+          const wps = arrow.waypoints ?? [];
+          const forkPoint = wps.length > 0
+            ? wps[wps.length - 1]
+            : from;
+
+          // Render trunk (source → fork) once
+          const trunkElements: React.ReactNode[] = [];
+
+          if (wps.length > 0) {
+            const trunkPath = orthogonalPath(
+              from, arrow.fromEdge,
+              forkPoint, null,
+              wps.slice(0, -1),
+              rowHeight
+            );
+            trunkElements.push(
+              <path
+                key={`${arrow.id}-trunk-hit`}
+                d={trunkPath}
+                fill="none"
+                stroke="transparent"
+                strokeWidth={30}
+                style={{ cursor: 'pointer' }}
+                onClick={e => {
+                  e.stopPropagation();
+                  setSelectedArrow(
+                    isSelected ? null : arrow.id
+                  );
+                  setTypePicker(
+                    isSelected ? null : {
+                      arrowId: arrow.id,
+                      x: forkPoint.x,
+                      y: forkPoint.y,
+                    }
+                  );
+                }}
+              />,
+              <path
+                key={`${arrow.id}-trunk`}
+                d={trunkPath}
+                fill="none"
+                stroke={arrow.color ?? meta.color}
+                strokeWidth={isSelected ? 4.5 : 3}
+                strokeDasharray={meta.dash}
+                style={{ transition: 'stroke-width 0.1s' }}
+                opacity={0.80}
+              />
+            );
+          }
+
+          // Render branch to each target
+          const branchElements = arrow.toBlockIds.map(
+            (targetId, idx) => {
+              const toBlock = blockMap.get(targetId);
+              if (!toBlock) return null;
+              const toEdge = nearestEdge(
+                forkPoint, toBlock.position,
+                colWidth, rowHeight
+              );
+              const to = getEdgeMidpoint(
+                toBlock.position, toEdge,
+                colWidth, rowHeight
+              );
+              const branchFromEdge = wps.length > 0
+                ? nearestEdge(
+                    forkPoint,
+                    fromBlock.position,
+                    colWidth, rowHeight
+                  )
+                : arrow.fromEdge;
+              const branchPath = orthogonalPath(
+                wps.length > 0 ? forkPoint : from,
+                branchFromEdge,
+                to, toEdge,
+                [],
+                rowHeight
+              );
+              return renderArrowPath(
+                arrow, branchPath,
+                (forkPoint.x + to.x) / 2,
+                (forkPoint.y + to.y) / 2,
+                meta,
+                `-branch-${idx}`
+              );
+            }
+          );
+
+          return (
+            <g key={arrow.id}>
+              {trunkElements}
+              {branchElements}
+            </g>
+          );
+        }
+
+        // Single-target arrow
+        const computed = getArrowPath(arrow);
+        if (!computed) return null;
+
         return (
           <g key={arrow.id}>
-            {/* Invisible thick hit area */}
-            <path
-              d={computed.path}
-              fill="none"
-              stroke="transparent"
-              strokeWidth={20}
-              style={{ cursor: 'pointer' }}
-              onClick={e => {
-                e.stopPropagation();
-                setSelectedArrow(
-                  isSelected ? null : arrow.id
-                );
-                setTypePicker(
-                  isSelected ? null : {
-                    arrowId: arrow.id,
-                    x: computed.midX,
-                    y: computed.midY,
-                  }
-                );
-              }}
-            />
-
-            {/* Visible arrow path */}
-            <path
-              d={computed.path}
-              fill="none"
-              stroke={arrow.color ?? meta.color}
-              strokeWidth={isSelected ? 2.5 : 1.5}
-              strokeDasharray={meta.dash}
-              markerEnd={`url(#arrow-${arrow.arrowType})`}
-              style={{ transition: 'stroke-width 0.1s' }}
-              opacity={0.80}
-            />
+            {renderArrowPath(
+              arrow, computed.path,
+              computed.midX, computed.midY, meta
+            )}
 
             {/* Label chip at midpoint */}
             {arrow.label && (
@@ -216,7 +355,7 @@ export function ArrowOverlay({
         </>
       )}
 
-      {/* Arrow type picker tooltip */}
+      {/* Arrow type picker tooltip + instruction field */}
       {typePicker && mode === 'edit' && (() => {
         const arrow = arrows.find(
           a => a.id === typePicker.arrowId
@@ -224,10 +363,10 @@ export function ArrowOverlay({
         if (!arrow) return null;
         return (
           <foreignObject
-            x={typePicker.x - 110}
-            y={typePicker.y - 130}
-            width={220}
-            height={120}
+            x={typePicker.x - 130}
+            y={typePicker.y - 210}
+            width={260}
+            height={200}
           >
             <div
               style={{
@@ -304,6 +443,32 @@ export function ArrowOverlay({
                   );
                 })}
               </div>
+
+              {/* Instruction / label text field */}
+              <textarea
+                defaultValue={arrow.label ?? ''}
+                rows={3}
+                placeholder="Arrow instruction…"
+                onBlur={e =>
+                  onArrowLabelChange(
+                    arrow.id, e.target.value
+                  )
+                }
+                style={{
+                  marginTop: 8,
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.08)',
+                  color: '#fff',
+                  fontSize: 11,
+                  fontFamily: 'Inter, sans-serif',
+                  border: '1px solid rgba(255,255,255,0.10)',
+                  borderRadius: 6,
+                  padding: '6px 8px',
+                  resize: 'none',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
             </div>
           </foreignObject>
         );
