@@ -28,7 +28,7 @@ export function ShareToDMModal({ open, onClose, contentId, contentTitle }: Share
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [sentTo, setSentTo] = useState<Set<string>>(new Set());
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Fetch existing threads for quick picks
   const { data: threads } = useQuery({
