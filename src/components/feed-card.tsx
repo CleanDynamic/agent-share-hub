@@ -201,13 +201,13 @@ export function FeedCard({ post }: { post: FeedPost }) {
       style={{
         padding: "14px 16px",
         marginBottom: "10px",
-        background: "linear-gradient(135deg, rgba(27, 27, 32, 0.4) 0%, rgba(27, 27, 32, 0.35) 100%)",
+        background: "linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.6) 100%)",
         backdropFilter: "blur(60px)",
         WebkitBackdropFilter: "blur(60px)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
-        borderTopColor: "rgba(255, 255, 255, 0.12)",
-        borderLeftColor: "rgba(255, 255, 255, 0.12)",
-        boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3)",
+        border: "1px solid rgba(0, 0, 0, 0.08)",
+        borderTopColor: "rgba(0, 0, 0, 0.06)",
+        borderLeftColor: "rgba(0, 0, 0, 0.06)",
+        boxShadow: "0 2px 12px rgba(0, 0, 0, 0.06)",
       }}
       onClick={() => navigate(`/content/${post.id}`)}
     >
@@ -240,16 +240,16 @@ export function FeedCard({ post }: { post: FeedPost }) {
           <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
               <AccountHoverCard account={post.author}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a" }}>
                   {post.author.display_name}
                 </span>
               </AccountHoverCard>
               <AccountHoverCard account={post.author}>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.40)" }}>
+                <span style={{ fontSize: 12, color: "rgba(0,0,0,0.40)" }}>
                   @{post.author.username}
                 </span>
               </AccountHoverCard>
-              <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>·</span>
+              <span style={{ color: "rgba(0,0,0,0.25)", fontSize: 10 }}>·</span>
               <span
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 4,
@@ -264,9 +264,9 @@ export function FeedCard({ post }: { post: FeedPost }) {
                 <span>{typeInfo.label.toUpperCase()}</span>
                 {typeInfo.sub && (
                   <span style={{
-                    color: 'rgba(255,255,255,0.45)',
+                    color: 'rgba(0,0,0,0.45)',
                     fontWeight: 600,
-                    borderLeft: '1px solid rgba(255,255,255,0.20)',
+                    borderLeft: '1px solid rgba(0,0,0,0.15)',
                     paddingLeft: 4,
                   }}>
                     {typeInfo.sub.toUpperCase()}
@@ -275,7 +275,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
               </span>
               {post.bounty_enabled === true && (
                 <>
-                  <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>·</span>
+                  <span style={{ color: "rgba(0,0,0,0.25)", fontSize: 10 }}>·</span>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 4,
                     padding: '1px 8px', borderRadius: 9999,
@@ -288,8 +288,8 @@ export function FeedCard({ post }: { post: FeedPost }) {
                   </span>
                 </>
               )}
-              <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>·</span>
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.40)" }}>
+              <span style={{ color: "rgba(0,0,0,0.25)", fontSize: 10 }}>·</span>
+              <span style={{ fontSize: 12, color: "rgba(0,0,0,0.40)" }}>
                 {getTimeAgo(post.created_at)}
               </span>
             </div>
@@ -297,7 +297,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
         </div>
 
         <button
-          style={{ padding: 4, color: "rgba(255,255,255,0.30)", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}
+          style={{ padding: 4, color: "rgba(0,0,0,0.35)", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}
           onClick={(e) => e.stopPropagation()}
         >
           <MoreHorizontal size={16} />
@@ -307,7 +307,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
       {/* Title */}
       <h3 style={{
         fontFamily: "'Playfair Display', Georgia, serif",
-        fontSize: 15, fontWeight: 500, color: "#fff",
+        fontSize: 15, fontWeight: 500, color: "#1a1a1a",
         lineHeight: 1.35, marginTop: 10, marginBottom: 0,
       }}>
         {post.title}
@@ -317,7 +317,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
       {previewText && (
         <p style={{
           marginTop: 6, fontSize: 13,
-          color: "rgba(255,255,255,0.50)", lineHeight: 1.6,
+          color: "rgba(0,0,0,0.50)", lineHeight: 1.6,
         }}>
           {previewText}
         </p>
@@ -359,7 +359,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
               </div>
               <p style={{
                 fontSize: 12,
-                color: 'rgba(255,255,255,0.40)',
+                color: 'rgba(0,0,0,0.40)',
                 lineHeight: 1.55, margin: 0,
                 flex: 1, minWidth: 0,
                 overflow: 'hidden',
@@ -436,7 +436,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
             transition: "max-height 0.55s cubic-bezier(0.4,0,0.2,1), opacity 0.45s ease",
           }}
         >
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
+          <p style={{ fontSize: 13, color: "rgba(0,0,0,0.55)", lineHeight: 1.6 }}>
             {remainingText}
           </p>
           {tags.length > 0 && (
@@ -459,18 +459,18 @@ export function FeedCard({ post }: { post: FeedPost }) {
             transition: "max-height 0.65s cubic-bezier(0.4,0,0.2,1), opacity 0.50s ease",
           }}
         >
-          <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.05)", margin: "12px 0" }} />
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.28)", marginBottom: 8 }}>
+          <hr style={{ border: "none", borderTop: "1px solid rgba(0,0,0,0.06)", margin: "12px 0" }} />
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(0,0,0,0.30)", marginBottom: 8 }}>
             What to expect
           </div>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.60)", lineHeight: 1.6 }}>
+          <p style={{ fontSize: 13, color: "rgba(0,0,0,0.55)", lineHeight: 1.6 }}>
             {post.what_to_expect}
           </p>
           {post.what_to_expect_blocks?.map((block, i) => (
             <div key={i} style={{ marginTop: 8 }}>
               {block.type === "heading"
-                ? <h4 style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{block.content}</h4>
-                : <p style={{ fontSize: 13, color: "rgba(255,255,255,0.60)" }}>{block.content}</p>
+                ? <h4 style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>{block.content}</h4>
+                : <p style={{ fontSize: 13, color: "rgba(0,0,0,0.55)" }}>{block.content}</p>
               }
             </div>
           ))}
@@ -480,9 +480,9 @@ export function FeedCard({ post }: { post: FeedPost }) {
       {/* Show more/less */}
       {canExpand && (
         <>
-          <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.05)", margin: "10px 0 4px 0" }} />
+          <hr style={{ border: "none", borderTop: "1px solid rgba(0,0,0,0.06)", margin: "10px 0 4px 0" }} />
           <button
-            style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}
+            style={{ fontSize: 12, color: "rgba(0,0,0,0.40)", background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}
             onClick={handleStageClick}
           >
             {expandStage === 0 && hasMoreContent && "Show more ↓"}
@@ -498,7 +498,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
       <div style={{
         display: "flex", alignItems: "center",
         marginTop: 14, paddingTop: 10,
-        borderTop: "1px solid rgba(255,255,255,0.05)",
+        borderTop: "1px solid rgba(0,0,0,0.06)",
       }}>
         {/* Like */}
         <button
@@ -524,7 +524,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
           style={{
             display: "flex", alignItems: "center", gap: 6,
             fontSize: 13, background: "none", border: "none", cursor: "pointer",
-            color: "rgba(255,255,255,0.40)",
+            color: "rgba(0,0,0,0.40)",
             transition: "color 0.15s",
             padding: '4px 6px', borderRadius: 5,
             marginLeft: 14,
@@ -664,12 +664,12 @@ export function FeedCard({ post }: { post: FeedPost }) {
               position: 'absolute',
               bottom: '100%', right: 0,
               marginBottom: 6,
-              background: 'rgba(14,14,20,0.98)',
-              border: '1px solid rgba(255,255,255,0.10)',
+              background: 'rgba(255,255,255,0.98)',
+              border: '1px solid rgba(0,0,0,0.10)',
               borderRadius: 8,
               padding: '4px 0',
               minWidth: 160,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.50)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
               zIndex: 100,
             }}>
               {[
@@ -699,7 +699,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
                     padding: '8px 14px',
                     background: 'none', border: 'none',
                     fontSize: 13,
-                    color: 'rgba(255,255,255,0.60)',
+                    color: 'rgba(0,0,0,0.55)',
                     cursor: 'pointer',
                     transition: 'background 0.1s',
                   }}
