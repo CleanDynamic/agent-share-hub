@@ -14,6 +14,7 @@ import { useNavBadges } from "@/hooks/useNavBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { FollowButton } from "@/components/FollowButton";
+import LiquidGlassPanel from "./LiquidGlassPanel";
 import { displayContentType, POST_TYPES, resolvePostType } from "@/lib/content-types";
 import { FeedCard, type FeedPost } from "@/components/feed-card";
 import { ReblogFeedCard, type ReblogPost } from "@/components/ReblogFeedCard";
@@ -1714,8 +1715,9 @@ export function NeoScaleShell() {
         <div className="ns-app-container" ref={containerRef}>
 
           {/* ═══ LEFT PANEL ═══ */}
+          <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ width: 200, height: 775, flexShrink: 0 }}>
           <div
-            className={`ns-panel ns-left-panel${pulsing ? " pulse" : ""}`}
+            className={`ns-left-panel${pulsing ? " pulse" : ""}`}
             ref={leftRef}
             {...initTilt(leftRef)}
           >
@@ -1796,6 +1798,7 @@ export function NeoScaleShell() {
               )}
             </div>
           </div>
+          </LiquidGlassPanel>
 
           {/* ═══ MIDDLE PANEL ═══ */}
           <div className="ns-middle-wrapper">
