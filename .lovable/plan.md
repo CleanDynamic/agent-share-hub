@@ -1,20 +1,30 @@
 
 
-## Fix: Middle panel glass to match side panels
+## Alternative: CSS-based translucent background on middle panel
 
-### Root cause
-The previous fix added `background` and `backdrop-filter` directly to `.ns-middle-front` and `.ns-middle-back` CSS classes — this creates a visible overlay on top of the content, not a glass panel background. The side panels work because they only use `LiquidGlassPanel`'s built-in content layer tint with no extra CSS backgrounds.
+### Why the current approach fails
+The `contentStyle={{ background: 'rgba(200, 200, 210, 0.13)' }}` on `LiquidGlassPanel` is not producing visible translucency — the tint is too faint and the WebGL glass layer underneath may be swallowing it. The side panels look fine because they're smaller and the subtle tint reads better at that scale.
 
-### Solution
-1. **Remove** the overlay CSS (`background` and `backdrop-filter`) from `.ns-middle-front, .ns-middle-back` in the `NEOSCALE_CSS` block
-2. **Add a `contentStyle` prop** to `LiquidGlassPanel` so callers can customize the content layer's background without changing the component globally
-3. **Pass a slightly stronger tint** to the middle panel's `LiquidGlassPanel` instances: `contentStyle={{ background: 'rgba(200, 200, 210, 0.13)' }}` — this compensates for the larger surface area while using the exact same mechanism as the side panels (not an overlay)
+### New approach
+Stop relying on the `LiquidGlassPanel` content layer tint for the middle panel entirely. Instead, apply a visible translucent background directly to `.ns-middle-front` and `.ns-middle-back` CSS classes — same as how any frosted glass card works: a semi-opaque background + backdrop-filter blur.
 
-Side panels remain completely untouched — they continue using the default `rgba(200, 200, 210, 0.08)`.
+### Changes
+
+**`src/components/NeoScaleShell.tsx`**
+
+1. On the two middle `<LiquidGlassPanel>` instances (lines 1760 and 1849), remove `contentStyle` prop — let the glass panel use its default
+2. Add to `.ns-middle-front` CSS (line 239):
+   ```css
+   background: rgba(22, 22, 30, 0.65);
+   backdrop-filter: blur(40px) saturate(1.8);
+   -webkit-backdrop-filter: blur(40px) saturate(1.8);
+   ```
+3. Add the same to `.ns-middle-back` CSS (line 244)
+
+This gives the middle panel a dark translucent base (matching the side panels' visual density) while still letting the `LiquidGlass` WebGL refraction layer show through underneath. The side panels are untouched.
 
 ### Files
 | File | Change |
 |------|--------|
-| `src/components/LiquidGlassPanel.tsx` | Add optional `contentStyle` prop, merge it into the content layer's inline styles |
-| `src/components/NeoScaleShell.tsx` | Remove `background` and `backdrop-filter` from `.ns-middle-front, .ns-middle-back` CSS; pass `contentStyle` with stronger tint to the two middle-panel `<LiquidGlassPanel>` instances (front face ~line 1762, back face ~line 1851) |
+| `src/components/NeoScaleShell.tsx` | Add translucent bg + blur to `.ns-middle-front` and `.ns-middle-back` CSS; remove `contentStyle` from middle panel `LiquidGlassPanel` instances |
 
