@@ -159,7 +159,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
         gap: 3,
         alignItems: 'center',
         zIndex: 100,
-        background: 'rgba(10,10,16,0.85)',
+        background: 'rgba(10,10,16,0.65)',
         backdropFilter: 'blur(16px)',
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 14,

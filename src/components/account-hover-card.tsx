@@ -53,7 +53,7 @@ export function AccountHoverCard({ account, children }: AccountHoverCardProps) {
   return (
     <HoverCard openDelay={300} closeDelay={100}>
       <HoverCardTrigger asChild>
-        <span className="cursor-pointer">{children}</span>
+        <div className="cursor-pointer inline">{children}</div>
       </HoverCardTrigger>
       <HoverCardContent
         className="w-72 p-0 overflow-hidden"
