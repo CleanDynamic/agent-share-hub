@@ -976,7 +976,6 @@ export function NeoScaleShell() {
   const isFlipping = useRef(false);
   const currentRotation = useRef(0);
 
-  const [flipDir,    setFlipDir]    = useState<1 | -1>(1);
   const [pulsing,    setPulsing]    = useState(false);
   const [activeTab,  setActiveTab]  = useState("For You");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
