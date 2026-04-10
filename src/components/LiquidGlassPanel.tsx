@@ -5,6 +5,7 @@ interface LiquidGlassPanelProps {
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
+  contentStyle?: React.CSSProperties;
   cornerRadius?: number;
   displacementScale?: number;
   blurAmount?: number;

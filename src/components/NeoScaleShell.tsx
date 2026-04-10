@@ -38,8 +38,6 @@ const NEOSCALE_CSS = `
 
 /* ── Middle panel design tokens ── */
 .ns-middle-front, .ns-middle-back {
-  background: rgba(180, 180, 195, 0.12);
-  backdrop-filter: blur(12px) saturate(1.3);
   --mp-text: rgba(255,255,255,0.92);
   --mp-text-secondary: rgba(255,255,255,0.45);
   --mp-text-muted: rgba(255,255,255,0.25);
