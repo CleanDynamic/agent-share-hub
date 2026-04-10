@@ -23,7 +23,7 @@ const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: s
   technique: { bg: "rgba(46, 196, 182, 0.15)", color: "#2EC4B6", border: "rgba(46, 196, 182, 0.3)" },
   discovery: { bg: "rgba(139, 92, 246, 0.15)", color: "#8B5CF6", border: "rgba(139, 92, 246, 0.3)" },
   discussion: { bg: "rgba(59, 130, 246, 0.15)", color: "#3B82F6", border: "rgba(59, 130, 246, 0.3)" },
-  default: { bg: "rgba(255, 255, 255, 0.08)", color: "rgba(255, 255, 255, 0.7)", border: "rgba(255, 255, 255, 0.1)" },
+  default: { bg: "rgba(0, 0, 0, 0.06)", color: "rgba(0, 0, 0, 0.55)", border: "rgba(0, 0, 0, 0.1)" },
 }
 
 export interface FeedPost {
@@ -197,7 +197,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
 
   return (
     <article
-      className="group relative rounded-xl cursor-pointer transition-all duration-300 hover:bg-white/[0.02]"
+      className="group relative rounded-xl cursor-pointer transition-all duration-300 hover:bg-black/[0.02]"
       style={{
         padding: "14px 16px",
         marginBottom: "10px",
