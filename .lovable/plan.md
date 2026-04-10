@@ -1,27 +1,29 @@
 
 
-## Fix: Preview Not Loading Due to React Version Incompatibility
+## Upgrade to React 19
 
-### Root Cause
-
-The `liquid-glass-react` package requires **React 19+**, but this project uses **React 18.3.1**. The `LiquidGlassPanel` component wraps all three shell panels (left, middle, right), so when it fails to render, the entire app goes blank. The ErrorBoundary catches it silently showing "Something went wrong" or just a blank screen.
-
-### Fix
-
-**Replace `LiquidGlassPanel` with a CSS-only glass effect** that works with React 18. The `LiquidGlassPanel` wrapper will become a simple `div` with a `backdrop-filter` glass effect applied via inline styles, achieving a similar frosted-glass look without the WebGL dependency.
+### What
+Upgrade React from 18.3.1 to 19.x so `liquid-glass-react` works natively, then restore the proper `LiquidGlass` WebGL component in `LiquidGlassPanel.tsx`.
 
 ### Changes
 
-**1. `src/components/LiquidGlassPanel.tsx`**
-- Replace the `LiquidGlass` import and render with a plain `<div>` that applies:
-  - `backdrop-filter: blur(20px) saturate(1.4)`
-  - `background: rgba(255,255,255,0.04)`
-  - `border-radius` from the `cornerRadius` prop
-  - `overflow: auto` to preserve scrolling
-- Keep the same props interface for compatibility (unused WebGL props are just ignored)
+**1. Upgrade packages** (`package.json`)
+- `react`: `^18.3.1` → `^19.0.0`
+- `react-dom`: `^18.3.1` → `^19.0.0`
+- `@types/react`: `^18.3.23` → `^19.0.0`
+- `@types/react-dom`: `^18.3.7` → `^19.0.0`
+- Run `npm install` to resolve
 
-**2. No other files change** — the shell panels, feed cards, nav links, and flip animation all remain untouched since `LiquidGlassPanel` is used as a transparent wrapper.
+**2. Restore LiquidGlass in `LiquidGlassPanel.tsx`**
+- Re-add the `import LiquidGlass from 'liquid-glass-react'` import
+- Render `<LiquidGlass>` instead of the plain `<div>` fallback, passing through the WebGL props (cornerRadius, blurAmount, saturation, etc.)
+- Keep `overflow: auto` and `width/height: 100%` on the wrapper to ensure content scrolls
 
-### Technical detail
-- The `liquid-glass-react` package can optionally be removed from `package.json` later, but for now the fix is just bypassing its render to unblock the preview immediately.
+**3. Fix any React 19 breaking changes**
+- `main.tsx` already uses `createRoot` — no change needed
+- React 19 removed `defaultProps` for function components — scan for any usage and inline defaults if found
+- React 19 changed `ref` handling (now a regular prop) — no `forwardRef` changes needed unless components break
+
+### Risk
+Some third-party UI libraries (radix, shadcn) may have peer dependency warnings with React 19. These are typically safe to ignore since shadcn/radix already support React 19.
 
