@@ -23,6 +23,8 @@ const BLOCK_ICONS: Record<string, React.ReactNode> = {
   tutorial_step: <ListChecks size={14} />, section_heading: <Type size={14} />,
 };
 
+type EdgeType = 'top' | 'right' | 'bottom' | 'left';
+
 interface CanvasBlockProps {
   block: CanvasBlockType;
   mode: 'edit' | 'view';
@@ -38,9 +40,10 @@ interface CanvasBlockProps {
   onPositionChange: (p: BlockPosition) => void;
   onBlockChange: (patch: Partial<CanvasBlockType>) => void;
   onDelete: () => void;
-  onArrowDrawStart: () => void;
+  onArrowDrawStart: (edge: EdgeType) => void;
   isArrowDrawing: boolean;
-  onArrowDrawEnd: () => void;
+  onArrowDrawEnd: (edge?: EdgeType) => void;
+  magnetizedEdge?: EdgeType | null;
   onAssignStage: (blockId: string, stageId: string | null) => void;
   onInsertResultBlock?: (block: Partial<CanvasBlockType>) => void;
 }
@@ -51,6 +54,7 @@ export function CanvasBlock({
   selected, onSelect,
   onPositionChange, onBlockChange, onDelete,
   onArrowDrawStart, isArrowDrawing, onArrowDrawEnd,
+  magnetizedEdge,
   onAssignStage, onInsertResultBlock,
 }: CanvasBlockProps) {
   const [hovered, setHovered] = useState(false);
@@ -61,6 +65,7 @@ export function CanvasBlock({
   const [executionOpen, setExecutionOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [stagePickerOpen, setStagePickerOpen] = useState(false);
+  const [hoveredSnapEdge, setHoveredSnapEdge] = useState<EdgeType | null>(null);
 
   const dragStartRef = useRef({ x: 0, y: 0, origCol: 0, origRow: 0 });
   const px = gridToPixels(block.position, colWidth, rowHeight);
@@ -312,7 +317,7 @@ export function CanvasBlock({
 
                 {/* Arrow/link button */}
                 <button
-                  onClick={e => { e.stopPropagation(); onArrowDrawStart(); }}
+                  onClick={e => { e.stopPropagation(); onArrowDrawStart('right'); }}
                   style={{
                     background: 'none', border: 'none',
                     color: 'rgba(255,255,255,0.35)',
@@ -445,6 +450,63 @@ export function CanvasBlock({
             border: '2px dashed rgba(232,87,26,0.40)',
             borderRadius: 10, pointerEvents: 'none', zIndex: 26,
           }} />
+        )}
+
+        {/* Snap-point indicators */}
+        {mode === 'edit' && (hovered || isArrowDrawing) && (
+          (['top', 'right', 'bottom', 'left'] as const).map(edge => {
+            const isHoveredSnap = hoveredSnapEdge === edge;
+            const isMagnetized = magnetizedEdge === edge;
+            const size = isHoveredSnap || isMagnetized ? 12 : 8;
+            const bg = isHoveredSnap || isMagnetized
+              ? '#E8571A'
+              : 'rgba(232,87,26,0.5)';
+
+            // All snap points positioned with left/top + translate(-50%,-50%)
+            const posStyle: React.CSSProperties =
+              edge === 'top'
+                ? { left: '50%', top: 0 }
+                : edge === 'right'
+                ? { left: '100%', top: '50%' }
+                : edge === 'bottom'
+                ? { left: '50%', top: '100%' }
+                : { left: 0, top: '50%' };
+
+            return (
+              <div
+                key={edge}
+                data-no-drag
+                onMouseEnter={() => setHoveredSnapEdge(edge)}
+                onMouseLeave={() => setHoveredSnapEdge(null)}
+                onClick={e => {
+                  e.stopPropagation();
+                  if (isArrowDrawing) {
+                    onArrowDrawEnd(edge);
+                  } else {
+                    onArrowDrawStart(edge);
+                  }
+                }}
+                onMouseDown={e => e.stopPropagation()}
+                style={{
+                  position: 'absolute',
+                  ...posStyle,
+                  width: size,
+                  height: size,
+                  borderRadius: '50%',
+                  background: bg,
+                  border: '2px solid #E8571A',
+                  zIndex: 30,
+                  cursor: 'crosshair',
+                  transition: 'width 0.1s, height 0.1s, background 0.1s',
+                  boxSizing: 'border-box',
+                  transform: 'translate(-50%, -50%)',
+                  ...(isMagnetized ? {
+                    animation: 'snapPointPulse 1s ease-in-out infinite',
+                  } : {}),
+                }}
+              />
+            );
+          })
         )}
       </div>
 

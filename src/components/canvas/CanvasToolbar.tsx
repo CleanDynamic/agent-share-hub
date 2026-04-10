@@ -38,6 +38,7 @@ interface CanvasToolbarProps {
   zoom?: number;
   onZoomIn?: () => void;
   onZoomOut?: () => void;
+  onClearAll?: () => void;
 }
 
 export function CanvasToolbar(props: CanvasToolbarProps) {
@@ -47,6 +48,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
     annotationCount = 0, onBack,
     onInsertBlock, onUndo, onRedo,
     zoom = 1, onZoomIn, onZoomOut,
+    onClearAll,
   } = props;
 
   const [addBlockOpen, setAddBlockOpen] = useState(false);
@@ -271,6 +273,14 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
               {onAnnotations && (
                 <button type="button" onClick={onAnnotations} style={menuItemStyle}>
                   Notes{annotationCount > 0 ? ` (${annotationCount})` : ''}
+                </button>
+              )}
+              {onClearAll && (
+                <button type="button" onClick={onClearAll} style={{
+                  ...menuItemStyle,
+                  color: 'rgba(239,68,68,0.70)',
+                }}>
+                  Clear All
                 </button>
               )}
             </div>

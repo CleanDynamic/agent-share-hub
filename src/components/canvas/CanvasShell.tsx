@@ -12,7 +12,8 @@ import { TemplateLibrary } from './TemplateLibrary';
 import { VersionHistory } from './VersionHistory';
 import { AnnotationsList } from './AnnotationsList';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
-import { readingOrder, snapToGridDot, nearestEdge, getEdgeMidpoint, orthogonalPath } from '@/lib/canvas-utils';
+import { readingOrder, snapToGridDot, nearestEdge, getEdgeMidpoint, orthogonalPath, getBlockSnapPoints, preventStageOverlap } from '@/lib/canvas-utils';
+import { ClearAllDialog } from './ClearAllDialog';
 
 import type { EvidenceMediaType } from './CanvasHeader';
 
@@ -197,11 +198,23 @@ export function CanvasShell(props: CanvasShellProps) {
   }, [mode, selectedBlockId, doc, zoom]);
 
   // ── Arrow drawing state (unlimited waypoints) ──────
+  type EdgeType = 'top' | 'right' | 'bottom' | 'left';
   const [arrowDrawing, setArrowDrawing] = useState<{
     fromBlockId: string;
+    fromEdge?: EdgeType;
     waypoints: { x: number; y: number }[];
     cursorSnapped: { x: number; y: number } | null;
   } | null>(null);
+
+  // Magnetized snap-point target during arrow drawing
+  const [magnetizedTarget, setMagnetizedTarget] = useState<{
+    blockId: string;
+    edge: EdgeType;
+    point: { x: number; y: number };
+  } | null>(null);
+
+  // Clear All dialog state
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
   const handleCanvasMouseMove = (
     e: React.MouseEvent<HTMLDivElement>
@@ -210,17 +223,41 @@ export function CanvasShell(props: CanvasShellProps) {
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
     const rawX = (e.clientX - rect.left) / zoom;
     const rawY = (e.clientY - rect.top) / zoom;
-    const snapped = snapToGridDot(rawX, rawY, colWidth, doc.rowHeight);
-    setArrowDrawing(prev => prev ? { ...prev, cursorSnapped: snapped } : null);
+
+    // Check magnetization to snap points on all blocks
+    let magnetized: { blockId: string; edge: EdgeType; point: { x: number; y: number } } | null = null;
+    let minDist = 20;
+    for (const block of doc.blocks) {
+      if (block.id === arrowDrawing.fromBlockId) continue;
+      const snapPoints = getBlockSnapPoints(block.position, colWidth, doc.rowHeight);
+      for (const sp of snapPoints) {
+        const dist = Math.hypot(rawX - sp.point.x, rawY - sp.point.y);
+        if (dist < minDist) {
+          minDist = dist;
+          magnetized = { blockId: block.id, edge: sp.edge, point: sp.point };
+        }
+      }
+    }
+
+    setMagnetizedTarget(magnetized);
+
+    if (magnetized) {
+      setArrowDrawing(prev => prev ? { ...prev, cursorSnapped: magnetized.point } : null);
+    } else {
+      const snapped = snapToGridDot(rawX, rawY, colWidth, doc.rowHeight);
+      setArrowDrawing(prev => prev ? { ...prev, cursorSnapped: snapped } : null);
+    }
   };
 
-  // Start drawing from a block
-  const handleArrowDrawStart = (blockId: string) => {
+  // Start drawing from a block (optionally with a specific edge)
+  const handleArrowDrawStart = (blockId: string, edge?: EdgeType) => {
     setArrowDrawing({
       fromBlockId: blockId,
+      fromEdge: edge,
       waypoints: [],
       cursorSnapped: null,
     });
+    setMagnetizedTarget(null);
   };
 
   // Click on the canvas grid → lock a waypoint (unlimited)
@@ -228,6 +265,12 @@ export function CanvasShell(props: CanvasShellProps) {
     if (!arrowDrawing || colWidth === 0) return;
     // If clicking on a block, that's handled by onArrowDrawEnd
     if ((e.target as HTMLElement).closest('[data-canvas-block]')) return;
+
+    // If magnetized to a snap point, complete the arrow there
+    if (magnetizedTarget) {
+      handleArrowDrawEnd(magnetizedTarget.blockId, magnetizedTarget.edge);
+      return;
+    }
 
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
     const rawX = (e.clientX - rect.left) / zoom;
@@ -240,27 +283,34 @@ export function CanvasShell(props: CanvasShellProps) {
     } : null);
   };
 
-  // Complete the arrow by clicking a target block
-  const handleArrowDrawEnd = (toBlockId: string) => {
+  // Complete the arrow by clicking a target block (or snap point)
+  const handleArrowDrawEnd = (toBlockId: string, snapEdge?: EdgeType) => {
     if (!arrowDrawing) return;
     if (arrowDrawing.fromBlockId === toBlockId) {
       // Cancel if clicking the same block
       setArrowDrawing(null);
+      setMagnetizedTarget(null);
       return;
     }
 
     const fromBlock = doc.blocks.find(b => b.id === arrowDrawing.fromBlockId);
     const toBlock = doc.blocks.find(b => b.id === toBlockId);
-    if (!fromBlock || !toBlock) { setArrowDrawing(null); return; }
+    if (!fromBlock || !toBlock) { setArrowDrawing(null); setMagnetizedTarget(null); return; }
 
-    // Auto-detect edges based on first/last waypoint or block centers
-    const firstWaypoint = arrowDrawing.waypoints[0]
-      ?? getEdgeMidpoint(toBlock.position, 'left', colWidth, doc.rowHeight);
-    const lastWaypoint = arrowDrawing.waypoints[arrowDrawing.waypoints.length - 1]
-      ?? getEdgeMidpoint(fromBlock.position, 'right', colWidth, doc.rowHeight);
+    // Use explicit edges if provided, otherwise auto-detect
+    const fromEdge = arrowDrawing.fromEdge
+      ?? nearestEdge(
+        arrowDrawing.waypoints[0]
+          ?? getEdgeMidpoint(toBlock.position, 'left', colWidth, doc.rowHeight),
+        fromBlock.position, colWidth, doc.rowHeight
+      );
 
-    const fromEdge = nearestEdge(firstWaypoint, fromBlock.position, colWidth, doc.rowHeight);
-    const toEdge = nearestEdge(lastWaypoint, toBlock.position, colWidth, doc.rowHeight);
+    const toEdge = snapEdge
+      ?? nearestEdge(
+        arrowDrawing.waypoints[arrowDrawing.waypoints.length - 1]
+          ?? getEdgeMidpoint(fromBlock.position, 'right', colWidth, doc.rowHeight),
+        toBlock.position, colWidth, doc.rowHeight
+      );
 
     doc.addArrow(
       arrowDrawing.fromBlockId,
@@ -272,13 +322,17 @@ export function CanvasShell(props: CanvasShellProps) {
         ? arrowDrawing.waypoints : undefined
     );
     setArrowDrawing(null);
+    setMagnetizedTarget(null);
   };
 
   // Cancel arrow drawing on Escape
   useEffect(() => {
     if (!arrowDrawing) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setArrowDrawing(null);
+      if (e.key === 'Escape') {
+        setArrowDrawing(null);
+        setMagnetizedTarget(null);
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -289,12 +343,20 @@ export function CanvasShell(props: CanvasShellProps) {
     if (!arrowDrawing || !arrowDrawing.cursorSnapped || colWidth === 0) return null;
     const fromBlock = doc.blocks.find(b => b.id === arrowDrawing.fromBlockId);
     if (!fromBlock) return null;
-    const firstWp = arrowDrawing.waypoints[0] ?? arrowDrawing.cursorSnapped;
-    const fromEdge = nearestEdge(firstWp, fromBlock.position, colWidth, doc.rowHeight);
+
+    const fromEdge = arrowDrawing.fromEdge
+      ?? nearestEdge(
+        arrowDrawing.waypoints[0] ?? arrowDrawing.cursorSnapped,
+        fromBlock.position, colWidth, doc.rowHeight
+      );
     const startPt = getEdgeMidpoint(fromBlock.position, fromEdge, colWidth, doc.rowHeight);
+
+    // If magnetized, route to the target edge properly
+    const toEdge = magnetizedTarget ? magnetizedTarget.edge : null;
+
     return orthogonalPath(
       startPt, fromEdge,
-      arrowDrawing.cursorSnapped, null,
+      arrowDrawing.cursorSnapped, toEdge,
       arrowDrawing.waypoints,
       doc.rowHeight
     );
@@ -322,6 +384,20 @@ export function CanvasShell(props: CanvasShellProps) {
       setActiveStageTab(null);
     }
   }, [doc.stages, activeStageTab]);
+
+  // Stage overlap prevention — shift blocks in later stages
+  // down when they overlap with earlier stages
+  useEffect(() => {
+    if (mode !== 'edit' || doc.stages.length < 2) return;
+    const adjusted = preventStageOverlap(doc.stages, doc.blocks);
+    const needsUpdate = adjusted.some(b => {
+      const orig = doc.blocks.find(ob => ob.id === b.id);
+      return orig && orig.position.row !== b.position.row;
+    });
+    if (needsUpdate) {
+      doc.restoreSnapshot({ blocks: adjusted });
+    }
+  }, [doc.blocks, doc.stages, mode]);
 
   // Handle inserting block with stage auto-assignment
   const handleInsertBlock = useCallback((type: string, position: Partial<CanvasBlockType['position']>) => {
@@ -446,7 +522,7 @@ export function CanvasShell(props: CanvasShellProps) {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {s.stageNumber}. {s.title}
+                {s.title}
               </button>
             ))}
             <button
@@ -562,9 +638,10 @@ export function CanvasShell(props: CanvasShellProps) {
                 doc.updateBlock(block.id, patch)
               }
               onDelete={() => doc.deleteBlock(block.id)}
-              onArrowDrawStart={() => handleArrowDrawStart(block.id)}
+              onArrowDrawStart={(edge) => handleArrowDrawStart(block.id, edge)}
               isArrowDrawing={arrowDrawing !== null}
-              onArrowDrawEnd={() => handleArrowDrawEnd(block.id)}
+              onArrowDrawEnd={(edge) => handleArrowDrawEnd(block.id, edge)}
+              magnetizedEdge={magnetizedTarget?.blockId === block.id ? magnetizedTarget.edge : null}
               onAssignStage={(blockId, stageId) =>
                 doc.assignBlockToStage(blockId, stageId)
               }
@@ -660,6 +737,7 @@ export function CanvasShell(props: CanvasShellProps) {
           zoom={zoom}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
+          onClearAll={() => setClearDialogOpen(true)}
         />
       )}
 
@@ -716,6 +794,19 @@ export function CanvasShell(props: CanvasShellProps) {
         onSaveVersion={label =>
           doc.saveVersion(doc.contentId ?? '', label)
         }
+      />
+
+      {/* Clear All confirmation dialog */}
+      <ClearAllDialog
+        open={clearDialogOpen}
+        onClose={() => setClearDialogOpen(false)}
+        onConfirm={() => {
+          doc.restoreSnapshot({
+            blocks: [],
+            arrows: [],
+            stages: [],
+          });
+        }}
       />
     </div>
   );
