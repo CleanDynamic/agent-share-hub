@@ -159,6 +159,123 @@ export function polylinePath(
   return d;
 }
 
+// Compute a stub point offset from an edge midpoint
+function stubPoint(
+  pt: { x: number; y: number },
+  edge: 'top' | 'right' | 'bottom' | 'left',
+  stub: number
+): { x: number; y: number } {
+  switch (edge) {
+    case 'top':    return { x: pt.x, y: pt.y - stub };
+    case 'bottom': return { x: pt.x, y: pt.y + stub };
+    case 'left':   return { x: pt.x - stub, y: pt.y };
+    case 'right':  return { x: pt.x + stub, y: pt.y };
+  }
+}
+
+// Route orthogonally between two consecutive points, inserting a corner
+// if they aren't axis-aligned. `goHorizFirst` picks the L-bend direction.
+function orthogonalSegment(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  goHorizFirst: boolean
+): { x: number; y: number }[] {
+  if (a.x === b.x || a.y === b.y) return [b];
+  if (goHorizFirst) {
+    return [{ x: b.x, y: a.y }, b];
+  }
+  return [{ x: a.x, y: b.y }, b];
+}
+
+// Build a 90-degree-only (Manhattan) routed SVG path between two edge points.
+// Exits the source edge perpendicular by `2 * rowHeight`, routes through
+// optional waypoints with 90° bends, then approaches the target edge
+// perpendicular.  When `toEdge` is null the path routes directly to `to`
+// (used for live preview during drawing).
+export function orthogonalPath(
+  from: { x: number; y: number },
+  fromEdge: 'top' | 'right' | 'bottom' | 'left',
+  to: { x: number; y: number },
+  toEdge: 'top' | 'right' | 'bottom' | 'left' | null,
+  waypoints: { x: number; y: number }[],
+  rowHeight: number,
+): string {
+  const stub = 2 * rowHeight;
+  const exitPt = stubPoint(from, fromEdge, stub);
+
+  const points: { x: number; y: number }[] = [from, exitPt];
+
+  // After exiting, first segment should be perpendicular to exit direction
+  // Exit horizontal (left/right) → go vertical next
+  // Exit vertical (top/bottom) → go horizontal next
+  const exitIsHorizontal =
+    fromEdge === 'left' || fromEdge === 'right';
+
+  // Route through each waypoint
+  let current = exitPt;
+  let goHoriz = !exitIsHorizontal; // first turn is perpendicular to exit
+
+  for (const wp of waypoints) {
+    if (wp.x === current.x && wp.y === current.y) continue;
+    const seg = orthogonalSegment(current, wp, goHoriz);
+    points.push(...seg);
+    // Toggle direction for next segment
+    if (current.x !== wp.x && current.y !== wp.y) {
+      goHoriz = !goHoriz;
+    } else {
+      // Moved on one axis only — next should be perpendicular
+      goHoriz = current.y !== wp.y;
+    }
+    current = wp;
+  }
+
+  if (toEdge !== null) {
+    // Approach the target perpendicular to its edge
+    const entryPt = stubPoint(to, toEdge, stub);
+    const entryIsHorizontal =
+      toEdge === 'left' || toEdge === 'right';
+
+    if (current.x !== entryPt.x || current.y !== entryPt.y) {
+      if (current.x === entryPt.x || current.y === entryPt.y) {
+        points.push(entryPt);
+      } else {
+        // Pick corner so the last leg is perpendicular to entry direction
+        if (entryIsHorizontal) {
+          // Entry is horizontal → approach vertically → go horiz first, then vert
+          points.push({ x: entryPt.x, y: current.y });
+        } else {
+          // Entry is vertical → approach horizontally → go vert first, then horiz
+          points.push({ x: current.x, y: entryPt.y });
+        }
+        points.push(entryPt);
+      }
+    }
+    points.push(to);
+  } else {
+    // Preview mode — route directly to cursor
+    if (current.x !== to.x || current.y !== to.y) {
+      const seg = orthogonalSegment(current, to, goHoriz);
+      points.push(...seg);
+    }
+  }
+
+  // Deduplicate consecutive identical points
+  const deduped: { x: number; y: number }[] = [points[0]];
+  for (let i = 1; i < points.length; i++) {
+    if (points[i].x !== points[i - 1].x ||
+        points[i].y !== points[i - 1].y) {
+      deduped.push(points[i]);
+    }
+  }
+
+  if (deduped.length === 0) return '';
+  let d = `M ${deduped[0].x} ${deduped[0].y}`;
+  for (let i = 1; i < deduped.length; i++) {
+    d += ` L ${deduped[i].x} ${deduped[i].y}`;
+  }
+  return d;
+}
+
 // Build TOC entries from stages and blocks
 export function buildCanvasTOC(
   stages: CanvasStage[],

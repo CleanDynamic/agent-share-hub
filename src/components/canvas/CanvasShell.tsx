@@ -12,7 +12,7 @@ import { TemplateLibrary } from './TemplateLibrary';
 import { VersionHistory } from './VersionHistory';
 import { AnnotationsList } from './AnnotationsList';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
-import { readingOrder, snapToGridDot, nearestEdge, getEdgeMidpoint, polylinePath } from '@/lib/canvas-utils';
+import { readingOrder, snapToGridDot, nearestEdge, getEdgeMidpoint, orthogonalPath } from '@/lib/canvas-utils';
 
 import type { EvidenceMediaType } from './CanvasHeader';
 
@@ -196,10 +196,10 @@ export function CanvasShell(props: CanvasShellProps) {
     return () => window.removeEventListener('keydown', handler);
   }, [mode, selectedBlockId, doc, zoom]);
 
-  // ── Arrow drawing state (new waypoint system) ──────
+  // ── Arrow drawing state (unlimited waypoints) ──────
   const [arrowDrawing, setArrowDrawing] = useState<{
     fromBlockId: string;
-    waypoints: { x: number; y: number }[];  // max 2 locked waypoints
+    waypoints: { x: number; y: number }[];
     cursorSnapped: { x: number; y: number } | null;
   } | null>(null);
 
@@ -223,12 +223,11 @@ export function CanvasShell(props: CanvasShellProps) {
     });
   };
 
-  // Click on the canvas grid → lock a waypoint (max 2)
+  // Click on the canvas grid → lock a waypoint (unlimited)
   const handleCanvasClickForArrow = (e: React.MouseEvent) => {
     if (!arrowDrawing || colWidth === 0) return;
     // If clicking on a block, that's handled by onArrowDrawEnd
     if ((e.target as HTMLElement).closest('[data-canvas-block]')) return;
-    if (arrowDrawing.waypoints.length >= 2) return; // max 2 waypoints
 
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
     const rawX = (e.clientX - rect.left) / zoom;
@@ -268,7 +267,9 @@ export function CanvasShell(props: CanvasShellProps) {
       toBlockId,
       fromEdge,
       toEdge,
-      'produces'
+      'produces',
+      arrowDrawing.waypoints.length > 0
+        ? arrowDrawing.waypoints : undefined
     );
     setArrowDrawing(null);
   };
@@ -283,7 +284,7 @@ export function CanvasShell(props: CanvasShellProps) {
     return () => window.removeEventListener('keydown', handler);
   }, [arrowDrawing]);
 
-  // Build the live drawing path for ArrowOverlay (computed in render, after colWidth)
+  // Build the live drawing path for ArrowOverlay using orthogonal routing
   const getDrawingPathStr = () => {
     if (!arrowDrawing || !arrowDrawing.cursorSnapped || colWidth === 0) return null;
     const fromBlock = doc.blocks.find(b => b.id === arrowDrawing.fromBlockId);
@@ -291,8 +292,12 @@ export function CanvasShell(props: CanvasShellProps) {
     const firstWp = arrowDrawing.waypoints[0] ?? arrowDrawing.cursorSnapped;
     const fromEdge = nearestEdge(firstWp, fromBlock.position, colWidth, doc.rowHeight);
     const startPt = getEdgeMidpoint(fromBlock.position, fromEdge, colWidth, doc.rowHeight);
-    const points = [startPt, ...arrowDrawing.waypoints, arrowDrawing.cursorSnapped];
-    return polylinePath(points);
+    return orthogonalPath(
+      startPt, fromEdge,
+      arrowDrawing.cursorSnapped, null,
+      arrowDrawing.waypoints,
+      doc.rowHeight
+    );
   };
 
   useEffect(() => {

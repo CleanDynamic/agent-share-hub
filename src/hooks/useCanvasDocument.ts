@@ -405,7 +405,8 @@ export function useCanvasDocument(
       toBlockId: string,
       fromEdge: BlockArrow['fromEdge'],
       toEdge: BlockArrow['toEdge'],
-      arrowType: ArrowType = 'produces'
+      arrowType: ArrowType = 'produces',
+      waypoints?: { x: number; y: number }[]
     ) => {
       pushUndo();
       const meta = ARROW_TYPE_META[arrowType];
@@ -418,6 +419,7 @@ export function useCanvasDocument(
         label: meta.label,
         arrowType,
         color: meta.color,
+        ...(waypoints ? { waypoints } : {}),
       };
       setArrows(prev => [...prev, arrow]);
       setIsDirty(true);
