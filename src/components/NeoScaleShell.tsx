@@ -294,18 +294,18 @@ const NEOSCALE_CSS = `
 }
 .ns-page-header {
   padding: 20px 24px 16px 24px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 .ns-page-title {
   font-family: 'Playfair Display', serif;
   font-size: 22px;
   font-weight: 700;
-  color: #fff;
+  color: #1a1a1a;
   margin-bottom: 4px;
 }
 .ns-page-subtitle {
   font-size: 13px;
-  color: rgba(255,255,255,0.35);
+  color: rgba(0,0,0,0.40);
   font-family: 'Inter', sans-serif;
 }
 .ns-page-body {
@@ -323,16 +323,16 @@ const NEOSCALE_CSS = `
   gap: 6px;
   padding: 12px 24px;
   font-size: 13px;
-  color: rgba(255,255,255,0.35);
+  color: rgba(0,0,0,0.40);
   background: none; border: none;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: color 0.15s;
   width: 100%;
   text-align: left;
 }
-.ns-back-btn:hover { color: #fff; }
+.ns-back-btn:hover { color: #1a1a1a; }
 
 /* ── Back face — outlet ── */
 .ns-outlet-wrap {
