@@ -1,4 +1,9 @@
+import { useState } from 'react';
 import { getPrimaryTypeLabel } from '@/lib/content-types';
+import { ChevronRight } from 'lucide-react';
+
+// ─── Evidence types ──────────────────────────────
+export type EvidenceMediaType = 'photos' | 'video' | 'written';
 
 interface CanvasHeaderProps {
   mode: 'edit' | 'view';
@@ -13,6 +18,60 @@ interface CanvasHeaderProps {
   onCoverChange?: (
     file: File | null, preview: string | null
   ) => void;
+  // Evidence props
+  evidenceMediaType?: EvidenceMediaType;
+  evidenceMediaFiles?: File[];
+  evidenceMediaPreviews?: string[];
+  evidenceCaption?: string;
+  onEvidenceMediaTypeChange?: (t: EvidenceMediaType) => void;
+  onEvidenceMediaFilesChange?: (files: File[], previews: string[]) => void;
+  onEvidenceCaptionChange?: (v: string) => void;
+}
+
+// ─── Collapsible section ─────────────────────────
+function CollapsibleSection({
+  label, open, onToggle, required, isEmpty, children,
+}: {
+  label: string; open: boolean; onToggle: () => void;
+  required?: boolean; isEmpty?: boolean; children: React.ReactNode;
+}) {
+  return (
+    <div style={{ marginBottom: 4 }}>
+      <button
+        type="button"
+        onClick={onToggle}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          width: '100%', padding: '8px 0',
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: 'rgba(255,255,255,0.55)', fontSize: 11,
+          fontWeight: 600, textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+        }}
+      >
+        <ChevronRight
+          size={12}
+          style={{
+            transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+            transition: 'transform 0.15s',
+            flexShrink: 0,
+          }}
+        />
+        {label}
+        {required && isEmpty && (
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: '#EF4444', flexShrink: 0,
+          }} />
+        )}
+      </button>
+      {open && (
+        <div style={{ paddingBottom: 8 }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function CanvasHeader({
@@ -20,8 +79,19 @@ export function CanvasHeader({
   difficulty, coverPreview,
   onTitleChange, onDescriptionChange,
   onPostTypeClick, onCoverChange,
+  evidenceMediaType = 'written',
+  evidenceMediaFiles = [],
+  evidenceMediaPreviews = [],
+  evidenceCaption = '',
+  onEvidenceMediaTypeChange,
+  onEvidenceMediaFilesChange,
+  onEvidenceCaptionChange,
 }: CanvasHeaderProps) {
   const typeInfo = getPrimaryTypeLabel(postType);
+
+  const [titleOpen, setTitleOpen] = useState(false);
+  const [descOpen, setDescOpen] = useState(false);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
 
   // Post type colour config
   const typeColors: Record<string, {
@@ -50,146 +120,126 @@ export function CanvasHeader({
   };
   const tc = typeColors[postType] ?? typeColors.build;
 
-  return (
-    <div style={{
-      padding: '16px 16px 12px 16px',
-      borderBottom: '1px solid rgba(255,255,255,0.05)',
-    }}>
+  const isEdit = mode === 'edit';
 
-      {/* Cover image — compact chip in edit, full in view */}
-      {mode === 'edit' && (
-        <div style={{ marginBottom: 12 }}>
-          {!coverPreview ? (
-            <label style={{
-              display: 'inline-flex',
-              alignItems: 'center', gap: 6,
-              padding: '4px 12px', borderRadius: 9999,
-              fontSize: 11, cursor: 'pointer',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px dashed rgba(255,255,255,0.12)',
-              color: 'rgba(255,255,255,0.35)',
-            }}>
-              Add cover image
-              <input type="file"
-                accept="image/*,video/*"
-                style={{ display: 'none' }}
-                onChange={e => {
-                  const f = e.target.files?.[0];
-                  if (!f) return;
-                  const url = URL.createObjectURL(f);
-                  onCoverChange?.(f, url);
-                }}
-              />
-            </label>
-          ) : (
-            <div style={{
-              display: 'flex', alignItems: 'center',
-              gap: 8,
-            }}>
-              <img src={coverPreview} style={{
-                width: 56, height: 36,
-                objectFit: 'cover', borderRadius: 4,
-                border: '1px solid rgba(255,255,255,0.10)',
-              }} />
-              <span style={{
-                fontSize: 11,
-                color: 'rgba(255,255,255,0.40)',
-              }}>
-                Cover added
+  // ── View mode: show everything expanded ─────────
+  if (!isEdit) {
+    return (
+      <div style={{
+        padding: '16px 16px 12px 16px',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+      }}>
+        {coverPreview && (
+          <div style={{ marginBottom: 16, borderRadius: 10, overflow: 'hidden' }}>
+            <img src={coverPreview} style={{ width: '100%', height: 160, objectFit: 'cover' }} />
+          </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '3px 12px', borderRadius: 9999,
+            background: tc.bg, border: `1px solid ${tc.border}`,
+          }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: tc.color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {typeInfo.label}
+            </span>
+            {typeInfo.sub && (
+              <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: 6, marginLeft: 2 }}>
+                {typeInfo.sub}
               </span>
-              <button type="button"
-                onClick={() => onCoverChange?.(
-                  null, null
-                )}
-                style={{
-                  fontSize: 11, background: 'none',
-                  border: 'none',
-                  color: 'rgba(255,255,255,0.25)',
-                  cursor: 'pointer',
-                }}>
-                Remove
-              </button>
+            )}
+          </div>
+          {difficulty && (
+            <div style={{ padding: '3px 10px', borderRadius: 9999, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.50)' }}>
+              {difficulty}
             </div>
           )}
         </div>
-      )}
+        <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.95)', margin: '0 0 12px 0', lineHeight: 1.25, letterSpacing: '-0.3px' }}>
+          {title || 'Untitled'}
+        </h1>
+        <p style={{ fontSize: 14, fontWeight: 400, color: 'rgba(255,255,255,0.62)', lineHeight: 1.70, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+          {description}
+        </p>
+      </div>
+    );
+  }
 
-      {/* Cover image view mode */}
-      {mode === 'view' && coverPreview && (
-        <div style={{
-          marginBottom: 16,
-          borderRadius: 10, overflow: 'hidden',
-        }}>
-          <img src={coverPreview} style={{
-            width: '100%', height: 160,
-            objectFit: 'cover',
-          }} />
-        </div>
-      )}
-
-      {/* Badges row */}
+  // ── Edit mode: collapsible sections ─────────────
+  return (
+    <div style={{
+      padding: '8px 16px 4px 16px',
+      borderBottom: '1px solid rgba(255,255,255,0.05)',
+    }}>
+      {/* Badges row — always visible */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        gap: 8, flexWrap: 'wrap', marginBottom: 12,
+        gap: 8, flexWrap: 'wrap', marginBottom: 4,
       }}>
-        {/* Post type badge */}
         <div
-          onClick={mode === 'edit'
-            ? onPostTypeClick : undefined}
+          onClick={onPostTypeClick}
           style={{
-            display: 'inline-flex',
-            alignItems: 'center', gap: 6,
+            display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '3px 12px', borderRadius: 9999,
-            background: tc.bg,
-            border: `1px solid ${tc.border}`,
-            cursor: mode === 'edit'
-              ? 'pointer' : 'default',
+            background: tc.bg, border: `1px solid ${tc.border}`,
+            cursor: 'pointer',
           }}
         >
-          <span style={{
-            fontSize: 10, fontWeight: 700,
-            color: tc.color, textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-          }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: tc.color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             {typeInfo.label}
           </span>
           {typeInfo.sub && (
-            <span style={{
-              fontSize: 9, color: 'rgba(255,255,255,0.35)',
-              textTransform: 'uppercase',
-              borderLeft:
-                '1px solid rgba(255,255,255,0.15)',
-              paddingLeft: 6, marginLeft: 2,
-            }}>
+            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: 6, marginLeft: 2 }}>
               {typeInfo.sub}
             </span>
           )}
-          {mode === 'edit' && (
-            <span style={{
-              fontSize: 9,
-              color: 'rgba(255,255,255,0.25)',
-            }}>
-              ↕
-            </span>
-          )}
+          <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)' }}>↕</span>
         </div>
 
-        {/* Difficulty badge */}
         {difficulty && (
-          <div style={{
-            padding: '3px 10px', borderRadius: 9999,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.09)',
-            fontSize: 10, fontWeight: 500,
-            color: 'rgba(255,255,255,0.50)',
-          }}>
+          <div style={{ padding: '3px 10px', borderRadius: 9999, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.50)' }}>
             {difficulty}
+          </div>
+        )}
+
+        {/* Cover image chip */}
+        {!coverPreview ? (
+          <label style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            padding: '3px 10px', borderRadius: 9999, fontSize: 10,
+            cursor: 'pointer', background: 'rgba(255,255,255,0.03)',
+            border: '1px dashed rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.35)',
+          }}>
+            + Cover
+            <input type="file" accept="image/*,video/*" style={{ display: 'none' }}
+              onChange={e => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                onCoverChange?.(f, URL.createObjectURL(f));
+              }}
+            />
+          </label>
+        ) : (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 4px 2px 8px', borderRadius: 9999, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <img src={coverPreview} style={{ width: 16, height: 16, objectFit: 'cover', borderRadius: '50%' }} />
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>Cover</span>
+            <button type="button" onClick={() => onCoverChange?.(null, null)}
+              style={{ fontSize: 11, color: 'rgba(255,255,255,0.30)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px' }}>
+              ×
+            </button>
           </div>
         )}
       </div>
 
-      {/* Title */}
-      {mode === 'edit' ? (
+      {/* ── Title (collapsible) ── */}
+      <CollapsibleSection
+        label="Title"
+        open={titleOpen}
+        onToggle={() => setTitleOpen(o => !o)}
+        required
+        isEmpty={!title.trim()}
+      >
         <input
           value={title}
           onChange={e => onTitleChange?.(e.target.value)}
@@ -197,49 +247,34 @@ export function CanvasHeader({
           maxLength={120}
           style={{
             width: '100%',
-            fontFamily:
-              "'Playfair Display', Georgia, serif",
-            fontSize: 22, fontWeight: 700,
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 20, fontWeight: 700,
             color: 'rgba(255,255,255,0.95)',
             background: 'transparent', border: 'none',
-            borderBottom:
-              '1px solid rgba(255,255,255,0.06)',
-            outline: 'none',
-            padding: '2px 0 10px 0',
-            marginBottom: 12, lineHeight: 1.25,
-            letterSpacing: '-0.3px',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            outline: 'none', padding: '2px 0 8px 0',
+            lineHeight: 1.25, letterSpacing: '-0.3px',
             boxSizing: 'border-box',
           }}
-          onFocus={e =>
-            e.target.style.borderBottomColor =
-              'rgba(255,255,255,0.15)'}
-          onBlur={e =>
-            e.target.style.borderBottomColor =
-              'rgba(255,255,255,0.06)'}
         />
-      ) : (
-        <h1 style={{
-          fontFamily:
-            "'Playfair Display', Georgia, serif",
-          fontSize: 22, fontWeight: 700,
-          color: 'rgba(255,255,255,0.95)',
-          margin: '0 0 12px 0', lineHeight: 1.25,
-          letterSpacing: '-0.3px',
-        }}>
-          {title || 'Untitled'}
-        </h1>
-      )}
+      </CollapsibleSection>
 
-      {/* Description */}
-      {mode === 'edit' ? (
+      {/* ── Description (collapsible) ── */}
+      <CollapsibleSection
+        label="Description"
+        open={descOpen}
+        onToggle={() => setDescOpen(o => !o)}
+        required
+        isEmpty={!description.trim()}
+      >
         <textarea
           value={description}
-          onChange={e =>
-            onDescriptionChange?.(e.target.value)}
+          onChange={e => onDescriptionChange?.(e.target.value)}
           placeholder="Describe what this is and why it matters..."
           rows={2}
+          maxLength={500}
           style={{
-            width: '100%', fontSize: 14,
+            width: '100%', fontSize: 13,
             color: 'rgba(255,255,255,0.62)',
             lineHeight: 1.70, background: 'transparent',
             border: 'none', outline: 'none',
@@ -248,16 +283,175 @@ export function CanvasHeader({
             boxSizing: 'border-box',
           }}
         />
-      ) : (
-        <p style={{
-          fontSize: 14, fontWeight: 400,
-          color: 'rgba(255,255,255,0.62)',
-          lineHeight: 1.70, margin: 0,
-          fontFamily: 'Inter, sans-serif',
-        }}>
-          {description}
-        </p>
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)', textAlign: 'right' }}>
+          {description.length} / 500
+        </div>
+      </CollapsibleSection>
+
+      {/* ── Your Results / Evidence (collapsible) ── */}
+      <CollapsibleSection
+        label="Your Results"
+        open={evidenceOpen}
+        onToggle={() => setEvidenceOpen(o => !o)}
+      >
+        <EvidenceEditor
+          mediaType={evidenceMediaType}
+          mediaFiles={evidenceMediaFiles}
+          mediaPreviews={evidenceMediaPreviews}
+          caption={evidenceCaption}
+          onMediaTypeChange={onEvidenceMediaTypeChange}
+          onMediaFilesChange={onEvidenceMediaFilesChange}
+          onCaptionChange={onEvidenceCaptionChange}
+        />
+      </CollapsibleSection>
+    </div>
+  );
+}
+
+// ─── Evidence editor (compact) ───────────────────
+function EvidenceEditor({
+  mediaType, mediaFiles, mediaPreviews, caption,
+  onMediaTypeChange, onMediaFilesChange, onCaptionChange,
+}: {
+  mediaType: EvidenceMediaType;
+  mediaFiles: File[];
+  mediaPreviews: string[];
+  caption: string;
+  onMediaTypeChange?: (t: EvidenceMediaType) => void;
+  onMediaFilesChange?: (files: File[], previews: string[]) => void;
+  onCaptionChange?: (v: string) => void;
+}) {
+  const TYPES: { value: EvidenceMediaType; label: string }[] = [
+    { value: 'photos', label: '📷 Photo(s)' },
+    { value: 'video', label: '🎬 Video' },
+    { value: 'written', label: '✏️ Written' },
+  ];
+
+  return (
+    <div>
+      {/* Media type toggle */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+        {TYPES.map(t => (
+          <button
+            key={t.value}
+            type="button"
+            onClick={() => onMediaTypeChange?.(t.value)}
+            style={{
+              padding: '3px 10px', borderRadius: 6, fontSize: 11,
+              cursor: 'pointer',
+              background: mediaType === t.value ? 'rgba(232,87,26,0.18)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${mediaType === t.value ? 'rgba(232,87,26,0.35)' : 'rgba(255,255,255,0.08)'}`,
+              color: mediaType === t.value ? '#E8571A' : 'rgba(255,255,255,0.45)',
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Photo(s) upload */}
+      {mediaType === 'photos' && (
+        <div style={{ marginBottom: 8 }}>
+          {mediaPreviews.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 8, paddingBottom: 4 }}>
+              {mediaPreviews.map((p, i) => (
+                <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
+                  <img src={p} style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)' }} />
+                  <button type="button"
+                    onClick={() => {
+                      const nf = [...mediaFiles]; nf.splice(i, 1);
+                      const np = [...mediaPreviews]; np.splice(i, 1);
+                      onMediaFilesChange?.(nf, np);
+                    }}
+                    style={{
+                      position: 'absolute', top: -4, right: -4,
+                      width: 16, height: 16, borderRadius: '50%',
+                      background: 'rgba(0,0,0,0.70)', border: 'none',
+                      color: '#fff', fontSize: 10, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >×</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {mediaPreviews.length < 5 && (
+            <label style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '4px 10px', borderRadius: 6, fontSize: 11,
+              cursor: 'pointer', background: 'rgba(255,255,255,0.04)',
+              border: '1px dashed rgba(255,255,255,0.12)',
+              color: 'rgba(255,255,255,0.40)',
+            }}>
+              + Add photos
+              <input type="file" accept="image/*" multiple style={{ display: 'none' }}
+                onChange={e => {
+                  const files = Array.from(e.target.files ?? []).slice(0, 5 - mediaFiles.length);
+                  const newFiles = [...mediaFiles, ...files];
+                  const newPreviews = [...mediaPreviews, ...files.map(f => URL.createObjectURL(f))];
+                  onMediaFilesChange?.(newFiles, newPreviews);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+          )}
+        </div>
       )}
+
+      {/* Video upload */}
+      {mediaType === 'video' && (
+        <div style={{ marginBottom: 8 }}>
+          {mediaPreviews.length > 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <video src={mediaPreviews[0]} style={{ width: 80, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)' }} />
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)' }}>Video added</span>
+              <button type="button"
+                onClick={() => onMediaFilesChange?.([], [])}
+                style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', background: 'none', border: 'none', cursor: 'pointer' }}
+              >Remove</button>
+            </div>
+          ) : (
+            <label style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '4px 10px', borderRadius: 6, fontSize: 11,
+              cursor: 'pointer', background: 'rgba(255,255,255,0.04)',
+              border: '1px dashed rgba(255,255,255,0.12)',
+              color: 'rgba(255,255,255,0.40)',
+            }}>
+              + Upload video
+              <input type="file" accept="video/*" style={{ display: 'none' }}
+                onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  onMediaFilesChange?.([f], [URL.createObjectURL(f)]);
+                }}
+              />
+            </label>
+          )}
+        </div>
+      )}
+
+      {/* Caption (shared) */}
+      <textarea
+        value={caption}
+        onChange={e => {
+          if (e.target.value.length <= 500) onCaptionChange?.(e.target.value);
+        }}
+        placeholder="Add a caption describing your results..."
+        rows={2}
+        style={{
+          width: '100%', fontSize: 12,
+          color: 'rgba(255,255,255,0.60)',
+          lineHeight: 1.60, background: 'transparent',
+          border: 'none', outline: 'none',
+          resize: 'none', padding: 0,
+          fontFamily: 'Inter, sans-serif',
+          boxSizing: 'border-box',
+        }}
+      />
+      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)', textAlign: 'right' }}>
+        {caption.length} / 500
+      </div>
     </div>
   );
 }
