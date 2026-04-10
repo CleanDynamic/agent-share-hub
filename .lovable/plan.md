@@ -1,49 +1,39 @@
 
 
-## Fix: Simplify flip mechanics and correct directions
+## Fix: Consistent flip on every navigation click
 
-### Problems identified
+### Root cause
+The current `flipToBack`/`flipToFront` guards (`if (!isShowingFront()) return;` and `if (isShowingFront()) return;`) silently skip the flip when the panel is already on the target face. So clicking a second right-panel item while already on the back face triggers `navigate()` but no animation — the content just swaps in place. This feels broken and inconsistent.
 
-1. **Home button broken** — The home/logo click (lines 1685-1696, 1704-1714) flips to front face but never calls `navigate("/")`, so the route stays on the previous page and the auto-flip effect fights back.
+### Fix
+Replace the guard-based approach with a single `doFlip(target: 'front' | 'back', direction: 'left' | 'right')` helper that **always animates**, even when navigating between two back-face pages:
 
-2. **Double flips** — The `useEffect` auto-flip (lines 1366-1391) fires on every `location.pathname` change. But the manual `flipMiddle()` calls from nav items ALSO flip. So clicking a left-panel nav item triggers `flipMiddle('left')` + `navigate()` → route changes → auto-flip fires again = two flips.
+- If already on the target face, perform a **full 360° rotation** in the given direction (visually: a complete flip that lands back on the same face with new content)
+- If on the opposite face, perform a normal **180° rotation**
+- The `isFlipping` lock stays to prevent overlapping animations
+- Direction rules remain: left-panel = `'left'`, right-panel = `'right'`
 
-3. **Wrong directions on right panel** — Right panel items like "Who to Follow" profiles (line 2122) just call `navigate()` with no flip at all. The post-type tiles (line 2025) flip to front face directly. Inconsistent.
+**Concrete changes in `src/components/NeoScaleShell.tsx`:**
 
-### Solution: Remove auto-flip, consolidate into one helper
-
-**Delete** the auto-flip `useEffect` (lines 1366-1391) entirely. All flips should be explicit — triggered only by user clicks, never by route changes.
-
-**Create two simple helpers:**
-
-```text
-flipToBack(direction: 'left' | 'right')
-  → adds +180 if direction='left', -180 if direction='right'
-  → used when navigating FROM home TO a page
-
-flipToFront()
-  → snaps to nearest 360
-  → used when going back to home feed
-```
-
-**Apply the rules:**
-
-| Trigger | Action |
-|---------|--------|
-| Left panel: Home button / Logo | `flipToFront()` + `navigate("/")` |
-| Left panel: Any other nav item | `flipToBack('left')` + `navigate(route)` |
-| Right panel: Any clickable item (trending, search results, collections, profiles, etc.) | `flipToBack('right')` + `navigate(route)` |
-| Right panel: Post-type tiles (filter feed) | `flipToFront()` (shows front face with filtered feed) |
-| Back button on back face | `flipToFront()` + `navigate("/")` |
-
-**Guard against re-flipping when already on correct face:**
-- `flipToBack`: skip if already showing back face
-- `flipToFront`: skip if already showing front face
-
-This eliminates the double-flip bug entirely since there's no auto-flip effect competing with manual flips.
+1. Delete `flipToFront()`, `flipToBack()`, `isShowingFront()`
+2. Add a `showingFront` ref (boolean, starts `true`) and one helper:
+   ```
+   doFlip(target: 'front' | 'back', direction: 'left' | 'right')
+     if isFlipping → return
+     delta = 0
+     if already on target face → delta = direction==='left' ? 360 : -360
+     else → delta = direction==='left' ? 180 : -180
+     update showingFront, animate, set isFlipping lock for 650ms
+   ```
+3. Update all call sites:
+   - Home/Logo: `doFlip('front', 'left')` + `navigate("/")`
+   - Left nav items: `doFlip('back', 'left')` + `navigate(route)`
+   - Right panel items: `doFlip('back', 'right')` + `navigate(path)`
+   - Post-type tiles: `doFlip('front', 'right')` + `navigate("/")`
+   - Back button: `doFlip('front', 'left')` + `navigate("/")`
 
 ### Files
 | File | Change |
 |------|--------|
-| `src/components/NeoScaleShell.tsx` | Remove auto-flip useEffect; replace `flipMiddle()` with `flipToBack(dir)` and `flipToFront()`; fix home button to navigate; fix all right-panel clicks to use `flipToBack('right')`; fix right-panel profiles that have no flip call |
+| `src/components/NeoScaleShell.tsx` | Replace flip helpers with unified `doFlip`; update all ~15 call sites |
 
