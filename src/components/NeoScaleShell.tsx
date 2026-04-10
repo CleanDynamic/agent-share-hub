@@ -257,24 +257,9 @@ const NEOSCALE_CSS = `
   transform-style: preserve-3d;
 }
 .ns-middle-front {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
   border-radius: 20px;
   overflow: hidden;
   padding: 0;
-  background: linear-gradient(165deg,
-    rgba(255,255,255,0.06) 0%,
-    rgba(255,255,255,0.02) 50%,
-    rgba(255,255,255,0.04) 100%);
-  border: 1px solid rgba(255,255,255,0.06);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  box-shadow: 0 30px 80px rgba(0,0,0,0.5),
-    inset 0 0 0 1px rgba(255,255,255,0.03),
-    inset 0 1px 0 rgba(255,255,255,0.05);
 }
 .ns-middle-back {
   position: absolute;
@@ -1805,6 +1790,7 @@ export function NeoScaleShell() {
             <div className="ns-middle-flipper" ref={flipperRef}>
 
               {/* FRONT FACE — home feed */}
+              <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' as any }}>
               <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
 
                 {/* Tabs + filter banner — padded header strip */}
@@ -1890,6 +1876,7 @@ export function NeoScaleShell() {
                   )}
                 </div>
               </div>
+              </LiquidGlassPanel>
 
               {/* BACK FACE — router outlet */}
               <div className={`ns-middle-back${flipDir === -1 ? " rtl" : ""}`}>
