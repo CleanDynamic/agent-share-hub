@@ -38,16 +38,16 @@ const NEOSCALE_CSS = `
 
 /* ── Middle panel design tokens ── */
 .ns-middle-front, .ns-middle-back {
-  --mp-text: rgba(255,255,255,0.92);
-  --mp-text-secondary: rgba(255,255,255,0.45);
-  --mp-text-muted: rgba(255,255,255,0.25);
-  --mp-border: rgba(255,255,255,0.06);
-  --mp-surface: rgba(255,255,255,0.03);
+  --mp-text: rgba(0,0,0,0.85);
+  --mp-text-secondary: rgba(0,0,0,0.45);
+  --mp-text-muted: rgba(0,0,0,0.25);
+  --mp-border: rgba(0,0,0,0.08);
+  --mp-surface: rgba(0,0,0,0.03);
   --mp-orange: #E8571A;
   --mp-teal: #2EC4B6;
   --mp-font: 'Playfair Display', Georgia, serif;
   font-family: 'Inter', sans-serif;
-  color: rgba(255,255,255,0.90);
+  color: rgba(0,0,0,0.85);
 }
 
 .ns-root {
@@ -116,35 +116,35 @@ const NEOSCALE_CSS = `
   transition: all 0.25s ease;
   position: relative;
 }
-.ns-nav-item:hover { background: rgba(255,255,255,0.04); }
+.ns-nav-item:hover { background: rgba(0,0,0,0.04); }
 .ns-nav-item.active { background: rgba(232,87,26,0.1); }
 .ns-nav-icon {
   width: 18px; height: 18px;
   display: flex; align-items: center; justify-content: center;
   font-size: 14px;
-  color: rgba(255,255,255,0.35);
+  color: rgba(0,0,0,0.35);
   transition: color 0.25s;
 }
 .ns-nav-item.active .ns-nav-icon { color: #E8571A; }
 .ns-nav-label {
   font-size: 13px;
   font-weight: 400;
-  color: rgba(255,255,255,0.4);
+  color: rgba(0,0,0,0.45);
   transition: color 0.25s;
   letter-spacing: 0.1px;
   flex: 1;
 }
-.ns-nav-item.active .ns-nav-label { color: rgba(255,255,255,0.9); font-weight: 500; }
-.ns-nav-item:hover .ns-nav-label { color: rgba(255,255,255,0.6); }
+.ns-nav-item.active .ns-nav-label { color: rgba(0,0,0,0.85); font-weight: 500; }
+.ns-nav-item:hover .ns-nav-label { color: rgba(0,0,0,0.65); }
 .ns-nav-spacer { flex: 1; }
-.ns-nav-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 8px 4px; }
+.ns-nav-divider { height: 1px; background: rgba(0,0,0,0.06); margin: 8px 4px; }
 .ns-nav-badge {
   display: flex; align-items: center; justify-content: center;
   min-width: 18px; height: 18px; padding: 0 5px;
   border-radius: 9px; font-size: 10px; font-weight: 700;
   background: #E8571A; color: #fff;
 }
-.ns-nav-badge.muted { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); }
+.ns-nav-badge.muted { background: rgba(0,0,0,0.06); color: rgba(0,0,0,0.45); }
 
 /* pulse connector */
 .ns-left-panel::after {
@@ -169,7 +169,7 @@ const NEOSCALE_CSS = `
 /* ── User section at bottom of left panel ── */
 .ns-user-section {
   padding: 12px 8px 4px;
-  border-top: 1px solid rgba(255,255,255,0.05);
+  border-top: 1px solid rgba(0,0,0,0.06);
   margin-top: 8px;
 }
 .ns-user-btn {
@@ -178,7 +178,7 @@ const NEOSCALE_CSS = `
   cursor: pointer; transition: background 0.2s;
   border: none; background: none; text-align: left;
 }
-.ns-user-btn:hover { background: rgba(255,255,255,0.04); }
+.ns-user-btn:hover { background: rgba(0,0,0,0.04); }
 .ns-user-avatar {
   width: 28px; height: 28px; border-radius: 50%;
   background: #E8571A; color: #fff;
@@ -188,14 +188,15 @@ const NEOSCALE_CSS = `
 }
 .ns-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ns-user-name {
-  font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.6);
+  font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.6);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
 }
-.ns-user-dots { color: rgba(255,255,255,0.2); font-size: 16px; }
+.ns-user-dots { color: rgba(0,0,0,0.25); font-size: 16px; }
 .ns-user-menu {
   position: absolute; bottom: 56px; left: 8px; right: 8px;
-  background: rgba(8,8,12,0.95); border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.95); border: 1px solid rgba(0,0,0,0.10);
   border-radius: 10px; padding: 4px; z-index: 10;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
 }
 .ns-user-menu button {
   display: flex; align-items: center; gap: 8px;
@@ -203,7 +204,7 @@ const NEOSCALE_CSS = `
   border-radius: 8px; cursor: pointer; font-size: 12px; color: #e74c3c;
   transition: background 0.15s;
 }
-.ns-user-menu button:hover { background: rgba(255,255,255,0.04); }
+.ns-user-menu button:hover { background: rgba(0,0,0,0.05); }
 .ns-auth-btns { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
 .ns-auth-btn {
   display: flex; align-items: center; justify-content: center;
@@ -211,14 +212,14 @@ const NEOSCALE_CSS = `
   cursor: pointer; transition: all 0.2s; border: none;
 }
 .ns-auth-btn.signin {
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.6);
+  background: rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.10);
+  color: rgba(0,0,0,0.6);
 }
-.ns-auth-btn.signin:hover { background: rgba(255,255,255,0.08); }
+.ns-auth-btn.signin:hover { background: rgba(0,0,0,0.08); }
 .ns-auth-btn.join {
-  background: #111; border: 1px solid rgba(255,255,255,0.1); color: #fff;
+  background: #1a1a1a; border: 1px solid rgba(0,0,0,0.15); color: #fff;
 }
-.ns-auth-btn.join:hover { background: #1a1a1a; }
+.ns-auth-btn.join:hover { background: #333; }
 
 /* ── Middle panel ── */
 .ns-middle-wrapper { width: 600px; height: 775px; perspective: 1400px; flex-shrink: 0; }
@@ -255,7 +256,7 @@ const NEOSCALE_CSS = `
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,0.06), transparent);
 }
 .ns-middle-back.rtl {
   transform: rotateY(-180deg);
@@ -273,14 +274,14 @@ const NEOSCALE_CSS = `
   box-sizing: border-box;
 }
 .ns-feed-scroll::-webkit-scrollbar { width: 3px; }
-.ns-feed-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+.ns-feed-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 3px; }
 
 .ns-feed-loading {
   display: flex; flex-direction: column; gap: 12px; padding: 4px 0;
 }
 .ns-feed-skeleton {
   height: 80px; border-radius: 12px;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.04);
   animation: nsPulse 1.5s ease-in-out infinite;
 }
 @keyframes nsPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }
@@ -293,18 +294,18 @@ const NEOSCALE_CSS = `
 }
 .ns-page-header {
   padding: 20px 24px 16px 24px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 .ns-page-title {
   font-family: 'Playfair Display', serif;
   font-size: 22px;
   font-weight: 700;
-  color: #fff;
+  color: #1a1a1a;
   margin-bottom: 4px;
 }
 .ns-page-subtitle {
   font-size: 13px;
-  color: rgba(255,255,255,0.35);
+  color: rgba(0,0,0,0.40);
   font-family: 'Inter', sans-serif;
 }
 .ns-page-body {
@@ -322,16 +323,16 @@ const NEOSCALE_CSS = `
   gap: 6px;
   padding: 12px 24px;
   font-size: 13px;
-  color: rgba(255,255,255,0.35);
+  color: rgba(0,0,0,0.40);
   background: none; border: none;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: color 0.15s;
   width: 100%;
   text-align: left;
 }
-.ns-back-btn:hover { color: #fff; }
+.ns-back-btn:hover { color: #1a1a1a; }
 
 /* ── Back face — outlet ── */
 .ns-outlet-wrap {
@@ -344,20 +345,20 @@ const NEOSCALE_CSS = `
   background: transparent;
   padding: 0;
   box-sizing: border-box;
-  color: rgba(255,255,255,0.90);
+  color: rgba(0,0,0,0.85);
   font-family: 'Inter', sans-serif;
 }
 .ns-outlet-wrap::-webkit-scrollbar { width: 3px; }
-.ns-outlet-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+.ns-outlet-wrap::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 3px; }
 
 /* ── Glass input (forms, search) ── */
 .ns-glass-input {
   width: 100%;
-  background: rgba(27,27,32,0.5);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.10);
   border-radius: 12px;
   padding: 10px 16px;
-  color: #fff;
+  color: #1a1a1a;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   outline: none;
@@ -368,21 +369,21 @@ const NEOSCALE_CSS = `
   border-color: rgba(232,87,26,0.50);
   box-shadow: 0 0 0 3px rgba(232,87,26,0.08);
 }
-.ns-glass-input::placeholder { color: rgba(255,255,255,0.25); }
+.ns-glass-input::placeholder { color: rgba(0,0,0,0.30); }
 
 /* ── Glass card (reusable smaller card) ── */
 .ns-glass-card {
-  background: rgba(27,27,32,0.4);
+  background: rgba(255,255,255,0.6);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255,255,255,0.05);
-  border-top: 1px solid rgba(255,255,255,0.08);
-  border-left: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-top: 1px solid rgba(0,0,0,0.06);
+  border-left: 1px solid rgba(0,0,0,0.06);
   border-radius: 16px;
   padding: 20px;
   transition: border-color 0.2s;
 }
-.ns-glass-card:hover { border-color: rgba(255,255,255,0.10); }
+.ns-glass-card:hover { border-color: rgba(0,0,0,0.15); }
 
 /* ── Orange button (primary CTA) ── */
 .ns-btn-orange {
@@ -403,20 +404,20 @@ const NEOSCALE_CSS = `
 
 /* ── Ghost button ── */
 .ns-btn-ghost {
-  background: rgba(255,255,255,0.04);
-  color: rgba(255,255,255,0.70);
+  background: rgba(0,0,0,0.04);
+  color: rgba(0,0,0,0.65);
   padding: 8px 20px;
   border-radius: 9999px;
   font-family: 'Inter', sans-serif;
   font-size: 12px;
   font-weight: 600;
-  border: 1px solid rgba(255,255,255,0.10);
+  border: 1px solid rgba(0,0,0,0.10);
   cursor: pointer;
   transition: all 0.15s;
 }
 .ns-btn-ghost:hover {
-  background: rgba(255,255,255,0.08);
-  color: #fff;
+  background: rgba(0,0,0,0.08);
+  color: #1a1a1a;
 }
 
 /* ── Section label (trending, categories etc) ── */
@@ -426,7 +427,7 @@ const NEOSCALE_CSS = `
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(255,255,255,0.30);
+  color: rgba(0,0,0,0.35);
   margin-bottom: 16px;
 }
 
@@ -437,19 +438,19 @@ const NEOSCALE_CSS = `
 }
 .ns-page-body .text-foreground,
 .ns-page-body [class*="text-foreground"] {
-  color: rgba(255,255,255,0.90) !important;
+  color: rgba(0,0,0,0.85) !important;
   font-family: 'Inter', sans-serif !important;
 }
 .ns-page-body .text-muted-foreground,
 .ns-page-body [class*="text-muted-foreground"] {
-  color: rgba(255,255,255,0.40) !important;
+  color: rgba(0,0,0,0.45) !important;
 }
 .ns-page-body .border-border,
 .ns-page-body [class*="border-border"] {
-  border-color: rgba(255,255,255,0.05) !important;
+  border-color: rgba(0,0,0,0.08) !important;
 }
 .ns-page-body .sticky {
-  background: rgba(8,8,12,0.90) !important;
+  background: rgba(237,237,239,0.90) !important;
   backdrop-filter: blur(20px) !important;
 }
 
@@ -470,43 +471,44 @@ const NEOSCALE_CSS = `
 
 .ns-right-title {
   font-size: 11px; font-weight: 600;
-  color: rgba(255,255,255,0.5);
+  color: rgba(0,0,0,0.45);
   letter-spacing: 1.5px; text-transform: uppercase;
   padding: 0 4px; margin-bottom: 14px;
 }
 .ns-right-search {
   width: 100%; height: 34px;
   border-radius: 17px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.08);
   display: flex; align-items: center;
   padding: 0 12px; gap: 8px;
   margin-bottom: 16px;
   cursor: pointer;
   transition: border-color 0.2s;
 }
-.ns-right-search:hover { border-color: rgba(255,255,255,0.12); }
-.ns-right-search svg { width: 13px; height: 13px; color: rgba(255,255,255,0.2); flex-shrink: 0; }
+.ns-right-search:hover { border-color: rgba(0,0,0,0.15); }
+.ns-right-search svg { width: 13px; height: 13px; color: rgba(0,0,0,0.25); flex-shrink: 0; }
 .ns-right-search input {
   flex: 1; background: none; border: none; outline: none;
-  font-size: 11px; color: rgba(255,255,255,0.5);
+  font-size: 11px; color: rgba(0,0,0,0.55);
   font-family: inherit;
 }
-.ns-right-search input::placeholder { color: rgba(255,255,255,0.18); }
+.ns-right-search input::placeholder { color: rgba(0,0,0,0.25); }
 .ns-right-search-results {
   position: absolute; left: 14px; right: 14px; top: 68px;
-  background: rgba(8,8,12,0.97); border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.97); border: 1px solid rgba(0,0,0,0.10);
   border-radius: 12px; max-height: 300px; overflow-y: auto; z-index: 20;
   padding: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
 }
 .ns-search-result {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 8px; border-radius: 8px; cursor: pointer;
   transition: background 0.15s;
 }
-.ns-search-result:hover { background: rgba(255,255,255,0.04); }
-.ns-search-result-title { font-size: 11px; color: rgba(255,255,255,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.ns-search-result-badge { font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.35); flex-shrink: 0; }
+.ns-search-result:hover { background: rgba(0,0,0,0.04); }
+.ns-search-result-title { font-size: 11px; color: rgba(0,0,0,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.ns-search-result-badge { font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,0.06); color: rgba(0,0,0,0.45); flex-shrink: 0; }
 
 /* ── Right panel tile grid ── */
 .ns-tile-grid {
@@ -526,7 +528,7 @@ const NEOSCALE_CSS = `
   gap: 10px;
   cursor: pointer;
   transition: background 0.15s;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.03);
   border: none;
   overflow: hidden;
   width: 100%;
@@ -539,7 +541,7 @@ const NEOSCALE_CSS = `
   left: 0; top: 20%; bottom: 20%;
   width: 2px;
   border-radius: 0 2px 2px 0;
-  background: var(--tile-hover-color, rgba(255,255,255,0.15));
+  background: var(--tile-hover-color, rgba(0,0,0,0.15));
   opacity: 0;
   transition: opacity 0.15s;
 }
@@ -569,7 +571,7 @@ const NEOSCALE_CSS = `
 }
 
 .ns-tile:hover {
-  background: rgba(255,255,255,0.055);
+  background: rgba(0,0,0,0.05);
 }
 
 .ns-tile:hover::after {
@@ -595,7 +597,7 @@ const NEOSCALE_CSS = `
 .ns-tile-label {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255,255,255,0.55);
+  color: rgba(0,0,0,0.55);
   text-transform: none;
   letter-spacing: 0;
   flex: 1;
@@ -604,7 +606,7 @@ const NEOSCALE_CSS = `
 .ns-tile-count {
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255,255,255,0.20);
+  color: rgba(0,0,0,0.20);
   position: relative;
   z-index: 1;
 }
@@ -626,7 +628,7 @@ const NEOSCALE_CSS = `
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.03);
   border: none;
   overflow: hidden;
   transition: background 0.15s;
@@ -654,17 +656,17 @@ const NEOSCALE_CSS = `
 }
 
 .ns-bounty-tile:hover {
-  background: rgba(255,255,255,0.055);
+  background: rgba(0,0,0,0.05);
 }
 
 .ns-bounty-tile:hover::after {
   opacity: 1;
   animation: ns-border-fill 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
-.ns-right-divider { height: 1px; background: rgba(255,255,255,0.04); margin: 4px 0 14px; }
+.ns-right-divider { height: 1px; background: rgba(0,0,0,0.06); margin: 4px 0 14px; }
 .ns-trending-title {
   font-size: 10px; font-weight: 600;
-  color: rgba(255,255,255,0.35);
+  color: rgba(0,0,0,0.40);
   letter-spacing: 1.2px; text-transform: uppercase;
   padding: 0 4px; margin-bottom: 10px;
 }
@@ -676,23 +678,23 @@ const NEOSCALE_CSS = `
   padding: 8px 8px; border-radius: 8px;
   cursor: pointer; transition: background 0.2s;
 }
-.ns-trending-item:hover { background: rgba(255,255,255,0.05); }
-.ns-trending-rank { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.15); width: 16px; text-align: center; }
+.ns-trending-item:hover { background: rgba(0,0,0,0.04); }
+.ns-trending-rank { font-size: 11px; font-weight: 600; color: rgba(0,0,0,0.20); width: 16px; text-align: center; }
 .ns-trending-info { flex: 1; min-width: 0; }
-.ns-trending-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.55); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ns-trending-name { font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.55); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ns-trending-badge {
   display: inline-block; padding: 2px 7px;
   border-radius: 4px; font-size: 9px; font-weight: 600; letter-spacing: 0.3px;
 }
-.ns-badge-beginner { background: rgba(46,204,113,0.12); color: #2ecc71; }
-.ns-badge-intermediate { background: rgba(243,156,18,0.12); color: #f39c12; }
-.ns-badge-advanced { background: rgba(231,76,60,0.12); color: #e74c3c; }
-.ns-badge-any { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.35); }
+.ns-badge-beginner { background: rgba(46,204,113,0.12); color: #1a8a4a; }
+.ns-badge-intermediate { background: rgba(243,156,18,0.12); color: #b87100; }
+.ns-badge-advanced { background: rgba(231,76,60,0.12); color: #c0392b; }
+.ns-badge-any { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.40); }
 
 /* ── Right panel sections ── */
 .ns-section-title {
   font-size: 10px; font-weight: 600;
-  color: rgba(255,255,255,0.35);
+  color: rgba(0,0,0,0.40);
   letter-spacing: 1.2px; text-transform: uppercase;
   padding: 0 4px; margin: 14px 0 8px;
 }
@@ -701,10 +703,10 @@ const NEOSCALE_CSS = `
   padding: 6px 8px; border-radius: 8px;
   cursor: pointer; transition: background 0.15s;
 }
-.ns-curator-item:hover { background: rgba(255,255,255,0.04); }
+.ns-curator-item:hover { background: rgba(0,0,0,0.04); }
 .ns-curator-avatar {
   width: 22px; height: 22px; border-radius: 50%;
-  background: rgba(255,255,255,0.08); flex-shrink: 0;
+  background: rgba(0,0,0,0.06); flex-shrink: 0;
   overflow: hidden;
 }
 .ns-curator-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -713,31 +715,31 @@ const NEOSCALE_CSS = `
   padding: 8px; border-radius: 8px;
   cursor: pointer; transition: background 0.15s;
 }
-.ns-collection-item:hover { background: rgba(255,255,255,0.04); }
+.ns-collection-item:hover { background: rgba(0,0,0,0.04); }
 .ns-follow-item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 4px;
 }
 .ns-follow-avatar {
   width: 28px; height: 28px; border-radius: 50%;
-  background: rgba(255,255,255,0.08); flex-shrink: 0;
+  background: rgba(0,0,0,0.06); flex-shrink: 0;
   overflow: hidden;
 }
 .ns-follow-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ns-follow-info { flex: 1; min-width: 0; }
-.ns-follow-name { font-size: 12px; color: rgba(255,255,255,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ns-follow-handle { font-size: 10px; color: rgba(255,255,255,0.25); }
+.ns-follow-name { font-size: 12px; color: rgba(0,0,0,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ns-follow-handle { font-size: 10px; color: rgba(0,0,0,0.30); }
 .ns-footer-links {
   margin-top: 16px; padding: 12px 4px 4px;
-  border-top: 1px solid rgba(255,255,255,0.04);
+  border-top: 1px solid rgba(0,0,0,0.06);
   display: flex; flex-direction: column; gap: 4px;
 }
 .ns-footer-link {
-  font-size: 10px; color: rgba(255,255,255,0.2);
+  font-size: 10px; color: rgba(0,0,0,0.25);
   text-decoration: none; transition: color 0.15s;
   cursor: pointer;
 }
-.ns-footer-link:hover { color: rgba(255,255,255,0.5); }
+.ns-footer-link:hover { color: rgba(0,0,0,0.55); }
 
 /* ── Free-canvas overrides ── */
 /* Prevent Tailwind from adding overflow:hidden
@@ -1392,7 +1394,7 @@ export function NeoScaleShell() {
             <div className="ns-page-body" style={{ padding: '20px 24px' }}>
               <div style={{
                 fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                letterSpacing: '0.10em', color: 'rgba(255,255,255,0.25)',
+                letterSpacing: '0.10em', color: 'rgba(0,0,0,0.30)',
                 marginBottom: 10,
               }}>
                 Blueprints
@@ -1419,13 +1421,13 @@ export function NeoScaleShell() {
                       {pt.label}
                     </div>
                   </div>
-                  <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 18 }}>→</span>
+                  <span style={{ color: 'rgba(0,0,0,0.30)', fontSize: 18 }}>→</span>
                 </div>
               ))}
 
               <div style={{
                 fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                letterSpacing: '0.10em', color: 'rgba(255,255,255,0.25)',
+                letterSpacing: '0.10em', color: 'rgba(0,0,0,0.30)',
                 marginTop: 20, marginBottom: 10,
               }}>
                 Writing
@@ -1450,12 +1452,12 @@ export function NeoScaleShell() {
                     Blog
                   </div>
                 </div>
-                <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 18 }}>→</span>
+                <span style={{ color: 'rgba(0,0,0,0.30)', fontSize: 18 }}>→</span>
               </div>
 
               <div style={{
                 fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                letterSpacing: '0.10em', color: 'rgba(255,255,255,0.25)',
+                letterSpacing: '0.10em', color: 'rgba(0,0,0,0.30)',
                 marginTop: 20, marginBottom: 10,
               }}>
                 Community
@@ -1494,7 +1496,7 @@ export function NeoScaleShell() {
           <div className="ns-page-header">
             <div className="ns-page-title">Messages</div>
           </div>
-          <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
             <input className="ns-glass-input" placeholder="Search messages..." />
           </div>
           <div className="ns-page-body">
@@ -1659,7 +1661,7 @@ export function NeoScaleShell() {
                           setFilterColor('');
                         }}
                         style={{
-                          fontSize: 11, color: 'rgba(255,255,255,0.35)',
+                          fontSize: 11, color: 'rgba(0,0,0,0.40)',
                           background: 'none', border: 'none',
                           cursor: 'pointer',
                         }}
@@ -1685,7 +1687,7 @@ export function NeoScaleShell() {
                     <div style={{
                       textAlign: 'center',
                       padding: '48px 16px',
-                      color: 'rgba(255,255,255,0.25)',
+                      color: 'rgba(0,0,0,0.30)',
                       fontFamily: "'Playfair Display', Georgia, serif",
                       fontSize: 16,
                     }}>
@@ -1699,7 +1701,7 @@ export function NeoScaleShell() {
                     <div style={{
                       textAlign: 'center',
                       padding: '16px',
-                      color: 'rgba(255,255,255,0.3)',
+                      color: 'rgba(0,0,0,0.35)',
                       fontSize: 11,
                     }}>
                       Loading more…
@@ -1748,8 +1750,8 @@ export function NeoScaleShell() {
             </div>
             {searchOpen && (
               <div className="ns-right-search-results">
-                {searchLoading && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>Searching…</div>}
-                {!searchLoading && searchResults.length === 0 && searchPeopleResults.length === 0 && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>No results</div>}
+                {searchLoading && <div style={{ padding: 8, fontSize: 10, color: "rgba(0,0,0,0.35)" }}>Searching…</div>}
+                {!searchLoading && searchResults.length === 0 && searchPeopleResults.length === 0 && <div style={{ padding: 8, fontSize: 10, color: "rgba(0,0,0,0.35)" }}>No results</div>}
 
                 {/* People results */}
                 {searchPeopleResults && searchPeopleResults.length > 0 && (
@@ -1758,7 +1760,7 @@ export function NeoScaleShell() {
                       fontSize: 9, fontWeight: 700,
                       textTransform: 'uppercase',
                       letterSpacing: '0.10em',
-                      color: 'rgba(255,255,255,0.25)',
+                      color: 'rgba(0,0,0,0.30)',
                       padding: '4px 10px 2px 10px',
                     }}>
                       People
@@ -1789,13 +1791,13 @@ export function NeoScaleShell() {
                         </div>
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: 11,
-                            color: 'rgba(255,255,255,0.70)',
+                            color: 'rgba(0,0,0,0.70)',
                             overflow: 'hidden', textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap' }}>
                             {p.display_name}
                           </div>
                           <div style={{ fontSize: 10,
-                            color: 'rgba(255,255,255,0.30)' }}>
+                            color: 'rgba(0,0,0,0.35)' }}>
                             @{p.username}
                           </div>
                         </div>
@@ -1805,7 +1807,7 @@ export function NeoScaleShell() {
                       fontSize: 9, fontWeight: 700,
                       textTransform: 'uppercase',
                       letterSpacing: '0.10em',
-                      color: 'rgba(255,255,255,0.25)',
+                      color: 'rgba(0,0,0,0.30)',
                       padding: '4px 10px 2px 10px',
                       marginTop: 4,
                     }}>
@@ -1836,7 +1838,7 @@ export function NeoScaleShell() {
             {/* ── Section label */}
             <div style={{
               fontSize: 10, fontWeight: 700,
-              color: 'rgba(255,255,255,0.28)',
+              color: 'rgba(0,0,0,0.30)',
               letterSpacing: '1.4px',
               textTransform: 'uppercase' as const,
               padding: '0 4px',
@@ -1885,7 +1887,7 @@ export function NeoScaleShell() {
                   <span className="ns-tile-label">{tile.label}</span>
                   <span style={{
                     fontSize: 11,
-                    color: 'rgba(255,255,255,0.18)',
+                    color: 'rgba(0,0,0,0.22)',
                     marginLeft: 'auto',
                     flexShrink: 0,
                   }}>→</span>
@@ -1914,7 +1916,7 @@ export function NeoScaleShell() {
                 </div>
               ))}
               {(!trendingItems || trendingItems.length === 0) && (
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", padding: "8px 8px" }}>
+                <div style={{ fontSize: 11, color: "rgba(0,0,0,0.25)", padding: "8px 8px" }}>
                   Loading…
                 </div>
               )}
@@ -1930,10 +1932,10 @@ export function NeoScaleShell() {
                   return (
                     <div key={pick.id} className="ns-curator-item" onClick={() => { if (content) { doFlip('back', 'right'); navigate(`/content/${content.id}`); } }}>
                       <div className="ns-curator-avatar">
-                        {curator?.avatar_url ? <img src={curator.avatar_url} alt="" /> : <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>✦</span>}
+                        {curator?.avatar_url ? <img src={curator.avatar_url} alt="" /> : <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>✦</span>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{content?.title}</div>
+                        <div style={{ fontSize: 11, color: "rgba(0,0,0,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{content?.title}</div>
                         <span className="ns-search-result-badge">{content?.content_type ? displayContentType(content.content_type) : ""}</span>
                       </div>
                     </div>
@@ -1948,8 +1950,8 @@ export function NeoScaleShell() {
                 <div className="ns-section-title">Collections</div>
                 {featuredCollections.map((col: any) => (
                   <div key={col.id} className="ns-collection-item" onClick={() => { doFlip('back', 'right'); navigate(`/collection/${col.slug || col.id}`); }}>
-                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>{col.title}</div>
-                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>
+                    <div style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", fontWeight: 500 }}>{col.title}</div>
+                    <div style={{ fontSize: 10, color: "rgba(0,0,0,0.30)" }}>
                       {(col.profiles as any)?.display_name || (col.profiles as any)?.username || "Creator"} · {col.item_count} items
                     </div>
                   </div>
@@ -1964,7 +1966,7 @@ export function NeoScaleShell() {
                 {followSuggestions.map((s: any) => (
                   <div key={s.id} className="ns-follow-item">
                     <div className="ns-follow-avatar" style={{ cursor: "pointer" }} onClick={() => { doFlip('back', 'right'); navigate(`/creator/${s.username}`); }}>
-                      {s.avatar_url ? <img src={s.avatar_url} alt="" /> : <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>{(s.display_name || "?")[0]}</span>}
+                      {s.avatar_url ? <img src={s.avatar_url} alt="" /> : <span style={{ fontSize: 11, color: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>{(s.display_name || "?")[0]}</span>}
                     </div>
                     <div className="ns-follow-info" style={{ cursor: "pointer" }} onClick={() => { doFlip('back', 'right'); navigate(`/creator/${s.username}`); }}>
                       <div className="ns-follow-name">{s.display_name || s.username}</div>
