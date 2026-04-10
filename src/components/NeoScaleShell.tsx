@@ -38,8 +38,6 @@ const NEOSCALE_CSS = `
 
 /* ── Middle panel design tokens ── */
 .ns-middle-front, .ns-middle-back {
-  background: rgba(180, 180, 195, 0.12);
-  backdrop-filter: blur(12px) saturate(1.3);
   --mp-text: rgba(255,255,255,0.92);
   --mp-text-secondary: rgba(255,255,255,0.45);
   --mp-text-muted: rgba(255,255,255,0.25);
@@ -1759,7 +1757,7 @@ export function NeoScaleShell() {
             <div className="ns-middle-flipper" ref={flipperRef}>
 
               {/* FRONT FACE — home feed */}
-              <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' as any }}>
+              <LiquidGlassPanel cornerRadius={20} elasticity={0.15} contentStyle={{ background: 'rgba(200, 200, 210, 0.13)' }} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' as any }}>
               <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
 
                 {/* Tabs + filter banner — padded header strip */}
@@ -1848,7 +1846,7 @@ export function NeoScaleShell() {
               </LiquidGlassPanel>
 
               {/* BACK FACE — router outlet */}
-              <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderRadius: 20 }}>
+              <LiquidGlassPanel cornerRadius={20} elasticity={0.15} contentStyle={{ background: 'rgba(200, 200, 210, 0.13)' }} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderRadius: 20 }}>
                 <div className={`ns-middle-back${flipDir === -1 ? " rtl" : ""}`}>
                   <div className="ns-outlet-wrap">
                     {renderBackFaceContent()}
