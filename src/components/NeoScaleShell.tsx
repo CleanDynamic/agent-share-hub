@@ -38,16 +38,16 @@ const NEOSCALE_CSS = `
 
 /* ── Middle panel design tokens ── */
 .ns-middle-front, .ns-middle-back {
-  --mp-text: rgba(255,255,255,0.92);
-  --mp-text-secondary: rgba(255,255,255,0.45);
-  --mp-text-muted: rgba(255,255,255,0.25);
-  --mp-border: rgba(255,255,255,0.06);
-  --mp-surface: rgba(255,255,255,0.03);
+  --mp-text: rgba(0,0,0,0.85);
+  --mp-text-secondary: rgba(0,0,0,0.45);
+  --mp-text-muted: rgba(0,0,0,0.25);
+  --mp-border: rgba(0,0,0,0.08);
+  --mp-surface: rgba(0,0,0,0.03);
   --mp-orange: #E8571A;
   --mp-teal: #2EC4B6;
   --mp-font: 'Playfair Display', Georgia, serif;
   font-family: 'Inter', sans-serif;
-  color: rgba(255,255,255,0.90);
+  color: rgba(0,0,0,0.85);
 }
 
 .ns-root {
@@ -116,35 +116,35 @@ const NEOSCALE_CSS = `
   transition: all 0.25s ease;
   position: relative;
 }
-.ns-nav-item:hover { background: rgba(255,255,255,0.04); }
+.ns-nav-item:hover { background: rgba(0,0,0,0.04); }
 .ns-nav-item.active { background: rgba(232,87,26,0.1); }
 .ns-nav-icon {
   width: 18px; height: 18px;
   display: flex; align-items: center; justify-content: center;
   font-size: 14px;
-  color: rgba(255,255,255,0.35);
+  color: rgba(0,0,0,0.35);
   transition: color 0.25s;
 }
 .ns-nav-item.active .ns-nav-icon { color: #E8571A; }
 .ns-nav-label {
   font-size: 13px;
   font-weight: 400;
-  color: rgba(255,255,255,0.4);
+  color: rgba(0,0,0,0.45);
   transition: color 0.25s;
   letter-spacing: 0.1px;
   flex: 1;
 }
-.ns-nav-item.active .ns-nav-label { color: rgba(255,255,255,0.9); font-weight: 500; }
-.ns-nav-item:hover .ns-nav-label { color: rgba(255,255,255,0.6); }
+.ns-nav-item.active .ns-nav-label { color: rgba(0,0,0,0.85); font-weight: 500; }
+.ns-nav-item:hover .ns-nav-label { color: rgba(0,0,0,0.65); }
 .ns-nav-spacer { flex: 1; }
-.ns-nav-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 8px 4px; }
+.ns-nav-divider { height: 1px; background: rgba(0,0,0,0.06); margin: 8px 4px; }
 .ns-nav-badge {
   display: flex; align-items: center; justify-content: center;
   min-width: 18px; height: 18px; padding: 0 5px;
   border-radius: 9px; font-size: 10px; font-weight: 700;
   background: #E8571A; color: #fff;
 }
-.ns-nav-badge.muted { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); }
+.ns-nav-badge.muted { background: rgba(0,0,0,0.06); color: rgba(0,0,0,0.45); }
 
 /* pulse connector */
 .ns-left-panel::after {
