@@ -471,43 +471,44 @@ const NEOSCALE_CSS = `
 
 .ns-right-title {
   font-size: 11px; font-weight: 600;
-  color: rgba(255,255,255,0.5);
+  color: rgba(0,0,0,0.45);
   letter-spacing: 1.5px; text-transform: uppercase;
   padding: 0 4px; margin-bottom: 14px;
 }
 .ns-right-search {
   width: 100%; height: 34px;
   border-radius: 17px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.08);
   display: flex; align-items: center;
   padding: 0 12px; gap: 8px;
   margin-bottom: 16px;
   cursor: pointer;
   transition: border-color 0.2s;
 }
-.ns-right-search:hover { border-color: rgba(255,255,255,0.12); }
-.ns-right-search svg { width: 13px; height: 13px; color: rgba(255,255,255,0.2); flex-shrink: 0; }
+.ns-right-search:hover { border-color: rgba(0,0,0,0.15); }
+.ns-right-search svg { width: 13px; height: 13px; color: rgba(0,0,0,0.25); flex-shrink: 0; }
 .ns-right-search input {
   flex: 1; background: none; border: none; outline: none;
-  font-size: 11px; color: rgba(255,255,255,0.5);
+  font-size: 11px; color: rgba(0,0,0,0.55);
   font-family: inherit;
 }
-.ns-right-search input::placeholder { color: rgba(255,255,255,0.18); }
+.ns-right-search input::placeholder { color: rgba(0,0,0,0.25); }
 .ns-right-search-results {
   position: absolute; left: 14px; right: 14px; top: 68px;
-  background: rgba(8,8,12,0.97); border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.97); border: 1px solid rgba(0,0,0,0.10);
   border-radius: 12px; max-height: 300px; overflow-y: auto; z-index: 20;
   padding: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
 }
 .ns-search-result {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 8px; border-radius: 8px; cursor: pointer;
   transition: background 0.15s;
 }
-.ns-search-result:hover { background: rgba(255,255,255,0.04); }
-.ns-search-result-title { font-size: 11px; color: rgba(255,255,255,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.ns-search-result-badge { font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.35); flex-shrink: 0; }
+.ns-search-result:hover { background: rgba(0,0,0,0.04); }
+.ns-search-result-title { font-size: 11px; color: rgba(0,0,0,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.ns-search-result-badge { font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,0.06); color: rgba(0,0,0,0.45); flex-shrink: 0; }
 
 /* ── Right panel tile grid ── */
 .ns-tile-grid {
