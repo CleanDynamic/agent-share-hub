@@ -13,6 +13,7 @@ interface LiquidGlassPanelProps {
   elasticity?: number;
   overLight?: boolean;
   mouseContainer?: React.RefObject<HTMLElement | null> | null;
+  disableEffect?: boolean;
 }
 
 export default function LiquidGlassPanel({
