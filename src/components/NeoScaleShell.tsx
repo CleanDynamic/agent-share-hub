@@ -240,6 +240,9 @@ const NEOSCALE_CSS = `
   border-radius: 20px;
   overflow: hidden;
   padding: 0;
+  background: rgba(22, 22, 30, 0.65);
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
 }
 .ns-middle-back {
   position: relative;
@@ -248,6 +251,9 @@ const NEOSCALE_CSS = `
   overflow-x: hidden;
   scrollbar-width: none;
   padding: 0;
+  background: rgba(22, 22, 30, 0.65);
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
 }
 .ns-middle-back::-webkit-scrollbar { display: none; }
 .ns-middle-front::before, .ns-middle-back::before {
@@ -1757,7 +1763,7 @@ export function NeoScaleShell() {
             <div className="ns-middle-flipper" ref={flipperRef}>
 
               {/* FRONT FACE — home feed */}
-              <LiquidGlassPanel cornerRadius={20} elasticity={0.15} contentStyle={{ background: 'rgba(200, 200, 210, 0.13)' }} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' as any }}>
+              <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' as any }}>
               <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
 
                 {/* Tabs + filter banner — padded header strip */}
@@ -1846,7 +1852,7 @@ export function NeoScaleShell() {
               </LiquidGlassPanel>
 
               {/* BACK FACE — router outlet */}
-              <LiquidGlassPanel cornerRadius={20} elasticity={0.15} contentStyle={{ background: 'rgba(200, 200, 210, 0.13)' }} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderRadius: 20 }}>
+              <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderRadius: 20 }}>
                 <div className={`ns-middle-back${flipDir === -1 ? " rtl" : ""}`}>
                   <div className="ns-outlet-wrap">
                     {renderBackFaceContent()}
