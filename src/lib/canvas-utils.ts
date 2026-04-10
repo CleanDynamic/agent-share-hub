@@ -333,3 +333,83 @@ export interface TOCEntry {
   blockId: string | null;
   children: TOCEntry[];
 }
+
+// Get all 4 snap-point positions for a block (pixel coords)
+export function getBlockSnapPoints(
+  position: BlockPosition,
+  colWidth: number,
+  rowHeight: number
+): Array<{
+  edge: 'top' | 'right' | 'bottom' | 'left';
+  point: { x: number; y: number };
+}> {
+  return (['top', 'right', 'bottom', 'left'] as const).map(
+    edge => ({
+      edge,
+      point: getEdgeMidpoint(position, edge, colWidth, rowHeight),
+    })
+  );
+}
+
+// Prevent stage zone overlaps by shifting blocks in later stages
+// downward when they overlap with blocks in earlier stages.
+export function preventStageOverlap(
+  stages: CanvasStage[],
+  blocks: CanvasBlock[]
+): CanvasBlock[] {
+  const sorted = [...stages].sort(
+    (a, b) => a.stageNumber - b.stageNumber
+  );
+  if (sorted.length < 2) return blocks;
+
+  const adjusted = blocks.map(b => ({
+    ...b,
+    position: { ...b.position },
+  }));
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prevStage = sorted[i - 1];
+    const currStage = sorted[i];
+
+    const prevBlocks = adjusted.filter(
+      b => b.stageId === prevStage.id
+    );
+    if (prevBlocks.length === 0) continue;
+
+    const prevMaxRow = Math.max(
+      ...prevBlocks.map(
+        b => b.position.row + b.position.rowSpan - 1
+      )
+    );
+
+    const currBlocks = adjusted.filter(
+      b => b.stageId === currStage.id
+    );
+    if (currBlocks.length === 0) continue;
+
+    const currMinRow = Math.min(
+      ...currBlocks.map(b => b.position.row)
+    );
+
+    if (currMinRow <= prevMaxRow + 1) {
+      const shiftAmount =
+        prevMaxRow + 1 - currMinRow + 2; // overlap + 2-row gap
+
+      // Collect IDs for current stage and all subsequent stages
+      const stagesToShift = new Set(
+        sorted.slice(i).map(s => s.id)
+      );
+
+      for (const block of adjusted) {
+        if (
+          block.stageId &&
+          stagesToShift.has(block.stageId)
+        ) {
+          block.position.row += shiftAmount;
+        }
+      }
+    }
+  }
+
+  return adjusted;
+}
