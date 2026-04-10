@@ -1237,6 +1237,16 @@ const Upload = () => {
         saving={savingDraft}
         submitting={submitting}
         onBack={() => setShowTypeChooser(true)}
+        evidenceMediaType={evidenceMediaType}
+        evidenceMediaFiles={evidenceMediaFiles}
+        evidenceMediaPreviews={evidenceMediaPreviews}
+        evidenceCaption={evidenceCaption}
+        onEvidenceMediaTypeChange={setEvidenceMediaType}
+        onEvidenceMediaFilesChange={(files, previews) => {
+          setEvidenceMediaFiles(files);
+          setEvidenceMediaPreviews(previews);
+        }}
+        onEvidenceCaptionChange={setEvidenceCaption}
       />
     );
   }
