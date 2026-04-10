@@ -1369,14 +1369,9 @@ export function NeoScaleShell() {
     const flipper = flipperRef.current;
     if (!flipper) return;
     const onTarget = (target === 'front' && showingFront.current) || (target === 'back' && !showingFront.current);
-    let delta: number;
-    if (onTarget) {
-      // Already on target face — do a full 360 so user sees animation
-      delta = direction === 'left' ? 360 : -360;
-    } else {
-      delta = direction === 'left' ? 180 : -180;
-      showingFront.current = target === 'front';
-    }
+    if (onTarget) return; // Already on target face — just let navigate() swap content
+    const delta = direction === 'left' ? 180 : -180;
+    showingFront.current = target === 'front';
     currentRotation.current += delta;
     isFlipping.current = true;
     flipper.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
