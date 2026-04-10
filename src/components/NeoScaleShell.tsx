@@ -973,7 +973,7 @@ export function NeoScaleShell() {
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRef    = useRef<HTMLDivElement>(null);
   const rightRef   = useRef<HTMLDivElement>(null);
-  const searchDebounce = useRef<ReturnType<typeof setTimeout>>();
+  const searchDebounce = useRef<ReturnType<typeof setTimeout>>(undefined);
   const isFlipping = useRef(false);
   const currentRotation = useRef(0);
 
@@ -1446,7 +1446,7 @@ export function NeoScaleShell() {
   }
 
   /* ── Build nav items ── */
-  type NavEntry = { key: string; icon: JSX.Element; label: string; route: string; badge?: string | null; authOnly?: boolean; divider?: boolean; creatorOnly?: boolean };
+  type NavEntry = { key: string; icon: React.ReactNode; label: string; route: string; badge?: string | null; authOnly?: boolean; divider?: boolean; creatorOnly?: boolean };
   const navItems: NavEntry[] = [
     { key: "home",     icon: ICONS.home,     label: "Home",      route: "/" },
     { key: "discover", icon: ICONS.discover, label: "Discover",  route: "/browse" },

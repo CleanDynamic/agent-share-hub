@@ -1,5 +1,4 @@
 import type React from 'react';
-import LiquidGlass from 'liquid-glass-react';
 
 interface LiquidGlassPanelProps {
   children: React.ReactNode;
@@ -20,33 +19,23 @@ export default function LiquidGlassPanel({
   className,
   style,
   cornerRadius = 20,
-  displacementScale,
-  blurAmount,
-  saturation,
-  aberrationIntensity,
-  elasticity,
-  overLight,
-  mouseContainer,
+  blurAmount = 20,
+  saturation = 1.4,
 }: LiquidGlassPanelProps) {
   return (
-    <LiquidGlass
+    <div
       className={className}
       style={{
         overflow: 'auto',
         width: '100%',
         height: '100%',
+        backdropFilter: `blur(${blurAmount}px) saturate(${saturation})`,
+        background: 'rgba(255, 255, 255, 0.04)',
+        borderRadius: `${cornerRadius}px`,
         ...style,
       }}
-      cornerRadius={cornerRadius}
-      displacementScale={displacementScale}
-      blurAmount={blurAmount}
-      saturation={saturation}
-      aberrationIntensity={aberrationIntensity}
-      elasticity={elasticity}
-      overLight={overLight}
-      mouseContainer={mouseContainer}
     >
       {children}
-    </LiquidGlass>
+    </div>
   );
 }
