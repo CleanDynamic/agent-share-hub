@@ -1,29 +1,28 @@
 
 
-## Upgrade to React 19
+## Fix: Panels Disappeared Due to liquid-glass-react Layout
 
-### What
-Upgrade React from 18.3.1 to 19.x so `liquid-glass-react` works natively, then restore the proper `LiquidGlass` WebGL component in `LiquidGlassPanel.tsx`.
+### Root Cause
+
+The `liquid-glass-react` `LiquidGlass` component renders children inside a `div` with:
+- `display: inline-flex` — collapses to content size
+- `overflow: hidden` — clips all scrollable content
+- `padding` and fixed font styles — overrides panel styling
+- Absolute-positioned backdrop filter overlay
+
+This component is designed for small glass buttons/badges, **not** for wrapping 775px-tall scrollable panels. The panels collapse to near-zero visible area with clipped content.
+
+### Fix
+
+**Revert `LiquidGlassPanel.tsx` back to a CSS-only glass effect.** The `liquid-glass-react` library is architecturally incompatible with wrapping large layout panels. Use CSS `backdrop-filter` to achieve a similar frosted-glass look that works with scrollable content.
 
 ### Changes
 
-**1. Upgrade packages** (`package.json`)
-- `react`: `^18.3.1` → `^19.0.0`
-- `react-dom`: `^18.3.1` → `^19.0.0`
-- `@types/react`: `^18.3.23` → `^19.0.0`
-- `@types/react-dom`: `^18.3.7` → `^19.0.0`
-- Run `npm install` to resolve
+**`src/components/LiquidGlassPanel.tsx`** — Replace `LiquidGlass` with a plain `<div>` using:
+- `backdropFilter: 'blur(20px) saturate(1.4)'`
+- `background: 'rgba(255,255,255,0.04)'`
+- `borderRadius` from the `cornerRadius` prop
+- `overflow: 'auto'`, `width: '100%'`, `height: '100%'`
 
-**2. Restore LiquidGlass in `LiquidGlassPanel.tsx`**
-- Re-add the `import LiquidGlass from 'liquid-glass-react'` import
-- Render `<LiquidGlass>` instead of the plain `<div>` fallback, passing through the WebGL props (cornerRadius, blurAmount, saturation, etc.)
-- Keep `overflow: auto` and `width/height: 100%` on the wrapper to ensure content scrolls
-
-**3. Fix any React 19 breaking changes**
-- `main.tsx` already uses `createRoot` — no change needed
-- React 19 removed `defaultProps` for function components — scan for any usage and inline defaults if found
-- React 19 changed `ref` handling (now a regular prop) — no `forwardRef` changes needed unless components break
-
-### Risk
-Some third-party UI libraries (radix, shadcn) may have peer dependency warnings with React 19. These are typically safe to ignore since shadcn/radix already support React 19.
+This is the same CSS fallback from earlier — it's not a workaround, it's the correct approach since the library doesn't support panel-sized containers.
 
