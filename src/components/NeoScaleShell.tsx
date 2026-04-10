@@ -92,29 +92,6 @@ const NEOSCALE_CSS = `
   z-index: 1;
 }
 
-/* ── Shared panel glass ── */
-.ns-panel {
-  border-radius: 20px;
-  background: linear-gradient(165deg,
-    rgba(255,255,255,0.06) 0%,
-    rgba(255,255,255,0.02) 50%,
-    rgba(255,255,255,0.04) 100%);
-  border: 1px solid rgba(255,255,255,0.06);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  box-shadow: 0 30px 80px rgba(0,0,0,0.5),
-    0 0 0 1px rgba(255,255,255,0.03) inset,
-    0 1px 0 rgba(255,255,255,0.05) inset;
-  position: relative;
-  overflow: hidden;
-}
-.ns-panel::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-}
 
 /* ── Left panel ── */
 .ns-left-panel {

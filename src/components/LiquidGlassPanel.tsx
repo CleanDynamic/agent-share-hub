@@ -1,4 +1,4 @@
-import { LiquidGlass } from 'liquid-glass-react';
+import LiquidGlass from 'liquid-glass-react';
 import type React from 'react';
 
 interface LiquidGlassPanelProps {
