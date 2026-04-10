@@ -1,39 +1,48 @@
 
 
-## Fix: Consistent flip on every navigation click
+## Fix: Coherent flip system — no 360° spins, consistent directions
 
-### Root cause
-The current `flipToBack`/`flipToFront` guards (`if (!isShowingFront()) return;` and `if (isShowingFront()) return;`) silently skip the flip when the panel is already on the target face. So clicking a second right-panel item while already on the back face triggers `navigate()` but no animation — the content just swaps in place. This feels broken and inconsistent.
+### Root cause of all bugs
 
-### Fix
-Replace the guard-based approach with a single `doFlip(target: 'front' | 'back', direction: 'left' | 'right')` helper that **always animates**, even when navigating between two back-face pages:
+The `doFlip` function does a **full 360° rotation** when navigating between pages on the same face. This causes:
+- **Home button**: Already on front face → 360° spin for no reason, and during the spin the back face content briefly shows (bounties or whatever was last loaded)
+- **Left panel double-flips**: Clicking a second left-panel item while already on back face → 360° spin instead of a simple content swap
+- **Right panel tiles**: Filter tiles do `doFlip('front', 'right')` while already on front → -360° backward spin
 
-- If already on the target face, perform a **full 360° rotation** in the given direction (visually: a complete flip that lands back on the same face with new content)
-- If on the opposite face, perform a normal **180° rotation**
-- The `isFlipping` lock stays to prevent overlapping animations
-- Direction rules remain: left-panel = `'left'`, right-panel = `'right'`
+### The fix: Remove 360° logic entirely
 
-**Concrete changes in `src/components/NeoScaleShell.tsx`:**
+The 360° "same-face flip" was meant to give visual feedback when navigating between pages on the same face, but it's fundamentally broken because it briefly exposes the opposite face's stale content mid-rotation.
 
-1. Delete `flipToFront()`, `flipToBack()`, `isShowingFront()`
-2. Add a `showingFront` ref (boolean, starts `true`) and one helper:
-   ```
-   doFlip(target: 'front' | 'back', direction: 'left' | 'right')
-     if isFlipping → return
-     delta = 0
-     if already on target face → delta = direction==='left' ? 360 : -360
-     else → delta = direction==='left' ? 180 : -180
-     update showingFront, animate, set isFlipping lock for 650ms
-   ```
-3. Update all call sites:
-   - Home/Logo: `doFlip('front', 'left')` + `navigate("/")`
-   - Left nav items: `doFlip('back', 'left')` + `navigate(route)`
-   - Right panel items: `doFlip('back', 'right')` + `navigate(path)`
-   - Post-type tiles: `doFlip('front', 'right')` + `navigate("/")`
-   - Back button: `doFlip('front', 'left')` + `navigate("/")`
+**New rules:**
+1. If already on the target face → **skip the flip, just navigate** (content updates via React router)
+2. If switching faces → **180° flip** in the correct direction
+3. Home button → if already on front, just navigate to `/`; if on back, flip to front
+
+**Updated `doFlip` function:**
+```
+doFlip(target: 'front' | 'back', direction: 'left' | 'right')
+  if isFlipping → return
+  if already on target face → return (no animation, just let navigate() handle content change)
+  delta = direction === 'left' ? 180 : -180
+  showingFront = (target === 'front')
+  animate rotation, lock for 650ms
+```
+
+**All call sites remain the same** — the only change is inside `doFlip` itself. The `navigate()` calls after `doFlip` still fire, so content updates even when the flip is skipped.
+
+### Direction rules (unchanged)
+| Source | Target | Direction |
+|--------|--------|-----------|
+| Home/Logo click | Front face | left (skip if already front) |
+| Left panel nav item | Back face | left |
+| Right panel item | Back face | right |
+| Post-type filter tiles | Front face | right (skip if already front) |
+| Back button | Front face | left |
 
 ### Files
 | File | Change |
 |------|--------|
-| `src/components/NeoScaleShell.tsx` | Replace flip helpers with unified `doFlip`; update all ~15 call sites |
+| `src/components/NeoScaleShell.tsx` | Remove the 360° branch from `doFlip` — when `onTarget` is true, just `return` early instead of doing a full rotation |
+
+This is a 3-line change inside the `doFlip` function (lines 1367-1385). No other files affected.
 
