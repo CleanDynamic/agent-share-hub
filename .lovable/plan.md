@@ -1,57 +1,49 @@
 
-## Make the center panel use the exact same glass structure as the side panels
 
-### What’s actually wrong
-Right now the center panel is not built like the side panels:
+## Fix: Simplify flip mechanics and correct directions
 
-- **Left/right panels:** one static `LiquidGlassPanel` provides the glass background, and the panel content sits inside it
-- **Center panel:** two separate `LiquidGlassPanel` instances are attached to the rotating front/back faces, and there is also extra CSS background/backdrop styling on `.ns-middle-front` / `.ns-middle-back`
+### Problems identified
 
-That means the center panel is using a different rendering path instead of the same glass surface as the side panels.
+1. **Home button broken** — The home/logo click (lines 1685-1696, 1704-1714) flips to front face but never calls `navigate("/")`, so the route stays on the previous page and the auto-flip effect fights back.
 
-### Correct fix
-Rebuild the middle panel so it truly mimics the side panels:
+2. **Double flips** — The `useEffect` auto-flip (lines 1366-1391) fires on every `location.pathname` change. But the manual `flipMiddle()` calls from nav items ALSO flip. So clicking a left-panel nav item triggers `flipMiddle('left')` + `navigate()` → route changes → auto-flip fires again = two flips.
 
-1. **Use one outer `LiquidGlassPanel` for the entire middle panel**
-   - wrap the whole `.ns-middle-flipper` in a single `LiquidGlassPanel`
-   - this outer panel becomes the only glass background for the center column, same as left/right
+3. **Wrong directions on right panel** — Right panel items like "Who to Follow" profiles (line 2122) just call `navigate()` with no flip at all. The post-type tiles (line 2025) flip to front face directly. Inconsistent.
 
-2. **Remove `LiquidGlassPanel` from the rotating faces**
-   - replace the current front/back face `LiquidGlassPanel` wrappers with plain face `<div>` containers
-   - keep the 3D flip on those inner faces only
+### Solution: Remove auto-flip, consolidate into one helper
 
-3. **Remove the fake middle-panel frosting**
-   - delete the direct `background`, `backdrop-filter`, and `-webkit-backdrop-filter` from `.ns-middle-front` and `.ns-middle-back`
-   - make those face containers transparent so the shared outer glass shows through
+**Delete** the auto-flip `useEffect` (lines 1366-1391) entirely. All flips should be explicit — triggered only by user clicks, never by route changes.
 
-4. **Keep scrolling inside the face content, not on the outer shell**
-   - set the middle panel’s outer `LiquidGlassPanel` content layer to `overflow: hidden`
-   - keep `ns-feed-scroll` and `ns-outlet-wrap` as the actual scroll containers
+**Create two simple helpers:**
 
-5. **Ensure the face containers fill the full panel**
-   - add a shared middle-face class with:
-     - `position: absolute`
-     - `inset: 0`
-     - `height: 100%`
-     - `display: flex`
-     - `flex-direction: column`
-     - `backface-visibility: hidden`
-     - `overflow: hidden`
-   - keep the back face rotated `180deg`
+```text
+flipToBack(direction: 'left' | 'right')
+  → adds +180 if direction='left', -180 if direction='right'
+  → used when navigating FROM home TO a page
 
-### Why this is the right approach
-This does not “simulate” the side panels with overlays. It makes the center panel use the **same glass panel as the side panels**:
-- one glass shell
-- transparent internal content
-- no extra middle-only frosting layer
+flipToFront()
+  → snaps to nearest 360
+  → used when going back to home feed
+```
 
-That should make the center feel uniform instead of looking like a separate dark card.
+**Apply the rules:**
 
-### Files to change
+| Trigger | Action |
+|---------|--------|
+| Left panel: Home button / Logo | `flipToFront()` + `navigate("/")` |
+| Left panel: Any other nav item | `flipToBack('left')` + `navigate(route)` |
+| Right panel: Any clickable item (trending, search results, collections, profiles, etc.) | `flipToBack('right')` + `navigate(route)` |
+| Right panel: Post-type tiles (filter feed) | `flipToFront()` (shows front face with filtered feed) |
+| Back button on back face | `flipToFront()` + `navigate("/")` |
+
+**Guard against re-flipping when already on correct face:**
+- `flipToBack`: skip if already showing back face
+- `flipToFront`: skip if already showing front face
+
+This eliminates the double-flip bug entirely since there's no auto-flip effect competing with manual flips.
+
+### Files
 | File | Change |
-|---|---|
-| `src/components/NeoScaleShell.tsx` | Replace the two middle-face `LiquidGlassPanel` wrappers with one outer middle `LiquidGlassPanel`, remove middle-face background/backdrop CSS, add transparent full-height face classes |
-| `src/components/LiquidGlassPanel.tsx` | No structural change required unless the middle instance needs a small `contentStyle` override for `overflow: hidden` only |
+|------|--------|
+| `src/components/NeoScaleShell.tsx` | Remove auto-flip useEffect; replace `flipMiddle()` with `flipToBack(dir)` and `flipToFront()`; fix home button to navigate; fix all right-panel clicks to use `flipToBack('right')`; fix right-panel profiles that have no flip call |
 
-### Implementation note
-I would **not** increase tint, add another overlay, or darken the middle panel again. The next pass should be a structural refactor so the center is literally rendered like the side panels rather than visually approximated.
