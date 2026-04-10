@@ -1,15 +1,21 @@
 
 
-## Remove cursor repulsion from side panels
+## Add translucent base to LiquidGlassPanel
 
-The `LiquidGlass` WebGL layer on the left and right panels creates a 3D displacement effect that follows the cursor. The fix is to disable this on side panels while keeping it on the middle panel.
+### Problem
+The panels are fully transparent — no base tint. The reference image shows a frosted glass with a light grey/white translucent base that gives the panel body and makes content readable.
 
-### Approach
+### Fix
 
-**`src/components/LiquidGlassPanel.tsx`** — Add a `disableEffect` prop. When true, skip rendering the `LiquidGlass` visual layer entirely and rely only on the CSS frosted glass styling (the content layer already has `backdrop-filter` and translucent background).
+**`src/components/LiquidGlassPanel.tsx`** — Add a semi-transparent background to the content layer:
+- Add `background: 'rgba(200, 200, 210, 0.08)'` to the content div (light grey tint at low opacity)
+- Add a subtle `border: '1px solid rgba(255, 255, 255, 0.10)'` on the outer wrapper for the frosted edge
+- Add `backdropFilter: 'blur(2px) saturate(1.2)'` on the content layer as a secondary frost to complement the WebGL layer beneath
 
-**`src/components/NeoScaleShell.tsx`** — Pass `disableEffect` to the left and right `LiquidGlassPanel` instances (lines ~1680 and ~1869). The middle panel keeps the effect.
+This gives the panels a visible translucent body — not opaque, not invisible — matching the frosted glass card in the reference.
 
-### Result
-Side panels retain the translucent frosted look via CSS but no longer have the interactive cursor-following distortion. The middle panel keeps the full liquid glass effect.
+### Files
+| File | Change |
+|------|--------|
+| `src/components/LiquidGlassPanel.tsx` | Add translucent background + border to wrapper and content layer |
 
