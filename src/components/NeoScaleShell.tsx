@@ -236,24 +236,27 @@ const NEOSCALE_CSS = `
   position: relative;
   transform-style: preserve-3d;
 }
+.ns-middle-face {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  background: transparent;
+}
 .ns-middle-front {
   border-radius: 20px;
-  overflow: hidden;
   padding: 0;
-  background: rgba(22, 22, 30, 0.65);
-  backdrop-filter: blur(40px) saturate(1.8);
-  -webkit-backdrop-filter: blur(40px) saturate(1.8);
 }
 .ns-middle-back {
-  position: relative;
-  width: 100%; height: 100%;
+  transform: rotateY(180deg);
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: none;
   padding: 0;
-  background: rgba(22, 22, 30, 0.65);
-  backdrop-filter: blur(40px) saturate(1.8);
-  -webkit-backdrop-filter: blur(40px) saturate(1.8);
 }
 .ns-middle-back::-webkit-scrollbar { display: none; }
 .ns-middle-front::before, .ns-middle-back::before {
@@ -1760,11 +1763,11 @@ export function NeoScaleShell() {
 
           {/* ═══ MIDDLE PANEL ═══ */}
           <div className="ns-middle-wrapper">
+            <LiquidGlassPanel cornerRadius={20} elasticity={0.15} contentStyle={{ overflow: 'hidden' }}>
             <div className="ns-middle-flipper" ref={flipperRef}>
 
               {/* FRONT FACE — home feed */}
-              <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' as any }}>
-              <div className="ns-middle-front" style={{ display: "flex", flexDirection: "column" }}>
+              <div className="ns-middle-face ns-middle-front">
 
                 {/* Tabs + filter banner — padded header strip */}
                 <div style={{ padding: '16px 16px 0' }}>
@@ -1849,18 +1852,16 @@ export function NeoScaleShell() {
                   )}
                 </div>
               </div>
-              </LiquidGlassPanel>
 
               {/* BACK FACE — router outlet */}
-              <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderRadius: 20 }}>
-                <div className={`ns-middle-back${flipDir === -1 ? " rtl" : ""}`}>
-                  <div className="ns-outlet-wrap">
-                    {renderBackFaceContent()}
-                  </div>
+              <div className={`ns-middle-face ns-middle-back${flipDir === -1 ? " rtl" : ""}`}>
+                <div className="ns-outlet-wrap">
+                  {renderBackFaceContent()}
                 </div>
-              </LiquidGlassPanel>
+              </div>
 
             </div>
+            </LiquidGlassPanel>
           </div>
 
           {/* ═══ RIGHT PANEL ═══ */}
