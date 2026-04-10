@@ -703,10 +703,10 @@ const NEOSCALE_CSS = `
   padding: 6px 8px; border-radius: 8px;
   cursor: pointer; transition: background 0.15s;
 }
-.ns-curator-item:hover { background: rgba(255,255,255,0.04); }
+.ns-curator-item:hover { background: rgba(0,0,0,0.04); }
 .ns-curator-avatar {
   width: 22px; height: 22px; border-radius: 50%;
-  background: rgba(255,255,255,0.08); flex-shrink: 0;
+  background: rgba(0,0,0,0.06); flex-shrink: 0;
   overflow: hidden;
 }
 .ns-curator-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -715,31 +715,31 @@ const NEOSCALE_CSS = `
   padding: 8px; border-radius: 8px;
   cursor: pointer; transition: background 0.15s;
 }
-.ns-collection-item:hover { background: rgba(255,255,255,0.04); }
+.ns-collection-item:hover { background: rgba(0,0,0,0.04); }
 .ns-follow-item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 4px;
 }
 .ns-follow-avatar {
   width: 28px; height: 28px; border-radius: 50%;
-  background: rgba(255,255,255,0.08); flex-shrink: 0;
+  background: rgba(0,0,0,0.06); flex-shrink: 0;
   overflow: hidden;
 }
 .ns-follow-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ns-follow-info { flex: 1; min-width: 0; }
-.ns-follow-name { font-size: 12px; color: rgba(255,255,255,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ns-follow-handle { font-size: 10px; color: rgba(255,255,255,0.25); }
+.ns-follow-name { font-size: 12px; color: rgba(0,0,0,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ns-follow-handle { font-size: 10px; color: rgba(0,0,0,0.30); }
 .ns-footer-links {
   margin-top: 16px; padding: 12px 4px 4px;
-  border-top: 1px solid rgba(255,255,255,0.04);
+  border-top: 1px solid rgba(0,0,0,0.06);
   display: flex; flex-direction: column; gap: 4px;
 }
 .ns-footer-link {
-  font-size: 10px; color: rgba(255,255,255,0.2);
+  font-size: 10px; color: rgba(0,0,0,0.25);
   text-decoration: none; transition: color 0.15s;
   cursor: pointer;
 }
-.ns-footer-link:hover { color: rgba(255,255,255,0.5); }
+.ns-footer-link:hover { color: rgba(0,0,0,0.55); }
 
 /* ── Free-canvas overrides ── */
 /* Prevent Tailwind from adding overflow:hidden
