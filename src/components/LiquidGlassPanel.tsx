@@ -13,6 +13,7 @@ interface LiquidGlassPanelProps {
   elasticity?: number;
   overLight?: boolean;
   mouseContainer?: React.RefObject<HTMLElement | null> | null;
+  disableEffect?: boolean;
 }
 
 export default function LiquidGlassPanel({
@@ -27,6 +28,7 @@ export default function LiquidGlassPanel({
   elasticity,
   overLight,
   mouseContainer,
+  disableEffect = false,
 }: LiquidGlassPanelProps) {
   return (
     <div
@@ -42,6 +44,7 @@ export default function LiquidGlassPanel({
       }}
     >
       {/* Visual-only glass layer */}
+      {!disableEffect && (
       <div
         style={{
           position: 'absolute',
@@ -65,6 +68,7 @@ export default function LiquidGlassPanel({
           <div style={{ width: '100%', height: '100%' }} />
         </LiquidGlass>
       </div>
+      )}
 
       {/* Content layer — normal layout, scrollable */}
       <div
