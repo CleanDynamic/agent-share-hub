@@ -1902,8 +1902,9 @@ export function NeoScaleShell() {
           </div>
 
           {/* ═══ RIGHT PANEL ═══ */}
+          <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ width: 220, height: 775, flexShrink: 0 }}>
           <div
-            className="ns-panel ns-right-panel"
+            className="ns-right-panel"
             ref={rightRef}
             {...initTilt(rightRef)}
           >
@@ -2184,6 +2185,7 @@ export function NeoScaleShell() {
               <a className="ns-footer-link" href="https://twitter.com/neoscaleai" target="_blank" rel="noopener noreferrer">Twitter @neoscaleai →</a>
             </div>
           </div>
+          </LiquidGlassPanel>
 
         </div>
       </div>
