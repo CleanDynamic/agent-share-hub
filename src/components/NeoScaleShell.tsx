@@ -597,7 +597,7 @@ const NEOSCALE_CSS = `
 .ns-tile-label {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(0,0,0,0.55);
+  color: rgba(255,255,255,0.55);
   text-transform: none;
   letter-spacing: 0;
   flex: 1;
@@ -606,7 +606,7 @@ const NEOSCALE_CSS = `
 .ns-tile-count {
   font-size: 11px;
   font-weight: 700;
-  color: rgba(0,0,0,0.20);
+  color: rgba(255,255,255,0.20);
   position: relative;
   z-index: 1;
 }
@@ -628,7 +628,7 @@ const NEOSCALE_CSS = `
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  background: rgba(0,0,0,0.03);
+  background: rgba(255,255,255,0.03);
   border: none;
   overflow: hidden;
   transition: background 0.15s;
@@ -656,17 +656,17 @@ const NEOSCALE_CSS = `
 }
 
 .ns-bounty-tile:hover {
-  background: rgba(0,0,0,0.05);
+  background: rgba(255,255,255,0.05);
 }
 
 .ns-bounty-tile:hover::after {
   opacity: 1;
   animation: ns-border-fill 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
-.ns-right-divider { height: 1px; background: rgba(0,0,0,0.06); margin: 4px 0 14px; }
+.ns-right-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 0 14px; }
 .ns-trending-title {
   font-size: 10px; font-weight: 600;
-  color: rgba(0,0,0,0.40);
+  color: rgba(255,255,255,0.40);
   letter-spacing: 1.2px; text-transform: uppercase;
   padding: 0 4px; margin-bottom: 10px;
 }
@@ -678,23 +678,23 @@ const NEOSCALE_CSS = `
   padding: 8px 8px; border-radius: 8px;
   cursor: pointer; transition: background 0.2s;
 }
-.ns-trending-item:hover { background: rgba(0,0,0,0.04); }
-.ns-trending-rank { font-size: 11px; font-weight: 600; color: rgba(0,0,0,0.20); width: 16px; text-align: center; }
+.ns-trending-item:hover { background: rgba(255,255,255,0.04); }
+.ns-trending-rank { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.20); width: 16px; text-align: center; }
 .ns-trending-info { flex: 1; min-width: 0; }
-.ns-trending-name { font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.55); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ns-trending-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.55); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ns-trending-badge {
   display: inline-block; padding: 2px 7px;
   border-radius: 4px; font-size: 9px; font-weight: 600; letter-spacing: 0.3px;
 }
-.ns-badge-beginner { background: rgba(46,204,113,0.12); color: #1a8a4a; }
-.ns-badge-intermediate { background: rgba(243,156,18,0.12); color: #b87100; }
-.ns-badge-advanced { background: rgba(231,76,60,0.12); color: #c0392b; }
-.ns-badge-any { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.40); }
+.ns-badge-beginner { background: rgba(46,204,113,0.12); color: #2ecc71; }
+.ns-badge-intermediate { background: rgba(243,156,18,0.12); color: #f39c12; }
+.ns-badge-advanced { background: rgba(231,76,60,0.12); color: #e74c3c; }
+.ns-badge-any { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.40); }
 
 /* ── Right panel sections ── */
 .ns-section-title {
   font-size: 10px; font-weight: 600;
-  color: rgba(0,0,0,0.40);
+  color: rgba(255,255,255,0.40);
   letter-spacing: 1.2px; text-transform: uppercase;
   padding: 0 4px; margin: 14px 0 8px;
 }
@@ -703,10 +703,10 @@ const NEOSCALE_CSS = `
   padding: 6px 8px; border-radius: 8px;
   cursor: pointer; transition: background 0.15s;
 }
-.ns-curator-item:hover { background: rgba(0,0,0,0.04); }
+.ns-curator-item:hover { background: rgba(255,255,255,0.04); }
 .ns-curator-avatar {
   width: 22px; height: 22px; border-radius: 50%;
-  background: rgba(0,0,0,0.06); flex-shrink: 0;
+  background: rgba(255,255,255,0.06); flex-shrink: 0;
   overflow: hidden;
 }
 .ns-curator-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -715,31 +715,31 @@ const NEOSCALE_CSS = `
   padding: 8px; border-radius: 8px;
   cursor: pointer; transition: background 0.15s;
 }
-.ns-collection-item:hover { background: rgba(0,0,0,0.04); }
+.ns-collection-item:hover { background: rgba(255,255,255,0.04); }
 .ns-follow-item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 4px;
 }
 .ns-follow-avatar {
   width: 28px; height: 28px; border-radius: 50%;
-  background: rgba(0,0,0,0.06); flex-shrink: 0;
+  background: rgba(255,255,255,0.06); flex-shrink: 0;
   overflow: hidden;
 }
 .ns-follow-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ns-follow-info { flex: 1; min-width: 0; }
-.ns-follow-name { font-size: 12px; color: rgba(0,0,0,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ns-follow-handle { font-size: 10px; color: rgba(0,0,0,0.30); }
+.ns-follow-name { font-size: 12px; color: rgba(255,255,255,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ns-follow-handle { font-size: 10px; color: rgba(255,255,255,0.30); }
 .ns-footer-links {
   margin-top: 16px; padding: 12px 4px 4px;
-  border-top: 1px solid rgba(0,0,0,0.06);
+  border-top: 1px solid rgba(255,255,255,0.06);
   display: flex; flex-direction: column; gap: 4px;
 }
 .ns-footer-link {
-  font-size: 10px; color: rgba(0,0,0,0.25);
+  font-size: 10px; color: rgba(255,255,255,0.25);
   text-decoration: none; transition: color 0.15s;
   cursor: pointer;
 }
-.ns-footer-link:hover { color: rgba(0,0,0,0.55); }
+.ns-footer-link:hover { color: rgba(255,255,255,0.55); }
 
 /* ── Free-canvas overrides ── */
 /* Prevent Tailwind from adding overflow:hidden
