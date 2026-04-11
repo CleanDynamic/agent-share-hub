@@ -53,6 +53,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
   } = props;
 
   const [addBlockOpen, setAddBlockOpen] = useState(false);
+  const [hoveredType, setHoveredType] = useState<string | null>(null);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {
@@ -121,35 +122,52 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             }}>
               Add block
             </div>
-            {QUICK_BLOCK_TYPES.map(bt => (
-              <button
-                key={bt.type}
-                type="button"
-                onClick={() => {
-                  const isHeading = bt.type === 'section_heading';
-                  const colSpan = 3;
-                  const rowSpan = isHeading ? 2 : 5;
-                  onInsertBlock?.(bt.type, {
-                    colSpan, rowSpan,
-                  });
-                  setAddBlockOpen(false);
-                }}
-                style={{
-                  padding: '6px 8px',
-                  borderRadius: 6,
-                  fontSize: 11, cursor: 'pointer',
-                  background: `${bt.accent}12`,
-                  border: `1px solid ${bt.accent}30`,
-                  color: bt.accent,
-                  fontWeight: 600,
-                  transition: 'all 0.10s',
-                  textAlign: 'left',
-                }}
-              >
-                <div>{bt.label}</div>
-                <div style={{ fontSize: 9, fontWeight: 400, opacity: 0.6 }}>{bt.desc}</div>
-              </button>
-            ))}
+            {QUICK_BLOCK_TYPES.map(bt => {
+              const isHovered = hoveredType === bt.type;
+              return (
+                <button
+                  key={bt.type}
+                  type="button"
+                  onMouseEnter={() => setHoveredType(bt.type)}
+                  onMouseLeave={() => setHoveredType(null)}
+                  onClick={() => {
+                    const isHeading = bt.type === 'section_heading';
+                    const colSpan = 3;
+                    const rowSpan = isHeading ? 2 : 5;
+                    onInsertBlock?.(bt.type, {
+                      colSpan, rowSpan,
+                    });
+                    setAddBlockOpen(false);
+                  }}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: 6,
+                    fontSize: 11, cursor: 'pointer',
+                    background: isHovered
+                      ? `${bt.accent}25`
+                      : `${bt.accent}12`,
+                    border: isHovered
+                      ? `1px solid ${bt.accent}50`
+                      : `1px solid ${bt.accent}30`,
+                    color: bt.accent,
+                    fontWeight: 600,
+                    transition: 'all 0.15s ease',
+                    textAlign: 'left',
+                    transform: isHovered ? 'translateY(-1px)' : 'none',
+                    boxShadow: isHovered
+                      ? `0 4px 12px ${bt.accent}20`
+                      : 'none',
+                  }}
+                >
+                  <div>{bt.label}</div>
+                  <div style={{
+                    fontSize: 9,
+                    fontWeight: 400,
+                    opacity: isHovered ? 1 : 0.6,
+                  }}>{bt.desc}</div>
+                </button>
+              );
+            })}
           </div>
         </>
       )}
