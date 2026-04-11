@@ -256,7 +256,7 @@ const NEOSCALE_CSS = `
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0,0,0,0.06), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
 }
 .ns-middle-back.rtl {
   transform: rotateY(-180deg);
@@ -274,14 +274,14 @@ const NEOSCALE_CSS = `
   box-sizing: border-box;
 }
 .ns-feed-scroll::-webkit-scrollbar { width: 3px; }
-.ns-feed-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 3px; }
+.ns-feed-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
 
 .ns-feed-loading {
   display: flex; flex-direction: column; gap: 12px; padding: 4px 0;
 }
 .ns-feed-skeleton {
   height: 80px; border-radius: 12px;
-  background: rgba(0,0,0,0.04);
+  background: rgba(255,255,255,0.04);
   animation: nsPulse 1.5s ease-in-out infinite;
 }
 @keyframes nsPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }
@@ -294,18 +294,18 @@ const NEOSCALE_CSS = `
 }
 .ns-page-header {
   padding: 20px 24px 16px 24px;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 .ns-page-title {
   font-family: 'Playfair Display', serif;
   font-size: 22px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: rgba(255,255,255,0.90);
   margin-bottom: 4px;
 }
 .ns-page-subtitle {
   font-size: 13px;
-  color: rgba(0,0,0,0.40);
+  color: rgba(255,255,255,0.40);
   font-family: 'Inter', sans-serif;
 }
 .ns-page-body {
@@ -323,16 +323,16 @@ const NEOSCALE_CSS = `
   gap: 6px;
   padding: 12px 24px;
   font-size: 13px;
-  color: rgba(0,0,0,0.40);
+  color: rgba(255,255,255,0.40);
   background: none; border: none;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: color 0.15s;
   width: 100%;
   text-align: left;
 }
-.ns-back-btn:hover { color: #1a1a1a; }
+.ns-back-btn:hover { color: rgba(255,255,255,0.85); }
 
 /* ── Back face — outlet ── */
 .ns-outlet-wrap {
@@ -345,20 +345,20 @@ const NEOSCALE_CSS = `
   background: transparent;
   padding: 0;
   box-sizing: border-box;
-  color: rgba(0,0,0,0.85);
+  color: rgba(255,255,255,0.85);
   font-family: 'Inter', sans-serif;
 }
 .ns-outlet-wrap::-webkit-scrollbar { width: 3px; }
-.ns-outlet-wrap::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 3px; }
+.ns-outlet-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
 
 /* ── Glass input (forms, search) ── */
 .ns-glass-input {
   width: 100%;
-  background: rgba(0,0,0,0.03);
-  border: 1px solid rgba(0,0,0,0.10);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.10);
   border-radius: 12px;
   padding: 10px 16px;
-  color: #1a1a1a;
+  color: rgba(255,255,255,0.85);
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   outline: none;
@@ -369,21 +369,21 @@ const NEOSCALE_CSS = `
   border-color: rgba(232,87,26,0.50);
   box-shadow: 0 0 0 3px rgba(232,87,26,0.08);
 }
-.ns-glass-input::placeholder { color: rgba(0,0,0,0.30); }
+.ns-glass-input::placeholder { color: rgba(255,255,255,0.30); }
 
 /* ── Glass card (reusable smaller card) ── */
 .ns-glass-card {
-  background: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.03);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(0,0,0,0.08);
-  border-top: 1px solid rgba(0,0,0,0.06);
-  border-left: 1px solid rgba(0,0,0,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  border-left: 1px solid rgba(255,255,255,0.06);
   border-radius: 16px;
   padding: 20px;
   transition: border-color 0.2s;
 }
-.ns-glass-card:hover { border-color: rgba(0,0,0,0.15); }
+.ns-glass-card:hover { border-color: rgba(255,255,255,0.15); }
 
 /* ── Orange button (primary CTA) ── */
 .ns-btn-orange {
@@ -404,20 +404,20 @@ const NEOSCALE_CSS = `
 
 /* ── Ghost button ── */
 .ns-btn-ghost {
-  background: rgba(0,0,0,0.04);
-  color: rgba(0,0,0,0.65);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.65);
   padding: 8px 20px;
   border-radius: 9999px;
   font-family: 'Inter', sans-serif;
   font-size: 12px;
   font-weight: 600;
-  border: 1px solid rgba(0,0,0,0.10);
+  border: 1px solid rgba(255,255,255,0.10);
   cursor: pointer;
   transition: all 0.15s;
 }
 .ns-btn-ghost:hover {
-  background: rgba(0,0,0,0.08);
-  color: #1a1a1a;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.85);
 }
 
 /* ── Section label (trending, categories etc) ── */
@@ -427,7 +427,7 @@ const NEOSCALE_CSS = `
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(0,0,0,0.35);
+  color: rgba(255,255,255,0.35);
   margin-bottom: 16px;
 }
 
