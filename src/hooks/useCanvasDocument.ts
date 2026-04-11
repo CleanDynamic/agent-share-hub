@@ -213,7 +213,7 @@ export function useCanvasDocument(
     (type: string, position?: Partial<BlockPosition>) => {
       pushUndo();
       const nextRow = getNextRow(blocksRaw);
-      const colSpan = position?.colSpan ?? 4;
+      const colSpan = position?.colSpan ?? 3;
       const centerCol = Math.max(1, Math.floor((columnCount - colSpan) / 2) + 1);
       const newBlock: CanvasBlock = {
         id: crypto.randomUUID(),
@@ -224,7 +224,7 @@ export function useCanvasDocument(
           col: position?.col ?? centerCol,
           row: position?.row ?? nextRow,
           colSpan,
-          rowSpan: position?.rowSpan ?? 2,
+          rowSpan: position?.rowSpan ?? 5,
         },
         stageId: null,
         stageIndex: null,
@@ -327,7 +327,7 @@ export function useCanvasDocument(
 
     // Auto-create a tutorial_step block for this stage
     const nextRow = getNextRow(blocksRaw);
-    const colSpan = 4;
+    const colSpan = 3;
     const centerCol = Math.max(1, Math.floor((columnCount - colSpan) / 2) + 1);
     const tutorialBlock: CanvasBlock = {
       id: crypto.randomUUID(),
@@ -338,7 +338,7 @@ export function useCanvasDocument(
         col: centerCol,
         row: nextRow,
         colSpan,
-        rowSpan: 2,
+        rowSpan: 5,
       },
       stageId,
       stageIndex: null,
