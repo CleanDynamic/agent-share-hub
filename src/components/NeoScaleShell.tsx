@@ -438,19 +438,19 @@ const NEOSCALE_CSS = `
 }
 .ns-page-body .text-foreground,
 .ns-page-body [class*="text-foreground"] {
-  color: rgba(0,0,0,0.85) !important;
+  color: rgba(255,255,255,0.85) !important;
   font-family: 'Inter', sans-serif !important;
 }
 .ns-page-body .text-muted-foreground,
 .ns-page-body [class*="text-muted-foreground"] {
-  color: rgba(0,0,0,0.45) !important;
+  color: rgba(255,255,255,0.45) !important;
 }
 .ns-page-body .border-border,
 .ns-page-body [class*="border-border"] {
-  border-color: rgba(0,0,0,0.08) !important;
+  border-color: rgba(255,255,255,0.08) !important;
 }
 .ns-page-body .sticky {
-  background: rgba(237,237,239,0.90) !important;
+  background: rgba(7,7,13,0.90) !important;
   backdrop-filter: blur(20px) !important;
 }
 
@@ -471,44 +471,44 @@ const NEOSCALE_CSS = `
 
 .ns-right-title {
   font-size: 11px; font-weight: 600;
-  color: rgba(0,0,0,0.45);
+  color: rgba(255,255,255,0.45);
   letter-spacing: 1.5px; text-transform: uppercase;
   padding: 0 4px; margin-bottom: 14px;
 }
 .ns-right-search {
   width: 100%; height: 34px;
   border-radius: 17px;
-  background: rgba(0,0,0,0.04);
-  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
   display: flex; align-items: center;
   padding: 0 12px; gap: 8px;
   margin-bottom: 16px;
   cursor: pointer;
   transition: border-color 0.2s;
 }
-.ns-right-search:hover { border-color: rgba(0,0,0,0.15); }
-.ns-right-search svg { width: 13px; height: 13px; color: rgba(0,0,0,0.25); flex-shrink: 0; }
+.ns-right-search:hover { border-color: rgba(255,255,255,0.15); }
+.ns-right-search svg { width: 13px; height: 13px; color: rgba(255,255,255,0.25); flex-shrink: 0; }
 .ns-right-search input {
   flex: 1; background: none; border: none; outline: none;
-  font-size: 11px; color: rgba(0,0,0,0.55);
+  font-size: 11px; color: rgba(255,255,255,0.55);
   font-family: inherit;
 }
-.ns-right-search input::placeholder { color: rgba(0,0,0,0.25); }
+.ns-right-search input::placeholder { color: rgba(255,255,255,0.25); }
 .ns-right-search-results {
   position: absolute; left: 14px; right: 14px; top: 68px;
-  background: rgba(255,255,255,0.97); border: 1px solid rgba(0,0,0,0.10);
+  background: rgba(8,8,12,0.97); border: 1px solid rgba(255,255,255,0.10);
   border-radius: 12px; max-height: 300px; overflow-y: auto; z-index: 20;
   padding: 6px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.40);
 }
 .ns-search-result {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 8px; border-radius: 8px; cursor: pointer;
   transition: background 0.15s;
 }
-.ns-search-result:hover { background: rgba(0,0,0,0.04); }
-.ns-search-result-title { font-size: 11px; color: rgba(0,0,0,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.ns-search-result-badge { font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,0.06); color: rgba(0,0,0,0.45); flex-shrink: 0; }
+.ns-search-result:hover { background: rgba(255,255,255,0.04); }
+.ns-search-result-title { font-size: 11px; color: rgba(255,255,255,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.ns-search-result-badge { font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.45); flex-shrink: 0; }
 
 /* ── Right panel tile grid ── */
 .ns-tile-grid {
@@ -528,7 +528,7 @@ const NEOSCALE_CSS = `
   gap: 10px;
   cursor: pointer;
   transition: background 0.15s;
-  background: rgba(0,0,0,0.03);
+  background: rgba(255,255,255,0.03);
   border: none;
   overflow: hidden;
   width: 100%;
@@ -541,7 +541,7 @@ const NEOSCALE_CSS = `
   left: 0; top: 20%; bottom: 20%;
   width: 2px;
   border-radius: 0 2px 2px 0;
-  background: var(--tile-hover-color, rgba(0,0,0,0.15));
+  background: var(--tile-hover-color, rgba(255,255,255,0.15));
   opacity: 0;
   transition: opacity 0.15s;
 }
@@ -571,7 +571,7 @@ const NEOSCALE_CSS = `
 }
 
 .ns-tile:hover {
-  background: rgba(0,0,0,0.05);
+  background: rgba(255,255,255,0.05);
 }
 
 .ns-tile:hover::after {
