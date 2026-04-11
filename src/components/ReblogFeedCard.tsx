@@ -358,7 +358,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
           <button
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              fontSize: 13, color: 'rgba(0,0,0,0.40)',
+              fontSize: 13, color: 'rgba(255,255,255,0.40)',
               background: 'none', border: 'none',
               cursor: 'pointer',
             }}
