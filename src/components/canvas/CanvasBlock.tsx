@@ -36,7 +36,8 @@ interface CanvasBlockProps {
   postType: string;
   showAnnotations?: boolean;
   selected?: boolean;
-  onSelect?: () => void;
+  onSelect?: (e?: React.MouseEvent) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
   onPositionChange: (p: BlockPosition) => void;
   onBlockChange: (patch: Partial<CanvasBlockType>) => void;
   onDelete: () => void;
@@ -51,7 +52,7 @@ interface CanvasBlockProps {
 export function CanvasBlock({
   block, mode, colWidth, rowHeight, columnCount,
   allBlocks, stages, postType, showAnnotations,
-  selected, onSelect,
+  selected, onSelect, onContextMenu,
   onPositionChange, onBlockChange, onDelete,
   onArrowDrawStart, isArrowDrawing, onArrowDrawEnd,
   magnetizedEdge,
@@ -176,13 +177,20 @@ export function CanvasBlock({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => { setHovered(false); setStagePickerOpen(false); }}
         onMouseDown={handleDragMouseDown}
+        onContextMenu={(e) => {
+          if (mode === 'edit' && onContextMenu) {
+            e.preventDefault();
+            e.stopPropagation();
+            onContextMenu(e);
+          }
+        }}
         onClick={(e) => {
           if (mode === 'edit') {
             e.stopPropagation();
             if (isArrowDrawing) {
               onArrowDrawEnd();
             } else {
-              onSelect?.();
+              onSelect?.(e);
             }
           }
         }}

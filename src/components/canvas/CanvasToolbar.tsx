@@ -29,6 +29,7 @@ interface CanvasToolbarProps {
   onTemplates?: () => void;
   onHistory?: () => void;
   onAnnotations?: () => void;
+  onGrammarCheck?: () => void;
   annotationCount?: number;
   onBack?: () => void;
   blockCount?: number;
@@ -44,7 +45,7 @@ interface CanvasToolbarProps {
 export function CanvasToolbar(props: CanvasToolbarProps) {
   const {
     doc, onSave, onPublish, saving, submitting,
-    onTemplates, onHistory, onAnnotations,
+    onTemplates, onHistory, onAnnotations, onGrammarCheck,
     annotationCount = 0, onBack,
     onInsertBlock, onUndo, onRedo,
     zoom = 1, onZoomIn, onZoomOut,
@@ -265,6 +266,11 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
               {onTemplates && (
                 <button type="button" onClick={onTemplates} style={menuItemStyle}>
                   Templates
+                </button>
+              )}
+              {onGrammarCheck && (
+                <button type="button" onClick={onGrammarCheck} style={menuItemStyle}>
+                  Grammar Check
                 </button>
               )}
               <button type="button" onClick={onHistory} style={menuItemStyle}>

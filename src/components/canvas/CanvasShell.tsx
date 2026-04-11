@@ -11,8 +11,9 @@ import { ArrowOverlay } from './ArrowOverlay';
 import { TemplateLibrary } from './TemplateLibrary';
 import { VersionHistory } from './VersionHistory';
 import { AnnotationsList } from './AnnotationsList';
+import { BlockContextMenu } from './BlockContextMenu';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
-import { readingOrder, snapToGridDot, nearestEdge, getEdgeMidpoint, orthogonalPath, getBlockSnapPoints, preventStageOverlap } from '@/lib/canvas-utils';
+import { readingOrder, snapToGridDot, nearestEdge, getEdgeMidpoint, orthogonalPath, getBlockSnapPoints, preventStageOverlap, gridToPixels } from '@/lib/canvas-utils';
 import { ClearAllDialog } from './ClearAllDialog';
 
 import type { EvidenceMediaType } from './CanvasHeader';
@@ -62,7 +63,20 @@ export function CanvasShell(props: CanvasShellProps) {
   const [activeStageTab, setActiveStageTab] = useState<string | null>(null);
 
   // ── Selection ───────────────────────────────────
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [selectedBlockIds, setSelectedBlockIds] = useState<Set<string>>(new Set());
+
+  // ── Marquee selection ──────────────────────────
+  const [marqueeStart, setMarqueeStart] = useState<{ x: number; y: number } | null>(null);
+  const [marqueeEnd, setMarqueeEnd] = useState<{ x: number; y: number } | null>(null);
+  const isMarqueeSelecting = marqueeStart !== null && marqueeEnd !== null;
+
+  // ── Context menu ───────────────────────────────
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+
+  // ── Grammar check toast ────────────────────────
+  const [grammarToast, setGrammarToast] = useState<string | null>(null);
+
+  const isBlockSelected = (id: string) => selectedBlockIds.has(id);
 
   // Zoom
   const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25];
@@ -107,50 +121,57 @@ export function CanvasShell(props: CanvasShellProps) {
         return;
       }
 
-      // Escape — deselect
+      // Escape — deselect & close context menu
       if (e.key === 'Escape') {
-        setSelectedBlockId(null);
+        setSelectedBlockIds(new Set());
+        setContextMenu(null);
         return;
       }
 
       // Select all
       if (meta && e.key === 'a') {
         e.preventDefault();
-        // Just select first block for now (multi-select is complex)
-        if (filteredBlocks.length > 0) {
-          setSelectedBlockId(filteredBlocks[0].id);
-        }
+        setSelectedBlockIds(new Set(filteredBlocks.map(b => b.id)));
         return;
       }
 
-      if (!selectedBlockId) {
+      const selectedIds = Array.from(selectedBlockIds);
+      const firstSelectedId = selectedIds[0];
+
+      if (selectedBlockIds.size === 0) {
         // Tab to select first block
         if (e.key === 'Tab') {
           e.preventDefault();
           const sorted = readingOrder([...filteredBlocks]);
-          if (sorted.length > 0) setSelectedBlockId(sorted[0].id);
+          if (sorted.length > 0) setSelectedBlockIds(new Set([sorted[0].id]));
         }
         return;
       }
 
-      // Backspace / Delete — delete selected block
+      // Backspace / Delete — delete all selected blocks
       if (e.key === 'Backspace' || e.key === 'Delete') {
         e.preventDefault();
-        doc.deleteBlock(selectedBlockId);
-        setSelectedBlockId(null);
+        for (const id of selectedIds) {
+          doc.deleteBlock(id);
+        }
+        setSelectedBlockIds(new Set());
         return;
       }
 
-      // Ctrl+D — duplicate
+      // Ctrl+D — duplicate (all selected)
       if (meta && e.key === 'd') {
         e.preventDefault();
-        const newId = doc.duplicateBlock(selectedBlockId);
-        if (newId) setSelectedBlockId(newId);
+        const newIds: string[] = [];
+        for (const id of selectedIds) {
+          const newId = doc.duplicateBlock(id);
+          if (newId) newIds.push(newId);
+        }
+        if (newIds.length > 0) setSelectedBlockIds(new Set(newIds));
         return;
       }
 
-      // Arrow keys — nudge
-      const block = doc.blocks.find(b => b.id === selectedBlockId);
+      // Arrow keys — nudge (applies to first selected block)
+      const block = doc.blocks.find(b => b.id === firstSelectedId);
       if (!block) return;
 
       if (e.key === 'ArrowRight') {
@@ -185,17 +206,17 @@ export function CanvasShell(props: CanvasShellProps) {
       if (e.key === 'Tab') {
         e.preventDefault();
         const sorted = readingOrder([...filteredBlocks]);
-        const idx = sorted.findIndex(b => b.id === selectedBlockId);
+        const idx = sorted.findIndex(b => b.id === firstSelectedId);
         const next = e.shiftKey
           ? sorted[(idx - 1 + sorted.length) % sorted.length]
           : sorted[(idx + 1) % sorted.length];
-        if (next) setSelectedBlockId(next.id);
+        if (next) setSelectedBlockIds(new Set([next.id]));
         return;
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [mode, selectedBlockId, doc, zoom]);
+  }, [mode, selectedBlockIds, doc, zoom]);
 
   // ── Arrow drawing state (unlimited waypoints) ──────
   type EdgeType = 'top' | 'right' | 'bottom' | 'left';
@@ -424,11 +445,213 @@ export function CanvasShell(props: CanvasShellProps) {
   const colWidth = containerWidth > 0
     ? containerWidth / doc.columnCount : 0;
 
-  // Deselect when clicking empty canvas
+  // Deselect when clicking empty canvas (unless marquee just happened)
   const handleCanvasClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('[data-canvas-block]')) return;
-    setSelectedBlockId(null);
+    if (contextMenu) return;
+    setSelectedBlockIds(new Set());
   };
+
+  // Marquee mouse-down on the canvas
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    if (mode !== 'edit') return;
+    if (arrowDrawing) return;
+    if (e.button !== 0) return; // left click only
+    // Ignore if clicking a block or interactive element
+    if ((e.target as HTMLElement).closest('[data-canvas-block]')) return;
+    if ((e.target as HTMLElement).closest('button, input, textarea')) return;
+
+    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+    setMarqueeStart({ x, y });
+    setMarqueeEnd({ x, y });
+    setContextMenu(null);
+  };
+
+  // Marquee mouse-move on the canvas
+  const handleMarqueeMove = (e: React.MouseEvent) => {
+    if (!marqueeStart) return;
+    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+    setMarqueeEnd({ x, y });
+  };
+
+  // Marquee mouse-up — compute intersections
+  const handleMarqueeUp = () => {
+    if (!marqueeStart || !marqueeEnd || colWidth === 0) {
+      setMarqueeStart(null);
+      setMarqueeEnd(null);
+      return;
+    }
+    const left = Math.min(marqueeStart.x, marqueeEnd.x);
+    const right = Math.max(marqueeStart.x, marqueeEnd.x);
+    const top = Math.min(marqueeStart.y, marqueeEnd.y);
+    const bottom = Math.max(marqueeStart.y, marqueeEnd.y);
+
+    // If the marquee is too small, treat as a click (clear selection)
+    if (right - left < 3 && bottom - top < 3) {
+      setSelectedBlockIds(new Set());
+      setMarqueeStart(null);
+      setMarqueeEnd(null);
+      return;
+    }
+
+    const intersecting = new Set<string>();
+    for (const block of filteredBlocks) {
+      const px = gridToPixels(block.position, colWidth, doc.rowHeight);
+      const blockLeft = px.x;
+      const blockTop = px.y;
+      const blockRight = px.x + px.w;
+      const blockBottom = px.y + px.h;
+      const overlaps =
+        blockLeft < right &&
+        blockRight > left &&
+        blockTop < bottom &&
+        blockBottom > top;
+      if (overlaps) intersecting.add(block.id);
+    }
+    setSelectedBlockIds(intersecting);
+    setMarqueeStart(null);
+    setMarqueeEnd(null);
+  };
+
+  // Block click — supports shift+click for additive selection
+  const handleBlockSelect = (blockId: string, e?: React.MouseEvent) => {
+    if (e?.shiftKey) {
+      setSelectedBlockIds(prev => {
+        const next = new Set(prev);
+        if (next.has(blockId)) next.delete(blockId);
+        else next.add(blockId);
+        return next;
+      });
+    } else {
+      setSelectedBlockIds(new Set([blockId]));
+    }
+    setContextMenu(null);
+  };
+
+  // Right-click on a block — show context menu
+  const handleBlockContextMenu = (blockId: string, e: React.MouseEvent) => {
+    if (mode !== 'edit') return;
+    // If the clicked block isn't in the selection, select it
+    setSelectedBlockIds(prev => {
+      if (prev.has(blockId)) return prev;
+      return new Set([blockId]);
+    });
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  };
+
+  // Context menu actions
+  const contextMoveToStage = (stageId: string) => {
+    for (const id of selectedBlockIds) {
+      doc.assignBlockToStage(id, stageId);
+    }
+  };
+  const contextRemoveFromStage = () => {
+    for (const id of selectedBlockIds) {
+      doc.assignBlockToStage(id, null);
+    }
+  };
+  const contextDelete = () => {
+    for (const id of selectedBlockIds) {
+      doc.deleteBlock(id);
+    }
+    setSelectedBlockIds(new Set());
+  };
+
+  // Grammar check
+  const handleGrammarCheck = useCallback(() => {
+    const fixText = (input: string): string => {
+      if (!input) return input;
+      let text = input;
+
+      // Collapse double spaces → single
+      text = text.replace(/  +/g, ' ');
+
+      // Trailing whitespace on each line
+      text = text.replace(/[ \t]+(\r?\n)/g, '$1');
+      text = text.replace(/[ \t]+$/, '');
+
+      // Common typo fixes (word-boundary aware)
+      const typoReplacements: Array<[RegExp, string]> = [
+        [/\bteh\b/g, 'the'],
+        [/\bdont\b/g, "don't"],
+        [/\bcant\b/g, "can't"],
+        [/\bwont\b/g, "won't"],
+        [/\bim\b/g, "I'm"],
+        [/\bive\b/g, "I've"],
+        [/\brecieve\b/g, 'receive'],
+        [/\bseperate\b/g, 'separate'],
+        [/\boccured\b/g, 'occurred'],
+        [/\bdefinately\b/g, 'definitely'],
+      ];
+      for (const [re, rep] of typoReplacements) {
+        text = text.replace(re, rep);
+      }
+
+      // Capitalisation after sentence-ending punctuation
+      text = text.replace(/([.!?])(\s+)([a-z])/g, (_m, p, w, c) =>
+        `${p}${w}${c.toUpperCase()}`
+      );
+
+      // Ensure text starts with a capital letter
+      const firstLetterIdx = text.search(/[a-zA-Z]/);
+      if (firstLetterIdx !== -1) {
+        const ch = text[firstLetterIdx];
+        if (ch >= 'a' && ch <= 'z') {
+          text = text.slice(0, firstLetterIdx) + ch.toUpperCase() + text.slice(firstLetterIdx + 1);
+        }
+      }
+
+      return text;
+    };
+
+    let corrections = 0;
+    let blocksChanged = 0;
+    for (const block of doc.blocks) {
+      if (!block.textContent) continue;
+      const corrected = fixText(block.textContent);
+      if (corrected !== block.textContent) {
+        // Count number of character differences as an approximation
+        // of corrections; simpler: count distinct replacements.
+        let diffs = 0;
+        const original = block.textContent;
+        // Count collapsed double spaces
+        const dblMatches = original.match(/  +/g);
+        if (dblMatches) diffs += dblMatches.length;
+        const trailingMatches = original.match(/[ \t]+(\r?\n|$)/g);
+        if (trailingMatches) diffs += trailingMatches.length;
+        const typoPatterns = [
+          /\bteh\b/g, /\bdont\b/g, /\bcant\b/g, /\bwont\b/g,
+          /\bim\b/g, /\bive\b/g, /\brecieve\b/g, /\bseperate\b/g,
+          /\boccured\b/g, /\bdefinately\b/g,
+        ];
+        for (const re of typoPatterns) {
+          const matches = original.match(re);
+          if (matches) diffs += matches.length;
+        }
+        const capMatches = original.match(/[.!?]\s+[a-z]/g);
+        if (capMatches) diffs += capMatches.length;
+        if (diffs === 0) diffs = 1;
+
+        corrections += diffs;
+        blocksChanged += 1;
+        doc.updateBlock(block.id, { textContent: corrected });
+      }
+    }
+    setGrammarToast(
+      `Grammar check complete — ${corrections} correction${corrections === 1 ? '' : 's'} made across ${blocksChanged} block${blocksChanged === 1 ? '' : 's'}.`
+    );
+  }, [doc]);
+
+  // Auto-dismiss grammar toast
+  useEffect(() => {
+    if (!grammarToast) return;
+    const t = setTimeout(() => setGrammarToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [grammarToast]);
 
   return (
     <div style={{
@@ -447,11 +670,19 @@ export function CanvasShell(props: CanvasShellProps) {
         blocks={doc.blocks}
         mode={mode}
         onBlockClick={blockId => {
-          setSelectedBlockId(blockId);
+          setSelectedBlockIds(new Set([blockId]));
           document.getElementById(`canvas-block-${blockId}`)
             ?.scrollIntoView({
               behavior: 'smooth', block: 'center'
             });
+        }}
+        onBlockChange={(id, patch) => doc.updateBlock(id, patch)}
+        onBlockDepthChange={(id, depth) => doc.updateBlock(id, { depth })}
+        onStageReorder={(newStages) => doc.setStages(newStages)}
+        onBlockReorder={(stageId, newBlockIds) => {
+          doc.setStages(prev =>
+            prev.map(s => s.id === stageId ? { ...s, blockIds: newBlockIds } : s)
+          );
         }}
         onStageAdd={title => doc.addStage(title)}
       />
@@ -554,7 +785,12 @@ export function CanvasShell(props: CanvasShellProps) {
         {/* The grid */}
         <div
           ref={containerRef}
-          onMouseMove={handleCanvasMouseMove}
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={(e) => {
+            handleCanvasMouseMove(e);
+            handleMarqueeMove(e);
+          }}
+          onMouseUp={handleMarqueeUp}
           onClick={(e) => {
             handleCanvasClickForArrow(e);
             handleCanvasClick(e);
@@ -629,8 +865,9 @@ export function CanvasShell(props: CanvasShellProps) {
               stages={doc.stages}
               postType={postType}
               showAnnotations={props.showAnnotations}
-              selected={selectedBlockId === block.id}
-              onSelect={() => setSelectedBlockId(block.id)}
+              selected={isBlockSelected(block.id)}
+              onSelect={(e) => handleBlockSelect(block.id, e)}
+              onContextMenu={(e) => handleBlockContextMenu(block.id, e)}
               onPositionChange={pos =>
                 doc.moveBlock(block.id, pos)
               }
@@ -657,6 +894,23 @@ export function CanvasShell(props: CanvasShellProps) {
               }}
             />
           ))}
+
+          {/* Marquee rectangle */}
+          {isMarqueeSelecting && marqueeStart && marqueeEnd && (
+            <div
+              style={{
+                position: 'absolute',
+                left: Math.min(marqueeStart.x, marqueeEnd.x),
+                top: Math.min(marqueeStart.y, marqueeEnd.y),
+                width: Math.abs(marqueeEnd.x - marqueeStart.x),
+                height: Math.abs(marqueeEnd.y - marqueeStart.y),
+                border: '1px solid rgba(232,87,26,0.6)',
+                background: 'rgba(232,87,26,0.08)',
+                pointerEvents: 'none',
+                zIndex: 50,
+              }}
+            />
+          )}
 
           {/* Arrow overlay */}
           {colWidth > 0 && (
@@ -713,6 +967,40 @@ export function CanvasShell(props: CanvasShellProps) {
         </div>
       </div>
 
+      {/* Grammar check toast */}
+      {grammarToast && (
+        <div style={{
+          position: 'fixed',
+          top: 16,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(34,197,94,0.15)',
+          border: '1px solid rgba(34,197,94,0.3)',
+          color: '#22C55E',
+          fontSize: 12,
+          borderRadius: 8,
+          padding: '8px 16px',
+          zIndex: 150,
+          fontFamily: 'Inter, sans-serif',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+        }}>
+          {grammarToast}
+        </div>
+      )}
+
+      {/* Context menu */}
+      {contextMenu && (
+        <BlockContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          stages={doc.stages}
+          onMoveToStage={contextMoveToStage}
+          onRemoveFromStage={contextRemoveFromStage}
+          onDelete={contextDelete}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+
       {/* Edit mode toolbar at bottom */}
       {mode === 'edit' && (
         <CanvasToolbar
@@ -724,6 +1012,7 @@ export function CanvasShell(props: CanvasShellProps) {
           onTemplates={() => setTemplateLibOpen(true)}
           onHistory={() => setVersionHistoryOpen(true)}
           onAnnotations={() => setAnnotationsOpen(true)}
+          onGrammarCheck={handleGrammarCheck}
           annotationCount={doc.blocks.filter(
             b => b.creatorAnnotation
           ).length}
@@ -747,13 +1036,14 @@ export function CanvasShell(props: CanvasShellProps) {
         onClose={() => setTemplateLibOpen(false)}
         currentBlocks={doc.blocks}
         onApply={(newBlocks, newArrows) => {
+          const prepared = newBlocks.map(b => ({
+            ...b,
+            id: b.id ?? crypto.randomUUID(),
+          }));
           doc.restoreSnapshot({
             blocks: [
               ...doc.blocks,
-              ...newBlocks.map(b => ({
-                ...b,
-                id: b.id ?? crypto.randomUUID(),
-              })),
+              ...prepared,
             ],
             arrows: [
               ...doc.arrows,
@@ -764,6 +1054,12 @@ export function CanvasShell(props: CanvasShellProps) {
             ],
             stages: doc.stages,
           });
+          // If a stage is active, assign all new blocks to it
+          if (activeStageTab) {
+            for (const block of prepared) {
+              doc.assignBlockToStage(block.id!, activeStageTab);
+            }
+          }
         }}
       />
 
