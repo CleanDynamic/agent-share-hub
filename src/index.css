@@ -5,21 +5,21 @@
 @tailwind utilities;
 
 :root {
-  --bg: #EDEDEF;
-  --surface: rgba(0,0,0,0.025);
-  --border: rgba(0,0,0,0.08);
-  --border-hover: rgba(0,0,0,0.15);
-  --text: rgba(0,0,0,0.85);
-  --text-muted: rgba(0,0,0,0.45);
+  --bg: #07070D;
+  --surface: rgba(255,255,255,0.03);
+  --border: rgba(255,255,255,0.06);
+  --border-hover: rgba(255,255,255,0.12);
+  --text: rgba(255,255,255,0.85);
+  --text-muted: rgba(255,255,255,0.40);
   --orange: #E8571A;
   --teal: #2EC4B6;
   --radius-card: 14px;
   --radius-btn: 100px;
   --radius-badge: 100px;
-  --input-bg: rgba(0,0,0,0.03);
-  --input-border: rgba(0,0,0,0.10);
-  --input-focus-border: rgba(0,0,0,0.20);
-  --divider: rgba(0,0,0,0.06);
+  --input-bg: rgba(255,255,255,0.05);
+  --input-border: rgba(255,255,255,0.10);
+  --input-focus-border: rgba(255,255,255,0.20);
+  --divider: rgba(255,255,255,0.06);
 }
 
 body {
@@ -40,19 +40,19 @@ body {
 }
 
 /* Badge colour rules — keep exactly */
-.ns-badge-prompt     { background: rgba(203,67,0,0.12);    border-color: rgba(203,67,0,0.25);    color: #c44300; }
-.ns-badge-agent      { background: rgba(85,224,210,0.12);  border-color: rgba(85,224,210,0.25);  color: #1a9e93; }
-.ns-badge-tutorial   { background: rgba(46,196,182,0.12);  border-color: rgba(46,196,182,0.25);  color: #1a9e93; }
-.ns-badge-workflow   { background: rgba(100,100,100,0.10); border-color: rgba(100,100,100,0.20); color: #555; }
-.ns-badge-eval       { background: rgba(219,39,119,0.12);  border-color: rgba(219,39,119,0.25);  color: #be185d; }
-.ns-badge-stack      { background: rgba(220,38,38,0.12);   border-color: rgba(220,38,38,0.25);   color: #dc2626; }
-.ns-badge-failure    { background: rgba(75,85,99,0.12);    border-color: rgba(75,85,99,0.25);    color: #4b5563; }
+.ns-badge-prompt     { background: rgba(203,67,0,0.12);    border-color: rgba(203,67,0,0.25);    color: #ff8a50; }
+.ns-badge-agent      { background: rgba(85,224,210,0.12);  border-color: rgba(85,224,210,0.25);  color: #55e0d2; }
+.ns-badge-tutorial   { background: rgba(46,196,182,0.12);  border-color: rgba(46,196,182,0.25);  color: #2ec4b6; }
+.ns-badge-workflow   { background: rgba(100,100,100,0.10); border-color: rgba(100,100,100,0.20); color: #999; }
+.ns-badge-eval       { background: rgba(219,39,119,0.12);  border-color: rgba(219,39,119,0.25);  color: #f472b6; }
+.ns-badge-stack      { background: rgba(220,38,38,0.12);   border-color: rgba(220,38,38,0.25);   color: #f87171; }
+.ns-badge-failure    { background: rgba(75,85,99,0.12);    border-color: rgba(75,85,99,0.25);    color: #9ca3af; }
 .ns-badge-blog       { background: rgba(232,87,26,0.10);   border-color: rgba(232,87,26,0.20);   color: #E8571A; }
-.ns-badge-bounty     { background: rgba(239,68,68,0.10);   border-color: rgba(239,68,68,0.20);   color: #dc2626; }
-.ns-badge-beginner   { background: rgba(0,0,0,0.04);       border-color: rgba(0,0,0,0.08);       color: #6b7280; }
-.ns-badge-intermediate { background: rgba(85,224,210,0.12); border-color: rgba(85,224,210,0.25); color: #1a9e93; }
-.ns-badge-advanced   { background: rgba(203,67,0,0.12);    border-color: rgba(203,67,0,0.25);    color: #c44300; }
-.ns-badge-any        { background: rgba(0,0,0,0.04);       border-color: rgba(0,0,0,0.08);       color: #6b7280; }
+.ns-badge-bounty     { background: rgba(239,68,68,0.10);   border-color: rgba(239,68,68,0.20);   color: #f87171; }
+.ns-badge-beginner   { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); color: rgba(255,255,255,0.45); }
+.ns-badge-intermediate { background: rgba(85,224,210,0.12); border-color: rgba(85,224,210,0.25); color: #55e0d2; }
+.ns-badge-advanced   { background: rgba(203,67,0,0.12);    border-color: rgba(203,67,0,0.25);    color: #ff8a50; }
+.ns-badge-any        { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); color: rgba(255,255,255,0.45); }
 
 @keyframes silverShift {
   0%   { background-position: 0% 50%; }
@@ -63,33 +63,33 @@ body {
 /* ── shadcn/ui infrastructure — do not remove ─────────────── */
 @layer base {
   :root {
-    --background: 0 0% 96%;
-    --foreground: 0 0% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --background: 240 20% 4%;
+    --foreground: 0 0% 95%;
+    --card: 240 10% 8%;
+    --card-foreground: 0 0% 95%;
+    --popover: 240 10% 8%;
+    --popover-foreground: 0 0% 95%;
     --primary: 174 62% 35%;
     --primary-foreground: 0 0% 100%;
     --secondary: 18 80% 50%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 92%;
-    --muted-foreground: 0 0% 40%;
-    --accent: 0 0% 92%;
-    --accent-foreground: 0 0% 10%;
+    --muted: 240 5% 15%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 240 5% 15%;
+    --accent-foreground: 0 0% 95%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 85%;
-    --input: 0 0% 85%;
+    --border: 240 5% 18%;
+    --input: 240 5% 18%;
     --ring: 174 62% 35%;
     --radius: 0.75rem;
-    --sidebar-background: 0 0% 97%;
-    --sidebar-foreground: 0 0% 10%;
+    --sidebar-background: 240 10% 5%;
+    --sidebar-foreground: 0 0% 95%;
     --sidebar-primary: 174 62% 35%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 92%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 85%;
+    --sidebar-accent: 240 5% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 240 5% 18%;
     --sidebar-ring: 174 62% 35%;
   }
 }
@@ -100,7 +100,7 @@ body {
   }
 
   body {
-    background-color: #EDEDEF;
+    background-color: #07070D;
     min-height: 100vh;
     color: var(--text);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -138,9 +138,9 @@ body {
 
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: #EDEDEF; }
-::-webkit-scrollbar-thumb { background: #b0b0b5; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #999; }
+::-webkit-scrollbar-track { background: #0a0a10; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
 
 .mention-link {
   color: #E8571A;
@@ -163,8 +163,8 @@ body {
 }
 
 input, textarea, select {
-  background: rgba(0,0,0,0.03) !important;
-  border: 1px solid rgba(0,0,0,0.10) !important;
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
   border-radius: 10px;
   color: var(--text) !important;
   outline: none;
