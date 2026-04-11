@@ -169,7 +169,7 @@ const NEOSCALE_CSS = `
 /* ── User section at bottom of left panel ── */
 .ns-user-section {
   padding: 12px 8px 4px;
-  border-top: 1px solid rgba(0,0,0,0.06);
+  border-top: 1px solid rgba(255,255,255,0.06);
   margin-top: 8px;
 }
 .ns-user-btn {
@@ -178,7 +178,7 @@ const NEOSCALE_CSS = `
   cursor: pointer; transition: background 0.2s;
   border: none; background: none; text-align: left;
 }
-.ns-user-btn:hover { background: rgba(0,0,0,0.04); }
+.ns-user-btn:hover { background: rgba(255,255,255,0.04); }
 .ns-user-avatar {
   width: 28px; height: 28px; border-radius: 50%;
   background: #E8571A; color: #fff;
@@ -188,15 +188,15 @@ const NEOSCALE_CSS = `
 }
 .ns-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ns-user-name {
-  font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.6);
+  font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.6);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
 }
-.ns-user-dots { color: rgba(0,0,0,0.25); font-size: 16px; }
+.ns-user-dots { color: rgba(255,255,255,0.25); font-size: 16px; }
 .ns-user-menu {
   position: absolute; bottom: 56px; left: 8px; right: 8px;
-  background: rgba(255,255,255,0.95); border: 1px solid rgba(0,0,0,0.10);
+  background: rgba(8,8,12,0.95); border: 1px solid rgba(255,255,255,0.10);
   border-radius: 10px; padding: 4px; z-index: 10;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.40);
 }
 .ns-user-menu button {
   display: flex; align-items: center; gap: 8px;
@@ -204,7 +204,7 @@ const NEOSCALE_CSS = `
   border-radius: 8px; cursor: pointer; font-size: 12px; color: #e74c3c;
   transition: background 0.15s;
 }
-.ns-user-menu button:hover { background: rgba(0,0,0,0.05); }
+.ns-user-menu button:hover { background: rgba(255,255,255,0.05); }
 .ns-auth-btns { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
 .ns-auth-btn {
   display: flex; align-items: center; justify-content: center;
