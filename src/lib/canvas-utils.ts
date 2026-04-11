@@ -67,30 +67,104 @@ export function readingOrder(
   );
 }
 
-// Assign stage indices (1a, 1b, 2a…) to all blocks
+// Convert a positive integer to a lowercase roman numeral
+function toRoman(n: number): string {
+  if (n <= 0) return '';
+  const table: Array<[number, string]> = [
+    [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i'],
+  ];
+  let result = '';
+  let remaining = n;
+  for (const [v, s] of table) {
+    while (remaining >= v) {
+      result += s;
+      remaining -= v;
+    }
+  }
+  return result;
+}
+
+// Assign stage indices (1a, 1b, 1a.i, 1a.i.1…) to all blocks.
+// depth 0 → letters (1a, 1b)
+// depth 1 → roman numerals nested under depth 0 (1a.i, 1a.ii)
+// depth 2 → numbers nested under depth 1 (1a.i.1, 1a.i.2)
+// Staged blocks are ordered by stage.blockIds (TOC/reading order)
+// with any unlisted staged blocks appended in reading order.
 export function assignStageIndices(
   stages: CanvasStage[],
   blocks: CanvasBlock[]
 ): CanvasBlock[] {
-  const stageMap = new Map(stages.map(s => [s.id, s]));
-  const counters: Record<string, number> = {};
+  interface StageCounter {
+    depth0: number;
+    depth1: number;
+    depth2: number;
+    currentLetter: string;
+    currentRoman: string;
+  }
 
-  const ordered = readingOrder(blocks);
-  return ordered.map(block => {
-    if (!block.stageId) {
-      return { ...block, stageIndex: null };
-    }
-    const stage = stageMap.get(block.stageId);
-    if (!stage) return { ...block, stageIndex: null };
-    counters[block.stageId] =
-      (counters[block.stageId] ?? 0) + 1;
-    const letter = String.fromCharCode(
-      96 + counters[block.stageId]
-    ); // a, b, c, d…
-    return {
-      ...block,
-      stageIndex: `${stage.stageNumber}${letter}`,
+  const indexMap = new Map<string, string | null>();
+
+  for (const stage of stages) {
+    const ctr: StageCounter = {
+      depth0: 0, depth1: 0, depth2: 0,
+      currentLetter: '', currentRoman: '',
     };
+
+    // Blocks tagged to this stage
+    const stageBlocks = blocks.filter(b => b.stageId === stage.id);
+    // Order by blockIds first, appending any missing in reading order
+    const idOrder = new Map<string, number>();
+    stage.blockIds.forEach((bid, i) => idOrder.set(bid, i));
+    const ordered = [...stageBlocks].sort((a, b) => {
+      const ai = idOrder.has(a.id) ? idOrder.get(a.id)! : Infinity;
+      const bi = idOrder.has(b.id) ? idOrder.get(b.id)! : Infinity;
+      if (ai !== bi) return ai - bi;
+      // Fallback: reading order
+      if (a.position.row !== b.position.row) return a.position.row - b.position.row;
+      return a.position.col - b.position.col;
+    });
+
+    for (const block of ordered) {
+      const depth = Math.max(0, Math.min(2, block.depth ?? 0));
+
+      let stageIndex: string;
+      if (depth === 0) {
+        ctr.depth0 += 1;
+        ctr.depth1 = 0;
+        ctr.depth2 = 0;
+        ctr.currentLetter = String.fromCharCode(96 + ctr.depth0);
+        ctr.currentRoman = '';
+        stageIndex = `${stage.stageNumber}${ctr.currentLetter}`;
+      } else if (depth === 1) {
+        if (!ctr.currentLetter) {
+          ctr.depth0 += 1;
+          ctr.currentLetter = String.fromCharCode(96 + ctr.depth0);
+        }
+        ctr.depth1 += 1;
+        ctr.depth2 = 0;
+        ctr.currentRoman = toRoman(ctr.depth1);
+        stageIndex = `${stage.stageNumber}${ctr.currentLetter}.${ctr.currentRoman}`;
+      } else {
+        // depth === 2
+        if (!ctr.currentLetter) {
+          ctr.depth0 += 1;
+          ctr.currentLetter = String.fromCharCode(96 + ctr.depth0);
+        }
+        if (!ctr.currentRoman) {
+          ctr.depth1 += 1;
+          ctr.currentRoman = toRoman(ctr.depth1);
+        }
+        ctr.depth2 += 1;
+        stageIndex = `${stage.stageNumber}${ctr.currentLetter}.${ctr.currentRoman}.${ctr.depth2}`;
+      }
+
+      indexMap.set(block.id, stageIndex);
+    }
+  }
+
+  return blocks.map(b => {
+    if (!b.stageId) return { ...b, stageIndex: null };
+    return { ...b, stageIndex: indexMap.get(b.id) ?? null };
   });
 }
 

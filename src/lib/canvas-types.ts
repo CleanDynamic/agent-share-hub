@@ -55,7 +55,8 @@ export interface CanvasBlock {
   subheading: string | null;
   position: BlockPosition;
   stageId: string | null;
-  stageIndex: string | null;  // '1a', '1b', '2a'…
+  stageIndex: string | null;  // '1a', '1b', '2a.i'…
+  depth?: number;             // 0 = letter, 1 = roman, 2 = number
   isLocked: boolean;
   lockType: 'none' | 'blur' | 'premium';
   mobileOrder: number | null;
