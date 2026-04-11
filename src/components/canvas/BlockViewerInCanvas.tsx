@@ -6,6 +6,7 @@ import type { CanvasBlock } from '@/lib/canvas-types';
 // all block type rendering correctly.
 import { RenderBlockContent }
   from '@/components/ContentBlockViewer';
+import { MediaPopup, resolveVideoSources } from './MediaPopup';
 
 interface BlockViewerInCanvasProps {
   block: CanvasBlock;
@@ -35,9 +36,195 @@ export function BlockViewerInCanvas({
   const [copied, setCopied] = useState(false);
   const [copyField, setCopyField] =
     useState<string | null>(null);
+  const [mediaPopupOpen, setMediaPopupOpen] = useState(false);
 
   const isCopyable = COPYABLE_TYPES.has(block.type);
   const accent = BLOCK_ACCENT[block.type];
+
+  // ── Image block thumbnail (click → popup) ────────────
+  if (block.type === 'image') {
+    const src = block.imageUrl || block.imagePreview || '';
+    return (
+      <div style={{ position: 'relative', height: '100%' }}>
+        {block.subheading && (
+          <h3 style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 16, fontWeight: 700,
+            color: 'rgba(255,255,255,0.90)',
+            margin: '0 0 10px 0', lineHeight: 1.3,
+          }}>
+            {block.subheading}
+          </h3>
+        )}
+        {src ? (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setMediaPopupOpen(true)}
+            style={{
+              width: '100%',
+              height: block.subheading ? 'calc(100% - 32px)' : '100%',
+              minHeight: 120,
+              cursor: 'zoom-in',
+              borderRadius: 8,
+              overflow: 'hidden',
+              background: 'rgba(0,0,0,0.25)',
+            }}
+          >
+            <img
+              src={src}
+              alt={block.imageDescription ?? ''}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                borderRadius: 8,
+                display: 'block',
+              }}
+            />
+          </div>
+        ) : (
+          <div style={{
+            height: '100%', minHeight: 120,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px dashed rgba(255,255,255,0.10)',
+            borderRadius: 8,
+            color: 'rgba(255,255,255,0.35)',
+            fontSize: 12, fontStyle: 'italic',
+          }}>
+            No image
+          </div>
+        )}
+        {mediaPopupOpen && src && (
+          <MediaPopup
+            open={mediaPopupOpen}
+            onClose={() => setMediaPopupOpen(false)}
+            kind="image"
+            src={src}
+            description={block.imageDescription ?? null}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // ── Video block thumbnail (click → popup) ────────────
+  if (block.type === 'video') {
+    const videoUrl: string = block.videoUrl || block.videoPreview || '';
+    const resolved = resolveVideoSources(videoUrl);
+    const thumbSrc = resolved.thumbnailUrl;
+
+    return (
+      <div style={{ position: 'relative', height: '100%' }}>
+        {block.subheading && (
+          <h3 style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 16, fontWeight: 700,
+            color: 'rgba(255,255,255,0.90)',
+            margin: '0 0 10px 0', lineHeight: 1.3,
+          }}>
+            {block.subheading}
+          </h3>
+        )}
+        {videoUrl ? (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setMediaPopupOpen(true)}
+            style={{
+              width: '100%',
+              height: block.subheading ? 'calc(100% - 32px)' : '100%',
+              minHeight: 120,
+              position: 'relative',
+              cursor: 'zoom-in',
+              borderRadius: 8,
+              overflow: 'hidden',
+              background: 'rgba(0,0,0,0.55)',
+            }}
+          >
+            {thumbSrc ? (
+              <img
+                src={thumbSrc}
+                alt={block.videoDescription ?? ''}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: 8,
+                  display: 'block',
+                }}
+              />
+            ) : resolved.kind === 'direct' ? (
+              <video
+                src={videoUrl}
+                muted
+                playsInline
+                preload="metadata"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: 8,
+                  display: 'block',
+                  pointerEvents: 'none',
+                }}
+              />
+            ) : (
+              <div style={{
+                width: '100%', height: '100%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'rgba(255,255,255,0.45)',
+                fontSize: 11, fontFamily: 'Inter, sans-serif',
+              }}>
+                Video
+              </div>
+            )}
+            {/* Play button overlay */}
+            <div style={{
+              position: 'absolute',
+              top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 56, height: 56,
+              borderRadius: '50%',
+              background: 'rgba(0,0,0,0.65)',
+              border: '2px solid rgba(255,255,255,0.85)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              pointerEvents: 'none',
+            }}>
+              <div style={{
+                width: 0, height: 0,
+                borderTop: '10px solid transparent',
+                borderBottom: '10px solid transparent',
+                borderLeft: '16px solid rgba(255,255,255,0.90)',
+                marginLeft: 4,
+              }} />
+            </div>
+          </div>
+        ) : (
+          <div style={{
+            height: '100%', minHeight: 120,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px dashed rgba(255,255,255,0.10)',
+            borderRadius: 8,
+            color: 'rgba(255,255,255,0.35)',
+            fontSize: 12, fontStyle: 'italic',
+          }}>
+            No video
+          </div>
+        )}
+        {mediaPopupOpen && videoUrl && (
+          <MediaPopup
+            open={mediaPopupOpen}
+            onClose={() => setMediaPopupOpen(false)}
+            kind="video"
+            src={resolved.sourceUrl}
+            embedUrl={resolved.embedUrl}
+            description={block.videoDescription ?? null}
+          />
+        )}
+      </div>
+    );
+  }
 
   const getTextToCopy = (): string => {
     switch (block.type) {

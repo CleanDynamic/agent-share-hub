@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { GripVertical, FileText, Code2, Image, Zap, GitCompare, Bot, Workflow, SlidersHorizontal, Wrench, BookOpen, ListChecks, Type, ChevronRight } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { GripVertical, FileText, Code2, Image, Zap, GitCompare, Bot, Workflow, SlidersHorizontal, Wrench, BookOpen, ListChecks, Type, ChevronRight, ChevronDown, Video } from 'lucide-react';
 import { gridToPixels, positionsOverlap } from '@/lib/canvas-utils';
 import type { CanvasBlock as CanvasBlockType, CanvasStage, BlockPosition } from '@/lib/canvas-types';
 import { BlockEditModal } from './BlockEditModal';
@@ -11,7 +11,7 @@ const BLOCK_TYPE_LABELS: Record<string, string> = {
   image: 'Image', result: 'Result', comparison: 'Comparison',
   agent_config: 'Agent Config', workflow: 'Workflow', model_params: 'Model Params',
   tool_setup: 'Tool Setup', resource: 'Resource', tutorial_step: 'Tutorial Step',
-  section_heading: 'Heading',
+  section_heading: 'Heading', sticky_note: 'Note', video: 'Video',
 };
 
 const BLOCK_ICONS: Record<string, React.ReactNode> = {
@@ -21,6 +21,7 @@ const BLOCK_ICONS: Record<string, React.ReactNode> = {
   workflow: <Workflow size={14} />, model_params: <SlidersHorizontal size={14} />,
   tool_setup: <Wrench size={14} />, resource: <BookOpen size={14} />,
   tutorial_step: <ListChecks size={14} />, section_heading: <Type size={14} />,
+  video: <Video size={14} />,
 };
 
 type EdgeType = 'top' | 'right' | 'bottom' | 'left';
@@ -60,6 +61,8 @@ export function CanvasBlock({
 }: CanvasBlockProps) {
   const [hovered, setHovered] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [dropping, setDropping] = useState(false);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
   const [ghost, setGhost] = useState<BlockPosition | null>(null);
   const [ghostValid, setGhostValid] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -69,7 +72,28 @@ export function CanvasBlock({
   const [hoveredSnapEdge, setHoveredSnapEdge] = useState<EdgeType | null>(null);
 
   const dragStartRef = useRef({ x: 0, y: 0, origCol: 0, origRow: 0 });
-  const px = gridToPixels(block.position, colWidth, rowHeight);
+  const rafIdRef = useRef<number | null>(null);
+  const dropTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cancel pending RAF / timers on unmount
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+      if (dropTimerRef.current !== null) {
+        clearTimeout(dropTimerRef.current);
+      }
+    };
+  }, []);
+  const isStickyNote = block.type === 'sticky_note';
+  const stickyCollapsed = isStickyNote && block.isCollapsed === true;
+
+  // For collapsed sticky notes, shrink the rendered height to a single row.
+  const effectivePosition = stickyCollapsed
+    ? { ...block.position, rowSpan: 1 }
+    : block.position;
+  const px = gridToPixels(effectivePosition, colWidth, rowHeight);
   const inset = 4;
 
   const BLOCK_ACCENT: Record<string, string> = {
@@ -79,8 +103,14 @@ export function CanvasBlock({
     section_heading: 'rgba(255,255,255,0.20)', text: 'rgba(255,255,255,0.15)',
     long_text: 'rgba(255,255,255,0.15)', tool_setup: '#06B6D4',
     model_params: '#A78BFA', resource: '#64748B',
+    sticky_note: '#FBBF24', video: '#EC4899',
   };
   const accent = BLOCK_ACCENT[block.type] ?? 'rgba(255,255,255,0.15)';
+
+  const toggleStickyCollapsed = () => {
+    if (!isStickyNote) return;
+    onBlockChange({ isCollapsed: !block.isCollapsed });
+  };
 
   // ── Drag ─────────────────────────────────────────
   const handleDragMouseDown = (e: React.MouseEvent) => {
@@ -89,30 +119,99 @@ export function CanvasBlock({
     // Don't start drag from toolbar buttons
     if (target.closest('button') || target.closest('[data-no-drag]')) return;
     e.preventDefault();
+
+    // Cancel any in-flight drop animation
+    if (dropTimerRef.current !== null) {
+      clearTimeout(dropTimerRef.current);
+      dropTimerRef.current = null;
+    }
+    setDropping(false);
     setDragging(true);
-    dragStartRef.current = { x: e.clientX, y: e.clientY, origCol: block.position.col, origRow: block.position.row };
+    setDragOffset({ x: 0, y: 0 });
+    dragStartRef.current = {
+      x: e.clientX, y: e.clientY,
+      origCol: block.position.col,
+      origRow: block.position.row,
+    };
+
     let latestGhost: BlockPosition | null = null;
     let latestGhostValid = true;
+    let pendingDx = 0;
+    let pendingDy = 0;
 
-    const move = (e: MouseEvent) => {
-      const dx = e.clientX - dragStartRef.current.x;
-      const dy = e.clientY - dragStartRef.current.y;
-      const newCol = Math.max(1, Math.min(columnCount - block.position.colSpan + 1, dragStartRef.current.origCol + Math.round(dx / colWidth)));
-      const newRow = Math.max(1, dragStartRef.current.origRow + Math.round(dy / rowHeight));
-      const proposed: BlockPosition = { ...block.position, col: newCol, row: newRow };
-      const collision = allBlocks.some(other => other.id !== block.id && positionsOverlap(proposed, other.position));
+    const flush = () => {
+      rafIdRef.current = null;
+      setDragOffset({ x: pendingDx, y: pendingDy });
+      const newCol = Math.max(
+        1,
+        Math.min(
+          columnCount - block.position.colSpan + 1,
+          dragStartRef.current.origCol + Math.round(pendingDx / colWidth)
+        )
+      );
+      const newRow = Math.max(
+        1,
+        dragStartRef.current.origRow + Math.round(pendingDy / rowHeight)
+      );
+      const proposed: BlockPosition = {
+        ...block.position, col: newCol, row: newRow,
+      };
+      const collision = allBlocks.some(
+        other => other.id !== block.id
+          && positionsOverlap(proposed, other.position)
+      );
       latestGhost = proposed;
       latestGhostValid = !collision;
       setGhost(proposed);
       setGhostValid(!collision);
     };
 
+    const move = (ev: MouseEvent) => {
+      pendingDx = ev.clientX - dragStartRef.current.x;
+      pendingDy = ev.clientY - dragStartRef.current.y;
+      // Schedule a pixel-perfect update on the next frame
+      if (rafIdRef.current === null) {
+        rafIdRef.current = requestAnimationFrame(flush);
+      }
+    };
+
     const up = () => {
-      setDragging(false);
-      if (latestGhost && latestGhostValid) onPositionChange(latestGhost);
-      setGhost(null);
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
+
+      const commit = latestGhost && latestGhostValid ? latestGhost : null;
+      if (commit) {
+        // Animate from current pixel-perfect position to the snap position
+        const targetDx = (commit.col - dragStartRef.current.origCol) * colWidth;
+        const targetDy = (commit.row - dragStartRef.current.origRow) * rowHeight;
+        setDropping(true);
+        setDragOffset({ x: targetDx, y: targetDy });
+        if (dropTimerRef.current !== null) clearTimeout(dropTimerRef.current);
+        dropTimerRef.current = setTimeout(() => {
+          dropTimerRef.current = null;
+          onPositionChange(commit);
+          setDragging(false);
+          setDropping(false);
+          setDragOffset(null);
+          setGhost(null);
+        }, 160);
+      } else {
+        // Cancel: spring back to origin
+        setDropping(true);
+        setDragOffset({ x: 0, y: 0 });
+        if (dropTimerRef.current !== null) clearTimeout(dropTimerRef.current);
+        dropTimerRef.current = setTimeout(() => {
+          dropTimerRef.current = null;
+          setDragging(false);
+          setDropping(false);
+          setDragOffset(null);
+          setGhost(null);
+        }, 160);
+      }
     };
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
@@ -159,14 +258,21 @@ export function CanvasBlock({
 
   return (
     <>
-      {/* Ghost */}
-      {dragging && ghostPx && (
+      {/* Ghost — visible only while actively dragging */}
+      {dragging && !dropping && ghostPx && (
         <div style={{
-          position: 'absolute', left: ghostPx.x, top: ghostPx.y, width: ghostPx.w, height: ghostPx.h,
-          border: `2px dashed ${ghostValid ? 'rgba(232,87,26,0.50)' : 'rgba(239,68,68,0.50)'}`,
+          position: 'absolute',
+          left: ghostPx.x, top: ghostPx.y,
+          width: ghostPx.w, height: ghostPx.h,
+          border: ghostValid
+            ? '2px dashed rgba(232,87,26,0.40)'
+            : '2px dashed rgba(239,68,68,0.50)',
           borderRadius: 8,
-          background: ghostValid ? 'rgba(232,87,26,0.05)' : 'rgba(239,68,68,0.05)',
-          zIndex: 5, pointerEvents: 'none',
+          background: ghostValid
+            ? 'rgba(232,87,26,0.04)'
+            : 'rgba(239,68,68,0.04)',
+          zIndex: 5,
+          pointerEvents: 'none',
         }} />
       )}
 
@@ -195,19 +301,167 @@ export function CanvasBlock({
           }
         }}
         onDoubleClick={() => {
-          if (mode === 'edit') setEditModalOpen(true);
+          if (mode !== 'edit') return;
+          if (isStickyNote) {
+            toggleStickyCollapsed();
+          } else {
+            setEditModalOpen(true);
+          }
         }}
         style={{
           position: 'absolute',
           left: px.x + inset, top: px.y + inset,
           width: px.w - inset * 2, height: px.h - inset * 2,
-          zIndex: dragging ? 20 : 10,
-          opacity: dragging ? 0.4 : 1,
-          cursor: mode === 'edit' ? (dragging ? 'grabbing' : 'grab') : 'default',
+          transform: dragOffset
+            ? `translate(${dragOffset.x}px, ${dragOffset.y}px) scale(${dragging && !dropping ? 1.03 : 1})`
+            : undefined,
+          transition: dropping
+            ? 'transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)'
+            : 'none',
+          zIndex: dragging ? 50 : 10,
+          boxShadow: dragging
+            ? '0 12px 40px rgba(0,0,0,0.50)'
+            : undefined,
+          cursor: mode === 'edit'
+            ? (dragging ? 'grabbing' : 'grab')
+            : 'default',
+          willChange: dragging ? 'transform' : undefined,
           boxSizing: 'border-box',
         }}
       >
-        {mode === 'edit' ? (
+        {isStickyNote ? (
+          /* ── STICKY NOTE ── */
+          <div
+            style={{
+              height: '100%',
+              position: 'relative',
+              background: 'rgba(251,191,36,0.10)',
+              borderLeft: '3px solid #FBBF24',
+              borderTop: '1px solid rgba(251,191,36,0.20)',
+              borderRight: '1px solid rgba(251,191,36,0.20)',
+              borderBottom: '1px solid rgba(251,191,36,0.20)',
+              borderRadius: 6,
+              padding: '6px 10px 6px 22px',
+              overflow: 'hidden',
+              boxShadow: selected
+                ? '0 0 0 1px rgba(251,191,36,0.45), 0 4px 16px rgba(0,0,0,0.35)'
+                : hovered ? '0 4px 12px rgba(0,0,0,0.30)' : 'none',
+              fontStyle: 'italic',
+              fontSize: 12,
+              color: 'rgba(255,255,255,0.65)',
+              lineHeight: 1.5,
+              fontFamily: 'Inter, sans-serif',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+            }}
+          >
+            {/* Collapse toggle — top-left */}
+            {mode === 'edit' && (
+              <button
+                data-no-drag
+                onClick={e => {
+                  e.stopPropagation();
+                  toggleStickyCollapsed();
+                }}
+                onMouseDown={e => e.stopPropagation()}
+                title={stickyCollapsed ? 'Expand note' : 'Collapse note'}
+                style={{
+                  position: 'absolute',
+                  top: 4, left: 4,
+                  width: 14, height: 14,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(251,191,36,0.70)',
+                  cursor: 'pointer',
+                  padding: 0,
+                  zIndex: 3,
+                }}
+              >
+                {stickyCollapsed
+                  ? <ChevronRight size={11} />
+                  : <ChevronDown size={11} />}
+              </button>
+            )}
+
+            {/* Note text */}
+            {stickyCollapsed
+              ? ((block.textContent || '').slice(0, 30)
+                  + ((block.textContent || '').length > 30 ? '…' : ''))
+              : (block.textContent || (mode === 'edit'
+                  ? 'Double-click to collapse · Click Edit to write…'
+                  : ''))}
+
+            {/* Folded-corner effect */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0, right: 0,
+                width: 0, height: 0,
+                borderStyle: 'solid',
+                borderWidth: '0 10px 10px 0',
+                borderColor: 'transparent rgba(251,191,36,0.25) transparent transparent',
+                pointerEvents: 'none',
+              }}
+            />
+
+            {/* Hover toolbar — small Edit/Del/Arrow row */}
+            {mode === 'edit' && (hovered || selected) && (
+              <div
+                onClick={e => e.stopPropagation()}
+                onMouseDown={e => e.stopPropagation()}
+                style={{
+                  position: 'absolute', bottom: 2, right: 2,
+                  display: 'flex', alignItems: 'center', gap: 2,
+                  background: 'rgba(10,10,16,0.90)',
+                  border: '1px solid rgba(251,191,36,0.20)',
+                  borderRadius: 4, padding: '1px 3px',
+                  zIndex: 30,
+                }}
+              >
+                <button
+                  data-no-drag
+                  onClick={e => {
+                    e.stopPropagation();
+                    if (deleteConfirm) { onDelete(); setDeleteConfirm(false); }
+                    else { setDeleteConfirm(true); setTimeout(() => setDeleteConfirm(false), 2500); }
+                  }}
+                  onMouseLeave={() => setDeleteConfirm(false)}
+                  style={{
+                    background: deleteConfirm ? 'rgba(239,68,68,0.15)' : 'none',
+                    border: 'none',
+                    color: deleteConfirm ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.35)',
+                    cursor: 'pointer', fontSize: 9, padding: '0 3px', borderRadius: 3,
+                  }}
+                >
+                  {deleteConfirm ? '✕' : 'Del'}
+                </button>
+                <button
+                  data-no-drag
+                  onClick={e => { e.stopPropagation(); setEditModalOpen(true); }}
+                  style={{
+                    background: 'none', border: 'none',
+                    color: 'rgba(255,255,255,0.35)',
+                    cursor: 'pointer', fontSize: 9, padding: '0 3px',
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  data-no-drag
+                  onClick={e => { e.stopPropagation(); onArrowDrawStart('right'); }}
+                  style={{
+                    background: 'none', border: 'none',
+                    color: 'rgba(255,255,255,0.35)',
+                    cursor: 'pointer', fontSize: 9, padding: '0 3px',
+                  }}
+                >
+                  →
+                </button>
+              </div>
+            )}
+          </div>
+        ) : mode === 'edit' ? (
           /* ── EDIT MODE: Compact card ── */
           <div
             style={{

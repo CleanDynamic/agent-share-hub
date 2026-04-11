@@ -356,7 +356,9 @@ export function buildCanvasTOC(
   blocks: CanvasBlock[]
 ): TOCEntry[] {
   const entries: TOCEntry[] = [];
-  const ungrouped = blocks.filter(b => !b.stageId);
+  // Sticky notes are canvas-level annotations and should not appear in the TOC
+  const tocBlocks = blocks.filter(b => b.type !== 'sticky_note');
+  const ungrouped = tocBlocks.filter(b => !b.stageId);
 
   // Staged blocks grouped under their stage
   for (const stage of stages) {
@@ -367,7 +369,7 @@ export function buildCanvasTOC(
       label: stage.title,
       blockId: null,
       children: stage.blockIds
-        .map(bid => blocks.find(b => b.id === bid))
+        .map(bid => tocBlocks.find(b => b.id === bid))
         .filter(Boolean)
         .map(block => ({
           type: 'block' as const,
