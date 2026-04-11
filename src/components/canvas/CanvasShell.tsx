@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { CanvasTOC } from './CanvasTOC';
 import { CanvasToolbar } from './CanvasToolbar';
@@ -61,6 +62,41 @@ export function CanvasShell(props: CanvasShellProps) {
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [annotationsOpen, setAnnotationsOpen] = useState(false);
   const [activeStageTab, setActiveStageTab] = useState<string | null>(null);
+
+  // ── Stage tab bar scroll arrows ─────────────────
+  const stageTabsScrollRef = useRef<HTMLDivElement>(null);
+  const [showStageTabsLeftArrow, setShowStageTabsLeftArrow] = useState(false);
+  const [showStageTabsRightArrow, setShowStageTabsRightArrow] = useState(false);
+
+  useEffect(() => {
+    const el = stageTabsScrollRef.current;
+    if (!el) return;
+
+    const updateArrows = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      const hasOverflow = scrollWidth > clientWidth;
+      setShowStageTabsLeftArrow(hasOverflow && scrollLeft > 0);
+      setShowStageTabsRightArrow(hasOverflow && scrollLeft + clientWidth < scrollWidth - 1);
+    };
+
+    updateArrows();
+
+    el.addEventListener('scroll', updateArrows);
+
+    const resizeObserver = new ResizeObserver(updateArrows);
+    resizeObserver.observe(el);
+
+    return () => {
+      el.removeEventListener('scroll', updateArrows);
+      resizeObserver.disconnect();
+    };
+  }, [doc.stages.length, mode]);
+
+  const scrollStageTabs = (direction: 'left' | 'right') => {
+    const el = stageTabsScrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
+  };
 
   // ── Selection ───────────────────────────────────
   const [selectedBlockIds, setSelectedBlockIds] = useState<Set<string>>(new Set());
@@ -722,49 +758,135 @@ export function CanvasShell(props: CanvasShellProps) {
         {/* Stage tab bar */}
         {mode === 'edit' && doc.stages.length > 0 && (
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 2,
+            display: 'flex', alignItems: 'center', gap: 6,
             padding: '6px 12px',
             borderBottom: '1px solid rgba(255,255,255,0.06)',
             flexShrink: 0,
-            overflowX: 'auto',
+            overflow: 'hidden',
+            position: 'relative',
           }}>
-            <button
-              onClick={() => setActiveStageTab(null)}
-              style={{
-                padding: '4px 12px', fontSize: 11, fontWeight: 600,
-                borderRadius: 6, border: 'none', cursor: 'pointer',
-                background: !activeStageTab ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.04)',
-                color: !activeStageTab ? '#E8571A' : 'rgba(255,255,255,0.40)',
-                transition: 'all 0.15s',
-              }}
-            >
-              All
-            </button>
-            {doc.stages.map(s => (
+            {showStageTabsLeftArrow && (
               <button
-                key={s.id}
-                onClick={() => setActiveStageTab(s.id)}
+                onClick={() => scrollStageTabs('left')}
+                aria-label="Scroll stage tabs left"
                 style={{
-                  padding: '4px 12px', fontSize: 11, fontWeight: 600,
-                  borderRadius: 6, border: 'none', cursor: 'pointer',
-                  background: activeStageTab === s.id ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.04)',
-                  color: activeStageTab === s.id ? '#E8571A' : 'rgba(255,255,255,0.40)',
-                  transition: 'all 0.15s',
-                  whiteSpace: 'nowrap',
+                  width: 28,
+                  height: 28,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(10,10,16,0.90)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 6,
+                  color: 'rgba(255,255,255,0.40)',
+                  cursor: 'pointer',
+                  flexShrink: 0,
                 }}
               >
-                {s.title}
+                <ChevronLeft size={14} />
               </button>
-            ))}
-            <button
-              onClick={() => doc.addStage(`Stage ${doc.stages.length + 1}`)}
-              style={{
-                padding: '4px 8px', fontSize: 11, border: 'none', cursor: 'pointer',
-                background: 'none', color: 'rgba(255,255,255,0.25)',
-              }}
-            >
-              + Stage
-            </button>
+            )}
+            <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+              <div
+                ref={stageTabsScrollRef}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  overflowX: 'auto',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                }}
+              >
+                <button
+                  onClick={() => setActiveStageTab(null)}
+                  style={{
+                    padding: '4px 12px', fontSize: 11, fontWeight: 600,
+                    borderRadius: 6, border: 'none', cursor: 'pointer',
+                    background: !activeStageTab ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.04)',
+                    color: !activeStageTab ? '#E8571A' : 'rgba(255,255,255,0.40)',
+                    transition: 'all 0.15s',
+                    flexShrink: 0,
+                  }}
+                >
+                  All
+                </button>
+                {doc.stages.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => setActiveStageTab(s.id)}
+                    style={{
+                      padding: '4px 12px', fontSize: 11, fontWeight: 600,
+                      borderRadius: 6, border: 'none', cursor: 'pointer',
+                      background: activeStageTab === s.id ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.04)',
+                      color: activeStageTab === s.id ? '#E8571A' : 'rgba(255,255,255,0.40)',
+                      transition: 'all 0.15s',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {s.title}
+                  </button>
+                ))}
+                <button
+                  onClick={() => doc.addStage(`Stage ${doc.stages.length + 1}`)}
+                  style={{
+                    padding: '4px 8px', fontSize: 11, border: 'none', cursor: 'pointer',
+                    background: 'none', color: 'rgba(255,255,255,0.25)',
+                    flexShrink: 0,
+                  }}
+                >
+                  + Stage
+                </button>
+              </div>
+              {showStageTabsLeftArrow && (
+                <div
+                  style={{
+                    pointerEvents: 'none',
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    width: 32,
+                    background: 'linear-gradient(to right, rgba(10,10,16,0.95), transparent)',
+                  }}
+                />
+              )}
+              {showStageTabsRightArrow && (
+                <div
+                  style={{
+                    pointerEvents: 'none',
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    right: 0,
+                    width: 32,
+                    background: 'linear-gradient(to left, rgba(10,10,16,0.95), transparent)',
+                  }}
+                />
+              )}
+            </div>
+            {showStageTabsRightArrow && (
+              <button
+                onClick={() => scrollStageTabs('right')}
+                aria-label="Scroll stage tabs right"
+                style={{
+                  width: 28,
+                  height: 28,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(10,10,16,0.90)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 6,
+                  color: 'rgba(255,255,255,0.40)',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                <ChevronRight size={14} />
+              </button>
+            )}
           </div>
         )}
 

@@ -36,7 +36,7 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
           'Write your prompt here...',
         position: {
           col: 1, row: 1,
-          colSpan: 12, rowSpan: 3,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -45,8 +45,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           'Paste the actual model output...',
         position: {
-          col: 1, row: 5,
-          colSpan: 12, rowSpan: 3,
+          col: 1, row: 7,
+          colSpan: 3, rowSpan: 5,
         },
       },
     ],
@@ -72,7 +72,7 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder: 'The original prompt...',
         position: {
           col: 1, row: 1,
-          colSpan: 6, rowSpan: 3,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -81,8 +81,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           'The improved prompt...',
         position: {
-          col: 7, row: 1,
-          colSpan: 6, rowSpan: 3,
+          col: 4, row: 1,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -90,8 +90,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         subheading: 'What Changed',
         placeholder: 'Explain the improvement...',
         position: {
-          col: 1, row: 5,
-          colSpan: 12, rowSpan: 2,
+          col: 1, row: 7,
+          colSpan: 3, rowSpan: 5,
         },
       },
     ],
@@ -123,7 +123,7 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
           'What needs to be installed...',
         position: {
           col: 1, row: 1,
-          colSpan: 12, rowSpan: 2,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -132,8 +132,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           '# Paste your code here\n',
         position: {
-          col: 1, row: 4,
-          colSpan: 8, rowSpan: 4,
+          col: 1, row: 7,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -142,8 +142,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           'What the terminal should show...',
         position: {
-          col: 9, row: 4,
-          colSpan: 4, rowSpan: 4,
+          col: 4, row: 7,
+          colSpan: 3, rowSpan: 5,
         },
       },
     ],
@@ -175,7 +175,7 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
           'Model, memory, tools, capabilities...',
         position: {
           col: 1, row: 1,
-          colSpan: 12, rowSpan: 4,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -184,8 +184,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           'How the agent processes...',
         position: {
-          col: 1, row: 6,
-          colSpan: 6, rowSpan: 3,
+          col: 1, row: 7,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -194,8 +194,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           'External tools the agent calls...',
         position: {
-          col: 7, row: 6,
-          colSpan: 6, rowSpan: 3,
+          col: 4, row: 7,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -204,8 +204,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           'What the agent produces...',
         position: {
-          col: 1, row: 10,
-          colSpan: 12, rowSpan: 2,
+          col: 1, row: 13,
+          colSpan: 3, rowSpan: 5,
         },
       },
     ],
@@ -247,7 +247,7 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
           'Temperature, top-p, max tokens...',
         position: {
           col: 1, row: 1,
-          colSpan: 12, rowSpan: 2,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -256,8 +256,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           'The prompt being evaluated...',
         position: {
-          col: 1, row: 4,
-          colSpan: 12, rowSpan: 2,
+          col: 1, row: 7,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -265,8 +265,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         subheading: 'Run 1',
         placeholder: 'Output from first run...',
         position: {
-          col: 1, row: 7,
-          colSpan: 4, rowSpan: 3,
+          col: 1, row: 13,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -274,8 +274,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         subheading: 'Run 2',
         placeholder: 'Output from second run...',
         position: {
-          col: 5, row: 7,
-          colSpan: 4, rowSpan: 3,
+          col: 4, row: 13,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -283,8 +283,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         subheading: 'Run 3',
         placeholder: 'Output from third run...',
         position: {
-          col: 9, row: 7,
-          colSpan: 4, rowSpan: 3,
+          col: 7, row: 13,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -293,8 +293,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           'Consistency, quality, notes...',
         position: {
-          col: 1, row: 11,
-          colSpan: 12, rowSpan: 2,
+          col: 1, row: 19,
+          colSpan: 3, rowSpan: 5,
         },
       },
     ],
@@ -351,7 +351,7 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
           'Explain this step visually...',
         position: {
           col: 1, row: 1,
-          colSpan: 5, rowSpan: 4,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -360,8 +360,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           'The technical content for this step...',
         position: {
-          col: 6, row: 1,
-          colSpan: 7, rowSpan: 4,
+          col: 4, row: 1,
+          colSpan: 3, rowSpan: 5,
         },
       },
     ],
@@ -388,7 +388,7 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
           'Pinecone / Weaviate / pgvector setup...',
         position: {
           col: 1, row: 1,
-          colSpan: 4, rowSpan: 3,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -397,8 +397,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           'Query embedding → similarity search...',
         position: {
-          col: 5, row: 1,
-          colSpan: 4, rowSpan: 3,
+          col: 4, row: 1,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -407,8 +407,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           'System prompt + retrieved context + query...',
         position: {
-          col: 9, row: 1,
-          colSpan: 4, rowSpan: 3,
+          col: 7, row: 1,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -417,8 +417,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           'Model, temperature, max tokens...',
         position: {
-          col: 1, row: 5,
-          colSpan: 6, rowSpan: 2,
+          col: 1, row: 7,
+          colSpan: 3, rowSpan: 5,
         },
       },
       {
@@ -427,8 +427,8 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
         placeholder:
           'Output with source citations...',
         position: {
-          col: 7, row: 5,
-          colSpan: 6, rowSpan: 2,
+          col: 4, row: 7,
+          colSpan: 3, rowSpan: 5,
         },
       },
     ],

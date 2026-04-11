@@ -1282,15 +1282,9 @@ const Upload = () => {
         )}
 
         {/* ─── Type chooser — shown initially, replaces step 1 ─── */}
-        {/* Three primary tiles: Blueprint / Blog / Bounty.
-            Blueprint expands to a sub-type picker
-            (build / technique / discovery). */}
+        {/* Three primary cards: Blueprints / Blogs / Bounties. */}
         {showTypeChooser && (() => {
           const goNext = () => {
-            // Default to 'build' if blueprint was chosen but no sub-type explicitly set
-            if (blueprintExpanded && !['build','technique','discovery'].includes(form.getValues('post_type'))) {
-              form.setValue('post_type', 'build');
-            }
             // Create a draft immediately so the canvas can start autosaving
             saveDraft(true).then(id => {
               if (id) setTimeout(() => setShowTypeChooser(false), 220);
@@ -1298,12 +1292,58 @@ const Upload = () => {
             });
           };
 
-          const UPLOAD_TYPES = [
-            { value: 'build',     label: 'Build',     color: '#E8571A', postType: 'build' },
-            { value: 'technique', label: 'Technique', color: '#2EC4B6', postType: 'technique' },
-            { value: 'discovery', label: 'Discovery', color: '#7C3AED', postType: 'discovery' },
-            { value: 'blog',      label: 'Blog',      color: '#3B82F6', postType: 'discussion' },
-            { value: 'bounty',    label: 'Bounty',    color: '#F59E0B', postType: null },
+          const UPLOAD_CARDS = [
+            {
+              value: 'blueprint',
+              title: 'Blueprints',
+              accent: '#E8571A',
+              description: 'Share step-by-step AI agent processes and workflows on a visual canvas.',
+              bullets: [
+                'Build — construct and document a new process',
+                'Technique — share a specific method or approach',
+                'Discovery — document findings and experiments',
+              ],
+              onClick: () => {
+                setUploadType('single');
+                setBlueprintExpanded(false);
+                form.setValue('post_type', 'build' as any);
+                goNext();
+              },
+            },
+            {
+              value: 'blog',
+              title: 'Blogs',
+              accent: '#3B82F6',
+              description: 'Write articles, tutorials, and thought pieces about AI agents.',
+              bullets: [
+                'Long-form articles and guides',
+                'Tutorials with embedded code',
+                'Opinion pieces and analysis',
+              ],
+              onClick: () => {
+                setBlueprintExpanded(false);
+                setUploadType('blog');
+                form.setValue('post_type', 'discussion' as any);
+                goNext();
+              },
+            },
+            {
+              value: 'bounty',
+              title: 'Bounties',
+              accent: '#22C55E',
+              description: 'Post challenges for the community to solve, with rewards.',
+              bullets: [
+                'Request specific AI agent builds',
+                'Set difficulty and reward tiers',
+                'Review and accept community submissions',
+              ],
+              onClick: () => {
+                setBlueprintExpanded(false);
+                setUploadType('bounty');
+                form.setValue('post_type', 'build' as any);
+                goNext();
+              },
+            },
           ];
 
           return (
@@ -1337,122 +1377,77 @@ const Upload = () => {
                 </div>
               </div>
 
-              {/* Tiles */}
+              {/* Cards — three options evenly spaced in a single row */}
               <div style={{
                 display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
+                flexDirection: 'row',
+                gap: 16,
+                alignItems: 'stretch',
               }}>
-                {/* Blueprint label */}
-                <div style={{
-                  fontSize: 10, fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.10em',
-                  color: 'rgba(255,255,255,0.22)',
-                  marginBottom: 2,
-                }}>
-                  Blueprints
-                </div>
-
-                {UPLOAD_TYPES.filter(t => t.value !== 'bounty').map(type => (
+                {UPLOAD_CARDS.map(card => (
                   <button
-                    key={type.value}
+                    key={card.value}
                     type="button"
-                    onClick={() => {
-                      if (type.value === 'blog') {
-                        setBlueprintExpanded(false);
-                        setUploadType('blog');
-                        form.setValue('post_type', 'discussion' as any);
-                      } else {
-                        setUploadType('single');
-                        setBlueprintExpanded(false);
-                        form.setValue('post_type', type.postType as any);
-                      }
-                      goNext();
-                    }}
+                    onClick={card.onClick}
                     style={{
+                      flex: 1,
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '14px 18px',
-                      borderRadius: 10,
-                      width: '100%',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      padding: 24,
+                      borderRadius: 12,
                       background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderLeft: `3px solid ${card.accent}`,
                       cursor: 'pointer',
                       transition: 'all 0.15s',
                       textAlign: 'left',
                     }}
                     onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.background = `${type.color}12`;
-                      (e.currentTarget as HTMLElement).style.borderColor = `${type.color}35`;
+                      (e.currentTarget as HTMLElement).style.background = `${card.accent}10`;
+                      (e.currentTarget as HTMLElement).style.borderColor = `${card.accent}50`;
+                      (e.currentTarget as HTMLElement).style.borderLeft = `3px solid ${card.accent}`;
                     }}
                     onMouseLeave={e => {
                       (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
-                      (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)';
+                      (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)';
+                      (e.currentTarget as HTMLElement).style.borderLeft = `3px solid ${card.accent}`;
                     }}
                   >
-                    <span style={{
-                      fontSize: 14, fontWeight: 600,
-                      color: type.color,
+                    <div style={{
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: card.accent,
                       fontFamily: "'Playfair Display', Georgia, serif",
+                      marginBottom: 8,
                     }}>
-                      {type.label}
-                    </span>
-                    <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.20)' }}>→</span>
+                      {card.title}
+                    </div>
+                    <div style={{
+                      fontSize: 13,
+                      color: 'rgba(255,255,255,0.45)',
+                      lineHeight: 1.5,
+                      marginBottom: 12,
+                    }}>
+                      {card.description}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {card.bullets.map((bullet, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            fontSize: 12,
+                            color: 'rgba(255,255,255,0.35)',
+                            paddingLeft: 12,
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          • {bullet}
+                        </div>
+                      ))}
+                    </div>
                   </button>
                 ))}
-
-                {/* Bounty separator */}
-                <div style={{
-                  fontSize: 10, fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.10em',
-                  color: 'rgba(255,255,255,0.22)',
-                  marginTop: 16, marginBottom: 2,
-                }}>
-                  Or request something
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBlueprintExpanded(false);
-                    setUploadType('bounty');
-                    form.setValue('post_type', 'build' as any);
-                    goNext();
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '14px 18px',
-                    borderRadius: 10,
-                    width: '100%',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.07)',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s',
-                    textAlign: 'left',
-                  }}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(245,158,11,0.08)';
-                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(245,158,11,0.30)';
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
-                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)';
-                  }}
-                >
-                  <span style={{
-                    fontSize: 14, fontWeight: 600,
-                    color: '#F59E0B',
-                    fontFamily: "'Playfair Display', Georgia, serif",
-                  }}>
-                    Post a Bounty
-                  </span>
-                  <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.20)' }}>→</span>
-                </button>
               </div>
             </div>
           );
