@@ -10,6 +10,7 @@ const BLOCK_TYPE_LABELS: Record<string, string> = {
   text: 'Text',
   long_text: 'Long Text',
   image: 'Image',
+  video: 'Video',
   result: 'Result',
   comparison: 'Comparison',
   agent_config: 'Agent Config',
@@ -19,6 +20,7 @@ const BLOCK_TYPE_LABELS: Record<string, string> = {
   resource: 'Resource',
   tutorial_step: 'Tutorial Step',
   section_heading: 'Section Heading',
+  sticky_note: 'Note',
 };
 
 interface BlockEditModalProps {

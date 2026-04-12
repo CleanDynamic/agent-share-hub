@@ -18,6 +18,8 @@ const QUICK_BLOCK_TYPES = [
   { type: 'tutorial_step', label: 'Tutorial', accent: '#E8571A', desc: 'Step-by-step' },
   { type: 'section_heading', label: 'Heading', accent: 'rgba(255,255,255,0.40)', desc: 'Section divider' },
   { type: 'resource', label: 'Resource', accent: '#64748B', desc: 'Link / reference' },
+  { type: 'sticky_note', label: 'Note', accent: '#FBBF24', desc: 'Sticky note comment' },
+  { type: 'video', label: 'Video', accent: '#EC4899', desc: 'Video embed' },
 ];
 
 interface CanvasToolbarProps {
@@ -132,8 +134,9 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                   onMouseLeave={() => setHoveredType(null)}
                   onClick={() => {
                     const isHeading = bt.type === 'section_heading';
-                    const colSpan = 3;
-                    const rowSpan = isHeading ? 2 : 5;
+                    const isSticky = bt.type === 'sticky_note';
+                    const colSpan = isSticky ? 2 : 3;
+                    const rowSpan = isSticky ? 3 : isHeading ? 2 : 5;
                     onInsertBlock?.(bt.type, {
                       colSpan, rowSpan,
                     });

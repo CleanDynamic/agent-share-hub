@@ -61,6 +61,7 @@ export interface CanvasBlock {
   lockType: 'none' | 'blur' | 'premium';
   mobileOrder: number | null;
   creatorAnnotation: string | null;
+  isCollapsed?: boolean;
   // All other ContentBlock fields (prompt, code,
   // image, result, comparison, etc.) carry through
   // from the existing ContentBlock interface.

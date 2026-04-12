@@ -430,9 +430,10 @@ export function CanvasShell(props: CanvasShellProps) {
     return () => ro.disconnect();
   }, []);
 
-  // Filter blocks by active stage tab
+  // Filter blocks by active stage tab. Sticky notes are canvas-level
+  // annotations and are always visible regardless of the active stage tab.
   const filteredBlocks = activeStageTab
-    ? doc.blocks.filter(b => b.stageId === activeStageTab)
+    ? doc.blocks.filter(b => b.stageId === activeStageTab || b.type === 'sticky_note')
     : doc.blocks;
 
   // When a stage is deleted, reset tab
@@ -456,10 +457,11 @@ export function CanvasShell(props: CanvasShellProps) {
     }
   }, [doc.blocks, doc.stages, mode]);
 
-  // Handle inserting block with stage auto-assignment
+  // Handle inserting block with stage auto-assignment. Sticky notes are
+  // canvas-level annotations and are never attached to a stage.
   const handleInsertBlock = useCallback((type: string, position: Partial<CanvasBlockType['position']>) => {
     const id = doc.addBlock(type, position);
-    if (activeStageTab) {
+    if (activeStageTab && type !== 'sticky_note') {
       doc.assignBlockToStage(id, activeStageTab);
     }
     return id;

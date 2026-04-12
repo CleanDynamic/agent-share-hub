@@ -176,7 +176,19 @@ export function ArrowOverlay({
 
       {/* Rendered arrows */}
       {arrows.map(arrow => {
-        const meta = ARROW_TYPE_META[arrow.arrowType];
+        const baseMeta = ARROW_TYPE_META[arrow.arrowType];
+        // Arrows connected to sticky notes render with a distinct
+        // lightly-dotted pattern to signal their annotation nature.
+        const fromIsSticky =
+          blockMap.get(arrow.fromBlockId)?.type === 'sticky_note';
+        const toIsSticky =
+          blockMap.get(arrow.toBlockId)?.type === 'sticky_note'
+          || (arrow.toBlockIds ?? []).some(
+            id => blockMap.get(id)?.type === 'sticky_note'
+          );
+        const meta = (fromIsSticky || toIsSticky)
+          ? { ...baseMeta, dash: '2,3' }
+          : baseMeta;
         const isSelected = selectedArrow === arrow.id;
 
         // Multi-target arrows
