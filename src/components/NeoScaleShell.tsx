@@ -100,7 +100,7 @@ const NEOSCALE_CSS = `
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.3px;
-  color: #E8571A;
+  color: #8B4513;
   padding: 0 8px;
   margin-bottom: 28px;
   cursor: pointer;
@@ -117,7 +117,7 @@ const NEOSCALE_CSS = `
   position: relative;
 }
 .ns-nav-item:hover { background: rgba(255,255,255,0.04); }
-.ns-nav-item.active { background: rgba(232,87,26,0.1); }
+.ns-nav-item.active { background: rgba(139,69,19,0.1); }
 .ns-nav-icon {
   width: 18px; height: 18px;
   display: flex; align-items: center; justify-content: center;
@@ -125,7 +125,7 @@ const NEOSCALE_CSS = `
   color: rgba(255,255,255,0.35);
   transition: color 0.25s;
 }
-.ns-nav-item.active .ns-nav-icon { color: #E8571A; }
+.ns-nav-item.active .ns-nav-icon { color: #8B4513; }
 .ns-nav-label {
   font-size: 13px;
   font-weight: 400;
@@ -142,7 +142,7 @@ const NEOSCALE_CSS = `
   display: flex; align-items: center; justify-content: center;
   min-width: 18px; height: 18px; padding: 0 5px;
   border-radius: 9px; font-size: 10px; font-weight: 700;
-  background: #E8571A; color: #fff;
+  background: #8B4513; color: #fff;
 }
 .ns-nav-badge.muted { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.45); }
 
@@ -153,11 +153,11 @@ const NEOSCALE_CSS = `
   right: -1px; top: 50%;
   transform: translateY(-50%);
   width: 3px; height: 0;
-  background: #E8571A;
+  background: #8B4513;
   border-radius: 2px;
   opacity: 0;
   filter: blur(1px);
-  box-shadow: 0 0 12px #E8571A;
+  box-shadow: 0 0 12px #8B4513;
 }
 .ns-left-panel.pulse::after { animation: nsConnectorPulse 0.5s ease-out forwards; }
 @keyframes nsConnectorPulse {
@@ -181,7 +181,7 @@ const NEOSCALE_CSS = `
 .ns-user-btn:hover { background: rgba(255,255,255,0.04); }
 .ns-user-avatar {
   width: 28px; height: 28px; border-radius: 50%;
-  background: #E8571A; color: #fff;
+  background: #8B4513; color: #fff;
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 600; flex-shrink: 0;
   overflow: hidden;
@@ -366,8 +366,8 @@ const NEOSCALE_CSS = `
   box-sizing: border-box;
 }
 .ns-glass-input:focus {
-  border-color: rgba(232,87,26,0.50);
-  box-shadow: 0 0 0 3px rgba(232,87,26,0.08);
+  border-color: rgba(139,69,19,0.50);
+  box-shadow: 0 0 0 3px rgba(139,69,19,0.08);
 }
 .ns-glass-input::placeholder { color: rgba(255,255,255,0.30); }
 
@@ -387,7 +387,7 @@ const NEOSCALE_CSS = `
 
 /* ── Orange button (primary CTA) ── */
 .ns-btn-orange {
-  background: linear-gradient(135deg, #E8571A, #f66124);
+  background: linear-gradient(135deg, #8B4513, #a05a2a);
   color: #fff;
   padding: 10px 24px;
   border-radius: 9999px;
@@ -396,7 +396,7 @@ const NEOSCALE_CSS = `
   font-weight: 700;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(232,87,26,0.20);
+  box-shadow: 0 4px 20px rgba(139,69,19,0.20);
   transition: transform 0.15s;
 }
 .ns-btn-orange:hover  { transform: scale(1.05); }
@@ -557,7 +557,7 @@ const NEOSCALE_CSS = `
   border-radius: 11px;
   padding: 1px;
   background: conic-gradient(
-    var(--tile-hover-color, #E8571A) var(--tile-fill, 0%),
+    var(--tile-hover-color, #8B4513) var(--tile-fill, 0%),
     transparent var(--tile-fill, 0%)
   );
   -webkit-mask:
@@ -778,9 +778,9 @@ const POST_TYPE_TILES = [
     value: 'blueprint',
     label: 'Blueprints',
     emoji: '🔷',
-    color: '#E8571A',
-    bg: 'rgba(232,87,26,0.12)',
-    border: 'rgba(232,87,26,0.20)',
+    color: '#8B4513',
+    bg: 'rgba(139,69,19,0.12)',
+    border: 'rgba(139,69,19,0.20)',
   },
   {
     value: 'blog',
@@ -802,7 +802,7 @@ const POST_TYPE_TILES = [
 
 // Random colour palette for tile hover borders
 const TILE_HOVER_COLORS = [
-  '#E8571A', '#2EC4B6', '#7C3AED', '#3B82F6',
+  '#8B4513', '#1F7A6D', '#7C3AED', '#3B82F6',
   '#F59E0B', '#22C55E', '#EC4899', '#06B6D4',
   '#A78BFA', '#F97316',
 ];
@@ -857,7 +857,7 @@ function timeAgo(dateStr: string): string {
 ──────────────────────────────────────────────── */
 function ctypeBg(contentType: string): string {
   const map: Record<string, string> = {
-    "prompt-file": "#E8571A",
+    "prompt-file": "#8B4513",
     "agent-blueprint": "#9B59B6",
     "workflow-template": "#3498DB",
     "ai-tools-llms": "#1ABC9C",
@@ -873,9 +873,9 @@ function ctypeBg(contentType: string): string {
 
 function getAvatarStyle(contentType: string) {
   const map: Record<string, {bg:string, color:string, border:string}> = {
-    'Prompt(s)':          {bg:'rgba(232,87,26,0.20)',   color:'#E8571A', border:'rgba(232,87,26,0.30)'},
+    'Prompt(s)':          {bg:'rgba(139,69,19,0.20)',   color:'#8B4513', border:'rgba(139,69,19,0.30)'},
     'Agent(s)':           {bg:'rgba(124,58,237,0.20)',  color:'#7C3AED', border:'rgba(124,58,237,0.30)'},
-    'Blog':               {bg:'rgba(46,196,182,0.20)',  color:'#2EC4B6', border:'rgba(46,196,182,0.30)'},
+    'Blog':               {bg:'rgba(31,122,109,0.20)',  color:'#1F7A6D', border:'rgba(31,122,109,0.30)'},
     'Workflow Template':  {bg:'rgba(37,99,235,0.20)',   color:'#3B82F6', border:'rgba(37,99,235,0.30)'},
     'Evaluation Framework':{bg:'rgba(219,39,119,0.20)',color:'#EC4899', border:'rgba(219,39,119,0.30)'},
     'Agent Stack':        {bg:'rgba(220,38,38,0.20)',   color:'#EF4444', border:'rgba(220,38,38,0.30)'},
@@ -1581,7 +1581,7 @@ export function NeoScaleShell() {
                       <span className={`ns-nav-badge${item.key === "drafts" ? " muted" : ""}`}>{item.badge}</span>
                     )}
                     {item.key === "library" && hasUnseenSaves && !item.badge && (
-                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#E8571A", marginLeft: "auto" }} />
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#8B4513", marginLeft: "auto" }} />
                     )}
                   </div>
                 </li>
@@ -1780,11 +1780,11 @@ export function NeoScaleShell() {
                       >
                         <div style={{
                           width: 20, height: 20, borderRadius: '50%',
-                          background: 'rgba(232,87,26,0.15)',
-                          border: '1px solid rgba(232,87,26,0.25)',
+                          background: 'rgba(139,69,19,0.15)',
+                          border: '1px solid rgba(139,69,19,0.25)',
                           display: 'flex', alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: 9, fontWeight: 700, color: '#E8571A',
+                          fontSize: 9, fontWeight: 700, color: '#8B4513',
                           flexShrink: 0,
                         }}>
                           {(p.display_name ?? p.username)[0].toUpperCase()}
