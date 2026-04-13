@@ -57,16 +57,16 @@ export function LibrarySidebar({
   onToast,
 }: LibrarySidebarProps) {
   const sidebarItemStyle = (isActive: boolean) => ({
-    background: isActive ? "rgba(46,196,182,0.08)" : "transparent",
+    background: isActive ? "rgba(31,122,109,0.08)" : "transparent",
     borderLeft: isActive
-      ? "2px solid #2EC4B6"
+      ? "2px solid #1F7A6D"
       : "2px solid transparent",
     borderRadius: 8,
     padding: "8px 12px",
     fontSize: 13,
     fontWeight: isActive ? 600 : 300,
     color: isActive
-      ? "#2EC4B6"
+      ? "#1F7A6D"
       : "rgba(255,255,255,0.45)",
     transition: "all 0.15s ease",
   });
@@ -148,7 +148,7 @@ export function LibrarySidebar({
                 />
                 <button
                   onClick={() => onEditSave(folder.id)}
-                  style={{ fontSize: 11, color: "#2EC4B6", fontWeight: 500 }}
+                  style={{ fontSize: 11, color: "#1F7A6D", fontWeight: 500 }}
                 >
                   Save
                 </button>
@@ -173,8 +173,8 @@ export function LibrarySidebar({
                       fontWeight: 500,
                       padding: "1px 5px",
                       borderRadius: 4,
-                      background: "rgba(46,196,182,0.15)",
-                      color: "#2EC4B6",
+                      background: "rgba(31,122,109,0.15)",
+                      color: "#1F7A6D",
                     }}
                   >
                     Live
@@ -274,9 +274,9 @@ export function LibrarySidebar({
                 >
                   <Share2
                     className="h-3.5 w-3.5 shrink-0"
-                    style={{ color: "#2EC4B6" }}
+                    style={{ color: "#1F7A6D" }}
                   />
-                  <span style={{ color: "#2EC4B6" }}>
+                  <span style={{ color: "#1F7A6D" }}>
                     {folder.published_collection_id
                       ? "Update Collection"
                       : "Publish as Collection"}
@@ -312,13 +312,13 @@ export function LibrarySidebar({
             fontSize: 12,
             fontWeight: !activeFolder ? 600 : 400,
             background: !activeFolder
-              ? "rgba(46,196,182,0.15)"
+              ? "rgba(31,122,109,0.15)"
               : "rgba(255,255,255,0.04)",
             color: !activeFolder
-              ? "#2EC4B6"
+              ? "#1F7A6D"
               : "rgba(255,255,255,0.45)",
             border: !activeFolder
-              ? "1px solid rgba(46,196,182,0.3)"
+              ? "1px solid rgba(31,122,109,0.3)"
               : "1px solid rgba(255,255,255,0.06)",
           }}
         >
@@ -332,15 +332,15 @@ export function LibrarySidebar({
             fontWeight: activeFolder === "root" ? 600 : 400,
             background:
               activeFolder === "root"
-                ? "rgba(46,196,182,0.15)"
+                ? "rgba(31,122,109,0.15)"
                 : "rgba(255,255,255,0.04)",
             color:
               activeFolder === "root"
-                ? "#2EC4B6"
+                ? "#1F7A6D"
                 : "rgba(255,255,255,0.45)",
             border:
               activeFolder === "root"
-                ? "1px solid rgba(46,196,182,0.3)"
+                ? "1px solid rgba(31,122,109,0.3)"
                 : "1px solid rgba(255,255,255,0.06)",
           }}
         >
@@ -356,15 +356,15 @@ export function LibrarySidebar({
               fontWeight: activeFolder === folder.id ? 600 : 400,
               background:
                 activeFolder === folder.id
-                  ? "rgba(46,196,182,0.15)"
+                  ? "rgba(31,122,109,0.15)"
                   : "rgba(255,255,255,0.04)",
               color:
                 activeFolder === folder.id
-                  ? "#2EC4B6"
+                  ? "#1F7A6D"
                   : "rgba(255,255,255,0.45)",
               border:
                 activeFolder === folder.id
-                  ? "1px solid rgba(46,196,182,0.3)"
+                  ? "1px solid rgba(31,122,109,0.3)"
                   : "1px solid rgba(255,255,255,0.06)",
             }}
           >

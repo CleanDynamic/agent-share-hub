@@ -116,11 +116,11 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
           <div
             className="text-[11px] leading-snug truncate px-2.5 py-1.5 rounded-md"
             style={{
-              background: "rgba(46,196,182,0.04)",
-              borderLeft: "2px solid rgba(46,196,182,0.3)",
+              background: "rgba(31,122,109,0.04)",
+              borderLeft: "2px solid rgba(31,122,109,0.3)",
             }}
           >
-            <span className="text-[#2EC4B6] opacity-70 uppercase tracking-wider mr-1">Needs:</span>
+            <span className="text-[#1F7A6D] opacity-70 uppercase tracking-wider mr-1">Needs:</span>
             <span className="text-muted-foreground">{gap}</span>
           </div>
         )}
@@ -142,7 +142,7 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
             to={`/content/${item.id}?tab=responses`}
             onClick={stop}
             className="text-xs font-medium hover:underline"
-            style={{ color: "#2EC4B6" }}
+            style={{ color: "#1F7A6D" }}
           >
             Respond ↗
           </Link>

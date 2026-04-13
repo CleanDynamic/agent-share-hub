@@ -43,13 +43,13 @@ const POST_TYPE_DISPLAY: Record<string, {
   blueprintLabel: string;
 }> = {
   build: {
-    label: 'Build', emoji: '🔨', color: '#E8571A',
-    bg: 'rgba(232,87,26,0.12)', border: 'rgba(232,87,26,0.25)',
+    label: 'Build', emoji: '🔨', color: '#8B4513',
+    bg: 'rgba(139,69,19,0.12)', border: 'rgba(139,69,19,0.25)',
     blueprintLabel: 'The Blueprint',
   },
   technique: {
-    label: 'Technique', emoji: '⚡', color: '#2EC4B6',
-    bg: 'rgba(46,196,182,0.12)', border: 'rgba(46,196,182,0.25)',
+    label: 'Technique', emoji: '⚡', color: '#1F7A6D',
+    bg: 'rgba(31,122,109,0.12)', border: 'rgba(31,122,109,0.25)',
     blueprintLabel: 'The Technique',
   },
   discovery: {
@@ -1296,7 +1296,7 @@ const Upload = () => {
             {
               value: 'blueprint',
               title: 'Blueprints',
-              accent: '#E8571A',
+              accent: '#8B4513',
               description: 'Share step-by-step AI agent processes and workflows on a visual canvas.',
               bullets: [
                 'Build — construct and document a new process',
@@ -1870,11 +1870,11 @@ const Upload = () => {
                   padding: '4px 12px', borderRadius: 9999, fontSize: 11,
                   fontWeight: 600, cursor: 'pointer',
                   background: isProjectMode
-                    ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.04)',
+                    ? 'rgba(139,69,19,0.15)' : 'rgba(255,255,255,0.04)',
                   border: `1px solid ${isProjectMode
-                    ? 'rgba(232,87,26,0.35)' : 'rgba(255,255,255,0.09)'}`,
+                    ? 'rgba(139,69,19,0.35)' : 'rgba(255,255,255,0.09)'}`,
                   color: isProjectMode
-                    ? '#E8571A' : 'rgba(255,255,255,0.35)',
+                    ? '#8B4513' : 'rgba(255,255,255,0.35)',
                   transition: 'all 0.15s',
                 }}
               >
@@ -2174,13 +2174,13 @@ const Upload = () => {
                   label: 'Outcome',
                   placeholder: 'Outcome: What will readers be able to do after following this?',
                   emoji: '🎯',
-                  color: '#E8571A',
+                  color: '#8B4513',
                 },
                 technique: {
                   label: 'The Claim',
                   placeholder: 'The Claim: What does this technique actually achieve?',
                   emoji: '⚡',
-                  color: '#2EC4B6',
+                  color: '#1F7A6D',
                 },
                 discovery: {
                   label: 'The Finding',
@@ -2632,7 +2632,7 @@ const Upload = () => {
                       fontSize: 12, fontWeight: 700,
                       cursor: submitting ? 'default' : 'pointer',
                       background: submitting
-                        ? 'rgba(232,87,26,0.40)' : '#E8571A',
+                        ? 'rgba(139,69,19,0.40)' : '#8B4513',
                       border: 'none', color: '#fff',
                       fontFamily: 'Inter',
                     }}
@@ -2688,7 +2688,7 @@ const Upload = () => {
               </button>
               <button onClick={handleExitSave} style={{
                 padding: '8px 16px', fontSize: 12, fontWeight: 700, borderRadius: 8,
-                background: 'rgba(232,87,26,0.85)', border: '1px solid rgba(232,87,26,0.50)',
+                background: 'rgba(139,69,19,0.85)', border: '1px solid rgba(139,69,19,0.50)',
                 color: '#fff', cursor: 'pointer',
               }}>
                 Save Draft

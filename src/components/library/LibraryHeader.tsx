@@ -37,7 +37,7 @@ export function LibraryHeader({ itemCount, updateCount }: LibraryHeaderProps) {
       >
         {itemCount} item{itemCount !== 1 ? "s" : ""}
         {updateCount > 0 && (
-          <span style={{ color: "#E8571A", marginLeft: 8 }}>
+          <span style={{ color: "#8B4513", marginLeft: 8 }}>
             · {updateCount} updated
           </span>
         )}

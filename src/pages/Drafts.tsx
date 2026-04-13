@@ -124,7 +124,7 @@ export default function DraftsPage() {
                     </p>
                     <div className="flex items-center flex-wrap" style={{ gap: 6 }}>
                       {draft.content_type && (
-                        <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(232,87,26,0.08)', color: '#E8571A', border: '1px solid rgba(232,87,26,0.2)' }}>
+                        <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(139,69,19,0.08)', color: '#8B4513', border: '1px solid rgba(139,69,19,0.2)' }}>
                           {displayContentType(draft.content_type)}
                         </span>
                       )}
@@ -146,7 +146,7 @@ export default function DraftsPage() {
                   <div className="flex items-center shrink-0" style={{ gap: 8 }}>
                     <button
                       onClick={() => navigate(`/upload?draft=${draft.id}`)}
-                      style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(46,196,182,0.3)', color: '#2EC4B6', background: 'rgba(46,196,182,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                      style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(31,122,109,0.3)', color: '#1F7A6D', background: 'rgba(31,122,109,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                     >
                       <Pencil style={{ width: 13, height: 13 }} /> Continue editing
                     </button>

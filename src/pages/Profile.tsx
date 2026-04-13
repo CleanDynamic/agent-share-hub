@@ -412,7 +412,7 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
           <span><span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{contentItems?.length ?? 0}</span> blueprints</span>
           <span><span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{totalDownloads.toLocaleString()}</span> downloads</span>
           {(profile.bounties_solved ?? 0) > 0 && (
-            <span style={{ color: '#2EC4B6' }}>★ <span style={{ fontWeight: 600 }}>{profile.bounties_solved}</span> solved</span>
+            <span style={{ color: '#1F7A6D' }}>★ <span style={{ fontWeight: 600 }}>{profile.bounties_solved}</span> solved</span>
           )}
         </div>
       </div>
@@ -430,8 +430,8 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
               borderRadius: 100,
               border: 'none',
               cursor: 'pointer',
-              background: activeTab === tab.key ? 'rgba(232,87,26,0.08)' : 'transparent',
-              color: activeTab === tab.key ? '#E8571A' : 'rgba(255,255,255,0.45)',
+              background: activeTab === tab.key ? 'rgba(139,69,19,0.08)' : 'transparent',
+              color: activeTab === tab.key ? '#8B4513' : 'rgba(255,255,255,0.45)',
               whiteSpace: 'nowrap',
             }}
           >

@@ -163,7 +163,7 @@ function OverviewCards({ userId, rangeStart, prevRangeStart, days }: { userId: s
           <p style={{ fontSize: 24, fontWeight: 600, color: 'rgba(255,255,255,0.90)', lineHeight: 1.1 }}>
             {c.isStar ? (
               <span className="flex items-center" style={{ gap: 6 }}>
-                {c.value} <Star style={{ width: 18, height: 18, fill: '#E8571A', color: '#E8571A' }} />
+                {c.value} <Star style={{ width: 18, height: 18, fill: '#8B4513', color: '#8B4513' }} />
               </span>
             ) : (
               c.value.toLocaleString?.() ?? c.value
@@ -176,7 +176,7 @@ function OverviewCards({ userId, rangeStart, prevRangeStart, days }: { userId: s
             </p>
           )}
           {c.label === "Total Earnings" && data?.totalEarnings === 0 && (
-            <Link to="/settings" style={{ fontSize: 11, color: '#2EC4B6' }}>
+            <Link to="/settings" style={{ fontSize: 11, color: '#1F7A6D' }}>
               Connect Stripe →
             </Link>
           )}

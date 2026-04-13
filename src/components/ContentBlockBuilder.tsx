@@ -923,11 +923,11 @@ const PromptBlockEditor = ({ block, update, index }: {
               padding: '4px 12px', borderRadius: 6, fontSize: 11,
               fontWeight: 600, textTransform: 'uppercase', cursor: 'pointer',
               background: block.promptRole === r
-                ? 'rgba(232,87,26,0.20)' : 'rgba(255,255,255,0.04)',
+                ? 'rgba(139,69,19,0.20)' : 'rgba(255,255,255,0.04)',
               border: `1px solid ${block.promptRole === r
-                ? 'rgba(232,87,26,0.50)' : 'rgba(255,255,255,0.08)'}`,
+                ? 'rgba(139,69,19,0.50)' : 'rgba(255,255,255,0.08)'}`,
               color: block.promptRole === r
-                ? '#E8571A' : 'rgba(255,255,255,0.45)',
+                ? '#8B4513' : 'rgba(255,255,255,0.45)',
             }}>
             {r === 'full' ? 'Full Conversation' : r}
           </button>
@@ -979,9 +979,9 @@ const PromptBlockEditor = ({ block, update, index }: {
             {detected.map(v => (
               <span key={v} style={{
                 padding: '2px 10px', borderRadius: 9999, fontSize: 12,
-                background: 'rgba(46,196,182,0.15)',
-                border: '1px solid rgba(46,196,182,0.30)',
-                color: '#2EC4B6', fontFamily: 'Courier New, monospace',
+                background: 'rgba(31,122,109,0.15)',
+                border: '1px solid rgba(31,122,109,0.30)',
+                color: '#1F7A6D', fontFamily: 'Courier New, monospace',
               }}>
                 {`{{${v}}}`}
               </span>
@@ -1106,9 +1106,9 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
               style={{
                 padding: '4px 10px', borderRadius: 6, fontSize: 12,
                 cursor: 'pointer',
-                background: active ? 'rgba(46,196,182,0.15)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${active ? 'rgba(46,196,182,0.40)' : 'rgba(255,255,255,0.08)'}`,
-                color: active ? '#2EC4B6' : 'rgba(255,255,255,0.45)',
+                background: active ? 'rgba(31,122,109,0.15)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${active ? 'rgba(31,122,109,0.40)' : 'rgba(255,255,255,0.08)'}`,
+                color: active ? '#1F7A6D' : 'rgba(255,255,255,0.45)',
               }}>
               {t}
             </button>
@@ -1207,7 +1207,7 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
 
 const STEP_TYPE_CONFIG = {
   manual:    { color: '#9CA3AF', label: 'Manual',    emoji: '👤' },
-  ai:        { color: '#2EC4B6', label: 'AI',        emoji: '🤖' },
+  ai:        { color: '#1F7A6D', label: 'AI',        emoji: '🤖' },
   automated: { color: '#3B82F6', label: 'Auto',      emoji: '⚡' },
   decision:  { color: '#F59E0B', label: 'Decision',  emoji: '◆' },
 };
@@ -1595,11 +1595,11 @@ const ComparisonBlockEditor = ({ block, update, index }: {
               padding: '2px 8px', borderRadius: 4, fontSize: 11,
               cursor: 'pointer',
               background: type === t.v
-                ? 'rgba(232,87,26,0.20)' : 'rgba(255,255,255,0.04)',
+                ? 'rgba(139,69,19,0.20)' : 'rgba(255,255,255,0.04)',
               border: `1px solid ${type === t.v
-                ? 'rgba(232,87,26,0.40)' : 'rgba(255,255,255,0.08)'}`,
+                ? 'rgba(139,69,19,0.40)' : 'rgba(255,255,255,0.08)'}`,
               color: type === t.v
-                ? '#E8571A' : 'rgba(255,255,255,0.40)',
+                ? '#8B4513' : 'rgba(255,255,255,0.40)',
             }}>
             {t.e} {t.l}
           </button>
@@ -1942,11 +1942,11 @@ const TutorialStepEditor = ({ block, update, index }: {
 
   return (
     <div style={{
-      border: '1px solid rgba(232,87,26,0.20)',
-      borderLeft: '3px solid rgba(232,87,26,0.50)',
+      border: '1px solid rgba(139,69,19,0.20)',
+      borderLeft: '3px solid rgba(139,69,19,0.50)',
       borderRadius: 8,
       padding: '12px 14px',
-      background: 'rgba(232,87,26,0.04)',
+      background: 'rgba(139,69,19,0.04)',
     }}>
       {/* Media type picker */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
@@ -1959,13 +1959,13 @@ const TutorialStepEditor = ({ block, update, index }: {
               padding: '4px 10px', borderRadius: 6,
               fontSize: 11, cursor: 'pointer',
               background: mediaType === opt.value
-                ? 'rgba(232,87,26,0.20)'
+                ? 'rgba(139,69,19,0.20)'
                 : 'rgba(255,255,255,0.04)',
               border: `1px solid ${mediaType === opt.value
-                ? 'rgba(232,87,26,0.40)'
+                ? 'rgba(139,69,19,0.40)'
                 : 'rgba(255,255,255,0.08)'}`,
               color: mediaType === opt.value
-                ? '#E8571A' : 'rgba(255,255,255,0.45)',
+                ? '#8B4513' : 'rgba(255,255,255,0.45)',
             }}
           >
             {opt.emoji} {opt.label}
@@ -2000,9 +2000,9 @@ const TutorialStepEditor = ({ block, update, index }: {
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '6px 14px', borderRadius: 6,
               fontSize: 11, cursor: 'pointer',
-              background: 'rgba(232,87,26,0.12)',
-              border: '1px solid rgba(232,87,26,0.30)',
-              color: '#E8571A', fontWeight: 600,
+              background: 'rgba(139,69,19,0.12)',
+              border: '1px solid rgba(139,69,19,0.30)',
+              color: '#8B4513', fontWeight: 600,
               marginBottom: 6,
             }}>
               Upload {mediaType === 'voicenote' ? 'audio' : mediaType}
@@ -2083,9 +2083,9 @@ const TutorialStepEditor = ({ block, update, index }: {
           <label style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
             padding: '5px 12px', borderRadius: 6, fontSize: 11,
-            cursor: 'pointer', background: 'rgba(232,87,26,0.12)',
-            border: '1px solid rgba(232,87,26,0.30)',
-            color: '#E8571A', fontWeight: 600,
+            cursor: 'pointer', background: 'rgba(139,69,19,0.12)',
+            border: '1px solid rgba(139,69,19,0.30)',
+            color: '#8B4513', fontWeight: 600,
           }}>
             + Upload images
             <input type="file" accept="image/*" multiple style={{ display: 'none' }}
@@ -2175,7 +2175,7 @@ const SectionHeadingEditor = ({
         width: '100%',
         background: 'transparent',
         border: 'none',
-        borderBottom: '2px solid rgba(232,87,26,0.35)',
+        borderBottom: '2px solid rgba(139,69,19,0.35)',
         fontSize: 18,
         fontWeight: 700,
         fontFamily: "'Playfair Display', Georgia, serif",
@@ -2185,10 +2185,10 @@ const SectionHeadingEditor = ({
         boxSizing: 'border-box',
       }}
       onFocus={e => {
-        e.currentTarget.style.borderBottomColor = 'rgba(232,87,26,0.70)';
+        e.currentTarget.style.borderBottomColor = 'rgba(139,69,19,0.70)';
       }}
       onBlur={e => {
-        e.currentTarget.style.borderBottomColor = 'rgba(232,87,26,0.35)';
+        e.currentTarget.style.borderBottomColor = 'rgba(139,69,19,0.35)';
       }}
     />
     <div style={{
@@ -2240,7 +2240,7 @@ const GroupBlockEditor = ({
 
   return (
     <div style={{
-      border: '1px dashed rgba(232,87,26,0.30)',
+      border: '1px dashed rgba(139,69,19,0.30)',
       borderRadius: 12,
       marginBottom: 12,
       overflow: 'hidden',
@@ -2249,10 +2249,10 @@ const GroupBlockEditor = ({
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
         padding: '10px 12px',
-        background: 'rgba(232,87,26,0.06)',
+        background: 'rgba(139,69,19,0.06)',
         borderBottom: group.isCollapsed
           ? 'none'
-          : '1px dashed rgba(232,87,26,0.20)',
+          : '1px dashed rgba(139,69,19,0.20)',
       }}>
         <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
           ▤
@@ -2530,14 +2530,14 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
           const showingMain = activeTab === "A";
 
           return (
-            <div key={block.id} className={`border rounded-xl bg-card overflow-hidden ${block.isPreview ? "border-[#2EC4B6]/50" : "border-border"}`}>
+            <div key={block.id} className={`border rounded-xl bg-card overflow-hidden ${block.isPreview ? "border-[#1F7A6D]/50" : "border-border"}`}>
               {/* Header */}
               <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-b border-border">
                 <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <BlockTypeIcon type={block.type} />
                   <span>{BLOCK_TYPE_LABELS[block.type]}</span>
                   <span className="text-xs text-muted-foreground">Block {index + 1}</span>
-                  {block.isPreview && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2EC4B6]/15 text-[#2EC4B6] font-medium">Preview</span>}
+                  {block.isPreview && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1F7A6D]/15 text-[#1F7A6D] font-medium">Preview</span>}
                 </div>
                 <div className="flex items-center gap-2">
                   {contentType !== "Blog" && supportsPreview(block.type) && (() => {
@@ -2733,9 +2733,9 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
             onClick={() => onChange([...blocks, emptyGroup()])}
             style={{
               padding: '8px 14px', borderRadius: 8, fontSize: 12,
-              background: 'rgba(232,87,26,0.06)',
-              border: '1px dashed rgba(232,87,26,0.30)',
-              color: 'rgba(232,87,26,0.70)', cursor: 'pointer',
+              background: 'rgba(139,69,19,0.06)',
+              border: '1px dashed rgba(139,69,19,0.30)',
+              color: 'rgba(139,69,19,0.70)', cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
             }}
           >

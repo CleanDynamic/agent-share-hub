@@ -137,7 +137,7 @@ export function VersionHistory({
               disabled={saving}
               style={{
                 padding: '6px 14px',
-                background: '#E8571A',
+                background: '#8B4513',
                 border: 'none', borderRadius: 6,
                 color: '#fff', fontSize: 12,
                 fontWeight: 700, cursor: 'pointer',
@@ -180,7 +180,7 @@ export function VersionHistory({
                   cursor: 'pointer',
                   background:
                     selected?.id === v.id
-                      ? 'rgba(232,87,26,0.08)'
+                      ? 'rgba(139,69,19,0.08)'
                       : 'transparent',
                   transition: 'background 0.1s',
                 }}
@@ -193,7 +193,7 @@ export function VersionHistory({
                   <div style={{
                     fontSize: 13, fontWeight: 600,
                     color: selected?.id === v.id
-                      ? '#E8571A'
+                      ? '#8B4513'
                       : 'rgba(255,255,255,0.75)',
                   }}>
                     {v.label}
@@ -233,11 +233,11 @@ export function VersionHistory({
                       marginTop: 8,
                       padding: '5px 14px',
                       background:
-                        'rgba(232,87,26,0.15)',
+                        'rgba(139,69,19,0.15)',
                       border:
-                        '1px solid rgba(232,87,26,0.35)',
+                        '1px solid rgba(139,69,19,0.35)',
                       borderRadius: 6,
-                      color: '#E8571A',
+                      color: '#8B4513',
                       fontSize: 11, fontWeight: 700,
                       cursor: 'pointer',
                       fontFamily: 'Inter, sans-serif',

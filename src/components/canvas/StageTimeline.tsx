@@ -51,7 +51,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
         position: 'absolute',
         left: 14, top: 0, bottom: 0,
         width: 2,
-        background: 'linear-gradient(to bottom, rgba(232,87,26,0.4), rgba(232,87,26,0.08))',
+        background: 'linear-gradient(to bottom, rgba(139,69,19,0.4), rgba(139,69,19,0.08))',
         borderRadius: 1,
       }} />
 
@@ -71,7 +71,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
               left: -32 + 8, top: 4,
               width: 14, height: 14,
               borderRadius: '50%',
-              background: '#E8571A',
+              background: '#8B4513',
               border: '3px solid rgba(6,6,10,1)',
               zIndex: 2,
             }} />
@@ -83,9 +83,9 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
               }}>
                 <span style={{
                   fontSize: 10, fontWeight: 700,
-                  color: '#E8571A',
-                  background: 'rgba(232,87,26,0.12)',
-                  border: '1px solid rgba(232,87,26,0.25)',
+                  color: '#8B4513',
+                  background: 'rgba(139,69,19,0.12)',
+                  border: '1px solid rgba(139,69,19,0.25)',
                   borderRadius: 4,
                   padding: '2px 8px',
                   textTransform: 'uppercase',

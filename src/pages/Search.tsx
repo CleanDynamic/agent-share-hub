@@ -231,7 +231,7 @@ export default function Search() {
                   flex: 1, padding: '12px 4px',
                   background: 'none', border: 'none',
                   borderBottom: isActive
-                    ? '2px solid #E8571A' : '2px solid transparent',
+                    ? '2px solid #8B4513' : '2px solid transparent',
                   color: isActive
                     ? '#fff' : 'rgba(255,255,255,0.40)',
                   fontSize: 13, fontWeight: isActive ? 700 : 400,
@@ -320,12 +320,12 @@ export default function Search() {
                 {/* Avatar */}
                 <div style={{
                   width: 42, height: 42, borderRadius: '50%',
-                  background: 'rgba(232,87,26,0.15)',
-                  border: '1px solid rgba(232,87,26,0.30)',
+                  background: 'rgba(139,69,19,0.15)',
+                  border: '1px solid rgba(139,69,19,0.30)',
                   display: 'flex', alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 14, fontWeight: 700,
-                  color: '#E8571A', flexShrink: 0,
+                  color: '#8B4513', flexShrink: 0,
                 }}>
                   {person.avatar_url
                     ? <img src={person.avatar_url}
@@ -357,8 +357,8 @@ export default function Search() {
                       <span style={{
                         marginLeft: 6, fontSize: 10,
                         padding: '1px 6px', borderRadius: 4,
-                        background: 'rgba(232,87,26,0.15)',
-                        color: '#E8571A', fontWeight: 700,
+                        background: 'rgba(139,69,19,0.15)',
+                        color: '#8B4513', fontWeight: 700,
                       }}>
                         Creator
                       </span>

@@ -258,7 +258,7 @@ export function BountyResponseComposer({ bountyContentId, bountyTitle, bountyCre
             onClick={handleSubmit}
             disabled={!canSubmit || submitting}
             className="w-full h-11 rounded-xl text-sm font-semibold"
-            style={{ background: canSubmit ? "#E8571A" : undefined }}
+            style={{ background: canSubmit ? "#8B4513" : undefined }}
           >
             {submitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Submitting…</> : "Submit Blueprint"}
           </Button>

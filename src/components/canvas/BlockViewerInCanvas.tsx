@@ -20,11 +20,11 @@ const COPYABLE_TYPES = new Set([
 ]);
 
 const BLOCK_ACCENT: Record<string, string> = {
-  prompt: '#E8571A',
+  prompt: '#8B4513',
   code: '#3B82F6',
   result: '#22C55E',
   agent_config: '#7C3AED',
-  workflow: '#2EC4B6',
+  workflow: '#1F7A6D',
   tool_setup: '#06B6D4',
   model_params: '#A78BFA',
   comparison: '#EC4899',
@@ -311,7 +311,7 @@ export function BlockViewerInCanvas({
         <div style={{
           background: 'rgba(0,0,0,0.30)',
           border: '1px solid rgba(255,255,255,0.08)',
-          borderLeft: '3px solid rgba(232,87,26,0.55)',
+          borderLeft: '3px solid rgba(139,69,19,0.55)',
           borderRadius: 8, padding: '12px 14px',
           paddingRight: 52, // space for copy btn
         }}>

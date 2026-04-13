@@ -48,9 +48,9 @@ const POST_TYPE_DISPLAY = {
   build: {
     label: 'Build',
     emoji: '🔨',
-    color: '#E8571A',
-    bg: 'rgba(232,87,26,0.12)',
-    border: 'rgba(232,87,26,0.25)',
+    color: '#8B4513',
+    bg: 'rgba(139,69,19,0.12)',
+    border: 'rgba(139,69,19,0.25)',
     wteLabel: 'Outcome',
     blueprintLabel: 'The Blueprint',
     stepStyle: 'numbered',
@@ -59,9 +59,9 @@ const POST_TYPE_DISPLAY = {
   technique: {
     label: 'Technique',
     emoji: '⚡',
-    color: '#2EC4B6',
-    bg: 'rgba(46,196,182,0.12)',
-    border: 'rgba(46,196,182,0.25)',
+    color: '#1F7A6D',
+    bg: 'rgba(31,122,109,0.12)',
+    border: 'rgba(31,122,109,0.25)',
     wteLabel: 'The Claim',
     blueprintLabel: 'The Technique',
     stepStyle: 'dot',
@@ -197,7 +197,7 @@ function SaveButton({ contentId }: { contentId: string }) {
       style={{
         display: 'flex', alignItems: 'center',
         gap: 5, fontSize: 13,
-        color: saved ? '#E8571A' : 'rgba(255,255,255,0.40)',
+        color: saved ? '#8B4513' : 'rgba(255,255,255,0.40)',
         background: 'none', border: 'none',
         cursor: 'pointer', padding: '4px 8px',
         borderRadius: 6, transition: 'color 0.15s',
@@ -829,7 +829,7 @@ const ContentDetail = () => {
                     onClick={toggleMeToo}
                     className={`text-[11px] px-3 py-1.5 rounded-full border transition-colors ${
                       hasMeTooLocal
-                        ? "bg-[#2EC4B6]/15 text-[#2EC4B6] border-[#2EC4B6]/30"
+                        ? "bg-[#1F7A6D]/15 text-[#1F7A6D] border-[#1F7A6D]/30"
                         : "bg-transparent text-muted-foreground border-border hover:border-muted-foreground/60"
                     }`}
                   >
@@ -993,7 +993,7 @@ const ContentDetail = () => {
         {isBounty && (item as any).bounty_gap && (
           <div
             className="rounded-xl px-4 py-3 mb-4"
-            style={{ background: "rgba(46,196,182,0.05)", borderLeft: "2px solid #2EC4B6" }}
+            style={{ background: "rgba(31,122,109,0.05)", borderLeft: "2px solid #1F7A6D" }}
           >
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">What a good solution needs:</p>
             <p className="text-sm text-foreground leading-relaxed">{(item as any).bounty_gap}</p>
@@ -1013,11 +1013,11 @@ const ContentDetail = () => {
             }}>
               <div style={{
                 width: 26, height: 26, borderRadius: '50%',
-                background: 'rgba(232,87,26,0.20)',
-                border: '1px solid rgba(232,87,26,0.30)',
+                background: 'rgba(139,69,19,0.20)',
+                border: '1px solid rgba(139,69,19,0.30)',
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 11, fontWeight: 700, color: '#E8571A',
+                fontSize: 11, fontWeight: 700, color: '#8B4513',
               }}>
                 {(creator.display_name || creator.username || '?')[0].toUpperCase()}
               </div>
@@ -1321,8 +1321,8 @@ const ContentDetail = () => {
                         padding: '6px 16px',
                         borderRadius: 100,
                         border: 'none',
-                        background: activeTab === tab ? 'rgba(232,87,26,0.08)' : 'transparent',
-                        color: activeTab === tab ? '#E8571A' : 'rgba(255,255,255,0.45)',
+                        background: activeTab === tab ? 'rgba(139,69,19,0.08)' : 'transparent',
+                        color: activeTab === tab ? '#8B4513' : 'rgba(255,255,255,0.45)',
                         cursor: 'pointer',
                       }}
                     >
@@ -1346,13 +1346,13 @@ const ContentDetail = () => {
                         padding: '6px 16px',
                         borderRadius: 100,
                         border: 'none',
-                        background: activeTab === tab ? 'rgba(232,87,26,0.08)' : 'transparent',
-                        color: activeTab === tab ? '#E8571A' : 'rgba(255,255,255,0.45)',
+                        background: activeTab === tab ? 'rgba(139,69,19,0.08)' : 'transparent',
+                        color: activeTab === tab ? '#8B4513' : 'rgba(255,255,255,0.45)',
                         cursor: 'pointer',
                       }}
                     >
                       {tab === "changelog" && (
-                        <>Changelog{hasLibraryUpdate && <span style={{ marginLeft: 4, color: '#E8571A' }}>●</span>}</>
+                        <>Changelog{hasLibraryUpdate && <span style={{ marginLeft: 4, color: '#8B4513' }}>●</span>}</>
                       )}
                       {tab === "tips" && "Tips"}
                       {tab === "comments" && `Comments (${(item as any).comment_count ?? 0})`}
@@ -1465,7 +1465,7 @@ const ContentDetail = () => {
                       <button
                         onClick={() => setComposerOpen(true)}
                         className="text-sm font-semibold px-4 py-2 rounded-xl"
-                        style={{ background: "#E8571A", color: "white" }}
+                        style={{ background: "#8B4513", color: "white" }}
                       >
                         Submit a Blueprint →
                       </button>
@@ -1547,7 +1547,7 @@ const ContentDetail = () => {
                           </div>
 
                           {/* ROW 2 — How it fixes */}
-                          <div className="rounded-lg px-3 py-2.5" style={{ background: "rgba(255,255,255,0.03)", borderLeft: "2px solid #2EC4B6" }}>
+                          <div className="rounded-lg px-3 py-2.5" style={{ background: "rgba(255,255,255,0.03)", borderLeft: "2px solid #1F7A6D" }}>
                             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">How this fixes it:</p>
                             <p className="text-sm text-foreground leading-relaxed">{resp.how_it_fixes}</p>
                           </div>
@@ -1588,7 +1588,7 @@ const ContentDetail = () => {
                               disabled={!isLoggedIn}
                               className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                                 isVerified
-                                  ? "bg-[#2EC4B6]/15 text-[#2EC4B6] border-[#2EC4B6]/30"
+                                  ? "bg-[#1F7A6D]/15 text-[#1F7A6D] border-[#1F7A6D]/30"
                                   : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
                               }`}
                             >
@@ -1746,7 +1746,7 @@ function CuratorPicksCard({ recs }: { recs: any[] }) {
         const curator = rec.curators?.profiles;
         const initials = (curator?.display_name || curator?.username || "?").slice(0, 2).toUpperCase();
         return (
-          <div key={rec.id} className="border-l-[3px] border-[#2EC4B6] pl-3">
+          <div key={rec.id} className="border-l-[3px] border-[#1F7A6D] pl-3">
             <p className="text-sm text-foreground italic leading-relaxed">{rec.recommendation_text}</p>
             <div className="flex items-center gap-2 mt-2">
               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-[10px] font-medium shrink-0 overflow-hidden">
@@ -1756,7 +1756,7 @@ function CuratorPicksCard({ recs }: { recs: any[] }) {
                 <Link to={`/creator/${curator?.username}`} className="text-xs font-medium text-foreground hover:text-primary transition-colors">
                   {curator?.display_name || curator?.username}
                 </Link>
-                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md bg-[#2EC4B6]/15 text-[#2EC4B6] border border-[#2EC4B6]/30 font-medium">Curator</span>
+                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md bg-[#1F7A6D]/15 text-[#1F7A6D] border border-[#1F7A6D]/30 font-medium">Curator</span>
                 <p className="text-[11px] text-muted-foreground">{curator?.follower_count ?? 0} followers</p>
               </div>
             </div>
@@ -2007,7 +2007,7 @@ function WhatToExpectSection({ item }: { item: any }) {
               width: i === current ? 16 : 6,
               height: 6, borderRadius: 3,
               background: i === current
-                ? '#E8571A' : 'rgba(255,255,255,0.20)',
+                ? '#8B4513' : 'rgba(255,255,255,0.20)',
               border: 'none', cursor: 'pointer', padding: 0,
               transition: 'all 0.25s ease',
             }}

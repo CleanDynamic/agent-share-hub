@@ -6,16 +6,16 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 
 const QUICK_BLOCK_TYPES = [
   { type: 'text', label: 'Text', accent: 'rgba(255,255,255,0.20)', desc: 'Plain text or notes' },
-  { type: 'prompt', label: 'Prompt', accent: '#E8571A', desc: 'AI prompt' },
+  { type: 'prompt', label: 'Prompt', accent: '#8B4513', desc: 'AI prompt' },
   { type: 'code', label: 'Code', accent: '#3B82F6', desc: 'Code snippet' },
   { type: 'result', label: 'Result', accent: '#22C55E', desc: 'Output' },
   { type: 'image', label: 'Image', accent: '#F59E0B', desc: 'Visual' },
   { type: 'agent_config', label: 'Agent', accent: '#7C3AED', desc: 'AI agent config' },
-  { type: 'workflow', label: 'Workflow', accent: '#2EC4B6', desc: 'Multi-step process' },
+  { type: 'workflow', label: 'Workflow', accent: '#1F7A6D', desc: 'Multi-step process' },
   { type: 'comparison', label: 'Compare', accent: '#EC4899', desc: 'Side-by-side' },
   { type: 'tool_setup', label: 'Tool', accent: '#06B6D4', desc: 'Tool setup' },
   { type: 'model_params', label: 'Model', accent: '#A78BFA', desc: 'Model config' },
-  { type: 'tutorial_step', label: 'Tutorial', accent: '#E8571A', desc: 'Step-by-step' },
+  { type: 'tutorial_step', label: 'Tutorial', accent: '#8B4513', desc: 'Step-by-step' },
   { type: 'section_heading', label: 'Heading', accent: 'rgba(255,255,255,0.40)', desc: 'Section divider' },
   { type: 'resource', label: 'Resource', accent: '#64748B', desc: 'Link / reference' },
   { type: 'sticky_note', label: 'Note', accent: '#FBBF24', desc: 'Sticky note comment' },
@@ -232,9 +232,9 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
           title="Add a block"
           style={{
             ...btnBase,
-            background: addBlockOpen ? 'rgba(232,87,26,0.15)' : 'rgba(232,87,26,0.08)',
-            border: '1px solid rgba(232,87,26,0.25)',
-            color: '#E8571A',
+            background: addBlockOpen ? 'rgba(139,69,19,0.15)' : 'rgba(139,69,19,0.08)',
+            border: '1px solid rgba(139,69,19,0.25)',
+            color: '#8B4513',
             fontWeight: 700,
           }}
         >
@@ -348,8 +348,8 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
           style={{
             ...btnBase,
             padding: '5px 12px',
-            background: submitting ? 'rgba(232,87,26,0.3)' : 'rgba(232,87,26,0.85)',
-            border: '1px solid rgba(232,87,26,0.5)',
+            background: submitting ? 'rgba(139,69,19,0.3)' : 'rgba(139,69,19,0.85)',
+            border: '1px solid rgba(139,69,19,0.5)',
             color: '#fff',
             fontSize: 11, fontWeight: 700,
             cursor: submitting ? 'not-allowed' : 'pointer',

@@ -2,8 +2,8 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { CalendarDays } from "lucide-react"
 
 const AVATAR_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  orange: { bg: "rgba(232, 87, 26, 0.15)", color: "#E8571A", border: "rgba(232, 87, 26, 0.3)" },
-  teal: { bg: "rgba(46, 196, 182, 0.15)", color: "#2EC4B6", border: "rgba(46, 196, 182, 0.3)" },
+  orange: { bg: "rgba(139, 69, 19, 0.15)", color: "#8B4513", border: "rgba(139, 69, 19, 0.3)" },
+  teal: { bg: "rgba(31, 122, 109, 0.15)", color: "#1F7A6D", border: "rgba(31, 122, 109, 0.3)" },
   purple: { bg: "rgba(139, 92, 246, 0.15)", color: "#8B5CF6", border: "rgba(139, 92, 246, 0.3)" },
   blue: { bg: "rgba(59, 130, 246, 0.15)", color: "#3B82F6", border: "rgba(59, 130, 246, 0.3)" },
   green: { bg: "rgba(34, 197, 94, 0.15)", color: "#22C55E", border: "rgba(34, 197, 94, 0.3)" },
@@ -93,7 +93,7 @@ export function AccountHoverCard({ account, children }: AccountHoverCardProps) {
             <button
               className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
               style={{
-                background: "#E8571A",
+                background: "#8B4513",
                 color: "#ffffff",
               }}
               onClick={(e) => {

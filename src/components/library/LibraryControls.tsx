@@ -46,11 +46,11 @@ export function LibraryControls({
             style={{
               background:
                 viewMode === "grid"
-                  ? "rgba(46,196,182,0.15)"
+                  ? "rgba(31,122,109,0.15)"
                   : "transparent",
               color:
                 viewMode === "grid"
-                  ? "#2EC4B6"
+                  ? "#1F7A6D"
                   : "rgba(255,255,255,0.28)",
             }}
             aria-label="Grid view"
@@ -63,11 +63,11 @@ export function LibraryControls({
             style={{
               background:
                 viewMode === "list"
-                  ? "rgba(46,196,182,0.15)"
+                  ? "rgba(31,122,109,0.15)"
                   : "transparent",
               color:
                 viewMode === "list"
-                  ? "#2EC4B6"
+                  ? "#1F7A6D"
                   : "rgba(255,255,255,0.28)",
             }}
             aria-label="List view"
@@ -89,15 +89,15 @@ export function LibraryControls({
                 letterSpacing: "0.04em",
                 background:
                   sortBy === s
-                    ? "rgba(46,196,182,0.12)"
+                    ? "rgba(31,122,109,0.12)"
                     : "transparent",
                 color:
                   sortBy === s
-                    ? "#2EC4B6"
+                    ? "#1F7A6D"
                     : "rgba(255,255,255,0.45)",
                 border:
                   sortBy === s
-                    ? "1px solid rgba(46,196,182,0.3)"
+                    ? "1px solid rgba(31,122,109,0.3)"
                     : "1px solid transparent",
               }}
             >
@@ -137,13 +137,13 @@ export function LibraryControls({
           onClick={onNewFolder}
           className="flex items-center gap-1.5 shrink-0 transition-all"
           style={{
-            background: "rgba(232,87,26,0.12)",
-            border: "1px solid rgba(232,87,26,0.3)",
+            background: "rgba(139,69,19,0.12)",
+            border: "1px solid rgba(139,69,19,0.3)",
             borderRadius: 8,
             padding: "7px 14px",
             fontSize: 12,
             fontWeight: 500,
-            color: "#E8571A",
+            color: "#8B4513",
             letterSpacing: "0.04em",
           }}
         >

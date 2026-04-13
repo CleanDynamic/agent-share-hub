@@ -171,7 +171,7 @@ function ThreadBlock({ block, index }: { block: any; index: number }) {
     <div className="flex gap-3 mt-3">
       <div className="flex flex-col items-center shrink-0">
         <span className="text-[12px] text-muted-foreground font-medium">{label}</span>
-        <div className="w-[1px] flex-1 bg-[#2EC4B6]/30 mt-1" />
+        <div className="w-[1px] flex-1 bg-[#1F7A6D]/30 mt-1" />
       </div>
       <div className="flex-1 pb-1">
         {block.block_type === "image" && block.image_url ? (
@@ -319,7 +319,7 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
       <div className="flex items-start gap-2">
         {/* Reblog indicator */}
         <div className="flex items-center gap-1 mr-0.5 pt-0.5">
-          <Repeat2 className="h-3.5 w-3.5 shrink-0" style={{ color: "#2EC4B6" }} />
+          <Repeat2 className="h-3.5 w-3.5 shrink-0" style={{ color: "#1F7A6D" }} />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -398,7 +398,7 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
           </button>
 
           {threadExpanded && (
-            <div className="mt-2 pl-1 border-l border-[#2EC4B6]/20">
+            <div className="mt-2 pl-1 border-l border-[#1F7A6D]/20">
               {threadBlocks.map((block, i) => (
                 <ThreadBlock key={block.id ?? i} block={block} index={i + 1} />
               ))}
@@ -428,7 +428,7 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
           <button
             onClick={(e) => { stop(e); setReblogOpen(true); }}
             className="text-[11px] font-medium transition-colors hover:opacity-80"
-            style={{ color: userHasReblogged ? "#2EC4B6" : "#2EC4B6" }}
+            style={{ color: userHasReblogged ? "#1F7A6D" : "#1F7A6D" }}
           >
             ↺ Reblog this
           </button>

@@ -33,7 +33,7 @@ export function FeedTabs({ activeTab, onTabChange, filteredTabs }: FeedTabsProps
           >
             {tab.label}
             {isActive && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#E8571A] rounded-full" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#8B4513] rounded-full" />
             )}
           </button>
         )

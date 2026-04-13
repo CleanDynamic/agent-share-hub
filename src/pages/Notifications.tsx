@@ -526,7 +526,7 @@ const NotificationsPage = () => {
       <div className="mx-auto max-w-2xl">
         {allNotifications.some((n) => !n.is_read) && (
           <div className="flex justify-end" style={{ marginBottom: 12 }}>
-            <button onClick={markAllRead} disabled={markingAll} style={{ fontSize: 13, color: '#2EC4B6', background: 'none', border: 'none', cursor: 'pointer', opacity: markingAll ? 0.5 : 1 }}>
+            <button onClick={markAllRead} disabled={markingAll} style={{ fontSize: 13, color: '#1F7A6D', background: 'none', border: 'none', cursor: 'pointer', opacity: markingAll ? 0.5 : 1 }}>
               {markingAll ? "Marking…" : "Mark all as read"}
             </button>
           </div>
@@ -572,10 +572,10 @@ const NotificationsPage = () => {
                     onMouseLeave={(e) => { e.currentTarget.style.background = !n.is_read ? 'rgba(255,255,255,0.01)' : 'transparent'; }}
                   >
                     <div className="shrink-0" style={{ width: 8, paddingTop: 6 }}>
-                      {!n.is_read && <span style={{ display: 'block', width: 6, height: 6, borderRadius: '50%', background: '#2EC4B6' }} />}
+                      {!n.is_read && <span style={{ display: 'block', width: 6, height: 6, borderRadius: '50%', background: '#1F7A6D' }} />}
                     </div>
                     <Avatar className="shrink-0" style={{ width: 28, height: 28, marginTop: 2 }}>
-                      <AvatarFallback style={{ fontSize: 10, fontWeight: 700, background: isSystem ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.06)', color: isSystem ? '#E8571A' : 'rgba(255,255,255,0.45)' }}>
+                      <AvatarFallback style={{ fontSize: 10, fontWeight: 700, background: isSystem ? 'rgba(139,69,19,0.15)' : 'rgba(255,255,255,0.06)', color: isSystem ? '#8B4513' : 'rgba(255,255,255,0.45)' }}>
                         {isSystem ? "NS" : initials}
                       </AvatarFallback>
                     </Avatar>

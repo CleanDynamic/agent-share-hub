@@ -82,7 +82,7 @@ export function CollectionFeedCard({ item }: CollectionFeedCardProps) {
 
       {/* Badge */}
       <div className="flex items-center gap-1.5 mt-1">
-        <Badge variant="outline" className="text-[10px] font-medium bg-[#2EC4B6]/20 text-[#2EC4B6] border-[#2EC4B6]/25">
+        <Badge variant="outline" className="text-[10px] font-medium bg-[#1F7A6D]/20 text-[#1F7A6D] border-[#1F7A6D]/25">
           Collection
         </Badge>
       </div>

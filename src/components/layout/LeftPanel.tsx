@@ -77,12 +77,12 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     <div className="flex flex-col">
       {/* Wordmark */}
       <div className={`px-6 pt-7 pb-5 ${collapsed ? "flex justify-center" : ""}`}>
-        <Link to="/" className={collapsed ? "text-xl font-light text-[#E8571A]" : "block"}>
+        <Link to="/" className={collapsed ? "text-xl font-light text-[#8B4513]" : "block"}>
           {collapsed ? (
             "N"
           ) : (
             <>
-              <span className="text-2xl font-light text-[#E8571A] tracking-tighter uppercase">NeoScale AI</span>
+              <span className="text-2xl font-light text-[#8B4513] tracking-tighter uppercase">NeoScale AI</span>
               <p className="text-[10px] text-slate-500 tracking-[0.2em] mt-0.5 uppercase">The Digital Alchemist</p>
             </>
           )}
@@ -104,7 +104,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                   collapsed ? "justify-center px-0" : "px-4"
                 } h-12 text-sm`}
                 style={isActive
-                  ? { color: 'var(--orange)', borderLeft: '2px solid var(--orange)', background: 'rgba(232,87,26,0.08)' }
+                  ? { color: 'var(--orange)', borderLeft: '2px solid var(--orange)', background: 'rgba(139,69,19,0.08)' }
                   : { color: 'var(--text-muted)' }
                 }
                 onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
@@ -113,7 +113,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                 <item.icon className="h-[22px] w-[22px] shrink-0 transition-colors" />
                 {!collapsed && <span>{item.label}</span>}
                 {item.badge && (
-                  <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full ${item.to === "/drafts" ? "bg-[#353439] text-slate-400" : "bg-[#E8571A] text-white"} px-1.5 text-[11px] font-bold`}>
+                  <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full ${item.to === "/drafts" ? "bg-[#353439] text-slate-400" : "bg-[#8B4513] text-white"} px-1.5 text-[11px] font-bold`}>
                     {item.badge}
                   </span>
                 )}

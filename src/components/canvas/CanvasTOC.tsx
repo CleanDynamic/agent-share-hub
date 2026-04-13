@@ -378,7 +378,7 @@ export function CanvasTOC({
             position: 'absolute',
             left: 0, right: 0, top: -1,
             height: 2,
-            background: '#E8571A',
+            background: '#8B4513',
             zIndex: 5,
           }} />
         )}
@@ -442,7 +442,7 @@ export function CanvasTOC({
               style={{
                 flex: 1,
                 background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(232,87,26,0.4)',
+                border: '1px solid rgba(139,69,19,0.4)',
                 borderRadius: 4,
                 padding: '2px 4px',
                 fontSize: 11,
@@ -496,7 +496,7 @@ export function CanvasTOC({
             position: 'absolute',
             left: 0, right: 0, bottom: -1,
             height: 2,
-            background: '#E8571A',
+            background: '#8B4513',
             zIndex: 5,
           }} />
         )}
@@ -551,7 +551,7 @@ export function CanvasTOC({
             position: 'absolute',
             left: baseIndent, right: 0, top: -1,
             height: 2,
-            background: '#E8571A',
+            background: '#8B4513',
             zIndex: 5,
           }} />
         )}
@@ -615,7 +615,7 @@ export function CanvasTOC({
               style={{
                 flex: 1,
                 background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(232,87,26,0.4)',
+                border: '1px solid rgba(139,69,19,0.4)',
                 borderRadius: 4,
                 padding: '2px 4px',
                 fontSize: 11,
@@ -713,7 +713,7 @@ export function CanvasTOC({
             position: 'absolute',
             left: baseIndent, right: 0, bottom: -1,
             height: 2,
-            background: '#E8571A',
+            background: '#8B4513',
             zIndex: 5,
           }} />
         )}
