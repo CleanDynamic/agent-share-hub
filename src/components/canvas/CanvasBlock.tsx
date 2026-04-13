@@ -253,7 +253,7 @@ export function CanvasBlock({
 
   // Selection ring style
   const selectionBorder = selected
-    ? '2px solid rgba(232,87,26,0.70)'
+    ? '2px solid rgba(59,130,246,0.70)'
     : hovered ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(255,255,255,0.06)';
 
   return (
@@ -265,11 +265,11 @@ export function CanvasBlock({
           left: ghostPx.x, top: ghostPx.y,
           width: ghostPx.w, height: ghostPx.h,
           border: ghostValid
-            ? '2px dashed rgba(232,87,26,0.40)'
+            ? '2px dashed rgba(59,130,246,0.40)'
             : '2px dashed rgba(239,68,68,0.50)',
           borderRadius: 8,
           background: ghostValid
-            ? 'rgba(232,87,26,0.04)'
+            ? 'rgba(59,130,246,0.04)'
             : 'rgba(239,68,68,0.04)',
           zIndex: 5,
           pointerEvents: 'none',
@@ -615,7 +615,7 @@ export function CanvasBlock({
                         {stages.map(s => (
                           <button key={s.id}
                             onClick={() => { onAssignStage(block.id, s.id); setStagePickerOpen(false); }}
-                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 10px', background: 'none', border: 'none', fontSize: 10, color: block.stageId === s.id ? '#E8571A' : 'rgba(255,255,255,0.60)', cursor: 'pointer', fontWeight: block.stageId === s.id ? 700 : 400 }}>
+                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 10px', background: 'none', border: 'none', fontSize: 10, color: block.stageId === s.id ? '#3B82F6' : 'rgba(255,255,255,0.60)', cursor: 'pointer', fontWeight: block.stageId === s.id ? 700 : 400 }}>
                             {s.stageNumber}. {s.title}
                           </button>
                         ))}
