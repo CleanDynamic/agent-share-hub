@@ -97,13 +97,13 @@ export function CanvasBlock({
   const inset = 4;
 
   const BLOCK_ACCENT: Record<string, string> = {
-    prompt: '#E8571A', code: '#3B82F6', result: '#22C55E',
-    agent_config: '#7C3AED', workflow: '#2EC4B6', comparison: '#EC4899',
-    image: '#F59E0B', tutorial_step: '#E8571A',
+    prompt: '#8B4513', code: '#2E5A88', result: '#2D6B4F',
+    agent_config: '#5B3A7A', workflow: '#1F7A6D', comparison: '#7A3050',
+    image: '#8B6914', tutorial_step: '#6B3A2A',
     section_heading: 'rgba(255,255,255,0.20)', text: 'rgba(255,255,255,0.15)',
-    long_text: 'rgba(255,255,255,0.15)', tool_setup: '#06B6D4',
-    model_params: '#A78BFA', resource: '#64748B',
-    sticky_note: '#FBBF24', video: '#EC4899',
+    long_text: 'rgba(255,255,255,0.15)', tool_setup: '#1A5E6B',
+    model_params: '#5A4F7A', resource: '#4A5568',
+    sticky_note: '#7A6B2A', video: '#6B2A4A',
   };
   const accent = BLOCK_ACCENT[block.type] ?? 'rgba(255,255,255,0.15)';
 
