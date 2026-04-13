@@ -97,13 +97,13 @@ export function CanvasBlock({
   const inset = 4;
 
   const BLOCK_ACCENT: Record<string, string> = {
-    prompt: '#E8571A', code: '#3B82F6', result: '#22C55E',
-    agent_config: '#7C3AED', workflow: '#2EC4B6', comparison: '#EC4899',
-    image: '#F59E0B', tutorial_step: '#E8571A',
+    prompt: '#8B4513', code: '#2E5A88', result: '#2D6B4F',
+    agent_config: '#5B3A7A', workflow: '#1F7A6D', comparison: '#7A3050',
+    image: '#8B6914', tutorial_step: '#6B3A2A',
     section_heading: 'rgba(255,255,255,0.20)', text: 'rgba(255,255,255,0.15)',
-    long_text: 'rgba(255,255,255,0.15)', tool_setup: '#06B6D4',
-    model_params: '#A78BFA', resource: '#64748B',
-    sticky_note: '#FBBF24', video: '#EC4899',
+    long_text: 'rgba(255,255,255,0.15)', tool_setup: '#1A5E6B',
+    model_params: '#5A4F7A', resource: '#4A5568',
+    sticky_note: '#7A6B2A', video: '#6B2A4A',
   };
   const accent = BLOCK_ACCENT[block.type] ?? 'rgba(255,255,255,0.15)';
 
@@ -253,7 +253,7 @@ export function CanvasBlock({
 
   // Selection ring style
   const selectionBorder = selected
-    ? '2px solid rgba(232,87,26,0.70)'
+    ? '2px solid rgba(59,130,246,0.70)'
     : hovered ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(255,255,255,0.06)';
 
   return (
@@ -265,11 +265,11 @@ export function CanvasBlock({
           left: ghostPx.x, top: ghostPx.y,
           width: ghostPx.w, height: ghostPx.h,
           border: ghostValid
-            ? '2px dashed rgba(232,87,26,0.40)'
+            ? '2px dashed rgba(59,130,246,0.40)'
             : '2px dashed rgba(239,68,68,0.50)',
           borderRadius: 8,
           background: ghostValid
-            ? 'rgba(232,87,26,0.04)'
+            ? 'rgba(59,130,246,0.04)'
             : 'rgba(239,68,68,0.04)',
           zIndex: 5,
           pointerEvents: 'none',
@@ -466,25 +466,45 @@ export function CanvasBlock({
           <div
             style={{
               height: '100%',
-              background: selected ? 'rgba(232,87,26,0.06)' : 'rgba(14,14,20,0.85)',
+              background: selected ? `${accent}10` : 'rgba(20,20,28,0.75)',
               border: selectionBorder,
-              borderRadius: 8,
+              borderRadius: 10,
               overflow: 'hidden',
               cursor: 'pointer',
               transition: 'border-color 0.15s, box-shadow 0.15s',
               boxShadow: selected
-                ? '0 0 0 1px rgba(232,87,26,0.30), 0 4px 20px rgba(0,0,0,0.3)'
+                ? `0 0 0 1px ${accent}50, 0 4px 20px rgba(0,0,0,0.3)`
                 : hovered ? '0 4px 20px rgba(0,0,0,0.3)' : 'none',
               display: 'flex',
               flexDirection: 'column',
               position: 'relative',
             }}
           >
-            {/* Accent bar top */}
-            <div style={{ height: 2, background: accent, flexShrink: 0 }} />
+            {/* Header row with badge square + chip */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px 4px', minHeight: 0 }}>
+              {/* Colour badge square */}
+              <div style={{
+                width: 20, height: 20, borderRadius: 4,
+                background: accent, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'rgba(255,255,255,0.9)', fontSize: 11,
+              }}>
+                {icon}
+              </div>
 
-            {/* Card body */}
-            <div style={{ flex: 1, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 6, minHeight: 0, overflow: 'hidden' }}>
+              {/* Type chip */}
+              <div style={{
+                fontSize: 10, fontWeight: 500,
+                color: 'rgba(255,255,255,0.55)',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 100, padding: '1px 8px',
+              }}>
+                {typeLabel}
+              </div>
+
+              <div style={{ flex: 1 }} />
+
               {/* Drag grip */}
               <div
                 className="drag-grip"
@@ -493,47 +513,31 @@ export function CanvasBlock({
                 style={{
                   flexShrink: 0, width: 16, height: 16,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'grab', color: hovered ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.15)',
+                  cursor: 'grab', color: hovered ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.12)',
                   borderRadius: 3,
                 }}
               >
                 <GripVertical size={10} />
               </div>
-
-              {/* Icon */}
-              <div style={{ flexShrink: 0, color: accent }}>
-                {icon}
-              </div>
-
-              {/* Title + type label */}
-              <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.85)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {block.subheading || typeLabel}
-                </div>
-                {block.subheading && (
-                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.30)', marginTop: 1, whiteSpace: 'nowrap' }}>
-                    {typeLabel}
-                  </div>
-                )}
-              </div>
-
-              {/* Open indicator */}
-              <div style={{ flexShrink: 0, color: 'rgba(255,255,255,0.12)' }}>
-                <ChevronRight size={10} />
-              </div>
             </div>
 
-            {/* Optional grid note */}
-            {block.textContent && (
-              <div style={{
-                padding: '0 8px 4px 30px',
-                fontSize: 9, color: 'rgba(255,255,255,0.22)',
-                lineHeight: 1.3,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {block.textContent.slice(0, 100)}
-              </div>
-            )}
+            {/* Card body */}
+            <div style={{ flex: 1, padding: '2px 10px 6px', minHeight: 0, overflow: 'hidden' }}>
+              {block.subheading && (
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.80)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>
+                  {block.subheading}
+                </div>
+              )}
+              {block.textContent && (
+                <div style={{
+                  fontSize: 11, color: 'rgba(255,255,255,0.40)',
+                  lineHeight: 1.4,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {block.textContent.slice(0, 120)}
+                </div>
+              )}
+            </div>
 
             {/* Hover toolbar */}
             {(hovered || selected) && (
@@ -611,7 +615,7 @@ export function CanvasBlock({
                         {stages.map(s => (
                           <button key={s.id}
                             onClick={() => { onAssignStage(block.id, s.id); setStagePickerOpen(false); }}
-                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 10px', background: 'none', border: 'none', fontSize: 10, color: block.stageId === s.id ? '#E8571A' : 'rgba(255,255,255,0.60)', cursor: 'pointer', fontWeight: block.stageId === s.id ? 700 : 400 }}>
+                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 10px', background: 'none', border: 'none', fontSize: 10, color: block.stageId === s.id ? '#3B82F6' : 'rgba(255,255,255,0.60)', cursor: 'pointer', fontWeight: block.stageId === s.id ? 700 : 400 }}>
                             {s.stageNumber}. {s.title}
                           </button>
                         ))}
@@ -645,9 +649,8 @@ export function CanvasBlock({
           /* ── VIEW MODE: Full content display ── */
           <div style={{
             height: '100%',
-            background: block.type === 'section_heading' ? 'transparent' : 'rgba(14,14,20,0.80)',
-            border: block.type === 'section_heading' ? 'none' : '1px solid rgba(255,255,255,0.06)',
-            borderTop: block.type === 'section_heading' ? 'none' : `2px solid ${accent}`,
+            background: block.type === 'section_heading' ? 'transparent' : 'rgba(20,20,28,0.75)',
+            border: block.type === 'section_heading' ? 'none' : '1px solid rgba(255,255,255,0.10)',
             borderRadius: 10, overflow: 'hidden',
             backdropFilter: 'blur(4px)',
             position: 'relative',
@@ -688,17 +691,17 @@ export function CanvasBlock({
           <>
             <div onMouseDown={handleResizeRight} style={{
               position: 'absolute', right: -2, top: '20%', height: '60%', width: 5,
-              cursor: 'ew-resize', background: 'rgba(232,87,26,0.60)', borderRadius: 2, zIndex: 25,
+              cursor: 'ew-resize', background: 'rgba(59,130,246,0.60)', borderRadius: 2, zIndex: 25,
               opacity: hovered || selected ? 1 : 0.2, transition: 'opacity 0.15s',
             }} />
             <div onMouseDown={handleResizeBottom} style={{
               position: 'absolute', bottom: -2, left: '20%', width: '60%', height: 5,
-              cursor: 'ns-resize', background: 'rgba(232,87,26,0.60)', borderRadius: 2, zIndex: 25,
+              cursor: 'ns-resize', background: 'rgba(59,130,246,0.60)', borderRadius: 2, zIndex: 25,
               opacity: hovered || selected ? 1 : 0.2, transition: 'opacity 0.15s',
             }} />
             <div onMouseDown={e => { handleResizeRight(e); handleResizeBottom(e); }} style={{
               position: 'absolute', bottom: -3, right: -3, width: 7, height: 7,
-              cursor: 'se-resize', background: '#E8571A', borderRadius: '50%', zIndex: 26,
+              cursor: 'se-resize', background: '#3B82F6', borderRadius: '50%', zIndex: 26,
               border: '2px solid rgba(6,6,10,0.80)',
               opacity: hovered || selected ? 1 : 0.25, transition: 'opacity 0.15s',
             }} />
@@ -709,7 +712,7 @@ export function CanvasBlock({
         {mode === 'edit' && isArrowDrawing && (
           <div style={{
             position: 'absolute', inset: -2,
-            border: '2px dashed rgba(232,87,26,0.40)',
+            border: '2px dashed rgba(59,130,246,0.40)',
             borderRadius: 10, pointerEvents: 'none', zIndex: 26,
           }} />
         )}
@@ -721,8 +724,8 @@ export function CanvasBlock({
             const isMagnetized = magnetizedEdge === edge;
             const size = isHoveredSnap || isMagnetized ? 12 : 8;
             const bg = isHoveredSnap || isMagnetized
-              ? '#E8571A'
-              : 'rgba(232,87,26,0.5)';
+              ? '#3B82F6'
+              : 'rgba(59,130,246,0.5)';
 
             // All snap points positioned with left/top + translate(-50%,-50%)
             const posStyle: React.CSSProperties =
@@ -756,7 +759,7 @@ export function CanvasBlock({
                   height: size,
                   borderRadius: '50%',
                   background: bg,
-                  border: '2px solid #E8571A',
+                  border: '2px solid #3B82F6',
                   zIndex: 30,
                   cursor: 'crosshair',
                   transition: 'width 0.1s, height 0.1s, background 0.1s',

@@ -43,7 +43,7 @@ export function DotGrid({
           cx={dot.x}
           cy={dot.y}
           r={1.2}
-          fill="rgba(255,255,255,0.04)"
+          fill="rgba(255,255,255,0.07)"
         />
       ))}
     </svg>
