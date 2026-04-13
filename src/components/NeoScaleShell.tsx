@@ -43,8 +43,8 @@ const NEOSCALE_CSS = `
   --mp-text-muted: rgba(255,255,255,0.25);
   --mp-border: rgba(255,255,255,0.08);
   --mp-surface: rgba(255,255,255,0.03);
-  --mp-orange: #E8571A;
-  --mp-teal: #2EC4B6;
+  --mp-orange: #8B4513;
+  --mp-teal: #1F7A6D;
   --mp-font: 'Playfair Display', Georgia, serif;
   font-family: 'Inter', sans-serif;
   color: rgba(255,255,255,0.85);

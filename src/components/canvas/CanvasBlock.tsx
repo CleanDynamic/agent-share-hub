@@ -691,17 +691,17 @@ export function CanvasBlock({
           <>
             <div onMouseDown={handleResizeRight} style={{
               position: 'absolute', right: -2, top: '20%', height: '60%', width: 5,
-              cursor: 'ew-resize', background: 'rgba(232,87,26,0.60)', borderRadius: 2, zIndex: 25,
+              cursor: 'ew-resize', background: 'rgba(59,130,246,0.60)', borderRadius: 2, zIndex: 25,
               opacity: hovered || selected ? 1 : 0.2, transition: 'opacity 0.15s',
             }} />
             <div onMouseDown={handleResizeBottom} style={{
               position: 'absolute', bottom: -2, left: '20%', width: '60%', height: 5,
-              cursor: 'ns-resize', background: 'rgba(232,87,26,0.60)', borderRadius: 2, zIndex: 25,
+              cursor: 'ns-resize', background: 'rgba(59,130,246,0.60)', borderRadius: 2, zIndex: 25,
               opacity: hovered || selected ? 1 : 0.2, transition: 'opacity 0.15s',
             }} />
             <div onMouseDown={e => { handleResizeRight(e); handleResizeBottom(e); }} style={{
               position: 'absolute', bottom: -3, right: -3, width: 7, height: 7,
-              cursor: 'se-resize', background: '#E8571A', borderRadius: '50%', zIndex: 26,
+              cursor: 'se-resize', background: '#3B82F6', borderRadius: '50%', zIndex: 26,
               border: '2px solid rgba(6,6,10,0.80)',
               opacity: hovered || selected ? 1 : 0.25, transition: 'opacity 0.15s',
             }} />
@@ -712,7 +712,7 @@ export function CanvasBlock({
         {mode === 'edit' && isArrowDrawing && (
           <div style={{
             position: 'absolute', inset: -2,
-            border: '2px dashed rgba(232,87,26,0.40)',
+            border: '2px dashed rgba(59,130,246,0.40)',
             borderRadius: 10, pointerEvents: 'none', zIndex: 26,
           }} />
         )}
@@ -724,8 +724,8 @@ export function CanvasBlock({
             const isMagnetized = magnetizedEdge === edge;
             const size = isHoveredSnap || isMagnetized ? 12 : 8;
             const bg = isHoveredSnap || isMagnetized
-              ? '#E8571A'
-              : 'rgba(232,87,26,0.5)';
+              ? '#3B82F6'
+              : 'rgba(59,130,246,0.5)';
 
             // All snap points positioned with left/top + translate(-50%,-50%)
             const posStyle: React.CSSProperties =
@@ -759,7 +759,7 @@ export function CanvasBlock({
                   height: size,
                   borderRadius: '50%',
                   background: bg,
-                  border: '2px solid #E8571A',
+                  border: '2px solid #3B82F6',
                   zIndex: 30,
                   cursor: 'crosshair',
                   transition: 'width 0.1s, height 0.1s, background 0.1s',
