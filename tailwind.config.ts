@@ -69,7 +69,7 @@ export default {
         "surface-container-highest": "#353439",
         "surface-bright": "#39393e",
         "surface-variant": "#353439",
-        "surface-tint": "#4fdbcc",
+        "surface-tint": "#3A9E8F",
 
         /* --- On-surface text --- */
         "on-surface": "#e4e1e8",
@@ -77,18 +77,18 @@ export default {
         "on-background": "#e4e1e8",
 
         /* --- Brand --- */
-        "brand-orange": "#E8571A",
+        "brand-orange": "#8B4513",
 
         /* --- Accent containers --- */
-        "primary-container": "#2ec4b6",
-        "primary-fixed": "#70f8e8",
-        "primary-fixed-dim": "#4fdbcc",
-        "secondary-container": "#cb4300",
-        "secondary-fixed": "#ffdbcf",
-        "secondary-fixed-dim": "#ffb59c",
-        "tertiary": "#cccbcb",
-        "tertiary-container": "#b0b0b0",
-        "tertiary-fixed": "#e3e2e2",
+        "primary-container": "#1F7A6D",
+        "primary-fixed": "#3A9E8F",
+        "primary-fixed-dim": "#2D8A7C",
+        "secondary-container": "#8B4513",
+        "secondary-fixed": "#C4A080",
+        "secondary-fixed-dim": "#B87A4A",
+        "tertiary": "#8A8A8A",
+        "tertiary-container": "#6A6A6A",
+        "tertiary-fixed": "#A0A0A0",
 
         /* --- On containers --- */
         "on-primary": "#003732",
