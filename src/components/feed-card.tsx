@@ -10,17 +10,17 @@ import { useToast } from "@/hooks/use-toast"
 import { getPrimaryTypeLabel } from "@/lib/content-types"
 
 const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  prompt: { bg: "rgba(232, 87, 26, 0.15)", color: "#E8571A", border: "rgba(232, 87, 26, 0.3)" },
-  prompts: { bg: "rgba(232, 87, 26, 0.15)", color: "#E8571A", border: "rgba(232, 87, 26, 0.3)" },
-  agent: { bg: "rgba(46, 196, 182, 0.15)", color: "#2EC4B6", border: "rgba(46, 196, 182, 0.3)" },
-  agents: { bg: "rgba(46, 196, 182, 0.15)", color: "#2EC4B6", border: "rgba(46, 196, 182, 0.3)" },
+  prompt: { bg: "rgba(139, 69, 19, 0.15)", color: "#8B4513", border: "rgba(139, 69, 19, 0.3)" },
+  prompts: { bg: "rgba(139, 69, 19, 0.15)", color: "#8B4513", border: "rgba(139, 69, 19, 0.3)" },
+  agent: { bg: "rgba(31, 122, 109, 0.15)", color: "#1F7A6D", border: "rgba(31, 122, 109, 0.3)" },
+  agents: { bg: "rgba(31, 122, 109, 0.15)", color: "#1F7A6D", border: "rgba(31, 122, 109, 0.3)" },
   workflow: { bg: "rgba(139, 92, 246, 0.15)", color: "#8B5CF6", border: "rgba(139, 92, 246, 0.3)" },
   blog: { bg: "rgba(59, 130, 246, 0.15)", color: "#3B82F6", border: "rgba(59, 130, 246, 0.3)" },
   tutorial: { bg: "rgba(34, 197, 94, 0.15)", color: "#22C55E", border: "rgba(34, 197, 94, 0.3)" },
   "failure-library": { bg: "rgba(239, 68, 68, 0.15)", color: "#EF4444", border: "rgba(239, 68, 68, 0.3)" },
   "failure library": { bg: "rgba(239, 68, 68, 0.15)", color: "#EF4444", border: "rgba(239, 68, 68, 0.3)" },
-  build: { bg: "rgba(232, 87, 26, 0.15)", color: "#E8571A", border: "rgba(232, 87, 26, 0.3)" },
-  technique: { bg: "rgba(46, 196, 182, 0.15)", color: "#2EC4B6", border: "rgba(46, 196, 182, 0.3)" },
+  build: { bg: "rgba(139, 69, 19, 0.15)", color: "#8B4513", border: "rgba(139, 69, 19, 0.3)" },
+  technique: { bg: "rgba(31, 122, 109, 0.15)", color: "#1F7A6D", border: "rgba(31, 122, 109, 0.3)" },
   discovery: { bg: "rgba(139, 92, 246, 0.15)", color: "#8B5CF6", border: "rgba(139, 92, 246, 0.3)" },
   discussion: { bg: "rgba(59, 130, 246, 0.15)", color: "#3B82F6", border: "rgba(59, 130, 246, 0.3)" },
   default: { bg: "rgba(255, 255, 255, 0.06)", color: "rgba(255, 255, 255, 0.55)", border: "rgba(255, 255, 255, 0.1)" },
@@ -442,7 +442,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
           {tags.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
               {tags.map((tag) => (
-                <span key={tag} style={{ fontSize: 12, color: "#2EC4B6" }}>#{tag}</span>
+                <span key={tag} style={{ fontSize: 12, color: "#1F7A6D" }}>#{tag}</span>
               ))}
             </div>
           )}
@@ -545,7 +545,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
           style={{
             display: "flex", alignItems: "center", gap: 6,
             fontSize: 13,
-            color: userHasReblogged ? "#2EC4B6" : "rgba(255,255,255,0.40)",
+            color: userHasReblogged ? "#1F7A6D" : "rgba(255,255,255,0.40)",
             background: "none", border: "none", cursor: "pointer",
             transition: "color 0.15s",
             padding: '4px 6px', borderRadius: 5,
@@ -595,7 +595,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
             display: 'flex', alignItems: 'center', gap: 4,
             fontSize: 13, background: 'none', border: 'none',
             cursor: 'pointer',
-            color: saved ? '#E8571A' : 'rgba(255,255,255,0.35)',
+            color: saved ? '#8B4513' : 'rgba(255,255,255,0.35)',
             transition: 'color 0.15s',
             padding: '4px 6px', borderRadius: 5,
             marginLeft: 14,
@@ -624,7 +624,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
             display: 'flex', alignItems: 'center', gap: 4,
             fontSize: 13, background: 'none', border: 'none',
             cursor: 'pointer',
-            color: copied ? '#2EC4B6' : 'rgba(255,255,255,0.35)',
+            color: copied ? '#1F7A6D' : 'rgba(255,255,255,0.35)',
             transition: 'color 0.15s',
             padding: '4px 6px', borderRadius: 5,
             marginLeft: 14,

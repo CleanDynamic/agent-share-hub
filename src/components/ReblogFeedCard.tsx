@@ -147,12 +147,12 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
         <AccountHoverCard account={post.author}>
           <div style={{
             width: 36, height: 36, borderRadius: '50%',
-            background: 'rgba(46,196,182,0.15)',
-            border: '1px solid rgba(46,196,182,0.30)',
+            background: 'rgba(31,122,109,0.15)',
+            border: '1px solid rgba(31,122,109,0.30)',
             display: 'flex', alignItems: 'center',
             justifyContent: 'center',
             fontSize: 12, fontWeight: 600,
-            color: '#2EC4B6', flexShrink: 0,
+            color: '#1F7A6D', flexShrink: 0,
           }}>
             {post.author.avatar_url
               ? <img src={post.author.avatar_url}
