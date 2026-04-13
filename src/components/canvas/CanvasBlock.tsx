@@ -466,25 +466,45 @@ export function CanvasBlock({
           <div
             style={{
               height: '100%',
-              background: selected ? 'rgba(232,87,26,0.06)' : 'rgba(14,14,20,0.85)',
+              background: selected ? `${accent}10` : 'rgba(20,20,28,0.75)',
               border: selectionBorder,
-              borderRadius: 8,
+              borderRadius: 10,
               overflow: 'hidden',
               cursor: 'pointer',
               transition: 'border-color 0.15s, box-shadow 0.15s',
               boxShadow: selected
-                ? '0 0 0 1px rgba(232,87,26,0.30), 0 4px 20px rgba(0,0,0,0.3)'
+                ? `0 0 0 1px ${accent}50, 0 4px 20px rgba(0,0,0,0.3)`
                 : hovered ? '0 4px 20px rgba(0,0,0,0.3)' : 'none',
               display: 'flex',
               flexDirection: 'column',
               position: 'relative',
             }}
           >
-            {/* Accent bar top */}
-            <div style={{ height: 2, background: accent, flexShrink: 0 }} />
+            {/* Header row with badge square + chip */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px 4px', minHeight: 0 }}>
+              {/* Colour badge square */}
+              <div style={{
+                width: 20, height: 20, borderRadius: 4,
+                background: accent, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'rgba(255,255,255,0.9)', fontSize: 11,
+              }}>
+                {icon}
+              </div>
 
-            {/* Card body */}
-            <div style={{ flex: 1, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 6, minHeight: 0, overflow: 'hidden' }}>
+              {/* Type chip */}
+              <div style={{
+                fontSize: 10, fontWeight: 500,
+                color: 'rgba(255,255,255,0.55)',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 100, padding: '1px 8px',
+              }}>
+                {typeLabel}
+              </div>
+
+              <div style={{ flex: 1 }} />
+
               {/* Drag grip */}
               <div
                 className="drag-grip"
@@ -493,47 +513,31 @@ export function CanvasBlock({
                 style={{
                   flexShrink: 0, width: 16, height: 16,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'grab', color: hovered ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.15)',
+                  cursor: 'grab', color: hovered ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.12)',
                   borderRadius: 3,
                 }}
               >
                 <GripVertical size={10} />
               </div>
-
-              {/* Icon */}
-              <div style={{ flexShrink: 0, color: accent }}>
-                {icon}
-              </div>
-
-              {/* Title + type label */}
-              <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.85)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {block.subheading || typeLabel}
-                </div>
-                {block.subheading && (
-                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.30)', marginTop: 1, whiteSpace: 'nowrap' }}>
-                    {typeLabel}
-                  </div>
-                )}
-              </div>
-
-              {/* Open indicator */}
-              <div style={{ flexShrink: 0, color: 'rgba(255,255,255,0.12)' }}>
-                <ChevronRight size={10} />
-              </div>
             </div>
 
-            {/* Optional grid note */}
-            {block.textContent && (
-              <div style={{
-                padding: '0 8px 4px 30px',
-                fontSize: 9, color: 'rgba(255,255,255,0.22)',
-                lineHeight: 1.3,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {block.textContent.slice(0, 100)}
-              </div>
-            )}
+            {/* Card body */}
+            <div style={{ flex: 1, padding: '2px 10px 6px', minHeight: 0, overflow: 'hidden' }}>
+              {block.subheading && (
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.80)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>
+                  {block.subheading}
+                </div>
+              )}
+              {block.textContent && (
+                <div style={{
+                  fontSize: 11, color: 'rgba(255,255,255,0.40)',
+                  lineHeight: 1.4,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {block.textContent.slice(0, 120)}
+                </div>
+              )}
+            </div>
 
             {/* Hover toolbar */}
             {(hovered || selected) && (
@@ -645,9 +649,8 @@ export function CanvasBlock({
           /* ── VIEW MODE: Full content display ── */
           <div style={{
             height: '100%',
-            background: block.type === 'section_heading' ? 'transparent' : 'rgba(14,14,20,0.80)',
-            border: block.type === 'section_heading' ? 'none' : '1px solid rgba(255,255,255,0.06)',
-            borderTop: block.type === 'section_heading' ? 'none' : `2px solid ${accent}`,
+            background: block.type === 'section_heading' ? 'transparent' : 'rgba(20,20,28,0.75)',
+            border: block.type === 'section_heading' ? 'none' : '1px solid rgba(255,255,255,0.10)',
             borderRadius: 10, overflow: 'hidden',
             backdropFilter: 'blur(4px)',
             position: 'relative',
