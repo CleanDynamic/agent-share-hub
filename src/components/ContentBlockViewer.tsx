@@ -211,7 +211,7 @@ function AdModal({ open, onComplete, label, countdownSeconds = 3 }: {
         </div>
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Advertisement</p>
         <p className="text-sm text-foreground">
-          {label} <span className="font-bold text-[#2EC4B6]">{seconds}</span>…
+          {label} <span className="font-bold text-[#1F7A6D]">{seconds}</span>…
         </p>
         <a href="/login" className="text-xs text-muted-foreground hover:text-foreground underline">Sign in to skip ads</a>
       </div>
@@ -248,7 +248,7 @@ function RenderGitHubBlock({ textContent, subBlocks }: { textContent: string | n
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center justify-center gap-2 w-full h-10 rounded-lg text-sm font-medium transition-colors"
-        style={{ backgroundColor: "#2EC4B6", color: "#fff" }}
+        style={{ backgroundColor: "#1F7A6D", color: "#fff" }}
       >
         <Github className="h-4 w-4" />
         View on GitHub →
@@ -436,7 +436,7 @@ export function RenderBlockContent({
         position: 'relative',
         background: 'rgba(0,0,0,0.35)',
         border: '1px solid rgba(255,255,255,0.08)',
-        borderLeft: '3px solid rgba(232,87,26,0.50)',
+        borderLeft: '3px solid rgba(139,69,19,0.50)',
         borderRadius: 8,
         padding: '14px 16px',
       }}>
@@ -533,8 +533,8 @@ export function RenderBlockContent({
         style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 14, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, textDecoration: 'none' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <ExternalLink style={{ width: 14, height: 14, color: '#2EC4B6', flexShrink: 0 }} />
-          <span style={{ fontSize: 13, color: '#2EC4B6', wordBreak: 'break-all' }}>{url}</span>
+          <ExternalLink style={{ width: 14, height: 14, color: '#1F7A6D', flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: '#1F7A6D', wordBreak: 'break-all' }}>{url}</span>
         </div>
         {description && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', margin: 0 }}>{description}</p>}
       </a>
@@ -622,7 +622,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
   const highlightVars = (text: string) => {
     return text.replace(
       /\{\{(\w+)\}\}/g,
-      '<mark style="background:rgba(46,196,182,0.20);color:#2EC4B6;border-radius:3px;padding:1px 4px">{{$1}}</mark>'
+      '<mark style="background:rgba(31,122,109,0.20);color:#1F7A6D;border-radius:3px;padding:1px 4px">{{$1}}</mark>'
     );
   };
 
@@ -633,9 +633,9 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
           <span style={{
             padding: '2px 10px', borderRadius: 9999, fontSize: 11,
             fontWeight: 700, textTransform: 'uppercase',
-            background: 'rgba(232,87,26,0.15)',
-            border: '1px solid rgba(232,87,26,0.30)',
-            color: '#E8571A',
+            background: 'rgba(139,69,19,0.15)',
+            border: '1px solid rgba(139,69,19,0.30)',
+            color: '#8B4513',
           }}>
             {block.prompt_role}
           </span>
@@ -655,13 +655,13 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
       {variables.length > 0 && (
         <div style={{
           padding: '10px 12px', marginBottom: 12,
-          background: 'rgba(46,196,182,0.05)',
-          border: '1px solid rgba(46,196,182,0.15)',
+          background: 'rgba(31,122,109,0.05)',
+          border: '1px solid rgba(31,122,109,0.15)',
           borderRadius: 8,
         }}>
           <div style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-            letterSpacing: '0.10em', color: '#2EC4B6', marginBottom: 8,
+            letterSpacing: '0.10em', color: '#1F7A6D', marginBottom: 8,
           }}>
             Fill in variables
           </div>
@@ -669,7 +669,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
             {variables.map((v: { name: string; description: string }) => (
               <div key={v.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <code style={{
-                  fontSize: 12, color: '#2EC4B6', flexShrink: 0,
+                  fontSize: 12, color: '#1F7A6D', flexShrink: 0,
                   fontFamily: 'Courier New, monospace',
                 }}>
                   {`{{${v.name}}}`}
@@ -680,7 +680,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
                   placeholder={v.description || `Enter ${v.name}`}
                   style={{
                     flex: 1, background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(46,196,182,0.25)',
+                    border: '1px solid rgba(31,122,109,0.25)',
                     borderRadius: 6, padding: '4px 8px', fontSize: 12,
                     color: '#fff', outline: 'none',
                   }} />
@@ -743,7 +743,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
 const WorkflowViewer = ({ block }: { block: BlockRow }) => {
   const steps = block.workflow_steps ?? [];
   const STEP_COLORS: Record<string, string> = {
-    manual: '#9CA3AF', ai: '#2EC4B6',
+    manual: '#9CA3AF', ai: '#1F7A6D',
     automated: '#3B82F6', decision: '#F59E0B',
   };
   const STEP_EMOJIS: Record<string, string> = {
@@ -755,14 +755,14 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
       {block.workflow_trigger && (
         <div style={{
           padding: '10px 14px', marginBottom: 16,
-          background: 'rgba(232,87,26,0.08)',
-          border: '1px solid rgba(232,87,26,0.20)',
+          background: 'rgba(139,69,19,0.08)',
+          border: '1px solid rgba(139,69,19,0.20)',
           borderRadius: 8, fontSize: 13,
           color: 'rgba(255,255,255,0.75)',
         }}>
           <span style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-            letterSpacing: '0.10em', color: '#E8571A',
+            letterSpacing: '0.10em', color: '#8B4513',
             display: 'block', marginBottom: 4,
           }}>
             Trigger
@@ -1230,7 +1230,7 @@ function TutorialCarousel({ images }: { images: string[] }) {
               style={{
                 width: i === current ? 20 : 6,
                 height: 6, borderRadius: 3,
-                background: i === current ? '#E8571A' : 'rgba(255,255,255,0.30)',
+                background: i === current ? '#8B4513' : 'rgba(255,255,255,0.30)',
                 border: 'none', cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
@@ -1285,11 +1285,11 @@ function renderTypedViewer(block: BlockRow): React.JSX.Element | null {
 
     return (
       <div style={{
-        border: '1px solid rgba(232,87,26,0.18)',
-        borderLeft: '3px solid rgba(232,87,26,0.45)',
+        border: '1px solid rgba(139,69,19,0.18)',
+        borderLeft: '3px solid rgba(139,69,19,0.45)',
         borderRadius: 8,
         overflow: 'hidden',
-        background: 'rgba(232,87,26,0.03)',
+        background: 'rgba(139,69,19,0.03)',
       }}>
         {/* Media */}
         {mediaUrl && mediaType === 'video' && (
@@ -1547,12 +1547,12 @@ export function ContentBlockViewer({
                         <div style={{
                           width: 24, height: 24,
                           borderRadius: '50%',
-                          background: 'rgba(232,87,26,0.12)',
-                          border: '1px solid rgba(232,87,26,0.28)',
+                          background: 'rgba(139,69,19,0.12)',
+                          border: '1px solid rgba(139,69,19,0.28)',
                           display: 'flex', alignItems: 'center',
                           justifyContent: 'center',
                           fontSize: 11, fontWeight: 700,
-                          color: '#E8571A', flexShrink: 0,
+                          color: '#8B4513', flexShrink: 0,
                         }}>
                           {index + 1}
                         </div>
@@ -1597,7 +1597,7 @@ export function ContentBlockViewer({
                   position: 'relative',
                   paddingLeft: isPreview ? 14 : 0,
                   borderLeft: isPreview
-                    ? '2px solid rgba(46,196,182,0.45)'
+                    ? '2px solid rgba(31,122,109,0.45)'
                     : 'none',
                 }}>
                   <div style={{ position: 'relative' }}>
@@ -1606,11 +1606,11 @@ export function ContentBlockViewer({
                     <div className="flex gap-1 pb-2">
                       <button type="button" onClick={() => setActiveTab((p) => ({ ...p, [block.id]: "A" }))}
                         className={`text-xs px-3 py-1 rounded-md transition-colors ${currentTab === "A" ? "font-medium border-b-2" : "text-muted-foreground hover:text-foreground"}`}
-                        style={currentTab === "A" ? { color: "#E8571A", borderColor: "#E8571A" } : {}}>A</button>
+                        style={currentTab === "A" ? { color: "#8B4513", borderColor: "#8B4513" } : {}}>A</button>
                       {blockVariations.map((v) => (
                         <button key={v.id} type="button" onClick={() => setActiveTab((p) => ({ ...p, [block.id]: v.variation_label }))}
                           className={`text-xs px-3 py-1 rounded-md transition-colors ${currentTab === v.variation_label ? "font-medium border-b-2" : "text-muted-foreground hover:text-foreground"}`}
-                          style={currentTab === v.variation_label ? { color: "#E8571A", borderColor: "#E8571A" } : {}}>{v.variation_label}</button>
+                          style={currentTab === v.variation_label ? { color: "#8B4513", borderColor: "#8B4513" } : {}}>{v.variation_label}</button>
                       ))}
                     </div>
                   )}
@@ -1673,7 +1673,7 @@ export function ContentBlockViewer({
                       <div className="mt-3 px-1">
                         <a href={block.external_file_url} target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors hover:bg-accent/60"
-                          style={{ borderColor: "#2EC4B6", color: "#2EC4B6" }}>
+                          style={{ borderColor: "#1F7A6D", color: "#1F7A6D" }}>
                           <Download className="h-3.5 w-3.5" />Download from {detectHostName(block.external_file_url)} →
                         </a>
                       </div>
@@ -1683,7 +1683,7 @@ export function ContentBlockViewer({
                     {isUnblurred && block.github_url && block.block_type !== "github" && (
                       <div className="mt-2 px-1">
                         <a href={block.github_url} target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm transition-colors hover:underline" style={{ color: "#2EC4B6" }}>
+                          className="inline-flex items-center gap-1.5 text-sm transition-colors hover:underline" style={{ color: "#1F7A6D" }}>
                           🐙 View on GitHub →
                         </a>
                       </div>

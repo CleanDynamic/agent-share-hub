@@ -205,13 +205,13 @@ export default function CollectionDetail() {
 
         {/* Unlisted info banner (owner only) */}
         {visibility === "unlisted" && isOwner && (
-          <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-[#2EC4B6]/10 border border-[#2EC4B6]/20 mb-6">
-            <Info className="h-4 w-4 text-[#2EC4B6] mt-0.5 shrink-0" />
+          <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-[#1F7A6D]/10 border border-[#1F7A6D]/20 mb-6">
+            <Info className="h-4 w-4 text-[#1F7A6D] mt-0.5 shrink-0" />
             <div className="flex-1">
-              <p className="text-xs text-[#2EC4B6] mb-1.5">This collection is unlisted. Share the direct link:</p>
+              <p className="text-xs text-[#1F7A6D] mb-1.5">This collection is unlisted. Share the direct link:</p>
               <button
                 onClick={copyLink}
-                className="inline-flex items-center gap-1.5 text-xs text-[#2EC4B6] hover:text-[#2EC4B6]/80 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs text-[#1F7A6D] hover:text-[#1F7A6D]/80 transition-colors"
               >
                 <Copy className="h-3 w-3" />
                 {window.location.origin}/collections/{slug}
@@ -261,7 +261,7 @@ export default function CollectionDetail() {
                 onClick={handleAddAllToLibrary}
                 disabled={addingAll || !!allInLibrary}
                 className={allInLibrary
-                  ? "bg-[#2EC4B6] hover:bg-[#2EC4B6]/90 text-white cursor-default"
+                  ? "bg-[#1F7A6D] hover:bg-[#1F7A6D]/90 text-white cursor-default"
                   : "bg-primary hover:bg-primary/90 text-primary-foreground"
                 }
               >

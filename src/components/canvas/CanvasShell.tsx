@@ -805,8 +805,8 @@ export function CanvasShell(props: CanvasShellProps) {
                   style={{
                     padding: '4px 12px', fontSize: 11, fontWeight: 600,
                     borderRadius: 6, border: 'none', cursor: 'pointer',
-                    background: !activeStageTab ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.04)',
-                    color: !activeStageTab ? '#E8571A' : 'rgba(255,255,255,0.40)',
+                    background: !activeStageTab ? 'rgba(139,69,19,0.15)' : 'rgba(255,255,255,0.04)',
+                    color: !activeStageTab ? '#8B4513' : 'rgba(255,255,255,0.40)',
                     transition: 'all 0.15s',
                     flexShrink: 0,
                   }}
@@ -820,8 +820,8 @@ export function CanvasShell(props: CanvasShellProps) {
                     style={{
                       padding: '4px 12px', fontSize: 11, fontWeight: 600,
                       borderRadius: 6, border: 'none', cursor: 'pointer',
-                      background: activeStageTab === s.id ? 'rgba(232,87,26,0.15)' : 'rgba(255,255,255,0.04)',
-                      color: activeStageTab === s.id ? '#E8571A' : 'rgba(255,255,255,0.40)',
+                      background: activeStageTab === s.id ? 'rgba(139,69,19,0.15)' : 'rgba(255,255,255,0.04)',
+                      color: activeStageTab === s.id ? '#8B4513' : 'rgba(255,255,255,0.40)',
                       transition: 'all 0.15s',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
@@ -1028,8 +1028,8 @@ export function CanvasShell(props: CanvasShellProps) {
                 top: Math.min(marqueeStart.y, marqueeEnd.y),
                 width: Math.abs(marqueeEnd.x - marqueeStart.x),
                 height: Math.abs(marqueeEnd.y - marqueeStart.y),
-                border: '1px solid rgba(232,87,26,0.6)',
-                background: 'rgba(232,87,26,0.08)',
+                border: '1px solid rgba(139,69,19,0.6)',
+                background: 'rgba(139,69,19,0.08)',
                 pointerEvents: 'none',
                 zIndex: 50,
               }}

@@ -5,7 +5,7 @@ import { displayContentType, TYPE_COLORS } from "@/lib/content-types";
 
 /** Accent colours per type for placeholder thumbnails */
 const TYPE_ACCENT: Record<string, string> = {
-  "Prompt File": "#E8571A",
+  "Prompt File": "#8B4513",
   "Agent Blueprint": "#7C3AED",
   "Workflow Template": "#3B82F6",
   "Agent Stack": "#EF4444",
@@ -116,7 +116,7 @@ export function PortfolioCard({ item }: PortfolioCardProps) {
           </span>
           {item.rating_count > 0 && (
             <span className="flex items-center gap-1">
-              <Star className="h-3.5 w-3.5 fill-[#E8571A] text-[#E8571A]" />
+              <Star className="h-3.5 w-3.5 fill-[#8B4513] text-[#8B4513]" />
               <span>{item.avg_rating.toFixed(1)}</span>
             </span>
           )}

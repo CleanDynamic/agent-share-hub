@@ -98,14 +98,14 @@ export function CanvasHeader({
     color: string; bg: string; border: string
   }> = {
     build: {
-      color: '#E8571A',
-      bg: 'rgba(232,87,26,0.12)',
-      border: 'rgba(232,87,26,0.25)',
+      color: '#8B4513',
+      bg: 'rgba(139,69,19,0.12)',
+      border: 'rgba(139,69,19,0.25)',
     },
     technique: {
-      color: '#2EC4B6',
-      bg: 'rgba(46,196,182,0.12)',
-      border: 'rgba(46,196,182,0.25)',
+      color: '#1F7A6D',
+      bg: 'rgba(31,122,109,0.12)',
+      border: 'rgba(31,122,109,0.25)',
     },
     discovery: {
       color: '#7C3AED',
@@ -339,9 +339,9 @@ function EvidenceEditor({
             style={{
               padding: '3px 10px', borderRadius: 6, fontSize: 11,
               cursor: 'pointer',
-              background: mediaType === t.value ? 'rgba(232,87,26,0.18)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${mediaType === t.value ? 'rgba(232,87,26,0.35)' : 'rgba(255,255,255,0.08)'}`,
-              color: mediaType === t.value ? '#E8571A' : 'rgba(255,255,255,0.45)',
+              background: mediaType === t.value ? 'rgba(139,69,19,0.18)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${mediaType === t.value ? 'rgba(139,69,19,0.35)' : 'rgba(255,255,255,0.08)'}`,
+              color: mediaType === t.value ? '#8B4513' : 'rgba(255,255,255,0.45)',
             }}
           >
             {t.label}

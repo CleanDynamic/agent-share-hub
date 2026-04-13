@@ -448,7 +448,7 @@ const Home = () => {
             className="shrink-0 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
             style={{
               width: 36, height: 36, borderRadius: '50%',
-              background: 'rgba(232,87,26,0.9)', color: '#fff', border: 'none',
+              background: 'rgba(139,69,19,0.9)', color: '#fff', border: 'none',
             }}
           >
             <Upload className="h-4 w-4" />
@@ -477,8 +477,8 @@ const Home = () => {
                 padding: '6px 16px',
                 borderRadius: 100,
                 border: 'none',
-                background: activeTab === tab ? 'rgba(232,87,26,0.08)' : 'transparent',
-                color: activeTab === tab ? '#E8571A' : 'rgba(255,255,255,0.45)',
+                background: activeTab === tab ? 'rgba(139,69,19,0.08)' : 'transparent',
+                color: activeTab === tab ? '#8B4513' : 'rgba(255,255,255,0.45)',
                 cursor: 'pointer',
               }}
             >

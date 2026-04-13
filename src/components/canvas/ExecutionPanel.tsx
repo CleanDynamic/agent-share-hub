@@ -182,15 +182,15 @@ export function ExecutionPanel({
               fontSize: 11, cursor: 'pointer',
               background:
                 selectedModel.id === m.id
-                  ? 'rgba(232,87,26,0.15)'
+                  ? 'rgba(139,69,19,0.15)'
                   : 'rgba(255,255,255,0.04)',
               border: `1px solid ${
                 selectedModel.id === m.id
-                  ? 'rgba(232,87,26,0.35)'
+                  ? 'rgba(139,69,19,0.35)'
                   : 'rgba(255,255,255,0.08)'
               }`,
               color: selectedModel.id === m.id
-                ? '#E8571A'
+                ? '#8B4513'
                 : 'rgba(255,255,255,0.45)',
               fontWeight:
                 selectedModel.id === m.id ? 700 : 400,

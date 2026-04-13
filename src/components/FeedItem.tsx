@@ -258,7 +258,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
       {/* LINE 1 — Header row */}
       <div className="flex items-center gap-2" style={{ height: 34 }}>
         {rank != null && (
-          <span style={{ fontSize: 18, fontWeight: 700, color: '#E8571A', minWidth: 32, flexShrink: 0 }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: '#8B4513', minWidth: 32, flexShrink: 0 }}>
             {String(rank).padStart(2, "0")}
           </span>
         )}
@@ -387,12 +387,12 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
                       }
                     }}
                     className="inline-flex items-center gap-1 shrink-0 transition-colors"
-                    style={{ color: userHasReblogged ? "#2EC4B6" : 'rgba(255,255,255,0.35)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                    style={{ color: userHasReblogged ? "#1F7A6D" : 'rgba(255,255,255,0.35)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                     onMouseEnter={e => { if (!userHasReblogged) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.70)'; }}
                     onMouseLeave={e => { if (!userHasReblogged) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.35)'; }}
                     title={userHasReblogged ? "You reblogged this" : "Reblog"}
                   >
-                    <Repeat2 style={{ width: 15, height: 15, color: userHasReblogged ? "#2EC4B6" : "currentColor" }} />
+                    <Repeat2 style={{ width: 15, height: 15, color: userHasReblogged ? "#1F7A6D" : "currentColor" }} />
                     {(reblogCount ?? 0) > 0 && <span>{formatNum(reblogCount ?? 0)}</span>}
                   </button>
                 </>

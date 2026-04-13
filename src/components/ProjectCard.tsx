@@ -73,7 +73,7 @@ export function ProjectCard({
           <Button
             size="sm"
             className="mt-2 text-xs h-7 w-full"
-            style={{ backgroundColor: "#E8571A" }}
+            style={{ backgroundColor: "#8B4513" }}
           >
             View Project
           </Button>

@@ -5,18 +5,18 @@ export const POST_TYPES = [
     value: 'build',
     label: 'Build',
     description: 'Something you made — a tool, agent, workflow, or system',
-    color: '#E8571A',
-    bg: 'rgba(232,87,26,0.15)',
-    border: 'rgba(232,87,26,0.30)',
+    color: '#8B4513',
+    bg: 'rgba(139,69,19,0.15)',
+    border: 'rgba(139,69,19,0.30)',
     emoji: '🔨',
   },
   {
     value: 'technique',
     label: 'Technique',
     description: 'A specific method or approach you have tested and proven',
-    color: '#2EC4B6',
-    bg: 'rgba(46,196,182,0.15)',
-    border: 'rgba(46,196,182,0.30)',
+    color: '#1F7A6D',
+    bg: 'rgba(31,122,109,0.15)',
+    border: 'rgba(31,122,109,0.30)',
     emoji: '⚡',
   },
   {
@@ -231,7 +231,7 @@ export const BOUNTY_CONTENT_TYPES = [
 ] as const;
 
 export const TYPE_COLORS: Record<string, string> = {
-  'Prompt File':           'bg-[#E8571A]/15 text-[#E8571A] border-[#E8571A]/30',
+  'Prompt File':           'bg-[#8B4513]/15 text-[#8B4513] border-[#8B4513]/30',
   'Agent Blueprint':       'bg-[#7C3AED]/15 text-[#7C3AED] border-[#7C3AED]/30',
   'AI Agent Install Guide':'bg-[#7C3AED]/15 text-[#7C3AED] border-[#7C3AED]/30',
   'Workflow Template':     'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30',

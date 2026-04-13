@@ -67,11 +67,11 @@ export function LibraryEmptyState({ isSearching }: LibraryEmptyStateProps) {
             width: 64,
             height: 64,
             borderRadius: 20,
-            background: "rgba(46,196,182,0.08)",
-            border: "1px solid rgba(46,196,182,0.2)",
+            background: "rgba(31,122,109,0.08)",
+            border: "1px solid rgba(31,122,109,0.2)",
           }}
         >
-          <BookOpen className="h-8 w-8" style={{ color: "#2EC4B6" }} />
+          <BookOpen className="h-8 w-8" style={{ color: "#1F7A6D" }} />
         </div>
 
         <h3
@@ -103,13 +103,13 @@ export function LibraryEmptyState({ isSearching }: LibraryEmptyStateProps) {
             to="/browse"
             className="flex items-center gap-2 transition-all"
             style={{
-              background: "rgba(46,196,182,0.12)",
-              border: "1px solid rgba(46,196,182,0.3)",
+              background: "rgba(31,122,109,0.12)",
+              border: "1px solid rgba(31,122,109,0.3)",
               borderRadius: 10,
               padding: "10px 24px",
               fontSize: 13,
               fontWeight: 600,
-              color: "#2EC4B6",
+              color: "#1F7A6D",
             }}
           >
             <Compass className="h-4 w-4" />
@@ -119,13 +119,13 @@ export function LibraryEmptyState({ isSearching }: LibraryEmptyStateProps) {
             to="/upload"
             className="flex items-center gap-2 transition-all"
             style={{
-              background: "rgba(232,87,26,0.10)",
-              border: "1px solid rgba(232,87,26,0.25)",
+              background: "rgba(139,69,19,0.10)",
+              border: "1px solid rgba(139,69,19,0.25)",
               borderRadius: 10,
               padding: "10px 24px",
               fontSize: 13,
               fontWeight: 600,
-              color: "#E8571A",
+              color: "#8B4513",
             }}
           >
             <PenTool className="h-4 w-4" />

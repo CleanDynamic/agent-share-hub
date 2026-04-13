@@ -115,7 +115,7 @@ function SwipeableThreadRow({
       style={{
         height: 72,
         background: isActive ? 'rgba(255,255,255,0.03)' : 'transparent',
-        borderLeft: isActive ? '2px solid #2EC4B6' : '2px solid transparent',
+        borderLeft: isActive ? '2px solid #1F7A6D' : '2px solid transparent',
       }}
       onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
       onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
@@ -158,7 +158,7 @@ function SwipeableThreadRow({
             {thread.last_message || "Start a conversation"}
           </p>
           {thread.unread_count > 0 && (
-            <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 16, minWidth: 16, padding: '0 4px', borderRadius: 100, background: '#2EC4B6', color: '#fff', fontSize: 10, fontWeight: 700 }}>
+            <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 16, minWidth: 16, padding: '0 4px', borderRadius: 100, background: '#1F7A6D', color: '#fff', fontSize: 10, fontWeight: 700 }}>
               {thread.unread_count > 9 ? "9+" : thread.unread_count}
             </span>
           )}
@@ -771,18 +771,18 @@ const MessagesPage = () => {
       <div className="flex items-center gap-1 px-4 shrink-0" style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 4 }}>
         <button
           onClick={() => setActiveTab("primary")}
-          style={{ fontSize: 13, fontWeight: 500, padding: '5px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: activeTab === "primary" ? 'rgba(46,196,182,0.08)' : 'transparent', color: activeTab === "primary" ? '#2EC4B6' : 'rgba(255,255,255,0.45)' }}
+          style={{ fontSize: 13, fontWeight: 500, padding: '5px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: activeTab === "primary" ? 'rgba(31,122,109,0.08)' : 'transparent', color: activeTab === "primary" ? '#1F7A6D' : 'rgba(255,255,255,0.45)' }}
         >
           Primary
         </button>
         <button
           onClick={() => setActiveTab("requests")}
           className="flex items-center"
-          style={{ fontSize: 13, fontWeight: 500, padding: '5px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', gap: 6, background: activeTab === "requests" ? 'rgba(46,196,182,0.08)' : 'transparent', color: activeTab === "requests" ? '#2EC4B6' : 'rgba(255,255,255,0.45)' }}
+          style={{ fontSize: 13, fontWeight: 500, padding: '5px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', gap: 6, background: activeTab === "requests" ? 'rgba(31,122,109,0.08)' : 'transparent', color: activeTab === "requests" ? '#1F7A6D' : 'rgba(255,255,255,0.45)' }}
         >
           Requests
           {requestCount > 0 && (
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 16, minWidth: 16, padding: '0 4px', borderRadius: 100, background: '#2EC4B6', color: '#fff', fontSize: 10, fontWeight: 700 }}>
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 16, minWidth: 16, padding: '0 4px', borderRadius: 100, background: '#1F7A6D', color: '#fff', fontSize: 10, fontWeight: 700 }}>
               {requestCount}
             </span>
           )}

@@ -107,7 +107,7 @@ export function AnnotationsList({
                   </span>
                   {block.stageIndex && (
                     <span style={{
-                      color: '#E8571A',
+                      color: '#8B4513',
                     }}>
                       {block.stageIndex}
                     </span>

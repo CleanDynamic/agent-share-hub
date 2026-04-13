@@ -131,8 +131,8 @@ export function LibraryGrid({
               <div
                 className="absolute -top-1.5 -right-1.5 z-10 h-3 w-3 rounded-full"
                 style={{
-                  background: "#E8571A",
-                  boxShadow: "0 0 8px rgba(232,87,26,0.5)",
+                  background: "#8B4513",
+                  boxShadow: "0 0 8px rgba(139,69,19,0.5)",
                 }}
               />
             )}
@@ -156,7 +156,7 @@ export function LibraryGrid({
                 className="px-5 pb-3 -mt-1"
                 style={{
                   fontSize: 11,
-                  color: "#E8571A",
+                  color: "#8B4513",
                   fontWeight: 500,
                 }}
               >

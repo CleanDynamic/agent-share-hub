@@ -129,15 +129,15 @@ function ReblogComposePanel({
             }}>
               <div style={{
                 width: 1, height: 16,
-                background: 'rgba(46,196,182,0.25)',
+                background: 'rgba(31,122,109,0.25)',
               }} />
               <div style={{
                 width: 20, height: 20, borderRadius: '50%',
-                background: 'rgba(46,196,182,0.10)',
-                border: '1px solid rgba(46,196,182,0.25)',
+                background: 'rgba(31,122,109,0.10)',
+                border: '1px solid rgba(31,122,109,0.25)',
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 8, color: 'rgba(46,196,182,0.60)',
+                fontSize: 8, color: 'rgba(31,122,109,0.60)',
                 fontWeight: 700,
               }}>
                 {i + 2}
@@ -181,16 +181,16 @@ function ReblogComposePanel({
         {annotations.map((ann, i) => (
           <div key={ann.id} style={{
             marginTop: 16,
-            border: '1px solid rgba(232,87,26,0.20)',
-            borderLeft: '3px solid rgba(232,87,26,0.50)',
+            border: '1px solid rgba(139,69,19,0.20)',
+            borderLeft: '3px solid rgba(139,69,19,0.50)',
             borderRadius: 8,
             overflow: 'hidden',
           }}>
             {/* Referenced block preview */}
             <div style={{
               padding: '8px 12px',
-              background: 'rgba(232,87,26,0.06)',
-              borderBottom: '1px solid rgba(232,87,26,0.12)',
+              background: 'rgba(139,69,19,0.06)',
+              borderBottom: '1px solid rgba(139,69,19,0.12)',
               display: 'flex', alignItems: 'center',
               justifyContent: 'space-between',
             }}>
@@ -326,7 +326,7 @@ function ReblogComposePanel({
           onClick={() => setThreads([...threads, ''])}
           style={{
             marginTop: 14, fontSize: 12,
-            color: 'rgba(46,196,182,0.55)',
+            color: 'rgba(31,122,109,0.55)',
             background: 'none', border: 'none',
             cursor: 'pointer', padding: 0,
           }}
@@ -356,7 +356,7 @@ function ReblogComposePanel({
           disabled={submitting}
           style={{
             padding: '8px 20px', borderRadius: 9999,
-            background: '#2EC4B6', border: 'none',
+            background: '#1F7A6D', border: 'none',
             color: '#fff', fontSize: 13, fontWeight: 700,
             cursor: submitting ? 'default' : 'pointer',
           }}
@@ -428,7 +428,7 @@ function OriginalPostPanel({
               style={{
                 marginBottom: 16,
                 border: isAnnotated
-                  ? '1px solid rgba(232,87,26,0.30)'
+                  ? '1px solid rgba(139,69,19,0.30)'
                   : '1px solid rgba(255,255,255,0.06)',
                 borderRadius: 8, overflow: 'hidden',
                 transition: 'border-color 0.15s',
@@ -474,9 +474,9 @@ function OriginalPostPanel({
                       style={{
                         fontSize: 9, padding: '2px 7px',
                         borderRadius: 4, cursor: 'pointer',
-                        background: 'rgba(232,87,26,0.10)',
-                        border: '1px solid rgba(232,87,26,0.25)',
-                        color: '#E8571A', fontWeight: 700,
+                        background: 'rgba(139,69,19,0.10)',
+                        border: '1px solid rgba(139,69,19,0.25)',
+                        color: '#8B4513', fontWeight: 700,
                       }}
                     >
                       ↳ Annotate
@@ -499,7 +499,7 @@ function OriginalPostPanel({
                 {isAnnotated && (
                   <span style={{
                     fontSize: 9,
-                    color: 'rgba(232,87,26,0.60)',
+                    color: 'rgba(139,69,19,0.60)',
                     fontWeight: 700,
                   }}>
                     ✓ Referenced

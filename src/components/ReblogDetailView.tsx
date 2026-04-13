@@ -87,7 +87,7 @@ function QuotedPostCardLarge({ originalId }: { originalId: string }) {
         <button
           onClick={() => navigate(`/content/${originalId}`)}
           className="text-[12px] font-medium flex items-center gap-1 hover:opacity-80 transition-opacity"
-          style={{ color: "#2EC4B6" }}
+          style={{ color: "#1F7A6D" }}
         >
           View original post <ExternalLink className="h-3 w-3" />
         </button>
@@ -114,8 +114,8 @@ function DetailThreadBlock({ block, index }: { block: any; index: number }) {
   return (
     <div className="flex gap-4 mb-4">
       <div className="flex flex-col items-center shrink-0 w-6">
-        <span className="text-[14px] text-[#2EC4B6] font-medium">{label}</span>
-        {index < 19 && <div className="w-[1px] flex-1 bg-[#2EC4B6]/25 mt-1" />}
+        <span className="text-[14px] text-[#1F7A6D] font-medium">{label}</span>
+        {index < 19 && <div className="w-[1px] flex-1 bg-[#1F7A6D]/25 mt-1" />}
       </div>
       <div className="flex-1 pb-1 min-w-0">
         {block.block_type === "image" && block.image_url ? (
@@ -236,8 +236,8 @@ export function ReblogDetailView({ item }: ReblogDetailViewProps) {
     <div className="pb-16">
       {/* Reblog indicator */}
       <div className="flex items-center gap-1.5 mb-3">
-        <Repeat2 className="h-4 w-4" style={{ color: "#2EC4B6" }} />
-        <span className="text-[13px] font-semibold" style={{ color: "#2EC4B6" }}>Reblog</span>
+        <Repeat2 className="h-4 w-4" style={{ color: "#1F7A6D" }} />
+        <span className="text-[13px] font-semibold" style={{ color: "#1F7A6D" }}>Reblog</span>
       </div>
 
       {/* Reblogger header */}
@@ -252,7 +252,7 @@ export function ReblogDetailView({ item }: ReblogDetailViewProps) {
             <Link to={`/creator/${creator?.username}`} className="text-[18px] font-bold text-foreground hover:underline">
               {creator?.display_name || creator?.username}
             </Link>
-            <span className="text-[14px]" style={{ color: "#2EC4B6" }}>@{creator?.username}</span>
+            <span className="text-[14px]" style={{ color: "#1F7A6D" }}>@{creator?.username}</span>
             <span className="text-muted-foreground">·</span>
             <span className="text-[14px] text-muted-foreground">{timeAgo(item.created_at)}</span>
           </div>
@@ -309,8 +309,8 @@ export function ReblogDetailView({ item }: ReblogDetailViewProps) {
               onClick={() => setReblogOpen(true)}
               className="text-[12px] font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
               style={{
-                color: userHasReblogged ? "#2EC4B6" : "#2EC4B6",
-                borderColor: userHasReblogged ? "#2EC4B6" : "rgba(46,196,182,0.4)",
+                color: userHasReblogged ? "#1F7A6D" : "#1F7A6D",
+                borderColor: userHasReblogged ? "#1F7A6D" : "rgba(31,122,109,0.4)",
               }}
             >
               ↺ Reblog this

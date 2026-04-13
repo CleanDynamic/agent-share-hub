@@ -27,16 +27,16 @@ export function ComposerBar({ user }: { user?: User }) {
         marginBottom: '0px',
         background: "rgba(27, 27, 32, 0.4)",
         backdropFilter: "blur(40px)",
-        border: `1px solid ${isFocused ? "rgba(232, 87, 26, 0.3)" : "rgba(255, 255, 255, 0.05)"}`,
+        border: `1px solid ${isFocused ? "rgba(139, 69, 19, 0.3)" : "rgba(255, 255, 255, 0.05)"}`,
       }}
     >
       {/* Avatar */}
       <div
         className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0"
         style={{
-          background: "rgba(232, 87, 26, 0.15)",
-          color: "#E8571A",
-          border: "1px solid rgba(232, 87, 26, 0.3)",
+          background: "rgba(139, 69, 19, 0.15)",
+          color: "#8B4513",
+          border: "1px solid rgba(139, 69, 19, 0.3)",
         }}
       >
         {userInitials}

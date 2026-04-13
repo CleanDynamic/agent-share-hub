@@ -119,7 +119,7 @@ export function ProjectFeedCard({ item }: ProjectFeedCardProps) {
         </span>
         <span className="inline-flex items-center gap-1 shrink-0"><Eye style={{ width: 15, height: 15 }} />{formatNum(item.view_count)}</span>
         {(item.rating_count ?? 0) > 0 && (
-          <span className="inline-flex items-center gap-1 shrink-0"><Star style={{ width: 15, height: 15, fill: '#2EC4B6', color: '#2EC4B6' }} />{(item.avg_rating ?? 0).toFixed(1)}</span>
+          <span className="inline-flex items-center gap-1 shrink-0"><Star style={{ width: 15, height: 15, fill: '#1F7A6D', color: '#1F7A6D' }} />{(item.avg_rating ?? 0).toFixed(1)}</span>
         )}
         {item.package_price_enabled && item.package_price_gbp != null && (
           <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary border border-primary/25 font-medium">

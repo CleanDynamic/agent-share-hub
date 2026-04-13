@@ -103,7 +103,7 @@ export function TemplateLibrary({
         toEdge: a.toEdge,
         label: meta?.label ?? a.arrowType,
         arrowType: a.arrowType as any,
-        color: meta?.color ?? '#E8571A',
+        color: meta?.color ?? '#8B4513',
       };
     });
 
@@ -187,7 +187,7 @@ export function TemplateLibrary({
                 border: 'none',
                 borderBottom:
                   activeCategory === cat
-                    ? '2px solid #E8571A'
+                    ? '2px solid #8B4513'
                     : '2px solid transparent',
                 color: activeCategory === cat
                   ? '#fff'
@@ -227,13 +227,13 @@ export function TemplateLibrary({
                   setHoveredTemplate(null)}
                 style={{
                   border: hoveredTemplate === template.id
-                    ? '1px solid rgba(232,87,26,0.35)'
+                    ? '1px solid rgba(139,69,19,0.35)'
                     : '1px solid rgba(255,255,255,0.07)',
                   borderRadius: 10,
                   padding: '14px',
                   background:
                     hoveredTemplate === template.id
-                      ? 'rgba(232,87,26,0.06)'
+                      ? 'rgba(139,69,19,0.06)'
                       : 'rgba(255,255,255,0.02)',
                   transition: 'all 0.15s',
                 }}
@@ -278,13 +278,13 @@ export function TemplateLibrary({
                           borderRadius: 5,
                           cursor: 'pointer',
                           background: active
-                            ? 'rgba(232,87,26,0.15)'
+                            ? 'rgba(139,69,19,0.15)'
                             : 'rgba(255,255,255,0.03)',
                           border: active
-                            ? '1px solid rgba(232,87,26,0.4)'
+                            ? '1px solid rgba(139,69,19,0.4)'
                             : '1px solid rgba(255,255,255,0.08)',
                           color: active
-                            ? '#E8571A'
+                            ? '#8B4513'
                             : 'rgba(255,255,255,0.45)',
                           transition: 'all 0.12s',
                         }}
@@ -339,10 +339,10 @@ export function TemplateLibrary({
                       fontSize: 9, padding: '2px 7px',
                       borderRadius: 4,
                       background:
-                        'rgba(232,87,26,0.08)',
+                        'rgba(139,69,19,0.08)',
                       border:
-                        '1px solid rgba(232,87,26,0.20)',
-                      color: '#E8571A',
+                        '1px solid rgba(139,69,19,0.20)',
+                      color: '#8B4513',
                       fontWeight: 600,
                     }}>
                       {preview.arrows.length} arrows
@@ -361,8 +361,8 @@ export function TemplateLibrary({
                     fontWeight: 700,
                     borderRadius: 6,
                     cursor: 'pointer',
-                    background: 'rgba(232,87,26,0.85)',
-                    border: '1px solid rgba(232,87,26,0.5)',
+                    background: 'rgba(139,69,19,0.85)',
+                    border: '1px solid rgba(139,69,19,0.5)',
                     color: '#fff',
                     transition: 'all 0.12s',
                   }}

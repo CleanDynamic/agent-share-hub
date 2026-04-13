@@ -169,7 +169,7 @@ export function ArrowOverlay({
         >
           <path
             d="M 0 0 L 10 5 L 0 10 z"
-            fill="rgba(232,87,26,0.60)"
+            fill="rgba(139,69,19,0.60)"
           />
         </marker>
       </defs>
@@ -345,7 +345,7 @@ export function ArrowOverlay({
           <path
             d={drawingPathStr}
             fill="none"
-            stroke="rgba(232,87,26,0.60)"
+            stroke="rgba(139,69,19,0.60)"
             strokeWidth={2}
             strokeDasharray="6,4"
             markerEnd="url(#arrow-drawing)"
@@ -358,7 +358,7 @@ export function ArrowOverlay({
               cx={wp.x}
               cy={wp.y}
               r={4}
-              fill="#E8571A"
+              fill="#8B4513"
               stroke="rgba(6,6,10,0.90)"
               strokeWidth={2}
               pointerEvents="none"

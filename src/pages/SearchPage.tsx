@@ -205,7 +205,7 @@ export default function SearchPage() {
             {/* Posts tab */}
             <TabsContent value="posts">
               {isTagSearch && postCount > 0 && (
-                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-[#2EC4B6]/10 border border-[#2EC4B6]/30 text-[#2EC4B6] text-sm">
+                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-[#1F7A6D]/10 border border-[#1F7A6D]/30 text-[#1F7A6D] text-sm">
                   <Hash className="h-4 w-4 shrink-0" />
                   <span>Showing posts tagged <strong>{q}</strong></span>
                   <button onClick={() => setParams({})} className="ml-auto hover:text-foreground">×</button>

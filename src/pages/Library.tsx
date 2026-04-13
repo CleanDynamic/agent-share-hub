@@ -279,9 +279,9 @@ export default function LibraryPage() {
                     fontWeight: 500,
                     padding: "6px 14px",
                     borderRadius: 8,
-                    border: "1px solid rgba(46,196,182,0.3)",
-                    color: "#2EC4B6",
-                    background: "rgba(46,196,182,0.08)",
+                    border: "1px solid rgba(31,122,109,0.3)",
+                    color: "#1F7A6D",
+                    background: "rgba(31,122,109,0.08)",
                   }}
                 >
                   {activeFolderObj.published_collection_id ? "Update Collection" : "Publish as Collection"}
