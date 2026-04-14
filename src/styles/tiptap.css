@@ -75,6 +75,7 @@
   border-radius: 8px;
   padding: 14px 16px; margin: 16px 0;
   overflow-x: auto;
+  animation: nodeInsert 0.25s ease;
 }
 
 .ProseMirror pre code {
@@ -96,6 +97,7 @@
   border-radius: 8px;
   display: block;
   margin: 16px 0;
+  animation: nodeInsert 0.25s ease;
 }
 
 /* Bold / italic */
@@ -126,6 +128,13 @@
   border-radius: 4px;
 }
 
+/* ── Stage Grid embedded node ─────────────── */
+.ProseMirror [data-type="stageGrid"],
+.ProseMirror .node-stageGrid {
+  margin: 24px 0;
+  animation: nodeInsert 0.3s ease;
+}
+
 /* ── Floating format toolbar ──────────────── */
 .tiptap-bubble-menu {
   display: flex; gap: 2px;
@@ -133,6 +142,7 @@
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 8px; padding: 4px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.50);
+  backdrop-filter: blur(20px);
 }
 
 .tiptap-bubble-menu button {
@@ -147,4 +157,15 @@
 .tiptap-bubble-menu button.is-active {
   background: rgba(232,87,26,0.15);
   color: #E8571A;
+}
+
+/* ── Animations ───────────────────────────── */
+@keyframes nodeInsert {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
