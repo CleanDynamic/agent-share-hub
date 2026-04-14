@@ -13,6 +13,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ArticleDocument } from '@/lib/article-types';
 import { SlashCommandMenu, SlashCommandMenuRef } from './SlashCommandMenu';
+import { ArticleFormatToolbar } from './ArticleFormatToolbar';
 
 interface TipTapEditorProps {
   contentId: string | null;
@@ -215,6 +216,14 @@ export function TipTapEditor({
     <div ref={containerRef} style={{ position: 'relative' }}>
       {/* The TipTap editor */}
       <EditorContent editor={editor} style={{ outline: 'none' }} />
+
+      {/* Floating format toolbar (BubbleMenu) */}
+      {mode === 'edit' && editor && (
+        <ArticleFormatToolbar
+          editor={editor}
+          availableBlocks={availableBlocks}
+        />
+      )}
 
       {/* Slash command menu */}
       {slashMenuPos && mode === 'edit' && editor && (
