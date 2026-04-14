@@ -255,7 +255,6 @@ const NEOSCALE_CSS = `
   overflow-x: hidden;
   scrollbar-width: none;
   padding: 0;
-  background: rgba(200,200,210,0.06);
 }
 .ns-middle-back::-webkit-scrollbar { display: none; }
 .ns-middle-front::before, .ns-middle-back::before {
