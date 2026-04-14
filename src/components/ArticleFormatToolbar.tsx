@@ -67,10 +67,7 @@ export function ArticleFormatToolbar({
     <BubbleMenu
       editor={editor}
       options={{
-        duration: 100,
         placement: 'top',
-        arrow: false,
-        theme: 'none',
       }}
       shouldShow={({ editor }: any) => {
         // Only show when text is selected
