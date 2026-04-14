@@ -34,8 +34,6 @@ interface CanvasShellProps {
   ) => void;
   onPostTypeClick?: () => void;
   hideHeader?: boolean;
-  embedded?: boolean;
-  height?: string;
   showAnnotations?: boolean;
   onSave?: () => void;
   onPublish?: () => void;
@@ -50,8 +48,6 @@ interface CanvasShellProps {
   onEvidenceMediaTypeChange?: (t: EvidenceMediaType) => void;
   onEvidenceMediaFilesChange?: (files: File[], previews: string[]) => void;
   onEvidenceCaptionChange?: (v: string) => void;
-  // View-mode block click handler: opens a focus panel for the clicked block
-  onBlockClick?: (block: CanvasBlockType) => void;
 }
 
 export function CanvasShell(props: CanvasShellProps) {
@@ -698,17 +694,14 @@ export function CanvasShell(props: CanvasShellProps) {
   return (
     <div style={{
       display: 'flex',
-      height: props.embedded ? 'auto' : '100%',
-      overflow: props.embedded ? undefined : 'hidden',
+      height: '100%',
+      overflow: 'hidden',
       background: 'rgba(6,6,10,0.65)',
       position: 'relative',
-      minHeight: props.embedded
-        ? Math.max(120, doc.blocks.length * 140)
-        : undefined,
     }}>
 
-      {/* TOC sidebar — hidden when embedded */}
-      {!props.embedded && <CanvasTOC
+      {/* TOC sidebar */}
+      <CanvasTOC
         open={tocOpen}
         onToggle={() => setTocOpen(o => !o)}
         stages={doc.stages}
@@ -730,20 +723,17 @@ export function CanvasShell(props: CanvasShellProps) {
           );
         }}
         onStageAdd={title => doc.addStage(title)}
-      />}
+      />
 
       {/* Main scroll area */}
       <div style={{
         flex: 1,
-        overflowY: props.embedded ? undefined : 'auto',
+        overflowY: 'auto',
         overflowX: 'hidden',
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        height: props.embedded ? 'auto' : undefined,
-        minHeight: props.embedded
-          ? Math.max(120, doc.blocks.length * 140)
-          : 0,
+        minHeight: 0,
       }}>
 
         {/* Document header */}
@@ -1026,7 +1016,6 @@ export function CanvasShell(props: CanvasShellProps) {
                   subheading: blockData.subheading,
                 });
               }}
-              onBlockClick={props.onBlockClick}
             />
           ))}
 
@@ -1136,8 +1125,8 @@ export function CanvasShell(props: CanvasShellProps) {
         />
       )}
 
-      {/* Edit mode toolbar at bottom — hidden when embedded */}
-      {mode === 'edit' && !props.embedded && (
+      {/* Edit mode toolbar at bottom */}
+      {mode === 'edit' && (
         <CanvasToolbar
           doc={doc}
           onSave={props.onSave}
@@ -1163,54 +1152,6 @@ export function CanvasShell(props: CanvasShellProps) {
           onZoomOut={zoomOut}
           onClearAll={() => setClearDialogOpen(true)}
         />
-      )}
-
-      {/* Embedded mini toolbar — compact block insert buttons */}
-      {mode === 'edit' && props.embedded && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 4,
-          padding: '6px 12px',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-          background: 'rgba(255,255,255,0.02)',
-        }}>
-          {[
-            { type: 'prompt', label: 'Prompt', color: '#E8571A' },
-            { type: 'result', label: 'Result', color: '#22C55E' },
-            { type: 'code_snippet', label: 'Code', color: '#3B82F6' },
-            { type: 'agent_config', label: 'Agent', color: '#A855F7' },
-            { type: 'context', label: 'Context', color: '#EAB308' },
-          ].map(item => (
-            <button
-              key={item.type}
-              onClick={() => handleInsertBlock(item.type, {})}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                padding: '3px 10px', borderRadius: 6,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: 'rgba(255,255,255,0.40)',
-                fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                transition: 'all 0.1s',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = `${item.color}15`;
-                (e.currentTarget as HTMLElement).style.borderColor = `${item.color}40`;
-                (e.currentTarget as HTMLElement).style.color = item.color;
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)';
-                (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.40)';
-              }}
-            >
-              <span style={{
-                width: 6, height: 6, borderRadius: 2,
-                background: item.color, opacity: 0.6,
-              }} />
-              {item.label}
-            </button>
-          ))}
-        </div>
       )}
 
       {/* Template library panel */}

@@ -13,8 +13,6 @@ import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { CanvasShell } from '@/components/canvas/CanvasShell';
 import { StageTimeline } from '@/components/canvas/StageTimeline';
-import { ArticleViewer } from '@/components/ArticleViewer';
-import { ArticleTOC } from '@/components/ArticleTOC';
 import { StarRating } from "@/components/StarRating";
 import { RatingDisplay } from "@/components/RatingDisplay";
 import { CommentsSection } from "@/components/CommentsSection";
@@ -269,13 +267,6 @@ const ContentDetail = () => {
 
   // ─── Canvas document (blocks with positions, arrows, stages) ──
   const canvasDoc = useCanvasDocument(item?.id ?? null);
-
-  // ─── Article mode — TipTap document instead of legacy canvas ──
-  const isArticleMode =
-    (item as any)?.editor_mode === 'article' &&
-    (item as any)?.article_body;
-
-  const [tocOpen, setTocOpen] = useState(true);
 
   // ─── TOC blocks (lightweight fetch for table of contents) ──
   const { data: tocBlocks } = useQuery({
@@ -1180,46 +1171,27 @@ const ContentDetail = () => {
           return hasImageBlocks ? <WhatToExpectSection item={item} /> : null;
         })()}
 
-        {/* 8. CANVAS — timeline view with stages, or article body */}
+        {/* 8. CANVAS — timeline view with stages */}
         {(!isSub || subscriberUnlocked) && (
-          isArticleMode ? (
-            /* Article mode — TipTap read-only renderer with TOC sidebar */
-            <div style={{ display: 'flex', height: '100%' }}>
-              <ArticleTOC
-                articleBody={(item as any).article_body}
-                open={tocOpen}
-                onToggle={() => setTocOpen(o => !o)}
+          <>
+            {!canvasDoc.loading && canvasDoc.blocks.length > 0 && (
+              <StageTimeline
+                stages={canvasDoc.stages}
+                blocks={canvasDoc.blocks}
+                postType={resolvedPostType}
+                showAnnotations={isPoster}
               />
-              <div style={{ flex: 1, overflowY: 'auto' }}>
-                <ArticleViewer
-                  article={(item as any).article_body}
-                  contentId={item.id}
-                  coverImageUrl={(item as any).cover_image_url}
-                />
+            )}
+            {canvasDoc.loading && (
+              <div style={{
+                padding: '40px', textAlign: 'center',
+                color: 'rgba(255,255,255,0.20)',
+                fontSize: 13,
+              }}>
+                Loading…
               </div>
-            </div>
-          ) : (
-            /* Legacy canvas mode */
-            <>
-              {!canvasDoc.loading && canvasDoc.blocks.length > 0 && (
-                <StageTimeline
-                  stages={canvasDoc.stages}
-                  blocks={canvasDoc.blocks}
-                  postType={resolvedPostType}
-                  showAnnotations={isPoster}
-                />
-              )}
-              {canvasDoc.loading && (
-                <div style={{
-                  padding: '40px', textAlign: 'center',
-                  color: 'rgba(255,255,255,0.20)',
-                  fontSize: 13,
-                }}>
-                  Loading…
-                </div>
-              )}
-            </>
-          )
+            )}
+          </>
         )}
 
         {/* 9a. Local model CTA */}

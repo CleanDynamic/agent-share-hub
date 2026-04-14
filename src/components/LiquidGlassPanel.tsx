@@ -80,8 +80,7 @@ export default function LiquidGlassPanel({
           display: 'flex',
           flexDirection: 'column',
           background: 'rgba(200, 200, 210, 0.08)',
-          backdropFilter: 'blur(40px) saturate(1.2)',
-          WebkitBackdropFilter: 'blur(40px) saturate(1.2)',
+          backdropFilter: 'blur(2px) saturate(1.2)',
           ...contentStyle,
         }}
       >

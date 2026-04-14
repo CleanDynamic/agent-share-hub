@@ -48,8 +48,6 @@ interface CanvasBlockProps {
   magnetizedEdge?: EdgeType | null;
   onAssignStage: (blockId: string, stageId: string | null) => void;
   onInsertResultBlock?: (block: Partial<CanvasBlockType>) => void;
-  // View-mode block click handler: opens a focus panel for the clicked block
-  onBlockClick?: (block: CanvasBlockType) => void;
 }
 
 export function CanvasBlock({
@@ -60,7 +58,6 @@ export function CanvasBlock({
   onArrowDrawStart, isArrowDrawing, onArrowDrawEnd,
   magnetizedEdge,
   onAssignStage, onInsertResultBlock,
-  onBlockClick,
 }: CanvasBlockProps) {
   const [hovered, setHovered] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -301,9 +298,6 @@ export function CanvasBlock({
             } else {
               onSelect?.(e);
             }
-          } else if (onBlockClick) {
-            e.stopPropagation();
-            onBlockClick(block);
           }
         }}
         onDoubleClick={() => {
@@ -330,7 +324,7 @@ export function CanvasBlock({
             : undefined,
           cursor: mode === 'edit'
             ? (dragging ? 'grabbing' : 'grab')
-            : (onBlockClick ? 'pointer' : 'default'),
+            : 'default',
           willChange: dragging ? 'transform' : undefined,
           boxSizing: 'border-box',
         }}
