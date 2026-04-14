@@ -34,6 +34,7 @@ interface CanvasShellProps {
   ) => void;
   onPostTypeClick?: () => void;
   hideHeader?: boolean;
+  embedded?: boolean;
   showAnnotations?: boolean;
   onSave?: () => void;
   onPublish?: () => void;
@@ -694,14 +695,15 @@ export function CanvasShell(props: CanvasShellProps) {
   return (
     <div style={{
       display: 'flex',
-      height: '100%',
-      overflow: 'hidden',
+      height: props.embedded ? 'auto' : '100%',
+      overflow: props.embedded ? 'visible' : 'hidden',
       background: 'rgba(6,6,10,0.65)',
       position: 'relative',
+      minHeight: props.embedded ? 80 : undefined,
     }}>
 
-      {/* TOC sidebar */}
-      <CanvasTOC
+      {/* TOC sidebar — hidden when embedded */}
+      {!props.embedded && <CanvasTOC
         open={tocOpen}
         onToggle={() => setTocOpen(o => !o)}
         stages={doc.stages}
@@ -723,7 +725,7 @@ export function CanvasShell(props: CanvasShellProps) {
           );
         }}
         onStageAdd={title => doc.addStage(title)}
-      />
+      />}
 
       {/* Main scroll area */}
       <div style={{
@@ -1125,8 +1127,8 @@ export function CanvasShell(props: CanvasShellProps) {
         />
       )}
 
-      {/* Edit mode toolbar at bottom */}
-      {mode === 'edit' && (
+      {/* Edit mode toolbar at bottom — hidden when embedded */}
+      {mode === 'edit' && !props.embedded && (
         <CanvasToolbar
           doc={doc}
           onSave={props.onSave}
