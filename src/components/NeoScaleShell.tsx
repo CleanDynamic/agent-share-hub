@@ -1400,7 +1400,7 @@ export function NeoScaleShell() {
             <div className="ns-page-body" style={{ padding: '20px 24px' }}>
               <div style={{
                 fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                letterSpacing: '0.10em', color: 'rgba(0,0,0,0.30)',
+                letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
                 marginBottom: 10,
               }}>
                 Blueprints
@@ -1427,13 +1427,13 @@ export function NeoScaleShell() {
                       {pt.label}
                     </div>
                   </div>
-                  <span style={{ color: 'rgba(0,0,0,0.30)', fontSize: 18 }}>→</span>
+                  <span style={{ color: 'rgba(255,255,255,0.30)', fontSize: 18 }}>→</span>
                 </div>
               ))}
 
               <div style={{
                 fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                letterSpacing: '0.10em', color: 'rgba(0,0,0,0.30)',
+                letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
                 marginTop: 20, marginBottom: 10,
               }}>
                 Writing
@@ -1458,12 +1458,12 @@ export function NeoScaleShell() {
                     Blog
                   </div>
                 </div>
-                <span style={{ color: 'rgba(0,0,0,0.30)', fontSize: 18 }}>→</span>
+                <span style={{ color: 'rgba(255,255,255,0.30)', fontSize: 18 }}>→</span>
               </div>
 
               <div style={{
                 fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                letterSpacing: '0.10em', color: 'rgba(0,0,0,0.30)',
+                letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
                 marginTop: 20, marginBottom: 10,
               }}>
                 Community
@@ -1667,7 +1667,7 @@ export function NeoScaleShell() {
                           setFilterColor('');
                         }}
                         style={{
-                          fontSize: 11, color: 'rgba(0,0,0,0.40)',
+                          fontSize: 11, color: 'rgba(255,255,255,0.40)',
                           background: 'none', border: 'none',
                           cursor: 'pointer',
                         }}
@@ -1693,7 +1693,7 @@ export function NeoScaleShell() {
                     <div style={{
                       textAlign: 'center',
                       padding: '48px 16px',
-                      color: 'rgba(0,0,0,0.30)',
+                      color: 'rgba(255,255,255,0.30)',
                       fontFamily: "'Playfair Display', Georgia, serif",
                       fontSize: 16,
                     }}>
@@ -1707,7 +1707,7 @@ export function NeoScaleShell() {
                     <div style={{
                       textAlign: 'center',
                       padding: '16px',
-                      color: 'rgba(0,0,0,0.35)',
+                      color: 'rgba(255,255,255,0.35)',
                       fontSize: 11,
                     }}>
                       Loading more…
@@ -1756,8 +1756,8 @@ export function NeoScaleShell() {
             </div>
             {searchOpen && (
               <div className="ns-right-search-results">
-                {searchLoading && <div style={{ padding: 8, fontSize: 10, color: "rgba(0,0,0,0.35)" }}>Searching…</div>}
-                {!searchLoading && searchResults.length === 0 && searchPeopleResults.length === 0 && <div style={{ padding: 8, fontSize: 10, color: "rgba(0,0,0,0.35)" }}>No results</div>}
+                {searchLoading && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.35)" }}>Searching…</div>}
+                {!searchLoading && searchResults.length === 0 && searchPeopleResults.length === 0 && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.35)" }}>No results</div>}
 
                 {/* People results */}
                 {searchPeopleResults && searchPeopleResults.length > 0 && (
@@ -1766,7 +1766,7 @@ export function NeoScaleShell() {
                       fontSize: 9, fontWeight: 700,
                       textTransform: 'uppercase',
                       letterSpacing: '0.10em',
-                      color: 'rgba(0,0,0,0.30)',
+                      color: 'rgba(255,255,255,0.30)',
                       padding: '4px 10px 2px 10px',
                     }}>
                       People
@@ -1797,13 +1797,13 @@ export function NeoScaleShell() {
                         </div>
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: 11,
-                            color: 'rgba(0,0,0,0.70)',
+                            color: 'rgba(255,255,255,0.70)',
                             overflow: 'hidden', textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap' }}>
                             {p.display_name}
                           </div>
                           <div style={{ fontSize: 10,
-                            color: 'rgba(0,0,0,0.35)' }}>
+                            color: 'rgba(255,255,255,0.35)' }}>
                             @{p.username}
                           </div>
                         </div>
@@ -1813,7 +1813,7 @@ export function NeoScaleShell() {
                       fontSize: 9, fontWeight: 700,
                       textTransform: 'uppercase',
                       letterSpacing: '0.10em',
-                      color: 'rgba(0,0,0,0.30)',
+                      color: 'rgba(255,255,255,0.30)',
                       padding: '4px 10px 2px 10px',
                       marginTop: 4,
                     }}>
@@ -1844,7 +1844,7 @@ export function NeoScaleShell() {
             {/* ── Section label */}
             <div style={{
               fontSize: 10, fontWeight: 700,
-              color: 'rgba(0,0,0,0.30)',
+              color: 'rgba(255,255,255,0.30)',
               letterSpacing: '1.4px',
               textTransform: 'uppercase' as const,
               padding: '0 4px',
@@ -1893,7 +1893,7 @@ export function NeoScaleShell() {
                   <span className="ns-tile-label">{tile.label}</span>
                   <span style={{
                     fontSize: 11,
-                    color: 'rgba(0,0,0,0.22)',
+                    color: 'rgba(255,255,255,0.22)',
                     marginLeft: 'auto',
                     flexShrink: 0,
                   }}>→</span>
@@ -1922,7 +1922,7 @@ export function NeoScaleShell() {
                 </div>
               ))}
               {(!trendingItems || trendingItems.length === 0) && (
-                <div style={{ fontSize: 11, color: "rgba(0,0,0,0.25)", padding: "8px 8px" }}>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", padding: "8px 8px" }}>
                   Loading…
                 </div>
               )}
@@ -1938,10 +1938,10 @@ export function NeoScaleShell() {
                   return (
                     <div key={pick.id} className="ns-curator-item" onClick={() => { if (content) { doFlip('back', 'right'); navigate(`/content/${content.id}`); } }}>
                       <div className="ns-curator-avatar">
-                        {curator?.avatar_url ? <img src={curator.avatar_url} alt="" /> : <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>✦</span>}
+                        {curator?.avatar_url ? <img src={curator.avatar_url} alt="" /> : <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>✦</span>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, color: "rgba(0,0,0,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{content?.title}</div>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{content?.title}</div>
                         <span className="ns-search-result-badge">{content?.content_type ? displayContentType(content.content_type) : ""}</span>
                       </div>
                     </div>
@@ -1956,8 +1956,8 @@ export function NeoScaleShell() {
                 <div className="ns-section-title">Collections</div>
                 {featuredCollections.map((col: any) => (
                   <div key={col.id} className="ns-collection-item" onClick={() => { doFlip('back', 'right'); navigate(`/collection/${col.slug || col.id}`); }}>
-                    <div style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", fontWeight: 500 }}>{col.title}</div>
-                    <div style={{ fontSize: 10, color: "rgba(0,0,0,0.30)" }}>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>{col.title}</div>
+                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.30)" }}>
                       {(col.profiles as any)?.display_name || (col.profiles as any)?.username || "Creator"} · {col.item_count} items
                     </div>
                   </div>
@@ -1972,7 +1972,7 @@ export function NeoScaleShell() {
                 {followSuggestions.map((s: any) => (
                   <div key={s.id} className="ns-follow-item">
                     <div className="ns-follow-avatar" style={{ cursor: "pointer" }} onClick={() => { doFlip('back', 'right'); navigate(`/creator/${s.username}`); }}>
-                      {s.avatar_url ? <img src={s.avatar_url} alt="" /> : <span style={{ fontSize: 11, color: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>{(s.display_name || "?")[0]}</span>}
+                      {s.avatar_url ? <img src={s.avatar_url} alt="" /> : <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>{(s.display_name || "?")[0]}</span>}
                     </div>
                     <div className="ns-follow-info" style={{ cursor: "pointer" }} onClick={() => { doFlip('back', 'right'); navigate(`/creator/${s.username}`); }}>
                       <div className="ns-follow-name">{s.display_name || s.username}</div>
