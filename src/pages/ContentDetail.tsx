@@ -13,6 +13,7 @@ import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { CanvasShell } from '@/components/canvas/CanvasShell';
 import { StageTimeline } from '@/components/canvas/StageTimeline';
+import { ArticleViewer } from '@/components/article/ArticleViewer';
 import { StarRating } from "@/components/StarRating";
 import { RatingDisplay } from "@/components/RatingDisplay";
 import { CommentsSection } from "@/components/CommentsSection";
