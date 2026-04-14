@@ -34,6 +34,7 @@ export function StageGridNodeView({
     <NodeViewWrapper>
       <div
         contentEditable={false}
+        data-toc-anchor={`stage-${stageGridId}`}
         style={{
           margin: '20px 0',
           borderRadius: 12,
