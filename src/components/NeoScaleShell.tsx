@@ -500,6 +500,34 @@ const NEOSCALE_CSS = `
   font-family: inherit;
 }
 .ns-right-search input::placeholder { color: rgba(255,255,255,0.25); }
+.ns-right-search input {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+.ns-right-search input:focus,
+.ns-right-search input:focus-visible {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.ns-right-panel [data-visual-slot="btn-secondary"] {
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  color: rgba(255,255,255,0.88) !important;
+  border-radius: 9999px !important;
+  box-shadow: none !important;
+}
+.ns-right-panel [data-visual-slot="btn-secondary"]:hover {
+  background: rgba(255,255,255,0.08) !important;
+  border-color: rgba(255,255,255,0.18) !important;
+}
+.ns-right-panel [data-visual-slot="btn-secondary"] svg {
+  color: rgba(255,255,255,0.72) !important;
+}
 .ns-right-search-results {
   position: absolute; left: 14px; right: 14px; top: 68px;
   background: rgba(8,8,12,0.97); border: 1px solid rgba(255,255,255,0.10);
