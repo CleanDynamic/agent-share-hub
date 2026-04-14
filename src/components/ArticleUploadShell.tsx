@@ -346,12 +346,21 @@ export function ArticleUploadShell({
 
         <div style={{ flex: 1 }} />
 
-        <div
-          style={{
-            fontSize: 11,
-            color: 'rgba(255,255,255,0.22)',
-          }}
-        >
+        <div style={{
+          fontSize: 10, color: 'rgba(255,255,255,0.18)',
+          fontFamily: 'monospace', display: 'flex', gap: 4, alignItems: 'center',
+        }}>
+          <kbd style={{
+            padding: '1px 4px', background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.10)', borderRadius: 3,
+            fontSize: 9,
+          }}>⌘S</kbd>
+          save
+        </div>
+
+        <div style={{
+          fontSize: 11, color: 'rgba(255,255,255,0.22)',
+        }}>
           {saving ? 'Saving…' : 'Auto-saved'}
         </div>
 

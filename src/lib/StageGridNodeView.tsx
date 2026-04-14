@@ -375,12 +375,7 @@ export function StageGridNodeView({
         </div>
 
         {/* The canvas shell (edit) or compact block grid (view) */}
-        <div
-          style={{
-            height: 'auto',
-            minHeight: 120,
-          }}
-        >
+        <div style={{ height: 'auto', minHeight: 120 }}>
           {stageGridId ? (
             mode === 'view' ? (
               <div style={{ position: 'relative' }}>
@@ -392,6 +387,29 @@ export function StageGridNodeView({
                   arrows={canvasDoc.arrows}
                   blocks={canvasDoc.blocks}
                 />
+              </div>
+            ) : canvasDoc.blocks.length === 0 ? (
+              /* Empty stage — show CTA */
+              <div style={{
+                padding: '32px 24px', textAlign: 'center',
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', gap: 8,
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10,
+                  background: 'rgba(232,87,26,0.08)',
+                  border: '1px dashed rgba(232,87,26,0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 18, color: 'rgba(232,87,26,0.50)',
+                }}>
+                  +
+                </div>
+                <div style={{
+                  fontSize: 12, color: 'rgba(255,255,255,0.30)',
+                  fontFamily: 'Inter, sans-serif',
+                }}>
+                  Click <strong style={{ color: 'rgba(255,255,255,0.50)' }}>+ Block</strong> in the canvas to add blocks
+                </div>
               </div>
             ) : (
               <CanvasShell
@@ -407,14 +425,10 @@ export function StageGridNodeView({
               />
             )
           ) : (
-            <div
-              style={{
-                padding: 24,
-                textAlign: 'center',
-                fontSize: 12,
-                color: 'rgba(255,255,255,0.25)',
-              }}
-            >
+            <div style={{
+              padding: 24, textAlign: 'center',
+              fontSize: 12, color: 'rgba(255,255,255,0.25)',
+            }}>
               Loading stage...
             </div>
           )}
