@@ -389,6 +389,9 @@ const Upload = () => {
         if ((item as any).article_body) {
           setArticleBody((item as any).article_body);
         }
+        if ((item as any).editor_mode === 'article') {
+          setEditorMode('article');
+        }
 
         // WTE blocks
         if ((item as any).what_to_expect_blocks) {
@@ -1250,10 +1253,6 @@ const Upload = () => {
         articleBody={articleBody}
         onArticleBodyChange={body => {
           setArticleBody(body);
-          // Trigger autosave
-          if (currentDraftId) {
-            scheduledSave(currentDraftId, body);
-          }
         }}
         onSave={async () => {
           await saveDraft(false);
@@ -1316,12 +1315,11 @@ const Upload = () => {
         {/* ─── Type chooser — shown initially, replaces step 1 ─── */}
         {/* Three primary cards: Blueprints / Blogs / Bounties. */}
         {showTypeChooser && (() => {
-          const goNext = () => {
-            // Create a draft immediately so the canvas can start autosaving
-            saveDraft(true).then(id => {
-              if (id) setTimeout(() => setShowTypeChooser(false), 220);
-              else setTimeout(() => setShowTypeChooser(false), 220);
-            });
+          const goNext = async () => {
+            // Create a draft immediately so contentId is available for autosave
+            const draftIdNew = await saveDraft(true);
+            setCurrentDraftId(draftIdNew ?? null);
+            setShowTypeChooser(false);
           };
 
           const UPLOAD_CARDS = [
@@ -1335,11 +1333,11 @@ const Upload = () => {
                 'Technique — share a specific method or approach',
                 'Discovery — document findings and experiments',
               ],
-              onClick: () => {
+              onClick: async () => {
                 setUploadType('single');
                 setBlueprintExpanded(false);
                 form.setValue('post_type', 'build' as any);
-                goNext();
+                await goNext();
               },
             },
             {
@@ -1352,11 +1350,11 @@ const Upload = () => {
                 'Tutorials with embedded code',
                 'Opinion pieces and analysis',
               ],
-              onClick: () => {
+              onClick: async () => {
                 setBlueprintExpanded(false);
                 setUploadType('blog');
                 form.setValue('post_type', 'discussion' as any);
-                goNext();
+                await goNext();
               },
             },
             {
@@ -1369,11 +1367,11 @@ const Upload = () => {
                 'Set difficulty and reward tiers',
                 'Review and accept community submissions',
               ],
-              onClick: () => {
+              onClick: async () => {
                 setBlueprintExpanded(false);
                 setUploadType('bounty');
                 form.setValue('post_type', 'build' as any);
-                goNext();
+                await goNext();
               },
             },
           ];
