@@ -35,6 +35,10 @@ import { DiscussionCompose } from "@/components/DiscussionCompose";
 import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, getPostType, getPrimaryTypeLabel } from "@/lib/content-types";
 import { CanvasShell } from '@/components/canvas/CanvasShell';
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
+import { ArticleEditor } from '@/components/article/ArticleEditor';
+import type { EvidenceMediaType } from '@/components/canvas/CanvasHeader';
+import { CanvasHeader } from '@/components/canvas/CanvasHeader';
+import { CanvasToolbar } from '@/components/canvas/CanvasToolbar';
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
