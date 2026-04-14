@@ -1502,7 +1502,7 @@ export function NeoScaleShell() {
           <div className="ns-page-header">
             <div className="ns-page-title">Messages</div>
           </div>
-          <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <input className="ns-glass-input" placeholder="Search messages..." />
           </div>
           <div className="ns-page-body">
