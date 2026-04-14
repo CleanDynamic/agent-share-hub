@@ -146,24 +146,27 @@ const COMMANDS: Command[] = [
 ];
 
 interface SlashCommandMenuProps {
-  position: { top: number; left: number };
-  filter: string;
-  onFilterChange: (f: string) => void;
-  onDismiss: () => void;
   editor: Editor | null;
+  query: string;
+  command: (props: { id: string }) => void;
   onInsertStageGrid: (label: string) => void;
-  availableBlocks: any[];
-  onInsertBlockRef: (block: any) => void;
+  position?: { top: number; left: number };
+  filter?: string;
+  onFilterChange?: (f: string) => void;
+  onDismiss?: () => void;
+  availableBlocks?: any[];
+  onInsertBlockRef?: (block: any) => void;
 }
 
-export function SlashCommandMenu({
-  position, filter, onFilterChange, onDismiss,
-  editor, onInsertStageGrid, availableBlocks,
-  onInsertBlockRef,
-}: SlashCommandMenuProps) {
+export const SlashCommandMenu = forwardRef<SlashCommandMenuRef, SlashCommandMenuProps>(function SlashCommandMenu({
+  editor, query, command, onInsertStageGrid,
+  position, filter: filterProp, onFilterChange, onDismiss,
+  availableBlocks, onInsertBlockRef,
+}, ref) {
   const [selectedIndex, setSelectedIndex] =
     useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
+  const filter = query || filterProp || '';
 
   const filtered = filter
     ? COMMANDS.filter(cmd =>

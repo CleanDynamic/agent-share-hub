@@ -66,13 +66,13 @@ export function ArticleFormatToolbar({
   return (
     <BubbleMenu
       editor={editor}
-      tippyOptions={{
+      options={{
         duration: 100,
         placement: 'top',
         arrow: false,
         theme: 'none',
       }}
-      shouldShow={({ editor }) => {
+      shouldShow={({ editor }: any) => {
         // Only show when text is selected
         // Do NOT show when a stage grid is selected
         const { selection } = editor.state;
