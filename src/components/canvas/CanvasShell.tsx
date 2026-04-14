@@ -1165,6 +1165,54 @@ export function CanvasShell(props: CanvasShellProps) {
         />
       )}
 
+      {/* Embedded mini toolbar — compact block insert buttons */}
+      {mode === 'edit' && props.embedded && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          padding: '6px 12px',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(255,255,255,0.02)',
+        }}>
+          {[
+            { type: 'prompt', label: 'Prompt', color: '#E8571A' },
+            { type: 'result', label: 'Result', color: '#22C55E' },
+            { type: 'code_snippet', label: 'Code', color: '#3B82F6' },
+            { type: 'agent_config', label: 'Agent', color: '#A855F7' },
+            { type: 'context', label: 'Context', color: '#EAB308' },
+          ].map(item => (
+            <button
+              key={item.type}
+              onClick={() => handleInsertBlock(item.type, {})}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '3px 10px', borderRadius: 6,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: 'rgba(255,255,255,0.40)',
+                fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                transition: 'all 0.1s',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.background = `${item.color}15`;
+                (e.currentTarget as HTMLElement).style.borderColor = `${item.color}40`;
+                (e.currentTarget as HTMLElement).style.color = item.color;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
+                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)';
+                (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.40)';
+              }}
+            >
+              <span style={{
+                width: 6, height: 6, borderRadius: 2,
+                background: item.color, opacity: 0.6,
+              }} />
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Template library panel */}
       <TemplateLibrary
         open={templateLibOpen}
