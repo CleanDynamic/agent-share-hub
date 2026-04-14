@@ -1053,6 +1053,14 @@ const Upload = () => {
         await canvasDoc.saveDocument(contentId);
       }
 
+      // ── Save article body (TipTap JSON) ──
+      const articleBody = (canvasDoc as any)._articleBody;
+      if (articleBody) {
+        await supabase.from('content_items').update({
+          article_body: articleBody,
+        } as any).eq('id', contentId);
+      }
+
       // ── Remaining metadata updates (safe to run after blocks are saved) ──
       const metaUpdates: any = {};
       // Blog: compute estimated read time
