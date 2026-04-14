@@ -1,4 +1,5 @@
 import { TipTapEditor } from './TipTapEditor';
+import { useArticleAutosave } from '@/hooks/useArticleAutosave';
 
 interface ArticleUploadShellProps {
   contentId: string | null;
@@ -33,6 +34,13 @@ export function ArticleUploadShell({
 }: ArticleUploadShellProps) {
   const title = form.watch('title') ?? '';
   const description = form.watch('description') ?? '';
+
+  const { saveNow } = useArticleAutosave(
+    contentId,
+    articleBody,
+    title,
+    description
+  );
 
   // Post type config for the badge
   const POST_TYPE_CONFIG: Record<string, {
@@ -292,7 +300,7 @@ export function ArticleUploadShell({
 
         <button
           type="button"
-          onClick={onSave}
+          onClick={saveNow}
           disabled={saving}
           style={{
             padding: '7px 14px',
