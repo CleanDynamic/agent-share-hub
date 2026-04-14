@@ -514,19 +514,55 @@ const NEOSCALE_CSS = `
   box-shadow: none !important;
   outline: none !important;
 }
+.ns-right-panel button,
 .ns-right-panel [data-visual-slot="btn-secondary"] {
-  background: rgba(255,255,255,0.05) !important;
-  border: 1px solid rgba(255,255,255,0.10) !important;
-  color: rgba(255,255,255,0.88) !important;
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: rgba(255,255,255,0.75) !important;
   border-radius: 9999px !important;
   box-shadow: none !important;
+  font-size: 11px !important;
+  padding: 4px 12px !important;
+  height: auto !important;
+  min-height: 28px !important;
 }
+.ns-right-panel button:hover,
 .ns-right-panel [data-visual-slot="btn-secondary"]:hover {
-  background: rgba(255,255,255,0.08) !important;
-  border-color: rgba(255,255,255,0.18) !important;
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.20) !important;
 }
+.ns-right-panel button svg,
 .ns-right-panel [data-visual-slot="btn-secondary"] svg {
-  color: rgba(255,255,255,0.72) !important;
+  color: rgba(255,255,255,0.55) !important;
+  width: 13px !important;
+  height: 13px !important;
+}
+/* Don't affect auth buttons at bottom */
+.ns-auth-btns .ns-auth-btn {
+  border-radius: 8px !important;
+  padding: 0 !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+.ns-auth-btns .ns-auth-btn.signin {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  color: rgba(255,255,255,0.6) !important;
+}
+.ns-auth-btns .ns-auth-btn.join {
+  background: #111 !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  color: #fff !important;
+}
+/* Follow item layout fix */
+.ns-follow-item {
+  gap: 6px !important;
+}
+.ns-follow-avatar {
+  width: 32px !important; height: 32px !important;
+  font-size: 12px !important;
 }
 .ns-right-search-results {
   position: absolute; left: 14px; right: 14px; top: 68px;
