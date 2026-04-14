@@ -348,7 +348,7 @@ const NEOSCALE_CSS = `
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  background: rgba(200,200,210,0.04);
+  background: rgba(200,200,210,0.08);
   padding: 0;
   box-sizing: border-box;
   color: rgba(255,255,255,0.85);
