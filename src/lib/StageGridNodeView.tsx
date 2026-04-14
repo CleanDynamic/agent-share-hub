@@ -2,6 +2,8 @@ import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import { useState } from 'react';
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { CanvasShell } from '@/components/canvas/CanvasShell';
+import { BlockFocusPanel } from '@/components/canvas/BlockFocusPanel';
+import type { CanvasBlock } from '@/lib/canvas-types';
 
 export function StageGridNodeView({
   node,
@@ -13,6 +15,11 @@ export function StageGridNodeView({
   const mode = editor.isEditable ? 'edit' : 'view';
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelVal, setLabelVal] = useState(label);
+  const [focusedBlock, setFocusedBlock] = useState<CanvasBlock | null>(null);
+
+  const openFocusPanel = (block: CanvasBlock) => {
+    setFocusedBlock(block);
+  };
 
   // Each stage grid has its own canvas document
   // scoped to its stageGridId (used as contentId)
@@ -140,6 +147,7 @@ export function StageGridNodeView({
               hideHeader={true}
               embedded={true}
               onSave={() => canvasDoc.saveDocument(stageGridId)}
+              onBlockClick={mode === 'view' ? openFocusPanel : undefined}
             />
           ) : (
             <div
@@ -155,6 +163,14 @@ export function StageGridNodeView({
           )}
         </div>
       </div>
+
+      {/* Block focus panel — opens when a block is clicked in view mode */}
+      {mode === 'view' && (
+        <BlockFocusPanel
+          block={focusedBlock}
+          onClose={() => setFocusedBlock(null)}
+        />
+      )}
     </NodeViewWrapper>
   );
 }

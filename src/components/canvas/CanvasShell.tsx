@@ -49,6 +49,8 @@ interface CanvasShellProps {
   onEvidenceMediaTypeChange?: (t: EvidenceMediaType) => void;
   onEvidenceMediaFilesChange?: (files: File[], previews: string[]) => void;
   onEvidenceCaptionChange?: (v: string) => void;
+  // View-mode block click handler: opens a focus panel for the clicked block
+  onBlockClick?: (block: CanvasBlockType) => void;
 }
 
 export function CanvasShell(props: CanvasShellProps) {
@@ -1018,6 +1020,7 @@ export function CanvasShell(props: CanvasShellProps) {
                   subheading: blockData.subheading,
                 });
               }}
+              onBlockClick={props.onBlockClick}
             />
           ))}
 
