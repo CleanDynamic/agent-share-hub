@@ -156,10 +156,11 @@ export function ArticleEditor({
   // Store canvasDoc in editor storage so StageGridNode can access it
   useEffect(() => {
     if (editor) {
-      if (!editor.storage.articleEditor) {
-        editor.storage.articleEditor = {};
+      const storage = editor.storage as any;
+      if (!storage.articleEditor) {
+        storage.articleEditor = {};
       }
-      editor.storage.articleEditor.canvasDoc = canvasDoc;
+      storage.articleEditor.canvasDoc = canvasDoc;
     }
   }, [editor, canvasDoc]);
 
