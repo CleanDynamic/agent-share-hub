@@ -34,6 +34,7 @@ import { DependencyPicker, type Dependency } from "@/components/DependencyPicker
 import { DiscussionCompose } from "@/components/DiscussionCompose";
 import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, getPostType, getPrimaryTypeLabel } from "@/lib/content-types";
 import { CanvasShell } from '@/components/canvas/CanvasShell';
+import { ArticleUploadShell } from '@/components/ArticleUploadShell';
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
@@ -268,9 +269,29 @@ const Upload = () => {
   const [evidenceMediaFiles, setEvidenceMediaFiles] = useState<File[]>([]);
   const [evidenceMediaPreviews, setEvidenceMediaPreviews] = useState<string[]>([]);
   const [evidenceCaption, setEvidenceCaption] = useState('');
+  // Article body (TipTap JSON doc) — saved to content_items.article_body
+  // and loaded from there on draft resume.
+  const [articleBody, setArticleBody] = useState<any>(null);
+  const [editorMode, setEditorMode] = useState<'canvas' | 'article'>('article');
   const autosaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const articleSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAutosaveRef = useRef<Date | null>(null);
   const canvasDoc = useCanvasDocument(currentDraftId);
+
+  // Debounced article body save to content_items.article_body
+  const scheduledSave = useCallback((id: string, body: any) => {
+    if (articleSaveTimer.current) clearTimeout(articleSaveTimer.current);
+    articleSaveTimer.current = setTimeout(async () => {
+      await supabase
+        .from('content_items')
+        .update({
+          article_body: body,
+          editor_mode: 'article',
+        } as any)
+        .eq('id', id);
+      lastAutosaveRef.current = new Date();
+    }, 800);
+  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -363,6 +384,11 @@ const Upload = () => {
         if ((item as any).cover_image_url) setCoverImagePreview((item as any).cover_image_url);
         if ((item as any).topics?.length > 0) setSelectedTopics((item as any).topics);
         if ((item as any).pwyw_floor_gbp) setPwywFloor(Number((item as any).pwyw_floor_gbp));
+
+        // Load article body (TipTap JSON) for article-mode editor
+        if ((item as any).article_body) {
+          setArticleBody((item as any).article_body);
+        }
 
         // WTE blocks
         if ((item as any).what_to_expect_blocks) {
@@ -848,6 +874,17 @@ const Upload = () => {
 
       const contentId = insertedItem.id;
 
+      // Save article body (TipTap JSON) for the article-mode editor
+      if (articleBody) {
+        await supabase
+          .from('content_items')
+          .update({
+            article_body: articleBody,
+            editor_mode: 'article',
+          } as any)
+          .eq('id', contentId);
+      }
+
       // ── Insert content_blocks + variations IMMEDIATELY after content_items ──
       // Prevents RLS failures from stale auth tokens during later async work.
       for (let i = 0; i < submitFlatBlocks.length; i++) {
@@ -1198,38 +1235,42 @@ const Upload = () => {
     );
   }
 
-  // ── Canvas mode: after type is chosen, render CanvasShell as the editor ──
+  // ── Article mode: after type is chosen, render ArticleUploadShell (TipTap) ──
   if (!showTypeChooser && !success) {
     return (
-      <CanvasShell
-        mode="edit"
-        doc={canvasDoc}
-        title={form.watch('title') ?? ''}
-        description={form.watch('description') ?? ''}
-        postType={form.watch('post_type') ?? 'build'}
-        difficulty={form.watch('difficulty') ?? null}
+      <ArticleUploadShell
+        contentId={currentDraftId}
+        form={form}
         coverPreview={coverImagePreview}
-        onTitleChange={v => form.setValue('title', v)}
-        onDescriptionChange={v => form.setValue('description', v)}
         onCoverChange={(f, p) => {
           setCoverImageFile(f);
           setCoverImagePreview(p);
         }}
-        onPostTypeClick={() => {
-          setShowTypeChooser(true);
+        onPostTypeClick={() => setShowTypeChooser(true)}
+        articleBody={articleBody}
+        onArticleBodyChange={body => {
+          setArticleBody(body);
+          // Trigger autosave
+          if (currentDraftId) {
+            scheduledSave(currentDraftId, body);
+          }
         }}
-        onSave={() => {
-          saveDraft(false);
-          canvasDoc.saveDocument(currentDraftId ?? '');
+        onSave={async () => {
+          await saveDraft(false);
+          if (currentDraftId && articleBody) {
+            await supabase
+              .from('content_items')
+              .update({
+                article_body: articleBody,
+                editor_mode: 'article',
+              } as any)
+              .eq('id', currentDraftId);
+          }
         }}
         onPublish={() => {
-          const title = form.getValues('title');
-          if (!title || !title.trim()) {
-            toast({ title: 'Title required', description: 'Add a title before publishing.', variant: 'destructive' });
-            return;
-          }
-          if (canvasDoc.blocks.length === 0) {
-            toast({ title: 'Add at least one block', description: 'Your blueprint needs content before publishing.', variant: 'destructive' });
+          const title = form.watch('title');
+          if (!title?.trim()) {
+            toast({ title: 'Title required', variant: 'destructive' });
             return;
           }
           form.handleSubmit(onSubmit)();
@@ -1237,16 +1278,7 @@ const Upload = () => {
         saving={savingDraft}
         submitting={submitting}
         onBack={() => setShowTypeChooser(true)}
-        evidenceMediaType={evidenceMediaType}
-        evidenceMediaFiles={evidenceMediaFiles}
-        evidenceMediaPreviews={evidenceMediaPreviews}
-        evidenceCaption={evidenceCaption}
-        onEvidenceMediaTypeChange={setEvidenceMediaType}
-        onEvidenceMediaFilesChange={(files, previews) => {
-          setEvidenceMediaFiles(files);
-          setEvidenceMediaPreviews(previews);
-        }}
-        onEvidenceCaptionChange={setEvidenceCaption}
+        postType={form.watch('post_type') ?? 'build'}
       />
     );
   }
