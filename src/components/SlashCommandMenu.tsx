@@ -1,5 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Editor } from '@tiptap/core';
+
+export interface SlashCommandMenuRef {
+  onKeyDown: (props: { event: KeyboardEvent }) => boolean;
+}
 
 interface Command {
   id: string;
@@ -142,24 +146,27 @@ const COMMANDS: Command[] = [
 ];
 
 interface SlashCommandMenuProps {
-  position: { top: number; left: number };
-  filter: string;
-  onFilterChange: (f: string) => void;
-  onDismiss: () => void;
   editor: Editor | null;
+  query: string;
+  command: (props: { id: string }) => void;
   onInsertStageGrid: (label: string) => void;
-  availableBlocks: any[];
-  onInsertBlockRef: (block: any) => void;
+  position?: { top: number; left: number };
+  filter?: string;
+  onFilterChange?: (f: string) => void;
+  onDismiss?: () => void;
+  availableBlocks?: any[];
+  onInsertBlockRef?: (block: any) => void;
 }
 
-export function SlashCommandMenu({
-  position, filter, onFilterChange, onDismiss,
-  editor, onInsertStageGrid, availableBlocks,
-  onInsertBlockRef,
-}: SlashCommandMenuProps) {
+export const SlashCommandMenu = forwardRef<SlashCommandMenuRef, SlashCommandMenuProps>(function SlashCommandMenu({
+  editor, query, command, onInsertStageGrid,
+  position, filter: filterProp, onFilterChange, onDismiss,
+  availableBlocks, onInsertBlockRef,
+}, ref) {
   const [selectedIndex, setSelectedIndex] =
     useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
+  const filter = query || filterProp || '';
 
   const filtered = filter
     ? COMMANDS.filter(cmd =>
@@ -171,6 +178,25 @@ export function SlashCommandMenu({
         )
       )
     : COMMANDS;
+
+  useImperativeHandle(ref, () => ({
+    onKeyDown: ({ event }: { event: KeyboardEvent }) => {
+      if (event.key === 'ArrowDown') {
+        setSelectedIndex(i => Math.min(i + 1, filtered.length - 1));
+        return true;
+      }
+      if (event.key === 'ArrowUp') {
+        setSelectedIndex(i => Math.max(i - 1, 0));
+        return true;
+      }
+      if (event.key === 'Enter') {
+        const cmd = filtered[selectedIndex];
+        if (cmd) executeCommand(cmd);
+        return true;
+      }
+      return false;
+    },
+  }));
 
   // Keyboard navigation
   useEffect(() => {
@@ -191,7 +217,18 @@ export function SlashCommandMenu({
         if (cmd) executeCommand(cmd);
       }
       if (e.key === 'Escape') {
-        onDismiss();
+        onDismiss?.();
+      }
+      // Handle typing to filter
+      if (e.key.length === 1) {
+        onFilterChange?.(filter + e.key);
+      }
+      if (e.key === 'Backspace') {
+        if (filter.length > 0) {
+          onFilterChange?.(filter.slice(0, -1));
+        } else {
+          onDismiss?.();
+        }
       }
       // Handle typing to filter
       if (e.key.length === 1) {
@@ -216,7 +253,7 @@ export function SlashCommandMenu({
   const executeCommand = (cmd: Command) => {
     cmd.action(editor, {
       onInsertStageGrid,
-      onInsertBlockRef,
+      onInsertBlockRef: onInsertBlockRef || (() => {}),
     });
     onDismiss();
   };
@@ -338,4 +375,4 @@ export function SlashCommandMenu({
       </div>
     </>
   );
-}
+});

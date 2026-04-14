@@ -55,7 +55,7 @@ export function TipTapEditor({
       const stageGridId = crypto.randomUUID();
 
       // Create the stage in canvas_stages
-      const { data: stageData } = await supabase
+      const { data: stageData } = await (supabase as any)
         .from('canvas_stages')
         .insert({
           id: stageGridId,
@@ -63,20 +63,19 @@ export function TipTapEditor({
           stage_number: 1,
           title: label,
           block_ids: [],
-          colour: 'rgba(232,87,26,0.06)',
-        } as any)
+          colour: 'rgba(139,69,19,0.06)',
+        })
         .select()
         .single();
 
       // Insert into article_stage_grids
-      await supabase.from('article_stage_grids').insert({
+      await (supabase as any).from('article_stage_grids').insert({
         id: stageGridId,
         content_id: contentId,
         stage_id: stageData?.id ?? stageGridId,
         article_node_index: 0,
         label,
-      } as any);
-
+      });
       // Insert the node into the editor
       editor
         ?.chain()

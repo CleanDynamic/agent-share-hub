@@ -1,4 +1,4 @@
-import { BubbleMenu } from '@tiptap/react';
+import { BubbleMenu } from '@tiptap/react/menus';
 import { Editor } from '@tiptap/core';
 import { useState } from 'react';
 
@@ -66,13 +66,10 @@ export function ArticleFormatToolbar({
   return (
     <BubbleMenu
       editor={editor}
-      tippyOptions={{
-        duration: 100,
+      options={{
         placement: 'top',
-        arrow: false,
-        theme: 'none',
       }}
-      shouldShow={({ editor }) => {
+      shouldShow={({ editor }: any) => {
         // Only show when text is selected
         // Do NOT show when a stage grid is selected
         const { selection } = editor.state;
