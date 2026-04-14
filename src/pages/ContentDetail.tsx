@@ -1194,6 +1194,7 @@ const ContentDetail = () => {
                 <ArticleViewer
                   article={(item as any).article_body}
                   contentId={item.id}
+                  coverImageUrl={(item as any).cover_image_url}
                 />
               </div>
             </div>

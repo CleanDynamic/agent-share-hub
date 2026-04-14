@@ -1,9 +1,251 @@
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { CanvasShell } from '@/components/canvas/CanvasShell';
 import { BlockFocusPanel } from '@/components/canvas/BlockFocusPanel';
-import type { CanvasBlock } from '@/lib/canvas-types';
+import type { CanvasBlock, BlockArrow } from '@/lib/canvas-types';
+import { ARROW_TYPE_META } from '@/lib/canvas-types';
+
+// ─── Compact Arrow Overlay (simplified, non-interactive) ───────
+function CompactArrowOverlay({
+  arrows,
+  blocks,
+}: {
+  arrows: BlockArrow[];
+  blocks: CanvasBlock[];
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [paths, setPaths] = useState<Array<{
+    id: string; d: string; color: string; dash: string;
+    label: string | null; midX: number; midY: number;
+  }>>([]);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const newPaths: typeof paths = [];
+    const blockMap = new Map(blocks.map(b => [b.id, b]));
+
+    arrows.forEach(arrow => {
+      const fromEl = container.parentElement?.querySelector(
+        `#canvas-block-${arrow.fromBlockId}`
+      ) as HTMLElement | null;
+      const toEl = container.parentElement?.querySelector(
+        `#canvas-block-${arrow.toBlockId}`
+      ) as HTMLElement | null;
+
+      const allTargetIds = arrow.toBlockIds && arrow.toBlockIds.length > 0
+        ? arrow.toBlockIds
+        : [arrow.toBlockId];
+
+      allTargetIds.forEach((targetId, idx) => {
+        const targetEl = container.parentElement?.querySelector(
+          `#canvas-block-${targetId}`
+        ) as HTMLElement | null;
+
+        if (!fromEl || !targetEl) return;
+        const parentRect = container.parentElement!.getBoundingClientRect();
+        const fromRect = fromEl.getBoundingClientRect();
+        const toRect = targetEl.getBoundingClientRect();
+
+        const fromX = fromRect.left + fromRect.width / 2 - parentRect.left;
+        const fromY = fromRect.top + fromRect.height / 2 - parentRect.top;
+        const toX = toRect.left + toRect.width / 2 - parentRect.left;
+        const toY = toRect.top + toRect.height / 2 - parentRect.top;
+
+        // Simple curved path
+        const midX = (fromX + toX) / 2;
+        const midY = (fromY + toY) / 2;
+        const cx = midX;
+        const cy = Math.min(fromY, toY) - 20;
+        const d = `M ${fromX} ${fromY} Q ${cx} ${cy} ${toX} ${toY}`;
+
+        const meta = ARROW_TYPE_META[arrow.arrowType];
+        const fromIsSticky = blockMap.get(arrow.fromBlockId)?.type === 'sticky_note';
+        const toIsSticky = blockMap.get(targetId)?.type === 'sticky_note';
+        const dash = (fromIsSticky || toIsSticky) ? '2,3' : meta.dash;
+
+        newPaths.push({
+          id: `${arrow.id}-${idx}`,
+          d,
+          color: arrow.color ?? meta.color,
+          dash,
+          label: idx === 0 ? arrow.label : null,
+          midX, midY,
+        });
+      });
+    });
+
+    setPaths(newPaths);
+  }, [arrows, blocks]);
+
+  if (arrows.length === 0) return null;
+
+  return (
+    <div ref={containerRef} style={{
+      position: 'absolute', inset: 0,
+      pointerEvents: 'none', zIndex: 8,
+    }}>
+      <svg style={{
+        position: 'absolute', inset: 0,
+        width: '100%', height: '100%',
+        overflow: 'visible',
+      }}>
+        <defs>
+          {Object.entries(ARROW_TYPE_META).map(([type, meta]) => (
+            <marker
+              key={type}
+              id={`compact-arrow-${type}`}
+              viewBox="0 0 10 10"
+              refX="9" refY="5"
+              markerWidth="8" markerHeight="8"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill={meta.color} />
+            </marker>
+          ))}
+        </defs>
+        {paths.map(p => (
+          <g key={p.id}>
+            <path
+              d={p.d}
+              fill="none"
+              stroke={p.color}
+              strokeWidth={2}
+              strokeDasharray={p.dash}
+              markerEnd={`url(#compact-arrow-${p.id.split('-')[0]})`}
+              opacity={0.6}
+            />
+            {p.label && (
+              <g>
+                <rect
+                  x={p.midX - 24} y={p.midY - 8}
+                  width={48} height={16} rx={3}
+                  fill="rgba(10,10,16,0.90)"
+                  stroke={p.color} strokeWidth={1} strokeOpacity={0.4}
+                />
+                <text
+                  x={p.midX} y={p.midY + 3}
+                  textAnchor="middle" fontSize={8}
+                  fontWeight={700} fontFamily="Inter, sans-serif"
+                  fill={p.color} letterSpacing={0.5}
+                >
+                  {p.label}
+                </text>
+              </g>
+            )}
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+// ─── Compact Block Grid (view mode) ───────────────────────
+function CompactBlockGrid({
+  blocks,
+  onBlockClick,
+}: {
+  blocks: CanvasBlock[];
+  onBlockClick: (block: CanvasBlock) => void;
+}) {
+  const ordered = [...blocks].sort((a, b) =>
+    a.position.row !== b.position.row
+      ? a.position.row - b.position.row
+      : a.position.col - b.position.col
+  );
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(12, 1fr)',
+      gap: 8,
+      padding: '12px 16px 16px 16px',
+    }}>
+      {ordered.map(block => (
+        <div
+          key={block.id}
+          id={`canvas-block-${block.id}`}
+          onClick={() => onBlockClick(block)}
+          style={{
+            gridColumn: `${block.position.col} / span ${block.position.colSpan}`,
+            padding: '10px 12px',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: 8,
+            cursor: 'pointer',
+            transition: 'all 0.15s',
+            minHeight: 60,
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLElement).style.background =
+              'rgba(255,255,255,0.06)';
+            (e.currentTarget as HTMLElement).style.borderColor =
+              'rgba(255,255,255,0.14)';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.background =
+              'rgba(255,255,255,0.03)';
+            (e.currentTarget as HTMLElement).style.borderColor =
+              'rgba(255,255,255,0.07)';
+          }}
+        >
+          {/* Block type chip */}
+          <div style={{
+            fontSize: 9, fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.10em',
+            color: 'rgba(255,255,255,0.28)',
+            marginBottom: 6,
+          }}>
+            {block.stageIndex && (
+              <span style={{
+                color: '#E8571A', marginRight: 6,
+                fontFamily: 'monospace',
+              }}>
+                {block.stageIndex}
+              </span>
+            )}
+            {block.type?.replace(/_/g, ' ')}
+          </div>
+
+          {/* Block subheading */}
+          {block.subheading && (
+            <div style={{
+              fontSize: 13, fontWeight: 600,
+              color: 'rgba(255,255,255,0.80)',
+              fontFamily: "'Playfair Display', serif",
+              lineHeight: 1.3, marginBottom: 4,
+            }}>
+              {block.subheading}
+            </div>
+          )}
+
+          {/* Content preview */}
+          <div style={{
+            fontSize: 12,
+            color: 'rgba(255,255,255,0.42)',
+            lineHeight: 1.55, overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+          }}>
+            {block.textContent?.substring(0, 100)}
+          </div>
+
+          {/* Click hint */}
+          <div style={{
+            marginTop: 8, fontSize: 10,
+            color: 'rgba(255,255,255,0.18)',
+          }}>
+            Click to view full block →
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function StageGridNodeView({
   node,
@@ -132,24 +374,38 @@ export function StageGridNodeView({
           </div>
         </div>
 
-        {/* The canvas shell */}
+        {/* The canvas shell (edit) or compact block grid (view) */}
         <div
           style={{
-            minHeight: canvasDoc.blocks.length === 0 ? 120 : 'auto',
+            height: 'auto',
+            minHeight: 120,
           }}
         >
           {stageGridId ? (
-            <CanvasShell
-              mode={mode}
-              doc={canvasDoc}
-              title=""
-              description=""
-              postType="build"
-              hideHeader={true}
-              embedded={true}
-              onSave={() => canvasDoc.saveDocument(stageGridId)}
-              onBlockClick={mode === 'view' ? openFocusPanel : undefined}
-            />
+            mode === 'view' ? (
+              <div style={{ position: 'relative' }}>
+                <CompactBlockGrid
+                  blocks={canvasDoc.blocks}
+                  onBlockClick={openFocusPanel}
+                />
+                <CompactArrowOverlay
+                  arrows={canvasDoc.arrows}
+                  blocks={canvasDoc.blocks}
+                />
+              </div>
+            ) : (
+              <CanvasShell
+                mode={mode}
+                doc={canvasDoc}
+                title=""
+                description=""
+                postType="build"
+                hideHeader={true}
+                embedded={true}
+                height="auto"
+                onSave={() => canvasDoc.saveDocument(stageGridId)}
+              />
+            )
           ) : (
             <div
               style={{

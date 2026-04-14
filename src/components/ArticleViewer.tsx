@@ -5,11 +5,13 @@ import type { ArticleDocument } from '@/lib/article-types';
 interface ArticleViewerProps {
   article: ArticleDocument;
   contentId: string;
+  coverImageUrl?: string | null;
 }
 
 export function ArticleViewer({
   article,
   contentId,
+  coverImageUrl,
 }: ArticleViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -38,6 +40,28 @@ export function ArticleViewer({
         padding: '0 0 40px 0',
       }}
     >
+      {/* Cover image — full-width above article body */}
+      {coverImageUrl && (
+        <div style={{
+          marginBottom: 24,
+          borderRadius: 10, overflow: 'hidden',
+          margin: '0 -28px 24px -28px',
+        }}>
+          {/\.(mp4|webm|mov)$/i.test(coverImageUrl) ? (
+            <video
+              src={coverImageUrl}
+              autoPlay muted loop playsInline
+              style={{ width: '100%', maxHeight: 280,
+                objectFit: 'cover', display: 'block' }}
+            />
+          ) : (
+            <img src={coverImageUrl}
+              style={{ width: '100%', maxHeight: 280,
+                objectFit: 'cover', display: 'block' }} />
+          )}
+        </div>
+      )}
+
       <TipTapEditor
         contentId={contentId}
         initialContent={article}

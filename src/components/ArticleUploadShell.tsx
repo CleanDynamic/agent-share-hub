@@ -244,6 +244,28 @@ export function ArticleUploadShell({
           }}
         />
 
+        {/* Cover image — full-width between description and body */}
+        {coverPreview && (
+          <div style={{
+            marginBottom: 24,
+            borderRadius: 10, overflow: 'hidden',
+            margin: '0 -28px 24px -28px',
+          }}>
+            {/\.(mp4|webm|mov)$/i.test(coverPreview) ? (
+              <video
+                src={coverPreview}
+                autoPlay muted loop playsInline
+                style={{ width: '100%', maxHeight: 280,
+                  objectFit: 'cover', display: 'block' }}
+              />
+            ) : (
+              <img src={coverPreview}
+                style={{ width: '100%', maxHeight: 280,
+                  objectFit: 'cover', display: 'block' }} />
+            )}
+          </div>
+        )}
+
         {/* TipTap article body — primary article editor with embedded StageGrid nodes */}
         <TipTapEditor
           contentId={contentId}

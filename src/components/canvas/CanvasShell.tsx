@@ -35,6 +35,7 @@ interface CanvasShellProps {
   onPostTypeClick?: () => void;
   hideHeader?: boolean;
   embedded?: boolean;
+  height?: string;
   showAnnotations?: boolean;
   onSave?: () => void;
   onPublish?: () => void;
@@ -698,10 +699,12 @@ export function CanvasShell(props: CanvasShellProps) {
     <div style={{
       display: 'flex',
       height: props.embedded ? 'auto' : '100%',
-      overflow: props.embedded ? 'visible' : 'hidden',
+      overflow: props.embedded ? undefined : 'hidden',
       background: 'rgba(6,6,10,0.65)',
       position: 'relative',
-      minHeight: props.embedded ? 80 : undefined,
+      minHeight: props.embedded
+        ? Math.max(120, doc.blocks.length * 140)
+        : undefined,
     }}>
 
       {/* TOC sidebar — hidden when embedded */}
@@ -732,12 +735,15 @@ export function CanvasShell(props: CanvasShellProps) {
       {/* Main scroll area */}
       <div style={{
         flex: 1,
-        overflowY: 'auto',
+        overflowY: props.embedded ? undefined : 'auto',
         overflowX: 'hidden',
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        minHeight: 0,
+        height: props.embedded ? 'auto' : undefined,
+        minHeight: props.embedded
+          ? Math.max(120, doc.blocks.length * 140)
+          : 0,
       }}>
 
         {/* Document header */}
