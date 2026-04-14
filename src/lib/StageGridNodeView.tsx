@@ -31,9 +31,6 @@ function CompactArrowOverlay({
       const fromEl = container.parentElement?.querySelector(
         `#canvas-block-${arrow.fromBlockId}`
       ) as HTMLElement | null;
-      const toEl = container.parentElement?.querySelector(
-        `#canvas-block-${arrow.toBlockId}`
-      ) as HTMLElement | null;
 
       const allTargetIds = arrow.toBlockIds && arrow.toBlockIds.length > 0
         ? arrow.toBlockIds
@@ -54,7 +51,6 @@ function CompactArrowOverlay({
         const toX = toRect.left + toRect.width / 2 - parentRect.left;
         const toY = toRect.top + toRect.height / 2 - parentRect.top;
 
-        // Simple curved path
         const midX = (fromX + toX) / 2;
         const midY = (fromY + toY) / 2;
         const cx = midX;
@@ -179,19 +175,14 @@ function CompactBlockGrid({
             minHeight: 60,
           }}
           onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.background =
-              'rgba(255,255,255,0.06)';
-            (e.currentTarget as HTMLElement).style.borderColor =
-              'rgba(255,255,255,0.14)';
+            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.14)';
           }}
           onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.background =
-              'rgba(255,255,255,0.03)';
-            (e.currentTarget as HTMLElement).style.borderColor =
-              'rgba(255,255,255,0.07)';
+            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
+            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)';
           }}
         >
-          {/* Block type chip */}
           <div style={{
             fontSize: 9, fontWeight: 700,
             textTransform: 'uppercase',
@@ -209,8 +200,6 @@ function CompactBlockGrid({
             )}
             {block.type?.replace(/_/g, ' ')}
           </div>
-
-          {/* Block subheading */}
           {block.subheading && (
             <div style={{
               fontSize: 13, fontWeight: 600,
@@ -221,8 +210,6 @@ function CompactBlockGrid({
               {block.subheading}
             </div>
           )}
-
-          {/* Content preview */}
           <div style={{
             fontSize: 12,
             color: 'rgba(255,255,255,0.42)',
@@ -233,8 +220,6 @@ function CompactBlockGrid({
           }}>
             {block.textContent?.substring(0, 100)}
           </div>
-
-          {/* Click hint */}
           <div style={{
             marginTop: 8, fontSize: 10,
             color: 'rgba(255,255,255,0.18)',
@@ -263,8 +248,6 @@ export function StageGridNodeView({
     setFocusedBlock(block);
   };
 
-  // Each stage grid has its own canvas document
-  // scoped to its stageGridId (used as contentId)
   const canvasDoc = useCanvasDocument(stageGridId);
 
   const handleLabelSave = () => {
@@ -278,140 +261,130 @@ export function StageGridNodeView({
         contentEditable={false}
         data-toc-anchor={`stage-${stageGridId}`}
         style={{
-          margin: '20px 0',
+          margin: '24px 0',
           borderRadius: 12,
           overflow: 'hidden',
           border: selected
             ? '2px solid rgba(232,87,26,0.50)'
-            : '1px solid rgba(255,255,255,0.08)',
-          background: 'rgba(10,10,18,0.60)',
+            : '1px solid rgba(255,255,255,0.10)',
+          background: 'rgba(6,6,10,0.65)',
           transition: 'border-color 0.15s',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.30)',
         }}
       >
-        {/* Stage grid header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 16px',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            background: 'rgba(255,255,255,0.02)',
-          }}
-        >
-          {editingLabel && mode === 'edit' ? (
-            <input
-              autoFocus
-              value={labelVal}
-              onChange={e => setLabelVal(e.target.value)}
-              onBlur={handleLabelSave}
-              onKeyDown={e => {
-                if (e.key === 'Enter') handleLabelSave();
-                if (e.key === 'Escape') setEditingLabel(false);
-              }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                borderBottom: '1px solid rgba(232,87,26,0.40)',
-                outline: 'none',
-                fontSize: 12,
-                fontWeight: 700,
-                color: '#E8571A',
-                textTransform: 'uppercase',
-                letterSpacing: '0.10em',
-                padding: '2px 0',
-                width: 180,
-              }}
-            />
-          ) : (
-            <div
-              onClick={() => mode === 'edit' && setEditingLabel(true)}
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.10em',
-                color: 'rgba(232,87,26,0.70)',
-                cursor: mode === 'edit' ? 'text' : 'default',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              <span
+        {/* Stage grid header — mimics old canvas look */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 14px',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(255,255,255,0.02)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Stage dot icon */}
+            <div style={{
+              width: 8, height: 8, borderRadius: 2,
+              background: '#E8571A', opacity: 0.8,
+            }} />
+            {editingLabel && mode === 'edit' ? (
+              <input
+                autoFocus
+                value={labelVal}
+                onChange={e => setLabelVal(e.target.value)}
+                onBlur={handleLabelSave}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleLabelSave();
+                  if (e.key === 'Escape') setEditingLabel(false);
+                }}
                 style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: '#E8571A',
-                  opacity: 0.7,
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: '1px solid rgba(232,87,26,0.40)',
+                  outline: 'none',
+                  fontSize: 11, fontWeight: 700,
+                  color: '#E8571A',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  padding: '2px 0', width: 180,
                 }}
               />
-              {label}
-              {mode === 'edit' && (
-                <span
-                  style={{
-                    fontSize: 9,
-                    color: 'rgba(255,255,255,0.20)',
+            ) : (
+              <div
+                onClick={() => mode === 'edit' && setEditingLabel(true)}
+                style={{
+                  fontSize: 11, fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  color: 'rgba(232,87,26,0.75)',
+                  cursor: mode === 'edit' ? 'text' : 'default',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                {label}
+                {mode === 'edit' && (
+                  <span style={{
+                    fontSize: 9, color: 'rgba(255,255,255,0.18)',
                     fontWeight: 400,
-                  }}
-                >
-                  (click to rename)
-                </span>
-              )}
-            </div>
-          )}
+                  }}>
+                    click to rename
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
 
-          {/* Block count indicator */}
-          <div
-            style={{
-              fontSize: 10,
-              color: 'rgba(255,255,255,0.25)',
-            }}
-          >
-            {canvasDoc.blocks.length} block
-            {canvasDoc.blocks.length !== 1 ? 's' : ''}
+          {/* Block count + stage badge */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <div style={{
+              fontSize: 9, fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              padding: '2px 8px', borderRadius: 4,
+              background: 'rgba(139,69,19,0.10)',
+              border: '1px solid rgba(139,69,19,0.20)',
+              color: 'rgba(139,69,19,0.70)',
+            }}>
+              STAGE GRID
+            </div>
+            <div style={{
+              fontSize: 10, color: 'rgba(255,255,255,0.25)',
+              fontFamily: 'monospace',
+            }}>
+              {canvasDoc.blocks.length} block{canvasDoc.blocks.length !== 1 ? 's' : ''}
+            </div>
           </div>
         </div>
 
-        {/* The canvas shell (edit) or compact block grid (view) */}
-        <div style={{ height: 'auto', minHeight: 120 }}>
+        {/* The canvas — always render CanvasShell in edit mode (mini canvas with dot grid, blocks, arrows) */}
+        <div style={{ height: 'auto', minHeight: 160 }}>
           {stageGridId ? (
             mode === 'view' ? (
               <div style={{ position: 'relative' }}>
-                <CompactBlockGrid
-                  blocks={canvasDoc.blocks}
-                  onBlockClick={openFocusPanel}
-                />
-                <CompactArrowOverlay
-                  arrows={canvasDoc.arrows}
-                  blocks={canvasDoc.blocks}
-                />
-              </div>
-            ) : canvasDoc.blocks.length === 0 ? (
-              /* Empty stage — show CTA */
-              <div style={{
-                padding: '32px 24px', textAlign: 'center',
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', gap: 8,
-              }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 10,
-                  background: 'rgba(232,87,26,0.08)',
-                  border: '1px dashed rgba(232,87,26,0.25)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 18, color: 'rgba(232,87,26,0.50)',
-                }}>
-                  +
-                </div>
-                <div style={{
-                  fontSize: 12, color: 'rgba(255,255,255,0.30)',
-                  fontFamily: 'Inter, sans-serif',
-                }}>
-                  Click <strong style={{ color: 'rgba(255,255,255,0.50)' }}>+ Block</strong> in the canvas to add blocks
-                </div>
+                {canvasDoc.blocks.length > 0 ? (
+                  <>
+                    <CompactBlockGrid
+                      blocks={canvasDoc.blocks}
+                      onBlockClick={openFocusPanel}
+                    />
+                    <CompactArrowOverlay
+                      arrows={canvasDoc.arrows}
+                      blocks={canvasDoc.blocks}
+                    />
+                  </>
+                ) : (
+                  <div style={{
+                    padding: '24px', textAlign: 'center',
+                    fontSize: 12, color: 'rgba(255,255,255,0.20)',
+                  }}>
+                    Empty stage
+                  </div>
+                )}
               </div>
             ) : (
+              /* Edit mode: always show the full mini canvas */
               <CanvasShell
                 mode={mode}
                 doc={canvasDoc}
