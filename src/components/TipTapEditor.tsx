@@ -223,38 +223,7 @@ export function TipTapEditor({
       {/* The TipTap editor */}
       <EditorContent editor={editor} style={{ outline: 'none' }} />
 
-      {/* Empty article guide */}
-      {isEmptyArticle && mode === 'edit' && (
-        <div style={{
-          marginTop: 24, padding: '20px',
-          border: '1px dashed rgba(255,255,255,0.08)',
-          borderRadius: 10,
-          textAlign: 'center',
-        }}>
-          <div style={{
-            fontSize: 13, fontWeight: 600,
-            color: 'rgba(255,255,255,0.35)',
-            fontFamily: "'Playfair Display', Georgia, serif",
-            marginBottom: 8,
-          }}>
-            Start writing your article
-          </div>
-          <div style={{
-            fontSize: 12, color: 'rgba(255,255,255,0.22)',
-            lineHeight: 1.6,
-          }}>
-            Press <kbd style={{
-              padding: '1px 5px',
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 3, fontSize: 11,
-            }}>/</kbd> to insert a stage grid, heading,
-            code block, or image.
-            <br />
-            Or just start typing your narrative.
-          </div>
-        </div>
-      )}
+      {/* Empty state removed — insert button is in the bottom toolbar */}
 
       {/* Floating format toolbar (BubbleMenu) */}
       {mode === 'edit' && editor && (

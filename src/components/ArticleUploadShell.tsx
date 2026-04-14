@@ -309,6 +309,41 @@ export function ArticleUploadShell({
           ← Back
         </button>
 
+        <button
+          type="button"
+          onClick={() => {
+            // Simulate typing "/" in the editor to trigger slash command menu
+            const editor = document.querySelector('.tiptap.ProseMirror') as HTMLElement;
+            if (editor) {
+              editor.focus();
+              document.execCommand('insertText', false, '/');
+            }
+          }}
+          style={{
+            padding: '6px 12px',
+            borderRadius: 7,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            color: 'rgba(255,255,255,0.45)',
+            fontSize: 12,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+          }}
+          title="Insert block (stage grid, heading, code, image…)"
+        >
+          <kbd style={{
+            padding: '0px 4px',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 3,
+            fontSize: 11,
+            fontFamily: 'monospace',
+          }}>/</kbd>
+          Insert
+        </button>
+
         <div style={{ flex: 1 }} />
 
         <div
