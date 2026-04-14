@@ -1,5 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Editor } from '@tiptap/core';
+
+export interface SlashCommandMenuRef {
+  onKeyDown: (props: { event: KeyboardEvent }) => boolean;
+}
 
 interface Command {
   id: string;

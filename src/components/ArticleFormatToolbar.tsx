@@ -1,4 +1,4 @@
-import { BubbleMenu } from '@tiptap/react';
+import { BubbleMenu } from '@tiptap/react/menus';
 import { Editor } from '@tiptap/core';
 import { useState } from 'react';
 
