@@ -1219,7 +1219,7 @@ const Upload = () => {
         flexDirection: 'column',
         height: '100%',
         overflow: 'hidden',
-        background: 'rgba(6,6,10,0.65)',
+        background: 'transparent',
         position: 'relative',
       }}>
         {/* Main scroll area */}
