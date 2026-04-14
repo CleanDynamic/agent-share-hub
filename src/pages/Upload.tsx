@@ -35,6 +35,10 @@ import { DiscussionCompose } from "@/components/DiscussionCompose";
 import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, getPostType, getPrimaryTypeLabel } from "@/lib/content-types";
 import { CanvasShell } from '@/components/canvas/CanvasShell';
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
+import { ArticleEditor } from '@/components/article/ArticleEditor';
+import type { EvidenceMediaType } from '@/components/canvas/CanvasHeader';
+import { CanvasHeader } from '@/components/canvas/CanvasHeader';
+import { CanvasToolbar } from '@/components/canvas/CanvasToolbar';
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -529,6 +533,7 @@ const Upload = () => {
         status: "draft",
         draft_saved_at: new Date().toISOString(),
         draft_name: values.title || null,
+        article_body: (canvasDoc as any)._articleBody ?? null,
       };
 
       let draftIdToUse = currentDraftId;
@@ -1049,6 +1054,14 @@ const Upload = () => {
         await canvasDoc.saveDocument(contentId);
       }
 
+      // ── Save article body (TipTap JSON) ──
+      const articleBody = (canvasDoc as any)._articleBody;
+      if (articleBody) {
+        await supabase.from('content_items').update({
+          article_body: articleBody,
+        } as any).eq('id', contentId);
+      }
+
       // ── Remaining metadata updates (safe to run after blocks are saved) ──
       const metaUpdates: any = {};
       // Blog: compute estimated read time
@@ -1198,56 +1211,101 @@ const Upload = () => {
     );
   }
 
-  // ── Canvas mode: after type is chosen, render CanvasShell as the editor ──
+  // ── Article mode: after type is chosen, render ArticleEditor ──
   if (!showTypeChooser && !success) {
     return (
-      <CanvasShell
-        mode="edit"
-        doc={canvasDoc}
-        title={form.watch('title') ?? ''}
-        description={form.watch('description') ?? ''}
-        postType={form.watch('post_type') ?? 'build'}
-        difficulty={form.watch('difficulty') ?? null}
-        coverPreview={coverImagePreview}
-        onTitleChange={v => form.setValue('title', v)}
-        onDescriptionChange={v => form.setValue('description', v)}
-        onCoverChange={(f, p) => {
-          setCoverImageFile(f);
-          setCoverImagePreview(p);
-        }}
-        onPostTypeClick={() => {
-          setShowTypeChooser(true);
-        }}
-        onSave={() => {
-          saveDraft(false);
-          canvasDoc.saveDocument(currentDraftId ?? '');
-        }}
-        onPublish={() => {
-          const title = form.getValues('title');
-          if (!title || !title.trim()) {
-            toast({ title: 'Title required', description: 'Add a title before publishing.', variant: 'destructive' });
-            return;
-          }
-          if (canvasDoc.blocks.length === 0) {
-            toast({ title: 'Add at least one block', description: 'Your blueprint needs content before publishing.', variant: 'destructive' });
-            return;
-          }
-          form.handleSubmit(onSubmit)();
-        }}
-        saving={savingDraft}
-        submitting={submitting}
-        onBack={() => setShowTypeChooser(true)}
-        evidenceMediaType={evidenceMediaType}
-        evidenceMediaFiles={evidenceMediaFiles}
-        evidenceMediaPreviews={evidenceMediaPreviews}
-        evidenceCaption={evidenceCaption}
-        onEvidenceMediaTypeChange={setEvidenceMediaType}
-        onEvidenceMediaFilesChange={(files, previews) => {
-          setEvidenceMediaFiles(files);
-          setEvidenceMediaPreviews(previews);
-        }}
-        onEvidenceCaptionChange={setEvidenceCaption}
-      />
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        overflow: 'hidden',
+        background: 'rgba(6,6,10,0.65)',
+        position: 'relative',
+      }}>
+        {/* Main scroll area */}
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+        }}>
+          {/* Document header — reuses CanvasHeader */}
+          <CanvasHeader
+            mode="edit"
+            title={form.watch('title') ?? ''}
+            description={form.watch('description') ?? ''}
+            postType={form.watch('post_type') ?? 'build'}
+            difficulty={form.watch('difficulty') ?? null}
+            coverPreview={coverImagePreview}
+            onTitleChange={v => form.setValue('title', v)}
+            onDescriptionChange={v => form.setValue('description', v)}
+            onPostTypeClick={() => setShowTypeChooser(true)}
+            onCoverChange={(f, p) => {
+              setCoverImageFile(f);
+              setCoverImagePreview(p);
+            }}
+            evidenceMediaType={evidenceMediaType}
+            evidenceMediaFiles={evidenceMediaFiles}
+            evidenceMediaPreviews={evidenceMediaPreviews}
+            evidenceCaption={evidenceCaption}
+            onEvidenceMediaTypeChange={setEvidenceMediaType}
+            onEvidenceMediaFilesChange={(files, previews) => {
+              setEvidenceMediaFiles(files);
+              setEvidenceMediaPreviews(previews);
+            }}
+            onEvidenceCaptionChange={setEvidenceCaption}
+          />
+
+          {/* Article body — TipTap editor */}
+          <div style={{
+            flex: 1,
+            padding: '0 20px 40px',
+          }}>
+            <ArticleEditor
+              canvasDoc={canvasDoc}
+              initialContent={(canvasDoc as any).articleBody ?? undefined}
+              onChange={(json) => {
+                // Store article body for save
+                (canvasDoc as any)._articleBody = json;
+              }}
+              editable
+            />
+          </div>
+        </div>
+
+        {/* Bottom toolbar */}
+        <CanvasToolbar
+          doc={canvasDoc}
+          onSave={() => {
+            saveDraft(false);
+            canvasDoc.saveDocument(currentDraftId ?? '');
+          }}
+          onPublish={() => {
+            const title = form.getValues('title');
+            if (!title || !title.trim()) {
+              toast({ title: 'Title required', description: 'Add a title before publishing.', variant: 'destructive' });
+              return;
+            }
+            form.handleSubmit(onSubmit)();
+          }}
+          saving={savingDraft}
+          submitting={submitting}
+          onBack={() => setShowTypeChooser(true)}
+          blockCount={canvasDoc.blocks.length}
+          onInsertBlock={() => {}}
+          onTemplates={() => {}}
+          onHistory={() => {}}
+          onAnnotations={() => {}}
+          onGrammarCheck={() => {}}
+          annotationCount={0}
+          zoom={1}
+          onZoomIn={() => {}}
+          onZoomOut={() => {}}
+          onClearAll={() => {}}
+        />
+      </div>
     );
   }
 

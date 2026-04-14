@@ -706,6 +706,7 @@ export type Database = {
         Row: {
           ai_tools: string[] | null
           approved_at: string | null
+          article_body: Json | null
           avg_rating: number
           comment_count: number
           compatibility_status: string | null
@@ -767,6 +768,7 @@ export type Database = {
         Insert: {
           ai_tools?: string[] | null
           approved_at?: string | null
+          article_body?: Json | null
           avg_rating?: number
           comment_count?: number
           compatibility_status?: string | null
@@ -828,6 +830,7 @@ export type Database = {
         Update: {
           ai_tools?: string[] | null
           approved_at?: string | null
+          article_body?: Json | null
           avg_rating?: number
           comment_count?: number
           compatibility_status?: string | null
