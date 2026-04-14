@@ -1,67 +1,26 @@
 
-Fix the black middle panel by removing the remaining hardcoded dark canvas backgrounds that are overriding the shell.
 
-Step 1 — Fix the actual source of the black surface  
-`src/components/NeoScaleShell.tsx` is already correct: `.ns-outlet-wrap` uses `rgba(200,200,210,0.04)`. The problem is deeper inside the upload/editor stack:
-- `src/pages/Upload.tsx` article-mode wrapper still sets `background: 'rgba(6,6,10,0.65)'`
-- `src/components/canvas/CanvasShell.tsx` still sets `background: 'rgba(6,6,10,0.65)'`
+## Fix the lighter filter on the middle panel
 
-Those two layers repaint the middle panel black even though the shell itself is grey.
+The middle panel appears lighter than the side panels because backgrounds are stacking:
 
-Step 2 — Make the upload/article surface inherit the shell glass  
-In `src/pages/Upload.tsx`, change the top-level article-mode wrapper from black to either:
-- `background: 'transparent'`, or
-- `background: 'rgba(200,200,210,0.04)'`
+1. `LiquidGlassPanel` content layer adds `background: rgba(200,200,210,0.08)` + `backdrop-filter: blur(2px) saturate(1.2)`
+2. `.ns-outlet-wrap` adds another `background: rgba(200,200,210,0.08)` on top
 
-I’d use transparent for the outer wrapper so the shell panel shows through, and keep any intended tint on inner article surfaces only.
+The side panels only have the `LiquidGlassPanel` layer — no extra tinted child. So the middle panel gets double the tint.
 
-Step 3 — Update CanvasShell to the new light-grey article/canvas surface  
-In `src/components/canvas/CanvasShell.tsx`, replace the root black background with the same glass tint used by the shell:
-```ts
-background: 'rgba(200,200,210,0.04)'
-```
-This keeps the current canvas architecture intact while making full-canvas and embedded usages visually consistent.
+### Fix
 
-Step 4 — Normalize the article/editor interior panels  
-To avoid the page still feeling too dark even after the outer surface is fixed:
-- keep `ArticleEditor` prose surface transparent or very lightly tinted
-- keep `StageGridNode` at `rgba(200,200,210,0.06)` with subtle border
-- preserve block cards as darker translucent micro-surfaces so they still read against the lighter panel
+**File: `src/components/NeoScaleShell.tsx`**
 
-This matches the “microcosms of the current canvas” direction without stripping the canvas system.
+Change `.ns-outlet-wrap` background from `rgba(200,200,210,0.08)` to `transparent`. The `LiquidGlassPanel` wrapper already provides the matching glass tint — the outlet wrap doesn't need its own.
 
-Step 5 — Verify there are no more middle-panel overrides  
-After the background swap, check the upload flow for any remaining black fills in:
-- article editor wrapper
-- canvas root
-- middle panel back face
-- stage grid body
-- toolbar anchoring area
-
-Technical details  
-Current root cause confirmed from code:
-```ts
-// src/components/NeoScaleShell.tsx
-.ns-outlet-wrap {
-  background: rgba(200,200,210,0.04);
-}
+```css
+/* Line 351: change from */
+background: rgba(200,200,210,0.08);
+/* to */
+background: transparent;
 ```
 
-```ts
-// src/pages/Upload.tsx
-background: 'rgba(6,6,10,0.65)'
-```
+One line change. The middle panel will then match the side panels exactly since all three rely solely on `LiquidGlassPanel` for their glass surface.
 
-```ts
-// src/components/canvas/CanvasShell.tsx
-background: 'rgba(6,6,10,0.65)'
-```
-
-Files to update
-- `src/pages/Upload.tsx`
-- `src/components/canvas/CanvasShell.tsx`
-
-Expected result
-- the middle upload/canvas page matches the side-panel grey translucent glass
-- the canvas system remains fully preserved
-- embedded stage grids still feel like mini canvases, but the overall article surface is light grey and readable instead of black
