@@ -79,8 +79,7 @@ export default function LiquidGlassPanel({
           scrollbarWidth: 'none',
           display: 'flex',
           flexDirection: 'column',
-          background: 'rgba(200, 200, 210, 0.08)',
-          backdropFilter: 'blur(2px) saturate(1.2)',
+          background: 'rgba(10, 10, 16, 0.55)',
           ...contentStyle,
         }}
       >
