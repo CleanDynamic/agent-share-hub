@@ -1175,7 +1175,15 @@ const ContentDetail = () => {
         {/* 8. CANVAS — timeline view with stages */}
         {(!isSub || subscriberUnlocked) && (
           <>
-            {!canvasDoc.loading && canvasDoc.blocks.length > 0 && (
+            {/* Article body (TipTap) — if available */}
+            {!canvasDoc.loading && (item as any).article_body && (
+              <ArticleViewer
+                content={(item as any).article_body}
+                canvasDoc={canvasDoc}
+              />
+            )}
+            {/* Legacy: StageTimeline fallback when no article_body */}
+            {!canvasDoc.loading && !(item as any).article_body && canvasDoc.blocks.length > 0 && (
               <StageTimeline
                 stages={canvasDoc.stages}
                 blocks={canvasDoc.blocks}
