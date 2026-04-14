@@ -179,6 +179,25 @@ export const SlashCommandMenu = forwardRef<SlashCommandMenuRef, SlashCommandMenu
       )
     : COMMANDS;
 
+  useImperativeHandle(ref, () => ({
+    onKeyDown: ({ event }: { event: KeyboardEvent }) => {
+      if (event.key === 'ArrowDown') {
+        setSelectedIndex(i => Math.min(i + 1, filtered.length - 1));
+        return true;
+      }
+      if (event.key === 'ArrowUp') {
+        setSelectedIndex(i => Math.max(i - 1, 0));
+        return true;
+      }
+      if (event.key === 'Enter') {
+        const cmd = filtered[selectedIndex];
+        if (cmd) executeCommand(cmd);
+        return true;
+      }
+      return false;
+    },
+  }));
+
   // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -198,7 +217,18 @@ export const SlashCommandMenu = forwardRef<SlashCommandMenuRef, SlashCommandMenu
         if (cmd) executeCommand(cmd);
       }
       if (e.key === 'Escape') {
-        onDismiss();
+        onDismiss?.();
+      }
+      // Handle typing to filter
+      if (e.key.length === 1) {
+        onFilterChange?.(filter + e.key);
+      }
+      if (e.key === 'Backspace') {
+        if (filter.length > 0) {
+          onFilterChange?.(filter.slice(0, -1));
+        } else {
+          onDismiss?.();
+        }
       }
       // Handle typing to filter
       if (e.key.length === 1) {
@@ -223,7 +253,7 @@ export const SlashCommandMenu = forwardRef<SlashCommandMenuRef, SlashCommandMenu
   const executeCommand = (cmd: Command) => {
     cmd.action(editor, {
       onInsertStageGrid,
-      onInsertBlockRef,
+      onInsertBlockRef: onInsertBlockRef || (() => {}),
     });
     onDismiss();
   };
@@ -345,4 +375,4 @@ export const SlashCommandMenu = forwardRef<SlashCommandMenuRef, SlashCommandMenu
       </div>
     </>
   );
-}
+});
