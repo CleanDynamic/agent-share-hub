@@ -533,6 +533,7 @@ const Upload = () => {
         status: "draft",
         draft_saved_at: new Date().toISOString(),
         draft_name: values.title || null,
+        article_body: (canvasDoc as any)._articleBody ?? null,
       };
 
       let draftIdToUse = currentDraftId;
