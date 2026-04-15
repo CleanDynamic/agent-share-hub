@@ -35,7 +35,7 @@ interface CanvasToolbarProps {
   annotationCount?: number;
   onBack?: () => void;
   blockCount?: number;
-  onInsertBlock?: (type: string, position: Partial<BlockPosition>) => void;
+  onInsertBlock?: (type: string, position: Partial<BlockPosition>) => string | null | void;
   onUndo?: () => void;
   onRedo?: () => void;
   zoom?: number;
@@ -137,10 +137,14 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                     const isSticky = bt.type === 'sticky_note';
                     const colSpan = isSticky ? 2 : 3;
                     const rowSpan = isSticky ? 3 : isHeading ? 2 : 5;
-                    onInsertBlock?.(bt.type, {
+                    const result = onInsertBlock?.(bt.type, {
                       colSpan, rowSpan,
                     });
-                    setAddBlockOpen(false);
+                    // Close the modal only if the host confirmed the insert.
+                    // Hosts that return `undefined` (legacy) are treated as success.
+                    if (result !== null) {
+                      setAddBlockOpen(false);
+                    }
                   }}
                   style={{
                     padding: '6px 8px',

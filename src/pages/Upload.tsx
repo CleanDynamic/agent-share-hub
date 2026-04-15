@@ -231,6 +231,7 @@ const Upload = () => {
   const [contentBlocks, setContentBlocks] = useState<BlockOrGroup[]>([]);
   const [wteBlocks, setWteBlocks] = useState<WteBlock[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [insertedContentId, setInsertedContentId] = useState<string | null>(null);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
@@ -1270,6 +1271,7 @@ const Upload = () => {
                 // Store article body for save
                 (canvasDoc as any)._articleBody = json;
               }}
+              onSelectedStageChange={setSelectedStageId}
               editable
             />
           </div>
@@ -1294,7 +1296,27 @@ const Upload = () => {
           submitting={submitting}
           onBack={() => setShowTypeChooser(true)}
           blockCount={canvasDoc.blocks.length}
-          onInsertBlock={() => {}}
+          onInsertBlock={(type, position) => {
+            // Verify the selected stage still exists
+            const targetStageId =
+              selectedStageId &&
+              canvasDoc.stages.some(s => s.id === selectedStageId)
+                ? selectedStageId
+                : null;
+
+            if (!targetStageId) {
+              toast({
+                title: 'Insert a stage grid first, then select it',
+              });
+              return null;
+            }
+
+            const id = canvasDoc.addBlock(type, position);
+            if (type !== 'sticky_note') {
+              canvasDoc.assignBlockToStage(id, targetStageId);
+            }
+            return id;
+          }}
           onTemplates={() => {}}
           onHistory={() => {}}
           onAnnotations={() => {}}

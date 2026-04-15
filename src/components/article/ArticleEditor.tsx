@@ -18,6 +18,7 @@ interface ArticleEditorProps {
   initialContent?: any;
   onChange?: (json: any) => void;
   editable?: boolean;
+  onSelectedStageChange?: (stageId: string | null) => void;
 }
 
 export function ArticleEditor({
@@ -25,6 +26,7 @@ export function ArticleEditor({
   initialContent,
   onChange,
   editable = true,
+  onSelectedStageChange,
 }: ArticleEditorProps) {
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
@@ -87,6 +89,25 @@ export function ArticleEditor({
     content: initialContent || {
       type: 'doc',
       content: [{ type: 'paragraph' }],
+    },
+    onSelectionUpdate: ({ editor }) => {
+      if (!onSelectedStageChange) return;
+      const { selection } = editor.state;
+      const selectedNode = (selection as any).node;
+      if (selectedNode?.type?.name === 'stageGrid') {
+        onSelectedStageChange(selectedNode.attrs?.stageId ?? null);
+        return;
+      }
+      // Also treat cursor inside a stageGrid's parent chain as "focused"
+      const { $from } = selection;
+      for (let depth = $from.depth; depth >= 0; depth--) {
+        const node = $from.node(depth);
+        if (node.type.name === 'stageGrid') {
+          onSelectedStageChange(node.attrs?.stageId ?? null);
+          return;
+        }
+      }
+      onSelectedStageChange(null);
     },
     onUpdate: ({ editor }) => {
       onChange?.(editor.getJSON());
