@@ -7,6 +7,7 @@ import { ARROW_TYPE_META } from '@/lib/canvas-types';
 import type { CanvasBlock as CanvasBlockType, BlockArrow } from '@/lib/canvas-types';
 import { gridToPixels, nearestEdge, getEdgeMidpoint, orthogonalPath, getBlockSnapPoints } from '@/lib/canvas-utils';
 import { Plus, GripVertical } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface StageGridNodeProps {
   node: any;
@@ -29,6 +30,7 @@ export function StageGridNode({ node, updateAttributes, editor, selected }: Stag
   const [containerWidth, setContainerWidth] = useState(0);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(stageTitle);
+  const [localBlocks, setLocalBlocks] = useState<CanvasBlockType[]>([]);
   const isEditable = editor?.isEditable ?? false;
 
   // Measure container width
@@ -44,8 +46,11 @@ export function StageGridNode({ node, updateAttributes, editor, selected }: Stag
   // Filter blocks and arrows for this stage
   const stageBlocks = useMemo(() => {
     if (!doc || !stageId) return [];
-    return (doc.blocks ?? []).filter((b: CanvasBlockType) => b.stageId === stageId);
-  }, [doc?.blocks, stageId]);
+    const fromDoc = (doc.blocks ?? []).filter((b: CanvasBlockType) => b.stageId === stageId);
+    const existingIds = new Set(fromDoc.map((b: CanvasBlockType) => b.id));
+    const optimistic = localBlocks.filter(b => !existingIds.has(b.id));
+    return [...fromDoc, ...optimistic];
+  }, [doc?.blocks, stageId, localBlocks]);
 
   const stageArrows = useMemo(() => {
     if (!doc || !stageId) return [];
@@ -82,11 +87,50 @@ export function StageGridNode({ node, updateAttributes, editor, selected }: Stag
     }
   };
 
-  const handleAddBlock = useCallback((type: string) => {
-    if (!doc || !stageId) return;
-    const id = doc.addBlock(type);
-    doc.assignBlockToStage(id, stageId);
-  }, [doc, stageId]);
+  const handleAddBlock = useCallback(async (type: string) => {
+    if (!doc || !stageId || !doc.contentId) return;
+
+    const existingCount = stageBlocks.length;
+    const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+    const blockId = crypto.randomUUID();
+
+    const newBlock: CanvasBlockType = {
+      id: blockId,
+      type,
+      textContent: '',
+      subheading: `${typeLabel} Block`,
+      position: {
+        col: 1,
+        row: existingCount * 5 + 1,
+        colSpan: 3,
+        rowSpan: 5,
+      },
+      stageId,
+      stageIndex: null,
+      isLocked: false,
+      lockType: 'none',
+      mobileOrder: null,
+      creatorAnnotation: null,
+    };
+
+    // Optimistic local state — block appears immediately
+    setLocalBlocks(prev => [...prev, newBlock]);
+
+    // Persist to Supabase
+    await supabase.from('content_blocks').insert({
+      id: blockId,
+      content_id: doc.contentId,
+      block_type: type,
+      text_content: '',
+      subheading: `${typeLabel} Block`,
+      canvas_col: 0,
+      canvas_row: existingCount * 120,
+      canvas_col_span: 3,
+      canvas_row_span: 5,
+      stage_id: stageId,
+      position: existingCount,
+    } as any);
+  }, [doc, stageId, stageBlocks.length]);
 
   if (!doc) {
     return (
