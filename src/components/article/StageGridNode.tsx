@@ -26,6 +26,7 @@ function useArticleCanvasDoc(editor: any) {
 export function StageGridNode({ node, updateAttributes, editor, selected, getPos }: StageGridNodeProps) {
   const stageId = node.attrs.stageId as string | null;
   const stageTitle = node.attrs.stageTitle as string;
+  const gridSpacing = (node.attrs.gridSpacing as number) ?? 20;
   const doc = useArticleCanvasDoc(editor);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -264,6 +265,9 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
             position: 'relative',
             minHeight: canvasHeight,
             overflow: 'hidden',
+            backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)`,
+            backgroundSize: `${gridSpacing}px ${gridSpacing}px`,
+            backgroundAttachment: 'local',
           }}
         >
           {/* Dot grid in edit mode */}
