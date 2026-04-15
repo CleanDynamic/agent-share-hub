@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { GripVertical, FileText, Code2, Image, Zap, GitCompare, Bot, Workflow, SlidersHorizontal, Wrench, BookOpen, ListChecks, Type, ChevronRight, ChevronDown, Video } from 'lucide-react';
-import { gridToPixels, positionsOverlap } from '@/lib/canvas-utils';
+import { gridToPixels } from '@/lib/canvas-utils';
 import type { CanvasBlock as CanvasBlockType, CanvasStage, BlockPosition } from '@/lib/canvas-types';
 import { BlockEditModal } from './BlockEditModal';
 import { BlockViewerInCanvas } from './BlockViewerInCanvas';
@@ -93,7 +93,12 @@ export function CanvasBlock({
   const effectivePosition = stickyCollapsed
     ? { ...block.position, rowSpan: 1 }
     : block.position;
-  const px = gridToPixels(effectivePosition, colWidth, rowHeight);
+  const gridPx = gridToPixels(effectivePosition, colWidth, rowHeight);
+  // Use pixel positions when available; fall back to grid-derived position
+  const blockX = block.position_x ?? gridPx.x;
+  const blockY = block.position_y ?? gridPx.y;
+  const blockW = gridPx.w;
+  const blockH = gridPx.h;
   const inset = 4;
 
   const BLOCK_ACCENT: Record<string, string> = {
@@ -112,7 +117,7 @@ export function CanvasBlock({
     onBlockChange({ isCollapsed: !block.isCollapsed });
   };
 
-  // ── Drag ─────────────────────────────────────────
+  // ── Drag (free-form pixel positioning) ───────────
   const handleDragMouseDown = (e: React.MouseEvent) => {
     if (mode !== 'edit') return;
     const target = e.target as HTMLElement;
@@ -134,42 +139,17 @@ export function CanvasBlock({
       origRow: block.position.row,
     };
 
-    let latestGhost: BlockPosition | null = null;
-    let latestGhostValid = true;
     let pendingDx = 0;
     let pendingDy = 0;
 
     const flush = () => {
       rafIdRef.current = null;
       setDragOffset({ x: pendingDx, y: pendingDy });
-      const newCol = Math.max(
-        1,
-        Math.min(
-          columnCount - block.position.colSpan + 1,
-          dragStartRef.current.origCol + Math.round(pendingDx / colWidth)
-        )
-      );
-      const newRow = Math.max(
-        1,
-        dragStartRef.current.origRow + Math.round(pendingDy / rowHeight)
-      );
-      const proposed: BlockPosition = {
-        ...block.position, col: newCol, row: newRow,
-      };
-      const collision = allBlocks.some(
-        other => other.id !== block.id
-          && positionsOverlap(proposed, other.position)
-      );
-      latestGhost = proposed;
-      latestGhostValid = !collision;
-      setGhost(proposed);
-      setGhostValid(!collision);
     };
 
     const move = (ev: MouseEvent) => {
       pendingDx = ev.clientX - dragStartRef.current.x;
       pendingDy = ev.clientY - dragStartRef.current.y;
-      // Schedule a pixel-perfect update on the next frame
       if (rafIdRef.current === null) {
         rafIdRef.current = requestAnimationFrame(flush);
       }
@@ -183,35 +163,16 @@ export function CanvasBlock({
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
 
-      const commit = latestGhost && latestGhostValid ? latestGhost : null;
-      if (commit) {
-        // Animate from current pixel-perfect position to the snap position
-        const targetDx = (commit.col - dragStartRef.current.origCol) * colWidth;
-        const targetDy = (commit.row - dragStartRef.current.origRow) * rowHeight;
-        setDropping(true);
-        setDragOffset({ x: targetDx, y: targetDy });
-        if (dropTimerRef.current !== null) clearTimeout(dropTimerRef.current);
-        dropTimerRef.current = setTimeout(() => {
-          dropTimerRef.current = null;
-          onPositionChange(commit);
-          setDragging(false);
-          setDropping(false);
-          setDragOffset(null);
-          setGhost(null);
-        }, 160);
-      } else {
-        // Cancel: spring back to origin
-        setDropping(true);
-        setDragOffset({ x: 0, y: 0 });
-        if (dropTimerRef.current !== null) clearTimeout(dropTimerRef.current);
-        dropTimerRef.current = setTimeout(() => {
-          dropTimerRef.current = null;
-          setDragging(false);
-          setDropping(false);
-          setDragOffset(null);
-          setGhost(null);
-        }, 160);
-      }
+      // Compute new pixel position (clamped so block stays inside container)
+      const newX = Math.max(0, blockX + pendingDx);
+      const newY = Math.max(0, blockY + pendingDy);
+
+      // Commit the new pixel position
+      onBlockChange({ position_x: newX, position_y: newY });
+      setDragging(false);
+      setDropping(false);
+      setDragOffset(null);
+      setGhost(null);
     };
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
@@ -246,8 +207,6 @@ export function CanvasBlock({
     document.addEventListener('mouseup', up);
   };
 
-  const ghostPx = ghost ? gridToPixels(ghost, colWidth, rowHeight) : null;
-
   const typeLabel = BLOCK_TYPE_LABELS[block.type] ?? block.type;
   const icon = BLOCK_ICONS[block.type] ?? <FileText size={14} />;
 
@@ -258,24 +217,6 @@ export function CanvasBlock({
 
   return (
     <>
-      {/* Ghost — visible only while actively dragging */}
-      {dragging && !dropping && ghostPx && (
-        <div style={{
-          position: 'absolute',
-          left: ghostPx.x, top: ghostPx.y,
-          width: ghostPx.w, height: ghostPx.h,
-          border: ghostValid
-            ? '2px dashed rgba(59,130,246,0.40)'
-            : '2px dashed rgba(239,68,68,0.50)',
-          borderRadius: 8,
-          background: ghostValid
-            ? 'rgba(59,130,246,0.04)'
-            : 'rgba(239,68,68,0.04)',
-          zIndex: 5,
-          pointerEvents: 'none',
-        }} />
-      )}
-
       {/* The block */}
       <div
         data-canvas-block
@@ -310,8 +251,8 @@ export function CanvasBlock({
         }}
         style={{
           position: 'absolute',
-          left: px.x + inset, top: px.y + inset,
-          width: px.w - inset * 2, height: px.h - inset * 2,
+          left: blockX + inset, top: blockY + inset,
+          width: blockW - inset * 2, height: blockH - inset * 2,
           transform: dragOffset
             ? `translate(${dragOffset.x}px, ${dragOffset.y}px) scale(${dragging && !dropping ? 1.03 : 1})`
             : undefined,

@@ -54,6 +54,8 @@ export interface CanvasBlock {
   textContent: string;
   subheading: string | null;
   position: BlockPosition;
+  position_x: number | null;  // free-form pixel X (null → derive from grid)
+  position_y: number | null;  // free-form pixel Y (null → derive from grid)
   stageId: string | null;
   stageIndex: string | null;  // '1a', '1b', '2a.i'…
   depth?: number;             // 0 = letter, 1 = roman, 2 = number
