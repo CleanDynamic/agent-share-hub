@@ -15,6 +15,7 @@ interface StageGridNodeProps {
   extension: any;
   editor: any;
   selected: boolean;
+  getPos?: () => number | undefined;
 }
 
 // Access the shared canvas document from editor storage
@@ -22,7 +23,7 @@ function useArticleCanvasDoc(editor: any) {
   return editor?.storage?.articleEditor?.canvasDoc ?? null;
 }
 
-export function StageGridNode({ node, updateAttributes, editor, selected }: StageGridNodeProps) {
+export function StageGridNode({ node, updateAttributes, editor, selected, getPos }: StageGridNodeProps) {
   const stageId = node.attrs.stageId as string | null;
   const stageTitle = node.attrs.stageTitle as string;
   const doc = useArticleCanvasDoc(editor);
@@ -151,15 +152,26 @@ export function StageGridNode({ node, updateAttributes, editor, selected }: Stag
     );
   }
 
+  const handleSelect = () => {
+    if (!editor || typeof getPos !== 'function') return;
+    const pos = getPos();
+    if (typeof pos !== 'number') return;
+    // Move ProseMirror's NodeSelection to this stage grid. This propagates
+    // via onSelectionUpdate in ArticleEditor → selectedStageId in Upload,
+    // and also drives the `selected` prop that styles the border below.
+    editor.commands.setNodeSelection(pos);
+  };
+
   return (
     <NodeViewWrapper>
       <div
+        onClick={handleSelect}
         style={{
           margin: '16px 0',
           background: 'rgba(200,200,210,0.06)',
           border: selected
-            ? '1px solid rgba(139,69,19,0.4)'
-            : '1px solid rgba(255,255,255,0.08)',
+            ? '1px solid rgba(100,160,255,0.3)'
+            : '1px solid rgba(255,255,255,0.06)',
           borderRadius: 12,
           overflow: 'hidden',
           transition: 'border-color 0.15s',
