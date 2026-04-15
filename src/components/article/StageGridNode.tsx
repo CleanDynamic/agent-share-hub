@@ -23,16 +23,21 @@ function useArticleCanvasDoc(editor: any) {
   return editor?.storage?.articleEditor?.canvasDoc ?? null;
 }
 
+const STAGE_MIN_HEIGHT = 200;
+const STAGE_MAX_HEIGHT = 800;
+
 export function StageGridNode({ node, updateAttributes, editor, selected, getPos }: StageGridNodeProps) {
   const stageId = node.attrs.stageId as string | null;
   const stageTitle = node.attrs.stageTitle as string;
   const gridSpacing = (node.attrs.gridSpacing as number) ?? 20;
+  const persistedHeight = node.attrs.height as number | null;
   const doc = useArticleCanvasDoc(editor);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(stageTitle);
   const [localBlocks, setLocalBlocks] = useState<CanvasBlockType[]>([]);
+  const [resizingHeight, setResizingHeight] = useState<number | null>(null);
   const isEditable = editor?.isEditable ?? false;
 
   // Measure container width
@@ -79,6 +84,34 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
     );
     return Math.max(maxBottom + 2 * rowHeight, isEditable ? 200 : 120);
   }, [stageBlocks, rowHeight, isEditable]);
+
+  // Effective height: resizing preview → persisted → auto-calculated
+  const effectiveHeight = resizingHeight ?? persistedHeight ?? canvasHeight;
+
+  // Resize handle drag logic
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isEditable) return;
+    const startY = e.clientY;
+    const startHeight = effectiveHeight;
+
+    const onMouseMove = (ev: MouseEvent) => {
+      const delta = ev.clientY - startY;
+      const clamped = Math.min(STAGE_MAX_HEIGHT, Math.max(STAGE_MIN_HEIGHT, startHeight + delta));
+      setResizingHeight(clamped);
+    };
+    const onMouseUp = (ev: MouseEvent) => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      const delta = ev.clientY - startY;
+      const final = Math.min(STAGE_MAX_HEIGHT, Math.max(STAGE_MIN_HEIGHT, startHeight + delta));
+      setResizingHeight(null);
+      updateAttributes({ height: final });
+    };
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [isEditable, effectiveHeight, updateAttributes]);
 
   // Stage colour
   const stage = doc?.stages?.find((s: any) => s.id === stageId);
@@ -263,7 +296,7 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
           ref={containerRef}
           style={{
             position: 'relative',
-            minHeight: canvasHeight,
+            height: effectiveHeight,
             overflow: 'hidden',
             backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)`,
             backgroundSize: `${gridSpacing}px ${gridSpacing}px`,
@@ -276,7 +309,7 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
               columnCount={columnCount}
               rowHeight={rowHeight}
               width={containerWidth}
-              height={canvasHeight}
+              height={effectiveHeight}
             />
           )}
 
@@ -322,7 +355,7 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
               colWidth={colWidth}
               rowHeight={rowHeight}
               canvasWidth={containerWidth}
-              canvasHeight={canvasHeight}
+              canvasHeight={effectiveHeight}
               mode={isEditable ? 'edit' : 'view'}
               drawingPathStr=""
               drawingWaypoints={[]}
@@ -353,7 +386,7 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
               alignItems: 'center',
               justifyContent: 'center',
               height: '100%',
-              minHeight: canvasHeight,
+              minHeight: effectiveHeight,
               gap: 8,
               color: 'rgba(255,255,255,0.25)',
               fontSize: 12,
@@ -385,6 +418,41 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
             </div>
           )}
         </div>
+
+        {/* Vertical resize handle */}
+        {isEditable && (
+          <div
+            onMouseDown={handleResizeStart}
+            style={{
+              height: 4,
+              cursor: 'ns-resize',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: resizingHeight != null
+                ? 'rgba(100,160,255,0.15)'
+                : 'rgba(255,255,255,0.03)',
+              transition: resizingHeight != null ? 'none' : 'background 0.15s',
+              userSelect: 'none',
+            }}
+            onMouseEnter={e => {
+              if (resizingHeight == null) (e.currentTarget as HTMLElement).style.background = 'rgba(100,160,255,0.10)';
+            }}
+            onMouseLeave={e => {
+              if (resizingHeight == null) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
+            }}
+          >
+            <span style={{
+              fontSize: 10,
+              lineHeight: 1,
+              color: 'rgba(255,255,255,0.25)',
+              letterSpacing: 2,
+              pointerEvents: 'none',
+            }}>
+              ⋯
+            </span>
+          </div>
+        )}
 
         {/* Mini toolbar in edit mode */}
         {isEditable && stageBlocks.length > 0 && (
