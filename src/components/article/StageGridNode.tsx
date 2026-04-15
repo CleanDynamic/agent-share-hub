@@ -65,13 +65,18 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
   const columnCount = doc?.columnCount ?? 12;
   const colWidth = containerWidth > 0 ? containerWidth / columnCount : 0;
 
-  // Calculate canvas height from blocks
+  // Calculate canvas height from blocks (using pixel positions when available)
   const canvasHeight = useMemo(() => {
     if (stageBlocks.length === 0) return isEditable ? 200 : 120;
-    const maxRow = Math.max(
-      ...stageBlocks.map((b: CanvasBlockType) => b.position.row + b.position.rowSpan)
+    const maxBottom = Math.max(
+      ...stageBlocks.map((b: CanvasBlockType) => {
+        const blockH = b.position.rowSpan * rowHeight;
+        if (b.position_y != null) return b.position_y + blockH;
+        // Fallback: derive from grid position
+        return (b.position.row - 1) * rowHeight + blockH;
+      })
     );
-    return Math.max((maxRow + 2) * rowHeight, isEditable ? 200 : 120);
+    return Math.max(maxBottom + 2 * rowHeight, isEditable ? 200 : 120);
   }, [stageBlocks, rowHeight, isEditable]);
 
   // Stage colour
@@ -95,6 +100,7 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
     const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
     const blockId = crypto.randomUUID();
 
+    const blockH = 5 * rowHeight;
     const newBlock: CanvasBlockType = {
       id: blockId,
       type,
@@ -106,6 +112,8 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
         colSpan: 3,
         rowSpan: 5,
       },
+      position_x: 20,
+      position_y: existingCount * (blockH + 16),
       stageId,
       stageIndex: null,
       isLocked: false,
@@ -128,6 +136,8 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
       canvas_row: existingCount * 120,
       canvas_col_span: 3,
       canvas_row_span: 5,
+      position_x: 20,
+      position_y: existingCount * (blockH + 16),
       stage_id: stageId,
       position: existingCount,
     } as any);

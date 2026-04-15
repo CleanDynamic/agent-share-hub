@@ -226,6 +226,8 @@ export function useCanvasDocument(
           colSpan,
           rowSpan: position?.rowSpan ?? 5,
         },
+        position_x: null,
+        position_y: null,
         stageId: null,
         stageIndex: null,
         isLocked: false,
@@ -298,6 +300,10 @@ export function useCanvasDocument(
           ...source.position,
           row: source.position.row + source.position.rowSpan + 1,
         },
+        position_x: source.position_x,
+        position_y: source.position_y != null
+          ? source.position_y + source.position.rowSpan * 24 + 16
+          : null,
       };
       setBlocks(prev => [...prev, newBlock]);
       return newBlock.id;
@@ -455,6 +461,8 @@ export function useCanvasDocument(
           canvas_row: block.position.row,
           canvas_col_span: block.position.colSpan,
           canvas_row_span: block.position.rowSpan,
+          position_x: block.position_x,
+          position_y: block.position_y,
           stage_id: block.stageId,
           stage_index: block.stageIndex,
           is_locked: block.isLocked,
@@ -615,6 +623,8 @@ function adaptDbBlock(row: any): CanvasBlock {
       colSpan: row.canvas_col_span ?? 12,
       rowSpan: row.canvas_row_span ?? 1,
     },
+    position_x: row.position_x ?? null,
+    position_y: row.position_y ?? null,
     stageId: row.stage_id ?? null,
     stageIndex: row.stage_index ?? null,
     isLocked: row.is_locked ?? false,
