@@ -346,6 +346,8 @@ export function useCanvasDocument(
         colSpan,
         rowSpan: 5,
       },
+      position_x: null,
+      position_y: null,
       stageId,
       stageIndex: null,
       isLocked: false,
