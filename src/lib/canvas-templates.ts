@@ -459,6 +459,151 @@ export const BLOCK_TEMPLATES: BlockTemplate[] = [
       },
     ],
   },
+
+  // ─── Starter templates ──────────────────────────
+  {
+    id: 'prompt-engineering-pattern',
+    label: 'Prompt Engineering Pattern',
+    description:
+      'System + user prompts converging on a result',
+    category: 'prompt',
+    blocks: [
+      {
+        type: 'prompt',
+        subheading: 'System Prompt',
+        placeholder:
+          'Define the system-level instructions...',
+        position: {
+          col: 1, row: 1,
+          colSpan: 3, rowSpan: 5,
+        },
+      },
+      {
+        type: 'prompt',
+        subheading: 'User Prompt',
+        placeholder:
+          'Write the user-facing prompt...',
+        position: {
+          col: 4, row: 1,
+          colSpan: 3, rowSpan: 5,
+        },
+      },
+      {
+        type: 'result',
+        subheading: 'Result',
+        placeholder:
+          'Paste the model output...',
+        position: {
+          col: 2, row: 7,
+          colSpan: 3, rowSpan: 5,
+        },
+      },
+    ],
+    arrows: [
+      {
+        fromIndex: 0, toIndex: 2,
+        fromEdge: 'bottom', toEdge: 'top',
+        arrowType: 'produces',
+      },
+      {
+        fromIndex: 1, toIndex: 2,
+        fromEdge: 'bottom', toEdge: 'top',
+        arrowType: 'produces',
+      },
+    ],
+  },
+
+  {
+    id: 'agent-setup',
+    label: 'Agent Setup',
+    description:
+      'Agent config and tools feeding a workflow',
+    category: 'agent',
+    blocks: [
+      {
+        type: 'agent_config',
+        subheading: 'Agent Config',
+        placeholder:
+          'Model, capabilities, constraints...',
+        position: {
+          col: 1, row: 1,
+          colSpan: 3, rowSpan: 5,
+        },
+      },
+      {
+        type: 'tool_setup',
+        subheading: 'Tool',
+        placeholder:
+          'External tools the agent uses...',
+        position: {
+          col: 4, row: 1,
+          colSpan: 3, rowSpan: 5,
+        },
+      },
+      {
+        type: 'workflow',
+        subheading: 'Workflow',
+        placeholder:
+          'How the agent processes tasks...',
+        position: {
+          col: 2, row: 7,
+          colSpan: 3, rowSpan: 5,
+        },
+      },
+    ],
+    arrows: [],
+  },
+
+  {
+    id: 'compare-evaluate',
+    label: 'Compare & Evaluate',
+    description:
+      'One prompt, two results, side-by-side comparison',
+    category: 'comparison',
+    blocks: [
+      {
+        type: 'prompt',
+        subheading: 'Prompt',
+        placeholder:
+          'The prompt being tested...',
+        position: {
+          col: 1, row: 1,
+          colSpan: 3, rowSpan: 5,
+        },
+      },
+      {
+        type: 'result',
+        subheading: 'Result A',
+        placeholder:
+          'Output from model / config A...',
+        position: {
+          col: 4, row: 1,
+          colSpan: 3, rowSpan: 5,
+        },
+      },
+      {
+        type: 'result',
+        subheading: 'Result B',
+        placeholder:
+          'Output from model / config B...',
+        position: {
+          col: 7, row: 1,
+          colSpan: 3, rowSpan: 5,
+        },
+      },
+      {
+        type: 'comparison',
+        subheading: 'Compare',
+        placeholder:
+          'Which result is better and why...',
+        position: {
+          col: 4, row: 8,
+          colSpan: 3, rowSpan: 5,
+        },
+      },
+    ],
+    arrows: [],
+  },
 ];
 
 // ─── Template scaling ────────────────────────────
