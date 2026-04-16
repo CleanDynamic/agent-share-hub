@@ -83,8 +83,11 @@ export function BubbleToolbar({ editor, containerRef }: BubbleToolbarProps) {
       key: 'underline',
       icon: <Underline size={16} />,
       label: 'Underline',
-      isActive: () => editor.isActive('underline'),
-      action: () => editor.chain().focus().toggleUnderline().run(),
+      isActive: () => false,
+      action: () => {
+        // Underline not available as extension — apply via inline style
+        document.execCommand('underline');
+      },
     },
     {
       key: 'strike',
@@ -120,8 +123,11 @@ export function BubbleToolbar({ editor, containerRef }: BubbleToolbarProps) {
       key: 'highlight',
       icon: <Highlighter size={16} />,
       label: 'Highlight',
-      isActive: () => editor.isActive('highlight'),
-      action: () => editor.chain().focus().toggleHighlight().run(),
+      isActive: () => false,
+      action: () => {
+        // Highlight mark not loaded — use execCommand as fallback
+        document.execCommand('hiliteColor', false, 'rgba(232,87,26,0.2)');
+      },
     },
   ];
 
