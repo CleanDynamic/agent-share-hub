@@ -44,24 +44,28 @@ function CollapsibleSection({
           display: 'flex', alignItems: 'center', gap: 6,
           width: '100%', padding: '8px 0',
           background: 'none', border: 'none', cursor: 'pointer',
-          color: 'rgba(255,255,255,0.55)', fontSize: 11,
-          fontWeight: 600, textTransform: 'uppercase',
-          letterSpacing: '0.06em',
+          color: 'rgba(255,255,255,0.45)', fontSize: 12,
+          fontWeight: 500,
+          letterSpacing: '0.04em',
+          fontFamily: 'Inter, sans-serif',
+          textTransform: 'none' as const,
         }}
       >
         <ChevronRight
           size={12}
           style={{
+            color: 'rgba(255,255,255,0.30)',
             transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-            transition: 'transform 0.15s',
+            transition: 'transform 200ms',
             flexShrink: 0,
           }}
         />
         {label}
         {required && isEmpty && (
           <span style={{
-            width: 6, height: 6, borderRadius: '50%',
-            background: '#EF4444', flexShrink: 0,
+            width: 4, height: 4, borderRadius: '50%',
+            background: '#E8571A', flexShrink: 0,
+            marginLeft: 6,
           }} />
         )}
       </button>
@@ -92,6 +96,8 @@ export function CanvasHeader({
   const [titleOpen, setTitleOpen] = useState(false);
   const [descOpen, setDescOpen] = useState(false);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [titleFocused, setTitleFocused] = useState(false);
+  const [descFocused, setDescFocused] = useState(false);
 
   // Post type colour config
   const typeColors: Record<string, {
@@ -243,18 +249,23 @@ export function CanvasHeader({
         <input
           value={title}
           onChange={e => onTitleChange?.(e.target.value)}
+          onFocus={() => setTitleFocused(true)}
+          onBlur={() => setTitleFocused(false)}
           placeholder="Title your Blueprint..."
           maxLength={120}
           style={{
             width: '100%',
-            fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: 20, fontWeight: 700,
-            color: 'rgba(255,255,255,0.95)',
-            background: 'transparent', border: 'none',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            outline: 'none', padding: '2px 0 8px 0',
-            lineHeight: 1.25, letterSpacing: '-0.3px',
-            boxSizing: 'border-box',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 15, fontWeight: 400,
+            color: 'rgba(255,255,255,0.90)',
+            background: 'rgba(255,255,255,0.02)',
+            border: `1px solid ${titleFocused ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)'}`,
+            borderRadius: 8,
+            outline: 'none',
+            padding: '12px 16px',
+            lineHeight: 1.4,
+            boxSizing: 'border-box' as const,
+            transition: 'border-color 200ms',
           }}
         />
       </CollapsibleSection>
@@ -270,27 +281,35 @@ export function CanvasHeader({
         <textarea
           value={description}
           onChange={e => onDescriptionChange?.(e.target.value)}
+          onFocus={() => setDescFocused(true)}
+          onBlur={() => setDescFocused(false)}
           placeholder="Describe what this is and why it matters..."
           rows={2}
           maxLength={500}
           style={{
-            width: '100%', fontSize: 13,
-            color: 'rgba(255,255,255,0.62)',
-            lineHeight: 1.70, background: 'transparent',
-            border: 'none', outline: 'none',
-            resize: 'none', padding: 0,
+            width: '100%', fontSize: 15, fontWeight: 400,
+            color: 'rgba(255,255,255,0.90)',
+            lineHeight: 1.4,
+            background: 'rgba(255,255,255,0.02)',
+            border: `1px solid ${descFocused ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)'}`,
+            borderRadius: 8,
+            outline: 'none',
+            resize: 'none',
+            padding: '12px 16px',
+            minHeight: 60,
             fontFamily: 'Inter, sans-serif',
-            boxSizing: 'border-box',
+            boxSizing: 'border-box' as const,
+            transition: 'border-color 200ms',
           }}
         />
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)', textAlign: 'right' }}>
+        <div style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.25)', textAlign: 'right', fontFamily: 'Inter, sans-serif', marginTop: 4 }}>
           {description.length} / 500
         </div>
       </CollapsibleSection>
 
-      {/* ── Your Results / Evidence (collapsible) ── */}
+      {/* ── Your results / Evidence (collapsible) ── */}
       <CollapsibleSection
-        label="Your Results"
+        label="Your results"
         open={evidenceOpen}
         onToggle={() => setEvidenceOpen(o => !o)}
       >
@@ -330,18 +349,21 @@ function EvidenceEditor({
   return (
     <div>
       {/* Media type toggle */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
         {TYPES.map(t => (
           <button
             key={t.value}
             type="button"
             onClick={() => onMediaTypeChange?.(t.value)}
             style={{
-              padding: '3px 10px', borderRadius: 6, fontSize: 11,
+              padding: '4px 12px', borderRadius: 6, fontSize: 11,
+              height: 28,
               cursor: 'pointer',
-              background: mediaType === t.value ? 'rgba(139,69,19,0.18)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${mediaType === t.value ? 'rgba(139,69,19,0.35)' : 'rgba(255,255,255,0.08)'}`,
-              color: mediaType === t.value ? '#8B4513' : 'rgba(255,255,255,0.45)',
+              background: mediaType === t.value ? 'rgba(232,87,26,0.10)' : 'transparent',
+              border: `1px solid ${mediaType === t.value ? 'rgba(232,87,26,0.3)' : 'rgba(255,255,255,0.08)'}`,
+              color: mediaType === t.value ? '#E8571A' : 'rgba(255,255,255,0.45)',
+              fontFamily: 'Inter, sans-serif',
+              transition: 'all 200ms',
             }}
           >
             {t.label}

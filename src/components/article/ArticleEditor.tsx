@@ -32,6 +32,8 @@ export function ArticleEditor({
   const [slashQuery, setSlashQuery] = useState('');
   const [slashPos, setSlashPos] = useState<{ top: number; left: number } | null>(null);
   const [slashSelectedIndex, setSlashSelectedIndex] = useState(0);
+  const [editorFocused, setEditorFocused] = useState(false);
+  const [insertHovered, setInsertHovered] = useState(false);
   const slashStartPos = useRef<number | null>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
 
@@ -40,8 +42,6 @@ export function ArticleEditor({
     const title = `Stage ${stageNum}`;
     canvasDoc.addStage(title);
     const newStage = canvasDoc.stages[canvasDoc.stages.length]; // Will be updated after state
-    // Use the stage ID from the hook - we need to get it after the state update
-    // Since addStage doesn't return the ID, we generate one here and pass it
     const stageId = crypto.randomUUID();
     return stageId;
   }, [canvasDoc]);
@@ -52,22 +52,15 @@ export function ArticleEditor({
     const stageId = crypto.randomUUID();
     const title = `Stage ${stageNum}`;
 
-    // Directly add stage via canvas doc
     canvasDoc.addStage(title);
 
-    // The last stage added should have the ID - but addStage generates its own
-    // We need to get it from the stages after the next render
-    // For now, use the most recently added stage
     setTimeout(() => {
       const latestStage = canvasDoc.stages[canvasDoc.stages.length - 1];
       if (latestStage) {
         // Update the TipTap node with the real stage ID
-        // This happens automatically since we reference by stageId attr
       }
     }, 100);
 
-    // Return the last stage ID that will exist after the add
-    // Since we can't predict it, we'll return a temp one and update
     return stageId;
   }, [canvasDoc]);
 
@@ -75,7 +68,7 @@ export function ArticleEditor({
     editable,
     extensions: [
       StarterKit.configure({
-        codeBlock: false, // We use lowlight version
+        codeBlock: false,
         heading: { levels: [1, 2, 3] },
       }),
       Placeholder.configure({
@@ -98,7 +91,6 @@ export function ArticleEditor({
         onSelectedStageChange(selectedNode.attrs?.stageId ?? null);
         return;
       }
-      // Also treat cursor inside a stageGrid's parent chain as "focused"
       const { $from } = selection;
       for (let depth = $from.depth; depth >= 0; depth--) {
         const node = $from.node(depth);
@@ -112,13 +104,11 @@ export function ArticleEditor({
     onUpdate: ({ editor }) => {
       onChange?.(editor.getJSON());
 
-      // Slash command detection
       const { state } = editor;
       const { $from } = state.selection;
       const textBefore = $from.parent.textContent.slice(0, $from.parentOffset);
 
       if (textBefore.endsWith('/') && !slashOpen) {
-        // Open slash menu
         const coords = editor.view.coordsAtPos($from.pos);
         const containerRect = editorContainerRef.current?.getBoundingClientRect();
         if (containerRect) {
@@ -192,12 +182,10 @@ export function ArticleEditor({
   const executeSlashCommand = useCallback((item: SlashCommandItem) => {
     if (!editor || slashStartPos.current === null) return;
 
-    // Delete the "/" and any query text
     const from = slashStartPos.current;
     const to = editor.state.selection.$from.pos;
     editor.chain().focus().deleteRange({ from, to }).run();
 
-    // Execute the command
     item.action(editor);
 
     setSlashOpen(false);
@@ -247,6 +235,24 @@ export function ArticleEditor({
     if (item) item.action(editor);
   };
 
+  // Track editor focus via focusin/focusout on the container
+  useEffect(() => {
+    const container = editorContainerRef.current;
+    if (!container) return;
+    const onFocusIn = () => setEditorFocused(true);
+    const onFocusOut = (e: FocusEvent) => {
+      if (!container.contains(e.relatedTarget as Node)) {
+        setEditorFocused(false);
+      }
+    };
+    container.addEventListener('focusin', onFocusIn);
+    container.addEventListener('focusout', onFocusOut);
+    return () => {
+      container.removeEventListener('focusin', onFocusIn);
+      container.removeEventListener('focusout', onFocusOut);
+    };
+  }, []);
+
   return (
     <div
       ref={editorContainerRef}
@@ -259,9 +265,13 @@ export function ArticleEditor({
           color: rgba(255,255,255,0.82);
           line-height: 1.7;
           font-size: 14px;
-          padding: 0 4px;
-          min-height: 200px;
+          padding: 24px 20px;
+          min-height: 300px;
           outline: none;
+          background: rgba(255,255,255,0.015);
+          border-radius: 8px;
+          border: 1px solid ${editorFocused ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)'};
+          transition: border-color 200ms;
         }
         .tiptap-article h1 {
           font-family: 'Playfair Display', serif;
@@ -289,7 +299,7 @@ export function ArticleEditor({
           letter-spacing: 0.04em;
         }
         .tiptap-article p {
-          margin: 0 0 12px;
+          margin: 0 0 16px;
         }
         .tiptap-article blockquote {
           border-left: 3px solid rgba(139,69,19,0.4);
@@ -340,6 +350,9 @@ export function ArticleEditor({
           pointer-events: none;
           height: 0;
           font-style: italic;
+          font-family: 'Inter', sans-serif;
+          font-size: 14px;
+          font-weight: 400;
         }
         .tiptap-article p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
@@ -348,6 +361,9 @@ export function ArticleEditor({
           pointer-events: none;
           height: 0;
           font-style: italic;
+          font-family: 'Inter', sans-serif;
+          font-size: 14px;
+          font-weight: 400;
         }
       `}</style>
 
@@ -380,48 +396,39 @@ export function ArticleEditor({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
-          padding: '8px 0',
-          marginTop: 8,
-          borderTop: '1px solid rgba(255,255,255,0.06)',
+          justifyContent: 'center',
+          padding: '12px 0',
+          marginTop: 12,
         }}>
-          {/* Quick insert button */}
+          {/* Centered insert button */}
           <button
             onClick={() => {
               if (editor) {
                 editor.chain().focus().run();
-                // Simulate typing /
                 const pos = editor.state.selection.$from.pos;
                 editor.chain().insertContentAt(pos, '/').run();
               }
             }}
+            onMouseEnter={() => setInsertHovered(true)}
+            onMouseLeave={() => setInsertHovered(false)}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
-              padding: '4px 10px',
-              fontSize: 11,
-              fontWeight: 600,
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 6,
-              color: 'rgba(255,255,255,0.40)',
+              gap: 6,
+              padding: '8px 20px',
+              fontSize: 12,
+              fontWeight: 500,
+              fontFamily: 'Inter, sans-serif',
+              background: insertHovered ? 'rgba(255,255,255,0.02)' : 'transparent',
+              border: `1px dashed ${insertHovered ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.10)'}`,
+              borderRadius: 8,
+              color: insertHovered ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.35)',
               cursor: 'pointer',
+              transition: 'all 200ms',
             }}
           >
-            <Plus size={12} /> Insert
+            <Plus size={14} /> Insert
           </button>
-
-          {/* Structure stats */}
-          <span style={{
-            marginLeft: 'auto',
-            fontSize: 10,
-            color: 'rgba(255,255,255,0.20)',
-            fontFamily: 'Inter, sans-serif',
-            letterSpacing: '0.05em',
-          }}>
-            {stats.paragraphs}¶ {stats.headings}H {stats.grids}⊞
-          </span>
         </div>
       )}
     </div>
