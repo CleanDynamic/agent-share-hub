@@ -6,7 +6,7 @@ import { ArrowOverlay } from '@/components/canvas/ArrowOverlay';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
 import type { CanvasBlock as CanvasBlockType, BlockArrow } from '@/lib/canvas-types';
 import { gridToPixels, nearestEdge, getEdgeMidpoint, orthogonalPath, getBlockSnapPoints } from '@/lib/canvas-utils';
-import { Plus, GripVertical } from 'lucide-react';
+import { Plus, GripVertical, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface StageGridNodeProps {
@@ -26,6 +26,38 @@ function useArticleCanvasDoc(editor: any) {
 const STAGE_MIN_HEIGHT = 200;
 const STAGE_MAX_HEIGHT = 800;
 
+// Block type colours
+const BLOCK_TYPE_COLORS: Record<string, { dot: string; hoverBg: string; hoverBorder: string }> = {
+  text: { dot: 'rgba(255,255,255,0.50)', hoverBg: 'rgba(255,255,255,0.06)', hoverBorder: 'rgba(255,255,255,0.20)' },
+  prompt: { dot: '#E8571A', hoverBg: 'rgba(232,87,26,0.06)', hoverBorder: 'rgba(232,87,26,0.25)' },
+  code: { dot: '#16A34A', hoverBg: 'rgba(22,163,74,0.06)', hoverBorder: 'rgba(22,163,74,0.25)' },
+  result: { dot: '#7C3AED', hoverBg: 'rgba(124,58,237,0.06)', hoverBorder: 'rgba(124,58,237,0.25)' },
+};
+
+function getBlockTypeColor(type: string) {
+  return BLOCK_TYPE_COLORS[type] ?? BLOCK_TYPE_COLORS.text;
+}
+
+// Compute stage index from document
+function useStageIndex(editor: any, stageId: string | null): number {
+  return useMemo(() => {
+    if (!editor || !stageId) return 1;
+    let index = 1;
+    try {
+      editor.state.doc.descendants((node: any) => {
+        if (node.type.name === 'stageGrid') {
+          if (node.attrs.stageId === stageId) return false; // stop
+          index++;
+        }
+        return true;
+      });
+    } catch {
+      // fallback
+    }
+    return index;
+  }, [editor, stageId, editor?.state?.doc]);
+}
+
 export function StageGridNode({ node, updateAttributes, editor, selected, getPos }: StageGridNodeProps) {
   const stageId = node.attrs.stageId as string | null;
   const stageTitle = node.attrs.stageTitle as string;
@@ -38,7 +70,11 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
   const [titleDraft, setTitleDraft] = useState(stageTitle);
   const [localBlocks, setLocalBlocks] = useState<CanvasBlockType[]>([]);
   const [resizingHeight, setResizingHeight] = useState<number | null>(null);
+  const [gripHovered, setGripHovered] = useState(false);
+  const [closeHovered, setCloseHovered] = useState(false);
+  const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const isEditable = editor?.isEditable ?? false;
+  const stageIndex = useStageIndex(editor, stageId);
 
   // Measure container width
   useEffect(() => {
@@ -71,21 +107,19 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
   const columnCount = doc?.columnCount ?? 12;
   const colWidth = containerWidth > 0 ? containerWidth / columnCount : 0;
 
-  // Calculate canvas height from blocks (using pixel positions when available)
+  // Calculate canvas height from blocks
   const canvasHeight = useMemo(() => {
     if (stageBlocks.length === 0) return isEditable ? 200 : 120;
     const maxBottom = Math.max(
       ...stageBlocks.map((b: CanvasBlockType) => {
         const blockH = b.position.rowSpan * rowHeight;
         if (b.position_y != null) return b.position_y + blockH;
-        // Fallback: derive from grid position
         return (b.position.row - 1) * rowHeight + blockH;
       })
     );
     return Math.max(maxBottom + 2 * rowHeight, isEditable ? 200 : 120);
   }, [stageBlocks, rowHeight, isEditable]);
 
-  // Effective height: resizing preview → persisted → auto-calculated
   const effectiveHeight = resizingHeight ?? persistedHeight ?? canvasHeight;
 
   // Resize handle drag logic
@@ -113,7 +147,6 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
     document.addEventListener('mouseup', onMouseUp);
   }, [isEditable, effectiveHeight, updateAttributes]);
 
-  // Stage colour
   const stage = doc?.stages?.find((s: any) => s.id === stageId);
   const stageColour = stage?.colour ?? 'rgba(200,200,210,0.06)';
 
@@ -126,6 +159,14 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
       );
     }
   };
+
+  const handleDeleteStage = useCallback(() => {
+    if (!editor || typeof getPos !== 'function') return;
+    const pos = getPos();
+    if (typeof pos !== 'number') return;
+    const nodeSize = node.nodeSize;
+    editor.chain().focus().deleteRange({ from: pos, to: pos + nodeSize }).run();
+  }, [editor, getPos, node]);
 
   const handleAddBlock = useCallback(async (type: string) => {
     if (!doc || !stageId || !doc.contentId) return;
@@ -156,10 +197,8 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
       creatorAnnotation: null,
     };
 
-    // Optimistic local state — block appears immediately
     setLocalBlocks(prev => [...prev, newBlock]);
 
-    // Persist to Supabase
     await supabase.from('content_blocks').insert({
       id: blockId,
       content_id: doc.contentId,
@@ -200,9 +239,6 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
     if (!editor || typeof getPos !== 'function') return;
     const pos = getPos();
     if (typeof pos !== 'number') return;
-    // Move ProseMirror's NodeSelection to this stage grid. This propagates
-    // via onSelectionUpdate in ArticleEditor → selectedStageId in Upload,
-    // and also drives the `selected` prop that styles the border below.
     editor.commands.setNodeSelection(pos);
   };
 
@@ -221,30 +257,54 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
           transition: 'border-color 0.15s',
         }}
       >
-        {/* Stage header */}
+        {/* F-1: Refined stage header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: 8,
           padding: '8px 12px',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
-          background: 'rgba(200,200,210,0.04)',
+          background: 'rgba(255,255,255,0.03)',
         }}>
           {isEditable && (
             <div
               data-drag-handle
-              style={{ cursor: 'grab', color: 'rgba(255,255,255,0.20)' }}
+              onMouseEnter={() => setGripHovered(true)}
+              onMouseLeave={() => setGripHovered(false)}
+              style={{
+                cursor: 'grab',
+                color: gripHovered ? 'rgba(255,255,255,0.40)' : 'rgba(255,255,255,0.20)',
+                transition: 'color 150ms',
+                display: 'flex',
+                alignItems: 'center',
+              }}
             >
               <GripVertical size={14} />
             </div>
           )}
+
+          {/* Numbered badge */}
           <div style={{
-            width: 6,
-            height: 6,
+            width: 20,
+            height: 20,
             borderRadius: '50%',
-            background: stageColour.replace('0.06', '0.5'),
+            background: 'rgba(232,87,26,0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             flexShrink: 0,
-          }} />
+          }}>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: '#E8571A',
+              fontFamily: 'Inter, sans-serif',
+              lineHeight: 1,
+            }}>
+              {stageIndex}
+            </span>
+          </div>
+
           {isEditingTitle && isEditable ? (
             <input
               autoFocus
@@ -261,7 +321,7 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
                 color: 'rgba(255,255,255,0.85)',
                 fontSize: 13,
                 fontWeight: 600,
-                fontFamily: "'Playfair Display', serif",
+                fontFamily: 'Inter, sans-serif',
                 outline: 'none',
               }}
             />
@@ -272,23 +332,58 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
                 flex: 1,
                 fontSize: 13,
                 fontWeight: 600,
-                color: 'rgba(255,255,255,0.75)',
-                fontFamily: "'Playfair Display', serif",
+                color: 'rgba(255,255,255,0.80)',
+                fontFamily: 'Inter, sans-serif',
                 cursor: isEditable ? 'text' : 'default',
-                letterSpacing: '0.02em',
               }}
               title={isEditable ? 'Click to rename' : undefined}
             >
               {stageTitle}
             </span>
           )}
+
+          {/* Block counter badge */}
           <span style={{
-            fontSize: 10,
-            color: 'rgba(255,255,255,0.25)',
+            fontSize: 11,
+            fontWeight: 400,
+            color: 'rgba(255,255,255,0.30)',
             fontFamily: 'Inter, sans-serif',
+            padding: '2px 8px',
+            background: 'rgba(255,255,255,0.04)',
+            borderRadius: 10,
           }}>
             {stageBlocks.length} block{stageBlocks.length !== 1 ? 's' : ''}
           </span>
+
+          {/* Delete button */}
+          {isEditable && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteStage();
+              }}
+              onMouseEnter={() => setCloseHovered(true)}
+              onMouseLeave={() => setCloseHovered(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 20,
+                height: 20,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: closeHovered ? 'rgba(239,68,68,0.80)' : 'rgba(255,255,255,0.20)',
+                fontSize: 14,
+                padding: 0,
+                transition: 'color 150ms',
+                flexShrink: 0,
+              }}
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
 
         {/* Mini canvas grid */}
@@ -313,7 +408,7 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
             />
           )}
 
-          {/* Blocks */}
+          {/* F-3: Block cards */}
           {colWidth > 0 && stageBlocks.map((block: CanvasBlockType) => (
             <CanvasBlock
               key={block.id}
@@ -378,7 +473,7 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
             />
           )}
 
-          {/* Empty state */}
+          {/* F-2: Refined empty state */}
           {stageBlocks.length === 0 && (
             <div style={{
               display: 'flex',
@@ -387,32 +482,61 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
               justifyContent: 'center',
               height: '100%',
               minHeight: effectiveHeight,
-              gap: 8,
-              color: 'rgba(255,255,255,0.25)',
-              fontSize: 12,
+              position: 'relative',
             }}>
-              <div>No blocks in this stage</div>
+              <div style={{
+                fontSize: 12,
+                fontWeight: 400,
+                color: 'rgba(255,255,255,0.18)',
+                fontFamily: 'Inter, sans-serif',
+                marginBottom: 'auto',
+                marginTop: 'auto',
+              }}>
+                Drop blocks here or tap below
+              </div>
+
+              {/* F-2: Block insertion buttons at bottom */}
               {isEditable && (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {['text', 'prompt', 'code', 'result'].map(type => (
-                    <button
-                      key={type}
-                      onClick={() => handleAddBlock(type)}
-                      style={{
-                        padding: '4px 10px',
-                        fontSize: 10,
-                        fontWeight: 600,
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid rgba(255,255,255,0.10)',
-                        borderRadius: 6,
-                        color: 'rgba(255,255,255,0.45)',
-                        cursor: 'pointer',
-                        textTransform: 'capitalize',
-                      }}
-                    >
-                      + {type}
-                    </button>
-                  ))}
+                <div style={{
+                  display: 'flex',
+                  gap: 8,
+                  justifyContent: 'center',
+                  marginBottom: 12,
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                }}>
+                  {['text', 'prompt', 'code', 'result'].map(type => {
+                    const tc = getBlockTypeColor(type);
+                    const isHov = hoveredButton === type;
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => handleAddBlock(type)}
+                        onMouseEnter={() => setHoveredButton(type)}
+                        onMouseLeave={() => setHoveredButton(null)}
+                        style={{
+                          height: 30,
+                          padding: '0 12px',
+                          fontSize: 11,
+                          fontWeight: 500,
+                          fontFamily: 'Inter, sans-serif',
+                          background: isHov ? tc.hoverBg : 'transparent',
+                          border: `1px dashed ${isHov ? tc.hoverBorder : 'rgba(255,255,255,0.10)'}`,
+                          borderRadius: 6,
+                          color: 'rgba(255,255,255,0.40)',
+                          cursor: 'pointer',
+                          textTransform: 'capitalize' as const,
+                          transition: 'all 150ms',
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                      >
+                        + {type}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -454,41 +578,47 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
           </div>
         )}
 
-        {/* Mini toolbar in edit mode */}
+        {/* Mini toolbar when blocks exist */}
         {isEditable && stageBlocks.length > 0 && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 4,
-            padding: '6px 12px',
+            justifyContent: 'center',
+            gap: 8,
+            padding: '8px 12px',
             borderTop: '1px solid rgba(255,255,255,0.06)',
             background: 'rgba(200,200,210,0.03)',
           }}>
-            <button
-              onClick={() => handleAddBlock('text')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '3px 10px',
-                fontSize: 10,
-                fontWeight: 600,
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 6,
-                color: 'rgba(255,255,255,0.40)',
-                cursor: 'pointer',
-              }}
-            >
-              <Plus size={10} /> Block
-            </button>
-            <span style={{
-              marginLeft: 'auto',
-              fontSize: 10,
-              color: 'rgba(255,255,255,0.20)',
-            }}>
-              {stageBlocks.length} block{stageBlocks.length !== 1 ? 's' : ''}
-            </span>
+            {['text', 'prompt', 'code', 'result'].map(type => {
+              const tc = getBlockTypeColor(type);
+              const isHov = hoveredButton === `bottom-${type}`;
+              return (
+                <button
+                  key={type}
+                  onClick={() => handleAddBlock(type)}
+                  onMouseEnter={() => setHoveredButton(`bottom-${type}`)}
+                  onMouseLeave={() => setHoveredButton(null)}
+                  style={{
+                    height: 30,
+                    padding: '0 12px',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    fontFamily: 'Inter, sans-serif',
+                    background: isHov ? tc.hoverBg : 'transparent',
+                    border: `1px dashed ${isHov ? tc.hoverBorder : 'rgba(255,255,255,0.10)'}`,
+                    borderRadius: 6,
+                    color: 'rgba(255,255,255,0.40)',
+                    cursor: 'pointer',
+                    textTransform: 'capitalize' as const,
+                    transition: 'all 150ms',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Plus size={10} style={{ marginRight: 4 }} /> {type}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
