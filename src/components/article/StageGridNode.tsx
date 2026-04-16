@@ -245,6 +245,7 @@ export function StageGridNode({ node, updateAttributes, editor, selected, getPos
   return (
     <NodeViewWrapper>
       <div
+        data-stage-id={stageId ?? undefined}
         onClick={handleSelect}
         style={{
           margin: '16px 0',

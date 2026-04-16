@@ -4,6 +4,7 @@ import ImageExtension from '@tiptap/extension-image';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
 import { StageGridExtension } from './StageGridExtension';
+import { BlockRefExtension } from '@/components/canvas/tiptap/BlockRefExtension';
 import { useEffect } from 'react';
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
 
@@ -25,6 +26,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
       ImageExtension.configure({ inline: false }),
       CodeBlockLowlight.configure({ lowlight }),
       StageGridExtension,
+      BlockRefExtension,
     ],
     content: content || { type: 'doc', content: [{ type: 'paragraph' }] },
   }, [content]);
