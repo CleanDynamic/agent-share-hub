@@ -5,6 +5,7 @@ import ImageExtension from '@tiptap/extension-image';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
 import { StageGridExtension } from './StageGridExtension';
+import { FormattingShortcuts } from './KeyboardShortcutsExtension';
 import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
 import type { SlashCommandItem } from './SlashCommandMenu';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
@@ -78,6 +79,7 @@ export function ArticleEditor({
       ImageExtension.configure({ inline: false }),
       CodeBlockLowlight.configure({ lowlight }),
       StageGridExtension,
+      FormattingShortcuts,
     ],
     content: initialContent || {
       type: 'doc',
