@@ -39,6 +39,7 @@ import { ArticleEditor } from '@/components/article/ArticleEditor';
 import type { EvidenceMediaType } from '@/components/canvas/CanvasHeader';
 import { CanvasHeader } from '@/components/canvas/CanvasHeader';
 import { CanvasToolbar } from '@/components/canvas/CanvasToolbar';
+import { TemplateLibrary } from '@/components/canvas/TemplateLibrary';
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -232,6 +233,7 @@ const Upload = () => {
   const [wteBlocks, setWteBlocks] = useState<WteBlock[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
+  const [templateLibOpen, setTemplateLibOpen] = useState(false);
   const [success, setSuccess] = useState(false);
   const [insertedContentId, setInsertedContentId] = useState<string | null>(null);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
@@ -1317,7 +1319,7 @@ const Upload = () => {
             }
             return id;
           }}
-          onTemplates={() => {}}
+          onTemplates={() => setTemplateLibOpen(true)}
           onHistory={() => {}}
           onAnnotations={() => {}}
           onGrammarCheck={() => {}}
@@ -1326,6 +1328,75 @@ const Upload = () => {
           onZoomIn={() => {}}
           onZoomOut={() => {}}
           onClearAll={() => {}}
+        />
+
+        {/* Template library panel */}
+        <TemplateLibrary
+          open={templateLibOpen}
+          onClose={() => setTemplateLibOpen(false)}
+          currentBlocks={canvasDoc.blocks}
+          onApply={(newBlocks, newArrows) => {
+            const prepared = newBlocks.map(b => ({
+              ...b,
+              id: b.id ?? crypto.randomUUID(),
+            }));
+
+            // Determine target stage
+            let targetStageId =
+              selectedStageId &&
+              canvasDoc.stages.some(s => s.id === selectedStageId)
+                ? selectedStageId
+                : null;
+
+            let updatedStages = canvasDoc.stages;
+
+            // If no stage is selected, create a new one
+            if (!targetStageId) {
+              const STAGE_COLOURS = [
+                'rgba(232,87,26,0.06)', 'rgba(46,196,182,0.06)',
+                'rgba(124,58,237,0.06)', 'rgba(59,130,246,0.06)',
+                'rgba(245,158,11,0.06)', 'rgba(34,197,94,0.06)',
+              ];
+              targetStageId = crypto.randomUUID();
+              const stageNum = canvasDoc.stages.length + 1;
+              updatedStages = [
+                ...canvasDoc.stages,
+                {
+                  id: targetStageId,
+                  contentId: canvasDoc.contentId ?? '',
+                  stageNumber: stageNum,
+                  title: `Stage ${stageNum}`,
+                  description: null,
+                  estimatedMinutes: null,
+                  difficulty: null,
+                  blockIds: [],
+                  colour: STAGE_COLOURS[
+                    canvasDoc.stages.length % STAGE_COLOURS.length
+                  ],
+                },
+              ];
+            }
+
+            // Merge blocks, arrows, and stages via snapshot
+            canvasDoc.restoreSnapshot({
+              blocks: [...canvasDoc.blocks, ...prepared],
+              arrows: [
+                ...canvasDoc.arrows,
+                ...newArrows.map(a => ({
+                  ...a,
+                  id: crypto.randomUUID(),
+                })),
+              ],
+              stages: updatedStages,
+            });
+
+            // Assign all new blocks to the target stage
+            for (const block of prepared) {
+              canvasDoc.assignBlockToStage(block.id!, targetStageId);
+            }
+
+            setSelectedStageId(targetStageId);
+          }}
         />
       </div>
     );
