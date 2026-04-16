@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useState, useCallback } from 'react';
-import { LayoutGrid, Heading2, Code, Image, Quote, Minus } from 'lucide-react';
+import { LayoutGrid, Heading2, Code, Image, Quote, Minus, Link2 } from 'lucide-react';
+import type { CanvasBlock, CanvasStage } from '@/lib/canvas-types';
 
 export interface SlashCommandItem {
   id: string;
@@ -112,8 +113,112 @@ export const SlashCommandMenu = forwardRef<any, SlashCommandMenuProps>(
 
 SlashCommandMenu.displayName = 'SlashCommandMenu';
 
+// ─── Block type → dot colour (matches BlockRefNode palette) ──
+const BLOCK_TYPE_DOT_COLOR: Record<string, string> = {
+  text: 'rgba(255,255,255,0.50)',
+  prompt: '#E8571A',
+  code: '#16A34A',
+  result: '#7C3AED',
+};
+
+function getBlockDotColor(type: string): string {
+  return BLOCK_TYPE_DOT_COLOR[type] ?? BLOCK_TYPE_DOT_COLOR.text;
+}
+
+function BlockTypeDot({ type }: { type: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: 'inline-block',
+        width: 8,
+        height: 8,
+        borderRadius: '50%',
+        background: getBlockDotColor(type),
+      }}
+    />
+  );
+}
+
+function getBlockDisplayTitle(block: CanvasBlock): string {
+  const sub = (block.subheading ?? '').trim();
+  if (sub) return sub;
+  const text = (block.textContent ?? '').trim().replace(/\s+/g, ' ');
+  if (text) return text.length > 48 ? `${text.slice(0, 45)}…` : text;
+  const typeLabel = block.type.charAt(0).toUpperCase() + block.type.slice(1);
+  return `Untitled ${typeLabel}`;
+}
+
+export interface SlashCanvasDoc {
+  blocks?: CanvasBlock[];
+  stages?: CanvasStage[];
+}
+
+function buildBlockRefItems(
+  filter: string,
+  canvasDoc: SlashCanvasDoc | null | undefined,
+): SlashCommandItem[] {
+  const blocks = canvasDoc?.blocks ?? [];
+  const stages = canvasDoc?.stages ?? [];
+  const stageById = new Map(stages.map(s => [s.id, s]));
+  const lowerFilter = filter.trim().toLowerCase();
+
+  return blocks
+    .map<SlashCommandItem>((block) => {
+      const stage = block.stageId ? stageById.get(block.stageId) ?? null : null;
+      const stageName = stage?.title ?? 'No stage';
+      const title = getBlockDisplayTitle(block);
+      return {
+        id: `blockref-${block.id}`,
+        label: title,
+        description: `— ${stageName}`,
+        icon: <BlockTypeDot type={block.type} />,
+        action: (editor) => {
+          editor
+            .chain()
+            .focus()
+            .deleteRange(editor.state.selection)
+            .insertContent({
+              type: 'blockRef',
+              attrs: {
+                blockId: block.id,
+                blockTitle: title,
+                blockType: block.type,
+                stageId: block.stageId ?? '',
+              },
+            })
+            .run();
+        },
+      };
+    })
+    .filter((item) => {
+      if (!lowerFilter) return true;
+      return (
+        item.label.toLowerCase().includes(lowerFilter) ||
+        item.description.toLowerCase().includes(lowerFilter)
+      );
+    });
+}
+
 // Slash command items factory
-export function getSlashCommandItems(query: string, onAddStage: () => string | null): SlashCommandItem[] {
+export function getSlashCommandItems(
+  query: string,
+  onAddStage: () => string | null,
+  canvasDoc?: SlashCanvasDoc | null,
+): SlashCommandItem[] {
+  const lowerQuery = query.toLowerCase();
+  const BLOCKREF_PREFIX = 'blockref';
+
+  // When the slash query begins with "blockref", transition the palette
+  // into a block picker showing every block across every stage, filtered
+  // by the remainder of the query.
+  if (lowerQuery.startsWith(BLOCKREF_PREFIX)) {
+    const filter = query.slice(BLOCKREF_PREFIX.length);
+    const items = buildBlockRefItems(filter, canvasDoc);
+    if (items.length > 0) return items;
+    // Fall through if there are no blocks — still show the command entry.
+  }
+
   const all: SlashCommandItem[] = [
     {
       id: 'stage',
@@ -196,11 +301,23 @@ export function getSlashCommandItems(query: string, onAddStage: () => string | n
           .run();
       },
     },
+    // New: Block Reference — opens a block picker (handled by the editor's
+    // slash command dispatcher, which expands the query to "blockref").
+    {
+      id: 'blockref',
+      label: 'Block Reference',
+      description: 'Link to a block in any stage',
+      icon: <Link2 size={14} />,
+      action: () => {
+        // No-op. ArticleEditor's executeSlashCommand detects id === 'blockref'
+        // and transforms the query into the block picker.
+      },
+    },
   ];
 
   if (!query) return all;
   return all.filter(item =>
-    item.label.toLowerCase().includes(query.toLowerCase()) ||
-    item.id.toLowerCase().includes(query.toLowerCase())
+    item.label.toLowerCase().includes(lowerQuery) ||
+    item.id.toLowerCase().includes(lowerQuery)
   );
 }

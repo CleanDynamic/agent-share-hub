@@ -5,6 +5,7 @@ import ImageExtension from '@tiptap/extension-image';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
 import { StageGridExtension } from './StageGridExtension';
+import { BlockRefExtension } from '@/components/canvas/tiptap/BlockRefExtension';
 import { BubbleToolbar } from './BubbleToolbar';
 import { FormattingShortcuts } from './KeyboardShortcutsExtension';
 import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
@@ -80,6 +81,7 @@ export function ArticleEditor({
       ImageExtension.configure({ inline: false }),
       CodeBlockLowlight.configure({ lowlight }),
       StageGridExtension,
+      BlockRefExtension,
       FormattingShortcuts,
     ],
     content: initialContent || {
@@ -179,11 +181,26 @@ export function ArticleEditor({
   }, [editor, canvasDoc]);
 
   const slashItems = useMemo(() => {
-    return getSlashCommandItems(slashQuery, addStageAndGetId);
-  }, [slashQuery, addStageAndGetId]);
+    return getSlashCommandItems(slashQuery, addStageAndGetId, canvasDoc);
+  }, [slashQuery, addStageAndGetId, canvasDoc]);
 
   const executeSlashCommand = useCallback((item: SlashCommandItem) => {
     if (!editor || slashStartPos.current === null) return;
+
+    // Selecting "Block Reference" from the main palette transitions the
+    // slash menu into block-picker mode by rewriting the slash query to
+    // "blockref". The menu stays open so further typing filters blocks.
+    if (item.id === 'blockref') {
+      const from = slashStartPos.current;
+      const to = editor.state.selection.$from.pos;
+      editor
+        .chain()
+        .focus()
+        .deleteRange({ from, to })
+        .insertContent('/blockref')
+        .run();
+      return;
+    }
 
     const from = slashStartPos.current;
     const to = editor.state.selection.$from.pos;
