@@ -47,60 +47,64 @@ export const SlashCommandMenu = forwardRef<any, SlashCommandMenuProps>(
 
     return (
       <div style={{
-        background: 'rgba(16,16,22,0.95)',
-        backdropFilter: 'blur(20px)',
+        background: 'rgba(16,16,24,0.95)',
+        backdropFilter: 'blur(12px)',
         border: '1px solid rgba(255,255,255,0.10)',
-        borderRadius: 10,
-        padding: 4,
-        minWidth: 220,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        borderRadius: 12,
+        padding: 6,
+        minWidth: 240,
+        maxHeight: 320,
+        overflowY: 'auto' as const,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
         fontFamily: 'Inter, sans-serif',
       }}>
-        {items.map((item, i) => (
-          <button
-            key={item.id}
-            onClick={() => command(item)}
-            onMouseEnter={() => setSelectedIndex(i)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              width: '100%',
-              padding: '8px 10px',
-              border: 'none',
-              borderRadius: 7,
-              background: i === selectedIndex
-                ? 'rgba(139,69,19,0.15)'
-                : 'transparent',
-              color: i === selectedIndex
-                ? 'rgba(255,255,255,0.85)'
-                : 'rgba(255,255,255,0.55)',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.1s',
-            }}
-          >
-            <span style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 28,
-              height: 28,
-              borderRadius: 6,
-              background: 'rgba(255,255,255,0.06)',
-              color: i === selectedIndex ? '#8B4513' : 'rgba(255,255,255,0.35)',
-              flexShrink: 0,
-            }}>
-              {item.icon}
-            </span>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600 }}>{item.label}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.30)' }}>
-                {item.description}
+        {items.map((item, i) => {
+          const isSelected = i === selectedIndex;
+          return (
+            <button
+              key={item.id}
+              onClick={() => command(item)}
+              onMouseEnter={() => setSelectedIndex(i)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                width: '100%',
+                padding: '8px 10px',
+                border: 'none',
+                borderLeft: isSelected ? '2px solid #E8571A' : '2px solid transparent',
+                borderRadius: 8,
+                background: isSelected
+                  ? 'rgba(232,87,26,0.08)'
+                  : 'transparent',
+                color: 'rgba(255,255,255,0.90)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 100ms',
+              }}
+            >
+              <span style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 28,
+                height: 28,
+                borderRadius: 6,
+                background: 'rgba(255,255,255,0.04)',
+                color: 'rgba(255,255,255,0.45)',
+                flexShrink: 0,
+              }}>
+                {item.icon}
+              </span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.90)' }}>{item.label}</div>
+                <div style={{ fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.40)' }}>
+                  {item.description}
+                </div>
               </div>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
     );
   }

@@ -5,6 +5,7 @@ import ImageExtension from '@tiptap/extension-image';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
 import { StageGridExtension } from './StageGridExtension';
+import { BubbleToolbar } from './BubbleToolbar';
 import { FormattingShortcuts } from './KeyboardShortcutsExtension';
 import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
 import type { SlashCommandItem } from './SlashCommandMenu';
@@ -373,6 +374,9 @@ export function ArticleEditor({
         editor={editor}
         className="tiptap-article"
       />
+
+      {/* Floating formatting toolbar */}
+      <BubbleToolbar editor={editor} containerRef={editorContainerRef as React.RefObject<HTMLDivElement>} />
 
       {/* Slash command popup */}
       {slashOpen && slashPos && (
