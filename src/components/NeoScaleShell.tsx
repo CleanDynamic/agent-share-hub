@@ -974,6 +974,7 @@ export function NeoScaleShell() {
   const searchDebounce = useRef<ReturnType<typeof setTimeout>>(undefined);
   const isFlipping = useRef(false);
   const currentRotation = useRef(0);
+  const showingFront = useRef(true);
 
   const [pulsing,    setPulsing]    = useState(false);
   const [activeTab,  setActiveTab]  = useState("For You");
