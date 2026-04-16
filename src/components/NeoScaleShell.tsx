@@ -974,6 +974,7 @@ export function NeoScaleShell() {
   const searchDebounce = useRef<ReturnType<typeof setTimeout>>(undefined);
   const isFlipping = useRef(false);
   const currentRotation = useRef(0);
+  const showingFront = useRef(true);
 
   const [pulsing,    setPulsing]    = useState(false);
   const [activeTab,  setActiveTab]  = useState("For You");
@@ -1293,7 +1294,7 @@ export function NeoScaleShell() {
   }
 
   /* ── Flip helper ── */
-  const showingFront = useRef(true);
+  // showingFront moved to top with other refs
 
   function doFlip(target: 'front' | 'back', direction: 'left' | 'right') {
     if (isFlipping.current) return;
