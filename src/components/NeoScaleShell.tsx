@@ -1294,7 +1294,7 @@ export function NeoScaleShell() {
   }
 
   /* ── Flip helper ── */
-  const showingFront = useRef(true);
+  // showingFront moved to top with other refs
 
   function doFlip(target: 'front' | 'back', direction: 'left' | 'right') {
     if (isFlipping.current) return;
