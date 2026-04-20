@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { FollowButton } from "@/components/FollowButton";
 import LiquidGlassPanel from "./LiquidGlassPanel";
+import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import { displayContentType, POST_TYPES, resolvePostType } from "@/lib/content-types";
 import { FeedCard, type FeedPost } from "@/components/feed-card";
 import { ReblogFeedCard, type ReblogPost } from "@/components/ReblogFeedCard";
