@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { FollowButton } from "@/components/FollowButton";
 import LiquidGlassPanel from "./LiquidGlassPanel";
+import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import { displayContentType, POST_TYPES, resolvePostType } from "@/lib/content-types";
 import { FeedCard, type FeedPost } from "@/components/feed-card";
 import { ReblogFeedCard, type ReblogPost } from "@/components/ReblogFeedCard";
@@ -1735,6 +1736,10 @@ export function NeoScaleShell() {
             ref={rightRef}
             {...initTilt(rightRef)}
           >
+            {location.pathname === '/upload' ? (
+              <WorkspaceShell />
+            ) : (
+            <>
             <div className="ns-right-title">Explore</div>
 
             {/* Working search bar */}
@@ -2000,6 +2005,8 @@ export function NeoScaleShell() {
               <span className="ns-footer-link" onClick={() => { doFlip('back', 'right'); navigate("/about"); }}>About NeoScale AI →</span>
               <a className="ns-footer-link" href="https://twitter.com/neoscaleai" target="_blank" rel="noopener noreferrer">Twitter @neoscaleai →</a>
             </div>
+            </>
+            )}
           </div>
           </LiquidGlassPanel>
 
