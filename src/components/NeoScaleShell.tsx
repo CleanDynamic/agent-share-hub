@@ -1736,6 +1736,10 @@ export function NeoScaleShell() {
             ref={rightRef}
             {...initTilt(rightRef)}
           >
+            {location.pathname === '/upload' ? (
+              <WorkspaceShell />
+            ) : (
+            <>
             <div className="ns-right-title">Explore</div>
 
             {/* Working search bar */}
