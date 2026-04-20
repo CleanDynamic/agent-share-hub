@@ -2005,6 +2005,8 @@ export function NeoScaleShell() {
               <span className="ns-footer-link" onClick={() => { doFlip('back', 'right'); navigate("/about"); }}>About NeoScale AI →</span>
               <a className="ns-footer-link" href="https://twitter.com/neoscaleai" target="_blank" rel="noopener noreferrer">Twitter @neoscaleai →</a>
             </div>
+            </>
+            )}
           </div>
           </LiquidGlassPanel>
 
