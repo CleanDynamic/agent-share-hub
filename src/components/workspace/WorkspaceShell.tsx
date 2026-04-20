@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactElement } from 'react';
 import {
   Sliders,
   Shapes,
@@ -28,7 +28,7 @@ interface ToolDefinition {
   id: WorkspaceToolId;
   label: string;
   icon: LucideIcon;
-  render: () => JSX.Element;
+  render: () => ReactElement;
 }
 
 const TOOLS: readonly ToolDefinition[] = [
