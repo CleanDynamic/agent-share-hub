@@ -1,6 +1,15 @@
 import * as React from "react";
 import { ImagePlus, X, ChevronDown } from "lucide-react";
 
+import {
+  PANEL_CARD_BACKGROUND,
+  PANEL_DIVIDER,
+  PANEL_INPUT_BACKGROUND,
+  PANEL_INPUT_BORDER,
+  PANEL_INPUT_RADIUS,
+  SECTION_LABEL_STYLE,
+} from './toolPanelStyles';
+
 interface InspectorDocumentProps {
   // Document section
   title: string;
@@ -77,13 +86,7 @@ export function InspectorDocument({
       {/* Document Section */}
       <div className="flex flex-col" style={{ gap: 8, marginBottom: 16 }}>
         <span
-          style={{
-            fontSize: 10,
-            fontWeight: 600,
-            color: "rgba(255, 255, 255, 0.35)",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-          }}
+          style={SECTION_LABEL_STYLE}
         >
           Document
         </span>
@@ -97,9 +100,9 @@ export function InspectorDocument({
           style={{
             width: "100%",
             height: 38,
-            backgroundColor: "rgba(30, 30, 40, 0.5)",
-            border: "0.5px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: 8,
+            backgroundColor: PANEL_INPUT_BACKGROUND,
+            border: PANEL_INPUT_BORDER,
+            borderRadius: PANEL_INPUT_RADIUS,
             padding: "0 12px",
             fontSize: 13,
             fontWeight: 500,
@@ -118,9 +121,9 @@ export function InspectorDocument({
             width: "100%",
             minHeight: 52,
             maxHeight: 80,
-            backgroundColor: "rgba(30, 30, 40, 0.5)",
-            border: "0.5px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: 8,
+            backgroundColor: PANEL_INPUT_BACKGROUND,
+            border: PANEL_INPUT_BORDER,
+            borderRadius: PANEL_INPUT_RADIUS,
             padding: "10px 12px",
             fontSize: 13,
             color: "rgba(255, 255, 255, 0.72)",
@@ -136,9 +139,9 @@ export function InspectorDocument({
             className="flex items-center justify-between"
             style={{
               height: 48,
-              backgroundColor: "rgba(30, 30, 40, 0.5)",
-              border: "0.5px solid rgba(255, 255, 255, 0.08)",
-              borderRadius: 8,
+              backgroundColor: PANEL_INPUT_BACKGROUND,
+              border: PANEL_INPUT_BORDER,
+              borderRadius: PANEL_INPUT_RADIUS,
               padding: "0 12px",
             }}
           >
@@ -226,7 +229,8 @@ export function InspectorDocument({
       <div
         style={{
           height: 1,
-          backgroundColor: "rgba(255, 255, 255, 0.06)",
+          backgroundColor: 'transparent',
+          borderTop: PANEL_DIVIDER,
           margin: "14px 0",
         }}
       />
@@ -234,13 +238,7 @@ export function InspectorDocument({
       {/* Stats Section */}
       <div className="flex flex-col" style={{ gap: 8, marginBottom: 16 }}>
         <span
-          style={{
-            fontSize: 10,
-            fontWeight: 600,
-            color: "rgba(255, 255, 255, 0.35)",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-          }}
+          style={SECTION_LABEL_STYLE}
         >
           Stats
         </span>
@@ -263,7 +261,8 @@ export function InspectorDocument({
       <div
         style={{
           height: 1,
-          backgroundColor: "rgba(255, 255, 255, 0.06)",
+          backgroundColor: 'transparent',
+          borderTop: PANEL_DIVIDER,
           margin: "14px 0",
         }}
       />
@@ -271,13 +270,7 @@ export function InspectorDocument({
       {/* Publishing Section */}
       <div className="flex flex-col" style={{ gap: 8 }}>
         <span
-          style={{
-            fontSize: 10,
-            fontWeight: 600,
-            color: "rgba(255, 255, 255, 0.35)",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-          }}
+          style={SECTION_LABEL_STYLE}
         >
           Publishing
         </span>
@@ -287,9 +280,9 @@ export function InspectorDocument({
           className="flex items-center"
           style={{
             height: 38,
-            backgroundColor: "rgba(30, 30, 40, 0.5)",
-            border: "0.5px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: 8,
+            backgroundColor: PANEL_INPUT_BACKGROUND,
+            border: PANEL_INPUT_BORDER,
+            borderRadius: PANEL_INPUT_RADIUS,
             padding: "0 12px",
           }}
         >
@@ -326,9 +319,9 @@ export function InspectorDocument({
             style={{
               width: "100%",
               height: 38,
-              backgroundColor: "rgba(30, 30, 40, 0.5)",
-              border: "0.5px solid rgba(255, 255, 255, 0.08)",
-              borderRadius: 8,
+              backgroundColor: PANEL_INPUT_BACKGROUND,
+              border: PANEL_INPUT_BORDER,
+              borderRadius: PANEL_INPUT_RADIUS,
               padding: "0 12px",
               cursor: "pointer",
               outline: "none",
@@ -360,9 +353,9 @@ export function InspectorDocument({
                 top: "calc(100% + 4px)",
                 left: 0,
                 right: 0,
-                backgroundColor: "rgba(30, 30, 30, 0.98)",
+                backgroundColor: 'hsl(var(--background) / 0.98)',
                 border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: 8,
+                borderRadius: PANEL_INPUT_RADIUS,
                 padding: 4,
                 zIndex: 10,
               }}
@@ -467,8 +460,8 @@ function StatCard({ label, value }: { label: string; value: string }) {
     <div
       className="flex flex-col"
       style={{
-        backgroundColor: "rgba(255, 255, 255, 0.04)",
-        border: "1px solid rgba(255, 255, 255, 0.06)",
+          backgroundColor: PANEL_CARD_BACKGROUND,
+          border: PANEL_DIVIDER,
         borderRadius: 8,
         padding: 10,
         gap: 2,
