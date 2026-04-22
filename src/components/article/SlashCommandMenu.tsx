@@ -1,323 +1,351 @@
-import { forwardRef, useEffect, useImperativeHandle, useState, useCallback } from 'react';
-import { LayoutGrid, Heading2, Code, Image, Quote, Minus, Link2 } from 'lucide-react';
-import type { CanvasBlock, CanvasStage } from '@/lib/canvas-types';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Editor } from '@tiptap/react';
+import {
+  Heading1,
+  Heading2,
+  Heading3,
+  Type,
+  List,
+  ListOrdered,
+  CheckSquare,
+  ChevronRight,
+  Minus,
+  MessageSquare,
+  Quote,
+  LayoutGrid,
+  Link2,
+  Eye,
+  Image,
+  Video,
+  Music,
+  Code2,
+  File,
+  Table,
+  Braces,
+  Sigma,
+  Superscript,
+  Columns3,
+  Sparkles,
+  PenLine,
+  FileText,
+  ArrowRight,
+} from 'lucide-react';
 
 export interface SlashCommandItem {
   id: string;
   label: string;
   description: string;
-  icon: React.ReactNode;
-  action: (editor: any) => void;
+  icon: React.ElementType;
+  shortcut?: string;
+  category: string;
+  action?: (editor: Editor) => void;
+  phaseLabel?: string;
 }
 
-interface SlashCommandMenuProps {
-  items: SlashCommandItem[];
-  command: (item: SlashCommandItem) => void;
-}
+const MENU_ITEMS: SlashCommandItem[] = [
+  { id: 'heading-1', label: 'Heading 1', description: 'Large section heading', icon: Heading1, shortcut: '⌘⌥1', category: 'BASIC', action: (editor) => editor.chain().focus().setHeading({ level: 1 }).run() },
+  { id: 'heading-2', label: 'Heading 2', description: 'Medium section heading', icon: Heading2, shortcut: '⌘⌥2', category: 'BASIC', action: (editor) => editor.chain().focus().setHeading({ level: 2 }).run() },
+  { id: 'heading-3', label: 'Heading 3', description: 'Small section heading', icon: Heading3, shortcut: '⌘⌥3', category: 'BASIC', action: (editor) => editor.chain().focus().setHeading({ level: 3 }).run() },
+  { id: 'body', label: 'Body', description: 'Plain text paragraph', icon: Type, shortcut: '⌘⌥0', category: 'BASIC', action: (editor) => editor.chain().focus().setParagraph().run() },
+  { id: 'bulleted-list', label: 'Bulleted list', description: 'Simple unordered list', icon: List, shortcut: '⌘⇧8', category: 'BASIC', action: (editor) => editor.chain().focus().toggleBulletList().run() },
+  { id: 'numbered-list', label: 'Numbered list', description: 'Numbered ordered list', icon: ListOrdered, shortcut: '⌘⇧7', category: 'BASIC', action: (editor) => editor.chain().focus().toggleOrderedList().run() },
+  { id: 'checklist', label: 'Checklist', description: 'Track tasks with checkboxes', icon: CheckSquare, shortcut: '⌘⇧9', category: 'BASIC', phaseLabel: 'Coming in Phase X' },
+  { id: 'toggle', label: 'Toggle', description: 'Collapsible content section', icon: ChevronRight, category: 'BASIC', phaseLabel: 'Coming in Phase X' },
+  { id: 'divider', label: 'Divider', description: 'Visual section separator', icon: Minus, shortcut: '---', category: 'BASIC', action: (editor) => editor.chain().focus().setHorizontalRule().run() },
+  { id: 'callout', label: 'Callout', description: 'Highlighted information block', icon: MessageSquare, category: 'BASIC', phaseLabel: 'Coming in Phase X' },
+  { id: 'quote', label: 'Quote', description: 'Quoted text block', icon: Quote, shortcut: '⌘⇧.', category: 'BASIC', action: (editor) => editor.chain().focus().setBlockquote().run() },
+  { id: 'stage-grid', label: 'Stage grid', description: 'Arrange blocks visually', icon: LayoutGrid, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
+  { id: 'block-reference', label: 'Block reference', description: 'Link to another block', icon: Link2, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
+  { id: 'inline-block-preview', label: 'Inline block preview', description: 'Preview block inline', icon: Eye, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
+  { id: 'image', label: 'Image', description: 'Upload or embed an image', icon: Image, category: 'MEDIA', action: (editor) => {
+      const url = window.prompt('Image URL:');
+      if (url) editor.chain().focus().setImage({ src: url }).run();
+    } },
+  { id: 'video', label: 'Video', description: 'Embed video content', icon: Video, category: 'MEDIA', phaseLabel: 'Coming in Phase X' },
+  { id: 'audio', label: 'Audio', description: 'Embed audio content', icon: Music, category: 'MEDIA', phaseLabel: 'Coming in Phase X' },
+  { id: 'embed', label: 'Embed', description: 'Embed external content', icon: Code2, category: 'MEDIA', phaseLabel: 'Coming in Phase X' },
+  { id: 'file', label: 'File', description: 'Upload a file attachment', icon: File, category: 'MEDIA', phaseLabel: 'Coming in Phase X' },
+  { id: 'table', label: 'Table', description: 'Insert a table', icon: Table, category: 'ADVANCED', phaseLabel: 'Coming in Phase X' },
+  { id: 'code-block', label: 'Code block', description: 'Syntax-highlighted code', icon: Braces, shortcut: '```', category: 'ADVANCED', action: (editor) => editor.chain().focus().setCodeBlock().run() },
+  { id: 'math-equation', label: 'Math equation', description: 'LaTeX math expression', icon: Sigma, category: 'ADVANCED', phaseLabel: 'Coming in Phase X' },
+  { id: 'footnote', label: 'Footnote', description: 'Add a footnote reference', icon: Superscript, category: 'ADVANCED', phaseLabel: 'Coming in Phase X' },
+  { id: 'columns', label: 'Columns', description: 'Multi-column layout', icon: Columns3, category: 'ADVANCED', phaseLabel: 'Coming in Phase X' },
+  { id: 'generate-ai', label: 'Generate with AI', description: 'Create content with AI', icon: Sparkles, shortcut: '⌘J', category: 'AI', phaseLabel: 'Coming in Phase X' },
+  { id: 'rewrite-selection', label: 'Rewrite selection', description: 'Improve selected text', icon: PenLine, category: 'AI', phaseLabel: 'Coming in Phase X' },
+  { id: 'summarize', label: 'Summarize', description: 'Condense content', icon: FileText, category: 'AI', phaseLabel: 'Coming in Phase X' },
+  { id: 'continue-writing', label: 'Continue writing', description: 'Extend your content', icon: ArrowRight, category: 'AI', phaseLabel: 'Coming in Phase X' },
+];
 
-export const SlashCommandMenu = forwardRef<any, SlashCommandMenuProps>(
-  ({ items, command }, ref) => {
-    const [selectedIndex, setSelectedIndex] = useState(0);
+const CATEGORY_ORDER = ['BASIC', 'CANVAS', 'MEDIA', 'ADVANCED', 'AI'];
 
-    useEffect(() => {
-      setSelectedIndex(0);
-    }, [items]);
+export function getSlashCommandItems(query: string): SlashCommandItem[] {
+  const lowerQuery = query.trim().toLowerCase();
 
-    const upHandler = useCallback(() => {
-      setSelectedIndex(i => (i + items.length - 1) % items.length);
-    }, [items.length]);
+  if (!lowerQuery) return MENU_ITEMS;
 
-    const downHandler = useCallback(() => {
-      setSelectedIndex(i => (i + 1) % items.length);
-    }, [items.length]);
-
-    const enterHandler = useCallback(() => {
-      if (items[selectedIndex]) command(items[selectedIndex]);
-    }, [items, selectedIndex, command]);
-
-    useImperativeHandle(ref, () => ({
-      onKeyDown: ({ event }: { event: KeyboardEvent }) => {
-        if (event.key === 'ArrowUp') { upHandler(); return true; }
-        if (event.key === 'ArrowDown') { downHandler(); return true; }
-        if (event.key === 'Enter') { enterHandler(); return true; }
-        return false;
-      },
-    }));
-
-    if (items.length === 0) return null;
-
-    return (
-      <div style={{
-        background: 'rgba(16,16,24,0.95)',
-        backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255,255,255,0.10)',
-        borderRadius: 12,
-        padding: 6,
-        minWidth: 240,
-        maxHeight: 320,
-        overflowY: 'auto' as const,
-        boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-        fontFamily: 'Inter, sans-serif',
-      }}>
-        {items.map((item, i) => {
-          const isSelected = i === selectedIndex;
-          return (
-            <button
-              key={item.id}
-              onClick={() => command(item)}
-              onMouseEnter={() => setSelectedIndex(i)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                width: '100%',
-                padding: '8px 10px',
-                border: 'none',
-                borderLeft: isSelected ? '2px solid #E8571A' : '2px solid transparent',
-                borderRadius: 8,
-                background: isSelected
-                  ? 'rgba(232,87,26,0.08)'
-                  : 'transparent',
-                color: 'rgba(255,255,255,0.90)',
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'all 100ms',
-              }}
-            >
-              <span style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 28,
-                height: 28,
-                borderRadius: 6,
-                background: 'rgba(255,255,255,0.04)',
-                color: 'rgba(255,255,255,0.45)',
-                flexShrink: 0,
-              }}>
-                {item.icon}
-              </span>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.90)' }}>{item.label}</div>
-                <div style={{ fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.40)' }}>
-                  {item.description}
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    );
-  }
-);
-
-SlashCommandMenu.displayName = 'SlashCommandMenu';
-
-// ─── Block type → dot colour (matches BlockRefNode palette) ──
-const BLOCK_TYPE_DOT_COLOR: Record<string, string> = {
-  text: 'rgba(255,255,255,0.50)',
-  prompt: '#E8571A',
-  code: '#16A34A',
-  result: '#7C3AED',
-};
-
-function getBlockDotColor(type: string): string {
-  return BLOCK_TYPE_DOT_COLOR[type] ?? BLOCK_TYPE_DOT_COLOR.text;
-}
-
-function BlockTypeDot({ type }: { type: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        display: 'inline-block',
-        width: 8,
-        height: 8,
-        borderRadius: '50%',
-        background: getBlockDotColor(type),
-      }}
-    />
+  return MENU_ITEMS.filter(
+    (item) =>
+      item.label.toLowerCase().includes(lowerQuery) ||
+      item.description.toLowerCase().includes(lowerQuery) ||
+      item.category.toLowerCase().includes(lowerQuery),
   );
 }
 
-function getBlockDisplayTitle(block: CanvasBlock): string {
-  const sub = (block.subheading ?? '').trim();
-  if (sub) return sub;
-  const text = (block.textContent ?? '').trim().replace(/\s+/g, ' ');
-  if (text) return text.length > 48 ? `${text.slice(0, 45)}…` : text;
-  const typeLabel = block.type.charAt(0).toUpperCase() + block.type.slice(1);
-  return `Untitled ${typeLabel}`;
+interface SlashCommandMenuProps {
+  isOpen: boolean;
+  query: string;
+  position: { x: number; y: number };
+  items: SlashCommandItem[];
+  selectedIndex: number;
+  onSelectedIndexChange: (index: number) => void;
+  onSelect: (itemId: string) => void;
+  onClose: () => void;
 }
 
-export interface SlashCanvasDoc {
-  blocks?: CanvasBlock[];
-  stages?: CanvasStage[];
-}
+export function SlashCommandMenu({
+  isOpen,
+  query,
+  position,
+  items,
+  selectedIndex,
+  onSelectedIndexChange,
+  onSelect,
+  onClose,
+}: SlashCommandMenuProps) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-function buildBlockRefItems(
-  filter: string,
-  canvasDoc: SlashCanvasDoc | null | undefined,
-): SlashCommandItem[] {
-  const blocks = canvasDoc?.blocks ?? [];
-  const stages = canvasDoc?.stages ?? [];
-  const stageById = new Map(stages.map(s => [s.id, s]));
-  const lowerFilter = filter.trim().toLowerCase();
+  const groupedItems = useMemo(
+    () =>
+      items.reduce<Record<string, SlashCommandItem[]>>((acc, item) => {
+        if (!acc[item.category]) acc[item.category] = [];
+        acc[item.category].push(item);
+        return acc;
+      }, {}),
+    [items],
+  );
 
-  return blocks
-    .map<SlashCommandItem>((block) => {
-      const stage = block.stageId ? stageById.get(block.stageId) ?? null : null;
-      const stageName = stage?.title ?? 'No stage';
-      const title = getBlockDisplayTitle(block);
-      return {
-        id: `blockref-${block.id}`,
-        label: title,
-        description: `— ${stageName}`,
-        icon: <BlockTypeDot type={block.type} />,
-        action: (editor) => {
-          editor
-            .chain()
-            .focus()
-            .deleteRange(editor.state.selection)
-            .insertContent({
-              type: 'blockRef',
-              attrs: {
-                blockId: block.id,
-                blockTitle: title,
-                blockType: block.type,
-                stageId: block.stageId ?? '',
-              },
-            })
-            .run();
-        },
-      };
-    })
-    .filter((item) => {
-      if (!lowerFilter) return true;
-      return (
-        item.label.toLowerCase().includes(lowerFilter) ||
-        item.description.toLowerCase().includes(lowerFilter)
-      );
-    });
-}
+  const sortedCategories = useMemo(
+    () => CATEGORY_ORDER.filter((category) => groupedItems[category]?.length),
+    [groupedItems],
+  );
 
-// Slash command items factory
-export function getSlashCommandItems(
-  query: string,
-  onAddStage: () => string | null,
-  canvasDoc?: SlashCanvasDoc | null,
-): SlashCommandItem[] {
-  const lowerQuery = query.toLowerCase();
-  const BLOCKREF_PREFIX = 'blockref';
+  useEffect(() => {
+    itemRefs.current = [];
+  }, [items]);
 
-  // When the slash query begins with "blockref", transition the palette
-  // into a block picker showing every block across every stage, filtered
-  // by the remainder of the query.
-  if (lowerQuery.startsWith(BLOCKREF_PREFIX)) {
-    const filter = query.slice(BLOCKREF_PREFIX.length);
-    const items = buildBlockRefItems(filter, canvasDoc);
-    if (items.length > 0) return items;
-    // Fall through if there are no blocks — still show the command entry.
-  }
+  useEffect(() => {
+    if (isOpen && inputRef.current) inputRef.current.focus();
+  }, [isOpen]);
 
-  const all: SlashCommandItem[] = [
-    {
-      id: 'stage',
-      label: 'Stage Grid',
-      description: 'Embed a canvas stage',
-      icon: <LayoutGrid size={14} />,
-      action: (editor) => {
-        const stageId = onAddStage();
-        if (stageId) {
-          editor.chain().focus()
-            .deleteRange(editor.state.selection)
-            .insertContent({
-              type: 'stageGrid',
-              attrs: { stageId, stageTitle: `Stage ${Date.now().toString(36)}` },
-            })
-            .run();
-        }
-      },
-    },
-    {
-      id: 'heading',
-      label: 'Heading',
-      description: 'Section heading',
-      icon: <Heading2 size={14} />,
-      action: (editor) => {
-        editor.chain().focus()
-          .deleteRange(editor.state.selection)
-          .setHeading({ level: 2 })
-          .run();
-      },
-    },
-    {
-      id: 'code',
-      label: 'Code Block',
-      description: 'Monospace code block',
-      icon: <Code size={14} />,
-      action: (editor) => {
-        editor.chain().focus()
-          .deleteRange(editor.state.selection)
-          .setCodeBlock()
-          .run();
-      },
-    },
-    {
-      id: 'image',
-      label: 'Image',
-      description: 'Embed an image',
-      icon: <Image size={14} />,
-      action: (editor) => {
-        const url = window.prompt('Image URL:');
-        if (url) {
-          editor.chain().focus()
-            .deleteRange(editor.state.selection)
-            .setImage({ src: url })
-            .run();
-        }
-      },
-    },
-    {
-      id: 'quote',
-      label: 'Quote',
-      description: 'Blockquote / callout',
-      icon: <Quote size={14} />,
-      action: (editor) => {
-        editor.chain().focus()
-          .deleteRange(editor.state.selection)
-          .setBlockquote()
-          .run();
-      },
-    },
-    {
-      id: 'divider',
-      label: 'Divider',
-      description: 'Horizontal rule',
-      icon: <Minus size={14} />,
-      action: (editor) => {
-        editor.chain().focus()
-          .deleteRange(editor.state.selection)
-          .setHorizontalRule()
-          .run();
-      },
-    },
-    // New: Block Reference — opens a block picker (handled by the editor's
-    // slash command dispatcher, which expands the query to "blockref").
-    {
-      id: 'blockref',
-      label: 'Block Reference',
-      description: 'Link to a block in any stage',
-      icon: <Link2 size={14} />,
-      action: () => {
-        // No-op. ArticleEditor's executeSlashCommand detects id === 'blockref'
-        // and transforms the query into the block picker.
-      },
-    },
-  ];
+  useEffect(() => {
+    const itemEl = itemRefs.current[selectedIndex];
+    if (itemEl) itemEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [selectedIndex]);
 
-  if (!query) return all;
-  return all.filter(item =>
-    item.label.toLowerCase().includes(lowerQuery) ||
-    item.id.toLowerCase().includes(lowerQuery)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) onClose();
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  let itemIndex = 0;
+
+  return (
+    <div
+      ref={menuRef}
+      className="slash-command-menu"
+      style={{
+        position: 'absolute',
+        left: position.x,
+        top: position.y,
+        width: 320,
+        maxHeight: 400,
+        background: 'hsl(240 20% 8% / 0.95)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid hsl(var(--foreground) / 0.08)',
+        borderRadius: 12,
+        boxShadow: '0 12px 32px hsl(240 10% 2% / 0.6)',
+        overflow: 'hidden',
+        fontFamily: 'Inter, sans-serif',
+        zIndex: 100,
+      }}
+    >
+      <div
+        style={{
+          padding: '6px 10px',
+          borderBottom: '1px solid hsl(var(--foreground) / 0.06)',
+        }}
+      >
+        <input
+          ref={inputRef}
+          type="text"
+          placeholder="Filter..."
+          readOnly
+          value={query}
+          style={{
+            width: '100%',
+            height: 36,
+            padding: '0 10px',
+            background: 'hsl(var(--foreground) / 0.03)',
+            border: 'none',
+            borderRadius: 6,
+            outline: 'none',
+            color: 'hsl(var(--foreground) / 0.9)',
+            fontSize: 13,
+            fontWeight: 500,
+            fontFamily: 'Inter, sans-serif',
+          }}
+        />
+      </div>
+
+      <div
+        style={{
+          maxHeight: 348,
+          overflowY: 'auto',
+          padding: '6px 0',
+        }}
+      >
+        {items.length === 0 ? (
+          <div
+            style={{
+              padding: '20px 10px',
+              textAlign: 'center',
+              color: 'hsl(var(--foreground) / 0.45)',
+              fontSize: 13,
+            }}
+          >
+            No results found
+          </div>
+        ) : (
+          sortedCategories.map((category) => (
+            <div key={category} style={{ marginBottom: 8 }}>
+              <div
+                style={{
+                  padding: '8px 16px 4px',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.08em',
+                  color: 'hsl(var(--foreground) / 0.3)',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {category}
+              </div>
+
+              {groupedItems[category].map((item) => {
+                const currentIndex = itemIndex++;
+                const isSelected = currentIndex === selectedIndex;
+                const Icon = item.icon;
+
+                return (
+                  <div
+                    key={item.id}
+                    ref={(el) => {
+                      itemRefs.current[currentIndex] = el;
+                    }}
+                    onClick={() => onSelect(item.id)}
+                    onMouseEnter={() => onSelectedIndexChange(currentIndex)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      height: 36,
+                      padding: '6px 10px',
+                      margin: '0 6px',
+                      borderRadius: 6,
+                      cursor: 'pointer',
+                      background: isSelected ? 'hsl(var(--secondary) / 0.1)' : 'transparent',
+                      borderLeft: isSelected ? '2px solid hsl(var(--secondary))' : '2px solid transparent',
+                      transition: 'background 0.1s ease',
+                    }}
+                    onMouseOver={(event) => {
+                      if (!isSelected) event.currentTarget.style.background = 'hsl(var(--foreground) / 0.06)';
+                    }}
+                    onMouseOut={(event) => {
+                      if (!isSelected) event.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 24,
+                        height: 24,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon size={16} style={{ color: 'hsl(var(--foreground) / 0.6)' }} />
+                    </div>
+
+                    <div
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        marginLeft: 8,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: 'hsl(var(--foreground) / 0.9)',
+                          lineHeight: 1.2,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {item.label}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 400,
+                          color: 'hsl(var(--foreground) / 0.45)',
+                          lineHeight: 1.2,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {item.description}
+                      </div>
+                    </div>
+
+                    {item.shortcut ? (
+                      <div
+                        style={{
+                          marginLeft: 8,
+                          padding: '1px 6px',
+                          background: 'hsl(var(--foreground) / 0.04)',
+                          borderRadius: 4,
+                          fontSize: 10,
+                          fontWeight: 500,
+                          color: 'hsl(var(--foreground) / 0.45)',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {item.shortcut}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
   );
 }

@@ -14,6 +14,7 @@ import type { SlashCommandItem } from './SlashCommandMenu';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import CharacterCount from '@tiptap/extension-character-count';
 import { LayoutGrid, Heading2, Code, Image, Quote, Minus, Plus, Type, Save, Send, MoreHorizontal } from 'lucide-react';
+import { toast } from 'sonner';
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { useDocumentStore } from '@/lib/documentStore';
 import { usePersistenceStatus } from '@/lib/documentPersistence';
@@ -177,12 +178,12 @@ export function ArticleEditor({
     editorProps: {
       handleKeyDown: (view, event) => {
         if (slashOpen) {
-          if (event.key === 'ArrowDown') {
+          if (event.key === 'ArrowDown' && slashItems.length > 0) {
             event.preventDefault();
             setSlashSelectedIndex(i => (i + 1) % slashItems.length);
             return true;
           }
-          if (event.key === 'ArrowUp') {
+          if (event.key === 'ArrowUp' && slashItems.length > 0) {
             event.preventDefault();
             setSlashSelectedIndex(i => (i + slashItems.length - 1) % slashItems.length);
             return true;
@@ -221,8 +222,8 @@ export function ArticleEditor({
   }, [editor, canvasDoc]);
 
   const slashItems = useMemo(() => {
-    return getSlashCommandItems(slashQuery, addStageAndGetId, canvasDoc);
-  }, [slashQuery, addStageAndGetId, canvasDoc]);
+    return getSlashCommandItems(slashQuery);
+  }, [slashQuery]);
 
   const metrics = useMemo(() => {
     const storage = editor?.storage as any;
@@ -238,30 +239,28 @@ export function ArticleEditor({
   const executeSlashCommand = useCallback((item: SlashCommandItem) => {
     if (!editor || slashStartPos.current === null) return;
 
-    // Selecting "Block Reference" from the main palette transitions the
-    // slash menu into block-picker mode by rewriting the slash query to
-    // "blockref". The menu stays open so further typing filters blocks.
-    if (item.id === 'blockref') {
-      const from = slashStartPos.current;
-      const to = editor.state.selection.$from.pos;
-      editor
-        .chain()
-        .focus()
-        .deleteRange({ from, to })
-        .insertContent('/blockref')
-        .run();
-      return;
-    }
-
     const from = slashStartPos.current;
     const to = editor.state.selection.$from.pos;
     editor.chain().focus().deleteRange({ from, to }).run();
+
+    if (item.phaseLabel || !item.action) {
+      toast(item.phaseLabel ?? 'Coming in Phase X');
+      setSlashOpen(false);
+      slashStartPos.current = null;
+      return;
+    }
 
     item.action(editor);
 
     setSlashOpen(false);
     slashStartPos.current = null;
   }, [editor]);
+
+  const handleSlashSelect = useCallback((itemId: string) => {
+    const item = slashItems.find((entry) => entry.id === itemId);
+    if (!item) return;
+    executeSlashCommand(item);
+  }, [executeSlashCommand, slashItems]);
 
   // Click outside to close slash menu
   useEffect(() => {
@@ -302,8 +301,19 @@ export function ArticleEditor({
   const handleQuickInsert = (type: string) => {
     if (!editor) return;
     editor.chain().focus().run();
-    const item = getSlashCommandItems('', addStageAndGetId).find(i => i.id === type);
-    if (item) item.action(editor);
+    const itemMap: Record<string, string> = {
+      stage: 'stage-grid',
+      heading: 'heading-2',
+      code: 'code-block',
+      image: 'image',
+    };
+    const item = getSlashCommandItems('').find(i => i.id === (itemMap[type] ?? type));
+    if (!item) return;
+    if (item.phaseLabel || !item.action) {
+      toast(item.phaseLabel ?? 'Coming in Phase X');
+      return;
+    }
+    item.action(editor);
   };
 
   // Track editor focus via focusin/focusout on the container
@@ -458,23 +468,19 @@ export function ArticleEditor({
       />
 
       {/* Slash command popup */}
-      {slashOpen && slashPos && (
-        <div
-          className="slash-command-menu"
-          style={{
-            position: 'absolute',
-            top: slashPos.top,
-            left: slashPos.left,
-            zIndex: 100,
-          }}
-        >
-          <SlashCommandMenu
-            items={slashItems}
-            command={(item) => executeSlashCommand(item)}
-            ref={undefined}
-          />
-        </div>
-      )}
+      <SlashCommandMenu
+        isOpen={slashOpen && Boolean(slashPos)}
+        query={slashQuery}
+        position={{ x: slashPos?.left ?? 0, y: slashPos?.top ?? 0 }}
+        items={slashItems}
+        selectedIndex={slashSelectedIndex}
+        onSelectedIndexChange={setSlashSelectedIndex}
+        onSelect={handleSlashSelect}
+        onClose={() => {
+          setSlashOpen(false);
+          slashStartPos.current = null;
+        }}
+      />
 
       {editable ? (
         <>
