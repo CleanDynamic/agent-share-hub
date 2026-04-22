@@ -7,12 +7,23 @@ import { common, createLowlight } from 'lowlight';
 import { StageGridExtension } from './StageGridExtension';
 import { BlockRefExtension } from '@/components/canvas/tiptap/BlockRefExtension';
 import { TopToolbar } from './TopToolbar';
+import { StatusBar } from './StatusBar';
 import { FormattingShortcuts } from './KeyboardShortcutsExtension';
 import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
 import type { SlashCommandItem } from './SlashCommandMenu';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import { LayoutGrid, Heading2, Code, Image, Quote, Minus, Plus, Type } from 'lucide-react';
+import CharacterCount from '@tiptap/extension-character-count';
+import { LayoutGrid, Heading2, Code, Image, Quote, Minus, Plus, Type, Save, Send, MoreHorizontal } from 'lucide-react';
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
+import { useDocumentStore } from '@/lib/documentStore';
+import { usePersistenceStatus } from '@/lib/documentPersistence';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const lowlight = createLowlight(common);
 
@@ -22,6 +33,16 @@ interface ArticleEditorProps {
   onChange?: (json: any) => void;
   editable?: boolean;
   onSelectedStageChange?: (stageId: string | null) => void;
+  documentTitle?: string;
+  onOpenTemplates?: () => void;
+  onOpenHistory?: () => void;
+  onOpenNotes?: () => void;
+  onGrammarCheck?: () => void;
+  onClearAll?: () => void;
+  onSave?: () => void;
+  onPublish?: () => void;
+  saving?: boolean;
+  publishing?: boolean;
 }
 
 export function ArticleEditor({
@@ -30,6 +51,16 @@ export function ArticleEditor({
   onChange,
   editable = true,
   onSelectedStageChange,
+  documentTitle = '',
+  onOpenTemplates,
+  onOpenHistory,
+  onOpenNotes,
+  onGrammarCheck,
+  onClearAll,
+  onSave,
+  onPublish,
+  saving = false,
+  publishing = false,
 }: ArticleEditorProps) {
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
@@ -39,6 +70,10 @@ export function ArticleEditor({
   const [insertHovered, setInsertHovered] = useState(false);
   const slashStartPos = useRef<number | null>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
+  const setDocumentTitle = useDocumentStore((state) => state.setDocumentTitle);
+  const focusMode = useDocumentStore((state) => state.focusMode);
+  const presence = useDocumentStore((state) => state.presence);
+  const { saveStatus } = usePersistenceStatus();
 
   const handleAddStage = useCallback((): string | null => {
     const stageNum = (canvasDoc.stages?.length ?? 0) + 1;
@@ -80,6 +115,7 @@ export function ArticleEditor({
       }),
       ImageExtension.configure({ inline: false }),
       CodeBlockLowlight.configure({ lowlight }),
+      CharacterCount,
       StageGridExtension,
       BlockRefExtension,
       FormattingShortcuts,
@@ -171,6 +207,10 @@ export function ArticleEditor({
 
   // Store canvasDoc in editor storage so StageGridNode can access it
   useEffect(() => {
+    setDocumentTitle(documentTitle);
+  }, [documentTitle, setDocumentTitle]);
+
+  useEffect(() => {
     if (editor) {
       const storage = editor.storage as any;
       if (!storage.articleEditor) {
@@ -183,6 +223,17 @@ export function ArticleEditor({
   const slashItems = useMemo(() => {
     return getSlashCommandItems(slashQuery, addStageAndGetId, canvasDoc);
   }, [slashQuery, addStageAndGetId, canvasDoc]);
+
+  const metrics = useMemo(() => {
+    const storage = editor?.storage as any;
+    const characterCount = storage?.characterCount?.characters?.() ?? 0;
+    const wordCount = storage?.characterCount?.words?.() ?? 0;
+    const readingMinutes = Math.max(1, Math.ceil(wordCount / 220));
+
+    return { characterCount, wordCount, readingMinutes };
+  }, [editor?.state, editor]);
+
+  const collaboratorCount = useMemo(() => Object.keys(presence ?? {}).length, [presence]);
 
   const executeSlashCommand = useCallback((item: SlashCommandItem) => {
     if (!editor || slashStartPos.current === null) return;
@@ -387,7 +438,7 @@ export function ArticleEditor({
         }
       `}</style>
 
-      <TopToolbar editor={editor} />
+      <TopToolbar editor={editor} onInsertBlock={() => handleQuickInsert('stage')} />
 
       <EditorContent
         editor={editor}
@@ -413,46 +464,152 @@ export function ArticleEditor({
         </div>
       )}
 
-      {/* Bottom toolbar */}
-      {editable && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '12px 0',
-          marginTop: 12,
-        }}>
-          {/* Centered insert button */}
-          <button
-            onClick={() => {
-              if (editor) {
-                editor.chain().focus().run();
-                const pos = editor.state.selection.$from.pos;
-                editor.chain().insertContentAt(pos, '/').run();
-              }
+      {editable ? (
+        <>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              gap: 8,
+              padding: '12px 0 8px',
+              marginTop: 8,
             }}
-            onMouseEnter={() => setInsertHovered(true)}
-            onMouseLeave={() => setInsertHovered(false)}
+          >
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saving}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                height: 30,
+                padding: '0 12px',
+                borderRadius: 6,
+                border: '0.5px solid hsl(var(--foreground) / 0.1)',
+                background: 'transparent',
+                color: 'hsl(var(--foreground) / 0.62)',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
+              <Save size={13} strokeWidth={1.8} />
+              Save
+            </button>
+
+            <button
+              type="button"
+              onClick={onPublish}
+              disabled={publishing}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                height: 30,
+                padding: '0 14px',
+                borderRadius: 6,
+                border: '0.5px solid hsl(var(--secondary) / 0.35)',
+                background: 'hsl(var(--secondary) / 0.14)',
+                color: 'hsl(var(--foreground) / 0.96)',
+                boxShadow: '0 8px 24px hsl(var(--secondary) / 0.12)',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: publishing ? 'not-allowed' : 'pointer',
+                opacity: publishing ? 0.65 : 1,
+              }}
+            >
+              <Send size={13} strokeWidth={1.8} />
+              Publish
+            </button>
+          </div>
+
+          <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              padding: '8px 20px',
-              fontSize: 12,
-              fontWeight: 500,
-              fontFamily: 'Inter, sans-serif',
-              background: insertHovered ? 'rgba(255,255,255,0.02)' : 'transparent',
-              border: `1px dashed ${insertHovered ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.10)'}`,
-              borderRadius: 8,
-              color: insertHovered ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.35)',
-              cursor: 'pointer',
-              transition: 'all 200ms',
+              justifyContent: 'space-between',
+              gap: 8,
             }}
           >
-            <Plus size={14} /> Insert
-          </button>
-        </div>
-      )}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <StatusBar
+                documentTitle={documentTitle}
+                wordCount={metrics.wordCount}
+                characterCount={metrics.characterCount}
+                readingMinutes={metrics.readingMinutes}
+                saveStatus={saveStatus}
+                zoom={100}
+                focusMode={focusMode}
+                collaborators={collaboratorCount}
+                onZoomChange={() => {}}
+                onMoreTemplates={onOpenTemplates}
+                onMoreGrammarCheck={onGrammarCheck}
+                onMoreHistory={onOpenHistory}
+                onMoreNotes={onOpenNotes}
+                onMoreClearAll={onClearAll}
+              />
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    border: '0.5px solid hsl(var(--foreground) / 0.08)',
+                    background: 'hsl(var(--foreground) / 0.025)',
+                    color: 'hsl(var(--foreground) / 0.62)',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                  aria-label="Editor actions"
+                >
+                  <MoreHorizontal size={13} strokeWidth={1.8} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                side="top"
+                sideOffset={6}
+                style={{
+                  background: 'hsl(240 20% 8% / 0.95)',
+                  border: '0.5px solid hsl(var(--foreground) / 0.08)',
+                  boxShadow: '0 10px 30px hsl(240 10% 2% / 0.45)',
+                  borderRadius: 8,
+                  minWidth: 184,
+                }}
+              >
+                <DropdownMenuItem inset onClick={onOpenTemplates} style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+                  Templates
+                </DropdownMenuItem>
+                <DropdownMenuItem inset onClick={onGrammarCheck} style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+                  Grammar Check
+                </DropdownMenuItem>
+                <DropdownMenuItem inset onClick={onOpenHistory} style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+                  History
+                </DropdownMenuItem>
+                <DropdownMenuItem inset onClick={onOpenNotes} style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+                  Notes
+                </DropdownMenuItem>
+                <DropdownMenuSeparator style={{ background: 'hsl(var(--foreground) / 0.06)' }} />
+                <DropdownMenuItem inset onClick={onClearAll} style={{ fontSize: 11, color: 'hsl(12 76% 61%)' }}>
+                  Clear All
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

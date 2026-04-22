@@ -425,9 +425,10 @@ function ToolbarGroup({ children }: { children: React.ReactNode }) {
 
 export interface TopToolbarProps {
   editor: Editor | null;
+  onInsertBlock?: () => void;
 }
 
-export function TopToolbar({ editor }: TopToolbarProps) {
+export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
   const blockStyle: string = 'body';
   const lineHeight: string = '1.5';
   const alignment: 'left' | 'center' | 'right' | 'justify' = 'left' as 'left' | 'center' | 'right' | 'justify';
@@ -532,6 +533,7 @@ export function TopToolbar({ editor }: TopToolbarProps) {
           <Divider />
 
           <ToolbarGroup>
+            <ToolbarButton icon={FileText} label="Add block" onClick={onInsertBlock ?? noop} />
             <ToolbarButton icon={Link} label="Insert link" onClick={noop} />
             <ToolbarButton icon={Image} label="Insert image" onClick={noop} />
             <ToolbarButton icon={Video} label="Insert video" onClick={noop} />

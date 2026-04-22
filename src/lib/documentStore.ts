@@ -74,6 +74,7 @@ export interface PresenceEntry {
 
 export interface DocumentState {
   documentId: string | null;
+  documentTitle: string;
   articleBody: unknown;
   stages: Record<string, Stage>;
   blocks: Record<string, Block>;
@@ -84,6 +85,7 @@ export interface DocumentState {
   presence: Record<string, PresenceEntry>;
 
   loadDocument: (id: string) => void;
+  setDocumentTitle: (title: string) => void;
   setArticleBody: (json: unknown) => void;
 
   addStage: (stage: Stage) => void;
@@ -113,6 +115,7 @@ const emptySelection: Selection = { kind: 'none', ids: [] };
 export const useDocumentStore = create<DocumentState>()(
   immer((set) => ({
     documentId: null,
+    documentTitle: '',
     articleBody: null,
     stages: {},
     blocks: {},
@@ -125,6 +128,7 @@ export const useDocumentStore = create<DocumentState>()(
     loadDocument: (id) =>
       set((state) => {
         state.documentId = id;
+        state.documentTitle = '';
         state.articleBody = null;
         state.stages = {};
         state.blocks = {};
@@ -133,6 +137,11 @@ export const useDocumentStore = create<DocumentState>()(
         state.focusMode = 'edit';
         state.dirty = new Set<string>();
         state.presence = {};
+      }),
+
+    setDocumentTitle: (title) =>
+      set((state) => {
+        state.documentTitle = title;
       }),
 
     setArticleBody: (json) =>
