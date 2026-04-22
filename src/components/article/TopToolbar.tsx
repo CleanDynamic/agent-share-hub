@@ -428,9 +428,9 @@ export interface TopToolbarProps {
 }
 
 export function TopToolbar({ editor }: TopToolbarProps) {
-  const blockStyle = 'body';
-  const lineHeight = '1.5';
-  const alignment: 'left' | 'center' | 'right' | 'justify' = 'left';
+  const blockStyle: string = 'body';
+  const lineHeight: string = '1.5';
+  const alignment: 'left' | 'center' | 'right' | 'justify' = 'left' as 'left' | 'center' | 'right' | 'justify';
   void editor;
 
   const getBlockStyleLabel = (value: string) => {
