@@ -332,72 +332,85 @@ export function ArticleEditor({
       {/* Editor styles */}
       <style>{`
         .tiptap-article {
+          width: 100%;
+          max-width: 720px;
+          margin: 0 auto;
+          min-height: 300px;
+          background: ${focusMode === 'focus' ? 'hsl(var(--foreground) / 0.015)' : 'transparent'};
+          border: ${focusMode === 'focus' ? `0.5px solid ${editorFocused ? 'hsl(var(--foreground) / 0.08)' : 'hsl(var(--foreground) / 0.05)'}` : '0.5px solid transparent'};
+          border-radius: 8px;
+          transition: border-color 200ms ease, background 200ms ease;
+        }
+        .tiptap-article .ProseMirror {
           font-family: 'Inter', sans-serif;
-          color: rgba(255,255,255,0.82);
-          line-height: 1.7;
-          font-size: 14px;
-          padding: 24px 20px;
+          font-size: 15px;
+          line-height: 1.75;
+          color: hsl(var(--foreground) / 0.92);
+          padding: 48px 24px 32px;
           min-height: 300px;
           outline: none;
-          background: rgba(255,255,255,0.015);
-          border-radius: 8px;
-          border: 1px solid ${editorFocused ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)'};
-          transition: border-color 200ms;
+          caret-color: hsl(18 79% 54%);
+        }
+        .tiptap-article .ProseMirror-focused {
+          caret-color: hsl(18 79% 54%);
+        }
+        .tiptap-article .ProseMirror::selection,
+        .tiptap-article .ProseMirror *::selection {
+          background: hsl(18 79% 54% / 0.2);
         }
         .tiptap-article h1 {
-          font-family: 'Playfair Display', serif;
+          font-family: 'Inter', sans-serif;
           font-size: 28px;
           font-weight: 700;
-          color: rgba(255,255,255,0.90);
-          margin: 24px 0 8px;
+          color: hsl(var(--foreground) / 0.95);
+          margin: 40px 0 12px;
           line-height: 1.3;
         }
         .tiptap-article h2 {
-          font-family: 'Playfair Display', serif;
-          font-size: 20px;
-          font-weight: 700;
-          color: rgba(255,255,255,0.85);
-          margin: 20px 0 6px;
+          font-family: 'Inter', sans-serif;
+          font-size: 22px;
+          font-weight: 600;
+          color: hsl(var(--foreground) / 0.92);
+          margin: 32px 0 10px;
           line-height: 1.35;
         }
         .tiptap-article h3 {
           font-family: 'Inter', sans-serif;
-          font-size: 15px;
-          font-weight: 700;
-          color: rgba(255,255,255,0.80);
-          margin: 16px 0 4px;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
+          font-size: 18px;
+          font-weight: 600;
+          color: hsl(var(--foreground) / 0.9);
+          margin: 24px 0 8px;
+          line-height: 1.4;
         }
         .tiptap-article p {
-          margin: 0 0 16px;
+          margin: 0 0 18px;
         }
         .tiptap-article blockquote {
-          border-left: 3px solid rgba(139,69,19,0.4);
-          padding-left: 16px;
-          color: rgba(255,255,255,0.60);
+          border-left: 2px solid hsl(18 79% 54% / 0.4);
+          padding-left: 20px;
+          color: hsl(var(--foreground) / 0.65);
           font-style: italic;
-          margin: 16px 0;
+          margin: 18px 0;
         }
         .tiptap-article pre {
-          background: rgba(0,0,0,0.3);
-          border: 1px solid rgba(255,255,255,0.08);
+          background: hsl(var(--foreground) / 0.03);
+          border: 0.5px solid hsl(var(--foreground) / 0.08);
           border-radius: 8px;
           padding: 14px 16px;
           overflow-x: auto;
           margin: 12px 0;
           font-family: 'JetBrains Mono', 'Fira Code', monospace;
-          font-size: 12px;
+          font-size: 13px;
           line-height: 1.5;
-          color: rgba(255,255,255,0.75);
+          color: hsl(var(--foreground) / 0.78);
         }
         .tiptap-article code {
-          background: rgba(255,255,255,0.06);
-          border-radius: 4px;
-          padding: 1px 4px;
+          background: hsl(var(--foreground) / 0.06);
+          border-radius: 3px;
+          padding: 1px 5px;
           font-family: 'JetBrains Mono', 'Fira Code', monospace;
-          font-size: 12px;
-          color: rgba(255,255,255,0.70);
+          font-size: 13px;
+          color: hsl(var(--foreground) / 0.85);
         }
         .tiptap-article pre code {
           background: none;
@@ -411,30 +424,24 @@ export function ArticleEditor({
         }
         .tiptap-article hr {
           border: none;
-          border-top: 1px solid rgba(255,255,255,0.08);
+          border-top: 0.5px solid hsl(var(--foreground) / 0.08);
           margin: 20px 0;
         }
-        .tiptap-article .is-editor-empty:first-child::before {
-          content: attr(data-placeholder);
+        .tiptap-article .ProseMirror p.is-editor-empty:first-child::before,
+        .tiptap-article .ProseMirror .is-editor-empty:first-child::before {
+          content: 'Tell your story...';
           float: left;
-          color: rgba(255,255,255,0.20);
+          color: hsl(var(--foreground) / 0.2);
           pointer-events: none;
           height: 0;
           font-style: italic;
           font-family: 'Inter', sans-serif;
-          font-size: 14px;
+          font-size: 15px;
           font-weight: 400;
         }
-        .tiptap-article p.is-editor-empty:first-child::before {
-          content: attr(data-placeholder);
-          float: left;
-          color: rgba(255,255,255,0.20);
-          pointer-events: none;
-          height: 0;
-          font-style: italic;
-          font-family: 'Inter', sans-serif;
-          font-size: 14px;
-          font-weight: 400;
+        .tiptap-article .ProseMirror-gapcursor:after {
+          border-top-color: hsl(18 79% 54%);
+          animation: articleCaretBlink 1.2s step-end infinite;
         }
       `}</style>
 
@@ -443,6 +450,11 @@ export function ArticleEditor({
       <EditorContent
         editor={editor}
         className="tiptap-article"
+        style={{
+          width: '100%',
+          maxWidth: 720,
+          margin: '0 auto',
+        }}
       />
 
       {/* Slash command popup */}
