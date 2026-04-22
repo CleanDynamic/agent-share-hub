@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
+import { Boxes } from 'lucide-react';
 
 import { useSelection } from '@/hooks/useSelection';
 import { useDocumentStore } from '@/lib/documentStore';
 
 import { InspectorDocument } from './InspectorDocument';
+import { EmptyPanelState } from './toolPanelStyles';
 
 type Visibility = 'public' | 'private' | 'unlisted';
 type Status = 'draft' | 'published';
@@ -62,15 +64,11 @@ function countWordsInString(s: unknown): number {
 
 function PlaceholderInspector({ label }: { label: string }) {
   return (
-    <div
-      style={{
-        padding: '12px',
-        fontSize: 13,
-        color: 'rgba(255,255,255,0.50)',
-      }}
-    >
-      {label}
-    </div>
+    <EmptyPanelState
+      icon={Boxes}
+      title="Inspector details coming soon"
+      description={label}
+    />
   );
 }
 
