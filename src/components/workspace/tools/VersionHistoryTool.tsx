@@ -1,6 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Clock3, Eye, Undo2 } from 'lucide-react';
 
+import {
+  EmptyPanelState,
+  PANEL_CARD_BACKGROUND,
+  PANEL_DIVIDER,
+  TOOL_HEADER_TITLE_STYLE,
+} from './toolPanelStyles';
+
 type VersionScope = 'block' | 'document';
 
 interface VersionEntry {
@@ -131,7 +138,7 @@ export function VersionHistoryTool({
         style={{
           height: 36,
           minHeight: 36,
-          borderBottom: '0.5px solid hsl(var(--foreground) / 0.08)',
+          borderBottom: PANEL_DIVIDER,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -140,11 +147,7 @@ export function VersionHistoryTool({
         }}
       >
         <span
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: 'hsl(var(--foreground) / 0.85)',
-          }}
+          style={TOOL_HEADER_TITLE_STYLE}
         >
           Versions
         </span>
@@ -199,29 +202,11 @@ export function VersionHistoryTool({
         }}
       >
         {versions.length === 0 ? (
-          <div
-            style={{
-              height: '100%',
-              minHeight: 220,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              padding: '0 20px',
-              textAlign: 'center',
-            }}
-          >
-            <Clock3 size={64} style={{ color: 'hsl(var(--foreground) / 0.25)' }} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <div style={{ fontSize: 12, fontWeight: 500, color: 'hsl(var(--foreground) / 0.6)' }}>
-                No changes yet
-              </div>
-              <div style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.4)', lineHeight: 1.45 }}>
-                Your edits will be saved automatically as versions.
-              </div>
-            </div>
-          </div>
+          <EmptyPanelState
+            icon={Clock3}
+            title="No changes yet"
+            description="Your edits will be saved automatically as versions."
+          />
         ) : (
           groupedVersions.map(([group, items], groupIndex) => (
             <div key={group} style={{ marginTop: groupIndex === 0 ? 0 : 10 }}>
@@ -257,9 +242,9 @@ export function VersionHistoryTool({
                       borderLeft: active
                         ? '2px solid hsl(var(--secondary))'
                         : '2px solid transparent',
-                      backgroundColor: active
-                        ? 'hsl(var(--secondary) / 0.06)'
-                        : 'transparent',
+                       backgroundColor: active
+                         ? 'hsl(var(--secondary) / 0.06)'
+                         : 'transparent',
                       textAlign: 'left',
                       display: 'flex',
                       alignItems: 'flex-start',
@@ -376,7 +361,7 @@ export function VersionHistoryTool({
           style={{
             height: 48,
             minHeight: 48,
-            borderTop: '0.5px solid hsl(var(--foreground) / 0.08)',
+             borderTop: PANEL_DIVIDER,
             backgroundColor: 'hsl(38 92% 50% / 0.08)',
             display: 'flex',
             alignItems: 'center',

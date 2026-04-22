@@ -1,6 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Check, MessageSquareOff, Send } from 'lucide-react';
 
+import {
+  EmptyPanelState,
+  PANEL_CARD_BACKGROUND,
+  PANEL_DIVIDER,
+  PANEL_INPUT_BACKGROUND,
+  PANEL_INPUT_BORDER,
+  PANEL_INPUT_RADIUS,
+} from './toolPanelStyles';
+
 type CommentFilter = 'all' | 'unresolved' | 'resolved';
 
 interface CommentThread {
@@ -171,11 +180,11 @@ export function CommentsTool({
     >
       <div
         style={{
-          height: 32,
-          minHeight: 32,
+          height: 36,
+          minHeight: 36,
           display: 'grid',
           gridTemplateColumns: '1fr 1fr 1fr',
-          borderBottom: '0.5px solid hsl(var(--foreground) / 0.08)',
+          borderBottom: PANEL_DIVIDER,
           padding: 0,
         }}
       >
@@ -215,45 +224,11 @@ export function CommentsTool({
         }}
       >
         {visibleThreads.length === 0 ? (
-          <div
-            style={{
-              height: '100%',
-              minHeight: 220,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-              gap: 10,
-              padding: '0 20px',
-            }}
-          >
-            <MessageSquareOff
-              size={64}
-              style={{ color: 'hsl(var(--foreground) / 0.25)' }}
-            />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: 'hsl(var(--foreground) / 0.86)',
-                }}
-              >
-                No comments yet
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 400,
-                  lineHeight: 1.45,
-                  color: 'hsl(var(--foreground) / 0.46)',
-                }}
-              >
-                Select text, a block, or a stage to add a comment.
-              </div>
-            </div>
-          </div>
+          <EmptyPanelState
+            icon={MessageSquareOff}
+            title="No comments yet"
+            description="Select text, a block, or a stage to add a comment."
+          />
         ) : (
           visibleThreads.map((thread) => (
             <button
@@ -265,8 +240,8 @@ export function CommentsTool({
                 marginBottom: 6,
                 padding: '8px 10px',
                 borderRadius: 8,
-                border: '0.5px solid hsl(var(--foreground) / 0.06)',
-                backgroundColor: 'hsl(var(--foreground) / 0.025)',
+                 border: PANEL_DIVIDER,
+                 backgroundColor: PANEL_CARD_BACKGROUND,
                 textAlign: 'left',
                 cursor: 'pointer',
                 display: 'flex',
@@ -421,7 +396,7 @@ export function CommentsTool({
           alignItems: 'center',
           gap: 8,
           padding: '0 10px',
-          borderTop: '0.5px solid hsl(var(--foreground) / 0.08)',
+           borderTop: PANEL_DIVIDER,
         }}
       >
         <Avatar name={currentUser.name} avatarUrl={currentUser.avatarUrl} />
@@ -441,9 +416,9 @@ export function CommentsTool({
             minWidth: 0,
             height: 28,
             padding: '6px 8px',
-            border: 'none',
-            borderRadius: 6,
-            backgroundColor: 'transparent',
+             border: PANEL_INPUT_BORDER,
+             borderRadius: PANEL_INPUT_RADIUS,
+             backgroundColor: PANEL_INPUT_BACKGROUND,
             fontSize: 11,
             fontWeight: 400,
             color: 'hsl(var(--foreground) / 0.85)',
@@ -459,7 +434,7 @@ export function CommentsTool({
             width: 28,
             height: 28,
             borderRadius: 6,
-            border: 'none',
+             border: '0.5px solid transparent',
             backgroundColor: 'transparent',
             color: draft.trim()
               ? 'hsl(var(--secondary))'

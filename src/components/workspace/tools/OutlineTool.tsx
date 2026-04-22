@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 
 import { useDocumentStore } from '@/lib/documentStore';
 
+import { PANEL_CARD_BACKGROUND, PANEL_DIVIDER } from './toolPanelStyles';
+
 type OutlineEntry = {
   id: string;
   kind: 'heading' | 'stage' | 'block';
@@ -162,12 +164,12 @@ export function OutlineTool({
     >
       <div
         style={{
-          height: 28,
-          minHeight: 28,
+          height: 36,
+          minHeight: 36,
           display: 'flex',
           alignItems: 'center',
           padding: '6px 12px',
-          borderBottom: '0.5px solid hsl(var(--foreground) / 0.08)',
+          borderBottom: PANEL_DIVIDER,
           fontSize: 10,
           fontWeight: 500,
           color: 'hsl(var(--foreground) / 0.4)',
@@ -211,7 +213,7 @@ export function OutlineTool({
                 paddingLeft: isStage ? 8 : 10 + indent,
                 borderRadius: isStage ? 6 : 4,
                 border: isStage
-                  ? '0.5px solid hsl(var(--primary) / 0.2)'
+                   ? '0.5px solid hsl(var(--primary) / 0.2)'
                   : 'none',
                 borderLeft: isActive
                   ? '2px solid hsl(var(--secondary))'
@@ -219,8 +221,8 @@ export function OutlineTool({
                     ? '0.5px solid hsl(var(--primary) / 0.2)'
                     : '2px solid transparent',
                 backgroundColor: isStage
-                  ? 'hsl(var(--primary) / 0.1)'
-                  : 'transparent',
+                   ? PANEL_CARD_BACKGROUND
+                   : 'transparent',
                 color: isActive
                   ? 'hsl(var(--foreground) / 0.95)'
                   : 'hsl(var(--foreground) / 0.55)',
@@ -308,14 +310,14 @@ export function OutlineTool({
 
       <div
         style={{
-          height: 28,
-          minHeight: 28,
+          height: 36,
+          minHeight: 36,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 8,
           padding: '6px 10px',
-          borderTop: '0.5px solid hsl(var(--foreground) / 0.08)',
+           borderTop: PANEL_DIVIDER,
         }}
       >
         <span style={{ fontSize: 10, color: 'hsl(var(--foreground) / 0.35)' }}>
