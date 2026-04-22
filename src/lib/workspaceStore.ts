@@ -5,7 +5,6 @@ export type WorkspaceToolId =
   | 'library'
   | 'outline'
   | 'comments'
-  | 'ai'
   | 'versions';
 
 export interface WorkspaceState {
@@ -22,7 +21,6 @@ const initialToolState: Record<WorkspaceToolId, unknown> = {
   library: undefined,
   outline: undefined,
   comments: undefined,
-  ai: undefined,
   versions: undefined,
 };
 
