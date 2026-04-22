@@ -6,7 +6,7 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
 import { StageGridExtension } from './StageGridExtension';
 import { BlockRefExtension } from '@/components/canvas/tiptap/BlockRefExtension';
-import { BubbleToolbar } from './BubbleToolbar';
+import { TopToolbar } from './TopToolbar';
 import { FormattingShortcuts } from './KeyboardShortcutsExtension';
 import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
 import type { SlashCommandItem } from './SlashCommandMenu';
@@ -387,13 +387,12 @@ export function ArticleEditor({
         }
       `}</style>
 
+      <TopToolbar editor={editor} />
+
       <EditorContent
         editor={editor}
         className="tiptap-article"
       />
-
-      {/* Floating formatting toolbar */}
-      <BubbleToolbar editor={editor} containerRef={editorContainerRef as React.RefObject<HTMLDivElement>} />
 
       {/* Slash command popup */}
       {slashOpen && slashPos && (
