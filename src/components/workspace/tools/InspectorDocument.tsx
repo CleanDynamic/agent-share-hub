@@ -84,7 +84,7 @@ export function InspectorDocument({
       }}
     >
       {/* Document Section */}
-      <div className="flex flex-col" style={{ gap: 8, marginBottom: 16 }}>
+      <div className="flex flex-col" style={{ gap: 8, marginBottom: 12 }}>
         <span
           style={SECTION_LABEL_STYLE}
         >
@@ -231,12 +231,12 @@ export function InspectorDocument({
           height: 1,
           backgroundColor: 'transparent',
           borderTop: PANEL_DIVIDER,
-          margin: "14px 0",
+          margin: "10px 0",
         }}
       />
 
       {/* Stats Section */}
-      <div className="flex flex-col" style={{ gap: 8, marginBottom: 16 }}>
+      <div className="flex flex-col" style={{ gap: 8, marginBottom: 12 }}>
         <span
           style={SECTION_LABEL_STYLE}
         >
@@ -263,7 +263,7 @@ export function InspectorDocument({
           height: 1,
           backgroundColor: 'transparent',
           borderTop: PANEL_DIVIDER,
-          margin: "14px 0",
+          margin: "10px 0",
         }}
       />
 
