@@ -38,7 +38,6 @@ import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { ArticleEditor } from '@/components/article/ArticleEditor';
 import type { EvidenceMediaType } from '@/components/canvas/CanvasHeader';
 import { CanvasHeader } from '@/components/canvas/CanvasHeader';
-import { CanvasToolbar } from '@/components/canvas/CanvasToolbar';
 import { TemplateLibrary } from '@/components/canvas/TemplateLibrary';
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
@@ -1269,66 +1268,35 @@ const Upload = () => {
             <ArticleEditor
               canvasDoc={canvasDoc}
               initialContent={(canvasDoc as any).articleBody ?? undefined}
+              documentTitle={form.watch('title') ?? ''}
               onChange={(json) => {
                 // Store article body for save
                 (canvasDoc as any)._articleBody = json;
               }}
               onSelectedStageChange={setSelectedStageId}
+              onOpenTemplates={() => setTemplateLibOpen(true)}
+              onOpenHistory={() => {}}
+              onOpenNotes={() => {}}
+              onGrammarCheck={() => {}}
+              onClearAll={() => {}}
+              onSave={() => {
+                saveDraft(false);
+                canvasDoc.saveDocument(currentDraftId ?? '');
+              }}
+              onPublish={() => {
+                const title = form.getValues('title');
+                if (!title || !title.trim()) {
+                  toast({ title: 'Title required', description: 'Add a title before publishing.', variant: 'destructive' });
+                  return;
+                }
+                form.handleSubmit(onSubmit)();
+              }}
+              saving={savingDraft}
+              publishing={submitting}
               editable
             />
           </div>
         </div>
-
-        {/* Bottom toolbar */}
-        <CanvasToolbar
-          doc={canvasDoc}
-          onSave={() => {
-            saveDraft(false);
-            canvasDoc.saveDocument(currentDraftId ?? '');
-          }}
-          onPublish={() => {
-            const title = form.getValues('title');
-            if (!title || !title.trim()) {
-              toast({ title: 'Title required', description: 'Add a title before publishing.', variant: 'destructive' });
-              return;
-            }
-            form.handleSubmit(onSubmit)();
-          }}
-          saving={savingDraft}
-          submitting={submitting}
-          onBack={() => setShowTypeChooser(true)}
-          blockCount={canvasDoc.blocks.length}
-          onInsertBlock={(type, position) => {
-            // Verify the selected stage still exists
-            const targetStageId =
-              selectedStageId &&
-              canvasDoc.stages.some(s => s.id === selectedStageId)
-                ? selectedStageId
-                : null;
-
-            if (!targetStageId) {
-              toast({
-                title: 'Insert a stage grid first, then select it',
-              });
-              return null;
-            }
-
-            const id = canvasDoc.addBlock(type, position);
-            if (type !== 'sticky_note') {
-              canvasDoc.assignBlockToStage(id, targetStageId);
-            }
-            return id;
-          }}
-          onTemplates={() => setTemplateLibOpen(true)}
-          onHistory={() => {}}
-          onAnnotations={() => {}}
-          onGrammarCheck={() => {}}
-          annotationCount={0}
-          zoom={1}
-          onZoomIn={() => {}}
-          onZoomOut={() => {}}
-          onClearAll={() => {}}
-        />
 
         {/* Template library panel */}
         <TemplateLibrary
