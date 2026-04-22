@@ -4,7 +4,6 @@ import {
   Shapes,
   List,
   MessageSquare,
-  Sparkles,
   Clock,
   type LucideIcon,
 } from 'lucide-react';
@@ -21,7 +20,6 @@ import { InspectorTool } from './tools/InspectorTool';
 import { BlockLibraryTool } from './tools/BlockLibraryTool';
 import { OutlineTool } from './tools/OutlineTool';
 import { CommentsTool } from './tools/CommentsTool';
-import { AIAssistantTool } from './tools/AIAssistantTool';
 import { VersionHistoryTool } from './tools/VersionHistoryTool';
 
 interface ToolDefinition {
@@ -36,7 +34,6 @@ const TOOLS: readonly ToolDefinition[] = [
   { id: 'library', label: 'Block Library', icon: Shapes, render: () => <BlockLibraryTool /> },
   { id: 'outline', label: 'Outline', icon: List, render: () => <OutlineTool /> },
   { id: 'comments', label: 'Comments', icon: MessageSquare, render: () => <CommentsTool /> },
-  { id: 'ai', label: 'AI Assistant', icon: Sparkles, render: () => <AIAssistantTool /> },
   { id: 'versions', label: 'Version History', icon: Clock, render: () => <VersionHistoryTool /> },
 ];
 
