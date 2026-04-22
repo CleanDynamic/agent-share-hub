@@ -180,11 +180,11 @@ export function CommentsTool({
     >
       <div
         style={{
-          height: 32,
-          minHeight: 32,
+          height: 36,
+          minHeight: 36,
           display: 'grid',
           gridTemplateColumns: '1fr 1fr 1fr',
-          borderBottom: '0.5px solid hsl(var(--foreground) / 0.08)',
+          borderBottom: PANEL_DIVIDER,
           padding: 0,
         }}
       >

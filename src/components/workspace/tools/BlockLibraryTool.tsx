@@ -1,6 +1,14 @@
 import { useMemo, useState, type CSSProperties, type DragEvent } from 'react';
 import { Search } from 'lucide-react';
 
+import {
+  PANEL_CARD_BACKGROUND,
+  PANEL_DIVIDER,
+  PANEL_INPUT_BACKGROUND,
+  PANEL_INPUT_BORDER,
+  PANEL_INPUT_RADIUS,
+} from './toolPanelStyles';
+
 // ─── Block catalog ────────────────────────────────────────────────
 interface BlockDef {
   type: string;
@@ -100,9 +108,9 @@ export function BlockLibraryTool({
           alignItems: 'center',
           gap: 6,
           padding: '8px 10px',
-          background: 'rgba(30,30,40,0.4)',
-          border: '0.5px solid rgba(255,255,255,0.06)',
-          borderRadius: 6,
+          background: PANEL_INPUT_BACKGROUND,
+          border: PANEL_INPUT_BORDER,
+          borderRadius: PANEL_INPUT_RADIUS,
         }}
       >
         <Search size={14} style={{ color: 'rgba(255,255,255,0.35)', flexShrink: 0 }} />
@@ -209,7 +217,7 @@ export function BlockLibraryTool({
           height: 24,
           flexShrink: 0,
           padding: '6px 10px',
-          borderTop: '0.5px solid rgba(255,255,255,0.06)',
+          borderTop: PANEL_DIVIDER,
           color: 'rgba(255,255,255,0.30)',
           fontFamily: 'Inter, sans-serif',
           fontSize: 10,
@@ -237,7 +245,7 @@ function BlockCard({ block, onDragStart, onDoubleClick }: BlockCardProps) {
     height: 60,
     borderRadius: 6,
     padding: '6px 8px',
-    background: hover ? withAlpha(block.color, 0.06) : 'rgba(255,255,255,0.03)',
+    background: hover ? withAlpha(block.color, 0.06) : PANEL_CARD_BACKGROUND,
     border: `0.5px solid ${hover ? withAlpha(block.color, 0.20) : 'rgba(255,255,255,0.06)'}`,
     cursor: 'grab',
     display: 'flex',

@@ -164,8 +164,8 @@ export function OutlineTool({
     >
       <div
         style={{
-          height: 28,
-          minHeight: 28,
+          height: 36,
+          minHeight: 36,
           display: 'flex',
           alignItems: 'center',
           padding: '6px 12px',
@@ -310,8 +310,8 @@ export function OutlineTool({
 
       <div
         style={{
-          height: 28,
-          minHeight: 28,
+          height: 36,
+          minHeight: 36,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
