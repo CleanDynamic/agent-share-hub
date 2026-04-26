@@ -46,6 +46,55 @@ export interface SlashCommandItem {
   phaseLabel?: string;
 }
 
+/**
+ * Insert a canvas block into the most recently created stage. Used by the
+ * slash menu's CANVAS category for quick insertion without opening the Add
+ * Block modal. If no stage exists yet, the user is told to insert one first.
+ */
+function insertCanvasBlock(type: Block['type']) {
+  const store = useDocumentStore.getState();
+  const stages = Object.values(store.stages);
+  if (stages.length === 0) {
+    toast.error('Insert a stage grid first');
+    return;
+  }
+  const latest = stages.sort(
+    (a, b) => (b.order_in_document ?? 0) - (a.order_in_document ?? 0),
+  )[0];
+
+  // Find a free row by stacking below existing blocks in the same stage.
+  const stageBlocks = Object.values(store.blocks).filter(
+    (b) => b.stage_id === latest.id,
+  );
+  const maxBottom = stageBlocks.reduce(
+    (acc, b) => Math.max(acc, b.position_y + b.height),
+    0,
+  );
+
+  const id =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `block-${Date.now()}`;
+  const now = new Date().toISOString();
+  const block: Block = {
+    id,
+    stage_id: latest.id,
+    type,
+    position_x: 40,
+    position_y: maxBottom > 0 ? maxBottom + 20 : 40,
+    width: 240,
+    height: 200,
+    z_index: 0,
+    name: null,
+    properties: {},
+    locked: false,
+    created_at: now,
+    updated_at: now,
+  };
+  store.addBlock(block);
+  store.setSelection({ kind: 'block', ids: [id] });
+}
+
 const MENU_ITEMS: SlashCommandItem[] = [
   { id: 'heading-1', label: 'Heading 1', description: 'Large section heading', icon: Heading1, shortcut: '⌘⌥1', category: 'BASIC', action: (editor) => editor.chain().focus().setHeading({ level: 1 }).run() },
   { id: 'heading-2', label: 'Heading 2', description: 'Medium section heading', icon: Heading2, shortcut: '⌘⌥2', category: 'BASIC', action: (editor) => editor.chain().focus().setHeading({ level: 2 }).run() },
