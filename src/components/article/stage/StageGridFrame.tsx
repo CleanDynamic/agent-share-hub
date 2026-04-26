@@ -42,6 +42,7 @@ export function StageGridFrame({
   onRename,
   onDelete,
   onQuickInsert,
+  onOpenTemplates,
   onResize,
   onContextMenu,
 }: StageGridFrameProps) {
