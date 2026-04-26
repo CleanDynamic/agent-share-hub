@@ -12,16 +12,22 @@ import '@xyflow/react/dist/style.css';
 
 import { useDocumentStore } from '@/lib/documentStore';
 import type { Block, Connection } from '@/types/document';
+import { PromptBlockNode } from '../blocks/PromptBlock';
 
 interface StageCanvasProps {
   stageId: string;
 }
 
+const nodeTypes = {
+  prompt: PromptBlockNode,
+};
+
 function blockToNode(block: Block): Node {
   return {
     id: block.id,
+    type: block.type === 'prompt' ? 'prompt' : undefined,
     position: { x: block.position_x, y: block.position_y },
-    data: { label: block.name ?? block.type },
+    data: { label: block.name ?? block.type, blockId: block.id },
     width: block.width,
     height: block.height,
   };
