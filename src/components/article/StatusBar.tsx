@@ -59,6 +59,8 @@ const itemButtonStyle = {
   fontSize: 11,
   fontWeight: 500,
   cursor: 'pointer',
+  whiteSpace: 'nowrap' as const,
+  flexShrink: 0,
   transition: 'background 120ms ease, color 120ms ease',
 } satisfies React.CSSProperties;
 
