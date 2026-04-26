@@ -344,18 +344,20 @@ export function StatusBar({
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setNotifications((current) => !current)}
-          style={{
-            ...itemButtonStyle,
-            background: notifications ? 'hsl(var(--foreground) / 0.12)' : 'transparent',
-            color: notifications ? 'hsl(var(--foreground) / 0.9)' : itemButtonStyle.color,
-          }}
-          aria-label="Notifications"
-        >
-          <Wifi size={12} strokeWidth={1.8} />
-        </button>
+        {showSecondary ? (
+          <button
+            type="button"
+            onClick={() => setNotifications((current) => !current)}
+            style={{
+              ...itemButtonStyle,
+              background: notifications ? 'hsl(var(--foreground) / 0.12)' : 'transparent',
+              color: notifications ? 'hsl(var(--foreground) / 0.9)' : itemButtonStyle.color,
+            }}
+            aria-label="Notifications"
+          >
+            <Wifi size={12} strokeWidth={1.8} />
+          </button>
+        ) : null}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
