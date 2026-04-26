@@ -60,7 +60,7 @@ export function StageGridNode({ node, updateAttributes, editor, getPos }: StageG
 
   const handleResize = useCallback(
     (newHeight: number) => {
-      const clamped = Math.round(Math.max(280, Math.min(800, newHeight)));
+      const clamped = Math.round(Math.max(200, Math.min(600, newHeight)));
       updateAttributes({ height: clamped });
       if (stageId) updateStage(stageId, { height: clamped });
     },
