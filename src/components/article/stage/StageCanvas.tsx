@@ -38,7 +38,9 @@ function blockToNode(block: Block): Node {
           ? 'code'
           : block.type === 'text'
             ? 'text'
-            : undefined,
+            : block.type === 'agent'
+              ? 'agent'
+              : undefined,
     position: { x: block.position_x, y: block.position_y },
     data: { label: block.name ?? block.type, blockId: block.id },
     width: block.width,
