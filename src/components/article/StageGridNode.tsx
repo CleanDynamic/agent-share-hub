@@ -2,7 +2,9 @@ import { NodeViewWrapper } from '@tiptap/react';
 import { useCallback, useMemo } from 'react';
 import { StageGridFrame } from './stage/StageGridFrame';
 import { StageCanvas } from './stage/StageCanvas';
+import { useTemplatePickerStore } from './stage/TemplatePicker';
 import { useDocumentStore } from '@/lib/documentStore';
+import { applyTemplateToStage } from '@/lib/stageTemplates';
 
 interface StageGridNodeProps {
   node: any;
@@ -23,6 +25,9 @@ export function StageGridNode({ node, updateAttributes, editor, getPos }: StageG
   const blocksMap = useDocumentStore((s) => s.blocks);
   const stagesMap = useDocumentStore((s) => s.stages);
   const updateStage = useDocumentStore((s) => s.updateStage);
+  const addBlock = useDocumentStore((s) => s.addBlock);
+  const addConnection = useDocumentStore((s) => s.addConnection);
+  const openTemplatePicker = useTemplatePickerStore((s) => s.open);
 
   // Live data from the store (falls back to TipTap attrs while the stage record
   // hasn't been hydrated yet)
@@ -83,6 +88,16 @@ export function StageGridNode({ node, updateAttributes, editor, getPos }: StageG
     /* coming in Phase 4 */
   }, []);
 
+  const handleOpenTemplates = useCallback(() => {
+    if (!stageId) return;
+    openTemplatePicker({
+      showEmpty: false,
+      onSelectTemplate: (template) => {
+        applyTemplateToStage(stageId, template, { addBlock, addConnection });
+      },
+    });
+  }, [stageId, openTemplatePicker, addBlock, addConnection]);
+
   return (
     <NodeViewWrapper data-stage-grid="" data-stage-id={stageId ?? undefined}>
       <StageGridFrame
@@ -96,6 +111,7 @@ export function StageGridNode({ node, updateAttributes, editor, getPos }: StageG
         onDelete={editor?.isEditable ? handleDelete : undefined}
         onExpand={handleExpand}
         onQuickInsert={handleQuickInsert}
+        onOpenTemplates={handleOpenTemplates}
       >
         {stageId ? <StageCanvas stageId={stageId} /> : null}
       </StageGridFrame>

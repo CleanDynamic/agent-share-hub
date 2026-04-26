@@ -9,6 +9,7 @@ import {
   Maximize,
   Map,
   GripHorizontal,
+  LayoutTemplate,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +27,7 @@ interface StageGridFrameProps {
   onExpand?: () => void;
   onDelete?: () => void;
   onQuickInsert?: (type: BlockType) => void;
+  onOpenTemplates?: () => void;
   zoom?: number;
   onZoom?: (zoom: number) => void;
   onFitView?: () => void;
@@ -59,6 +61,7 @@ export function StageGridFrame({
   onExpand,
   onDelete,
   onQuickInsert,
+  onOpenTemplates,
   zoom = 100,
   onZoom,
   onFitView,
@@ -282,8 +285,30 @@ export function StageGridFrame({
           background: 'rgba(255,255,255,0.025)',
         }}
       >
-        {/* Quick Insert Chips */}
+        {/* Templates + Quick Insert Chips */}
         <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <button
+            type="button"
+            onClick={onOpenTemplates}
+            className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-[5px] transition-all"
+            style={{
+              fontFamily: 'Inter, sans-serif',
+              color: '#E8571A',
+              background: 'rgba(232,87,26,0.10)',
+              border: '0.5px solid rgba(232,87,26,0.35)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(232,87,26,0.18)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(232,87,26,0.10)';
+            }}
+            title="Browse stage templates"
+          >
+            <LayoutTemplate size={11} strokeWidth={1.8} />
+            Templates
+          </button>
+          <div className="flex-shrink-0 w-px h-3 bg-white/10" />
           {quickInsertButtons.map(({ type, label }) => (
             <button
               key={type}

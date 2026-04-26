@@ -11,6 +11,7 @@ import { StatusBar } from './StatusBar';
 import { FormattingShortcuts } from './KeyboardShortcutsExtension';
 import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
 import type { SlashCommandItem } from './SlashCommandMenu';
+import { TemplatePickerHost } from './stage/TemplatePicker';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import CharacterCount from '@tiptap/extension-character-count';
 import { LayoutGrid, Heading2, Code, Image, Quote, Minus, Plus, Type, Save, Send } from 'lucide-react';
@@ -459,6 +460,9 @@ export function ArticleEditor({
           margin: '0 auto',
         }}
       />
+
+      {/* Template picker modal (controlled by useTemplatePickerStore) */}
+      <TemplatePickerHost />
 
       {/* Slash command popup */}
       <SlashCommandMenu

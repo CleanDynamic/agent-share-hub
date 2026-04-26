@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
+import { useTemplatePickerStore } from './stage/TemplatePicker';
+import { useDocumentStore } from '@/lib/documentStore';
+import { applyTemplateToStage, type StageTemplate } from '@/lib/stageTemplates';
 import {
   Heading1,
   Heading2,
@@ -42,6 +45,43 @@ export interface SlashCommandItem {
   phaseLabel?: string;
 }
 
+function insertStageWithTemplate(editor: Editor, template: StageTemplate | null): void {
+  const store = useDocumentStore.getState();
+  const stageId = crypto.randomUUID();
+  const order = Object.keys(store.stages).length;
+  const now = new Date().toISOString();
+  const stageName = template?.name ?? `Stage ${order + 1}`;
+
+  store.addStage({
+    id: stageId,
+    content_item_id: store.documentId ?? '',
+    order_in_document: order,
+    grid_spacing: 20,
+    background_style: 'dot',
+    width_mode: 'wide',
+    height: 400,
+    stage_name: stageName,
+    created_at: now,
+    updated_at: now,
+  });
+
+  editor
+    .chain()
+    .focus()
+    .insertContent({
+      type: 'stageGrid',
+      attrs: { stageId, stageTitle: stageName, gridSpacing: 20, height: 400 },
+    })
+    .run();
+
+  if (template) {
+    applyTemplateToStage(stageId, template, {
+      addBlock: store.addBlock,
+      addConnection: store.addConnection,
+    });
+  }
+}
+
 const MENU_ITEMS: SlashCommandItem[] = [
   { id: 'heading-1', label: 'Heading 1', description: 'Large section heading', icon: Heading1, shortcut: '⌘⌥1', category: 'BASIC', action: (editor) => editor.chain().focus().setHeading({ level: 1 }).run() },
   { id: 'heading-2', label: 'Heading 2', description: 'Medium section heading', icon: Heading2, shortcut: '⌘⌥2', category: 'BASIC', action: (editor) => editor.chain().focus().setHeading({ level: 2 }).run() },
@@ -54,7 +94,13 @@ const MENU_ITEMS: SlashCommandItem[] = [
   { id: 'divider', label: 'Divider', description: 'Visual section separator', icon: Minus, shortcut: '---', category: 'BASIC', action: (editor) => editor.chain().focus().setHorizontalRule().run() },
   { id: 'callout', label: 'Callout', description: 'Highlighted information block', icon: MessageSquare, category: 'BASIC', phaseLabel: 'Coming in Phase X' },
   { id: 'quote', label: 'Quote', description: 'Quoted text block', icon: Quote, shortcut: '⌘⇧.', category: 'BASIC', action: (editor) => editor.chain().focus().setBlockquote().run() },
-  { id: 'stage-grid', label: 'Stage grid', description: 'Arrange blocks visually', icon: LayoutGrid, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
+  { id: 'stage-grid', label: 'Stage grid', description: 'Arrange blocks visually', icon: LayoutGrid, category: 'CANVAS', action: (editor) => {
+      useTemplatePickerStore.getState().open({
+        showEmpty: true,
+        onSelectTemplate: (template) => insertStageWithTemplate(editor, template),
+        onSelectEmpty: () => insertStageWithTemplate(editor, null),
+      });
+    } },
   { id: 'block-reference', label: 'Block reference', description: 'Link to another block', icon: Link2, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
   { id: 'inline-block-preview', label: 'Inline block preview', description: 'Preview block inline', icon: Eye, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
   { id: 'image', label: 'Image', description: 'Upload or embed an image', icon: Image, category: 'MEDIA', action: (editor) => {
