@@ -30,6 +30,7 @@ import {
   FileText,
   ArrowRight,
   Bot,
+  Columns2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDocumentStore } from '@/lib/documentStore';
@@ -122,6 +123,7 @@ const MENU_ITEMS: SlashCommandItem[] = [
   { id: 'block-reference', label: 'Block reference', description: 'Link to another block', icon: Link2, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
   { id: 'inline-block-preview', label: 'Inline block preview', description: 'Preview block inline', icon: Eye, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
   { id: 'agent-block', label: 'Agent block', description: 'Add an AI agent into the latest stage', icon: Bot, category: 'CANVAS', action: () => insertCanvasBlock('agent') },
+  { id: 'compare-block', label: 'Compare block', description: 'Side-by-side comparison of two options', icon: Columns2, category: 'CANVAS', action: () => insertCanvasBlock('compare') },
   { id: 'image', label: 'Image', description: 'Upload or embed an image', icon: Image, category: 'MEDIA', action: (editor) => {
       const url = window.prompt('Image URL:');
       if (url) editor.chain().focus().setImage({ src: url }).run();
