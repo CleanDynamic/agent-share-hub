@@ -14,6 +14,7 @@ import { useDocumentStore } from '@/lib/documentStore';
 import type { Block, Connection } from '@/types/document';
 import { PromptBlockNode } from '../blocks/PromptBlock';
 import { CodeBlockNode } from '../blocks/CodeBlock';
+import { TextBlockNode } from '../blocks/TextBlock';
 
 interface StageCanvasProps {
   stageId: string;
@@ -22,6 +23,7 @@ interface StageCanvasProps {
 const nodeTypes = {
   prompt: PromptBlockNode,
   code: CodeBlockNode,
+  text: TextBlockNode,
 };
 
 function blockToNode(block: Block): Node {
@@ -32,7 +34,9 @@ function blockToNode(block: Block): Node {
         ? 'prompt'
         : block.type === 'code'
           ? 'code'
-          : undefined,
+          : block.type === 'text'
+            ? 'text'
+            : undefined,
     position: { x: block.position_x, y: block.position_y },
     data: { label: block.name ?? block.type, blockId: block.id },
     width: block.width,
