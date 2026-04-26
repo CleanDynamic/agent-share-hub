@@ -32,6 +32,7 @@ import {
   Bot,
   Columns2,
   Heading,
+  Cpu,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDocumentStore } from '@/lib/documentStore';
@@ -126,6 +127,7 @@ const MENU_ITEMS: SlashCommandItem[] = [
   { id: 'agent-block', label: 'Agent block', description: 'Add an AI agent into the latest stage', icon: Bot, category: 'CANVAS', action: () => insertCanvasBlock('agent') },
   { id: 'compare-block', label: 'Compare block', description: 'Side-by-side comparison of two options', icon: Columns2, category: 'CANVAS', action: () => insertCanvasBlock('compare') },
   { id: 'heading-block', label: 'Heading block', description: 'Add a heading block to the latest stage', icon: Heading, category: 'CANVAS', action: () => insertCanvasBlock('heading') },
+  { id: 'model-block', label: 'Model block', description: 'Configure an LLM provider and model', icon: Cpu, category: 'CANVAS', action: () => insertCanvasBlock('model') },
   { id: 'image', label: 'Image', description: 'Upload or embed an image', icon: Image, category: 'MEDIA', action: (editor) => {
       const url = window.prompt('Image URL:');
       if (url) editor.chain().focus().setImage({ src: url }).run();

@@ -18,6 +18,7 @@ import { TextBlockNode } from '../blocks/TextBlock';
 import { AgentBlockNode } from '../blocks/AgentBlock';
 import { CompareBlockNode } from '../blocks/CompareBlock';
 import { HeadingBlockNode } from '../blocks/HeadingBlock';
+import { ModelBlockNode } from '../blocks/ModelBlock';
 
 interface StageCanvasProps {
   stageId: string;
@@ -30,25 +31,23 @@ const nodeTypes = {
   agent: AgentBlockNode,
   compare: CompareBlockNode,
   heading: HeadingBlockNode,
+  model: ModelBlockNode,
+};
+
+const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
+  prompt: 'prompt',
+  code: 'code',
+  text: 'text',
+  agent: 'agent',
+  compare: 'compare',
+  heading: 'heading',
+  model: 'model',
 };
 
 function blockToNode(block: Block): Node {
   return {
     id: block.id,
-    type:
-      block.type === 'prompt'
-        ? 'prompt'
-        : block.type === 'code'
-          ? 'code'
-          : block.type === 'text'
-            ? 'text'
-            : block.type === 'agent'
-              ? 'agent'
-              : block.type === 'compare'
-                ? 'compare'
-                : block.type === 'heading'
-                  ? 'heading'
-                  : undefined,
+    type: BLOCK_TYPE_TO_NODE[block.type],
     position: { x: block.position_x, y: block.position_y },
     data: { label: block.name ?? block.type, blockId: block.id },
     width: block.width,
