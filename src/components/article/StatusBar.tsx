@@ -251,39 +251,41 @@ export function StatusBar({
           <span>{focusMode === 'focus' ? 'Focus' : focusMode === 'view' ? 'View' : 'Edit'}</span>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              style={itemButtonStyle}
-              aria-label="Word count details"
+        {showSecondary ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                style={itemButtonStyle}
+                aria-label="Word count details"
+              >
+                <span>{characterCount} chars</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              side="top"
+              sideOffset={6}
+              style={{
+                background: 'hsl(240 20% 8% / 0.95)',
+                border: '0.5px solid hsl(var(--foreground) / 0.08)',
+                boxShadow: '0 10px 30px hsl(240 10% 2% / 0.45)',
+                borderRadius: 8,
+                minWidth: 188,
+              }}
             >
-              <span>{characterCount} chars</span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            side="top"
-            sideOffset={6}
-            style={{
-              background: 'hsl(240 20% 8% / 0.95)',
-              border: '0.5px solid hsl(var(--foreground) / 0.08)',
-              boxShadow: '0 10px 30px hsl(240 10% 2% / 0.45)',
-              borderRadius: 8,
-              minWidth: 188,
-            }}
-          >
-            <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
-              Words: {wordCount}
-            </DropdownMenuItem>
-            <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
-              Characters: {characterCount}
-            </DropdownMenuItem>
-            <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
-              Read time: {readingMinutes} min
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+                Words: {wordCount}
+              </DropdownMenuItem>
+              <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+                Characters: {characterCount}
+              </DropdownMenuItem>
+              <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+                Read time: {readingMinutes} min
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
 
         <div
           style={{
