@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/lib/documentStore';
+import { eventBus } from '@/lib/eventBus';
+import { runPrompt, approximateTokens } from '@/lib/llm';
 import {
   Sheet,
   SheetContent,
@@ -67,6 +69,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
   const blockId = (data as PromptBlockData).blockId ?? id;
 
   const block = useDocumentStore((s) => s.blocks[blockId]);
+  const allBlocks = useDocumentStore((s) => s.blocks);
   const updateBlock = useDocumentStore((s) => s.updateBlock);
   const setSelection = useDocumentStore((s) => s.setSelection);
   const expandedSelection = useDocumentStore(
@@ -77,6 +80,8 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
   const [systemPromptOpen, setSystemPromptOpen] = React.useState(false);
   const [showModelDropdown, setShowModelDropdown] = React.useState(false);
   const [hovered, setHovered] = React.useState(false);
+  // Transient status — kept local, NOT persisted to the document store.
+  const [status, setStatus] = React.useState<BlockStatus>('idle');
 
   const props = (block?.properties ?? {}) as Record<string, unknown>;
   const name = block?.name ?? '';
@@ -85,8 +90,10 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
   const model = (props.model as string) ?? 'gpt-4o';
   const temperature = (props.temperature as number) ?? 0.7;
   const maxTokens = (props.maxTokens as number) ?? 2048;
-  const status = ((props.status as BlockStatus) ?? 'idle') as BlockStatus;
-  const tokenCount = (props.tokenCount as number) ?? 0;
+  const tokenCount = React.useMemo(
+    () => approximateTokens(`${systemPrompt ?? ''}\n${promptText ?? ''}`),
+    [systemPrompt, promptText],
+  );
 
   const patchProps = React.useCallback(
     (patch: Record<string, unknown>) => {
@@ -109,15 +116,90 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
     setSelection({ kind: 'block', ids: [blockId] });
   }, [blockId, setSelection]);
 
-  const handleRun = () => {
-    toast('Wiring LLM integration in next step.');
-  };
-
   const extractedVariables = React.useMemo(() => {
     const regex = /\{\{(\w+)\}\}/g;
-    const matches = promptText.matchAll(regex);
-    return [...new Set([...matches].map((m) => m[1]))];
-  }, [promptText]);
+    const fromPrompt = [...promptText.matchAll(regex)].map((m) => m[1]);
+    const fromSystem = [...(systemPrompt ?? '').matchAll(regex)].map(
+      (m) => m[1],
+    );
+    return [...new Set([...fromPrompt, ...fromSystem])];
+  }, [promptText, systemPrompt]);
+
+  /**
+   * Resolve a {{name}} variable by finding a block in the same stage with a
+   * matching `block.name` and returning its `properties.output`.
+   */
+  const resolveVariables = React.useCallback((): Record<string, string> => {
+    const out: Record<string, string> = {};
+    if (!block) return out;
+    for (const varName of extractedVariables) {
+      const match = Object.values(allBlocks).find(
+        (b) => b.stage_id === block.stage_id && b.name === varName,
+      );
+      const matchProps = (match?.properties ?? {}) as Record<string, unknown>;
+      const value = matchProps.output;
+      if (typeof value === 'string' && value.length > 0) {
+        out[varName] = value;
+      }
+    }
+    return out;
+  }, [allBlocks, block, extractedVariables]);
+
+  const handleRun = React.useCallback(async () => {
+    if (!block) return;
+    if (!promptText.trim()) {
+      toast.error('Prompt is empty');
+      return;
+    }
+
+    setStatus('running');
+    eventBus.emit('block:run:start', { blockId });
+
+    try {
+      const variables = resolveVariables();
+      const result = await runPrompt({
+        model,
+        systemPrompt: systemPrompt || undefined,
+        userPrompt: promptText,
+        temperature,
+        maxTokens,
+        variables,
+      });
+
+      patchProps({
+        lastRun: {
+          timestamp: new Date().toISOString(),
+          model,
+          payload: result.payload,
+          providerUrl: result.providerUrl,
+          providerName: result.providerName,
+          approxTokens: result.approxTokens,
+        },
+      });
+
+      eventBus.emit('block:run:complete', {
+        blockId,
+        result: result.payload,
+      });
+      setStatus('success');
+      toast.success(`Copied to clipboard — opened ${result.providerName}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Run failed';
+      eventBus.emit('block:run:error', { blockId, error: err });
+      setStatus('error');
+      toast.error(message);
+    }
+  }, [
+    block,
+    blockId,
+    maxTokens,
+    model,
+    patchProps,
+    promptText,
+    resolveVariables,
+    systemPrompt,
+    temperature,
+  ]);
 
   const portOpacity = hovered || selected ? 1 : 0;
 
