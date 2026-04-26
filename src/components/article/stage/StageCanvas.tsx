@@ -122,6 +122,7 @@ export function StageCanvas({ stageId }: StageCanvasProps) {
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
