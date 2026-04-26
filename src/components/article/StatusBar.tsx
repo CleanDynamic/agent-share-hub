@@ -147,6 +147,7 @@ export function StatusBar({
 
   return (
     <div
+      ref={containerRef}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -174,24 +175,28 @@ export function StatusBar({
           <span>{branch}</span>
         </div>
 
-        <div style={{ ...itemButtonStyle, cursor: 'default' }}>
-          <FileCode size={12} strokeWidth={1.8} />
-          <span
-            style={{
-              maxWidth: 140,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {titleLabel}
-          </span>
-        </div>
+        {showTertiary ? (
+          <div style={{ ...itemButtonStyle, cursor: 'default' }}>
+            <FileCode size={12} strokeWidth={1.8} />
+            <span
+              style={{
+                maxWidth: 100,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {titleLabel}
+            </span>
+          </div>
+        ) : null}
 
-        <div style={{ ...itemButtonStyle, cursor: 'default' }}>
-          <span>{syncStatus.behind}↓</span>
-          <span>{syncStatus.ahead}↑</span>
-        </div>
+        {showSecondary ? (
+          <div style={{ ...itemButtonStyle, cursor: 'default' }}>
+            <span>{syncStatus.behind}↓</span>
+            <span>{syncStatus.ahead}↑</span>
+          </div>
+        ) : null}
 
         <div style={{ ...itemButtonStyle, cursor: 'default' }}>
           <SaveIcon
@@ -205,18 +210,24 @@ export function StatusBar({
           <span style={{ color: saveMeta.color }}>{saveMeta.label}</span>
         </div>
 
-        <div style={{ ...itemButtonStyle, cursor: 'default' }}>
-          <AlertTriangle size={12} strokeWidth={1.8} style={{ color: 'hsl(12 76% 61%)' }} />
-          <span>{errors}</span>
-          <span style={{ color: 'hsl(var(--foreground) / 0.42)' }}>·</span>
-          <Bell size={12} strokeWidth={1.8} style={{ color: 'hsl(45 93% 63%)' }} />
-          <span>{warnings}</span>
-        </div>
+        {showSecondary ? (
+          <div style={{ ...itemButtonStyle, cursor: 'default' }}>
+            <AlertTriangle size={12} strokeWidth={1.8} style={{ color: 'hsl(12 76% 61%)' }} />
+            <span>{errors}</span>
+            <span style={{ color: 'hsl(var(--foreground) / 0.42)' }}>·</span>
+            <Bell size={12} strokeWidth={1.8} style={{ color: 'hsl(45 93% 63%)' }} />
+            <span>{warnings}</span>
+          </div>
+        ) : null}
 
         <div style={{ ...itemButtonStyle, cursor: 'default' }}>
           <span>{wordCount} words</span>
-          <span style={{ color: 'hsl(var(--foreground) / 0.42)' }}>·</span>
-          <span>{readingMinutes} min read</span>
+          {showSecondary ? (
+            <>
+              <span style={{ color: 'hsl(var(--foreground) / 0.42)' }}>·</span>
+              <span>{readingMinutes} min</span>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -224,14 +235,16 @@ export function StatusBar({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 2,
+          gap: 4,
           flexShrink: 0,
         }}
       >
-        <div style={{ ...itemButtonStyle, cursor: 'default' }}>
-          <Users size={12} strokeWidth={1.8} />
-          <span>{collaborators}</span>
-        </div>
+        {showSecondary ? (
+          <div style={{ ...itemButtonStyle, cursor: 'default' }}>
+            <Users size={12} strokeWidth={1.8} />
+            <span>{collaborators}</span>
+          </div>
+        ) : null}
 
         <div style={{ ...itemButtonStyle, cursor: 'default' }}>
           <Focus size={12} strokeWidth={1.8} />
