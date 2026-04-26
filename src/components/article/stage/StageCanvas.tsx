@@ -17,6 +17,7 @@ import { CodeBlockNode } from '../blocks/CodeBlock';
 import { TextBlockNode } from '../blocks/TextBlock';
 import { AgentBlockNode } from '../blocks/AgentBlock';
 import { CompareBlockNode } from '../blocks/CompareBlock';
+import { HeadingBlockNode } from '../blocks/HeadingBlock';
 
 interface StageCanvasProps {
   stageId: string;
@@ -28,6 +29,7 @@ const nodeTypes = {
   text: TextBlockNode,
   agent: AgentBlockNode,
   compare: CompareBlockNode,
+  heading: HeadingBlockNode,
 };
 
 function blockToNode(block: Block): Node {
