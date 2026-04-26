@@ -85,6 +85,22 @@ export function StatusBar({
   onMoreClearAll,
 }: StatusBarProps) {
   const [notifications, setNotifications] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(9999);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 9999;
+      setContainerWidth(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const showSecondary = containerWidth >= 720;
+  const showTertiary = containerWidth >= 560;
 
   const currentZoom = useMemo(() => Math.max(25, Math.min(200, Math.round(zoom))), [zoom]);
 
