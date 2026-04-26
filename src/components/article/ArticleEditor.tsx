@@ -490,8 +490,7 @@ export function ArticleEditor({
               justifyContent: 'flex-end',
               alignItems: 'center',
               gap: 8,
-              padding: '12px 0 8px',
-              marginTop: 8,
+              padding: '8px 0 6px',
             }}
           >
             <button
