@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   GitBranch,
   AlertTriangle,
@@ -59,6 +59,8 @@ const itemButtonStyle = {
   fontSize: 11,
   fontWeight: 500,
   cursor: 'pointer',
+  whiteSpace: 'nowrap' as const,
+  flexShrink: 0,
   transition: 'background 120ms ease, color 120ms ease',
 } satisfies React.CSSProperties;
 
@@ -83,6 +85,22 @@ export function StatusBar({
   onMoreClearAll,
 }: StatusBarProps) {
   const [notifications, setNotifications] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(9999);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 9999;
+      setContainerWidth(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const showSecondary = containerWidth >= 720;
+  const showTertiary = containerWidth >= 560;
 
   const currentZoom = useMemo(() => Math.max(25, Math.min(200, Math.round(zoom))), [zoom]);
 
@@ -129,6 +147,7 @@ export function StatusBar({
 
   return (
     <div
+      ref={containerRef}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -156,24 +175,28 @@ export function StatusBar({
           <span>{branch}</span>
         </div>
 
-        <div style={{ ...itemButtonStyle, cursor: 'default' }}>
-          <FileCode size={12} strokeWidth={1.8} />
-          <span
-            style={{
-              maxWidth: 140,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {titleLabel}
-          </span>
-        </div>
+        {showTertiary ? (
+          <div style={{ ...itemButtonStyle, cursor: 'default' }}>
+            <FileCode size={12} strokeWidth={1.8} />
+            <span
+              style={{
+                maxWidth: 100,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {titleLabel}
+            </span>
+          </div>
+        ) : null}
 
-        <div style={{ ...itemButtonStyle, cursor: 'default' }}>
-          <span>{syncStatus.behind}↓</span>
-          <span>{syncStatus.ahead}↑</span>
-        </div>
+        {showSecondary ? (
+          <div style={{ ...itemButtonStyle, cursor: 'default' }}>
+            <span>{syncStatus.behind}↓</span>
+            <span>{syncStatus.ahead}↑</span>
+          </div>
+        ) : null}
 
         <div style={{ ...itemButtonStyle, cursor: 'default' }}>
           <SaveIcon
@@ -187,18 +210,24 @@ export function StatusBar({
           <span style={{ color: saveMeta.color }}>{saveMeta.label}</span>
         </div>
 
-        <div style={{ ...itemButtonStyle, cursor: 'default' }}>
-          <AlertTriangle size={12} strokeWidth={1.8} style={{ color: 'hsl(12 76% 61%)' }} />
-          <span>{errors}</span>
-          <span style={{ color: 'hsl(var(--foreground) / 0.42)' }}>·</span>
-          <Bell size={12} strokeWidth={1.8} style={{ color: 'hsl(45 93% 63%)' }} />
-          <span>{warnings}</span>
-        </div>
+        {showSecondary ? (
+          <div style={{ ...itemButtonStyle, cursor: 'default' }}>
+            <AlertTriangle size={12} strokeWidth={1.8} style={{ color: 'hsl(12 76% 61%)' }} />
+            <span>{errors}</span>
+            <span style={{ color: 'hsl(var(--foreground) / 0.42)' }}>·</span>
+            <Bell size={12} strokeWidth={1.8} style={{ color: 'hsl(45 93% 63%)' }} />
+            <span>{warnings}</span>
+          </div>
+        ) : null}
 
         <div style={{ ...itemButtonStyle, cursor: 'default' }}>
           <span>{wordCount} words</span>
-          <span style={{ color: 'hsl(var(--foreground) / 0.42)' }}>·</span>
-          <span>{readingMinutes} min read</span>
+          {showSecondary ? (
+            <>
+              <span style={{ color: 'hsl(var(--foreground) / 0.42)' }}>·</span>
+              <span>{readingMinutes} min</span>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -206,53 +235,57 @@ export function StatusBar({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 2,
+          gap: 4,
           flexShrink: 0,
         }}
       >
-        <div style={{ ...itemButtonStyle, cursor: 'default' }}>
-          <Users size={12} strokeWidth={1.8} />
-          <span>{collaborators}</span>
-        </div>
+        {showSecondary ? (
+          <div style={{ ...itemButtonStyle, cursor: 'default' }}>
+            <Users size={12} strokeWidth={1.8} />
+            <span>{collaborators}</span>
+          </div>
+        ) : null}
 
         <div style={{ ...itemButtonStyle, cursor: 'default' }}>
           <Focus size={12} strokeWidth={1.8} />
           <span>{focusMode === 'focus' ? 'Focus' : focusMode === 'view' ? 'View' : 'Edit'}</span>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              style={itemButtonStyle}
-              aria-label="Word count details"
+        {showSecondary ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                style={itemButtonStyle}
+                aria-label="Word count details"
+              >
+                <span>{characterCount} chars</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              side="top"
+              sideOffset={6}
+              style={{
+                background: 'hsl(240 20% 8% / 0.95)',
+                border: '0.5px solid hsl(var(--foreground) / 0.08)',
+                boxShadow: '0 10px 30px hsl(240 10% 2% / 0.45)',
+                borderRadius: 8,
+                minWidth: 188,
+              }}
             >
-              <span>{characterCount} chars</span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            side="top"
-            sideOffset={6}
-            style={{
-              background: 'hsl(240 20% 8% / 0.95)',
-              border: '0.5px solid hsl(var(--foreground) / 0.08)',
-              boxShadow: '0 10px 30px hsl(240 10% 2% / 0.45)',
-              borderRadius: 8,
-              minWidth: 188,
-            }}
-          >
-            <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
-              Words: {wordCount}
-            </DropdownMenuItem>
-            <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
-              Characters: {characterCount}
-            </DropdownMenuItem>
-            <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
-              Read time: {readingMinutes} min
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+                Words: {wordCount}
+              </DropdownMenuItem>
+              <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+                Characters: {characterCount}
+              </DropdownMenuItem>
+              <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+                Read time: {readingMinutes} min
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
 
         <div
           style={{
@@ -311,18 +344,20 @@ export function StatusBar({
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setNotifications((current) => !current)}
-          style={{
-            ...itemButtonStyle,
-            background: notifications ? 'hsl(var(--foreground) / 0.12)' : 'transparent',
-            color: notifications ? 'hsl(var(--foreground) / 0.9)' : itemButtonStyle.color,
-          }}
-          aria-label="Notifications"
-        >
-          <Wifi size={12} strokeWidth={1.8} />
-        </button>
+        {showSecondary ? (
+          <button
+            type="button"
+            onClick={() => setNotifications((current) => !current)}
+            style={{
+              ...itemButtonStyle,
+              background: notifications ? 'hsl(var(--foreground) / 0.12)' : 'transparent',
+              color: notifications ? 'hsl(var(--foreground) / 0.9)' : itemButtonStyle.color,
+            }}
+            aria-label="Notifications"
+          >
+            <Wifi size={12} strokeWidth={1.8} />
+          </button>
+        ) : null}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

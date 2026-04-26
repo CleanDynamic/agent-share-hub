@@ -13,18 +13,11 @@ import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
 import type { SlashCommandItem } from './SlashCommandMenu';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import CharacterCount from '@tiptap/extension-character-count';
-import { LayoutGrid, Heading2, Code, Image, Quote, Minus, Plus, Type, Save, Send, MoreHorizontal } from 'lucide-react';
+import { LayoutGrid, Heading2, Code, Image, Quote, Minus, Plus, Type, Save, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { useDocumentStore } from '@/lib/documentStore';
 import { usePersistenceStatus } from '@/lib/documentPersistence';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 const lowlight = createLowlight(common);
 
@@ -490,8 +483,7 @@ export function ArticleEditor({
               justifyContent: 'flex-end',
               alignItems: 'center',
               gap: 8,
-              padding: '12px 0 8px',
-              marginTop: 8,
+              padding: '8px 0 6px',
             }}
           >
             <button
@@ -545,86 +537,23 @@ export function ArticleEditor({
               Publish
             </button>
           </div>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8,
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <StatusBar
-                documentTitle={documentTitle}
-                wordCount={metrics.wordCount}
-                characterCount={metrics.characterCount}
-                readingMinutes={metrics.readingMinutes}
-                saveStatus={saveStatus}
-                zoom={100}
-                focusMode={focusMode}
-                collaborators={collaboratorCount}
-                onZoomChange={() => {}}
-                onMoreTemplates={onOpenTemplates}
-                onMoreGrammarCheck={onGrammarCheck}
-                onMoreHistory={onOpenHistory}
-                onMoreNotes={onOpenNotes}
-                onMoreClearAll={onClearAll}
-              />
-            </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 28,
-                    height: 28,
-                    borderRadius: 6,
-                    border: '0.5px solid hsl(var(--foreground) / 0.08)',
-                    background: 'hsl(var(--foreground) / 0.025)',
-                    color: 'hsl(var(--foreground) / 0.62)',
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                  }}
-                  aria-label="Editor actions"
-                >
-                  <MoreHorizontal size={13} strokeWidth={1.8} />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                side="top"
-                sideOffset={6}
-                style={{
-                  background: 'hsl(240 20% 8% / 0.95)',
-                  border: '0.5px solid hsl(var(--foreground) / 0.08)',
-                  boxShadow: '0 10px 30px hsl(240 10% 2% / 0.45)',
-                  borderRadius: 8,
-                  minWidth: 184,
-                }}
-              >
-                <DropdownMenuItem inset onClick={onOpenTemplates} style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
-                  Templates
-                </DropdownMenuItem>
-                <DropdownMenuItem inset onClick={onGrammarCheck} style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
-                  Grammar Check
-                </DropdownMenuItem>
-                <DropdownMenuItem inset onClick={onOpenHistory} style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
-                  History
-                </DropdownMenuItem>
-                <DropdownMenuItem inset onClick={onOpenNotes} style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
-                  Notes
-                </DropdownMenuItem>
-                <DropdownMenuSeparator style={{ background: 'hsl(var(--foreground) / 0.06)' }} />
-                <DropdownMenuItem inset onClick={onClearAll} style={{ fontSize: 11, color: 'hsl(12 76% 61%)' }}>
-                  Clear All
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div style={{ width: '100%', minWidth: 0 }}>
+            <StatusBar
+              documentTitle={documentTitle}
+              wordCount={metrics.wordCount}
+              characterCount={metrics.characterCount}
+              readingMinutes={metrics.readingMinutes}
+              saveStatus={saveStatus}
+              zoom={100}
+              focusMode={focusMode}
+              collaborators={collaboratorCount}
+              onZoomChange={() => {}}
+              onMoreTemplates={onOpenTemplates}
+              onMoreGrammarCheck={onGrammarCheck}
+              onMoreHistory={onOpenHistory}
+              onMoreNotes={onOpenNotes}
+              onMoreClearAll={onClearAll}
+            />
           </div>
         </>
       ) : null}
