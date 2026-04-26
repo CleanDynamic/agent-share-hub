@@ -15,6 +15,7 @@ import type { Block, Connection } from '@/types/document';
 import { PromptBlockNode } from '../blocks/PromptBlock';
 import { CodeBlockNode } from '../blocks/CodeBlock';
 import { TextBlockNode } from '../blocks/TextBlock';
+import { AgentBlockNode } from '../blocks/AgentBlock';
 
 interface StageCanvasProps {
   stageId: string;
@@ -24,6 +25,7 @@ const nodeTypes = {
   prompt: PromptBlockNode,
   code: CodeBlockNode,
   text: TextBlockNode,
+  agent: AgentBlockNode,
 };
 
 function blockToNode(block: Block): Node {
@@ -36,7 +38,9 @@ function blockToNode(block: Block): Node {
           ? 'code'
           : block.type === 'text'
             ? 'text'
-            : undefined,
+            : block.type === 'agent'
+              ? 'agent'
+              : undefined,
     position: { x: block.position_x, y: block.position_y },
     data: { label: block.name ?? block.type, blockId: block.id },
     width: block.width,
