@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { MoreHorizontal, X } from 'lucide-react';
+import { LayoutTemplate, MoreHorizontal, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type WidthMode = 'narrow' | 'wide' | 'full';
