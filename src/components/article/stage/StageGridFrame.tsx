@@ -231,6 +231,18 @@ export function StageGridFrame({
             transition: 'opacity 160ms ease',
           }}
         >
+          {onOpenTemplates ? (
+            <button
+              type="button"
+              onClick={onOpenTemplates}
+              className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 text-[10.5px] font-medium text-white/65 rounded-[5px] border border-white/15 hover:border-white/30 hover:text-white/95 transition-all"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+              title="Browse stage templates"
+            >
+              <LayoutTemplate size={11} strokeWidth={1.8} />
+              Templates
+            </button>
+          ) : null}
           <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto pointer-events-auto" style={{ scrollbarWidth: 'none' }}>
             {quickInsertButtons.map(({ type, label }) => (
               <button
