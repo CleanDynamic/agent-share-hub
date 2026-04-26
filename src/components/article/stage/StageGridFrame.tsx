@@ -16,6 +16,7 @@ interface StageGridFrameProps {
   onExpand?: () => void;
   onDelete?: () => void;
   onQuickInsert?: (type: BlockType) => void;
+  onOpenTemplates?: () => void;
   zoom?: number;
   onZoom?: (zoom: number) => void;
   onFitView?: () => void;
