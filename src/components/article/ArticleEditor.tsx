@@ -425,6 +425,10 @@ export function ArticleEditor({
           border-radius: 8px;
           margin: 12px 0;
         }
+        .tiptap-article [data-stage-grid] {
+          margin: 16px 0;
+          border-radius: 8px;
+        }
         .tiptap-article hr {
           border: none;
           border-top: 0.5px solid hsl(var(--foreground) / 0.08);
