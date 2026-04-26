@@ -46,7 +46,9 @@ function blockToNode(block: Block): Node {
               ? 'agent'
               : block.type === 'compare'
                 ? 'compare'
-                : undefined,
+                : block.type === 'heading'
+                  ? 'heading'
+                  : undefined,
     position: { x: block.position_x, y: block.position_y },
     data: { label: block.name ?? block.type, blockId: block.id },
     width: block.width,
