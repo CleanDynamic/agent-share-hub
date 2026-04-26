@@ -29,7 +29,11 @@ import {
   PenLine,
   FileText,
   ArrowRight,
+  Bot,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useDocumentStore } from '@/lib/documentStore';
+import type { Block } from '@/types/document';
 
 export interface SlashCommandItem {
   id: string;
