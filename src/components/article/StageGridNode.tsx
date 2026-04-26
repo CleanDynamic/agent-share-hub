@@ -1,7 +1,8 @@
 import { NodeViewWrapper } from '@tiptap/react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StageGridFrame } from './stage/StageGridFrame';
 import { StageCanvas } from './stage/StageCanvas';
+import { TemplatePicker } from './stage/TemplatePicker';
 import { useDocumentStore } from '@/lib/documentStore';
 
 interface StageGridNodeProps {
@@ -17,12 +18,27 @@ export function StageGridNode({ node, updateAttributes, editor, getPos }: StageG
   const stageId = node.attrs.stageId as string | null;
   const fallbackTitle = (node.attrs.stageTitle as string) ?? 'Untitled stage';
   const persistedHeight = (node.attrs.height as number | null) ?? 280;
+  const openTemplatesOnMount = Boolean(node.attrs.openTemplatesOnMount);
 
   // Pull this stage's record from the document store (single source of truth)
   const stageRecord = useDocumentStore((s) => (stageId ? s.stages[stageId] : undefined));
   const blocksMap = useDocumentStore((s) => s.blocks);
   const stagesMap = useDocumentStore((s) => s.stages);
   const updateStage = useDocumentStore((s) => s.updateStage);
+
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerWithEmpty, setPickerWithEmpty] = useState(false);
+
+  // Auto-open picker when inserted via the slash menu
+  useEffect(() => {
+    if (openTemplatesOnMount) {
+      setPickerWithEmpty(true);
+      setPickerOpen(true);
+      // Clear the transient flag so it doesn't reopen on remount.
+      try { updateAttributes({ openTemplatesOnMount: false }); } catch (_) { /* noop */ }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openTemplatesOnMount]);
 
   // Live data from the store (falls back to TipTap attrs while the stage record
   // hasn't been hydrated yet)
@@ -83,6 +99,11 @@ export function StageGridNode({ node, updateAttributes, editor, getPos }: StageG
     /* coming in Phase 4 */
   }, []);
 
+  const handleOpenTemplates = useCallback(() => {
+    setPickerWithEmpty(false);
+    setPickerOpen(true);
+  }, []);
+
   return (
     <NodeViewWrapper data-stage-grid="" data-stage-id={stageId ?? undefined}>
       <StageGridFrame
@@ -96,9 +117,18 @@ export function StageGridNode({ node, updateAttributes, editor, getPos }: StageG
         onDelete={editor?.isEditable ? handleDelete : undefined}
         onExpand={handleExpand}
         onQuickInsert={handleQuickInsert}
+        onOpenTemplates={editor?.isEditable && stageId ? handleOpenTemplates : undefined}
       >
         {stageId ? <StageCanvas stageId={stageId} /> : null}
       </StageGridFrame>
+      {stageId ? (
+        <TemplatePicker
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          stageId={stageId}
+          showEmptyOption={pickerWithEmpty}
+        />
+      ) : null}
     </NodeViewWrapper>
   );
 }

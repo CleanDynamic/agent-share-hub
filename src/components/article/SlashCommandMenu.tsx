@@ -63,7 +63,7 @@ const MENU_ITEMS: SlashCommandItem[] = [
       try { canvasDoc?.addStage?.(stageTitle); } catch (e) { /* noop */ }
       editor.chain().focus().insertContent({
         type: 'stageGrid',
-        attrs: { stageId, stageTitle, gridSpacing: 20, height: 360 },
+        attrs: { stageId, stageTitle, gridSpacing: 20, height: 360, openTemplatesOnMount: true },
       }).run();
     } },
   { id: 'block-reference', label: 'Block reference', description: 'Link to another block', icon: Link2, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
