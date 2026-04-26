@@ -429,17 +429,100 @@ export interface TopToolbarProps {
 }
 
 export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
-  const blockStyle: string = 'body';
+  // Force re-render on selection / transaction so isActive() reflects state
+  const [, forceTick] = React.useReducer((x: number) => x + 1, 0);
+  React.useEffect(() => {
+    if (!editor) return;
+    const handler = () => forceTick();
+    editor.on('selectionUpdate', handler);
+    editor.on('transaction', handler);
+    editor.on('focus', handler);
+    editor.on('blur', handler);
+    return () => {
+      editor.off('selectionUpdate', handler);
+      editor.off('transaction', handler);
+      editor.off('focus', handler);
+      editor.off('blur', handler);
+    };
+  }, [editor]);
+
+  const isActive = (name: string, attrs?: Record<string, unknown>) =>
+    editor?.isActive(name, attrs as never) ?? false;
+
+  const blockStyle: string = React.useMemo(() => {
+    if (!editor) return 'body';
+    if (editor.isActive('heading', { level: 1 })) return 'heading1';
+    if (editor.isActive('heading', { level: 2 })) return 'heading2';
+    if (editor.isActive('heading', { level: 3 })) return 'heading3';
+    if (editor.isActive('blockquote')) return 'quote';
+    if (editor.isActive('codeBlock')) return 'code';
+    return 'body';
+  }, [editor, editor?.state.selection]);
+
   const lineHeight: string = '1.5';
-  const alignment: 'left' | 'center' | 'right' | 'justify' = 'left' as 'left' | 'center' | 'right' | 'justify';
-  void editor;
+  const alignment: 'left' | 'center' | 'right' | 'justify' = 'left';
 
   const getBlockStyleLabel = (value: string) => {
     const option = blockStyleOptions.find((opt) => opt.value === value);
     return option ? option.label : 'Body';
   };
 
-  const noop = () => {};
+  const soon = (label: string) => () => {
+    import('sonner').then(({ toast }) => toast(`${label} — coming soon`));
+  };
+
+  const run = (fn: (chain: ReturnType<NonNullable<typeof editor>['chain']>) => void) => () => {
+    if (!editor) return;
+    fn(editor.chain().focus());
+  };
+
+  const setBlockStyle = (value: string) => {
+    if (!editor) return;
+    const chain = editor.chain().focus();
+    switch (value) {
+      case 'heading1':
+        chain.setHeading({ level: 1 }).run();
+        break;
+      case 'heading2':
+        chain.setHeading({ level: 2 }).run();
+        break;
+      case 'heading3':
+        chain.setHeading({ level: 3 }).run();
+        break;
+      case 'quote':
+        chain.setParagraph().run();
+        editor.chain().focus().toggleBlockquote().run();
+        break;
+      case 'code':
+        chain.toggleCodeBlock().run();
+        break;
+      case 'caption':
+      case 'callout':
+        soon(value === 'caption' ? 'Caption' : 'Callout')();
+        break;
+      case 'body':
+      default:
+        chain.setParagraph().run();
+        break;
+    }
+  };
+
+  const handleLink = () => {
+    if (!editor) return;
+    // Link mark not in StarterKit by default
+    if (!editor.schema.marks.link) {
+      soon('Links')();
+      return;
+    }
+    const previous = editor.getAttributes('link').href as string | undefined;
+    const input = window.prompt('Enter URL', previous ?? 'https://');
+    if (input === null) return;
+    if (input.trim() === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange('link').setLink({ href: input.trim() }).run();
+  };
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -465,8 +548,20 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           }}
         >
           <ToolbarGroup>
-            <ToolbarButton icon={Undo2} label="Undo" shortcut="⌘Z" onClick={noop} />
-            <ToolbarButton icon={Redo2} label="Redo" shortcut="⇧⌘Z" onClick={noop} />
+            <ToolbarButton
+              icon={Undo2}
+              label="Undo"
+              shortcut="⌘Z"
+              onClick={run((c) => c.undo().run())}
+              disabled={!editor?.can().undo()}
+            />
+            <ToolbarButton
+              icon={Redo2}
+              label="Redo"
+              shortcut="⇧⌘Z"
+              onClick={run((c) => c.redo().run())}
+              disabled={!editor?.can().redo()}
+            />
           </ToolbarGroup>
 
           <Divider />
@@ -477,7 +572,7 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
               shortcut="⌘⌥0"
               value={getBlockStyleLabel(blockStyle)}
               options={blockStyleOptions}
-              onChange={noop}
+              onChange={setBlockStyle}
               width={110}
             />
           </ToolbarGroup>
@@ -485,81 +580,91 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           <Divider />
 
           <ToolbarGroup>
-            <ToolbarButton icon={Bold} label="Bold" shortcut="⌘B" onClick={noop} />
-            <ToolbarButton icon={Italic} label="Italic" shortcut="⌘I" onClick={noop} />
-            <ToolbarButton icon={Underline} label="Underline" shortcut="⌘U" onClick={noop} />
-            <ToolbarButton icon={Strikethrough} label="Strikethrough" shortcut="⇧⌘X" onClick={noop} />
-            <ToolbarButton icon={Subscript} label="Subscript" onClick={noop} />
-            <ToolbarButton icon={Superscript} label="Superscript" onClick={noop} />
-            <ToolbarButton icon={Code} label="Inline code" shortcut="⌘E" onClick={noop} />
+            <ToolbarButton icon={Bold} label="Bold" shortcut="⌘B" isActive={isActive('bold')} onClick={run((c) => c.toggleBold().run())} />
+            <ToolbarButton icon={Italic} label="Italic" shortcut="⌘I" isActive={isActive('italic')} onClick={run((c) => c.toggleItalic().run())} />
+            <ToolbarButton icon={Underline} label="Underline" shortcut="⌘U" onClick={soon('Underline')} />
+            <ToolbarButton icon={Strikethrough} label="Strikethrough" shortcut="⇧⌘X" isActive={isActive('strike')} onClick={run((c) => c.toggleStrike().run())} />
+            <ToolbarButton icon={Subscript} label="Subscript" onClick={soon('Subscript')} />
+            <ToolbarButton icon={Superscript} label="Superscript" onClick={soon('Superscript')} />
+            <ToolbarButton icon={Code} label="Inline code" shortcut="⌘E" isActive={isActive('code')} onClick={run((c) => c.toggleCode().run())} />
           </ToolbarGroup>
 
           <Divider />
 
           <ToolbarGroup>
-            <ColorSwatch color="hsl(var(--foreground) / 0.9)" label="Text color" onClick={noop} />
-            <ColorSwatch color="hsl(45 93% 63% / 0.3)" label="Highlight color" onClick={noop} />
-            <ToolbarButton icon={Type} label="Text tools" onClick={noop} />
-            <ToolbarButton icon={Highlighter} label="Highlight" onClick={noop} />
+            <ColorSwatch color="hsl(var(--foreground) / 0.9)" label="Text color" onClick={soon('Text color')} />
+            <ColorSwatch color="hsl(45 93% 63% / 0.3)" label="Highlight color" onClick={soon('Highlight color')} />
+            <ToolbarButton icon={Type} label="Text tools" onClick={soon('Text tools')} />
+            <ToolbarButton icon={Highlighter} label="Highlight" onClick={soon('Highlight')} />
           </ToolbarGroup>
 
           <Divider />
 
           <ToolbarGroup>
-            <ToolbarButton icon={AlignLeft} label="Align left" isActive={alignment === 'left'} onClick={noop} />
-            <ToolbarButton icon={AlignCenter} label="Align center" isActive={alignment === 'center'} onClick={noop} />
-            <ToolbarButton icon={AlignRight} label="Align right" isActive={alignment === 'right'} onClick={noop} />
-            <ToolbarButton icon={AlignJustify} label="Justify" isActive={alignment === 'justify'} onClick={noop} />
+            <ToolbarButton icon={AlignLeft} label="Align left" isActive={alignment === 'left'} onClick={soon('Alignment')} />
+            <ToolbarButton icon={AlignCenter} label="Align center" onClick={soon('Alignment')} />
+            <ToolbarButton icon={AlignRight} label="Align right" onClick={soon('Alignment')} />
+            <ToolbarButton icon={AlignJustify} label="Justify" onClick={soon('Alignment')} />
             <ToolbarDropdown
               label="Line height"
               value={lineHeight}
               options={lineHeightOptions}
-              onChange={noop}
+              onChange={() => soon('Line height')()}
               width={64}
             />
-            <ToolbarButton icon={Outdent} label="Outdent" onClick={noop} />
-            <ToolbarButton icon={Indent} label="Indent" onClick={noop} />
+            <ToolbarButton
+              icon={Outdent}
+              label="Outdent"
+              onClick={run((c) => c.liftListItem('listItem').run())}
+              disabled={!editor?.can().liftListItem('listItem')}
+            />
+            <ToolbarButton
+              icon={Indent}
+              label="Indent"
+              onClick={run((c) => c.sinkListItem('listItem').run())}
+              disabled={!editor?.can().sinkListItem('listItem')}
+            />
           </ToolbarGroup>
 
           <Divider />
 
           <ToolbarGroup>
-            <ToolbarButton icon={List} label="Bulleted list" onClick={noop} />
-            <ToolbarButton icon={ListOrdered} label="Numbered list" onClick={noop} />
-            <ToolbarButton icon={CheckSquare} label="Checklist" onClick={noop} />
-            <ToolbarButton icon={ChevronRight} label="Toggle list" onClick={noop} />
+            <ToolbarButton icon={List} label="Bulleted list" isActive={isActive('bulletList')} onClick={run((c) => c.toggleBulletList().run())} />
+            <ToolbarButton icon={ListOrdered} label="Numbered list" isActive={isActive('orderedList')} onClick={run((c) => c.toggleOrderedList().run())} />
+            <ToolbarButton icon={CheckSquare} label="Checklist" onClick={soon('Checklist')} />
+            <ToolbarButton icon={ChevronRight} label="Toggle list" onClick={soon('Toggle list')} />
           </ToolbarGroup>
 
           <Divider />
 
           <ToolbarGroup>
-            <ToolbarButton icon={FileText} label="Add block" onClick={onInsertBlock ?? noop} />
-            <ToolbarButton icon={Link} label="Insert link" onClick={noop} />
-            <ToolbarButton icon={Image} label="Insert image" onClick={noop} />
-            <ToolbarButton icon={Video} label="Insert video" onClick={noop} />
-            <ToolbarButton icon={Table} label="Insert table" onClick={noop} />
-            <ToolbarButton icon={LayoutGrid} label="Insert stage grid" onClick={noop} />
-            <ToolbarButton icon={FileSymlink} label="Insert block reference" onClick={noop} />
-            <ToolbarButton icon={Minus} label="Insert divider" onClick={noop} />
+            <ToolbarButton icon={FileText} label="Add block" onClick={onInsertBlock ?? soon('Insert')} />
+            <ToolbarButton icon={Link} label="Insert link" shortcut="⌘K" onClick={handleLink} />
+            <ToolbarButton icon={Image} label="Insert image" onClick={soon('Image')} />
+            <ToolbarButton icon={Video} label="Insert video" onClick={soon('Video')} />
+            <ToolbarButton icon={Table} label="Insert table" onClick={soon('Table')} />
+            <ToolbarButton icon={LayoutGrid} label="Insert stage grid" onClick={onInsertBlock ?? soon('Stage grid')} />
+            <ToolbarButton icon={FileSymlink} label="Insert block reference" onClick={soon('Block reference')} />
+            <ToolbarButton icon={Minus} label="Insert divider" onClick={run((c) => c.setHorizontalRule().run())} />
           </ToolbarGroup>
 
           <Divider />
 
           <ToolbarGroup>
-            <ToolbarButton icon={SpellCheck} label="Spell check" onClick={noop} />
-            <ToolbarButton icon={MessageSquare} label="Comment" onClick={noop} />
-            <ToolbarButton icon={FileText} label="Word count" onClick={noop} />
-            <ToolbarButton icon={GitBranch} label="Track changes" onClick={noop} />
+            <ToolbarButton icon={SpellCheck} label="Spell check" onClick={soon('Spell check')} />
+            <ToolbarButton icon={MessageSquare} label="Comment" onClick={soon('Comments')} />
+            <ToolbarButton icon={FileText} label="Word count" onClick={soon('Word count')} />
+            <ToolbarButton icon={GitBranch} label="Track changes" onClick={soon('Track changes')} />
           </ToolbarGroup>
 
           <Divider />
 
           <ToolbarGroup>
-            <ToolbarButton icon={ZoomIn} label="Zoom" onClick={noop} />
-            <ToolbarButton icon={Focus} label="Focus mode" onClick={noop} />
-            <ToolbarButton icon={PanelLeft} label="Outline panel" onClick={noop} />
-            <ToolbarButton icon={PanelRight} label="Inspector panel" onClick={noop} />
-            <ToolbarButton icon={ChevronsUpDown} label="Toolbar options" onClick={noop} />
+            <ToolbarButton icon={ZoomIn} label="Zoom" onClick={soon('Zoom')} />
+            <ToolbarButton icon={Focus} label="Focus mode" onClick={soon('Focus mode')} />
+            <ToolbarButton icon={PanelLeft} label="Outline panel" onClick={soon('Outline')} />
+            <ToolbarButton icon={PanelRight} label="Inspector panel" onClick={soon('Inspector')} />
+            <ToolbarButton icon={ChevronsUpDown} label="Toolbar options" onClick={soon('Toolbar options')} />
           </ToolbarGroup>
         </div>
       </div>
