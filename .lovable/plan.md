@@ -1,94 +1,68 @@
+## What's working
 
+- TopToolbar visual design — premium Word-style strip with groups, dividers, tooltips, color swatches.
+- Writing surface — Inter 15px / 1.75, orange caret + selection, blockquote/code/heading styles, italic placeholder.
+- Slash menu — categorised palette, keyboard nav, action callbacks wired to TipTap.
+- Save/Publish row, focus-mode background fade.
 
-## Plan: Inspector — Document variation
+## What's broken (visible in your screenshot)
 
-Wire the v0 `InspectorDocument` design into the workspace's Inspector tool, using the document store as the data source. Build the Inspector as a **kind-switcher** so future selection-aware variations (Block / Stage / Arrow / Prose) can drop in alongside it.
+**1. TopToolbar buttons do nothing.** Every `onClick` is `noop`. Even though `editor` is passed in, it's discarded with `void editor`. Bold, Italic, headings, lists, code, alignment — none of them affect the document.
 
-### Files touched (only two — strict scope)
+**2. StatusBar overflows and wraps.** At the current ~640px center panel width the bar tries to fit 11 items on one row, so labels collide ("01↑ Saved0 0 ⌄min words", "Edit 0 chars 100% …"). The MoreHorizontal "…" duplicate dropdown sits outside the bar in a separate 28px square button next to it, which looks tacked-on.
 
-1. **NEW** `src/components/workspace/tools/InspectorDocument.tsx` — paste the v0 component verbatim (visual + interaction code unchanged).
-2. **MODIFY** `src/components/workspace/tools/InspectorTool.tsx` — replace placeholder with selection-kind switcher and wire the Document case to live data.
+**3. Save/Publish row sits in dead space.** Floats far above the status bar with a big gap.
 
-No other files change. `WorkspaceShell.tsx`, `RightPanel.tsx`, `Upload.tsx`, `documentStore.ts`, `documentPersistence.ts`, `CanvasHeader.tsx`, `LeftPanel.tsx`, `AppLayout.tsx`, and `BlobBackground.tsx` are not touched.
+## Plan
 
-### Switcher structure (InspectorTool.tsx)
+### A. Wire TopToolbar to the editor (`TopToolbar.tsx`)
 
-```text
-useSelection() → selection.kind
-  ├─ 'none'    → <InspectorDocument ...wiredProps />
-  ├─ 'block'   → "Block inspector coming in Step 2"
-  ├─ 'stage'   → "Stage inspector coming in Step 3"
-  ├─ 'arrow'   → "Arrow inspector coming in Step 4"
-  ├─ 'prose'   → "Prose inspector coming in Step 5"
-  └─ 'multi'   → "Multi-select inspector coming later"
-```
+Replace `noop` with real TipTap commands, derive active state from `editor.isActive(...)`, and re-render on selection change with a small `useEditorState` subscription (forceUpdate on `editor.on('selectionUpdate' | 'transaction')`).
 
-Placeholders use the same muted style currently in InspectorTool (Inter 13px, rgba(255,255,255,0.50)) — single line, no borders, no padding bloat.
+| Button | Command |
+|---|---|
+| Undo / Redo | `editor.chain().focus().undo()/redo()` + `editor.can().undo/redo()` for disabled state |
+| Block style dropdown | reads current heading level / paragraph; sets via `setParagraph()` / `toggleHeading({level})` / `toggleBlockquote()` / `toggleCodeBlock()` |
+| Bold / Italic / Underline* / Strike / Code | `toggleBold()` etc. with `isActive` highlight (* underline mark not in StarterKit — keep button but no-op with tooltip "Coming soon" if extension absent) |
+| Subscript / Superscript | not in StarterKit — toast "Coming soon" |
+| Bullet / Ordered / Task list | `toggleBulletList()`, `toggleOrderedList()`, task list → toast |
+| Indent / Outdent | `sinkListItem('listItem')` / `liftListItem('listItem')` |
+| Align left/center/right/justify | not in StarterKit — toast "Coming soon" |
+| Link | reuses the same prompt logic as `Mod-k` shortcut — toast for now if `link` mark missing |
+| Image | toast (slash menu handles real insert) |
+| Inline code / Code block | `toggleCode()` / `toggleCodeBlock()` |
+| Horizontal rule | `setHorizontalRule()` |
+| Color swatches / Highlight | toast "Coming soon" (no color/highlight extensions installed) |
+| Insert block (+) | already wired via `onInsertBlock` |
 
-### Data wiring for InspectorDocument
+All visual styling stays exactly as it is — no layout/colour changes.
 
-The right panel is mounted inside `RightPanel.tsx` with no props, so we **cannot** prop-drill from `Upload.tsx`. We use the **document store** as the single source of truth, which is what the persistence layer already syncs to Supabase.
+### B. Fix StatusBar layout (`StatusBar.tsx`)
 
-| v0 prop | Source | Persistence path |
-|---|---|---|
-| `title` | Read/write `articleBody.title` (TipTap doc-level attribute, falls back to empty string) | Saved via `setArticleBody` → existing `articleDirty` flush in `documentPersistence.ts` writes `content_items.article_body` |
-| `description` | Read/write `articleBody.description` (same channel) | Same as title |
-| `coverUrl`, `onCoverAdd`, `onCoverRemove` | Read/write `articleBody.cover_url` | Same as title |
-| `words` | Computed: count words in `articleBody` text nodes + every text/heading/quote block in `blocks` map | Read-only |
-| `minToRead` | `Math.max(1, Math.ceil(words / 220))` | Read-only |
-| `stages` | `Object.keys(stages).length` | Read-only |
-| `blocks` | `Object.keys(blocks).length` | Read-only |
-| `slug` | Read/write `articleBody.slug` | Same channel |
-| `visibility` | Read/write `articleBody.visibility` (default `'private'`) | Same channel |
-| `status` | Derived from `articleBody.published_at`: present → `'published'`, else `'draft'` | Read-only here |
-| `onPublish` | Toggles `articleBody.published_at = new Date().toISOString()` (or clears for "Update" — keep as set-only for v1) | Same channel |
-| `publishDisabled` | `true` when `title` is empty OR `slug` is empty | Computed |
+The bar is too dense for a 640px panel. Changes (visual only, same height):
 
-**Why piggy-back on `articleBody`:** the existing persistence layer flushes `articleBody` as a JSON blob into `content_items.article_body` on every change, debounced at 400ms. This means we get autosave for all Inspector fields for free, with no new persistence code, no new DB columns, no touching `documentPersistence.ts`. The Upload.tsx form remains the canonical writer for *publish-time* fields (it serialises everything to dedicated columns on submit) — Inspector edits live in the article body until publish, which matches how the editor itself already works.
+1. **Drop low-value items at narrow widths** by hiding everything except branch, save status, word count, focus, zoom, and the "…" menu when `< 720px`. Use a `ResizeObserver` on the bar's container so wider viewports still show errors/warnings/chars/collaborators/wifi.
+2. **Move the external "…" (More options) button into the StatusBar itself** — it's already there. Remove the duplicate one rendered in `ArticleEditor.tsx` next to the bar.
+3. **Add `whiteSpace: 'nowrap'` and `flexShrink: 0`** to every status item so nothing wraps mid-label ("min words" stacking).
+4. **Tighten the title ellipsis** to `maxWidth: 100` so it never pushes other items off-screen.
+5. **Right group `gap: 4`** instead of `2` so zoom controls don't crowd into the chars label.
 
-> **Note:** This is a deliberate trade-off. A "fully canonical" wiring would require touching `documentStore.ts` to add a `documentMeta` slice, plus `documentPersistence.ts` to flush meta to dedicated columns (`content_items.title`, `description`, `slug`, `visibility`, `cover_image_url`). The user's instructions explicitly forbid touching any other file, so I'm keeping all reads/writes inside the article body blob. If you'd rather have the Inspector write to dedicated `content_items` columns, that requires expanding scope to those two files — say the word and I'll re-plan.
+### C. Tighten Save/Publish row (`ArticleEditor.tsx`)
 
-### Stats computation (inline helper in InspectorTool)
+- Remove the standalone `MoreHorizontal` dropdown button next to `<StatusBar/>` (moved into the bar in step B).
+- Reduce the row's `padding` from `12px 0 8px` to `8px 0 6px` and remove `marginTop: 8` so it sits directly above the status bar.
 
-```text
-words = countWords(articleBody) + sum(block.properties.text || block.properties.content)
-countWords(json) walks TipTap JSON, accumulating text node lengths split by /\s+/
-```
+### D. Verify
 
-Memoised with `useMemo` against `articleBody`, `blocks`. Stats panel re-renders on every keystroke but the count operation is O(n) over the doc — fine for typical article sizes.
+- Type "/" → slash menu opens. Pick "Heading 2" → editor inserts H2.
+- Click **B** in toolbar with text selected → text becomes bold and the button shows the orange active state.
+- Pick "Heading 1" from the block-style dropdown → current paragraph becomes H1; dropdown label updates.
+- Resize panel → status bar drops secondary items instead of wrapping.
 
-### Right-panel fit constraints
+## Files touched
 
-- v0 component declares `width: 320, maxHeight: 640` — we **drop** the fixed width (let it fill the panel) and **drop** the `maxHeight` (the panel itself constrains height).
-- Per the no-vertical-scroll rule on the right panel, the Inspector content as designed (Document + Stats grid + Publishing) measures ~580px tall when the cover is empty and the description is a single line. This fits comfortably inside the workspace body area below the 24px selection strip + 40px tab rail.
-- The description textarea uses `resize: "vertical"` in the v0 code — we change this to `resize: "none"` so it can't be dragged past the panel height.
+- `src/components/article/TopToolbar.tsx` — wire commands, add active-state subscription, swap `noop` for real handlers.
+- `src/components/article/StatusBar.tsx` — responsive hide rules, nowrap, gap tweaks.
+- `src/components/article/ArticleEditor.tsx` — remove duplicate "…" button, tighten Save/Publish row spacing.
 
-### Auto-switch behaviour (already wired)
-
-`WorkspaceShell.tsx` already calls `setActiveTool('inspector')` when selection changes to block/stage/arrow. No change needed — when those kinds land, the switcher will render the relevant placeholder, and once Steps 2–5 ship those placeholders become real inspectors.
-
-### Persistence model recap
-
-```text
-User types in Inspector field
-  → setArticleBody({ ...articleBody, title: 'foo' })
-  → documentStore subscriber sets articleDirty = true
-  → 400ms debounce → flush('full')
-  → UPDATE content_items SET article_body = ... WHERE id = $documentId
-  → bumpDocumentVersion()
-  → usePersistenceStatus → 'saved'
-```
-
-No new save buttons, no new toasts, no new RPC calls.
-
-### Acceptance
-
-- Open `/upload` in edit mode → right panel shows Workspace → Inspector tab is active by default → Inspector renders the Document variation (no selection).
-- Type into Title / Description / Slug → values persist after refresh (via `article_body`).
-- Add and remove cover via Inspector → preview shows immediately, persists.
-- Words / Min to read / Stages / Blocks update live as you edit the article.
-- Visibility dropdown opens, selects, closes; status pill reflects published_at.
-- Publish button gradient stays orange; disabled when title or slug is blank.
-- Selecting a block in the canvas auto-switches to Inspector and shows the "Block inspector coming in Step 2" placeholder.
-- Right panel does not gain vertical scroll.
-
+No changes to `AppLayout.tsx`, `LeftPanel.tsx`, `RightPanel.tsx`, `BlobBackground.tsx`, the page background, or any layout positions.
