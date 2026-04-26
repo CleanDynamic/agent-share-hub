@@ -16,7 +16,7 @@ interface StageGridNodeProps {
 export function StageGridNode({ node, updateAttributes, editor, getPos }: StageGridNodeProps) {
   const stageId = node.attrs.stageId as string | null;
   const fallbackTitle = (node.attrs.stageTitle as string) ?? 'Untitled stage';
-  const persistedHeight = (node.attrs.height as number | null) ?? 400;
+  const persistedHeight = (node.attrs.height as number | null) ?? 280;
 
   // Pull this stage's record from the document store (single source of truth)
   const stageRecord = useDocumentStore((s) => (stageId ? s.stages[stageId] : undefined));
