@@ -1,15 +1,5 @@
 import * as React from 'react';
-import {
-  GripVertical,
-  Maximize2,
-  MoreHorizontal,
-  X,
-  Minus,
-  Plus,
-  Maximize,
-  Map,
-  GripHorizontal,
-} from 'lucide-react';
+import { MoreHorizontal, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type WidthMode = 'narrow' | 'wide' | 'full';
@@ -35,12 +25,6 @@ interface StageGridFrameProps {
   onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-const widthClasses: Record<WidthMode, string> = {
-  narrow: 'max-w-[480px]',
-  wide: 'max-w-[720px]',
-  full: 'max-w-[1120px]',
-};
-
 const blockTypeColors: Record<BlockType, string> = {
   text: '#3B82F6',
   prompt: '#8B5CF6',
@@ -53,17 +37,10 @@ export function StageGridFrame({
   stageName,
   blockCount,
   children,
-  widthMode = 'wide',
-  height = 400,
+  height = 280,
   onRename,
-  onExpand,
   onDelete,
   onQuickInsert,
-  zoom = 100,
-  onZoom,
-  onFitView,
-  minimapOpen = false,
-  onToggleMinimap,
   onResize,
   onContextMenu,
 }: StageGridFrameProps) {
@@ -71,10 +48,9 @@ export function StageGridFrame({
   const [editedName, setEditedName] = React.useState(stageName);
   const [isResizing, setIsResizing] = React.useState(false);
   const [currentHeight, setCurrentHeight] = React.useState(height);
+  const [hovered, setHovered] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const frameRef = React.useRef<HTMLDivElement>(null);
 
-  // Sync controlled height in
   React.useEffect(() => {
     if (!isResizing) setCurrentHeight(height);
   }, [height, isResizing]);
@@ -93,9 +69,8 @@ export function StageGridFrame({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleNameSubmit();
-    } else if (e.key === 'Escape') {
+    if (e.key === 'Enter') handleNameSubmit();
+    else if (e.key === 'Escape') {
       setIsEditing(false);
       setEditedName(stageName);
     }
@@ -118,7 +93,7 @@ export function StageGridFrame({
 
     const handleMouseMove = (ev: MouseEvent) => {
       const delta = ev.clientY - startY;
-      latest = Math.min(800, Math.max(280, startHeight + delta));
+      latest = Math.min(600, Math.max(200, startHeight + delta));
       setCurrentHeight(latest);
     };
 
@@ -140,240 +115,156 @@ export function StageGridFrame({
     { type: 'result', label: '+ Result' },
   ];
 
+  const overlayVisible = hovered || isEditing || isResizing;
+
   return (
     <div
-      ref={frameRef}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       onContextMenu={onContextMenu}
-      className={cn(
-        'relative w-full mx-auto my-4 rounded-[10px] overflow-hidden',
-        widthClasses[widthMode],
-      )}
+      className="relative w-full mx-auto rounded-[8px] overflow-hidden"
       style={{
+        maxWidth: 720,
+        margin: '16px auto',
         background: 'rgba(20, 20, 28, 0.55)',
         border: '0.5px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
-        backdropFilter: 'blur(14px)',
-        WebkitBackdropFilter: 'blur(14px)',
       }}
     >
-      {/* Header Bar */}
-      <div
-        className="flex items-center gap-2 px-3"
-        style={{
-          height: 36,
-          borderBottom: '0.5px solid rgba(255,255,255,0.06)',
-          background: 'rgba(255,255,255,0.025)',
-        }}
-      >
-        {/* Drag Handle */}
-        <button
-          type="button"
-          data-drag-handle
-          className="flex items-center justify-center text-white/30 hover:text-white/60 transition-colors cursor-grab active:cursor-grabbing"
-          style={{ width: 18, height: 18 }}
-          aria-label="Drag stage"
-        >
-          <GripVertical size={14} strokeWidth={1.8} />
-        </button>
-
-        {/* Stage Number Badge */}
-        <div
-          className="flex items-center justify-center flex-shrink-0"
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: '50%',
-            background: 'rgba(232,87,26,0.14)',
-            color: '#E8571A',
-            fontFamily: 'Inter, sans-serif',
-            fontSize: 11,
-            fontWeight: 600,
-            lineHeight: 1,
-          }}
-        >
-          {stageNumber}
-        </div>
-
-        {/* Stage Name */}
-        {isEditing ? (
-          <input
-            ref={inputRef}
-            value={editedName}
-            onChange={(e) => setEditedName(e.target.value)}
-            onBlur={handleNameSubmit}
-            onKeyDown={handleKeyDown}
-            className="flex-1 bg-transparent text-[13px] font-semibold text-white/85 outline-none border-b border-white/20 py-0.5"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            className="flex-1 text-left text-[13px] font-semibold text-white/85 hover:text-white truncate transition-colors"
-            style={{ fontFamily: 'Inter, sans-serif' }}
-            title="Click to rename"
-          >
-            {stageName}
-          </button>
-        )}
-
-        {/* Block Count */}
-        <span
-          className="flex-shrink-0"
-          style={{
-            fontFamily: 'Inter, sans-serif',
-            fontSize: 11,
-            color: 'rgba(255,255,255,0.4)',
-            padding: '2px 8px',
-            borderRadius: 10,
-            background: 'rgba(255,255,255,0.04)',
-          }}
-        >
-          {blockCount} {blockCount === 1 ? 'block' : 'blocks'}
-        </span>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-0.5 flex-shrink-0">
-          <button
-            type="button"
-            onClick={onExpand}
-            className="p-1 text-white/40 hover:text-white/80 hover:bg-white/[0.06] rounded transition-colors"
-            title="Expand to full canvas"
-          >
-            <Maximize2 size={13} strokeWidth={1.8} />
-          </button>
-          <button
-            type="button"
-            className="p-1 text-white/40 hover:text-white/80 hover:bg-white/[0.06] rounded transition-colors"
-            title="More options"
-          >
-            <MoreHorizontal size={13} strokeWidth={1.8} />
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            className="p-1 text-white/40 hover:text-red-400 hover:bg-white/[0.06] rounded transition-colors"
-            title="Delete stage"
-          >
-            <X size={13} strokeWidth={1.8} />
-          </button>
-        </div>
-      </div>
-
       {/* Canvas Area */}
       <div
         className="relative w-full"
-        style={{
-          height: currentHeight,
-          background:
-            'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)',
-          backgroundSize: '20px 20px',
-        }}
+        style={{ height: currentHeight }}
       >
-        {/* Children (React Flow renders here) */}
         <div className="absolute inset-0">{children}</div>
-      </div>
 
-      {/* Footer Bar */}
-      <div
-        className="flex items-center justify-between px-3 gap-3"
-        style={{
-          height: 36,
-          borderTop: '0.5px solid rgba(255,255,255,0.06)',
-          background: 'rgba(255,255,255,0.025)',
-        }}
-      >
-        {/* Quick Insert Chips */}
-        <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          {quickInsertButtons.map(({ type, label }) => (
+        {/* Hover overlay header */}
+        <div
+          className="absolute left-0 right-0 top-0 flex items-center gap-2 px-3 pointer-events-none"
+          style={{
+            height: 28,
+            background:
+              'linear-gradient(to bottom, rgba(15,15,20,0.85) 0%, rgba(15,15,20,0.55) 70%, rgba(15,15,20,0) 100%)',
+            opacity: overlayVisible ? 1 : 0,
+            transition: 'opacity 160ms ease',
+          }}
+        >
+          <div
+            className="flex items-center justify-center flex-shrink-0 pointer-events-auto"
+            style={{
+              width: 18,
+              height: 18,
+              borderRadius: '50%',
+              background: 'rgba(232,87,26,0.18)',
+              color: '#E8571A',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: 10,
+              fontWeight: 600,
+              lineHeight: 1,
+            }}
+          >
+            {stageNumber}
+          </div>
+
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onBlur={handleNameSubmit}
+              onKeyDown={handleKeyDown}
+              className="flex-1 bg-transparent text-[12px] font-semibold text-white/85 outline-none border-b border-white/20 py-0.5 pointer-events-auto"
+            />
+          ) : (
             <button
-              key={type}
               type="button"
-              onClick={() => onQuickInsert?.(type)}
-              className="flex-shrink-0 px-2.5 py-1 text-[11px] font-medium text-white/50 rounded-[5px] border border-dashed border-white/10 hover:border-solid transition-all"
+              onClick={() => setIsEditing(true)}
+              className="flex-1 text-left text-[12px] font-semibold text-white/85 hover:text-white truncate transition-colors pointer-events-auto"
               style={{ fontFamily: 'Inter, sans-serif' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = blockTypeColors[type];
-                e.currentTarget.style.color = blockTypeColors[type];
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
-              }}
+              title="Click to rename"
             >
-              {label}
+              {stageName}
             </button>
-          ))}
+          )}
+
+          <span
+            className="flex-shrink-0 pointer-events-none"
+            style={{
+              fontFamily: 'Inter, sans-serif',
+              fontSize: 10,
+              color: 'rgba(255,255,255,0.45)',
+            }}
+          >
+            {blockCount} {blockCount === 1 ? 'block' : 'blocks'}
+          </span>
+
+          <div className="flex items-center gap-0.5 flex-shrink-0 pointer-events-auto">
+            <button
+              type="button"
+              className="p-1 text-white/45 hover:text-white/85 hover:bg-white/[0.08] rounded transition-colors"
+              title="More options"
+            >
+              <MoreHorizontal size={12} strokeWidth={1.8} />
+            </button>
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="p-1 text-white/45 hover:text-red-400 hover:bg-white/[0.08] rounded transition-colors"
+                title="Delete stage"
+              >
+                <X size={12} strokeWidth={1.8} />
+              </button>
+            ) : null}
+          </div>
         </div>
 
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => onZoom?.(Math.max(25, zoom - 25))}
-            className="p-1 text-white/40 hover:text-white/70 hover:bg-white/[0.06] rounded transition-colors"
-            title="Zoom out"
-          >
-            <Minus size={12} strokeWidth={1.8} />
-          </button>
-          <span
-            className="text-white/50 tabular-nums text-center"
-            style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, minWidth: 36 }}
-          >
-            {zoom}%
-          </span>
-          <button
-            type="button"
-            onClick={() => onZoom?.(Math.min(200, zoom + 25))}
-            className="p-1 text-white/40 hover:text-white/70 hover:bg-white/[0.06] rounded transition-colors"
-            title="Zoom in"
-          >
-            <Plus size={12} strokeWidth={1.8} />
-          </button>
-
-          <div className="w-px h-3 bg-white/10 mx-1" />
-
-          <button
-            type="button"
-            onClick={onFitView}
-            className="p-1 text-white/40 hover:text-white/70 hover:bg-white/[0.06] rounded transition-colors"
-            title="Fit view"
-          >
-            <Maximize size={12} strokeWidth={1.8} />
-          </button>
-          <button
-            type="button"
-            onClick={onToggleMinimap}
-            className={cn(
-              'p-1 rounded transition-colors',
-              minimapOpen
-                ? 'text-[#E8571A] bg-white/[0.06]'
-                : 'text-white/40 hover:text-white/70 hover:bg-white/[0.06]',
-            )}
-            title="Toggle minimap"
-          >
-            <Map size={12} strokeWidth={1.8} />
-          </button>
+        {/* Hover overlay footer */}
+        <div
+          className="absolute left-0 right-0 bottom-0 flex items-center gap-1.5 px-3 pointer-events-none"
+          style={{
+            height: 32,
+            background:
+              'linear-gradient(to top, rgba(15,15,20,0.85) 0%, rgba(15,15,20,0.55) 70%, rgba(15,15,20,0) 100%)',
+            opacity: overlayVisible ? 1 : 0,
+            transition: 'opacity 160ms ease',
+          }}
+        >
+          <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto pointer-events-auto" style={{ scrollbarWidth: 'none' }}>
+            {quickInsertButtons.map(({ type, label }) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => onQuickInsert?.(type)}
+                className="flex-shrink-0 px-2 py-0.5 text-[10.5px] font-medium text-white/55 rounded-[5px] border border-dashed border-white/15 hover:border-solid transition-all"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = blockTypeColors[type];
+                  e.currentTarget.style.color = blockTypeColors[type];
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Resize Handle */}
+      {/* Resize handle (hairline, hover-only) */}
       <div
         onMouseDown={handleResizeStart}
         className={cn(
-          'absolute left-0 right-0 bottom-0 flex items-center justify-center cursor-ns-resize group',
-          isResizing && 'bg-white/[0.04]',
+          'absolute left-0 right-0 bottom-0 cursor-ns-resize',
         )}
-        style={{ height: 6 }}
-      >
-        <GripHorizontal
-          size={12}
-          strokeWidth={1.8}
-          className={cn(
-            'text-white/20 transition-colors',
-            isResizing ? 'text-white/50' : 'group-hover:text-white/40',
-          )}
-        />
-      </div>
+        style={{
+          height: 4,
+          background: overlayVisible ? 'rgba(255,255,255,0.12)' : 'transparent',
+          transition: 'background 160ms ease',
+        }}
+      />
     </div>
   );
 }

@@ -1,68 +1,86 @@
-## What's working
+## Goal
 
-- TopToolbar visual design — premium Word-style strip with groups, dividers, tooltips, color swatches.
-- Writing surface — Inter 15px / 1.75, orange caret + selection, blockquote/code/heading styles, italic placeholder.
-- Slash menu — categorised palette, keyboard nav, action callbacks wired to TipTap.
-- Save/Publish row, focus-mode background fade.
+Make embedded stage grids feel like an inline image in the document: a single clean rectangle that sits in the prose with subtle edges, no permanent toolbars, no white React Flow widgets. Controls only appear on hover.
 
-## What's broken (visible in your screenshot)
+## Why the current version feels broken
 
-**1. TopToolbar buttons do nothing.** Every `onClick` is `noop`. Even though `editor` is passed in, it's discarded with `void editor`. Bold, Italic, headings, lists, code, alignment — none of them affect the document.
+Looking at the screenshot:
 
-**2. StatusBar overflows and wraps.** At the current ~640px center panel width the bar tries to fit 11 items on one row, so labels collide ("01↑ Saved0 0 ⌄min words", "Edit 0 chars 100% …"). The MoreHorizontal "…" duplicate dropdown sits outside the bar in a separate 28px square button next to it, which looks tacked-on.
+1. The frame stacks **three rows of chrome**: 36px header (badge + title + buttons), the canvas, then a 36px footer (+Text/+Prompt/+Code/+Result chips + zoom + minimap toggle), plus a 6px resize gripper. That's ~78px of UI wrapping an empty canvas — heavier than the content itself.
+2. React Flow's `<MiniMap />` renders with its **default white background** in the bottom-right corner — that's the white box in the screenshot. It clashes with the dark theme.
+3. The frame's max width (`max-w-[720px]`) is wider than the prose column (`max-w-[720px]` minus 48px of padding), so the grid visually breaks out of the text column instead of aligning with it.
+4. Default height is 400px and the dot-grid background pattern is duplicated in both the frame and React Flow — visual noise.
 
-**3. Save/Publish row sits in dead space.** Floats far above the status bar with a big gap.
+Net effect: the grid looks like a separate "app card" pasted into the document, not an embedded element.
 
-## Plan
+## Design — the new embed
 
-### A. Wire TopToolbar to the editor (`TopToolbar.tsx`)
+A stage grid should read as **one rectangle** sitting in the prose, like a figure:
 
-Replace `noop` with real TipTap commands, derive active state from `editor.isActive(...)`, and re-render on selection change with a small `useEditorState` subscription (forceUpdate on `editor.on('selectionUpdate' | 'transaction')`).
+```text
+┌──────────────────────────────────────────┐
+│  [hover] ① Stage 1   0 blocks   ⋯  ✕    │   ← header only on hover
+│ · · · · · · · · · · · · · · · · · · · ·  │
+│ · · ·  (React Flow canvas, dark) · · · · │
+│ · · · · · · · · · · · · · · · · · · · ·  │
+│           [hover] + Text  + Prompt …     │   ← footer only on hover
+└──────────────────────────────────────────┘
+                  ═══                          ← thin resize handle on hover
+```
 
-| Button | Command |
-|---|---|
-| Undo / Redo | `editor.chain().focus().undo()/redo()` + `editor.can().undo/redo()` for disabled state |
-| Block style dropdown | reads current heading level / paragraph; sets via `setParagraph()` / `toggleHeading({level})` / `toggleBlockquote()` / `toggleCodeBlock()` |
-| Bold / Italic / Underline* / Strike / Code | `toggleBold()` etc. with `isActive` highlight (* underline mark not in StarterKit — keep button but no-op with tooltip "Coming soon" if extension absent) |
-| Subscript / Superscript | not in StarterKit — toast "Coming soon" |
-| Bullet / Ordered / Task list | `toggleBulletList()`, `toggleOrderedList()`, task list → toast |
-| Indent / Outdent | `sinkListItem('listItem')` / `liftListItem('listItem')` |
-| Align left/center/right/justify | not in StarterKit — toast "Coming soon" |
-| Link | reuses the same prompt logic as `Mod-k` shortcut — toast for now if `link` mark missing |
-| Image | toast (slash menu handles real insert) |
-| Inline code / Code block | `toggleCode()` / `toggleCodeBlock()` |
-| Horizontal rule | `setHorizontalRule()` |
-| Color swatches / Highlight | toast "Coming soon" (no color/highlight extensions installed) |
-| Insert block (+) | already wired via `onInsertBlock` |
+Key principles:
+- **One container, one border.** No header strip, no footer strip baked in. Controls float over the canvas and fade in on hover.
+- **Width matches prose.** The grid spans the same 720px as the surrounding paragraphs — never wider, never narrower.
+- **Dark all the way through.** No white React Flow widgets. Minimap removed; zoom controls hidden by default.
+- **Quieter default height.** 280px instead of 400px so it doesn't dominate the page.
+- **Subtle, single-pixel edge** that matches the article's other embedded blocks (images, code blocks).
 
-All visual styling stays exactly as it is — no layout/colour changes.
+## Changes
 
-### B. Fix StatusBar layout (`StatusBar.tsx`)
+### 1. `src/components/article/stage/StageGridFrame.tsx` — rewrite the chrome
 
-The bar is too dense for a 640px panel. Changes (visual only, same height):
+- Remove the always-visible header bar and footer bar.
+- Wrap the canvas in a single rounded rectangle: 1px border at `rgba(255,255,255,0.08)`, no backdrop blur, no drop shadow (matches `.tiptap-article img` styling).
+- Add a **hover overlay header** (absolute, top, fades in with `opacity` on container hover): just the stage badge `①`, the editable title, block count, and a small `⋯` / `✕` cluster on the right. ~28px tall, semi-transparent dark gradient bar so it floats over the canvas.
+- Add a **hover overlay footer** (absolute, bottom, same fade pattern): the four `+ Text / + Prompt / + Code / + Result` chips. Drop the zoom controls and minimap toggle entirely — zoom lives inside React Flow's own controls if needed later.
+- Resize handle stays but becomes a 4px hairline at the bottom edge, only visible on hover.
+- Default `height` prop becomes 280, clamp range becomes 200–600.
+- Drop `widthClasses` — always render at `width: 100%; max-width: 720px` to match the prose column. Remove the `widthMode` prop usage (keep it in the interface as a no-op so callers don't break).
+- Remove the inner dot-grid background (`radial-gradient`) — React Flow already renders dots, doubling them creates moiré.
 
-1. **Drop low-value items at narrow widths** by hiding everything except branch, save status, word count, focus, zoom, and the "…" menu when `< 720px`. Use a `ResizeObserver` on the bar's container so wider viewports still show errors/warnings/chars/collaborators/wifi.
-2. **Move the external "…" (More options) button into the StatusBar itself** — it's already there. Remove the duplicate one rendered in `ArticleEditor.tsx` next to the bar.
-3. **Add `whiteSpace: 'nowrap'` and `flexShrink: 0`** to every status item so nothing wraps mid-label ("min words" stacking).
-4. **Tighten the title ellipsis** to `maxWidth: 100` so it never pushes other items off-screen.
-5. **Right group `gap: 4`** instead of `2` so zoom controls don't crowd into the chars label.
+### 2. `src/components/article/stage/StageCanvas.tsx` — remove white widgets
 
-### C. Tighten Save/Publish row (`ArticleEditor.tsx`)
+- Delete the `<MiniMap />` element entirely (this is the white box in the screenshot).
+- Keep `<Background>` dots but bump `color` to `rgba(255,255,255,0.06)` so they read as subtle texture, not a grid.
+- Add a wrapping `<style>` (or inline style on the React Flow root) that sets the React Flow pane background to `transparent` so the frame's color shows through. Specifically override `.react-flow__pane`, `.react-flow__background`, and `.react-flow__minimap` (defensive, in case it ever returns) to transparent / dark.
+- Remove `fitView` default — with no blocks it leaves the canvas in an awkward zoom state. Use a fixed default viewport instead.
 
-- Remove the standalone `MoreHorizontal` dropdown button next to `<StatusBar/>` (moved into the bar in step B).
-- Reduce the row's `padding` from `12px 0 8px` to `8px 0 6px` and remove `marginTop: 8` so it sits directly above the status bar.
+### 3. `src/components/article/StageGridNode.tsx` — match new defaults
 
-### D. Verify
+- Change `persistedHeight` fallback from 400 to 280.
+- Update the `handleResize` clamp from `(280, 800)` to `(200, 600)` to match the frame.
+- Drop the `widthMode` plumbing (always wide / column-width).
 
-- Type "/" → slash menu opens. Pick "Heading 2" → editor inserts H2.
-- Click **B** in toolbar with text selected → text becomes bold and the button shows the orange active state.
-- Pick "Heading 1" from the block-style dropdown → current paragraph becomes H1; dropdown label updates.
-- Resize panel → status bar drops secondary items instead of wrapping.
+### 4. `src/components/article/ArticleEditor.tsx` — small spacing fix
 
-## Files touched
+- The TipTap CSS already gives images `margin: 12px 0`. Add the equivalent rule for `[data-stage-grid]` so the embedded grid has the same vertical rhythm as an image: `margin: 16px 0; border-radius: 8px;`.
+- No changes to the toolbar or the Insert Grid button.
 
-- `src/components/article/TopToolbar.tsx` — wire commands, add active-state subscription, swap `noop` for real handlers.
-- `src/components/article/StatusBar.tsx` — responsive hide rules, nowrap, gap tweaks.
-- `src/components/article/ArticleEditor.tsx` — remove duplicate "…" button, tighten Save/Publish row spacing.
+### Files touched
 
-No changes to `AppLayout.tsx`, `LeftPanel.tsx`, `RightPanel.tsx`, `BlobBackground.tsx`, the page background, or any layout positions.
+- `src/components/article/stage/StageGridFrame.tsx` — major rewrite (chrome → hover overlays)
+- `src/components/article/stage/StageCanvas.tsx` — remove MiniMap, transparent React Flow background
+- `src/components/article/StageGridNode.tsx` — update default height + clamp
+- `src/components/article/ArticleEditor.tsx` — add `[data-stage-grid]` spacing rule
+
+### Out of scope (intentionally)
+
+- The `StageGridExtension`, the slash-command insertion path, and the document store wiring all stay exactly as they are. This is a visual cleanup, not a logic change.
+- Zoom controls and minimap can return later as a hover-only popover if needed — for now they're removed because they're the source of the white-box artifact and they aren't useful on a 280px embed.
+- The 4 protected files (`AppLayout.tsx`, `LeftPanel.tsx`, `RightPanel.tsx`, `BlobBackground.tsx`) are not touched.
+
+## What you'll see after
+
+- A stage grid inserted via the Insert Grid button or `/stage` appears as a clean dark rectangle the same width as the prose, ~280px tall.
+- Hovering it reveals a thin top bar with the stage name and a thin bottom bar with the +Text/+Prompt/+Code/+Result chips, then they fade out when the cursor leaves.
+- No white minimap, no double border, no chunky toolbar — it sits in the document like an image or code block does.
