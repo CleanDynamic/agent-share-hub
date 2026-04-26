@@ -54,7 +54,18 @@ const MENU_ITEMS: SlashCommandItem[] = [
   { id: 'divider', label: 'Divider', description: 'Visual section separator', icon: Minus, shortcut: '---', category: 'BASIC', action: (editor) => editor.chain().focus().setHorizontalRule().run() },
   { id: 'callout', label: 'Callout', description: 'Highlighted information block', icon: MessageSquare, category: 'BASIC', phaseLabel: 'Coming in Phase X' },
   { id: 'quote', label: 'Quote', description: 'Quoted text block', icon: Quote, shortcut: '⌘⇧.', category: 'BASIC', action: (editor) => editor.chain().focus().setBlockquote().run() },
-  { id: 'stage-grid', label: 'Stage grid', description: 'Arrange blocks visually', icon: LayoutGrid, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
+  { id: 'stage-grid', label: 'Stage grid', description: 'Arrange blocks visually', icon: LayoutGrid, category: 'CANVAS', action: (editor) => {
+      const stageId = (typeof crypto !== 'undefined' && 'randomUUID' in crypto) ? crypto.randomUUID() : `stage-${Date.now()}`;
+      const storage = editor.storage as any;
+      const canvasDoc = storage?.articleEditor?.canvasDoc;
+      const stageNum = (canvasDoc?.stages?.length ?? 0) + 1;
+      const stageTitle = `Stage ${stageNum}`;
+      try { canvasDoc?.addStage?.(stageTitle); } catch (e) { /* noop */ }
+      editor.chain().focus().insertContent({
+        type: 'stageGrid',
+        attrs: { stageId, stageTitle, gridSpacing: 20, height: 360 },
+      }).run();
+    } },
   { id: 'block-reference', label: 'Block reference', description: 'Link to another block', icon: Link2, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
   { id: 'inline-block-preview', label: 'Inline block preview', description: 'Preview block inline', icon: Eye, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
   { id: 'image', label: 'Image', description: 'Upload or embed an image', icon: Image, category: 'MEDIA', action: (editor) => {
