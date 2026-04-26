@@ -3,7 +3,6 @@ import {
   ReactFlow,
   Background,
   BackgroundVariant,
-  MiniMap,
   type Edge,
   type EdgeChange,
   type Node,
@@ -97,25 +96,43 @@ export function StageCanvas({ stageId }: StageCanvasProps) {
   );
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      fitView
-      minZoom={0.25}
-      maxZoom={2}
-      panOnDrag={[1]}
-      panActivationKeyCode="Space"
-      selectionOnDrag
-    >
-      <Background
-        variant={BackgroundVariant.Dots}
-        gap={20}
-        size={1}
-        color="rgba(255,255,255,0.08)"
-      />
-      <MiniMap />
-    </ReactFlow>
+    <div className="absolute inset-0 stage-canvas-root">
+      <style>{`
+        .stage-canvas-root .react-flow,
+        .stage-canvas-root .react-flow__pane,
+        .stage-canvas-root .react-flow__renderer,
+        .stage-canvas-root .react-flow__viewport,
+        .stage-canvas-root .react-flow__background {
+          background: transparent !important;
+        }
+        .stage-canvas-root .react-flow__attribution {
+          display: none !important;
+        }
+        .stage-canvas-root .react-flow__minimap,
+        .stage-canvas-root .react-flow__controls {
+          display: none !important;
+        }
+      `}</style>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        minZoom={0.25}
+        maxZoom={2}
+        panOnDrag={[1]}
+        panActivationKeyCode="Space"
+        selectionOnDrag
+        proOptions={{ hideAttribution: true }}
+      >
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={20}
+          size={1}
+          color="rgba(255,255,255,0.06)"
+        />
+      </ReactFlow>
+    </div>
   );
 }
