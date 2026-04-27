@@ -180,6 +180,7 @@ export const useDocumentStore = create<DocumentState>()(
     removeStage: (id) =>
       set((state) => {
         delete state.stages[id];
+        delete state.stageOpen[id];
         for (const block of Object.values(state.blocks)) {
           if (block.stage_id === id) {
             delete state.blocks[block.id];
@@ -187,6 +188,23 @@ export const useDocumentStore = create<DocumentState>()(
           }
         }
         state.dirty.add(id);
+      }),
+
+    openStage: (id) =>
+      set((state) => {
+        // Only one stage open at a time — close every other.
+        const next: Record<string, boolean> = {};
+        next[id] = true;
+        state.stageOpen = next;
+      }),
+
+    closeStage: (id) =>
+      set((state) => {
+        if (id) {
+          delete state.stageOpen[id];
+        } else {
+          state.stageOpen = {};
+        }
       }),
 
     addBlock: (block) =>
