@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useExpandedBlockId, setExpandedBlockId, toggleExpandedBlockId } from '@/lib/blockExpansion';
+import { useExpandedBlockId, toggleExpandedBlockId } from '@/lib/blockExpansion';
 
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/lib/documentStore';
