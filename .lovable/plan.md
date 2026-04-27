@@ -1,38 +1,36 @@
-Implement a fully functional save flow for the upload editor.
+Plan to make drafts actually save and reopen correctly
 
-1. Add a naming screen when the Save button is clicked
-- The selected Save button in `ArticleEditor` will no longer directly save.
-- It will open a centered glassmorphism modal asking for a draft name.
-- The input will default to the current draft name, title, or `Untitled draft`.
-- The modal will have Cancel and Save Draft actions.
-- Pressing Enter in the input will save.
+1. Fix the current save failure
+- Remove database fields from the draft save payload that do not exist in the current schema, especially the fields causing the logged error like `bounty_enabled`.
+- Do the same cleanup for block inserts during draft saving, because several canvas/block-specific columns are also not present in the current `content_blocks` schema.
+- Add explicit error checks after every important database write. If an insert/update/delete fails, the save flow will stop and show a clear error instead of pretending it saved.
 
-2. Make draft saving explicit and reliable
-- Refactor `saveDraft` in `Upload.tsx` to accept an optional `draftName`.
-- Save `draft_name` from the naming modal instead of always using the title.
-- Keep `title` separate from `draft_name` so users can name drafts before final title details are complete.
-- Update the saved draft status text to show the saved name and timestamp when available.
+2. Make Save create a real draft and keep editing that same draft
+- When a new draft is created, update `currentDraftId` and replace the URL with `/upload?draft=<id>` so refreshing, backing out, or returning to Upload opens the existing draft instead of starting a new upload.
+- Keep `draft_name`, `draft_saved_at`, `article_body`, and `stage_grids` stored on the draft record.
+- After a successful save, show the saved draft name and timestamp.
 
-3. Preserve article and Stage Grid state before every save
-- Before opening the naming modal, flush the current TipTap JSON into the upload page state.
-- Save both:
-  - `article_body` for the written article and embedded Stage Grid nodes
-  - `stage_grids` for stages, blocks, and connections in the mini-canvas system
-- Treat article-only and grid-only drafts as valid content, so a draft can be created even if the metadata form is mostly empty.
+3. Preserve the article editor and Stage Grid content
+- Keep the TipTap article JSON as the source for the text editor contents.
+- Save the Stage Grid store as one JSON snapshot in `stage_grids`.
+- Restore both `article_body` and `stage_grids` when opening `/upload?draft=<id>`.
+- On “Back to article” from the Stage Grid canvas, snapshot the grid and silently save if a draft already exists.
 
-4. Save when leaving Stage Grid mode
-- When the user clicks “Back to article” from the Stage Grid canvas, snapshot the grid store and silently update the current draft if one exists.
-- This prevents block/layout edits made inside the canvas from disappearing when returning to the article.
-- If no draft exists yet, the explicit Save button will create one via the naming modal.
+4. Add a proper “save before leaving” prompt
+- Replace the currently-unused `guardedNavigate` logic with a real route-leave blocker for Upload.
+- When the user tries to leave Upload with unsaved article/grid/form changes, show the existing “Save before leaving?” modal.
+- Save Draft will create/update the draft, then continue navigation.
+- Discard will leave without saving, and if it is a newly-created unsaved draft, remove it.
+- Cancel will keep the user on the upload editor.
 
-5. Improve error handling and feedback
-- Show a destructive toast if saving fails.
-- Keep the Save button disabled while a save is running.
-- Only show “Draft saved” after the database write succeeds.
+5. Add a safety fallback for “new upload” cases
+- If the user has an unsaved draft and returns to `/upload?post_type=...`, the app should not silently reset their work.
+- Once the draft has an id, the editor URL will stay tied to that draft, so coming back to Upload continues the same draft.
+- Optional silent autosave will only update an existing draft; the naming screen remains the explicit way to create the first named draft.
 
 Technical details
-- Files to edit:
-  - `src/components/article/ArticleEditor.tsx`
+- Main files to edit:
   - `src/pages/Upload.tsx`
-- No database schema migration is needed because `content_items` already has `article_body`, `stage_grids`, `draft_name`, and `draft_saved_at`.
-- The implementation will use existing Lovable Cloud tables and existing UI components (`Dialog`, `Input`, `Button`) where appropriate.
+  - `src/components/article/ArticleEditor.tsx` only if the save dialog needs a small state/status refinement
+- No database migration is needed for this fix. The backend already has the draft fields needed: `article_body`, `stage_grids`, `draft_name`, and `draft_saved_at`.
+- The main bug shown in the console is a schema mismatch: draft saving sends removed columns like `bounty_enabled`, so the database rejects the save before the draft can be created.
