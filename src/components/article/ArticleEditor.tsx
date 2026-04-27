@@ -332,6 +332,29 @@ export function ArticleEditor({
     executeSlashCommand(item);
   }, [executeSlashCommand, slashItems]);
 
+  const insertBlockReference = useCallback((item: BlockPickerItem) => {
+    if (!editor || refStartPos.current === null) return;
+    const from = refStartPos.current;
+    const to = editor.state.selection.$from.pos;
+    editor
+      .chain()
+      .focus()
+      .deleteRange({ from, to })
+      .insertContent({
+        type: 'blockReference',
+        attrs: {
+          blockId: item.blockId,
+          blockName: item.blockName,
+          blockType: item.blockType,
+          stageId: item.stageId,
+        },
+      })
+      .insertContent(' ')
+      .run();
+    setRefOpen(false);
+    refStartPos.current = null;
+  }, [editor]);
+
   // Click outside to close slash menu
   useEffect(() => {
     if (!slashOpen) return;
