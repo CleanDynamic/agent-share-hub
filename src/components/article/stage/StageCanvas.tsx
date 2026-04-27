@@ -4,6 +4,7 @@ import {
   ReactFlowProvider,
   Background,
   BackgroundVariant,
+  MiniMap,
   useReactFlow,
   type Connection as RFConnection,
   type Edge,
