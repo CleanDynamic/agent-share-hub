@@ -27,7 +27,7 @@ export const searchPluginKey = new PluginKey<SearchPluginState>('searchHighlight
 const HIGHLIGHT_CLASS = 'sh-match';
 const ACTIVE_CLASS = 'sh-match-active';
 
-declare module '@tiptap/core' {
+declare module '@tiptap/react' {
   interface Commands<ReturnType> {
     searchHighlight: {
       setSearch: (opts: Partial<SearchOptions>) => ReturnType;
