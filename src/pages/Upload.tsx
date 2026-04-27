@@ -528,7 +528,7 @@ const Upload = () => {
   });
 
   // ── Save Draft Logic ──
-  const saveDraft = useCallback(async (silent = false): Promise<string | null> => {
+  const saveDraft = useCallback(async (silent = false, draftName?: string): Promise<string | null> => {
     const values = form.getValues();
     const articleBody = (canvasDoc as any)._articleBody ?? (canvasDoc as any).articleBody ?? useDocumentStore.getState().articleBody;
     const stageGridsSnapshot = (() => {
@@ -603,7 +603,7 @@ const Upload = () => {
         bounty_tip_gbp: isBountyType && bountyTipGbp !== null ? bountyTipGbp : null,
         status: "draft",
         draft_saved_at: new Date().toISOString(),
-        draft_name: values.title || null,
+        draft_name: draftName?.trim() || values.title || draftMeta?.name || null,
         article_body: articleBody ?? null,
         stage_grids: stageGridsSnapshot,
       };
