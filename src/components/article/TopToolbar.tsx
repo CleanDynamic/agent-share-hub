@@ -377,6 +377,254 @@ function ColorSwatch({ color, label, shortcut, onClick }: ColorSwatchProps) {
   );
 }
 
+type PaletteEntry = { name: string; value: string | null };
+
+const TEXT_PALETTE: PaletteEntry[] = [
+  { name: 'Default', value: null },
+  { name: 'Gray', value: '#9CA3AF' },
+  { name: 'Brown', value: '#8B5E3C' },
+  { name: 'Orange', value: '#E8571A' },
+  { name: 'Yellow', value: '#F5C518' },
+  { name: 'Green', value: '#2BB673' },
+  { name: 'Teal', value: '#2EC4B6' },
+  { name: 'Blue', value: '#3B82F6' },
+  { name: 'Purple', value: '#A855F7' },
+  { name: 'Pink', value: '#EC4899' },
+  { name: 'Red', value: '#EF4444' },
+];
+
+const HIGHLIGHT_PALETTE: PaletteEntry[] = [
+  { name: 'Default', value: null },
+  { name: 'Gray', value: '#9CA3AF55' },
+  { name: 'Brown', value: '#8B5E3C55' },
+  { name: 'Orange', value: '#E8571A55' },
+  { name: 'Yellow', value: '#F5C51855' },
+  { name: 'Green', value: '#2BB67355' },
+  { name: 'Teal', value: '#2EC4B655' },
+  { name: 'Blue', value: '#3B82F655' },
+  { name: 'Purple', value: '#A855F755' },
+  { name: 'Pink', value: '#EC489955' },
+  { name: 'Red', value: '#EF444455' },
+];
+
+interface ColorPickerPopoverProps {
+  mode: 'text' | 'highlight';
+  triggerColor: string;
+  triggerLabel: string;
+  onApply: (color: string | null) => void;
+}
+
+function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: ColorPickerPopoverProps) {
+  const [open, setOpen] = React.useState(false);
+  const [hovered, setHovered] = React.useState(false);
+  const [hex, setHex] = React.useState('');
+  const palette = mode === 'text' ? TEXT_PALETTE : HIGHLIGHT_PALETTE;
+  const header = mode === 'text' ? 'Text color' : 'Highlight color';
+
+  const applyHex = () => {
+    const v = hex.trim();
+    if (!v) return;
+    const normalized = v.startsWith('#') ? v : `#${v}`;
+    if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(normalized)) {
+      onApply(normalized);
+      setOpen(false);
+      setHex('');
+    }
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={triggerLabel}
+          title={triggerLabel}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 6,
+            border: 'none',
+            padding: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            background: hovered ? 'hsl(var(--foreground) / 0.06)' : 'transparent',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span
+            style={{
+              width: 14,
+              height: 14,
+              borderRadius: 999,
+              background: triggerColor,
+              boxShadow: 'inset 0 0 0 1px hsl(var(--foreground) / 0.15)',
+            }}
+          />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={6}
+        className="p-3 w-auto"
+        style={{
+          background: 'hsl(240 20% 8% / 0.98)',
+          border: '1px solid hsl(var(--foreground) / 0.08)',
+          borderRadius: 10,
+          boxShadow: '0 8px 24px hsl(240 10% 2% / 0.5)',
+          fontFamily: 'Inter, sans-serif',
+          color: 'hsl(var(--foreground) / 0.9)',
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: 'hsl(var(--foreground) / 0.6)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            marginBottom: 8,
+          }}
+        >
+          {header}
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(6, 24px)',
+            gap: 2,
+            marginBottom: 8,
+          }}
+        >
+          {palette.map((entry) => {
+            const isDefault = entry.value === null;
+            const swatchBg = isDefault
+              ? 'transparent'
+              : entry.value!;
+            return (
+              <button
+                key={entry.name}
+                type="button"
+                title={entry.name}
+                onClick={() => {
+                  onApply(entry.value);
+                  setOpen(false);
+                }}
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 4,
+                  padding: 0,
+                  cursor: 'pointer',
+                  background: swatchBg,
+                  border: isDefault
+                    ? '1px dashed hsl(var(--foreground) / 0.3)'
+                    : '1px solid hsl(var(--foreground) / 0.15)',
+                  position: 'relative',
+                }}
+              >
+                {isDefault ? (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 9,
+                      color: 'hsl(var(--foreground) / 0.5)',
+                    }}
+                  >
+                    A
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            onApply(null);
+            setOpen(false);
+          }}
+          style={{
+            width: '100%',
+            height: 26,
+            borderRadius: 6,
+            border: 'none',
+            background: 'transparent',
+            color: 'hsl(var(--foreground) / 0.7)',
+            fontSize: 11,
+            fontFamily: 'Inter, sans-serif',
+            cursor: 'pointer',
+            marginBottom: 6,
+            textAlign: 'left',
+            padding: '0 6px',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background =
+              'hsl(var(--foreground) / 0.06)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+          }}
+        >
+          Remove color
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <input
+            value={hex}
+            onChange={(e) => setHex(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                applyHex();
+              }
+            }}
+            placeholder="#RRGGBB"
+            style={{
+              flex: 1,
+              height: 26,
+              borderRadius: 6,
+              border: '1px solid hsl(var(--foreground) / 0.1)',
+              background: 'hsl(var(--foreground) / 0.03)',
+              color: 'hsl(var(--foreground) / 0.9)',
+              padding: '0 8px',
+              fontSize: 11,
+              fontFamily: 'Inter, sans-serif',
+              outline: 'none',
+            }}
+          />
+          <button
+            type="button"
+            onClick={applyHex}
+            style={{
+              height: 26,
+              padding: '0 10px',
+              borderRadius: 6,
+              border: '1px solid hsl(var(--foreground) / 0.1)',
+              background: 'hsl(var(--foreground) / 0.06)',
+              color: 'hsl(var(--foreground) / 0.9)',
+              fontSize: 11,
+              fontFamily: 'Inter, sans-serif',
+              cursor: 'pointer',
+            }}
+          >
+            Apply
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function Divider() {
   return (
     <div
