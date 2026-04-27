@@ -934,8 +934,109 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           <ToolbarGroup>
             <ToolbarButton icon={FileText} label="Add block" onClick={onInsertBlock ?? soon('Insert')} />
             <ToolbarButton icon={Link} label="Insert link" shortcut="⌘K" onClick={handleLink} />
-            <ToolbarButton icon={Image} label="Insert image" onClick={soon('Image')} />
-            <ToolbarButton icon={Video} label="Insert video" onClick={soon('Video')} />
+            <Popover open={imageOpen} onOpenChange={setImageOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  title="Insert image"
+                  aria-label="Insert image"
+                  style={{
+                    width: 28, height: 28, borderRadius: 6,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', border: 'none', background: 'transparent',
+                    color: 'hsl(var(--foreground) / 0.7)', padding: 0,
+                  }}
+                >
+                  <Image size={14} strokeWidth={1.8} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                sideOffset={6}
+                className="p-3 w-72"
+                style={{
+                  background: 'hsl(240 20% 8% / 0.98)',
+                  border: '1px solid hsl(var(--foreground) / 0.08)',
+                  borderRadius: 10,
+                  fontFamily: 'Inter, sans-serif',
+                  color: 'hsl(var(--foreground) / 0.9)',
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--foreground) / 0.6)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                  Insert image
+                </div>
+                <input
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertImage(); } }}
+                  placeholder="Image URL"
+                  autoFocus
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.03)', color: 'hsl(var(--foreground) / 0.9)', padding: '0 8px', fontSize: 12, marginBottom: 6, outline: 'none', boxSizing: 'border-box' }}
+                />
+                <input
+                  value={imageAlt}
+                  onChange={(e) => setImageAlt(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertImage(); } }}
+                  placeholder="Alt text (optional)"
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.03)', color: 'hsl(var(--foreground) / 0.9)', padding: '0 8px', fontSize: 12, marginBottom: 8, outline: 'none', boxSizing: 'border-box' }}
+                />
+                <button
+                  type="button"
+                  onClick={insertImage}
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.06)', color: 'hsl(var(--foreground) / 0.9)', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}
+                >
+                  Insert
+                </button>
+              </PopoverContent>
+            </Popover>
+            <Popover open={videoOpen} onOpenChange={setVideoOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  title="Insert video"
+                  aria-label="Insert video"
+                  style={{
+                    width: 28, height: 28, borderRadius: 6,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', border: 'none', background: 'transparent',
+                    color: 'hsl(var(--foreground) / 0.7)', padding: 0,
+                  }}
+                >
+                  <Video size={14} strokeWidth={1.8} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                sideOffset={6}
+                className="p-3 w-72"
+                style={{
+                  background: 'hsl(240 20% 8% / 0.98)',
+                  border: '1px solid hsl(var(--foreground) / 0.08)',
+                  borderRadius: 10,
+                  fontFamily: 'Inter, sans-serif',
+                  color: 'hsl(var(--foreground) / 0.9)',
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--foreground) / 0.6)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                  Insert video
+                </div>
+                <input
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertVideo(); } }}
+                  placeholder="YouTube, Vimeo, or .mp4 URL"
+                  autoFocus
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.03)', color: 'hsl(var(--foreground) / 0.9)', padding: '0 8px', fontSize: 12, marginBottom: 8, outline: 'none', boxSizing: 'border-box' }}
+                />
+                <button
+                  type="button"
+                  onClick={insertVideo}
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.06)', color: 'hsl(var(--foreground) / 0.9)', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}
+                >
+                  Insert
+                </button>
+              </PopoverContent>
+            </Popover>
             <TablePickerPopover
               editor={editor}
               trigger={
