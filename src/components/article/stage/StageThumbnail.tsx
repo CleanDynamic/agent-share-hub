@@ -316,6 +316,11 @@ export function StageThumbnail({
         </button>
       </div>
 
+      {/* SPATIAL PREVIEW (mini-map) */}
+      {blockCount > 0 ? (
+        <SpatialPreview blocks={blocks} connections={connections} />
+      ) : null}
+
       {/* COLOUR STRIP */}
       <div
         style={{
