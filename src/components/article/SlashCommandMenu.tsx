@@ -137,6 +137,7 @@ const MENU_ITEMS: SlashCommandItem[] = [
   { id: 'result-block', label: 'Result block', description: 'Show output from a connected source block', icon: CheckCircle2, category: 'CANVAS', action: () => insertCanvasBlock('result') },
   { id: 'resource-block', label: 'Resource block', description: 'Embed a web link with preview and notes', icon: Globe, category: 'CANVAS', action: () => insertCanvasBlock('resource') },
   { id: 'tool-block', label: 'Tool block', description: 'Define a callable tool with JSON schema', icon: Wrench, category: 'CANVAS', action: () => insertCanvasBlock('tool') },
+  { id: 'workflow-block', label: 'Workflow block', description: 'Stepwise workflow with progress tracking', icon: Workflow, category: 'CANVAS', action: () => insertCanvasBlock('workflow') },
   { id: 'image', label: 'Image', description: 'Upload or embed an image', icon: Image, category: 'MEDIA', action: (editor) => {
       const url = window.prompt('Image URL:');
       if (url) editor.chain().focus().setImage({ src: url }).run();
