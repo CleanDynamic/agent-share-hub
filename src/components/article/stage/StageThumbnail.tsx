@@ -24,10 +24,17 @@ export interface ThumbnailBlock {
   id: string;
   type: ThumbnailBlockType;
   name?: string | null;
+  position_x?: number;
+  position_y?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface ThumbnailConnection {
   id?: string;
+  from_block_id?: string;
+  to_block_id?: string;
+  connection_type?: string;
   [key: string]: any;
 }
 
