@@ -20,6 +20,8 @@ import { StatusBar } from './StatusBar';
 import { FormattingShortcuts } from './KeyboardShortcutsExtension';
 import { SearchHighlight } from './SearchHighlight';
 import { FindReplaceBar } from './FindReplaceBar';
+import { BlockReferenceExtension } from './tiptap/BlockReferenceExtension';
+import { BlockPickerMenu, type BlockPickerItem } from './tiptap/BlockPickerMenu';
 import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
 import type { SlashCommandItem } from './SlashCommandMenu';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
@@ -75,6 +77,12 @@ export function ArticleEditor({
   const [insertHovered, setInsertHovered] = useState(false);
   const [findOpen, setFindOpen] = useState(false);
   const [findShowReplace, setFindShowReplace] = useState(false);
+  const [refOpen, setRefOpen] = useState(false);
+  const [refQuery, setRefQuery] = useState('');
+  const [refPos, setRefPos] = useState<{ top: number; left: number } | null>(null);
+  const [refSelectedIndex, setRefSelectedIndex] = useState(0);
+  const [refItems, setRefItems] = useState<BlockPickerItem[]>([]);
+  const refStartPos = useRef<number | null>(null);
   const slashStartPos = useRef<number | null>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const setDocumentTitle = useDocumentStore((state) => state.setDocumentTitle);
@@ -139,6 +147,7 @@ export function ArticleEditor({
       BlockRefExtension,
       FormattingShortcuts,
       SearchHighlight,
+      BlockReferenceExtension,
     ],
     content: initialContent || {
       type: 'doc',
@@ -191,6 +200,32 @@ export function ArticleEditor({
           slashStartPos.current = null;
         } else {
           setSlashQuery(query);
+        }
+      }
+
+      // Block-reference picker triggered by "[["
+      if (textBefore.endsWith('[[') && !refOpen) {
+        const coords = editor.view.coordsAtPos($from.pos);
+        const containerRect = editorContainerRef.current?.getBoundingClientRect();
+        if (containerRect) {
+          setRefPos({
+            top: coords.top - containerRect.top + 24,
+            left: coords.left - containerRect.left,
+          });
+        }
+        refStartPos.current = $from.pos - 2;
+        setRefOpen(true);
+        setRefQuery('');
+        setRefSelectedIndex(0);
+      } else if (refOpen && refStartPos.current !== null) {
+        const from = refStartPos.current;
+        const to = $from.pos;
+        const query = state.doc.textBetween(from + 2, to, '');
+        if (query.includes('\n') || query.includes(']]') || to < from + 2) {
+          setRefOpen(false);
+          refStartPos.current = null;
+        } else {
+          setRefQuery(query);
         }
       }
     },
@@ -256,6 +291,7 @@ export function ArticleEditor({
     return () => window.removeEventListener('keydown', handler);
   }, [findOpen]);
 
+
   const slashItems = useMemo(() => {
     return getSlashCommandItems(slashQuery);
   }, [slashQuery]);
@@ -296,6 +332,59 @@ export function ArticleEditor({
     if (!item) return;
     executeSlashCommand(item);
   }, [executeSlashCommand, slashItems]);
+
+  const insertBlockReference = useCallback((item: BlockPickerItem) => {
+    if (!editor || refStartPos.current === null) return;
+    const from = refStartPos.current;
+    const to = editor.state.selection.$from.pos;
+    editor
+      .chain()
+      .focus()
+      .deleteRange({ from, to })
+      .insertContent({
+        type: 'blockReference',
+        attrs: {
+          blockId: item.blockId,
+          blockName: item.blockName,
+          blockType: item.blockType,
+          stageId: item.stageId,
+        },
+      })
+      .insertContent(' ')
+      .run();
+    setRefOpen(false);
+    refStartPos.current = null;
+  }, [editor]);
+
+  // Block-reference picker keyboard navigation
+  useEffect(() => {
+    if (!refOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setRefSelectedIndex((i) =>
+          refItems.length === 0 ? 0 : (i + 1) % refItems.length,
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setRefSelectedIndex((i) =>
+          refItems.length === 0
+            ? 0
+            : (i + refItems.length - 1) % refItems.length,
+        );
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const item = refItems[refSelectedIndex];
+        if (item) insertBlockReference(item);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setRefOpen(false);
+        refStartPos.current = null;
+      }
+    };
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
+  }, [refOpen, refItems, refSelectedIndex, insertBlockReference]);
 
   // Click outside to close slash menu
   useEffect(() => {
@@ -572,6 +661,20 @@ export function ArticleEditor({
           setSlashOpen(false);
           slashStartPos.current = null;
         }}
+      />
+
+      <BlockPickerMenu
+        isOpen={refOpen && Boolean(refPos)}
+        query={refQuery}
+        position={refPos ? { x: refPos.left, y: refPos.top } : null}
+        selectedIndex={refSelectedIndex}
+        onSelectedIndexChange={setRefSelectedIndex}
+        onSelect={insertBlockReference}
+        onClose={() => {
+          setRefOpen(false);
+          refStartPos.current = null;
+        }}
+        onItemsChange={setRefItems}
       />
 
       {editable ? (
