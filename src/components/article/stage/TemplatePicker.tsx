@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/lib/documentStore';
+import { eventBus } from '@/lib/eventBus';
 import type { Block, Connection } from '@/types/document';
 import {
   STAGE_TEMPLATES,
@@ -181,6 +182,11 @@ export function TemplatePicker({
   const handlePick = (template: StageTemplate | null) => {
     if (template) {
       applyTemplateToStage(template, stageId, { addBlock, addConnection });
+      // Templates always insert 2+ blocks → ask the canvas to fit-view
+      // them. Defer one tick so React Flow has registered the new nodes.
+      setTimeout(() => {
+        eventBus.emit('canvas:fit-needed', { stageId });
+      }, 50);
     }
     onApplied?.(template?.id ?? null);
     onOpenChange(false);

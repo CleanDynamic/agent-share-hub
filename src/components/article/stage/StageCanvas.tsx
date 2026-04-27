@@ -5,6 +5,7 @@ import {
   Background,
   BackgroundVariant,
   MiniMap,
+  PanOnScrollMode,
   useReactFlow,
   type Connection as RFConnection,
   type Edge,
@@ -16,6 +17,10 @@ import '@xyflow/react/dist/style.css';
 
 import { useDocumentStore } from '@/lib/documentStore';
 import { eventBus } from '@/lib/eventBus';
+import {
+  setExpandedBlockId,
+  toggleExpandedBlockId,
+} from '@/lib/blockExpansion';
 import {
   BLOCK_TYPE_ACCENT,
   clearDragType,
@@ -125,7 +130,7 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
   const removeConnection = useDocumentStore((s) => s.removeConnection);
   const setSelection = useDocumentStore((s) => s.setSelection);
 
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView, setViewport } = useReactFlow();
 
   // Force re-render whenever the newly-created set changes so the
   // .block-scale-in class actually paints (the set lives outside Zustand).
@@ -290,6 +295,54 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
     });
   }, []);
 
+  // ── canvas:fit-needed listener ──────────────────────────────────
+  // Centres the viewport on whatever blocks are present. Bus-driven so
+  // template inserts, first-block inserts, and stage-open events can all
+  // request a fit without holding a ref to the canvas.
+  useEffect(() => {
+    return eventBus.on('canvas:fit-needed', (payload) => {
+      if (payload?.stageId && payload.stageId !== stageId) return;
+      // Defer one frame so React Flow has measured any nodes added in
+      // the same tick.
+      window.setTimeout(() => {
+        fitView({ padding: 0.2, duration: 300, minZoom: 0.2, maxZoom: 1.5 });
+      }, 16);
+    });
+  }, [fitView, stageId]);
+
+  // ── On-mount initial framing ────────────────────────────────────
+  // If the stage opens with content, centre on it. If empty, sit at the
+  // standard 0.55 working zoom with the origin in view.
+  useEffect(() => {
+    const hasBlocks = Object.values(useDocumentStore.getState().blocks).some(
+      (b) => b.stage_id === stageId,
+    );
+    const t = window.setTimeout(() => {
+      if (hasBlocks) {
+        fitView({ padding: 0.2, duration: 0, minZoom: 0.2, maxZoom: 1.5 });
+      } else {
+        setViewport({ x: 0, y: 0, zoom: 0.55 }, { duration: 0 });
+      }
+    }, 50);
+    return () => window.clearTimeout(t);
+    // Intentionally only on mount per stageId.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stageId]);
+
+  // ── Pane click → collapse any expanded block ────────────────────
+  const onPaneClick = useCallback(() => {
+    setExpandedBlockId(null);
+  }, []);
+
+  // ── Double-click a node → toggle in-place expansion ─────────────
+  const onNodeDoubleClick = useCallback(
+    (_e: React.MouseEvent, node: Node) => {
+      toggleExpandedBlockId(node.id);
+    },
+    [],
+  );
+
+
   return (
     <div
       ref={wrapperRef}
@@ -332,11 +385,24 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-        minZoom={0.25}
-        maxZoom={2}
+        onPaneClick={onPaneClick}
+        onNodeDoubleClick={onNodeDoubleClick}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.55 }}
+        minZoom={0.2}
+        maxZoom={1.5}
+        // Pan model (Figma-style):
+        //   • left-click drag on empty canvas → marquee selection
+        //   • middle-mouse drag             → pan
+        //   • two-finger trackpad scroll    → pan (free, any direction)
+        //   • pinch on trackpad             → zoom
+        //   • Cmd/Ctrl + scroll             → zoom
+        //   • double-click                  → block expansion (handled above)
         panOnDrag={[1]}
-        panActivationKeyCode="Space"
+        panOnScroll
+        panOnScrollMode={PanOnScrollMode.Free}
+        zoomOnScroll={false}
+        zoomOnPinch
+        zoomOnDoubleClick={false}
         selectionOnDrag
         proOptions={{ hideAttribution: true }}
       >

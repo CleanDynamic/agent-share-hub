@@ -1,9 +1,20 @@
 import { useCallback, useState } from 'react';
 import { ReactFlowProvider, useReactFlow, useStore } from '@xyflow/react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { ArrowLeft, Minus, Plus, Maximize, Map as MapIcon } from 'lucide-react';
+import {
+  ArrowLeft,
+  Minus,
+  Plus,
+  Maximize,
+  Map as MapIcon,
+  HelpCircle,
+} from 'lucide-react';
 
 import { StageCanvasInner } from './StageCanvas';
+import {
+  getExpandedBlockId,
+  setExpandedBlockId,
+} from '@/lib/blockExpansion';
 
 interface StageFullscreenProps {
   stageId: string;
@@ -19,8 +30,18 @@ interface StageFullscreenProps {
 export function StageFullscreen({ stageId, onClose }: StageFullscreenProps) {
   const [showMiniMap, setShowMiniMap] = useState(false);
 
-  // Esc closes the stage.
-  useHotkeys('esc', () => onClose(), { enableOnFormTags: false });
+  // Esc: collapse the currently-expanded block first; if none, close stage.
+  useHotkeys(
+    'esc',
+    () => {
+      if (getExpandedBlockId()) {
+        setExpandedBlockId(null);
+      } else {
+        onClose();
+      }
+    },
+    { enableOnFormTags: false },
+  );
 
   return (
     <ReactFlowProvider>
@@ -105,7 +126,7 @@ function BottomBar({ showMiniMap, onToggleMiniMap }: BottomBarProps) {
   // Live zoom subscription via React Flow's internal store.
   const zoom = useStore((s) => s.transform[2]);
 
-  const clampZoom = (z: number) => Math.max(0.25, Math.min(2, z));
+  const clampZoom = (z: number) => Math.max(0.2, Math.min(1.5, z));
 
   const onZoomOut = useCallback(() => {
     const next = clampZoom((getZoom() ?? zoom) - 0.1);
@@ -118,7 +139,7 @@ function BottomBar({ showMiniMap, onToggleMiniMap }: BottomBarProps) {
   }, [getZoom, zoom, zoomTo]);
 
   const onFit = useCallback(() => {
-    fitView({ padding: 0.15, duration: 200 });
+    fitView({ padding: 0.2, duration: 200, minZoom: 0.2, maxZoom: 1.5 });
   }, [fitView]);
 
   const zoomLabel = `${Math.round((zoom ?? 1) * 100)}%`;
@@ -174,6 +195,23 @@ function BottomBar({ showMiniMap, onToggleMiniMap }: BottomBarProps) {
       >
         <MapIcon size={14} strokeWidth={1.8} />
       </IconBtn>
+
+      <span
+        title="Scroll to pan · Pinch or Cmd-scroll to zoom"
+        aria-label="Scroll to pan · Pinch or Cmd-scroll to zoom"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 20,
+          height: 20,
+          marginLeft: 6,
+          color: 'rgba(255,255,255,0.30)',
+          cursor: 'help',
+        }}
+      >
+        <HelpCircle size={12} strokeWidth={1.8} />
+      </span>
     </div>
   );
 }
