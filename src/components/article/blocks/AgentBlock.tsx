@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/lib/documentStore';
+import { isNameUnique } from '@/lib/variables';
 import {
   Sheet,
   SheetContent,
@@ -78,6 +79,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
   const blockId = (data as AgentBlockData).blockId ?? id;
 
   const block = useDocumentStore((s) => s.blocks[blockId]);
+  const allBlocks = useDocumentStore((s) => s.blocks);
   const updateBlock = useDocumentStore((s) => s.updateBlock);
   const setSelection = useDocumentStore((s) => s.setSelection);
   const expandedSelection = useDocumentStore(
@@ -108,7 +110,13 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
     [block, blockId, updateBlock],
   );
 
-  const onNameChange = (v: string) => updateBlock(blockId, { name: v });
+  const onNameChange = (v: string) => {
+    if (!isNameUnique(v, blockId, allBlocks)) {
+      toast.error(`Name "${v.trim()}" is already used by another block.`);
+      return;
+    }
+    updateBlock(blockId, { name: v });
+  };
   const onRoleChange = (v: string) => patchProps({ role: v });
   const onModelChange = (v: string) => patchProps({ model: v });
   const onToolsChange = (v: string[]) => patchProps({ tools: v });

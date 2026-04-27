@@ -14,6 +14,15 @@ import { useDocumentStore } from '@/lib/documentStore';
 import { eventBus } from '@/lib/eventBus';
 import { runPrompt, approximateTokens } from '@/lib/llm';
 import {
+  describeVariables,
+  extractVariables,
+  getBlockValue,
+  indexBlocksByName,
+  isNameUnique,
+} from '@/lib/variables';
+import { VariableChips } from '@/components/article/blocks/shared/VariableChips';
+import { useVariableAutocomplete } from '@/components/article/blocks/shared/VariableAutocomplete';
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -105,7 +114,16 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
     [block, blockId, updateBlock],
   );
 
-  const onNameChange = (v: string) => updateBlock(blockId, { name: v });
+  const [nameError, setNameError] = React.useState<string | null>(null);
+  const onNameChange = (v: string) => {
+    if (!isNameUnique(v, blockId, allBlocks)) {
+      setNameError(`Name "${v.trim()}" is already used by another block.`);
+      // Do NOT persist a duplicate name.
+      return;
+    }
+    setNameError(null);
+    updateBlock(blockId, { name: v });
+  };
   const onPromptChange = (v: string) => patchProps({ prompt: v });
   const onSystemPromptChange = (v: string) => patchProps({ systemPrompt: v });
   const onModelChange = (v: string) => patchProps({ model: v });
@@ -116,40 +134,84 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
     setSelection({ kind: 'block', ids: [blockId] });
   }, [blockId, setSelection]);
 
-  const extractedVariables = React.useMemo(() => {
-    const regex = /\{\{(\w+)\}\}/g;
-    const fromPrompt = [...promptText.matchAll(regex)].map((m) => m[1]);
-    const fromSystem = [...(systemPrompt ?? '').matchAll(regex)].map(
-      (m) => m[1],
-    );
-    return [...new Set([...fromPrompt, ...fromSystem])];
-  }, [promptText, systemPrompt]);
+  const extractedVariables = React.useMemo(
+    () => [
+      ...new Set([
+        ...extractVariables(promptText),
+        ...extractVariables(systemPrompt ?? ''),
+      ]),
+    ],
+    [promptText, systemPrompt],
+  );
+
+  const blocksByName = React.useMemo(
+    () => indexBlocksByName(allBlocks),
+    [allBlocks],
+  );
+
+  const variableInfos = React.useMemo(
+    () => describeVariables(extractedVariables, blocksByName),
+    [extractedVariables, blocksByName],
+  );
 
   /**
-   * Resolve a {{name}} variable by finding a block in the same stage with a
-   * matching `block.name` and returning its `properties.output`.
+   * Resolve a {{name}} variable by finding any block in the document with a
+   * matching `block.name` and returning its current value (output, code, or
+   * extracted text).
    */
   const resolveVariables = React.useCallback((): Record<string, string> => {
     const out: Record<string, string> = {};
-    if (!block) return out;
     for (const varName of extractedVariables) {
-      const match = Object.values(allBlocks).find(
-        (b) => b.stage_id === block.stage_id && b.name === varName,
-      );
-      const matchProps = (match?.properties ?? {}) as Record<string, unknown>;
-      const value = matchProps.output;
+      const match = blocksByName.get(varName);
+      const value = getBlockValue(match);
       if (typeof value === 'string' && value.length > 0) {
         out[varName] = value;
       }
     }
     return out;
-  }, [allBlocks, block, extractedVariables]);
+  }, [extractedVariables, blocksByName]);
 
   const handleRun = React.useCallback(async () => {
     if (!block) return;
     if (!promptText.trim()) {
       toast.error('Prompt is empty');
       return;
+    }
+
+    // Pre-flight: check named-block dependencies before assembling the
+    // prompt. If a referenced block exists but hasn't produced output, ask
+    // the user whether to continue (with empty substitution) or run it first.
+    const blocking = variableInfos.filter((v) => v.status !== 'resolved');
+    if (blocking.length > 0) {
+      const missing = blocking.filter((v) => v.status === 'missing');
+      const noOutput = blocking.filter((v) => v.status === 'no_output');
+      if (missing.length > 0) {
+        toast.error(
+          `Unknown variable${missing.length > 1 ? 's' : ''}: ${missing
+            .map((m) => `{{${m.name}}}`)
+            .join(', ')}`,
+        );
+        setStatus('error');
+        return;
+      }
+      if (noOutput.length > 0) {
+        const names = noOutput.map((m) => `'${m.name}'`).join(', ');
+        const proceed = window.confirm(
+          `The block${noOutput.length > 1 ? 's' : ''} ${names} ${
+            noOutput.length > 1 ? 'have' : 'has'
+          } no output yet. Run ${
+            noOutput.length > 1 ? 'them' : 'it'
+          } first?\n\nOK to cancel and run the dependency, Cancel to continue with empty values.`,
+        );
+        if (proceed) {
+          // Focus the first dependency so the user can run it manually.
+          if (noOutput[0].blockId) {
+            setSelection({ kind: 'block', ids: [noOutput[0].blockId] });
+          }
+          setStatus('idle');
+          return;
+        }
+      }
     }
 
     setStatus('running');
@@ -199,7 +261,26 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
     resolveVariables,
     systemPrompt,
     temperature,
+    variableInfos,
+    setSelection,
   ]);
+
+  const promptRef = React.useRef<HTMLTextAreaElement>(null);
+  const systemPromptRef = React.useRef<HTMLTextAreaElement>(null);
+  const promptAutocomplete = useVariableAutocomplete({
+    value: promptText,
+    onChange: onPromptChange,
+    ref: promptRef,
+    blocks: allBlocks,
+    selfId: blockId,
+  });
+  const systemAutocomplete = useVariableAutocomplete({
+    value: systemPrompt,
+    onChange: onSystemPromptChange,
+    ref: systemPromptRef,
+    blocks: allBlocks,
+    selfId: blockId,
+  });
 
   const portOpacity = hovered || selected ? 1 : 0;
 
@@ -357,8 +438,16 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                 value={name}
                 onChange={(e) => onNameChange(e.target.value)}
                 placeholder="Block name"
-                className="w-full px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-sm text-white/80 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
+                className={cn(
+                  'w-full px-3 py-2 rounded-md bg-white/[0.03] border text-sm text-white/80 placeholder:text-white/30 outline-none transition-colors',
+                  nameError
+                    ? 'border-red-500/50 focus:border-red-500/70'
+                    : 'border-white/[0.06] focus:border-white/[0.12]',
+                )}
               />
+              {nameError && (
+                <p className="mt-1 text-[10.5px] text-red-400">{nameError}</p>
+              )}
             </div>
 
             {/* System prompt collapsible */}
@@ -379,8 +468,14 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
               </button>
               {systemPromptOpen && (
                 <textarea
+                  ref={systemPromptRef}
                   value={systemPrompt}
-                  onChange={(e) => onSystemPromptChange(e.target.value)}
+                  onChange={(e) => {
+                    onSystemPromptChange(e.target.value);
+                    systemAutocomplete.onInput();
+                  }}
+                  onKeyDown={systemAutocomplete.onKeyDown}
+                  onClick={systemAutocomplete.onInput}
                   placeholder="Enter system prompt..."
                   className="w-full h-20 p-3 rounded-md resize-none bg-white/[0.03] border border-white/[0.06] text-xs text-white/70 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
                 />
@@ -393,34 +488,33 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                 Prompt
               </label>
               <textarea
+                ref={promptRef}
                 value={promptText}
-                onChange={(e) => onPromptChange(e.target.value)}
-                placeholder="Enter your prompt... Use {{variable}} syntax for dynamic values."
+                onChange={(e) => {
+                  onPromptChange(e.target.value);
+                  promptAutocomplete.onInput();
+                }}
+                onKeyDown={promptAutocomplete.onKeyDown}
+                onClick={promptAutocomplete.onInput}
+                placeholder="Enter your prompt... Type {{ to insert a block reference."
                 className="w-full h-40 p-3 rounded-md resize-none bg-white/[0.03] border border-white/[0.06] text-sm text-white/80 placeholder:text-white/30 leading-relaxed outline-none focus:border-white/[0.12] transition-colors"
               />
             </div>
 
             {/* Variables */}
-            {extractedVariables.length > 0 && (
+            {variableInfos.length > 0 && (
               <div>
                 <label className="block text-[11px] font-medium text-white/50 mb-1.5">
                   Variables detected
                 </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {extractedVariables.map((v) => (
-                    <span
-                      key={v}
-                      className="px-2 py-0.5 text-[10px] font-medium rounded-full"
-                      style={{
-                        color: '#2EC4B6',
-                        background: 'rgba(46,196,182,0.1)',
-                        border: '1px solid rgba(46,196,182,0.2)',
-                      }}
-                    >
-                      {`{{${v}}}`}
-                    </span>
-                  ))}
-                </div>
+                <VariableChips
+                  variables={variableInfos}
+                  onChipClick={(info) => {
+                    if (info.blockId) {
+                      setSelection({ kind: 'block', ids: [info.blockId] });
+                    }
+                  }}
+                />
               </div>
             )}
 
@@ -523,6 +617,8 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
           </div>
         </SheetContent>
       </Sheet>
+      {promptAutocomplete.popover}
+      {systemAutocomplete.popover}
     </>
   );
 }

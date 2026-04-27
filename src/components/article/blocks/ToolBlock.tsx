@@ -4,6 +4,8 @@ import { MoreHorizontal, ArrowUpRight, Wrench } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/lib/documentStore';
+import { isNameUnique } from '@/lib/variables';
+import { toast } from 'sonner';
 import {
   Sheet,
   SheetContent,
@@ -32,6 +34,7 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
   const blockId = (data as ToolBlockData).blockId ?? id;
 
   const block = useDocumentStore((s) => s.blocks[blockId]);
+  const allBlocks = useDocumentStore((s) => s.blocks);
   const updateBlock = useDocumentStore((s) => s.updateBlock);
   const setSelection = useDocumentStore((s) => s.setSelection);
 
@@ -72,7 +75,13 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
     });
   };
 
-  const onNameChange = (v: string) => updateBlock(blockId, { name: v });
+  const onNameChange = (v: string) => {
+    if (!isNameUnique(v, blockId, allBlocks)) {
+      toast.error(`Name "${v.trim()}" is already used by another block.`);
+      return;
+    }
+    updateBlock(blockId, { name: v });
+  };
   const selectThis = () => setSelection({ kind: 'block', ids: [blockId] });
 
   const portOpacity = hovered || selected ? 1 : 0;

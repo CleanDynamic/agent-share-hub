@@ -20,6 +20,13 @@ import {
 } from '@/lib/detectLanguage';
 import { runCode, isRunnable } from '@/lib/codeRunner';
 import {
+  describeVariables,
+  extractVariables,
+  indexBlocksByName,
+  isNameUnique,
+} from '@/lib/variables';
+import { VariableChips } from '@/components/article/blocks/shared/VariableChips';
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -89,6 +96,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
   const blockId = (data as CodeBlockData).blockId ?? id;
 
   const block = useDocumentStore((s) => s.blocks[blockId]);
+  const allBlocks = useDocumentStore((s) => s.blocks);
   const updateBlock = useDocumentStore((s) => s.updateBlock);
   const setSelection = useDocumentStore((s) => s.setSelection);
   const expandedSelection = useDocumentStore(
@@ -99,6 +107,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
   const [showLangDropdown, setShowLangDropdown] = React.useState(false);
   const [hovered, setHovered] = React.useState(false);
   const [status, setStatus] = React.useState<BlockStatus>('idle');
+  const [nameError, setNameError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     ensureMonacoTheme();
@@ -129,16 +138,30 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
 
   const onCodeChange = (v: string | undefined) => patchProps({ code: v ?? '' });
   const onLanguageChange = (v: CodeLanguage) => patchProps({ language: v });
-  const onNameChange = (v: string) => updateBlock(blockId, { name: v });
+  const onNameChange = (v: string) => {
+    if (!isNameUnique(v, blockId, allBlocks)) {
+      setNameError(`Name "${v.trim()}" is already used by another block.`);
+      return;
+    }
+    setNameError(null);
+    updateBlock(blockId, { name: v });
+  };
 
   const selectThis = React.useCallback(() => {
     setSelection({ kind: 'block', ids: [blockId] });
   }, [blockId, setSelection]);
 
-  const inputs = React.useMemo(() => {
-    const re = /\{\{(\w+)\}\}/g;
-    return [...new Set([...code.matchAll(re)].map((m) => m[1]))];
-  }, [code]);
+  const inputs = React.useMemo(() => extractVariables(code), [code]);
+
+  const blocksByName = React.useMemo(
+    () => indexBlocksByName(allBlocks),
+    [allBlocks],
+  );
+
+  const inputInfos = React.useMemo(
+    () => describeVariables(inputs, blocksByName),
+    [inputs, blocksByName],
+  );
 
   const compactPreview = React.useMemo(() => {
     return code.split('\n').slice(0, 6).join('\n');
@@ -401,24 +424,36 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
 
           <div className="mt-4 space-y-4">
             {/* Name + language */}
-            <div className="flex items-center gap-2">
-              <input
-                value={name}
-                onChange={(e) => onNameChange(e.target.value)}
-                placeholder="Block name"
-                className="flex-1 px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-sm text-white/80 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
-              />
-              <select
-                value={language}
-                onChange={(e) => onLanguageChange(e.target.value as CodeLanguage)}
-                className="px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-xs text-white/80 outline-none focus:border-white/[0.12]"
-              >
-                {SUPPORTED_LANGUAGES.map((l) => (
-                  <option key={l.value} value={l.value} className="bg-[#16161e]">
-                    {l.label}
-                  </option>
-                ))}
-              </select>
+            <div>
+              <div className="flex items-center gap-2">
+                <input
+                  value={name}
+                  onChange={(e) => onNameChange(e.target.value)}
+                  placeholder="Block name"
+                  className={cn(
+                    'flex-1 px-3 py-2 rounded-md bg-white/[0.03] border text-sm text-white/80 placeholder:text-white/30 outline-none transition-colors',
+                    nameError
+                      ? 'border-red-500/50 focus:border-red-500/70'
+                      : 'border-white/[0.06] focus:border-white/[0.12]',
+                  )}
+                />
+                <select
+                  value={language}
+                  onChange={(e) =>
+                    onLanguageChange(e.target.value as CodeLanguage)
+                  }
+                  className="px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-xs text-white/80 outline-none focus:border-white/[0.12]"
+                >
+                  {SUPPORTED_LANGUAGES.map((l) => (
+                    <option key={l.value} value={l.value} className="bg-[#16161e]">
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {nameError && (
+                <p className="mt-1 text-[10.5px] text-red-400">{nameError}</p>
+              )}
             </div>
 
             {/* Editor */}
@@ -456,25 +491,19 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
               <label className="block text-[11px] font-medium text-white/50 mb-1.5">
                 Inputs ({inputs.length})
               </label>
-              {inputs.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {inputs.map((v) => (
-                    <span
-                      key={v}
-                      className="px-2 py-0.5 text-[10px] font-medium rounded-full"
-                      style={{
-                        color: '#2EC4B6',
-                        background: 'rgba(46,196,182,0.1)',
-                        border: '1px solid rgba(46,196,182,0.2)',
-                      }}
-                    >
-                      {`{{${v}}}`}
-                    </span>
-                  ))}
-                </div>
+              {inputInfos.length > 0 ? (
+                <VariableChips
+                  variables={inputInfos}
+                  onChipClick={(info) => {
+                    if (info.blockId) {
+                      setSelection({ kind: 'block', ids: [info.blockId] });
+                    }
+                  }}
+                />
               ) : (
                 <p className="text-[11px] text-white/35">
-                  No <code className="text-white/50">{`{{variable}}`}</code> references detected.
+                  No <code className="text-white/50">{`{{variable}}`}</code>{' '}
+                  references detected.
                 </p>
               )}
             </div>
