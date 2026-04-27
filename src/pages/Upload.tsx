@@ -735,7 +735,7 @@ const Upload = () => {
     } finally {
       if (!silent) setSavingDraft(false);
     }
-  }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast, isBountyType, isBlogType, bountyBlueprintRequired, bountyGap, bountyTipGbp]);
+  }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast, isBountyType, isBlogType, bountyBlueprintRequired, bountyGap, bountyTipGbp, draftMeta, canvasDoc, selectedTopics]);
 
   // ── Autosave every 60 seconds (fallback) ──
   useEffect(() => {
