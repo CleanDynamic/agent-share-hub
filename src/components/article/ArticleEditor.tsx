@@ -291,35 +291,6 @@ export function ArticleEditor({
     return () => window.removeEventListener('keydown', handler);
   }, [findOpen]);
 
-  // Block-reference picker keyboard navigation
-  useEffect(() => {
-    if (!refOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setRefSelectedIndex((i) =>
-          refItems.length === 0 ? 0 : (i + 1) % refItems.length,
-        );
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setRefSelectedIndex((i) =>
-          refItems.length === 0
-            ? 0
-            : (i + refItems.length - 1) % refItems.length,
-        );
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        const item = refItems[refSelectedIndex];
-        if (item) insertBlockReference(item);
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        setRefOpen(false);
-        refStartPos.current = null;
-      }
-    };
-    window.addEventListener('keydown', handler, true);
-    return () => window.removeEventListener('keydown', handler, true);
-  }, [refOpen, refItems, refSelectedIndex, insertBlockReference]);
 
   const slashItems = useMemo(() => {
     return getSlashCommandItems(slashQuery);
