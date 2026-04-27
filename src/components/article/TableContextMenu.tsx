@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { Editor } from '@tiptap/react';
+import { TextSelection } from '@tiptap/pm/state';
 import {
   ContextMenu,
   ContextMenuContent,
