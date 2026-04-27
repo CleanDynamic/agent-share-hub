@@ -16,7 +16,7 @@ interface StageGridNodeProps {
 
 export function StageGridNode({ node, updateAttributes, editor, getPos }: StageGridNodeProps) {
   const stageId = node.attrs.stageId as string | null;
-  const fallbackTitle = (node.attrs.stageTitle as string) ?? 'Untitled stage';
+  const fallbackTitle = (node.attrs.stageTitle as string) ?? '';
   const persistedHeight = (node.attrs.height as number | null) ?? 280;
   const openTemplatesOnMount = Boolean(node.attrs.openTemplatesOnMount);
 
