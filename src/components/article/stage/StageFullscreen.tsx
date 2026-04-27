@@ -1,9 +1,20 @@
 import { useCallback, useState } from 'react';
 import { ReactFlowProvider, useReactFlow, useStore } from '@xyflow/react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { ArrowLeft, Minus, Plus, Maximize, Map as MapIcon } from 'lucide-react';
+import {
+  ArrowLeft,
+  Minus,
+  Plus,
+  Maximize,
+  Map as MapIcon,
+  HelpCircle,
+} from 'lucide-react';
 
 import { StageCanvasInner } from './StageCanvas';
+import {
+  getExpandedBlockId,
+  setExpandedBlockId,
+} from '@/lib/blockExpansion';
 
 interface StageFullscreenProps {
   stageId: string;
@@ -19,8 +30,18 @@ interface StageFullscreenProps {
 export function StageFullscreen({ stageId, onClose }: StageFullscreenProps) {
   const [showMiniMap, setShowMiniMap] = useState(false);
 
-  // Esc closes the stage.
-  useHotkeys('esc', () => onClose(), { enableOnFormTags: false });
+  // Esc: collapse the currently-expanded block first; if none, close stage.
+  useHotkeys(
+    'esc',
+    () => {
+      if (getExpandedBlockId()) {
+        setExpandedBlockId(null);
+      } else {
+        onClose();
+      }
+    },
+    { enableOnFormTags: false },
+  );
 
   return (
     <ReactFlowProvider>
