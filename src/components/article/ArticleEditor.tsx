@@ -987,6 +987,118 @@ export function ArticleEditor({
           </div>
         </>
       ) : null}
+
+      {saveDialogOpen ? (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <div
+            onClick={() => setSaveDialogOpen(false)}
+            style={{
+              position: 'absolute', inset: 0,
+              background: 'rgba(0,0,0,0.60)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+            }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Name your draft"
+            style={{
+              position: 'relative', zIndex: 1,
+              background: 'rgba(14,14,20,0.98)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 16,
+              padding: '24px 26px',
+              maxWidth: 420, width: '90%',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.60)',
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            <h3 style={{
+              fontSize: 16, fontWeight: 700,
+              color: 'rgba(255,255,255,0.92)',
+              margin: '0 0 6px',
+            }}>
+              Name your draft
+            </h3>
+            <p style={{
+              fontSize: 12,
+              color: 'rgba(255,255,255,0.50)',
+              margin: '0 0 16px', lineHeight: 1.5,
+            }}>
+              Give this draft a name so you can find it again later.
+            </p>
+            <input
+              autoFocus
+              type="text"
+              value={draftNameInput}
+              onChange={(e) => setDraftNameInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  confirmSave();
+                } else if (e.key === 'Escape') {
+                  e.preventDefault();
+                  setSaveDialogOpen(false);
+                }
+              }}
+              maxLength={120}
+              placeholder="Untitled draft"
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: 8,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                color: 'rgba(255,255,255,0.92)',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 13,
+                outline: 'none',
+                marginBottom: 18,
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setSaveDialogOpen(false)}
+                style={{
+                  padding: '8px 14px', fontSize: 12, fontWeight: 600,
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'rgba(255,255,255,0.65)',
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmSave}
+                disabled={saving}
+                style={{
+                  padding: '8px 16px', fontSize: 12, fontWeight: 700,
+                  borderRadius: 8,
+                  background: 'hsl(18 79% 54% / 0.85)',
+                  border: '1px solid hsl(18 79% 54% / 0.55)',
+                  color: '#fff',
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  opacity: saving ? 0.65 : 1,
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                {saving ? 'Saving…' : 'Save Draft'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
