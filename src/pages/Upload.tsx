@@ -785,6 +785,77 @@ const Upload = () => {
     pendingNavigationRef.current = null;
   };
 
+  // ── Intercept in-app navigation to prompt save ──
+  // Catch link/button clicks anywhere on the page that would navigate
+  // away from /upload, and pop history-back attempts.
+  useEffect(() => {
+    if (success) return;
+
+    const hasUnsaved = () => {
+      if (skipExitGuardRef.current) return false;
+      const v = form.getValues();
+      const articleBody = (canvasDoc as any)._articleBody ?? useDocumentStore.getState().articleBody;
+      const ds = useDocumentStore.getState();
+      const hasGrid =
+        Object.keys(ds.stages).length > 0 ||
+        Object.keys(ds.blocks).length > 0;
+      return Boolean(
+        v.title || v.description || v.use_instructions || v.what_to_expect ||
+        contentBlocks.some(b => {
+          if ((b as any).type === 'group') return (b as GroupBlock).blocks.length > 0;
+          const cb = b as ContentBlock;
+          return cb.textContent || cb.file || cb.imageFile;
+        }) ||
+        articleBody || hasGrid,
+      );
+    };
+
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented) return;
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const anchor = target.closest('a[href]') as HTMLAnchorElement | null;
+      let dest: string | null = null;
+      if (anchor) {
+        const href = anchor.getAttribute('href') || '';
+        if (!href || href.startsWith('#') || anchor.target === '_blank') return;
+        try {
+          const url = new URL(href, window.location.origin);
+          if (url.origin !== window.location.origin) return;
+          dest = url.pathname + url.search + url.hash;
+        } catch { return; }
+      }
+      if (!dest) return;
+      const here = window.location.pathname + window.location.search;
+      if (dest === here) return;
+      try {
+        const u = new URL(dest, window.location.origin);
+        if (u.pathname === '/upload') return;
+      } catch { /* noop */ }
+      if (!hasUnsaved()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      pendingNavigationRef.current = () => navigate(dest!);
+      setExitDialogOpen(true);
+    };
+
+    const onPopState = () => {
+      if (!hasUnsaved()) return;
+      window.history.pushState(null, '', window.location.href);
+      pendingNavigationRef.current = () => window.history.back();
+      setExitDialogOpen(true);
+    };
+
+    document.addEventListener('click', onClick, true);
+    window.addEventListener('popstate', onPopState);
+    window.history.pushState(null, '', window.location.href);
+    return () => {
+      document.removeEventListener('click', onClick, true);
+      window.removeEventListener('popstate', onPopState);
+    };
+  }, [contentBlocks, form, navigate, success, canvasDoc]);
+
   // ── Scroll to a block by id inside the canvas ──
   const scrollToBlock = useCallback((blockId: string) => {
     const el = document.getElementById(`canvas-block-${blockId}`);
