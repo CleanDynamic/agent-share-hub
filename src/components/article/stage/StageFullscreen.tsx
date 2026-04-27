@@ -195,6 +195,23 @@ function BottomBar({ showMiniMap, onToggleMiniMap }: BottomBarProps) {
       >
         <MapIcon size={14} strokeWidth={1.8} />
       </IconBtn>
+
+      <span
+        title="Scroll to pan · Pinch or Cmd-scroll to zoom"
+        aria-label="Scroll to pan · Pinch or Cmd-scroll to zoom"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 20,
+          height: 20,
+          marginLeft: 6,
+          color: 'rgba(255,255,255,0.30)',
+          cursor: 'help',
+        }}
+      >
+        <HelpCircle size={12} strokeWidth={1.8} />
+      </span>
     </div>
   );
 }
