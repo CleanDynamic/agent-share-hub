@@ -1,0 +1,1 @@
+ALTER TABLE public.content_items ADD COLUMN IF NOT EXISTS stage_grids jsonb;

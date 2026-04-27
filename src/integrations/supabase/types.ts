@@ -750,6 +750,7 @@ export type Database = {
           pwyw_floor_gbp: number | null
           pwyw_purchase_count: number | null
           rating_count: number
+          stage_grids: Json | null
           star_rating: number
           status: string
           tags: string[]
@@ -812,6 +813,7 @@ export type Database = {
           pwyw_floor_gbp?: number | null
           pwyw_purchase_count?: number | null
           rating_count?: number
+          stage_grids?: Json | null
           star_rating?: number
           status?: string
           tags?: string[]
@@ -874,6 +876,7 @@ export type Database = {
           pwyw_floor_gbp?: number | null
           pwyw_purchase_count?: number | null
           rating_count?: number
+          stage_grids?: Json | null
           star_rating?: number
           status?: string
           tags?: string[]
