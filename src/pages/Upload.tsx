@@ -1350,12 +1350,20 @@ const Upload = () => {
             }}>
               <ArticleEditor
                 canvasDoc={canvasDoc}
-                initialContent={(canvasDoc as any)._articleBody ?? (canvasDoc as any).articleBody ?? undefined}
+                initialContent={
+                  (canvasDoc as any)._articleBody
+                  ?? (canvasDoc as any).articleBody
+                  ?? (useDocumentStore.getState().articleBody as any)
+                  ?? undefined
+                }
                 documentTitle={form.watch('title') ?? ''}
                 onChange={(json) => {
-                  // Store article body for save and for remounting after stage fullscreen.
+                  // Cache the latest article body in three places so that
+                  // remounting the editor (e.g. after closing the stage
+                  // fullscreen) restores the freshly inserted nodes.
                   (canvasDoc as any)._articleBody = json;
                   (canvasDoc as any).articleBody = json;
+                  try { useDocumentStore.getState().setArticleBody(json); } catch (_) { /* noop */ }
                 }}
                 onSelectedStageChange={setSelectedStageId}
                 onOpenTemplates={() => setTemplateLibOpen(true)}
