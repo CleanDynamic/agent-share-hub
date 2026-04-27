@@ -33,6 +33,18 @@ const nodeTypes = {
   compare: CompareBlockNode,
   heading: HeadingBlockNode,
   model: ModelBlockNode,
+  note: NoteBlockNode,
+};
+
+const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
+  prompt: 'prompt',
+  code: 'code',
+  text: 'text',
+  agent: 'agent',
+  compare: 'compare',
+  heading: 'heading',
+  model: 'model',
+  note: 'note',
 };
 
 const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
