@@ -80,8 +80,8 @@ export function DataFlowEdge(props: EdgeProps) {
 
   const conn = useDocumentStore((s) => s.connections[id]);
   const type: ConnectionType = conn?.connection_type ?? 'feeds_into';
-  const customColor = (conn?.properties as Record<string, unknown> | undefined)
-    ?.color as string | undefined;
+  const customColor = (conn as unknown as { custom_color?: string } | undefined)
+    ?.custom_color;
   const label = conn?.label ?? undefined;
 
   const [edgePath, labelX, labelY] = getBezierPath({
