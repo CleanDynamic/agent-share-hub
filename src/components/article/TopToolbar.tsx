@@ -846,7 +846,7 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
                 else editor.chain().focus().setHighlight({ color }).run();
               }}
             />
-            <ToolbarButton icon={Highlighter} label="Highlight" onClick={soon('Highlight')} />
+            <ToolbarButton icon={Highlighter} label="Highlight" isActive={isActive('highlight')} onClick={run((c) => c.toggleHighlight().run())} />
           </ToolbarGroup>
 
           <Divider />
