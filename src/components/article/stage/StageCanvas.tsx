@@ -35,6 +35,7 @@ const nodeTypes = {
   heading: HeadingBlockNode,
   model: ModelBlockNode,
   note: NoteBlockNode,
+  result: ResultBlockNode,
 };
 
 const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
@@ -46,6 +47,7 @@ const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
   heading: 'heading',
   model: 'model',
   note: 'note',
+  result: 'result',
 };
 
 
