@@ -849,7 +849,6 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
                 else editor.chain().focus().setHighlight({ color }).run();
               }}
             />
-            <ToolbarButton icon={Type} label="Text tools" onClick={soon('Text tools')} />
             <ToolbarButton icon={Highlighter} label="Highlight" onClick={soon('Highlight')} />
           </ToolbarGroup>
 
