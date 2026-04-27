@@ -60,11 +60,14 @@ function withAlpha(color: string, alpha: number): string {
 interface BlockLibraryToolProps {
   onBlockDragStart?: (blockType: string) => void;
   onBlockDoubleClick?: (blockType: string) => void;
+  /** Single-click insert (used while a stage is open in full mode). */
+  onBlockClick?: (blockType: string) => void;
 }
 
 export function BlockLibraryTool({
   onBlockDragStart,
   onBlockDoubleClick,
+  onBlockClick,
 }: BlockLibraryToolProps) {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<Category>('All');
@@ -193,6 +196,7 @@ export function BlockLibraryTool({
             block={block}
             onDragStart={() => onBlockDragStart?.(block.type)}
             onDoubleClick={() => onBlockDoubleClick?.(block.type)}
+            onClick={() => onBlockClick?.(block.type)}
           />
         ))}
         {filtered.length === 0 && (
@@ -236,9 +240,10 @@ interface BlockCardProps {
   block: BlockDef;
   onDragStart: () => void;
   onDoubleClick: () => void;
+  onClick: () => void;
 }
 
-function BlockCard({ block, onDragStart, onDoubleClick }: BlockCardProps) {
+function BlockCard({ block, onDragStart, onDoubleClick, onClick }: BlockCardProps) {
   const [hover, setHover] = useState(false);
 
   const baseStyle: CSSProperties = {
@@ -266,6 +271,7 @@ function BlockCard({ block, onDragStart, onDoubleClick }: BlockCardProps) {
     <div
       draggable
       onDragStart={handleDragStart}
+      onClick={onClick}
       onDoubleClick={onDoubleClick}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}

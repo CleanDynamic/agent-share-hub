@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useSelection } from '@/hooks/useSelection';
 import { useDocumentStore } from '@/lib/documentStore';
 import { eventBus } from '@/lib/eventBus';
+import { insertBlockInStage } from '@/lib/blockInsertion';
 import {
   useWorkspaceStore,
   type WorkspaceToolId,
@@ -149,7 +150,21 @@ export function WorkspaceShell() {
     ? activeTool
     : visibleTools[0]?.id ?? 'inspector';
 
-  const ActiveRender = TOOL_BY_ID[effectiveActive]?.render ?? TOOLS[0].render;
+  // ── Click-to-insert handler for the Block Library while a stage is open ──
+  const handleLibraryClick = (blockType: string) => {
+    if (!stageOpen) return; // defensive — Library is hidden in article mode
+    const openMap = useDocumentStore.getState().stageOpen;
+    const openStageId = Object.keys(openMap).find((id) => openMap[id]) ?? null;
+    insertBlockInStage(openStageId, blockType);
+  };
+
+  const renderActiveTool = (): ReactElement => {
+    if (effectiveActive === 'library') {
+      return <BlockLibraryTool onBlockClick={handleLibraryClick} />;
+    }
+    const def = TOOL_BY_ID[effectiveActive];
+    return def?.render() ?? TOOLS[0].render();
+  };
 
   return (
     <div
