@@ -110,13 +110,6 @@ export function StageGridFrame({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  const quickInsertButtons: { type: BlockType; label: string }[] = [
-    { type: 'text', label: '+ Text' },
-    { type: 'prompt', label: '+ Prompt' },
-    { type: 'code', label: '+ Code' },
-    { type: 'result', label: '+ Result' },
-  ];
-
   const overlayVisible = hovered || isEditing || isResizing;
 
   return (
