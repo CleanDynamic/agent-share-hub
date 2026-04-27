@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/lib/documentStore';
 import { isNameUnique } from '@/lib/variables';
+import { useEvent } from '@/lib/eventBus';
 import {
   Sheet,
   SheetContent,
@@ -284,6 +285,42 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
   };
 
   const selectThis = () => setSelection({ kind: 'block', ids: [blockId] });
+
+  /**
+   * Live dataflow: when a connected upstream block emits new output, update
+   * this Result block's display immediately. Sets `connected = true` and
+   * updates the markdown/raw content based on the payload shape.
+   */
+  useEvent('arrow:data-flow', (payload) => {
+    if (payload.targetId !== blockId) return;
+    const sourceBlock = useDocumentStore.getState().blocks[payload.sourceId];
+    const sourceBlockType = sourceBlock?.type ?? 'prompt';
+    const allowedSourceTypes = ['prompt', 'code', 'agent'] as const;
+    const nextSourceType = (allowedSourceTypes as readonly string[]).includes(
+      sourceBlockType,
+    )
+      ? (sourceBlockType as 'prompt' | 'code' | 'agent')
+      : 'prompt';
+    const text =
+      typeof payload.data === 'string'
+        ? payload.data
+        : payload.data == null
+          ? ''
+          : JSON.stringify(payload.data, null, 2);
+    let nextJson: object | null = null;
+    if (typeof payload.data === 'object' && payload.data !== null) {
+      nextJson = payload.data as object;
+    }
+    patchProps({
+      connected: true,
+      sourceName: sourceBlock?.name ?? sourceName,
+      sourceType: nextSourceType,
+      markdownContent: text,
+      rawContent: text,
+      jsonContent: nextJson,
+      status: 'success',
+    });
+  });
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();

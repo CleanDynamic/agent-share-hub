@@ -6,7 +6,12 @@ export type EventMap = {
   "block:run:start": { blockId: string };
   "block:run:complete": { blockId: string; result: unknown };
   "block:run:error": { blockId: string; error: unknown };
-  "arrow:data-flow": { connectionId: string; data: unknown };
+  "arrow:data-flow": {
+    connectionId: string;
+    sourceId: string;
+    targetId: string;
+    data: unknown;
+  };
   "selection:change": { blockIds: readonly string[]; arrowIds: readonly string[] };
   "command-palette:open": void;
   "focus-mode:toggle": void;

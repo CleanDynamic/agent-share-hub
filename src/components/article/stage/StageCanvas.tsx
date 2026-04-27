@@ -1,8 +1,9 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   ReactFlow,
   Background,
   BackgroundVariant,
+  type Connection as RFConnection,
   type Edge,
   type EdgeChange,
   type Node,
@@ -11,7 +12,9 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { useDocumentStore } from '@/lib/documentStore';
+import { eventBus } from '@/lib/eventBus';
 import type { Block, Connection } from '@/types/document';
+import { edgeTypes, DEFAULT_EDGE_TYPE } from './edgeTypes';
 import { PromptBlockNode } from '../blocks/PromptBlock';
 import { CodeBlockNode } from '../blocks/CodeBlock';
 import { TextBlockNode } from '../blocks/TextBlock';
@@ -76,7 +79,12 @@ function connectionToEdge(conn: Connection): Edge {
     id: conn.id,
     source: conn.from_block_id,
     target: conn.to_block_id,
+    type: DEFAULT_EDGE_TYPE,
     label: conn.label ?? undefined,
+    data: {
+      connectionType: conn.connection_type,
+      carriesData: conn.carries_data,
+    },
   };
 }
 
@@ -86,7 +94,9 @@ export function StageCanvas({ stageId }: StageCanvasProps) {
   const moveBlock = useDocumentStore((s) => s.moveBlock);
   const updateBlock = useDocumentStore((s) => s.updateBlock);
   const removeBlock = useDocumentStore((s) => s.removeBlock);
+  const addConnection = useDocumentStore((s) => s.addConnection);
   const removeConnection = useDocumentStore((s) => s.removeConnection);
+  const setSelection = useDocumentStore((s) => s.setSelection);
 
   const nodes = useMemo<Node[]>(
     () =>
@@ -133,11 +143,66 @@ export function StageCanvas({ stageId }: StageCanvasProps) {
       for (const change of changes) {
         if (change.type === 'remove') {
           removeConnection(change.id);
+        } else if (change.type === 'select') {
+          if (change.selected) {
+            setSelection({ kind: 'arrow', ids: [change.id] });
+          }
         }
       }
     },
-    [removeConnection],
+    [removeConnection, setSelection],
   );
+
+  /**
+   * New edge — initialise with sensible defaults: feeds_into / carries_data.
+   */
+  const onConnect = useCallback(
+    (params: RFConnection) => {
+      if (!params.source || !params.target) return;
+      const id = (
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `conn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      ) as string;
+      addConnection({
+        id,
+        from_block_id: params.source,
+        to_block_id: params.target,
+        from_port: (params.sourceHandle as Connection['from_port']) ?? 'right',
+        to_port: (params.targetHandle as Connection['to_port']) ?? 'left',
+        connection_type: 'feeds_into',
+        carries_data: true,
+        label: null,
+        created_at: new Date().toISOString(),
+      });
+    },
+    [addConnection],
+  );
+
+  /**
+   * Live dataflow: when any block finishes a run, look at its outgoing
+   * data-carrying connections and emit `arrow:data-flow` for each. The Result
+   * block (and any future consumers) listen for this and update.
+   *
+   * The animation itself is handled by the DataFlowEdge custom edge type.
+   */
+  useEffect(() => {
+    return eventBus.on('block:run:complete', ({ blockId, result }) => {
+      const sourceBlock = useDocumentStore.getState().blocks[blockId];
+      if (!sourceBlock) return;
+      const allConnections = useDocumentStore.getState().connections;
+      for (const conn of Object.values(allConnections)) {
+        if (conn.from_block_id !== blockId) continue;
+        if (!conn.carries_data) continue;
+        eventBus.emit('arrow:data-flow', {
+          connectionId: conn.id,
+          sourceId: conn.from_block_id,
+          targetId: conn.to_block_id,
+          data: result,
+        });
+      }
+    });
+  }, []);
 
   return (
     <div className="absolute inset-0 stage-canvas-root">
@@ -161,8 +226,11 @@ export function StageCanvas({ stageId }: StageCanvasProps) {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        defaultEdgeOptions={{ type: DEFAULT_EDGE_TYPE }}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         minZoom={0.25}
         maxZoom={2}
