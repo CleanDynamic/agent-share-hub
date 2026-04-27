@@ -121,6 +121,27 @@ const MENU_ITEMS: SlashCommandItem[] = [
       const canvasDoc = storage?.articleEditor?.canvasDoc;
       const stageTitle = '';
       try { canvasDoc?.addStage?.(stageTitle); } catch (e) { /* noop */ }
+      // Also register the stage in the in-memory document store keyed on the
+      // SAME stageId used by the TipTap node. Without this, edits inside the
+      // fullscreen canvas (blocks, name, layout) have no stage record to
+      // attach to and are lost on save.
+      try {
+        const now = new Date().toISOString();
+        const ds = useDocumentStore.getState();
+        const stageCount = Object.keys(ds.stages).length;
+        ds.addStage({
+          id: stageId,
+          content_item_id: ds.documentId ?? '',
+          order_in_document: stageCount,
+          grid_spacing: 20,
+          background_style: 'dot',
+          width_mode: 'wide',
+          height: 360,
+          stage_name: stageTitle || null,
+          created_at: now,
+          updated_at: now,
+        } as any);
+      } catch (e) { /* noop */ }
       editor.chain().focus().insertContent({
         type: 'stageGrid',
         attrs: { stageId, stageTitle, gridSpacing: 20, height: 360, openTemplatesOnMount: true },
