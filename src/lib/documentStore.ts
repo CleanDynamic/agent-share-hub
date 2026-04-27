@@ -79,6 +79,13 @@ export interface DocumentState {
   stages: Record<string, Stage>;
   blocks: Record<string, Block>;
   connections: Record<string, Connection>;
+  /**
+   * Local-only per-stage UI flag. `true` means the stage is currently
+   * expanded into full mode in the editor. Not persisted to Supabase —
+   * resets to `false` (closed/thumbnail) on every page load. Only one
+   * stage can be open at a time.
+   */
+  stageOpen: Record<string, boolean>;
   selection: Selection;
   focusMode: FocusMode;
   dirty: Set<string>;
@@ -91,6 +98,11 @@ export interface DocumentState {
   addStage: (stage: Stage) => void;
   updateStage: (id: string, patch: Partial<Stage>) => void;
   removeStage: (id: string) => void;
+
+  /** Open a stage (closes any other open stage). */
+  openStage: (id: string) => void;
+  /** Close a specific stage (or close whichever is open if no id given). */
+  closeStage: (id?: string) => void;
 
   addBlock: (block: Block) => void;
   updateBlock: (id: string, patch: Partial<Block>) => void;
