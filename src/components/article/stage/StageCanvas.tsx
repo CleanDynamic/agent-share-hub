@@ -21,6 +21,7 @@ import { HeadingBlockNode } from '../blocks/HeadingBlock';
 import { ModelBlockNode } from '../blocks/ModelBlock';
 import { NoteBlockNode } from '../blocks/NoteBlock';
 import { ResultBlockNode } from '../blocks/ResultBlock';
+import { ResourceBlockNode } from '../blocks/ResourceBlock';
 
 interface StageCanvasProps {
   stageId: string;
