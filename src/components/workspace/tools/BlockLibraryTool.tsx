@@ -240,9 +240,10 @@ interface BlockCardProps {
   block: BlockDef;
   onDragStart: () => void;
   onDoubleClick: () => void;
+  onClick: () => void;
 }
 
-function BlockCard({ block, onDragStart, onDoubleClick }: BlockCardProps) {
+function BlockCard({ block, onDragStart, onDoubleClick, onClick }: BlockCardProps) {
   const [hover, setHover] = useState(false);
 
   const baseStyle: CSSProperties = {
