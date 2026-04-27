@@ -708,6 +708,23 @@ export function ArticleEditor({
         />
       </TableContextMenu>
 
+      {/* Bubble toolbar over text selection */}
+      <BubbleToolbar
+        editor={editor}
+        containerRef={editorContainerRef}
+        onAddComment={triggerAddComment}
+      />
+
+      {/* Comments overlay (markers + thread cards) */}
+      <CommentsOverlay
+        documentId={documentId}
+        editor={editor}
+        containerRef={editorContainerRef}
+        pendingAnchor={pendingCommentAnchor}
+        onPendingHandled={() => setPendingCommentAnchor(null)}
+        onUnresolvedCountChange={setUnresolvedComments}
+      />
+
       {/* Slash command popup */}
       <SlashCommandMenu
         isOpen={slashOpen && Boolean(slashPos)}
