@@ -105,19 +105,6 @@ function findMatches(doc: PMNode, opts: SearchOptions): SearchMatch[] {
   return matches;
 }
 
-function buildDecorations(matches: SearchMatch[], activeIndex: number) {
-  const decos = matches.map((mt, i) =>
-    Decoration.inline(mt.from, mt.to, {
-      class: i === activeIndex ? `${HIGHLIGHT_CLASS} ${ACTIVE_CLASS}` : HIGHLIGHT_CLASS,
-    }),
-  );
-  return DecorationSet.empty.add(
-    // empty doc node — but DecorationSet.add wants a doc; use create instead
-    // Will be replaced via DecorationSet.create below.
-    null as unknown as PMNode,
-    decos,
-  );
-}
 
 const DEFAULT_OPTIONS: SearchOptions = {
   searchTerm: '',
