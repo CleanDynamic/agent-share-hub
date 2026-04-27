@@ -565,6 +565,16 @@ const Upload = () => {
         draft_saved_at: new Date().toISOString(),
         draft_name: values.title || null,
         article_body: (canvasDoc as any)._articleBody ?? null,
+        stage_grids: (() => {
+          try {
+            const ds = useDocumentStore.getState();
+            return {
+              stages: ds.stages,
+              blocks: ds.blocks,
+              connections: ds.connections,
+            };
+          } catch { return null; }
+        })(),
       };
 
       let draftIdToUse = currentDraftId;
