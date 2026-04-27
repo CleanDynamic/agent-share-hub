@@ -852,10 +852,10 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           <Divider />
 
           <ToolbarGroup>
-            <ToolbarButton icon={AlignLeft} label="Align left" isActive={isActive({ textAlign: 'left' })} onClick={run((c) => c.setTextAlign('left').run())} />
-            <ToolbarButton icon={AlignCenter} label="Align center" isActive={isActive({ textAlign: 'center' })} onClick={run((c) => c.setTextAlign('center').run())} />
-            <ToolbarButton icon={AlignRight} label="Align right" isActive={isActive({ textAlign: 'right' })} onClick={run((c) => c.setTextAlign('right').run())} />
-            <ToolbarButton icon={AlignJustify} label="Justify" isActive={isActive({ textAlign: 'justify' })} onClick={run((c) => c.setTextAlign('justify').run())} />
+            <ToolbarButton icon={AlignLeft} label="Align left" isActive={editor?.isActive({ textAlign: 'left' } as never) ?? false} onClick={run((c) => c.setTextAlign('left').run())} />
+            <ToolbarButton icon={AlignCenter} label="Align center" isActive={editor?.isActive({ textAlign: 'center' } as never) ?? false} onClick={run((c) => c.setTextAlign('center').run())} />
+            <ToolbarButton icon={AlignRight} label="Align right" isActive={editor?.isActive({ textAlign: 'right' } as never) ?? false} onClick={run((c) => c.setTextAlign('right').run())} />
+            <ToolbarButton icon={AlignJustify} label="Justify" isActive={editor?.isActive({ textAlign: 'justify' } as never) ?? false} onClick={run((c) => c.setTextAlign('justify').run())} />
             <ToolbarButton
               icon={Outdent}
               label="Outdent"
