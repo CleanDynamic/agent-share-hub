@@ -287,6 +287,17 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
 
   const portOpacity = hovered || selected ? 1 : 0;
 
+  // ── In-place expansion (Phase: Issue 4) ──────────────────────────
+  const expandedBlockId = useExpandedBlockId();
+  const isExpanded = expandedBlockId === blockId;
+  const onBodyDoubleClick = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      toggleExpandedBlockId(blockId);
+    },
+    [blockId],
+  );
+
   // Compact card content (rendered inside the React Flow node)
   return (
     <>
@@ -296,19 +307,25 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
         onClick={selectThis}
         className={cn(
           'group relative rounded-lg p-2.5',
-          'bg-[rgba(20,20,28,0.85)] backdrop-blur-md',
-          'transition-all',
+          'bg-[rgba(20,20,28,0.95)] backdrop-blur-md',
         )}
         style={{
-          width: 240,
+          width: isExpanded ? 480 : 240,
+          zIndex: isExpanded ? 10 : 'auto',
+          position: 'relative',
+          transition: 'width 200ms ease, height 200ms ease',
           border: selected
             ? '1px solid rgba(232,87,26,0.6)'
-            : expandedSelection
-              ? '1px dashed rgba(232,87,26,0.45)'
-              : '1px solid rgba(255,255,255,0.08)',
-          boxShadow: selected
-            ? '0 0 0 2px rgba(232,87,26,0.18)'
-            : 'none',
+            : isExpanded
+              ? '1px solid rgba(232,87,26,0.45)'
+              : expandedSelection
+                ? '1px dashed rgba(232,87,26,0.45)'
+                : '1px solid rgba(255,255,255,0.08)',
+          boxShadow: isExpanded
+            ? '0 12px 40px rgba(0,0,0,0.45), 0 0 0 2px rgba(232,87,26,0.18)'
+            : selected
+              ? '0 0 0 2px rgba(232,87,26,0.18)'
+              : 'none',
         }}
       >
         {/* React Flow connection handles */}
@@ -346,6 +363,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
             placeholder="Name"
             className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-white/70 placeholder:text-white/30 outline-none nodrag"
           />
@@ -354,7 +372,20 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
+              toggleExpandedBlockId(blockId);
             }}
+            className="nodrag p-0.5 text-white/40 hover:text-white/80"
+            title={isExpanded ? 'Collapse' : 'Expand'}
+            aria-label={isExpanded ? 'Collapse block' : 'Expand block'}
+          >
+            <Maximize2 size={12} />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            onDoubleClick={(e) => e.stopPropagation()}
             className="p-0.5 text-white/40 hover:text-white/80 nodrag"
             title="More"
           >
@@ -362,55 +393,232 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
           </button>
         </div>
 
-        {/* Body preview */}
-        <div
-          className="rounded-md p-2 mb-2"
-          style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.05)',
-            minHeight: 56,
-          }}
-        >
-          <p className="text-[11px] leading-snug text-white/70 line-clamp-3">
-            {promptText || (
-              <span className="text-white/30">Enter your prompt...</span>
+        {isExpanded ? (
+          // ───────── Expanded inline editing UI ─────────
+          <div onDoubleClick={onBodyDoubleClick} className="space-y-3">
+            {/* System prompt collapsible */}
+            <div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSystemPromptOpen((v) => !v);
+                }}
+                className="nodrag flex items-center gap-1.5 text-[11px] font-medium text-white/50 hover:text-white/70 transition-colors mb-1.5"
+              >
+                <ChevronDown
+                  size={12}
+                  className={cn(
+                    'transition-transform',
+                    systemPromptOpen ? '' : '-rotate-90',
+                  )}
+                />
+                System prompt
+              </button>
+              {systemPromptOpen && (
+                <textarea
+                  ref={systemPromptRef}
+                  value={systemPrompt}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => {
+                    onSystemPromptChange(e.target.value);
+                    systemAutocomplete.onInput();
+                  }}
+                  onKeyDown={systemAutocomplete.onKeyDown}
+                  placeholder="Enter system prompt..."
+                  className="nodrag w-full h-16 p-2 rounded-md resize-none bg-white/[0.03] border border-white/[0.06] text-[11.5px] text-white/75 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
+                />
+              )}
+            </div>
+
+            {/* Prompt */}
+            <div>
+              <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+                Prompt
+              </label>
+              <textarea
+                ref={promptRef}
+                value={promptText}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  onPromptChange(e.target.value);
+                  promptAutocomplete.onInput();
+                }}
+                onKeyDown={promptAutocomplete.onKeyDown}
+                placeholder="Enter your prompt... Type {{ to insert a block reference."
+                className="nodrag w-full h-28 p-2 rounded-md resize-none bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/85 placeholder:text-white/30 leading-relaxed outline-none focus:border-white/[0.12] transition-colors"
+              />
+            </div>
+
+            {/* Variables */}
+            {variableInfos.length > 0 && (
+              <div>
+                <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+                  Variables detected
+                </label>
+                <VariableChips
+                  variables={variableInfos}
+                  onChipClick={(info) => {
+                    if (info.blockId) {
+                      setSelection({ kind: 'block', ids: [info.blockId] });
+                    }
+                  }}
+                />
+              </div>
             )}
-          </p>
-        </div>
 
-        {/* Stats */}
-        <div className="text-[10px] text-white/40 mb-2">
-          {tokenCount} tokens · {models.find((m) => m.value === model)?.label}
-        </div>
+            {/* Model + temp + tokens */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="relative">
+                <label className="block text-[10.5px] font-medium text-white/50 mb-1">
+                  Model
+                </label>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowModelDropdown((v) => !v);
+                  }}
+                  className="nodrag w-full px-2 py-1.5 rounded-md text-left bg-white/[0.03] border border-white/[0.06] text-[11px] text-white/75 hover:border-white/[0.12] transition-colors"
+                >
+                  {models.find((m) => m.value === model)?.label}
+                </button>
+                {showModelDropdown && (
+                  <div className="nodrag absolute top-full left-0 right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-white/[0.08] rounded-md z-20">
+                    {models.map((m) => (
+                      <button
+                        key={m.value}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onModelChange(m.value);
+                          setShowModelDropdown(false);
+                        }}
+                        className={cn(
+                          'w-full px-2 py-1 text-left text-[11px] hover:bg-white/[0.06] transition-colors',
+                          m.value === model ? 'text-white' : 'text-white/60',
+                        )}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              selectThis();
-              handleRun();
-            }}
-            className="nodrag flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold text-white"
-            style={{ background: 'rgba(232,87,26,0.9)' }}
-          >
-            <Play size={10} className="fill-current" />
-            Run
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              selectThis();
-              setDrawerOpen(true);
-            }}
-            className="nodrag p-1 text-white/45 hover:text-white/85 rounded transition-colors"
-            title="Expand"
-          >
-            <ArrowUpRight size={12} />
-          </button>
-        </div>
+              <div>
+                <label className="block text-[10.5px] font-medium text-white/50 mb-1">
+                  Temperature
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="range"
+                    min={0}
+                    max={2}
+                    step={0.1}
+                    value={temperature}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) =>
+                      onTemperatureChange(parseFloat(e.target.value))
+                    }
+                    className="nodrag flex-1 h-1 bg-white/[0.06] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#E8571A]"
+                  />
+                  <span className="text-[10px] text-white/55 w-6 text-right">
+                    {temperature.toFixed(1)}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-medium text-white/50 mb-1">
+                  Max tokens
+                </label>
+                <input
+                  type="number"
+                  value={maxTokens}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) =>
+                    onMaxTokensChange(parseInt(e.target.value, 10) || 0)
+                  }
+                  className="nodrag w-full px-2 py-1.5 rounded-md bg-white/[0.03] border border-white/[0.06] text-[11px] text-white/75 outline-none focus:border-white/[0.12] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
+              <span className="text-[10.5px] text-white/40">
+                {tokenCount} tokens estimated
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  selectThis();
+                  handleRun();
+                }}
+                className="nodrag flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-full text-white"
+                style={{ background: 'rgba(232,87,26,0.9)' }}
+              >
+                <Play className="w-3 h-3 fill-current" />
+                Run
+              </button>
+            </div>
+          </div>
+        ) : (
+          // ───────── Compact card body ─────────
+          <>
+            <div
+              onDoubleClick={onBodyDoubleClick}
+              className="rounded-md p-2 mb-2"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                minHeight: 56,
+              }}
+            >
+              <p className="text-[11px] leading-snug text-white/70 line-clamp-3">
+                {promptText || (
+                  <span className="text-white/30">Enter your prompt...</span>
+                )}
+              </p>
+            </div>
+
+            {/* Stats */}
+            <div className="text-[10px] text-white/40 mb-2">
+              {tokenCount} tokens · {models.find((m) => m.value === model)?.label}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  selectThis();
+                  handleRun();
+                }}
+                className="nodrag flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold text-white"
+                style={{ background: 'rgba(232,87,26,0.9)' }}
+              >
+                <Play size={10} className="fill-current" />
+                Run
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  selectThis();
+                  setDrawerOpen(true);
+                }}
+                className="nodrag p-1 text-white/45 hover:text-white/85 rounded transition-colors"
+                title="Open in side drawer"
+              >
+                <ArrowUpRight size={12} />
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Expanded drawer */}
