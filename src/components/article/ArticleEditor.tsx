@@ -285,8 +285,20 @@ export function ArticleEditor({
         storage.articleEditor = {};
       }
       storage.articleEditor.canvasDoc = canvasDoc;
+      // Expose a synchronous "publish current JSON" hook so commands like
+      // Insert Grid (and the Stage Grid open-fullscreen flow) can flush
+      // the latest editor state into the parent cache *before* the editor
+      // unmounts. Without this, freshly inserted nodes would be lost.
+      storage.articleEditor.publishLatest = () => {
+        try {
+          const json = editor.getJSON();
+          onChange?.(json);
+          const setBody = useDocumentStore.getState().setArticleBody;
+          if (typeof setBody === 'function') setBody(json);
+        } catch (_) { /* noop */ }
+      };
     }
-  }, [editor, canvasDoc]);
+  }, [editor, canvasDoc, onChange]);
 
   // Cmd/Ctrl+F → find; Cmd/Ctrl+Shift+F → find + replace; Esc → close
   useEffect(() => {

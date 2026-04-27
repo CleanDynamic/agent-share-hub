@@ -117,14 +117,10 @@ const MENU_ITEMS: SlashCommandItem[] = [
   { id: 'quote', label: 'Quote', description: 'Quoted text block', icon: Quote, shortcut: '⌘⇧.', category: 'BASIC', action: (editor) => editor.chain().focus().setBlockquote().run() },
   { id: 'stage-grid', label: 'Stage grid', description: 'Arrange blocks visually', icon: LayoutGrid, category: 'CANVAS', action: (editor) => {
       const stageId = (typeof crypto !== 'undefined' && 'randomUUID' in crypto) ? crypto.randomUUID() : `stage-${Date.now()}`;
-      const storage = editor.storage as any;
-      const canvasDoc = storage?.articleEditor?.canvasDoc;
       const stageTitle = '';
-      try { canvasDoc?.addStage?.(stageTitle); } catch (e) { /* noop */ }
-      // Also register the stage in the in-memory document store keyed on the
-      // SAME stageId used by the TipTap node. Without this, edits inside the
-      // fullscreen canvas (blocks, name, layout) have no stage record to
-      // attach to and are lost on save.
+      // Register the stage in the in-memory document store keyed on the
+      // SAME stageId used by the TipTap node. Without this, edits inside
+      // the fullscreen canvas have no stage record to attach to.
       try {
         const now = new Date().toISOString();
         const ds = useDocumentStore.getState();
@@ -146,6 +142,13 @@ const MENU_ITEMS: SlashCommandItem[] = [
         type: 'stageGrid',
         attrs: { stageId, stageTitle, gridSpacing: 20, height: 360, openTemplatesOnMount: true },
       }).run();
+      // Force-publish the new JSON so the host (Upload.tsx) caches it before
+      // any subsequent unmount (e.g. opening the stage fullscreen).
+      try {
+        const storage = (editor.storage as any);
+        const publish = storage?.articleEditor?.publishLatest;
+        if (typeof publish === 'function') publish();
+      } catch (_) { /* noop */ }
     } },
   { id: 'block-reference', label: 'Block reference', description: 'Link to another block', icon: Link2, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
   { id: 'inline-block-preview', label: 'Inline block preview', description: 'Preview block inline', icon: Eye, category: 'CANVAS', phaseLabel: 'Coming in Phase X' },
