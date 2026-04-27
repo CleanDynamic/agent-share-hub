@@ -35,7 +35,7 @@ interface ToolDefinition {
 // list per render based on whether a stage is in full mode.
 const TOOLS: readonly ToolDefinition[] = [
   { id: 'inspector', label: 'Inspector', icon: Sliders, render: () => <InspectorTool /> },
-  { id: 'library', label: 'Block Library', icon: Shapes, render: () => <BlockLibraryTool /> },
+  { id: 'library', label: 'Block Library', icon: Shapes, render: () => <BlockLibraryHost /> },
   { id: 'outline', label: 'Outline', icon: List, render: () => <OutlineTool /> },
   { id: 'comments', label: 'Comments', icon: MessageSquare, render: () => <CommentsTool /> },
   { id: 'versions', label: 'Version History', icon: Clock, render: () => <VersionHistoryTool /> },
