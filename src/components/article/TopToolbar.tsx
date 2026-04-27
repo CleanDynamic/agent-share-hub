@@ -741,15 +741,22 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
         chain.setHeading({ level: 3 }).run();
         break;
       case 'quote':
-        chain.setParagraph().run();
+        editor.chain().focus().setParagraph().run();
         editor.chain().focus().toggleBlockquote().run();
+        // clear callout flag so it's a plain quote
+        editor.chain().focus().updateAttributes('blockquote', { 'data-callout': null } as never).run();
         break;
       case 'code':
         chain.toggleCodeBlock().run();
         break;
       case 'caption':
+        editor.chain().focus().setParagraph().run();
+        editor.chain().focus().updateAttributes('paragraph', { class: 'caption' } as never).run();
+        break;
       case 'callout':
-        soon(value === 'caption' ? 'Caption' : 'Callout')();
+        editor.chain().focus().setParagraph().run();
+        editor.chain().focus().setBlockquote().run();
+        editor.chain().focus().updateAttributes('blockquote', { 'data-callout': 'true' } as never).run();
         break;
       case 'body':
       default:
