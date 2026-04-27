@@ -15,6 +15,7 @@ import { common, createLowlight } from 'lowlight';
 import { StageGridExtension } from './StageGridExtension';
 import { BlockRefExtension } from '@/components/canvas/tiptap/BlockRefExtension';
 import { TopToolbar } from './TopToolbar';
+import { TableContextMenu } from './TableContextMenu';
 import { StatusBar } from './StatusBar';
 import { FormattingShortcuts } from './KeyboardShortcutsExtension';
 import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
