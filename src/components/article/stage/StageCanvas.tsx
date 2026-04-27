@@ -22,6 +22,7 @@ import { ModelBlockNode } from '../blocks/ModelBlock';
 import { NoteBlockNode } from '../blocks/NoteBlock';
 import { ResultBlockNode } from '../blocks/ResultBlock';
 import { ResourceBlockNode } from '../blocks/ResourceBlock';
+import { ToolBlockNode } from '../blocks/ToolBlock';
 
 interface StageCanvasProps {
   stageId: string;
