@@ -295,3 +295,23 @@ function WorkspaceTabButton({ tool, active, iconVisible, onClick }: WorkspaceTab
     </Tooltip>
   );
 }
+
+/**
+ * Library host — wires the Block Library's click-to-insert handler to the
+ * currently open stage. If no stage is open, clicks no-op (the Library
+ * tab also won't normally be visible in that state).
+ */
+function BlockLibraryHost() {
+  const stageOpenMap = useDocumentStore((s) => s.stageOpen);
+  const openStageId = useMemo(
+    () => Object.keys(stageOpenMap).find((id) => stageOpenMap[id]) ?? null,
+    [stageOpenMap],
+  );
+
+  const handleClick = (blockType: string) => {
+    if (!openStageId) return;
+    insertBlockInStage(openStageId, blockType as Parameters<typeof insertBlockInStage>[1]);
+  };
+
+  return <BlockLibraryTool onBlockClick={handleClick} />;
+}
