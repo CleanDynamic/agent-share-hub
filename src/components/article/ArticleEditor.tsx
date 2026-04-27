@@ -663,6 +663,20 @@ export function ArticleEditor({
         }}
       />
 
+      <BlockPickerMenu
+        isOpen={refOpen && Boolean(refPos)}
+        query={refQuery}
+        position={refPos ? { x: refPos.left, y: refPos.top } : null}
+        selectedIndex={refSelectedIndex}
+        onSelectedIndexChange={setRefSelectedIndex}
+        onSelect={insertBlockReference}
+        onClose={() => {
+          setRefOpen(false);
+          refStartPos.current = null;
+        }}
+        onItemsChange={setRefItems}
+      />
+
       {editable ? (
         <>
           <div
