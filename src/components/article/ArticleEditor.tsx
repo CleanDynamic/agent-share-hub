@@ -53,10 +53,11 @@ interface ArticleEditorProps {
   onOpenNotes?: () => void;
   onGrammarCheck?: () => void;
   onClearAll?: () => void;
-  onSave?: () => void;
+  onSave?: (draftName: string) => void | Promise<void>;
   onPublish?: () => void;
   saving?: boolean;
   publishing?: boolean;
+  defaultDraftName?: string;
 }
 
 export function ArticleEditor({
@@ -75,7 +76,10 @@ export function ArticleEditor({
   onPublish,
   saving = false,
   publishing = false,
+  defaultDraftName,
 }: ArticleEditorProps) {
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [draftNameInput, setDraftNameInput] = useState('');
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
   const [slashPos, setSlashPos] = useState<{ top: number; left: number } | null>(null);
