@@ -36,6 +36,7 @@ import {
   StickyNote,
   CheckCircle2,
   Globe,
+  Wrench,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDocumentStore } from '@/lib/documentStore';
