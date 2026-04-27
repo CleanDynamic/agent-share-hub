@@ -1350,11 +1350,12 @@ const Upload = () => {
             }}>
               <ArticleEditor
                 canvasDoc={canvasDoc}
-                initialContent={(canvasDoc as any).articleBody ?? undefined}
+                initialContent={(canvasDoc as any)._articleBody ?? (canvasDoc as any).articleBody ?? undefined}
                 documentTitle={form.watch('title') ?? ''}
                 onChange={(json) => {
-                  // Store article body for save
+                  // Store article body for save and for remounting after stage fullscreen.
                   (canvasDoc as any)._articleBody = json;
+                  (canvasDoc as any).articleBody = json;
                 }}
                 onSelectedStageChange={setSelectedStageId}
                 onOpenTemplates={() => setTemplateLibOpen(true)}
