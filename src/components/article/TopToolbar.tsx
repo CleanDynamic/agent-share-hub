@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LinkPopover } from './LinkPopover';
+import { TablePickerPopover } from './TablePickerPopover';
 import {
   Undo2,
   Redo2,
