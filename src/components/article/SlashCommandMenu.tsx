@@ -133,6 +133,7 @@ const MENU_ITEMS: SlashCommandItem[] = [
   { id: 'model-block', label: 'Model block', description: 'Configure an LLM provider and model', icon: Cpu, category: 'CANVAS', action: () => insertCanvasBlock('model') },
   { id: 'note-block', label: 'Note block', description: 'Add a sticky note to the latest stage', icon: StickyNote, category: 'CANVAS', action: () => insertCanvasBlock('note') },
   { id: 'result-block', label: 'Result block', description: 'Show output from a connected source block', icon: CheckCircle2, category: 'CANVAS', action: () => insertCanvasBlock('result') },
+  { id: 'resource-block', label: 'Resource block', description: 'Embed a web link with preview and notes', icon: Globe, category: 'CANVAS', action: () => insertCanvasBlock('resource') },
   { id: 'image', label: 'Image', description: 'Upload or embed an image', icon: Image, category: 'MEDIA', action: (editor) => {
       const url = window.prompt('Image URL:');
       if (url) editor.chain().focus().setImage({ src: url }).run();
