@@ -1314,7 +1314,10 @@ const Upload = () => {
           // and status strip are NOT mounted here.
           <StageFullscreen
             stageId={openStageId}
-            onClose={() => closeStageAction()}
+            onClose={() => {
+              saveDraft(true);
+              closeStageAction();
+            }}
           />
         ) : (
           // ARTICLE MODE — original editor surface.
@@ -1381,10 +1384,7 @@ const Upload = () => {
                 onOpenNotes={() => {}}
                 onGrammarCheck={() => {}}
                 onClearAll={() => {}}
-                onSave={() => {
-                  saveDraft(false);
-                  canvasDoc.saveDocument(currentDraftId ?? '');
-                }}
+                onSave={() => saveDraft(false)}
                 onPublish={() => {
                   const title = form.getValues('title');
                   if (!title || !title.trim()) {
