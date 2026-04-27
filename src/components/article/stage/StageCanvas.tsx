@@ -1,8 +1,9 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   ReactFlow,
   Background,
   BackgroundVariant,
+  type Connection as RFConnection,
   type Edge,
   type EdgeChange,
   type Node,
@@ -11,7 +12,9 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { useDocumentStore } from '@/lib/documentStore';
+import { eventBus } from '@/lib/eventBus';
 import type { Block, Connection } from '@/types/document';
+import { edgeTypes, DEFAULT_EDGE_TYPE } from './edgeTypes';
 import { PromptBlockNode } from '../blocks/PromptBlock';
 import { CodeBlockNode } from '../blocks/CodeBlock';
 import { TextBlockNode } from '../blocks/TextBlock';
@@ -76,7 +79,12 @@ function connectionToEdge(conn: Connection): Edge {
     id: conn.id,
     source: conn.from_block_id,
     target: conn.to_block_id,
+    type: DEFAULT_EDGE_TYPE,
     label: conn.label ?? undefined,
+    data: {
+      connectionType: conn.connection_type,
+      carriesData: conn.carries_data,
+    },
   };
 }
 
