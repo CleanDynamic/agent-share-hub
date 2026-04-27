@@ -1095,12 +1095,23 @@ const Upload = () => {
         await canvasDoc.saveDocument(contentId);
       }
 
-      // ── Save article body (TipTap JSON) ──
+      // ── Save article body (TipTap JSON) + stage grid snapshot ──
       const articleBody = (canvasDoc as any)._articleBody;
-      if (articleBody) {
-        await supabase.from('content_items').update({
-          article_body: articleBody,
-        } as any).eq('id', contentId);
+      const stageGridsSnapshot = (() => {
+        try {
+          const ds = useDocumentStore.getState();
+          return {
+            stages: ds.stages,
+            blocks: ds.blocks,
+            connections: ds.connections,
+          };
+        } catch { return null; }
+      })();
+      if (articleBody || stageGridsSnapshot) {
+        const update: any = {};
+        if (articleBody) update.article_body = articleBody;
+        if (stageGridsSnapshot) update.stage_grids = stageGridsSnapshot;
+        await supabase.from('content_items').update(update).eq('id', contentId);
       }
 
       // ── Remaining metadata updates (safe to run after blocks are saved) ──
