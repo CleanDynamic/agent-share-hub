@@ -251,6 +251,21 @@ export function StatusBar({
           </div>
         ) : null}
 
+        <button
+          type="button"
+          onClick={onCommentsClick}
+          style={{
+            ...itemButtonStyle,
+            cursor: onCommentsClick ? 'pointer' : 'default',
+            color: unresolvedComments > 0 ? 'hsl(18 79% 70%)' : itemButtonStyle.color,
+          }}
+          aria-label={`${unresolvedComments} unresolved comments`}
+          title={`${unresolvedComments} unresolved comment${unresolvedComments === 1 ? '' : 's'}`}
+        >
+          <MessageCircle size={12} strokeWidth={1.8} />
+          <span>{unresolvedComments}</span>
+        </button>
+
         <div style={{ ...itemButtonStyle, cursor: 'default' }}>
           <Focus size={12} strokeWidth={1.8} />
           <span>{focusMode === 'focus' ? 'Focus' : focusMode === 'view' ? 'View' : 'Edit'}</span>
