@@ -1,4 +1,4 @@
-import { useEffect, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
   Sliders,
   Shapes,
@@ -11,6 +11,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSelection } from '@/hooks/useSelection';
 import { useDocumentStore } from '@/lib/documentStore';
+import { eventBus } from '@/lib/eventBus';
 import {
   useWorkspaceStore,
   type WorkspaceToolId,
@@ -29,12 +30,34 @@ interface ToolDefinition {
   render: () => ReactElement;
 }
 
+// Master registry of every tool. The visible tab rail is derived from this
+// list per render based on whether a stage is in full mode.
 const TOOLS: readonly ToolDefinition[] = [
   { id: 'inspector', label: 'Inspector', icon: Sliders, render: () => <InspectorTool /> },
   { id: 'library', label: 'Block Library', icon: Shapes, render: () => <BlockLibraryTool /> },
   { id: 'outline', label: 'Outline', icon: List, render: () => <OutlineTool /> },
   { id: 'comments', label: 'Comments', icon: MessageSquare, render: () => <CommentsTool /> },
   { id: 'versions', label: 'Version History', icon: Clock, render: () => <VersionHistoryTool /> },
+];
+
+const TOOL_BY_ID: Record<WorkspaceToolId, ToolDefinition> = TOOLS.reduce(
+  (acc, t) => ({ ...acc, [t.id]: t }),
+  {} as Record<WorkspaceToolId, ToolDefinition>,
+);
+
+// Tab orders for each mode. Library is hidden entirely in article mode.
+const ARTICLE_MODE_ORDER: readonly WorkspaceToolId[] = [
+  'inspector',
+  'outline',
+  'comments',
+  'versions',
+];
+const STAGE_MODE_ORDER: readonly WorkspaceToolId[] = [
+  'library',
+  'inspector',
+  'outline',
+  'comments',
+  'versions',
 ];
 
 const TYPE_DOT_COLOR: Record<string, string> = {
@@ -73,10 +96,31 @@ function useSelectionLabel(): { label: string | null; kind: string | null } {
 export function WorkspaceShell() {
   const activeTool = useWorkspaceStore((s) => s.activeTool);
   const setActiveTool = useWorkspaceStore((s) => s.setActiveTool);
+  const stageOpen = useWorkspaceStore((s) => s.stageOpen);
+  const setStageOpen = useWorkspaceStore((s) => s.setStageOpen);
   const { selection } = useSelection();
   const { label: selectionLabel, kind: selectionKind } = useSelectionLabel();
 
+  // ── Stage open/close → reorder tabs and override active tool ─────
+  // Stage events take priority over the selection-driven auto-switch
+  // below, so we mark the most recent change here and skip the next
+  // selection-effect run while a stage is open.
+  const stageOpenRef = useRef(stageOpen);
+  stageOpenRef.current = stageOpen;
+
   useEffect(() => {
+    const offOpen = eventBus.on('stage:opened', () => setStageOpen(true));
+    const offClose = eventBus.on('stage:closed', () => setStageOpen(false));
+    return () => {
+      offOpen();
+      offClose();
+    };
+  }, [setStageOpen]);
+
+  // ── Selection-driven auto-switch (Step 1.7) ──────────────────────
+  // Skipped while a stage is open so the user stays parked on Library.
+  useEffect(() => {
+    if (stageOpenRef.current) return;
     if (
       selection.kind === 'block' ||
       selection.kind === 'stage' ||
@@ -86,7 +130,26 @@ export function WorkspaceShell() {
     }
   }, [selection.kind, selection.ids, setActiveTool]);
 
-  const ActiveRender = TOOLS.find((t) => t.id === activeTool)?.render ?? TOOLS[0].render;
+  // ── Cross-fade tab icons whenever the rail composition changes ───
+  const [iconsVisible, setIconsVisible] = useState(true);
+  useEffect(() => {
+    setIconsVisible(false);
+    const t = window.setTimeout(() => setIconsVisible(true), 30);
+    return () => window.clearTimeout(t);
+  }, [stageOpen]);
+
+  const visibleTools = useMemo(() => {
+    const order = stageOpen ? STAGE_MODE_ORDER : ARTICLE_MODE_ORDER;
+    return order.map((id) => TOOL_BY_ID[id]);
+  }, [stageOpen]);
+
+  // Defensive: if activeTool ever points at a hidden tab, fall back to
+  // the first visible tab (covers any external setActiveTool callers).
+  const effectiveActive: WorkspaceToolId = visibleTools.some((t) => t.id === activeTool)
+    ? activeTool
+    : visibleTools[0]?.id ?? 'inspector';
+
+  const ActiveRender = TOOL_BY_ID[effectiveActive]?.render ?? TOOLS[0].render;
 
   return (
     <div
@@ -143,11 +206,12 @@ export function WorkspaceShell() {
           flexShrink: 0,
         }}
       >
-        {TOOLS.map((tool) => (
+        {visibleTools.map((tool) => (
           <WorkspaceTabButton
             key={tool.id}
             tool={tool}
-            active={tool.id === activeTool}
+            active={tool.id === effectiveActive}
+            iconVisible={iconsVisible}
             onClick={() => setActiveTool(tool.id)}
           />
         ))}
@@ -171,10 +235,11 @@ export function WorkspaceShell() {
 interface WorkspaceTabButtonProps {
   tool: ToolDefinition;
   active: boolean;
+  iconVisible: boolean;
   onClick: () => void;
 }
 
-function WorkspaceTabButton({ tool, active, onClick }: WorkspaceTabButtonProps) {
+function WorkspaceTabButton({ tool, active, iconVisible, onClick }: WorkspaceTabButtonProps) {
   const Icon = tool.icon;
   const iconColor = active
     ? '#E8571A'
@@ -215,7 +280,14 @@ function WorkspaceTabButton({ tool, active, onClick }: WorkspaceTabButtonProps) 
             if (svg) svg.style.color = 'rgba(255,255,255,0.45)';
           }}
         >
-          <Icon size={18} style={{ color: iconColor }} />
+          <Icon
+            size={18}
+            style={{
+              color: iconColor,
+              opacity: iconVisible ? 1 : 0,
+              transition: 'opacity 150ms ease',
+            }}
+          />
         </button>
       </TooltipTrigger>
       <TooltipContent side="bottom">{tool.label}</TooltipContent>
