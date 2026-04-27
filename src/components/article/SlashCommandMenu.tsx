@@ -119,8 +119,7 @@ const MENU_ITEMS: SlashCommandItem[] = [
       const stageId = (typeof crypto !== 'undefined' && 'randomUUID' in crypto) ? crypto.randomUUID() : `stage-${Date.now()}`;
       const storage = editor.storage as any;
       const canvasDoc = storage?.articleEditor?.canvasDoc;
-      const stageNum = (canvasDoc?.stages?.length ?? 0) + 1;
-      const stageTitle = `Stage ${stageNum}`;
+      const stageTitle = '';
       try { canvasDoc?.addStage?.(stageTitle); } catch (e) { /* noop */ }
       editor.chain().focus().insertContent({
         type: 'stageGrid',
