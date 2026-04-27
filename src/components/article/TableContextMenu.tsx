@@ -21,14 +21,14 @@ export function TableContextMenu({ editor, children }: TableContextMenuProps) {
     const target = e.target as HTMLElement;
     const isTable = !!target.closest('table');
     setInTable(isTable);
-    // Place caret in the cell under the cursor so commands target it
     if (isTable) {
       const view = editor.view;
       const pos = view.posAtCoords({ left: e.clientX, top: e.clientY });
       if (pos) {
-        const tr = editor.state.tr.setSelection(
-          editor.state.selection.constructor.near(editor.state.doc.resolve(pos.pos)) as never,
-        );
+        // Place caret at the right-clicked position so table commands target it
+        const { TextSelection } = require('@tiptap/pm/state') as typeof import('@tiptap/pm/state');
+        const $pos = editor.state.doc.resolve(pos.pos);
+        const tr = editor.state.tr.setSelection(TextSelection.near($pos));
         view.dispatch(tr);
       }
     }
