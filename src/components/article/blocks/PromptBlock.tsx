@@ -262,6 +262,8 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
     resolveVariables,
     systemPrompt,
     temperature,
+    variableInfos,
+    setSelection,
   ]);
 
   const portOpacity = hovered || selected ? 1 : 0;
