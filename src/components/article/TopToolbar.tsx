@@ -841,8 +841,32 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           <Divider />
 
           <ToolbarGroup>
-            <ColorSwatch color="hsl(var(--foreground) / 0.9)" label="Text color" onClick={soon('Text color')} />
-            <ColorSwatch color="hsl(45 93% 63% / 0.3)" label="Highlight color" onClick={soon('Highlight color')} />
+            <ColorPickerPopover
+              mode="text"
+              triggerLabel="Text color"
+              triggerColor={
+                (editor?.getAttributes('textStyle')?.color as string) ||
+                'hsl(var(--foreground) / 0.9)'
+              }
+              onApply={(color) => {
+                if (!editor) return;
+                if (color === null) editor.chain().focus().unsetColor().run();
+                else editor.chain().focus().setColor(color).run();
+              }}
+            />
+            <ColorPickerPopover
+              mode="highlight"
+              triggerLabel="Highlight color"
+              triggerColor={
+                (editor?.getAttributes('highlight')?.color as string) ||
+                'hsl(45 93% 63% / 0.3)'
+              }
+              onApply={(color) => {
+                if (!editor) return;
+                if (color === null) editor.chain().focus().unsetHighlight().run();
+                else editor.chain().focus().setHighlight({ color }).run();
+              }}
+            />
             <ToolbarButton icon={Type} label="Text tools" onClick={soon('Text tools')} />
             <ToolbarButton icon={Highlighter} label="Highlight" onClick={soon('Highlight')} />
           </ToolbarGroup>
