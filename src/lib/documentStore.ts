@@ -146,6 +146,7 @@ export const useDocumentStore = create<DocumentState>()(
         state.stages = {};
         state.blocks = {};
         state.connections = {};
+        state.stageOpen = {};
         state.selection = { kind: 'none', ids: [] };
         state.focusMode = 'edit';
         state.dirty = new Set<string>();
