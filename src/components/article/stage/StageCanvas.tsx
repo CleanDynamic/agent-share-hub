@@ -19,6 +19,7 @@ import { AgentBlockNode } from '../blocks/AgentBlock';
 import { CompareBlockNode } from '../blocks/CompareBlock';
 import { HeadingBlockNode } from '../blocks/HeadingBlock';
 import { ModelBlockNode } from '../blocks/ModelBlock';
+import { NoteBlockNode } from '../blocks/NoteBlock';
 
 interface StageCanvasProps {
   stageId: string;
@@ -32,6 +33,7 @@ const nodeTypes = {
   compare: CompareBlockNode,
   heading: HeadingBlockNode,
   model: ModelBlockNode,
+  note: NoteBlockNode,
 };
 
 const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
@@ -42,7 +44,9 @@ const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
   compare: 'compare',
   heading: 'heading',
   model: 'model',
+  note: 'note',
 };
+
 
 function blockToNode(block: Block): Node {
   return {

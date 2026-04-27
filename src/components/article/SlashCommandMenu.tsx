@@ -33,6 +33,7 @@ import {
   Columns2,
   Heading,
   Cpu,
+  StickyNote,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDocumentStore } from '@/lib/documentStore';
@@ -128,6 +129,7 @@ const MENU_ITEMS: SlashCommandItem[] = [
   { id: 'compare-block', label: 'Compare block', description: 'Side-by-side comparison of two options', icon: Columns2, category: 'CANVAS', action: () => insertCanvasBlock('compare') },
   { id: 'heading-block', label: 'Heading block', description: 'Add a heading block to the latest stage', icon: Heading, category: 'CANVAS', action: () => insertCanvasBlock('heading') },
   { id: 'model-block', label: 'Model block', description: 'Configure an LLM provider and model', icon: Cpu, category: 'CANVAS', action: () => insertCanvasBlock('model') },
+  { id: 'note-block', label: 'Note block', description: 'Add a sticky note to the latest stage', icon: StickyNote, category: 'CANVAS', action: () => insertCanvasBlock('note') },
   { id: 'image', label: 'Image', description: 'Upload or embed an image', icon: Image, category: 'MEDIA', action: (editor) => {
       const url = window.prompt('Image URL:');
       if (url) editor.chain().focus().setImage({ src: url }).run();
