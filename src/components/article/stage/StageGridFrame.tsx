@@ -26,12 +26,6 @@ interface StageGridFrameProps {
   onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-const blockTypeColors: Record<BlockType, string> = {
-  text: '#3B82F6',
-  prompt: '#8B5CF6',
-  code: '#10B981',
-  result: '#F59E0B',
-};
 
 export function StageGridFrame({
   stageNumber,
