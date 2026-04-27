@@ -37,6 +37,7 @@ const nodeTypes = {
   model: ModelBlockNode,
   note: NoteBlockNode,
   result: ResultBlockNode,
+  resource: ResourceBlockNode,
 };
 
 const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
@@ -49,6 +50,7 @@ const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
   model: 'model',
   note: 'note',
   result: 'result',
+  resource: 'resource',
 };
 
 
