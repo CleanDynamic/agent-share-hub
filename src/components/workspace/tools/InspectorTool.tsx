@@ -5,6 +5,7 @@ import { useSelection } from '@/hooks/useSelection';
 import { useDocumentStore } from '@/lib/documentStore';
 
 import { InspectorDocument } from './InspectorDocument';
+import { ArrowInspector } from './ArrowInspector';
 import { EmptyPanelState } from './toolPanelStyles';
 
 type Visibility = 'public' | 'private' | 'unlisted';
@@ -156,8 +157,13 @@ export function InspectorTool() {
       return <PlaceholderInspector label="Block inspector coming in Step 2" />;
     case 'stage':
       return <PlaceholderInspector label="Stage inspector coming in Step 3" />;
-    case 'arrow':
-      return <PlaceholderInspector label="Arrow inspector coming in Step 4" />;
+    case 'arrow': {
+      const arrowId = selection.ids[0];
+      if (!arrowId) {
+        return <PlaceholderInspector label="No arrow selected" />;
+      }
+      return <ArrowInspector connectionId={arrowId} />;
+    }
     case 'prose':
       return <PlaceholderInspector label="Prose inspector coming in Step 5" />;
     case 'multi':
