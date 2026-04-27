@@ -532,6 +532,14 @@ export function ArticleEditor({
 
       <TopToolbar editor={editor} onInsertBlock={() => handleQuickInsert('stage')} />
 
+      <FindReplaceBar
+        editor={editor}
+        open={findOpen}
+        showReplace={findShowReplace}
+        onClose={() => setFindOpen(false)}
+        onToggleReplace={setFindShowReplace}
+      />
+
       <TableContextMenu editor={editor}>
         <EditorContent
           editor={editor}
