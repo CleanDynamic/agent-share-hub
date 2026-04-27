@@ -39,6 +39,7 @@ import { ArticleEditor } from '@/components/article/ArticleEditor';
 import type { EvidenceMediaType } from '@/components/canvas/CanvasHeader';
 import { CanvasHeader } from '@/components/canvas/CanvasHeader';
 import { TemplateLibrary } from '@/components/canvas/TemplateLibrary';
+import { eventBus } from '@/lib/eventBus';
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -233,6 +234,16 @@ const Upload = () => {
   const [submitting, setSubmitting] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [templateLibOpen, setTemplateLibOpen] = useState(false);
+  // Tracks whether a stage grid is currently expanded into full mode. When
+  // true, the editor's CanvasHeader (BLUEPRINT pill, Title, Description,
+  // Your results) is hidden so the stage can fill the middle panel.
+  const [openStageId, setOpenStageId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const offOpen = eventBus.on('stage:opened', ({ stageId }) => setOpenStageId(stageId));
+    const offClose = eventBus.on('stage:closed', () => setOpenStageId(null));
+    return () => { offOpen(); offClose(); };
+  }, []);
   const [success, setSuccess] = useState(false);
   const [insertedContentId, setInsertedContentId] = useState<string | null>(null);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
@@ -1215,15 +1226,19 @@ const Upload = () => {
 
   // ── Article mode: after type is chosen, render ArticleEditor ──
   if (!showTypeChooser && !success) {
+    const stageOpen = openStageId !== null;
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        overflow: 'hidden',
-        background: 'transparent',
-        position: 'relative',
-      }}>
+      <div
+        data-editor-middle-panel=""
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          overflow: 'hidden',
+          background: 'transparent',
+          position: 'relative',
+        }}
+      >
         {/* Main scroll area */}
         <div style={{
           flex: 1,
@@ -1233,32 +1248,37 @@ const Upload = () => {
           flexDirection: 'column',
           minHeight: 0,
         }}>
-          {/* Document header — reuses CanvasHeader */}
-          <CanvasHeader
-            mode="edit"
-            title={form.watch('title') ?? ''}
-            description={form.watch('description') ?? ''}
-            postType={form.watch('post_type') ?? 'build'}
-            difficulty={form.watch('difficulty') ?? null}
-            coverPreview={coverImagePreview}
-            onTitleChange={v => form.setValue('title', v)}
-            onDescriptionChange={v => form.setValue('description', v)}
-            onPostTypeClick={() => setShowTypeChooser(true)}
-            onCoverChange={(f, p) => {
-              setCoverImageFile(f);
-              setCoverImagePreview(p);
-            }}
-            evidenceMediaType={evidenceMediaType}
-            evidenceMediaFiles={evidenceMediaFiles}
-            evidenceMediaPreviews={evidenceMediaPreviews}
-            evidenceCaption={evidenceCaption}
-            onEvidenceMediaTypeChange={setEvidenceMediaType}
-            onEvidenceMediaFilesChange={(files, previews) => {
-              setEvidenceMediaFiles(files);
-              setEvidenceMediaPreviews(previews);
-            }}
-            onEvidenceCaptionChange={setEvidenceCaption}
-          />
+          {/* Document header — reuses CanvasHeader. Hidden (display:none, not
+              unmounted) while a stage grid is opened in full mode so the
+              stage can take over the middle panel without disturbing
+              component state. */}
+          <div style={{ display: stageOpen ? 'none' : undefined }} aria-hidden={stageOpen || undefined}>
+            <CanvasHeader
+              mode="edit"
+              title={form.watch('title') ?? ''}
+              description={form.watch('description') ?? ''}
+              postType={form.watch('post_type') ?? 'build'}
+              difficulty={form.watch('difficulty') ?? null}
+              coverPreview={coverImagePreview}
+              onTitleChange={v => form.setValue('title', v)}
+              onDescriptionChange={v => form.setValue('description', v)}
+              onPostTypeClick={() => setShowTypeChooser(true)}
+              onCoverChange={(f, p) => {
+                setCoverImageFile(f);
+                setCoverImagePreview(p);
+              }}
+              evidenceMediaType={evidenceMediaType}
+              evidenceMediaFiles={evidenceMediaFiles}
+              evidenceMediaPreviews={evidenceMediaPreviews}
+              evidenceCaption={evidenceCaption}
+              onEvidenceMediaTypeChange={setEvidenceMediaType}
+              onEvidenceMediaFilesChange={(files, previews) => {
+                setEvidenceMediaFiles(files);
+                setEvidenceMediaPreviews(previews);
+              }}
+              onEvidenceCaptionChange={setEvidenceCaption}
+            />
+          </div>
 
           {/* Article body — TipTap editor */}
           <div style={{

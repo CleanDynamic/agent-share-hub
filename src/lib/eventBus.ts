@@ -16,6 +16,8 @@ export type EventMap = {
   "command-palette:open": void;
   "focus-mode:toggle": void;
   "outline:scroll-to": { targetId: string };
+  "stage:opened": { stageId: string };
+  "stage:closed": { stageId: string };
 };
 
 export type EventName = keyof EventMap;

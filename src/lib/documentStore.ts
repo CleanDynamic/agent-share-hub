@@ -79,6 +79,13 @@ export interface DocumentState {
   stages: Record<string, Stage>;
   blocks: Record<string, Block>;
   connections: Record<string, Connection>;
+  /**
+   * Local-only per-stage UI flag. `true` means the stage is currently
+   * expanded into full mode in the editor. Not persisted to Supabase —
+   * resets to `false` (closed/thumbnail) on every page load. Only one
+   * stage can be open at a time.
+   */
+  stageOpen: Record<string, boolean>;
   selection: Selection;
   focusMode: FocusMode;
   dirty: Set<string>;
@@ -91,6 +98,11 @@ export interface DocumentState {
   addStage: (stage: Stage) => void;
   updateStage: (id: string, patch: Partial<Stage>) => void;
   removeStage: (id: string) => void;
+
+  /** Open a stage (closes any other open stage). */
+  openStage: (id: string) => void;
+  /** Close a specific stage (or close whichever is open if no id given). */
+  closeStage: (id?: string) => void;
 
   addBlock: (block: Block) => void;
   updateBlock: (id: string, patch: Partial<Block>) => void;
@@ -120,6 +132,7 @@ export const useDocumentStore = create<DocumentState>()(
     stages: {},
     blocks: {},
     connections: {},
+    stageOpen: {},
     selection: emptySelection,
     focusMode: 'edit',
     dirty: new Set<string>(),
@@ -133,6 +146,7 @@ export const useDocumentStore = create<DocumentState>()(
         state.stages = {};
         state.blocks = {};
         state.connections = {};
+        state.stageOpen = {};
         state.selection = { kind: 'none', ids: [] };
         state.focusMode = 'edit';
         state.dirty = new Set<string>();
@@ -166,6 +180,7 @@ export const useDocumentStore = create<DocumentState>()(
     removeStage: (id) =>
       set((state) => {
         delete state.stages[id];
+        delete state.stageOpen[id];
         for (const block of Object.values(state.blocks)) {
           if (block.stage_id === id) {
             delete state.blocks[block.id];
@@ -173,6 +188,23 @@ export const useDocumentStore = create<DocumentState>()(
           }
         }
         state.dirty.add(id);
+      }),
+
+    openStage: (id) =>
+      set((state) => {
+        // Only one stage open at a time — close every other.
+        const next: Record<string, boolean> = {};
+        next[id] = true;
+        state.stageOpen = next;
+      }),
+
+    closeStage: (id) =>
+      set((state) => {
+        if (id) {
+          delete state.stageOpen[id];
+        } else {
+          state.stageOpen = {};
+        }
       }),
 
     addBlock: (block) =>
