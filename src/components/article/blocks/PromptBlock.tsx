@@ -439,8 +439,16 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                 value={name}
                 onChange={(e) => onNameChange(e.target.value)}
                 placeholder="Block name"
-                className="w-full px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-sm text-white/80 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
+                className={cn(
+                  'w-full px-3 py-2 rounded-md bg-white/[0.03] border text-sm text-white/80 placeholder:text-white/30 outline-none transition-colors',
+                  nameError
+                    ? 'border-red-500/50 focus:border-red-500/70'
+                    : 'border-white/[0.06] focus:border-white/[0.12]',
+                )}
               />
+              {nameError && (
+                <p className="mt-1 text-[10.5px] text-red-400">{nameError}</p>
+              )}
             </div>
 
             {/* System prompt collapsible */}
@@ -461,8 +469,14 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
               </button>
               {systemPromptOpen && (
                 <textarea
+                  ref={systemPromptRef}
                   value={systemPrompt}
-                  onChange={(e) => onSystemPromptChange(e.target.value)}
+                  onChange={(e) => {
+                    onSystemPromptChange(e.target.value);
+                    systemAutocomplete.onInput();
+                  }}
+                  onKeyDown={systemAutocomplete.onKeyDown}
+                  onClick={systemAutocomplete.onInput}
                   placeholder="Enter system prompt..."
                   className="w-full h-20 p-3 rounded-md resize-none bg-white/[0.03] border border-white/[0.06] text-xs text-white/70 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
                 />
@@ -475,34 +489,33 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                 Prompt
               </label>
               <textarea
+                ref={promptRef}
                 value={promptText}
-                onChange={(e) => onPromptChange(e.target.value)}
-                placeholder="Enter your prompt... Use {{variable}} syntax for dynamic values."
+                onChange={(e) => {
+                  onPromptChange(e.target.value);
+                  promptAutocomplete.onInput();
+                }}
+                onKeyDown={promptAutocomplete.onKeyDown}
+                onClick={promptAutocomplete.onInput}
+                placeholder="Enter your prompt... Type {{ to insert a block reference."
                 className="w-full h-40 p-3 rounded-md resize-none bg-white/[0.03] border border-white/[0.06] text-sm text-white/80 placeholder:text-white/30 leading-relaxed outline-none focus:border-white/[0.12] transition-colors"
               />
             </div>
 
             {/* Variables */}
-            {extractedVariables.length > 0 && (
+            {variableInfos.length > 0 && (
               <div>
                 <label className="block text-[11px] font-medium text-white/50 mb-1.5">
                   Variables detected
                 </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {extractedVariables.map((v) => (
-                    <span
-                      key={v}
-                      className="px-2 py-0.5 text-[10px] font-medium rounded-full"
-                      style={{
-                        color: '#2EC4B6',
-                        background: 'rgba(46,196,182,0.1)',
-                        border: '1px solid rgba(46,196,182,0.2)',
-                      }}
-                    >
-                      {`{{${v}}}`}
-                    </span>
-                  ))}
-                </div>
+                <VariableChips
+                  variables={variableInfos}
+                  onChipClick={(info) => {
+                    if (info.blockId) {
+                      setSelection({ kind: 'block', ids: [info.blockId] });
+                    }
+                  }}
+                />
               </div>
             )}
 
