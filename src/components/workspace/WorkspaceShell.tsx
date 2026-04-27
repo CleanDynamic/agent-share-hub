@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useSelection } from '@/hooks/useSelection';
 import { useDocumentStore } from '@/lib/documentStore';
 import { eventBus } from '@/lib/eventBus';
+import { insertBlockInStage } from '@/lib/blockInsertion';
 import {
   useWorkspaceStore,
   type WorkspaceToolId,
