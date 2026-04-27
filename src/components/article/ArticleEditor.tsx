@@ -471,6 +471,42 @@ export function ArticleEditor({
           border-top-color: hsl(18 79% 54%);
           animation: articleCaretBlink 1.2s step-end infinite;
         }
+        .tiptap-article table.tiptap-table {
+          border-collapse: collapse;
+          margin: 16px 0;
+          width: 100%;
+          table-layout: fixed;
+          overflow: hidden;
+        }
+        .tiptap-article table.tiptap-table td,
+        .tiptap-article table.tiptap-table th {
+          border: 1px solid hsl(var(--foreground) / 0.15);
+          padding: 6px 8px;
+          vertical-align: top;
+          position: relative;
+          min-width: 60px;
+        }
+        .tiptap-article table.tiptap-table th {
+          background: hsl(var(--foreground) / 0.06);
+          font-weight: 600;
+          text-align: left;
+        }
+        .tiptap-article table.tiptap-table .selectedCell:after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: hsl(var(--primary, 18 79% 54%) / 0.15);
+          pointer-events: none;
+        }
+        .tiptap-article .column-resize-handle {
+          position: absolute;
+          right: -2px;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+          background: hsl(var(--primary, 18 79% 54%) / 0.5);
+          cursor: col-resize;
+        }
       `}</style>
 
       <TopToolbar editor={editor} onInsertBlock={() => handleQuickInsert('stage')} />
