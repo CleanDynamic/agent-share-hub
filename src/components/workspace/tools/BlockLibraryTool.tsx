@@ -271,6 +271,7 @@ function BlockCard({ block, onDragStart, onDoubleClick, onClick }: BlockCardProp
     <div
       draggable
       onDragStart={handleDragStart}
+      onClick={onClick}
       onDoubleClick={onDoubleClick}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
