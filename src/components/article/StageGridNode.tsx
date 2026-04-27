@@ -78,6 +78,10 @@ export function StageGridNode({ node, updateAttributes, editor, getPos }: StageG
       id: b.id,
       type: b.type as ThumbnailBlock['type'],
       name: b.name,
+      position_x: b.position_x,
+      position_y: b.position_y,
+      width: b.width,
+      height: b.height,
     }));
   }, [blocksMap, stageId]);
 

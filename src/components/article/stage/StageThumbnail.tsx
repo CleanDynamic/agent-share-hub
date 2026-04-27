@@ -24,10 +24,17 @@ export interface ThumbnailBlock {
   id: string;
   type: ThumbnailBlockType;
   name?: string | null;
+  position_x?: number;
+  position_y?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface ThumbnailConnection {
   id?: string;
+  from_block_id?: string;
+  to_block_id?: string;
+  connection_type?: string;
   [key: string]: any;
 }
 
@@ -309,6 +316,11 @@ export function StageThumbnail({
         </button>
       </div>
 
+      {/* SPATIAL PREVIEW (mini-map) */}
+      {blockCount > 0 ? (
+        <SpatialPreview blocks={blocks} connections={connections} />
+      ) : null}
+
       {/* COLOUR STRIP */}
       <div
         style={{
@@ -457,3 +469,154 @@ function BlockLabelPill({ dotColor, label }: BlockLabelPillProps) {
     </div>
   );
 }
+
+// ─── Spatial mini-map preview ──────────────────────────────────────────────
+
+const CONNECTION_COLORS: Record<string, string> = {
+  feeds_into: '#2EC4B6',
+  references: 'rgba(255,255,255,0.45)',
+  depends_on: '#E8571A',
+  contradicts: '#EF4444',
+  alternative_to: '#A78BFA',
+  custom: 'rgba(255,255,255,0.45)',
+};
+
+interface SpatialPreviewProps {
+  blocks: ThumbnailBlock[];
+  connections: ThumbnailConnection[];
+}
+
+function SpatialPreviewImpl({ blocks, connections }: SpatialPreviewProps) {
+  // Resolve positioned blocks (default to 0,0 / 240x140 when missing).
+  const positioned = blocks.map((b) => ({
+    id: b.id,
+    type: b.type,
+    x: typeof b.position_x === 'number' ? b.position_x : 0,
+    y: typeof b.position_y === 'number' ? b.position_y : 0,
+    w: typeof b.width === 'number' && b.width > 0 ? b.width : 240,
+    h: typeof b.height === 'number' && b.height > 0 ? b.height : 140,
+  }));
+
+  if (positioned.length === 0) return null;
+
+  // Bounding box
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of positioned) {
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x + p.w > maxX) maxX = p.x + p.w;
+    if (p.y + p.h > maxY) maxY = p.y + p.h;
+  }
+  // Pad slightly so strokes aren't clipped
+  const pad = 8;
+  minX -= pad;
+  minY -= pad;
+  maxX += pad;
+  maxY += pad;
+  const vbW = Math.max(1, maxX - minX);
+  const vbH = Math.max(1, maxY - minY);
+
+  const blockById = new Map(positioned.map((p) => [p.id, p]));
+
+  return (
+    <div
+      style={{
+        height: 80,
+        margin: '6px 12px',
+        background: 'rgba(255,255,255,0.015)',
+        borderRadius: 6,
+        overflow: 'hidden',
+        borderTop: '0.5px solid rgba(255,255,255,0.06)',
+      }}
+    >
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`${minX} ${minY} ${vbW} ${vbH}`}
+        preserveAspectRatio="xMidYMid meet"
+        style={{ display: 'block', pointerEvents: 'none' }}
+      >
+        {/* Connections (under blocks) */}
+        {connections.map((c, idx) => {
+          const from = c.from_block_id ? blockById.get(c.from_block_id) : undefined;
+          const to = c.to_block_id ? blockById.get(c.to_block_id) : undefined;
+          if (!from || !to) return null;
+          const fx = from.x + from.w / 2;
+          const fy = from.y + from.h / 2;
+          const tx = to.x + to.w / 2;
+          const ty = to.y + to.h / 2;
+          const stroke =
+            CONNECTION_COLORS[c.connection_type ?? 'references'] ??
+            'rgba(255,255,255,0.45)';
+          return (
+            <polyline
+              key={c.id ?? `c-${idx}`}
+              points={`${fx},${fy} ${tx},${ty}`}
+              fill="none"
+              stroke={stroke}
+              strokeWidth={Math.max(1, vbW / 400)}
+              strokeLinecap="round"
+            />
+          );
+        })}
+
+        {/* Blocks */}
+        {positioned.map((p) => {
+          const c = colorForType(p.type);
+          return (
+            <rect
+              key={p.id}
+              x={p.x}
+              y={p.y}
+              width={p.w}
+              height={p.h}
+              rx={Math.max(2, Math.min(p.w, p.h) * 0.04)}
+              ry={Math.max(2, Math.min(p.w, p.h) * 0.04)}
+              fill={withAlpha(c, 0.55)}
+              stroke={withAlpha(c, 0.85)}
+              strokeWidth={Math.max(1, vbW / 400)}
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+export const SpatialPreview = React.memo(
+  SpatialPreviewImpl,
+  (prev, next) => {
+    if (prev.blocks.length !== next.blocks.length) return false;
+    if (prev.connections.length !== next.connections.length) return false;
+    for (let i = 0; i < prev.blocks.length; i++) {
+      const a = prev.blocks[i];
+      const b = next.blocks[i];
+      if (
+        a.id !== b.id ||
+        a.type !== b.type ||
+        a.position_x !== b.position_x ||
+        a.position_y !== b.position_y ||
+        a.width !== b.width ||
+        a.height !== b.height
+      ) {
+        return false;
+      }
+    }
+    for (let i = 0; i < prev.connections.length; i++) {
+      const a = prev.connections[i];
+      const b = next.connections[i];
+      if (
+        a.id !== b.id ||
+        a.from_block_id !== b.from_block_id ||
+        a.to_block_id !== b.to_block_id ||
+        a.connection_type !== b.connection_type
+      ) {
+        return false;
+      }
+    }
+    return true;
+  },
+);
