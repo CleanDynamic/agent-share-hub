@@ -235,16 +235,33 @@ const Upload = () => {
   const [submitting, setSubmitting] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [templateLibOpen, setTemplateLibOpen] = useState(false);
-  // Tracks whether a stage grid is currently expanded into full mode. When
-  // true, the editor's CanvasHeader (BLUEPRINT pill, Title, Description,
-  // Your results) is hidden so the stage can fill the middle panel.
-  const [openStageId, setOpenStageId] = useState<string | null>(null);
+  // Open stage id is derived from the document store (single source of
+  // truth). When non-null, the middle panel renders <StageFullscreen />
+  // instead of the article editor — a real swap, not an overlay.
+  const stageOpenMap = useDocumentStore((s) => s.stageOpen);
+  const closeStageAction = useDocumentStore((s) => s.closeStage);
+  const openStageId = useMemo(
+    () => Object.keys(stageOpenMap).find((id) => stageOpenMap[id]) ?? null,
+    [stageOpenMap],
+  );
 
+  // After closing a stage, scroll the article view back to the thumbnail
+  // so the user lands at their previous position.
+  const prevOpenStageIdRef = useRef<string | null>(null);
   useEffect(() => {
-    const offOpen = eventBus.on('stage:opened', ({ stageId }) => setOpenStageId(stageId));
-    const offClose = eventBus.on('stage:closed', () => setOpenStageId(null));
-    return () => { offOpen(); offClose(); };
-  }, []);
+    const prev = prevOpenStageIdRef.current;
+    prevOpenStageIdRef.current = openStageId;
+    if (prev && !openStageId) {
+      const justClosed = prev;
+      window.setTimeout(() => {
+        const el = document.querySelector(`[data-stage-id="${justClosed}"]`);
+        if (el && typeof (el as HTMLElement).scrollIntoView === 'function') {
+          (el as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 50);
+    }
+  }, [openStageId]);
+
   const [success, setSuccess] = useState(false);
   const [insertedContentId, setInsertedContentId] = useState<string | null>(null);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
