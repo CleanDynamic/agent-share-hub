@@ -7,6 +7,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { LinkPopover } from './LinkPopover';
 import {
   Undo2,
   Redo2,
@@ -756,21 +757,14 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
     }
   };
 
+  const [linkOpen, setLinkOpen] = React.useState(false);
   const handleLink = () => {
     if (!editor) return;
-    // Link mark not in StarterKit by default
     if (!editor.schema.marks.link) {
       soon('Links')();
       return;
     }
-    const previous = editor.getAttributes('link').href as string | undefined;
-    const input = window.prompt('Enter URL', previous ?? 'https://');
-    if (input === null) return;
-    if (input.trim() === '') {
-      editor.chain().focus().extendMarkRange('link').unsetLink().run();
-      return;
-    }
-    editor.chain().focus().extendMarkRange('link').setLink({ href: input.trim() }).run();
+    setLinkOpen(true);
   };
 
   return (
@@ -941,6 +935,7 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           </ToolbarGroup>
         </div>
       </div>
+      <LinkPopover editor={editor} open={linkOpen} onOpenChange={setLinkOpen} />
     </TooltipProvider>
   );
 }

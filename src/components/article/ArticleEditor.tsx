@@ -6,6 +6,7 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import Highlight from '@tiptap/extension-highlight';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
+import LinkExtension from '@tiptap/extension-link';
 import { common, createLowlight } from 'lowlight';
 import { StageGridExtension } from './StageGridExtension';
 import { BlockRefExtension } from '@/components/canvas/tiptap/BlockRefExtension';
@@ -115,6 +116,11 @@ export function ArticleEditor({
       TextStyle,
       Color,
       Highlight.configure({ multicolor: true }),
+      LinkExtension.configure({
+        openOnClick: false,
+        autolink: true,
+        HTMLAttributes: { rel: 'noopener noreferrer nofollow' },
+      }),
       CharacterCount,
       StageGridExtension,
       BlockRefExtension,
