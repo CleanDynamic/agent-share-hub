@@ -298,6 +298,59 @@ export function ArticleEditor({
     return () => window.removeEventListener('keydown', handler);
   }, [findOpen]);
 
+  // Build a comment anchor from the current selection state
+  const buildCommentAnchor = useCallback((): CommentAnchor | null => {
+    // 1. Prose selection (non-empty TipTap selection)
+    if (editor) {
+      const { from, to, empty } = editor.state.selection;
+      if (!empty && from !== to) {
+        return { type: 'prose', data: { from, to } };
+      }
+    }
+    // 2. Selected stage / block / arrow from the document store
+    if (selection?.kind === 'block' && selection.ids[0]) {
+      return { type: 'block', data: { id: selection.ids[0] } };
+    }
+    if (selection?.kind === 'stage' && selection.ids[0]) {
+      return { type: 'stage', data: { id: selection.ids[0] } };
+    }
+    if (selection?.kind === 'arrow' && selection.ids[0]) {
+      return { type: 'arrow', data: { id: selection.ids[0] } };
+    }
+    // 3. Fallback: caret position in prose
+    if (editor) {
+      const { from } = editor.state.selection;
+      return { type: 'prose', data: { from, to: from } };
+    }
+    return null;
+  }, [editor, selection]);
+
+  const triggerAddComment = useCallback(() => {
+    const anchor = buildCommentAnchor();
+    if (!anchor) {
+      toast('Select some text or a block to comment on');
+      return;
+    }
+    if (!documentId) {
+      toast('Save the document first to add comments');
+      return;
+    }
+    setPendingCommentAnchor(anchor);
+  }, [buildCommentAnchor, documentId]);
+
+  // Cmd/Ctrl+Shift+M → add comment
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.shiftKey && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        triggerAddComment();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [triggerAddComment]);
+
 
   const slashItems = useMemo(() => {
     return getSlashCommandItems(slashQuery);
