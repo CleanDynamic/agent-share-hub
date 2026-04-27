@@ -73,6 +73,8 @@ export function ArticleEditor({
   const [slashSelectedIndex, setSlashSelectedIndex] = useState(0);
   const [editorFocused, setEditorFocused] = useState(false);
   const [insertHovered, setInsertHovered] = useState(false);
+  const [findOpen, setFindOpen] = useState(false);
+  const [findShowReplace, setFindShowReplace] = useState(false);
   const slashStartPos = useRef<number | null>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const setDocumentTitle = useDocumentStore((state) => state.setDocumentTitle);
