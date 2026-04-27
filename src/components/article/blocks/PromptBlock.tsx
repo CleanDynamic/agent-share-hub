@@ -266,6 +266,23 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
     setSelection,
   ]);
 
+  const promptRef = React.useRef<HTMLTextAreaElement>(null);
+  const systemPromptRef = React.useRef<HTMLTextAreaElement>(null);
+  const promptAutocomplete = useVariableAutocomplete({
+    value: promptText,
+    onChange: onPromptChange,
+    ref: promptRef,
+    blocks: allBlocks,
+    selfId: blockId,
+  });
+  const systemAutocomplete = useVariableAutocomplete({
+    value: systemPrompt,
+    onChange: onSystemPromptChange,
+    ref: systemPromptRef,
+    blocks: allBlocks,
+    selfId: blockId,
+  });
+
   const portOpacity = hovered || selected ? 1 : 0;
 
   // Compact card content (rendered inside the React Flow node)
