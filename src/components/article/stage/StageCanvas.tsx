@@ -17,6 +17,10 @@ import '@xyflow/react/dist/style.css';
 import { useDocumentStore } from '@/lib/documentStore';
 import { eventBus } from '@/lib/eventBus';
 import {
+  setExpandedBlockId,
+  toggleExpandedBlockId,
+} from '@/lib/blockExpansion';
+import {
   BLOCK_TYPE_ACCENT,
   clearDragType,
   getDragType,
