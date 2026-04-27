@@ -126,7 +126,7 @@ function BottomBar({ showMiniMap, onToggleMiniMap }: BottomBarProps) {
   // Live zoom subscription via React Flow's internal store.
   const zoom = useStore((s) => s.transform[2]);
 
-  const clampZoom = (z: number) => Math.max(0.25, Math.min(2, z));
+  const clampZoom = (z: number) => Math.max(0.2, Math.min(1.5, z));
 
   const onZoomOut = useCallback(() => {
     const next = clampZoom((getZoom() ?? zoom) - 0.1);
@@ -139,7 +139,7 @@ function BottomBar({ showMiniMap, onToggleMiniMap }: BottomBarProps) {
   }, [getZoom, zoom, zoomTo]);
 
   const onFit = useCallback(() => {
-    fitView({ padding: 0.15, duration: 200 });
+    fitView({ padding: 0.2, duration: 200, minZoom: 0.2, maxZoom: 1.5 });
   }, [fitView]);
 
   const zoomLabel = `${Math.round((zoom ?? 1) * 100)}%`;
