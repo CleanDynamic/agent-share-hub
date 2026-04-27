@@ -346,6 +346,18 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
           size={1}
           color="rgba(255,255,255,0.06)"
         />
+        {showMiniMap ? (
+          <MiniMap
+            pannable
+            zoomable
+            maskColor="rgba(15,15,20,0.6)"
+            style={{
+              background: 'rgba(20,20,28,0.85)',
+              border: '0.5px solid rgba(255,255,255,0.08)',
+              borderRadius: 6,
+            }}
+          />
+        ) : null}
       </ReactFlow>
       {ghost && (
         <div
