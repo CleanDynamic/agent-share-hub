@@ -813,7 +813,7 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           <ToolbarGroup>
             <ToolbarButton icon={Bold} label="Bold" shortcut="⌘B" isActive={isActive('bold')} onClick={run((c) => c.toggleBold().run())} />
             <ToolbarButton icon={Italic} label="Italic" shortcut="⌘I" isActive={isActive('italic')} onClick={run((c) => c.toggleItalic().run())} />
-            <ToolbarButton icon={Underline} label="Underline" shortcut="⌘U" onClick={soon('Underline')} />
+            <ToolbarButton icon={Underline} label="Underline" shortcut="⌘U" isActive={isActive('underline')} onClick={run((c) => c.toggleUnderline().run())} />
             <ToolbarButton icon={Code} label="Inline code" shortcut="⌘E" isActive={isActive('code')} onClick={run((c) => c.toggleCode().run())} />
           </ToolbarGroup>
 
