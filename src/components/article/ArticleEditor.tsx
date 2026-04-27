@@ -18,6 +18,8 @@ import { TopToolbar } from './TopToolbar';
 import { TableContextMenu } from './TableContextMenu';
 import { StatusBar } from './StatusBar';
 import { FormattingShortcuts } from './KeyboardShortcutsExtension';
+import { SearchHighlight } from './SearchHighlight';
+import { FindReplaceBar } from './FindReplaceBar';
 import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
 import type { SlashCommandItem } from './SlashCommandMenu';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
@@ -71,6 +73,8 @@ export function ArticleEditor({
   const [slashSelectedIndex, setSlashSelectedIndex] = useState(0);
   const [editorFocused, setEditorFocused] = useState(false);
   const [insertHovered, setInsertHovered] = useState(false);
+  const [findOpen, setFindOpen] = useState(false);
+  const [findShowReplace, setFindShowReplace] = useState(false);
   const slashStartPos = useRef<number | null>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const setDocumentTitle = useDocumentStore((state) => state.setDocumentTitle);
@@ -134,6 +138,7 @@ export function ArticleEditor({
       StageGridExtension,
       BlockRefExtension,
       FormattingShortcuts,
+      SearchHighlight,
     ],
     content: initialContent || {
       type: 'doc',
@@ -234,6 +239,22 @@ export function ArticleEditor({
       storage.articleEditor.canvasDoc = canvasDoc;
     }
   }, [editor, canvasDoc]);
+
+  // Cmd/Ctrl+F → find; Cmd/Ctrl+Shift+F → find + replace; Esc → close
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setFindOpen(true);
+        setFindShowReplace(e.shiftKey);
+      } else if (e.key === 'Escape' && findOpen) {
+        setFindOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [findOpen]);
 
   const slashItems = useMemo(() => {
     return getSlashCommandItems(slashQuery);
@@ -507,9 +528,24 @@ export function ArticleEditor({
           background: hsl(var(--primary, 18 79% 54%) / 0.5);
           cursor: col-resize;
         }
+        .tiptap-article .sh-match {
+          background: rgba(232, 87, 26, 0.25);
+          border-radius: 2px;
+        }
+        .tiptap-article .sh-match-active {
+          background: rgba(232, 87, 26, 0.5);
+        }
       `}</style>
 
       <TopToolbar editor={editor} onInsertBlock={() => handleQuickInsert('stage')} />
+
+      <FindReplaceBar
+        editor={editor}
+        open={findOpen}
+        showReplace={findShowReplace}
+        onClose={() => setFindOpen(false)}
+        onToggleReplace={setFindShowReplace}
+      />
 
       <TableContextMenu editor={editor}>
         <EditorContent
