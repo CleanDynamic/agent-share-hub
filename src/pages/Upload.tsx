@@ -414,6 +414,27 @@ const Upload = () => {
           })));
         }
 
+        // Restore the TipTap article body so the editor can mount with it
+        if ((item as any).article_body) {
+          (canvasDoc as any).articleBody = (item as any).article_body;
+          (canvasDoc as any)._articleBody = (item as any).article_body;
+        }
+
+        // Restore Stage Grid snapshot (stages / blocks / connections) into the
+        // in-memory document store used by the article editor's stage grids.
+        const sg = (item as any).stage_grids;
+        if (sg && typeof sg === 'object') {
+          try {
+            useDocumentStore.setState((state: any) => {
+              state.stages = sg.stages ?? {};
+              state.blocks = sg.blocks ?? {};
+              state.connections = sg.connections ?? {};
+            });
+          } catch (e) {
+            console.error('Failed to hydrate stage grids:', e);
+          }
+        }
+
         // Set draft meta for banner
         setDraftMeta({
           name: (item as any).draft_name || item.title || "Untitled draft",
@@ -565,6 +586,16 @@ const Upload = () => {
         draft_saved_at: new Date().toISOString(),
         draft_name: values.title || null,
         article_body: (canvasDoc as any)._articleBody ?? null,
+        stage_grids: (() => {
+          try {
+            const ds = useDocumentStore.getState();
+            return {
+              stages: ds.stages,
+              blocks: ds.blocks,
+              connections: ds.connections,
+            };
+          } catch { return null; }
+        })(),
       };
 
       let draftIdToUse = currentDraftId;
@@ -1085,12 +1116,23 @@ const Upload = () => {
         await canvasDoc.saveDocument(contentId);
       }
 
-      // ── Save article body (TipTap JSON) ──
+      // ── Save article body (TipTap JSON) + stage grid snapshot ──
       const articleBody = (canvasDoc as any)._articleBody;
-      if (articleBody) {
-        await supabase.from('content_items').update({
-          article_body: articleBody,
-        } as any).eq('id', contentId);
+      const stageGridsSnapshot = (() => {
+        try {
+          const ds = useDocumentStore.getState();
+          return {
+            stages: ds.stages,
+            blocks: ds.blocks,
+            connections: ds.connections,
+          };
+        } catch { return null; }
+      })();
+      if (articleBody || stageGridsSnapshot) {
+        const update: any = {};
+        if (articleBody) update.article_body = articleBody;
+        if (stageGridsSnapshot) update.stage_grids = stageGridsSnapshot;
+        await supabase.from('content_items').update(update).eq('id', contentId);
       }
 
       // ── Remaining metadata updates (safe to run after blocks are saved) ──
