@@ -11,7 +11,7 @@ export const StageGridExtension = Node.create({
   addAttributes() {
     return {
       stageId: { default: null },
-      stageTitle: { default: 'Untitled Stage' },
+      stageTitle: { default: '' },
       gridSpacing: { default: 20 },
       height: { default: null },
       openTemplatesOnMount: { default: false },
