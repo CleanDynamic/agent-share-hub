@@ -202,6 +202,32 @@ export function ArticleEditor({
           setSlashQuery(query);
         }
       }
+
+      // Block-reference picker triggered by "[["
+      if (textBefore.endsWith('[[') && !refOpen) {
+        const coords = editor.view.coordsAtPos($from.pos);
+        const containerRect = editorContainerRef.current?.getBoundingClientRect();
+        if (containerRect) {
+          setRefPos({
+            top: coords.top - containerRect.top + 24,
+            left: coords.left - containerRect.left,
+          });
+        }
+        refStartPos.current = $from.pos - 2;
+        setRefOpen(true);
+        setRefQuery('');
+        setRefSelectedIndex(0);
+      } else if (refOpen && refStartPos.current !== null) {
+        const from = refStartPos.current;
+        const to = $from.pos;
+        const query = state.doc.textBetween(from + 2, to, '');
+        if (query.includes('\n') || query.includes(']]') || to < from + 2) {
+          setRefOpen(false);
+          refStartPos.current = null;
+        } else {
+          setRefQuery(query);
+        }
+      }
     },
     editorProps: {
       handleKeyDown: (view, event) => {
