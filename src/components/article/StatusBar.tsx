@@ -14,6 +14,7 @@ import {
   CircleAlert,
   Focus,
   Users,
+  MessageCircle,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -37,6 +38,8 @@ interface StatusBarProps {
   zoom?: number;
   focusMode?: 'edit' | 'view' | 'focus';
   collaborators?: number;
+  unresolvedComments?: number;
+  onCommentsClick?: () => void;
   onZoomChange?: (zoom: number) => void;
   onMoreTemplates?: () => void;
   onMoreGrammarCheck?: () => void;
@@ -77,6 +80,8 @@ export function StatusBar({
   zoom = 100,
   focusMode = 'edit',
   collaborators = 0,
+  unresolvedComments = 0,
+  onCommentsClick,
   onZoomChange,
   onMoreTemplates,
   onMoreGrammarCheck,
