@@ -909,7 +909,42 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
             <ToolbarButton icon={Link} label="Insert link" shortcut="⌘K" onClick={handleLink} />
             <ToolbarButton icon={Image} label="Insert image" onClick={soon('Image')} />
             <ToolbarButton icon={Video} label="Insert video" onClick={soon('Video')} />
-            <ToolbarButton icon={Table} label="Insert table" onClick={soon('Table')} />
+            <TablePickerPopover
+              editor={editor}
+              trigger={
+                <button
+                  type="button"
+                  title="Insert table"
+                  aria-label="Insert table"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'hsl(var(--foreground) / 0.7)',
+                    padding: 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background =
+                      'hsl(var(--foreground) / 0.06)';
+                    (e.currentTarget as HTMLButtonElement).style.color =
+                      'hsl(var(--foreground) / 0.95)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                    (e.currentTarget as HTMLButtonElement).style.color =
+                      'hsl(var(--foreground) / 0.7)';
+                  }}
+                >
+                  <Table size={14} strokeWidth={1.8} />
+                </button>
+              }
+            />
             <ToolbarButton icon={LayoutGrid} label="Insert stage grid" onClick={onInsertBlock ?? soon('Stage grid')} />
             <ToolbarButton icon={FileSymlink} label="Insert block reference" onClick={soon('Block reference')} />
             <ToolbarButton icon={Minus} label="Insert divider" onClick={run((c) => c.setHorizontalRule().run())} />
