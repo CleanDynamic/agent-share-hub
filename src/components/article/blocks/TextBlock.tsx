@@ -11,6 +11,8 @@ import { Color } from '@tiptap/extension-color';
 import Placeholder from '@tiptap/extension-placeholder';
 
 import { useDocumentStore } from '@/lib/documentStore';
+import { isNameUnique } from '@/lib/variables';
+import { toast } from 'sonner';
 import {
   Sheet,
   SheetContent,
