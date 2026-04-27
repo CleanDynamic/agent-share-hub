@@ -42,7 +42,7 @@ export function StageGridNode({ node, updateAttributes, editor, getPos }: StageG
 
   // Live data from the store (falls back to TipTap attrs while the stage record
   // hasn't been hydrated yet)
-  const stageName = stageRecord?.stage_name ?? fallbackTitle;
+  const stageName = stageRecord?.stage_name ?? fallbackTitle ?? '';
   const widthMode = stageRecord?.width_mode ?? 'wide';
   const height = stageRecord?.height ?? persistedHeight;
 
