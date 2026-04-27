@@ -102,8 +102,16 @@ export function StageGridNode({ node, updateAttributes, editor }: StageGridNodeP
   // owned by StageFullscreen itself.
   const handleOpen = useCallback(() => {
     if (!stageId) return;
+    // Flush the latest article JSON to the parent cache BEFORE the editor
+    // unmounts; otherwise the inserted Stage Grid node would be lost when
+    // the user returns to the article view.
+    try {
+      const storage = (editor?.storage as any);
+      const publish = storage?.articleEditor?.publishLatest;
+      if (typeof publish === 'function') publish();
+    } catch (_) { /* noop */ }
     openStageAction(stageId);
-  }, [stageId, openStageAction]);
+  }, [stageId, openStageAction, editor]);
 
   // ── Render ────────────────────────────────────────────────
   return (
