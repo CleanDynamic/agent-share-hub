@@ -1496,6 +1496,62 @@ export type Database = {
           },
         ]
       }
+      document_comments: {
+        Row: {
+          anchor_data: Json
+          anchor_type: string
+          author_id: string
+          body: string
+          created_at: string
+          document_id: string
+          id: string
+          parent_comment_id: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          thread_id: string
+          updated_at: string
+        }
+        Insert: {
+          anchor_data?: Json
+          anchor_type: string
+          author_id: string
+          body: string
+          created_at?: string
+          document_id: string
+          id?: string
+          parent_comment_id?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          thread_id: string
+          updated_at?: string
+        }
+        Update: {
+          anchor_data?: Json
+          anchor_type?: string
+          author_id?: string
+          body?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          parent_comment_id?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          thread_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "document_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       downloads: {
         Row: {
           content_id: string

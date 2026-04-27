@@ -14,6 +14,7 @@ import {
   CircleAlert,
   Focus,
   Users,
+  MessageCircle,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -37,6 +38,8 @@ interface StatusBarProps {
   zoom?: number;
   focusMode?: 'edit' | 'view' | 'focus';
   collaborators?: number;
+  unresolvedComments?: number;
+  onCommentsClick?: () => void;
   onZoomChange?: (zoom: number) => void;
   onMoreTemplates?: () => void;
   onMoreGrammarCheck?: () => void;
@@ -77,6 +80,8 @@ export function StatusBar({
   zoom = 100,
   focusMode = 'edit',
   collaborators = 0,
+  unresolvedComments = 0,
+  onCommentsClick,
   onZoomChange,
   onMoreTemplates,
   onMoreGrammarCheck,
@@ -245,6 +250,21 @@ export function StatusBar({
             <span>{collaborators}</span>
           </div>
         ) : null}
+
+        <button
+          type="button"
+          onClick={onCommentsClick}
+          style={{
+            ...itemButtonStyle,
+            cursor: onCommentsClick ? 'pointer' : 'default',
+            color: unresolvedComments > 0 ? 'hsl(18 79% 70%)' : itemButtonStyle.color,
+          }}
+          aria-label={`${unresolvedComments} unresolved comments`}
+          title={`${unresolvedComments} unresolved comment${unresolvedComments === 1 ? '' : 's'}`}
+        >
+          <MessageCircle size={12} strokeWidth={1.8} />
+          <span>{unresolvedComments}</span>
+        </button>
 
         <div style={{ ...itemButtonStyle, cursor: 'default' }}>
           <Focus size={12} strokeWidth={1.8} />
