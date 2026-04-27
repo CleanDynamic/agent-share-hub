@@ -41,6 +41,7 @@ const nodeTypes = {
   result: ResultBlockNode,
   resource: ResourceBlockNode,
   tool: ToolBlockNode,
+  workflow: WorkflowBlockNode,
 };
 
 const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
@@ -55,6 +56,7 @@ const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
   result: 'result',
   resource: 'resource',
   tool: 'tool',
+  workflow: 'workflow',
 };
 
 
