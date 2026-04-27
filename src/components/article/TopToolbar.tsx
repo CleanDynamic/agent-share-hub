@@ -768,6 +768,57 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
     setLinkOpen(true);
   };
 
+  // Image insertion popover state
+  const [imageOpen, setImageOpen] = React.useState(false);
+  const [imageUrl, setImageUrl] = React.useState('');
+  const [imageAlt, setImageAlt] = React.useState('');
+  const insertImage = () => {
+    if (!editor) return;
+    const src = imageUrl.trim();
+    if (!src) return;
+    editor.chain().focus().setImage({ src, alt: imageAlt.trim() || undefined }).run();
+    setImageUrl('');
+    setImageAlt('');
+    setImageOpen(false);
+  };
+
+  // Video insertion popover state
+  const [videoOpen, setVideoOpen] = React.useState(false);
+  const [videoUrl, setVideoUrl] = React.useState('');
+  const insertVideo = () => {
+    if (!editor) return;
+    const url = videoUrl.trim();
+    if (!url) return;
+
+    let html = '';
+    // YouTube
+    const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
+    if (ytMatch) {
+      html = `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+    } else {
+      // Vimeo
+      const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+      if (vimeoMatch) {
+        html = `<div class="video-embed"><iframe src="https://player.vimeo.com/video/${vimeoMatch[1]}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>`;
+      } else if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(url)) {
+        // Direct video file
+        html = `<div class="video-embed"><video controls src="${url}"></video></div>`;
+      } else {
+        // Fallback: treat as iframe-able URL
+        html = `<div class="video-embed"><iframe src="${url}" allowfullscreen></iframe></div>`;
+      }
+    }
+
+    editor.chain().focus().insertContent(html).run();
+    setVideoUrl('');
+    setVideoOpen(false);
+  };
+
+  const insertBlockReference = () => {
+    if (!editor) return;
+    editor.chain().focus().insertContent('@').run();
+  };
+
   return (
     <TooltipProvider delayDuration={150}>
       <div
