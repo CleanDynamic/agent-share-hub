@@ -18,6 +18,8 @@ import { TopToolbar } from './TopToolbar';
 import { TableContextMenu } from './TableContextMenu';
 import { StatusBar } from './StatusBar';
 import { FormattingShortcuts } from './KeyboardShortcutsExtension';
+import { SearchHighlight } from './SearchHighlight';
+import { FindReplaceBar } from './FindReplaceBar';
 import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
 import type { SlashCommandItem } from './SlashCommandMenu';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
