@@ -240,6 +240,22 @@ export function ArticleEditor({
     }
   }, [editor, canvasDoc]);
 
+  // Cmd/Ctrl+F → find; Cmd/Ctrl+Shift+F → find + replace; Esc → close
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setFindOpen(true);
+        setFindShowReplace(e.shiftKey);
+      } else if (e.key === 'Escape' && findOpen) {
+        setFindOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [findOpen]);
+
   const slashItems = useMemo(() => {
     return getSlashCommandItems(slashQuery);
   }, [slashQuery]);
