@@ -723,10 +723,11 @@ const Upload = () => {
       }
 
       const now = new Date().toISOString();
-      setDraftMeta({ name: values.title || "Untitled draft", savedAt: now });
+      const savedName = draftName?.trim() || values.title || draftMeta?.name || "Untitled draft";
+      setDraftMeta({ name: savedName, savedAt: now });
       lastAutosaveRef.current = new Date();
 
-      if (!silent) toast({ title: "Draft saved ✓" });
+      if (!silent) toast({ title: `Saved “${savedName}”`, description: "Draft saved to your library." });
       return draftIdToUse;
     } catch (err: any) {
       if (!silent) toast({ title: "Failed to save draft", description: err?.message, variant: "destructive" });
