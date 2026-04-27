@@ -26,12 +26,6 @@ interface StageGridFrameProps {
   onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-const blockTypeColors: Record<BlockType, string> = {
-  text: '#3B82F6',
-  prompt: '#8B5CF6',
-  code: '#10B981',
-  result: '#F59E0B',
-};
 
 export function StageGridFrame({
   stageNumber,
@@ -41,7 +35,6 @@ export function StageGridFrame({
   height = 280,
   onRename,
   onDelete,
-  onQuickInsert,
   onOpenTemplates,
   onResize,
   onContextMenu,
@@ -109,13 +102,6 @@ export function StageGridFrame({
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   };
-
-  const quickInsertButtons: { type: BlockType; label: string }[] = [
-    { type: 'text', label: '+ Text' },
-    { type: 'prompt', label: '+ Prompt' },
-    { type: 'code', label: '+ Code' },
-    { type: 'result', label: '+ Result' },
-  ];
 
   const overlayVisible = hovered || isEditing || isResizing;
 
@@ -251,27 +237,6 @@ export function StageGridFrame({
               Templates
             </button>
           ) : null}
-          <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto pointer-events-auto" style={{ scrollbarWidth: 'none' }}>
-            {quickInsertButtons.map(({ type, label }) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => onQuickInsert?.(type)}
-                className="flex-shrink-0 px-2 py-0.5 text-[10.5px] font-medium text-white/55 rounded-[5px] border border-dashed border-white/15 hover:border-solid transition-all"
-                style={{ fontFamily: 'Inter, sans-serif' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = blockTypeColors[type];
-                  e.currentTarget.style.color = blockTypeColors[type];
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
