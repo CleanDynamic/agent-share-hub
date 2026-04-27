@@ -11,6 +11,7 @@
  */
 
 import { useDocumentStore } from '@/lib/documentStore';
+import { eventBus } from '@/lib/eventBus';
 import type { Block, BlockType } from '@/types/document';
 
 // ─── Accent colors (must mirror BlockLibraryTool's BLOCKS palette) ──
@@ -120,6 +121,10 @@ export function insertBlockInStage(
 ): string {
   const store = useDocumentStore.getState();
 
+  const existingCount = Object.values(store.blocks).filter(
+    (b) => b.stage_id === stageId,
+  ).length;
+
   let x: number;
   let y: number;
 
@@ -127,12 +132,9 @@ export function insertBlockInStage(
     x = options.position.x;
     y = options.position.y;
   } else {
-    const count = Object.values(store.blocks).filter(
-      (b) => b.stage_id === stageId,
-    ).length;
     const cols = Math.max(1, Math.floor(CLICK_CANVAS_WIDTH / CLICK_GRID_COL_WIDTH));
-    x = (count * CLICK_GRID_COL_WIDTH) % CLICK_CANVAS_WIDTH;
-    y = CLICK_GRID_TOP + Math.floor(count / cols) * CLICK_GRID_ROW_HEIGHT;
+    x = (existingCount * CLICK_GRID_COL_WIDTH) % CLICK_CANVAS_WIDTH;
+    y = CLICK_GRID_TOP + Math.floor(existingCount / cols) * CLICK_GRID_ROW_HEIGHT;
   }
 
   const id = uuid();
@@ -156,6 +158,12 @@ export function insertBlockInStage(
   store.addBlock(block);
   store.setSelection({ kind: 'block', ids: [id] });
   markBlockNewlyCreated(id);
+
+  // First block into an empty stage → ask the canvas to fit-view so the
+  // user lands looking at their new block, not at empty origin space.
+  if (existingCount === 0) {
+    eventBus.emit('canvas:fit-needed', { stageId });
+  }
 
   return id;
 }
