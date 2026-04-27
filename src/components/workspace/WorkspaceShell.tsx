@@ -11,7 +11,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSelection } from '@/hooks/useSelection';
 import { useDocumentStore } from '@/lib/documentStore';
-import { eventBus } from '@/lib/eventBus';
+
 import { insertBlockInStage } from '@/lib/blockInsertion';
 import {
   useWorkspaceStore,
@@ -109,14 +109,18 @@ export function WorkspaceShell() {
   const stageOpenRef = useRef(stageOpen);
   stageOpenRef.current = stageOpen;
 
+  // Derive stage-open from the document store (single source of truth) and
+  // mirror it into the workspace store so the rest of the tab logic
+  // (visibility, default tool, return-to-Inspector on close) keeps working
+  // exactly as before.
+  const docStageOpenMap = useDocumentStore((s) => s.stageOpen);
+  const docStageOpen = useMemo(
+    () => Object.values(docStageOpenMap).some(Boolean),
+    [docStageOpenMap],
+  );
   useEffect(() => {
-    const offOpen = eventBus.on('stage:opened', () => setStageOpen(true));
-    const offClose = eventBus.on('stage:closed', () => setStageOpen(false));
-    return () => {
-      offOpen();
-      offClose();
-    };
-  }, [setStageOpen]);
+    setStageOpen(docStageOpen);
+  }, [docStageOpen, setStageOpen]);
 
   // ── Selection-driven auto-switch (Step 1.7) ──────────────────────
   // Skipped while a stage is open so the user stays parked on Library.

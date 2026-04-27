@@ -1,70 +1,89 @@
-# Plan: Wire block insertion when a stage is open in full mode
+# Fix fullscreen stage: swap, don't overlay
 
-The previous attempt at this prompt was incomplete: `src/lib/blockInsertion.ts` was never created, `WorkspaceShell` doesn't pass any handler to `BlockLibraryTool`, `BlockLibraryTool` has no `onBlockClick` prop, and `StageCanvas` has no drop handlers. This plan completes all four parts of the original spec.
+The current "full mode" renders a `position: fixed` overlay from inside the TipTap node, while the article editor (header, toolbar, writing canvas, action row, status bar) stays mounted underneath. Result: blocks visibly overlap the editor and the editor still claims focus/scroll.
 
-## What gets built
+The fix is structural: at the middle-panel level, conditionally render either the article editor or a new `<StageFullscreen>`. Nothing overlays anything.
 
-### 1. New file: `src/lib/blockInsertion.ts`
+## What the user will experience
 
-A small shared module exposing:
+- Click a stage thumbnail → the middle panel's content is replaced. Article editor (header strip, TipTap toolbar, writing canvas, Insert Grid / Save / Publish row, bottom status strip) is gone — not hidden, unmounted. The middle panel itself (background, border-radius, padding) is unchanged. Left nav and right workspace panel keep working.
+- The replacement surface: thin top strip with a single "Back to article" button on the left, dot-grid React Flow canvas filling the centre, thin bottom bar with zoom −/100%/+, fit-view, and minimap-toggle controls right-aligned.
+- Press **Esc** or click **Back to article** → article editor re-mounts with all state intact, and the page smooth-scrolls to the thumbnail of the stage that was just open.
+- Right workspace panel still auto-reorders to put Block Library first while a stage is open (behaviour from Prompt 5 unchanged — only the trigger wiring changes).
 
-- `BLOCK_TYPE_ACCENT: Record<BlockType, string>` — accent colors mirroring the Block Library palette, used by both the ghost-preview and (later) other consumers.
-- `insertBlockInStage(stageId, type, opts?)` — creates a `Block`, calls `documentStore.addBlock`, sets selection to the new block, and registers it as "newly created" so the canvas can play the scale-in.
-  - **Click placement** (no `position` passed): auto-place using `x = (count * 240) % canvasWidth`, `y = 100 + floor(count / cols) * 160`, with `cols = max(1, floor(canvasWidth / 240))`, `canvasWidth = 1200` default.
-  - **Drop placement** (explicit `position` passed): use given `x, y` (caller already snapped).
-  - Default size: 220×120. Default `name`: capitalized type. Default `properties: {}`, `locked: false`, `z_index: 0`.
-- `markBlockNewlyCreated(blockId)` / `isBlockNewlyCreated(blockId)` / `subscribeNewlyCreated(listener)` — tiny in-memory set with subscribers; entries auto-clear after 250ms (long enough to outlast the 200ms animation).
+## Implementation
 
-### 2. `BlockLibraryTool` — accept `onBlockClick`
+### 1. New file: `src/components/article/stage/StageFullscreen.tsx`
 
-- Add `onBlockClick?: (blockType: string) => void` to props and forward to each `BlockCard`.
-- `BlockCard` gets a single-click handler that calls `onBlockClick`. Drag and double-click handlers stay as-is.
-- Update the bottom hint text to `"Click or drag a block to add it"` so the click affordance is discoverable. (Visual styling unchanged.)
+Props: `{ stageId: string; onClose: () => void }`.
 
-### 3. `WorkspaceShell` — provide the click handler
+Layout (single column, `height: 100%`, `display: flex; flex-direction: column`):
 
-- Subscribe to `documentStore.stageOpen` to find the currently-open stage id (`Object.keys(stageOpen).find((id) => stageOpen[id])`).
-- Define `handleLibraryClick(type)`: if no stage is open, no-op. Otherwise call `insertBlockInStage(openStageId, type)`.
-- Render `<BlockLibraryTool onBlockClick={handleLibraryClick} />` instead of the bare component.
+- **Top strip** — 44px tall, `padding: 8px 14px`, transparent, `border-bottom: 0.5px solid rgba(255,255,255,0.06)`. Contains only the "Back to article" button (left-aligned, lucide `ArrowLeft` 14px, label "Back to article" Inter 12px/500 `rgba(255,255,255,0.75)`, bg `rgba(255,255,255,0.04)`, border `0.5px solid rgba(255,255,255,0.06)`, `border-radius: 6px`, `padding: 6px 10px`, `gap: 6px`; hover bg `rgba(255,255,255,0.08)`). Clicking calls `onClose`.
+- **Canvas body** — `flex: 1; min-height: 0`. Renders the existing React Flow canvas via the new `<StageCanvasInner stageId={stageId} />` (see §3). No overlaid frame, no name header, no Templates button.
+- **Bottom bar** — 36px tall, `padding: 6px 14px`, transparent, `border-top: 0.5px solid rgba(255,255,255,0.06)`, `display: flex; justify-content: flex-end; align-items: center; gap: 0`. In order:
+  - Zoom group: `−` icon button (lucide `Minus` 12px), label `100%` (Inter 11px/500 `rgba(255,255,255,0.70)`, `font-variant-numeric: tabular-nums`, `min-width: 36px; text-align: center`), `+` icon button (lucide `Plus` 12px). Each button 24px square, `border-radius: 5px`, hover bg `rgba(255,255,255,0.06)`. `−`/`+` call `zoomTo(clamp(currentZoom ± 0.1, 0.25, 2))` using `useReactFlow().getViewport()` and `setViewport` (or `zoomIn/zoomOut` with `duration: 0`). Label reflects the current zoom rounded to whole percent; subscribe via `useOnViewportChange`.
+  - 1px vertical divider, height 16px, `rgba(255,255,255,0.06)`, `margin: 0 8px`.
+  - Fit-view icon button (lucide `Maximize` 14px, `rgba(255,255,255,0.70)`). Click → `fitView({ padding: 0.15, duration: 200 })`.
+  - 1px divider (same).
+  - Minimap toggle (lucide `Map` 14px). Local `useState` boolean. When active: icon `#E8571A`, bg `rgba(232,87,26,0.10)`. Active state passed down to render React Flow's `<MiniMap />` inside the canvas.
 
-### 4. `StageCanvas` — drag-to-place + ghost preview
+`StageFullscreen` itself wraps everything in **one** `<ReactFlowProvider>` so the bottom-bar hooks share the same React Flow store as the canvas.
 
-- Wrap the existing `<ReactFlow>` in a `ReactFlowProvider` (needed so `useReactFlow().screenToFlowPosition` works inside the canvas component). Split into a thin outer `StageCanvas` that provides, and an inner `StageCanvasInner` that consumes.
-- Add local `ghost` state: `{ x, y, type } | null`.
-- `onDragOver(e)`: if `dataTransfer.types.includes('application/x-block-type')`, `e.preventDefault()`, set `dropEffect = 'copy'`, compute flow coords via `screenToFlowPosition({ x: e.clientX, y: e.clientY })`, snap each axis to nearest 20px, update `ghost`. Read the dragged block's type defensively from a module-level `currentDragType` ref set by `BlockCard.onDragStart` (since `dataTransfer.getData` is empty during dragover in most browsers).
-- `onDrop(e)`: read `application/x-block-type`, snap, call `insertBlockInStage(stageId, type, { position: { x, y } })`, clear `ghost`.
-- `onDragLeave`: clear `ghost`.
-- Ghost element: an absolutely-positioned 220×120 div, dashed 1px border in the type's accent color at 0.4 opacity, transformed by the React Flow viewport. Render inside the React Flow viewport via a small overlay div using `useReactFlow().getViewport()` to translate, OR render in CSS coords by converting flow→screen with `flowToScreenPosition`. Use the screen-coord approach to avoid React Flow internals.
-- The currently used `currentDragType` module ref lives in `blockInsertion.ts` (`setDragType` / `getDragType` / `clearDragType`); `BlockCard.handleDragStart` sets it, `onDrop`/`dragend` clears it.
+Esc key: `useHotkeys('esc', onClose, { enabled: true })` from `react-hotkeys-hook` (already a dep).
 
-### 5. Scale-in animation
+### 2. Middle-panel wiring — `src/pages/Upload.tsx`
 
-- Pick the smallest possible surface: wrap each registered block component (e.g. `PromptBlockNode`, `TextBlockNode`, etc.) is too many files. Instead, add the wrapper at the React Flow level by injecting a CSS class on `Node.className` when `isBlockNewlyCreated(block.id)` returns true at render time. The class `.block-scale-in` is defined in the existing `<style>` block inside `StageCanvas` and applies `@keyframes` from 0.96 → 1.0 over 200ms.
-- `StageCanvasInner` subscribes to `subscribeNewlyCreated` to force a re-render so the class actually paints (since the in-memory set is outside Zustand).
+`openStageId` already lives here as React state but is currently fed by event-bus listeners. Switch the source of truth to the document store:
 
-### 6. Selection auto-switch override (already in place)
+- Replace the local `useState<string | null>(null)` + `eventBus.on('stage:opened' / 'stage:closed')` block with a derived value:
+  ```ts
+  const stageOpenMap = useDocumentStore((s) => s.stageOpen);
+  const openStageId = useMemo(
+    () => Object.keys(stageOpenMap).find((id) => stageOpenMap[id]) ?? null,
+    [stageOpenMap],
+  );
+  ```
+- Inside the `data-editor-middle-panel` container, conditionally render:
+  - `openStageId === null` → existing `CanvasHeader` + `ArticleEditor` block (drop the `display: none` wrapper around `CanvasHeader`; it's no longer needed).
+  - `openStageId !== null` → `<StageFullscreen stageId={openStageId} onClose={() => useDocumentStore.getState().closeStage()} />` only. The header/editor JSX is not in the tree.
+- Scroll-to-thumbnail on close: `useEffect` watching `openStageId`. When it transitions from a string `prev` to `null`, `setTimeout(() => document.querySelector('[data-stage-id="' + prev + '"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50)`.
 
-- `WorkspaceShell` already gates the selection effect behind `stageOpenRef.current` (lines 122–131). After insertion, `setSelection({ kind: 'block', ids: [newId] })` will fire but the effect skips. The active tool stays on Library. ✓ Confirmed by reading current code.
+### 3. `src/components/article/stage/StageCanvas.tsx` — minimal additive change
 
-### 7. Defensive no-op when no stage is open
+Today the file exports `StageCanvas`, which internally wraps `StageCanvasInner` in its own `ReactFlowProvider`. To let `StageFullscreen` own the provider (so its bottom-bar hooks can drive zoom/fit), also `export` the existing `StageCanvasInner`. Behaviour unchanged for current callers; `StageFullscreen` imports `StageCanvasInner` directly. Optional `<MiniMap />` is rendered inside `StageCanvasInner` only if `StageFullscreen` injects it via a new optional `overlay?: ReactNode` prop on `StageCanvasInner` — this keeps the React Flow viewport/store unified. (No other behaviour changes.)
 
-- `handleLibraryClick` early-returns if `openStageId` is null.
-- `BlockLibraryTool` itself is hidden in article mode (Prompt 5 wiring already in place), so this is belt-and-suspenders.
-- Drag from a card while no stage is open: `onDragOver` won't be called on the canvas (canvas isn't mounted), and dropping anywhere else does nothing because no other surface accepts `application/x-block-type`.
+### 4. `src/components/article/StageGridNode.tsx` — strip the overlay
+
+- Delete the entire fullscreen branch (lines that render `data-stage-fullscreen-portal` + `<FullStageOverlay>`) and the `FullStageOverlay` component.
+- Always render the `StageThumbnail` branch (when not open, identical to today; when open, the thumbnail still mounts in document flow so `scrollIntoView` has a target — `StageFullscreen` covers it via the middle-panel swap, so this is fine and matches step 8 of the spec).
+- `handleOpen` still calls `openStageAction(stageId)` (the document store). Drop the `eventBus.emit('stage:opened' / 'stage:closed')` calls and the local Esc keydown handler — Esc is now owned by `StageFullscreen`. The cleanup-emit on unmount is also removed.
+
+### 5. Workspace tab logic — `src/components/workspace/WorkspaceShell.tsx`
+
+Per spec step 6, only the trigger source changes. Replace the event-bus subscription with a derived subscription to the document store:
+
+```ts
+const stageOpenMap = useDocumentStore((s) => s.stageOpen);
+const docStageOpen = useMemo(
+  () => Object.values(stageOpenMap).some(Boolean),
+  [stageOpenMap],
+);
+useEffect(() => { setStageOpen(docStageOpen); }, [docStageOpen, setStageOpen]);
+```
+
+Remove the `eventBus.on('stage:opened' / 'stage:closed')` effect. Everything downstream (`STAGE_MODE_ORDER`, Library auto-active, return-to-Inspector on close) already derives from `useWorkspaceStore.stageOpen` and is unchanged.
+
+### 6. Cleanup
+
+- `src/lib/eventBus.ts`: leave `'stage:opened' / 'stage:closed'` in the type map (low-risk, no remaining emitters/subscribers after the changes above). No new emitters.
 
 ## Files touched
 
-```text
-src/lib/blockInsertion.ts                              (NEW)
-src/components/workspace/tools/BlockLibraryTool.tsx   (add onBlockClick prop, update hint text)
-src/components/workspace/WorkspaceShell.tsx           (pass handleLibraryClick to library)
-src/components/article/stage/StageCanvas.tsx          (ReactFlowProvider split, drop handlers, ghost, scale-in CSS, newly-created subscription)
-```
+- **new** `src/components/article/stage/StageFullscreen.tsx`
+- `src/pages/Upload.tsx` — swap conditional rendering in the middle panel; derive `openStageId` from the store; add scroll-on-close effect.
+- `src/components/article/StageGridNode.tsx` — remove fullscreen overlay branch and `FullStageOverlay`; remove event-bus emits and local Esc handler.
+- `src/components/article/stage/StageCanvas.tsx` — additive: export `StageCanvasInner`; add optional `overlay` slot for the MiniMap.
+- `src/components/workspace/WorkspaceShell.tsx` — replace event-bus stage subscription with a `useDocumentStore` derived effect.
 
-No other component is touched. Block Library visuals, canvas pan/zoom, and existing node renderers stay exactly as-is.
-
-## Out of scope (intentionally)
-
-- No persistence beyond the existing `documentStore.addBlock` (it already adds to `dirty` for the autosave loop).
-- No multi-stage drop targeting — drops are only handled inside the open stage's canvas.
-- No keyboard insertion path (`/` palette is a separate prompt).
+Not touched (per spec): `StageThumbnail`, `ArticleEditor`, the rest of the workspace tab logic.

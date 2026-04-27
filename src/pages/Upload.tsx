@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { z } from "zod";
@@ -39,7 +39,8 @@ import { ArticleEditor } from '@/components/article/ArticleEditor';
 import type { EvidenceMediaType } from '@/components/canvas/CanvasHeader';
 import { CanvasHeader } from '@/components/canvas/CanvasHeader';
 import { TemplateLibrary } from '@/components/canvas/TemplateLibrary';
-import { eventBus } from '@/lib/eventBus';
+import { useDocumentStore } from '@/lib/documentStore';
+import { StageFullscreen } from '@/components/article/stage/StageFullscreen';
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -234,16 +235,33 @@ const Upload = () => {
   const [submitting, setSubmitting] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [templateLibOpen, setTemplateLibOpen] = useState(false);
-  // Tracks whether a stage grid is currently expanded into full mode. When
-  // true, the editor's CanvasHeader (BLUEPRINT pill, Title, Description,
-  // Your results) is hidden so the stage can fill the middle panel.
-  const [openStageId, setOpenStageId] = useState<string | null>(null);
+  // Open stage id is derived from the document store (single source of
+  // truth). When non-null, the middle panel renders <StageFullscreen />
+  // instead of the article editor — a real swap, not an overlay.
+  const stageOpenMap = useDocumentStore((s) => s.stageOpen);
+  const closeStageAction = useDocumentStore((s) => s.closeStage);
+  const openStageId = useMemo(
+    () => Object.keys(stageOpenMap).find((id) => stageOpenMap[id]) ?? null,
+    [stageOpenMap],
+  );
 
+  // After closing a stage, scroll the article view back to the thumbnail
+  // so the user lands at their previous position.
+  const prevOpenStageIdRef = useRef<string | null>(null);
   useEffect(() => {
-    const offOpen = eventBus.on('stage:opened', ({ stageId }) => setOpenStageId(stageId));
-    const offClose = eventBus.on('stage:closed', () => setOpenStageId(null));
-    return () => { offOpen(); offClose(); };
-  }, []);
+    const prev = prevOpenStageIdRef.current;
+    prevOpenStageIdRef.current = openStageId;
+    if (prev && !openStageId) {
+      const justClosed = prev;
+      window.setTimeout(() => {
+        const el = document.querySelector(`[data-stage-id="${justClosed}"]`);
+        if (el && typeof (el as HTMLElement).scrollIntoView === 'function') {
+          (el as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 50);
+    }
+  }, [openStageId]);
+
   const [success, setSuccess] = useState(false);
   const [insertedContentId, setInsertedContentId] = useState<string | null>(null);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
@@ -1226,7 +1244,6 @@ const Upload = () => {
 
   // ── Article mode: after type is chosen, render ArticleEditor ──
   if (!showTypeChooser && !success) {
-    const stageOpen = openStageId !== null;
     return (
       <div
         data-editor-middle-panel=""
@@ -1239,20 +1256,25 @@ const Upload = () => {
           position: 'relative',
         }}
       >
-        {/* Main scroll area */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 0,
-        }}>
-          {/* Document header — reuses CanvasHeader. Hidden (display:none, not
-              unmounted) while a stage grid is opened in full mode so the
-              stage can take over the middle panel without disturbing
-              component state. */}
-          <div style={{ display: stageOpen ? 'none' : undefined }} aria-hidden={stageOpen || undefined}>
+        {openStageId !== null ? (
+          // STAGE MODE — replace the article editor entirely. The
+          // CanvasHeader, TipTap toolbar, writing canvas, action row,
+          // and status strip are NOT mounted here.
+          <StageFullscreen
+            stageId={openStageId}
+            onClose={() => closeStageAction()}
+          />
+        ) : (
+          // ARTICLE MODE — original editor surface.
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+          }}>
+            {/* Document header — reuses CanvasHeader. */}
             <CanvasHeader
               mode="edit"
               title={form.watch('title') ?? ''}
@@ -1278,45 +1300,45 @@ const Upload = () => {
               }}
               onEvidenceCaptionChange={setEvidenceCaption}
             />
-          </div>
 
-          {/* Article body — TipTap editor */}
-          <div style={{
-            flex: 1,
-            padding: '0 20px 40px',
-          }}>
-            <ArticleEditor
-              canvasDoc={canvasDoc}
-              initialContent={(canvasDoc as any).articleBody ?? undefined}
-              documentTitle={form.watch('title') ?? ''}
-              onChange={(json) => {
-                // Store article body for save
-                (canvasDoc as any)._articleBody = json;
-              }}
-              onSelectedStageChange={setSelectedStageId}
-              onOpenTemplates={() => setTemplateLibOpen(true)}
-              onOpenHistory={() => {}}
-              onOpenNotes={() => {}}
-              onGrammarCheck={() => {}}
-              onClearAll={() => {}}
-              onSave={() => {
-                saveDraft(false);
-                canvasDoc.saveDocument(currentDraftId ?? '');
-              }}
-              onPublish={() => {
-                const title = form.getValues('title');
-                if (!title || !title.trim()) {
-                  toast({ title: 'Title required', description: 'Add a title before publishing.', variant: 'destructive' });
-                  return;
-                }
-                form.handleSubmit(onSubmit)();
-              }}
-              saving={savingDraft}
-              publishing={submitting}
-              editable
-            />
+            {/* Article body — TipTap editor */}
+            <div style={{
+              flex: 1,
+              padding: '0 20px 40px',
+            }}>
+              <ArticleEditor
+                canvasDoc={canvasDoc}
+                initialContent={(canvasDoc as any).articleBody ?? undefined}
+                documentTitle={form.watch('title') ?? ''}
+                onChange={(json) => {
+                  // Store article body for save
+                  (canvasDoc as any)._articleBody = json;
+                }}
+                onSelectedStageChange={setSelectedStageId}
+                onOpenTemplates={() => setTemplateLibOpen(true)}
+                onOpenHistory={() => {}}
+                onOpenNotes={() => {}}
+                onGrammarCheck={() => {}}
+                onClearAll={() => {}}
+                onSave={() => {
+                  saveDraft(false);
+                  canvasDoc.saveDocument(currentDraftId ?? '');
+                }}
+                onPublish={() => {
+                  const title = form.getValues('title');
+                  if (!title || !title.trim()) {
+                    toast({ title: 'Title required', description: 'Add a title before publishing.', variant: 'destructive' });
+                    return;
+                  }
+                  form.handleSubmit(onSubmit)();
+                }}
+                saving={savingDraft}
+                publishing={submitting}
+                editable
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Template library panel */}
         <TemplateLibrary

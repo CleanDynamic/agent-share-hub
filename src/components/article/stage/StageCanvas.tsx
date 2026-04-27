@@ -4,6 +4,7 @@ import {
   ReactFlowProvider,
   Background,
   BackgroundVariant,
+  MiniMap,
   useReactFlow,
   type Connection as RFConnection,
   type Edge,
@@ -40,6 +41,8 @@ import { WorkflowBlockNode } from '../blocks/WorkflowBlock';
 
 interface StageCanvasProps {
   stageId: string;
+  /** Show React Flow's MiniMap inside the canvas. Default false. */
+  showMiniMap?: boolean;
 }
 
 const nodeTypes = {
@@ -104,15 +107,15 @@ function connectionToEdge(conn: Connection): Edge {
   };
 }
 
-export function StageCanvas({ stageId }: StageCanvasProps) {
+export function StageCanvas({ stageId, showMiniMap }: StageCanvasProps) {
   return (
     <ReactFlowProvider>
-      <StageCanvasInner stageId={stageId} />
+      <StageCanvasInner stageId={stageId} showMiniMap={showMiniMap} />
     </ReactFlowProvider>
   );
 }
 
-function StageCanvasInner({ stageId }: StageCanvasProps) {
+export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasProps) {
   const blocks = useDocumentStore((s) => s.blocks);
   const connections = useDocumentStore((s) => s.connections);
   const moveBlock = useDocumentStore((s) => s.moveBlock);
@@ -290,7 +293,7 @@ function StageCanvasInner({ stageId }: StageCanvasProps) {
   return (
     <div
       ref={wrapperRef}
-      className="absolute inset-0 stage-canvas-root"
+      className={`absolute inset-0 stage-canvas-root${showMiniMap ? '' : ' no-minimap'}`}
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragLeave={onDragLeave}
@@ -306,8 +309,10 @@ function StageCanvasInner({ stageId }: StageCanvasProps) {
         .stage-canvas-root .react-flow__attribution {
           display: none !important;
         }
-        .stage-canvas-root .react-flow__minimap,
         .stage-canvas-root .react-flow__controls {
+          display: none !important;
+        }
+        .stage-canvas-root.no-minimap .react-flow__minimap {
           display: none !important;
         }
         @keyframes block-scale-in {
@@ -341,6 +346,18 @@ function StageCanvasInner({ stageId }: StageCanvasProps) {
           size={1}
           color="rgba(255,255,255,0.06)"
         />
+        {showMiniMap ? (
+          <MiniMap
+            pannable
+            zoomable
+            maskColor="rgba(15,15,20,0.6)"
+            style={{
+              background: 'rgba(20,20,28,0.85)',
+              border: '0.5px solid rgba(255,255,255,0.08)',
+              borderRadius: 6,
+            }}
+          />
+        ) : null}
       </ReactFlow>
       {ghost && (
         <div
