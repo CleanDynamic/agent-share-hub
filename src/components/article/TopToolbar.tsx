@@ -811,19 +811,6 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           <Divider />
 
           <ToolbarGroup>
-            <ToolbarDropdown
-              label="Block style"
-              shortcut="⌘⌥0"
-              value={getBlockStyleLabel(blockStyle)}
-              options={blockStyleOptions}
-              onChange={setBlockStyle}
-              width={110}
-            />
-          </ToolbarGroup>
-
-          <Divider />
-
-          <ToolbarGroup>
             <ToolbarButton icon={Bold} label="Bold" shortcut="⌘B" isActive={isActive('bold')} onClick={run((c) => c.toggleBold().run())} />
             <ToolbarButton icon={Italic} label="Italic" shortcut="⌘I" isActive={isActive('italic')} onClick={run((c) => c.toggleItalic().run())} />
             <ToolbarButton icon={Underline} label="Underline" shortcut="⌘U" onClick={soon('Underline')} />
