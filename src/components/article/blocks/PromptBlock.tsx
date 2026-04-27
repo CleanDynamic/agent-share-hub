@@ -115,7 +115,16 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
     [block, blockId, updateBlock],
   );
 
-  const onNameChange = (v: string) => updateBlock(blockId, { name: v });
+  const [nameError, setNameError] = React.useState<string | null>(null);
+  const onNameChange = (v: string) => {
+    if (!isNameUnique(v, blockId, allBlocks)) {
+      setNameError(`Name "${v.trim()}" is already used by another block.`);
+      // Do NOT persist a duplicate name.
+      return;
+    }
+    setNameError(null);
+    updateBlock(blockId, { name: v });
+  };
   const onPromptChange = (v: string) => patchProps({ prompt: v });
   const onSystemPromptChange = (v: string) => patchProps({ systemPrompt: v });
   const onModelChange = (v: string) => patchProps({ model: v });
@@ -126,34 +135,42 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
     setSelection({ kind: 'block', ids: [blockId] });
   }, [blockId, setSelection]);
 
-  const extractedVariables = React.useMemo(() => {
-    const regex = /\{\{(\w+)\}\}/g;
-    const fromPrompt = [...promptText.matchAll(regex)].map((m) => m[1]);
-    const fromSystem = [...(systemPrompt ?? '').matchAll(regex)].map(
-      (m) => m[1],
-    );
-    return [...new Set([...fromPrompt, ...fromSystem])];
-  }, [promptText, systemPrompt]);
+  const extractedVariables = React.useMemo(
+    () => [
+      ...new Set([
+        ...extractVariables(promptText),
+        ...extractVariables(systemPrompt ?? ''),
+      ]),
+    ],
+    [promptText, systemPrompt],
+  );
+
+  const blocksByName = React.useMemo(
+    () => indexBlocksByName(allBlocks),
+    [allBlocks],
+  );
+
+  const variableInfos = React.useMemo(
+    () => describeVariables(extractedVariables, blocksByName),
+    [extractedVariables, blocksByName],
+  );
 
   /**
-   * Resolve a {{name}} variable by finding a block in the same stage with a
-   * matching `block.name` and returning its `properties.output`.
+   * Resolve a {{name}} variable by finding any block in the document with a
+   * matching `block.name` and returning its current value (output, code, or
+   * extracted text).
    */
   const resolveVariables = React.useCallback((): Record<string, string> => {
     const out: Record<string, string> = {};
-    if (!block) return out;
     for (const varName of extractedVariables) {
-      const match = Object.values(allBlocks).find(
-        (b) => b.stage_id === block.stage_id && b.name === varName,
-      );
-      const matchProps = (match?.properties ?? {}) as Record<string, unknown>;
-      const value = matchProps.output;
+      const match = blocksByName.get(varName);
+      const value = getBlockValue(match);
       if (typeof value === 'string' && value.length > 0) {
         out[varName] = value;
       }
     }
     return out;
-  }, [allBlocks, block, extractedVariables]);
+  }, [extractedVariables, blocksByName]);
 
   const handleRun = React.useCallback(async () => {
     if (!block) return;
