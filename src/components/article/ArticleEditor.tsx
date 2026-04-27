@@ -98,8 +98,7 @@ export function ArticleEditor({
   const { saveStatus } = usePersistenceStatus();
 
   const handleAddStage = useCallback((): string | null => {
-    const stageNum = (canvasDoc.stages?.length ?? 0) + 1;
-    const title = `Stage ${stageNum}`;
+    const title = '';
     canvasDoc.addStage(title);
     const newStage = canvasDoc.stages[canvasDoc.stages.length]; // Will be updated after state
     const stageId = crypto.randomUUID();
@@ -108,9 +107,8 @@ export function ArticleEditor({
 
   // Build a proper addStage that returns an ID
   const addStageAndGetId = useCallback((): string | null => {
-    const stageNum = (canvasDoc.stages?.length ?? 0) + 1;
     const stageId = crypto.randomUUID();
-    const title = `Stage ${stageNum}`;
+    const title = '';
 
     canvasDoc.addStage(title);
 
