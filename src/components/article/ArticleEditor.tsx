@@ -17,6 +17,9 @@ import { BlockRefExtension } from '@/components/canvas/tiptap/BlockRefExtension'
 import { TopToolbar } from './TopToolbar';
 import { TableContextMenu } from './TableContextMenu';
 import { StatusBar } from './StatusBar';
+import { BubbleToolbar } from './BubbleToolbar';
+import { CommentsOverlay } from './comments/CommentsOverlay';
+import type { CommentAnchor } from '@/hooks/useDocumentComments';
 import { FormattingShortcuts } from './KeyboardShortcutsExtension';
 import { SearchHighlight } from './SearchHighlight';
 import { FindReplaceBar } from './FindReplaceBar';
