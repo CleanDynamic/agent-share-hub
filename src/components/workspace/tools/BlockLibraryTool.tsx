@@ -196,6 +196,7 @@ export function BlockLibraryTool({
             block={block}
             onDragStart={() => onBlockDragStart?.(block.type)}
             onDoubleClick={() => onBlockDoubleClick?.(block.type)}
+            onClick={() => onBlockClick?.(block.type)}
           />
         ))}
         {filtered.length === 0 && (
