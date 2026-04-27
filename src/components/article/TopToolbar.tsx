@@ -1074,7 +1074,7 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
               }
             />
             <ToolbarButton icon={LayoutGrid} label="Insert stage grid" onClick={onInsertBlock ?? soon('Stage grid')} />
-            <ToolbarButton icon={FileSymlink} label="Insert block reference" onClick={soon('Block reference')} />
+            <ToolbarButton icon={FileSymlink} label="Insert block reference" onClick={insertBlockReference} />
             <ToolbarButton icon={Minus} label="Insert divider" onClick={run((c) => c.setHorizontalRule().run())} />
           </ToolbarGroup>
 
