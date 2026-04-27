@@ -18,6 +18,8 @@ export type EventMap = {
   "outline:scroll-to": { targetId: string };
   "stage:opened": { stageId: string };
   "stage:closed": { stageId: string };
+  "canvas:fit-needed": { stageId?: string };
+  "block:expand-toggle": { blockId: string };
 };
 
 export type EventName = keyof EventMap;
