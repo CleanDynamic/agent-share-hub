@@ -1,116 +1,161 @@
 /**
- * Block insertion helper used by both click-to-insert (Block Library tool)
- * and drag-to-place (StageCanvas drop handler).
+ * blockInsertion
  *
- * Single source of truth for: id generation, default sizing, the layout
- * algorithm for click-inserts, and the transient "newly created" registry
- * that drives the scale-in animation on the canvas.
+ * Shared utility for adding new blocks into a stage from the Block Library
+ * (click-to-insert) or via drag-and-drop onto the canvas.
+ *
+ * Also tracks "newly created" block ids briefly so the canvas can play a
+ * scale-in animation, and stores the currently-dragged block type in a
+ * module-level ref (because `dataTransfer.getData` is empty during
+ * `dragover` in most browsers).
  */
+
 import { useDocumentStore } from '@/lib/documentStore';
 import type { Block, BlockType } from '@/types/document';
 
+// ─── Accent colors (must mirror BlockLibraryTool's BLOCKS palette) ──
+export const BLOCK_TYPE_ACCENT: Record<BlockType, string> = {
+  text:     'rgba(255,255,255,0.60)',
+  heading:  'rgba(255,255,255,0.50)',
+  note:     '#F59E0B',
+  quote:    'rgba(255,255,255,0.60)',
+  prompt:   '#E8571A',
+  agent:    '#7C3AED',
+  model:    '#A78BFA',
+  result:   '#7C3AED',
+  code:     '#22C55E',
+  image:    'rgba(255,255,255,0.60)',
+  video:    'rgba(255,255,255,0.60)',
+  resource: '#06B6D4',
+  tutorial: '#2EC4B6',
+  tool:     '#3B82F6',
+  workflow: '#3B82F6',
+  compare:  '#EC4899',
+};
+
 const DEFAULT_BLOCK_WIDTH = 220;
 const DEFAULT_BLOCK_HEIGHT = 120;
-
-// Click-insert flow layout: simple grid laid out left→right, top→bottom.
-// Used as a fallback so the user can keep clicking without overlap.
 const CLICK_GRID_COL_WIDTH = 240;
 const CLICK_GRID_ROW_HEIGHT = 160;
 const CLICK_GRID_TOP = 100;
+const CLICK_CANVAS_WIDTH = 1200;
 
-// ── Newly created registry (powers a one-shot scale-in animation) ─────
-const newlyCreatedIds = new Set<string>();
+function uuid(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return `block-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// ─── Newly-created tracking (powers the scale-in animation) ─────────
+const newlyCreated = new Set<string>();
 const newlyCreatedListeners = new Set<() => void>();
+const NEWLY_CREATED_TTL_MS = 250; // > 200ms animation duration
 
-function notify() {
-  for (const cb of [...newlyCreatedListeners]) cb();
+function notifyNewlyCreated() {
+  for (const fn of newlyCreatedListeners) fn();
+}
+
+export function markBlockNewlyCreated(blockId: string): void {
+  newlyCreated.add(blockId);
+  notifyNewlyCreated();
+  window.setTimeout(() => {
+    newlyCreated.delete(blockId);
+    notifyNewlyCreated();
+  }, NEWLY_CREATED_TTL_MS);
 }
 
 export function isBlockNewlyCreated(blockId: string): boolean {
-  return newlyCreatedIds.has(blockId);
+  return newlyCreated.has(blockId);
 }
 
-export function subscribeNewlyCreated(cb: () => void): () => void {
-  newlyCreatedListeners.add(cb);
-  return () => newlyCreatedListeners.delete(cb);
+export function subscribeNewlyCreated(listener: () => void): () => void {
+  newlyCreatedListeners.add(listener);
+  return () => {
+    newlyCreatedListeners.delete(listener);
+  };
 }
 
-function markNewlyCreated(blockId: string, ttl = 240) {
-  newlyCreatedIds.add(blockId);
-  notify();
-  window.setTimeout(() => {
-    newlyCreatedIds.delete(blockId);
-    notify();
-  }, ttl);
+// ─── Drag-type ref (set by BlockCard, read by canvas dragover) ──────
+let currentDragType: BlockType | null = null;
+
+export function setDragType(type: BlockType): void {
+  currentDragType = type;
 }
 
-// ── Insert APIs ───────────────────────────────────────────────────────
+export function getDragType(): BlockType | null {
+  return currentDragType;
+}
+
+export function clearDragType(): void {
+  currentDragType = null;
+}
+
+// ─── Insert ─────────────────────────────────────────────────────────
 export interface InsertBlockOptions {
-  /** Optional explicit canvas-space position. When omitted we auto-place. */
+  /** Explicit canvas position. Caller is responsible for snapping. */
   position?: { x: number; y: number };
-  /** Used by the click-insert layout to wrap rows. Defaults to a wide canvas. */
-  canvasWidth?: number;
-  /** When true, select the new block after insertion. Defaults to true. */
-  select?: boolean;
+  /** Width to use; defaults to 220. */
+  width?: number;
+  /** Height to use; defaults to 120. */
+  height?: number;
 }
 
 /**
- * Insert a new block into a stage. Returns the created block id, or `null`
- * if no `stageId` was provided (e.g. no stage is currently open).
+ * Create a new block in the given stage and select it.
+ * - When `options.position` is omitted, auto-place using a wrap-around
+ *   grid based on the current count of blocks in the stage.
+ * - When provided, use those coordinates verbatim.
+ *
+ * Returns the new block's id.
  */
 export function insertBlockInStage(
-  stageId: string | null,
-  type: string,
-  opts: InsertBlockOptions = {},
-): string | null {
-  if (!stageId) return null;
-
+  stageId: string,
+  type: BlockType,
+  options: InsertBlockOptions = {},
+): string {
   const store = useDocumentStore.getState();
-  const stageBlocks = Object.values(store.blocks).filter((b) => b.stage_id === stageId);
-  const blockCount = stageBlocks.length;
 
-  let position = opts.position;
-  if (!position) {
-    const canvasWidth = Math.max(CLICK_GRID_COL_WIDTH * 2, opts.canvasWidth ?? 960);
-    const cols = Math.max(1, Math.floor(canvasWidth / CLICK_GRID_COL_WIDTH));
-    const x = (blockCount * CLICK_GRID_COL_WIDTH) % canvasWidth;
-    const y = CLICK_GRID_TOP + Math.floor(blockCount / cols) * CLICK_GRID_ROW_HEIGHT;
-    position = { x, y };
+  let x: number;
+  let y: number;
+
+  if (options.position) {
+    x = options.position.x;
+    y = options.position.y;
+  } else {
+    const count = Object.values(store.blocks).filter(
+      (b) => b.stage_id === stageId,
+    ).length;
+    const cols = Math.max(1, Math.floor(CLICK_CANVAS_WIDTH / CLICK_GRID_COL_WIDTH));
+    x = (count * CLICK_GRID_COL_WIDTH) % CLICK_CANVAS_WIDTH;
+    y = CLICK_GRID_TOP + Math.floor(count / cols) * CLICK_GRID_ROW_HEIGHT;
   }
 
-  const id =
-    typeof crypto !== 'undefined' && 'randomUUID' in crypto
-      ? crypto.randomUUID()
-      : `block-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
+  const id = uuid();
   const now = new Date().toISOString();
-  const newBlock: Block = {
+  const block: Block = {
     id,
     stage_id: stageId,
-    type: type as BlockType,
-    position_x: position.x,
-    position_y: position.y,
-    width: DEFAULT_BLOCK_WIDTH,
-    height: DEFAULT_BLOCK_HEIGHT,
-    z_index: blockCount,
-    name: null,
+    type,
+    position_x: x,
+    position_y: y,
+    width: options.width ?? DEFAULT_BLOCK_WIDTH,
+    height: options.height ?? DEFAULT_BLOCK_HEIGHT,
+    z_index: 0,
+    name: capitalize(type),
     properties: {},
     locked: false,
     created_at: now,
     updated_at: now,
   };
 
-  store.addBlock(newBlock);
-  markNewlyCreated(id);
-
-  if (opts.select !== false) {
-    store.setSelection({ kind: 'block', ids: [id] });
-  }
+  store.addBlock(block);
+  store.setSelection({ kind: 'block', ids: [id] });
+  markBlockNewlyCreated(id);
 
   return id;
-}
-
-/** Snap a value to the nearest grid step. */
-export function snapToGrid(value: number, step = 20): number {
-  return Math.round(value / step) * step;
 }

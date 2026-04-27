@@ -35,7 +35,7 @@ interface ToolDefinition {
 // list per render based on whether a stage is in full mode.
 const TOOLS: readonly ToolDefinition[] = [
   { id: 'inspector', label: 'Inspector', icon: Sliders, render: () => <InspectorTool /> },
-  { id: 'library', label: 'Block Library', icon: Shapes, render: () => <BlockLibraryTool /> },
+  { id: 'library', label: 'Block Library', icon: Shapes, render: () => <BlockLibraryHost /> },
   { id: 'outline', label: 'Outline', icon: List, render: () => <OutlineTool /> },
   { id: 'comments', label: 'Comments', icon: MessageSquare, render: () => <CommentsTool /> },
   { id: 'versions', label: 'Version History', icon: Clock, render: () => <VersionHistoryTool /> },
@@ -150,21 +150,7 @@ export function WorkspaceShell() {
     ? activeTool
     : visibleTools[0]?.id ?? 'inspector';
 
-  // ── Click-to-insert handler for the Block Library while a stage is open ──
-  const handleLibraryClick = (blockType: string) => {
-    if (!stageOpen) return; // defensive — Library is hidden in article mode
-    const openMap = useDocumentStore.getState().stageOpen;
-    const openStageId = Object.keys(openMap).find((id) => openMap[id]) ?? null;
-    insertBlockInStage(openStageId, blockType);
-  };
-
-  const renderActiveTool = (): ReactElement => {
-    if (effectiveActive === 'library') {
-      return <BlockLibraryTool onBlockClick={handleLibraryClick} />;
-    }
-    const def = TOOL_BY_ID[effectiveActive];
-    return def?.render() ?? TOOLS[0].render();
-  };
+  const ActiveRender = TOOL_BY_ID[effectiveActive]?.render ?? TOOLS[0].render;
 
   return (
     <div
@@ -308,4 +294,24 @@ function WorkspaceTabButton({ tool, active, iconVisible, onClick }: WorkspaceTab
       <TooltipContent side="bottom">{tool.label}</TooltipContent>
     </Tooltip>
   );
+}
+
+/**
+ * Library host — wires the Block Library's click-to-insert handler to the
+ * currently open stage. If no stage is open, clicks no-op (the Library
+ * tab also won't normally be visible in that state).
+ */
+function BlockLibraryHost() {
+  const stageOpenMap = useDocumentStore((s) => s.stageOpen);
+  const openStageId = useMemo(
+    () => Object.keys(stageOpenMap).find((id) => stageOpenMap[id]) ?? null,
+    [stageOpenMap],
+  );
+
+  const handleClick = (blockType: string) => {
+    if (!openStageId) return;
+    insertBlockInStage(openStageId, blockType as Parameters<typeof insertBlockInStage>[1]);
+  };
+
+  return <BlockLibraryTool onBlockClick={handleClick} />;
 }

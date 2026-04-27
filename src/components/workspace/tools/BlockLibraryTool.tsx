@@ -8,6 +8,8 @@ import {
   PANEL_INPUT_BORDER,
   PANEL_INPUT_RADIUS,
 } from './toolPanelStyles';
+import { setDragType, clearDragType } from '@/lib/blockInsertion';
+import type { BlockType } from '@/types/document';
 
 // ─── Block catalog ────────────────────────────────────────────────
 interface BlockDef {
@@ -58,16 +60,15 @@ function withAlpha(color: string, alpha: number): string {
 }
 
 interface BlockLibraryToolProps {
+  onBlockClick?: (blockType: string) => void;
   onBlockDragStart?: (blockType: string) => void;
   onBlockDoubleClick?: (blockType: string) => void;
-  /** Single-click insert (used while a stage is open in full mode). */
-  onBlockClick?: (blockType: string) => void;
 }
 
 export function BlockLibraryTool({
+  onBlockClick,
   onBlockDragStart,
   onBlockDoubleClick,
-  onBlockClick,
 }: BlockLibraryToolProps) {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<Category>('All');
@@ -194,9 +195,9 @@ export function BlockLibraryTool({
           <BlockCard
             key={block.type}
             block={block}
+            onClick={() => onBlockClick?.(block.type)}
             onDragStart={() => onBlockDragStart?.(block.type)}
             onDoubleClick={() => onBlockDoubleClick?.(block.type)}
-            onClick={() => onBlockClick?.(block.type)}
           />
         ))}
         {filtered.length === 0 && (
@@ -230,7 +231,7 @@ export function BlockLibraryTool({
           alignItems: 'center',
         }}
       >
-        Drag into a stage or press / to insert
+        Click or drag a block to add it
       </div>
     </div>
   );
@@ -238,12 +239,12 @@ export function BlockLibraryTool({
 
 interface BlockCardProps {
   block: BlockDef;
+  onClick: () => void;
   onDragStart: () => void;
   onDoubleClick: () => void;
-  onClick: () => void;
 }
 
-function BlockCard({ block, onDragStart, onDoubleClick, onClick }: BlockCardProps) {
+function BlockCard({ block, onClick, onDragStart, onDoubleClick }: BlockCardProps) {
   const [hover, setHover] = useState(false);
 
   const baseStyle: CSSProperties = {
@@ -264,13 +265,19 @@ function BlockCard({ block, onDragStart, onDoubleClick, onClick }: BlockCardProp
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('application/x-block-type', block.type);
     e.dataTransfer.setData('text/plain', block.type);
+    setDragType(block.type as BlockType);
     onDragStart();
+  };
+
+  const handleDragEnd = () => {
+    clearDragType();
   };
 
   return (
     <div
       draggable
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onMouseEnter={() => setHover(true)}
