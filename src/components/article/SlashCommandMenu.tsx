@@ -33,6 +33,7 @@ import {
   Columns2,
   Heading,
   Cpu,
+  StickyNote,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDocumentStore } from '@/lib/documentStore';
