@@ -618,6 +618,8 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
           </div>
         </SheetContent>
       </Sheet>
+      {promptAutocomplete.popover}
+      {systemAutocomplete.popover}
     </>
   );
 }
