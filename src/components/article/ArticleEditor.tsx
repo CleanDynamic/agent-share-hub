@@ -706,6 +706,31 @@ export function ArticleEditor({
           font-style: normal;
           color: hsl(var(--foreground) / 0.85);
         }
+        .tiptap-article ul,
+        .tiptap-article ol {
+          padding-left: 1.5rem;
+          margin: 12px 0 18px;
+          color: hsl(var(--foreground) / 0.85);
+        }
+        .tiptap-article ul {
+          list-style: disc;
+        }
+        .tiptap-article ol {
+          list-style: decimal;
+        }
+        .tiptap-article ul ul {
+          list-style: circle;
+        }
+        .tiptap-article ul ul ul {
+          list-style: square;
+        }
+        .tiptap-article li {
+          margin: 4px 0;
+          padding-left: 4px;
+        }
+        .tiptap-article li > p {
+          margin: 0 0 4px;
+        }
         .tiptap-article ul[data-type="taskList"] {
           list-style: none;
           padding: 0;
