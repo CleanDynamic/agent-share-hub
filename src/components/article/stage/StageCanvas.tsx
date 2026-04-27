@@ -5,6 +5,7 @@ import {
   Background,
   BackgroundVariant,
   MiniMap,
+  PanOnScrollMode,
   useReactFlow,
   type Connection as RFConnection,
   type Edge,
@@ -398,7 +399,7 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
         //   • double-click                  → block expansion (handled above)
         panOnDrag={[1]}
         panOnScroll
-        panOnScrollMode="free"
+        panOnScrollMode={PanOnScrollMode.Free}
         zoomOnScroll={false}
         zoomOnPinch
         zoomOnDoubleClick={false}
