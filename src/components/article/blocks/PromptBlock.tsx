@@ -14,6 +14,16 @@ import { useDocumentStore } from '@/lib/documentStore';
 import { eventBus } from '@/lib/eventBus';
 import { runPrompt, approximateTokens } from '@/lib/llm';
 import {
+  describeVariables,
+  extractVariables,
+  getBlockValue,
+  indexBlocksByName,
+  isNameUnique,
+  blockHasOutput,
+} from '@/lib/variables';
+import { VariableChips } from '@/components/article/blocks/shared/VariableChips';
+import { useVariableAutocomplete } from '@/components/article/blocks/shared/VariableAutocomplete';
+import {
   Sheet,
   SheetContent,
   SheetHeader,
