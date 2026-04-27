@@ -41,6 +41,8 @@ import { WorkflowBlockNode } from '../blocks/WorkflowBlock';
 
 interface StageCanvasProps {
   stageId: string;
+  /** Show React Flow's MiniMap inside the canvas. Default false. */
+  showMiniMap?: boolean;
 }
 
 const nodeTypes = {
