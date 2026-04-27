@@ -107,15 +107,15 @@ function connectionToEdge(conn: Connection): Edge {
   };
 }
 
-export function StageCanvas({ stageId }: StageCanvasProps) {
+export function StageCanvas({ stageId, showMiniMap }: StageCanvasProps) {
   return (
     <ReactFlowProvider>
-      <StageCanvasInner stageId={stageId} />
+      <StageCanvasInner stageId={stageId} showMiniMap={showMiniMap} />
     </ReactFlowProvider>
   );
 }
 
-function StageCanvasInner({ stageId }: StageCanvasProps) {
+export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasProps) {
   const blocks = useDocumentStore((s) => s.blocks);
   const connections = useDocumentStore((s) => s.connections);
   const moveBlock = useDocumentStore((s) => s.moveBlock);
