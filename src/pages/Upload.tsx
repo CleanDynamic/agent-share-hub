@@ -414,6 +414,27 @@ const Upload = () => {
           })));
         }
 
+        // Restore the TipTap article body so the editor can mount with it
+        if ((item as any).article_body) {
+          (canvasDoc as any).articleBody = (item as any).article_body;
+          (canvasDoc as any)._articleBody = (item as any).article_body;
+        }
+
+        // Restore Stage Grid snapshot (stages / blocks / connections) into the
+        // in-memory document store used by the article editor's stage grids.
+        const sg = (item as any).stage_grids;
+        if (sg && typeof sg === 'object') {
+          try {
+            useDocumentStore.setState((state: any) => {
+              state.stages = sg.stages ?? {};
+              state.blocks = sg.blocks ?? {};
+              state.connections = sg.connections ?? {};
+            });
+          } catch (e) {
+            console.error('Failed to hydrate stage grids:', e);
+          }
+        }
+
         // Set draft meta for banner
         setDraftMeta({
           name: (item as any).draft_name || item.title || "Untitled draft",
