@@ -26,8 +26,6 @@ export function TableContextMenu({ editor, children }: TableContextMenuProps) {
       const view = editor.view;
       const pos = view.posAtCoords({ left: e.clientX, top: e.clientY });
       if (pos) {
-        // Place caret at the right-clicked position so table commands target it
-        const { TextSelection } = require('@tiptap/pm/state') as typeof import('@tiptap/pm/state');
         const $pos = editor.state.doc.resolve(pos.pos);
         const tr = editor.state.tr.setSelection(TextSelection.near($pos));
         view.dispatch(tr);
