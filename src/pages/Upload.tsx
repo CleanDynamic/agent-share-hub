@@ -234,6 +234,16 @@ const Upload = () => {
   const [submitting, setSubmitting] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [templateLibOpen, setTemplateLibOpen] = useState(false);
+  // Tracks whether a stage grid is currently expanded into full mode. When
+  // true, the editor's CanvasHeader (BLUEPRINT pill, Title, Description,
+  // Your results) is hidden so the stage can fill the middle panel.
+  const [openStageId, setOpenStageId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const offOpen = eventBus.on('stage:opened', ({ stageId }) => setOpenStageId(stageId));
+    const offClose = eventBus.on('stage:closed', () => setOpenStageId(null));
+    return () => { offOpen(); offClose(); };
+  }, []);
   const [success, setSuccess] = useState(false);
   const [insertedContentId, setInsertedContentId] = useState<string | null>(null);
   const [submitToolOpen, setSubmitToolOpen] = useState(false);
