@@ -35,7 +35,6 @@ export function StageGridFrame({
   height = 280,
   onRename,
   onDelete,
-  onQuickInsert,
   onOpenTemplates,
   onResize,
   onContextMenu,
