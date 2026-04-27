@@ -814,9 +814,6 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
             <ToolbarButton icon={Bold} label="Bold" shortcut="⌘B" isActive={isActive('bold')} onClick={run((c) => c.toggleBold().run())} />
             <ToolbarButton icon={Italic} label="Italic" shortcut="⌘I" isActive={isActive('italic')} onClick={run((c) => c.toggleItalic().run())} />
             <ToolbarButton icon={Underline} label="Underline" shortcut="⌘U" onClick={soon('Underline')} />
-            <ToolbarButton icon={Strikethrough} label="Strikethrough" shortcut="⇧⌘X" isActive={isActive('strike')} onClick={run((c) => c.toggleStrike().run())} />
-            <ToolbarButton icon={Subscript} label="Subscript" onClick={soon('Subscript')} />
-            <ToolbarButton icon={Superscript} label="Superscript" onClick={soon('Superscript')} />
             <ToolbarButton icon={Code} label="Inline code" shortcut="⌘E" isActive={isActive('code')} onClick={run((c) => c.toggleCode().run())} />
           </ToolbarGroup>
 
@@ -859,13 +856,6 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
             <ToolbarButton icon={AlignCenter} label="Align center" onClick={soon('Alignment')} />
             <ToolbarButton icon={AlignRight} label="Align right" onClick={soon('Alignment')} />
             <ToolbarButton icon={AlignJustify} label="Justify" onClick={soon('Alignment')} />
-            <ToolbarDropdown
-              label="Line height"
-              value={lineHeight}
-              options={lineHeightOptions}
-              onChange={() => soon('Line height')()}
-              width={64}
-            />
             <ToolbarButton
               icon={Outdent}
               label="Outdent"
@@ -937,24 +927,6 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
             <ToolbarButton icon={Minus} label="Insert divider" onClick={run((c) => c.setHorizontalRule().run())} />
           </ToolbarGroup>
 
-          <Divider />
-
-          <ToolbarGroup>
-            <ToolbarButton icon={SpellCheck} label="Spell check" onClick={soon('Spell check')} />
-            <ToolbarButton icon={MessageSquare} label="Comment" onClick={soon('Comments')} />
-            <ToolbarButton icon={FileText} label="Word count" onClick={soon('Word count')} />
-            <ToolbarButton icon={GitBranch} label="Track changes" onClick={soon('Track changes')} />
-          </ToolbarGroup>
-
-          <Divider />
-
-          <ToolbarGroup>
-            <ToolbarButton icon={ZoomIn} label="Zoom" onClick={soon('Zoom')} />
-            <ToolbarButton icon={Focus} label="Focus mode" onClick={soon('Focus mode')} />
-            <ToolbarButton icon={PanelLeft} label="Outline panel" onClick={soon('Outline')} />
-            <ToolbarButton icon={PanelRight} label="Inspector panel" onClick={soon('Inspector')} />
-            <ToolbarButton icon={ChevronsUpDown} label="Toolbar options" onClick={soon('Toolbar options')} />
-          </ToolbarGroup>
         </div>
       </div>
       <LinkPopover editor={editor} open={linkOpen} onOpenChange={setLinkOpen} />
