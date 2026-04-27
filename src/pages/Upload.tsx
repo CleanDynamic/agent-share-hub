@@ -528,7 +528,7 @@ const Upload = () => {
   });
 
   // ── Save Draft Logic ──
-  const saveDraft = useCallback(async (silent = false): Promise<string | null> => {
+  const saveDraft = useCallback(async (silent = false, draftName?: string): Promise<string | null> => {
     const values = form.getValues();
     const articleBody = (canvasDoc as any)._articleBody ?? (canvasDoc as any).articleBody ?? useDocumentStore.getState().articleBody;
     const stageGridsSnapshot = (() => {
@@ -603,7 +603,7 @@ const Upload = () => {
         bounty_tip_gbp: isBountyType && bountyTipGbp !== null ? bountyTipGbp : null,
         status: "draft",
         draft_saved_at: new Date().toISOString(),
-        draft_name: values.title || null,
+        draft_name: draftName?.trim() || values.title || draftMeta?.name || null,
         article_body: articleBody ?? null,
         stage_grids: stageGridsSnapshot,
       };
@@ -723,10 +723,11 @@ const Upload = () => {
       }
 
       const now = new Date().toISOString();
-      setDraftMeta({ name: values.title || "Untitled draft", savedAt: now });
+      const savedName = draftName?.trim() || values.title || draftMeta?.name || "Untitled draft";
+      setDraftMeta({ name: savedName, savedAt: now });
       lastAutosaveRef.current = new Date();
 
-      if (!silent) toast({ title: "Draft saved ✓" });
+      if (!silent) toast({ title: `Saved “${savedName}”`, description: "Draft saved to your library." });
       return draftIdToUse;
     } catch (err: any) {
       if (!silent) toast({ title: "Failed to save draft", description: err?.message, variant: "destructive" });
@@ -734,7 +735,7 @@ const Upload = () => {
     } finally {
       if (!silent) setSavingDraft(false);
     }
-  }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast, isBountyType, isBlogType, bountyBlueprintRequired, bountyGap, bountyTipGbp]);
+  }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast, isBountyType, isBlogType, bountyBlueprintRequired, bountyGap, bountyTipGbp, draftMeta, canvasDoc, selectedTopics]);
 
   // ── Autosave every 60 seconds (fallback) ──
   useEffect(() => {
@@ -1384,7 +1385,9 @@ const Upload = () => {
                 onOpenNotes={() => {}}
                 onGrammarCheck={() => {}}
                 onClearAll={() => {}}
-                onSave={() => saveDraft(false)}
+                saving={savingDraft}
+                defaultDraftName={draftMeta?.name ?? form.getValues('title') ?? ''}
+                onSave={async (draftName) => { await saveDraft(false, draftName); }}
                 onPublish={() => {
                   const title = form.getValues('title');
                   if (!title || !title.trim()) {
@@ -1393,7 +1396,6 @@ const Upload = () => {
                   }
                   form.handleSubmit(onSubmit)();
                 }}
-                saving={savingDraft}
                 publishing={submitting}
                 editable
               />
