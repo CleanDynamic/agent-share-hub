@@ -37,6 +37,7 @@ import {
   CheckCircle2,
   Globe,
   Wrench,
+  Workflow,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDocumentStore } from '@/lib/documentStore';
