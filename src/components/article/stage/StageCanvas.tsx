@@ -293,7 +293,7 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
   return (
     <div
       ref={wrapperRef}
-      className="absolute inset-0 stage-canvas-root"
+      className={`absolute inset-0 stage-canvas-root${showMiniMap ? '' : ' no-minimap'}`}
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragLeave={onDragLeave}
