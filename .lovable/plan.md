@@ -1,86 +1,70 @@
-## Goal
+# Plan: Wire block insertion when a stage is open in full mode
 
-Make embedded stage grids feel like an inline image in the document: a single clean rectangle that sits in the prose with subtle edges, no permanent toolbars, no white React Flow widgets. Controls only appear on hover.
+The previous attempt at this prompt was incomplete: `src/lib/blockInsertion.ts` was never created, `WorkspaceShell` doesn't pass any handler to `BlockLibraryTool`, `BlockLibraryTool` has no `onBlockClick` prop, and `StageCanvas` has no drop handlers. This plan completes all four parts of the original spec.
 
-## Why the current version feels broken
+## What gets built
 
-Looking at the screenshot:
+### 1. New file: `src/lib/blockInsertion.ts`
 
-1. The frame stacks **three rows of chrome**: 36px header (badge + title + buttons), the canvas, then a 36px footer (+Text/+Prompt/+Code/+Result chips + zoom + minimap toggle), plus a 6px resize gripper. That's ~78px of UI wrapping an empty canvas — heavier than the content itself.
-2. React Flow's `<MiniMap />` renders with its **default white background** in the bottom-right corner — that's the white box in the screenshot. It clashes with the dark theme.
-3. The frame's max width (`max-w-[720px]`) is wider than the prose column (`max-w-[720px]` minus 48px of padding), so the grid visually breaks out of the text column instead of aligning with it.
-4. Default height is 400px and the dot-grid background pattern is duplicated in both the frame and React Flow — visual noise.
+A small shared module exposing:
 
-Net effect: the grid looks like a separate "app card" pasted into the document, not an embedded element.
+- `BLOCK_TYPE_ACCENT: Record<BlockType, string>` — accent colors mirroring the Block Library palette, used by both the ghost-preview and (later) other consumers.
+- `insertBlockInStage(stageId, type, opts?)` — creates a `Block`, calls `documentStore.addBlock`, sets selection to the new block, and registers it as "newly created" so the canvas can play the scale-in.
+  - **Click placement** (no `position` passed): auto-place using `x = (count * 240) % canvasWidth`, `y = 100 + floor(count / cols) * 160`, with `cols = max(1, floor(canvasWidth / 240))`, `canvasWidth = 1200` default.
+  - **Drop placement** (explicit `position` passed): use given `x, y` (caller already snapped).
+  - Default size: 220×120. Default `name`: capitalized type. Default `properties: {}`, `locked: false`, `z_index: 0`.
+- `markBlockNewlyCreated(blockId)` / `isBlockNewlyCreated(blockId)` / `subscribeNewlyCreated(listener)` — tiny in-memory set with subscribers; entries auto-clear after 250ms (long enough to outlast the 200ms animation).
 
-## Design — the new embed
+### 2. `BlockLibraryTool` — accept `onBlockClick`
 
-A stage grid should read as **one rectangle** sitting in the prose, like a figure:
+- Add `onBlockClick?: (blockType: string) => void` to props and forward to each `BlockCard`.
+- `BlockCard` gets a single-click handler that calls `onBlockClick`. Drag and double-click handlers stay as-is.
+- Update the bottom hint text to `"Click or drag a block to add it"` so the click affordance is discoverable. (Visual styling unchanged.)
+
+### 3. `WorkspaceShell` — provide the click handler
+
+- Subscribe to `documentStore.stageOpen` to find the currently-open stage id (`Object.keys(stageOpen).find((id) => stageOpen[id])`).
+- Define `handleLibraryClick(type)`: if no stage is open, no-op. Otherwise call `insertBlockInStage(openStageId, type)`.
+- Render `<BlockLibraryTool onBlockClick={handleLibraryClick} />` instead of the bare component.
+
+### 4. `StageCanvas` — drag-to-place + ghost preview
+
+- Wrap the existing `<ReactFlow>` in a `ReactFlowProvider` (needed so `useReactFlow().screenToFlowPosition` works inside the canvas component). Split into a thin outer `StageCanvas` that provides, and an inner `StageCanvasInner` that consumes.
+- Add local `ghost` state: `{ x, y, type } | null`.
+- `onDragOver(e)`: if `dataTransfer.types.includes('application/x-block-type')`, `e.preventDefault()`, set `dropEffect = 'copy'`, compute flow coords via `screenToFlowPosition({ x: e.clientX, y: e.clientY })`, snap each axis to nearest 20px, update `ghost`. Read the dragged block's type defensively from a module-level `currentDragType` ref set by `BlockCard.onDragStart` (since `dataTransfer.getData` is empty during dragover in most browsers).
+- `onDrop(e)`: read `application/x-block-type`, snap, call `insertBlockInStage(stageId, type, { position: { x, y } })`, clear `ghost`.
+- `onDragLeave`: clear `ghost`.
+- Ghost element: an absolutely-positioned 220×120 div, dashed 1px border in the type's accent color at 0.4 opacity, transformed by the React Flow viewport. Render inside the React Flow viewport via a small overlay div using `useReactFlow().getViewport()` to translate, OR render in CSS coords by converting flow→screen with `flowToScreenPosition`. Use the screen-coord approach to avoid React Flow internals.
+- The currently used `currentDragType` module ref lives in `blockInsertion.ts` (`setDragType` / `getDragType` / `clearDragType`); `BlockCard.handleDragStart` sets it, `onDrop`/`dragend` clears it.
+
+### 5. Scale-in animation
+
+- Pick the smallest possible surface: wrap each registered block component (e.g. `PromptBlockNode`, `TextBlockNode`, etc.) is too many files. Instead, add the wrapper at the React Flow level by injecting a CSS class on `Node.className` when `isBlockNewlyCreated(block.id)` returns true at render time. The class `.block-scale-in` is defined in the existing `<style>` block inside `StageCanvas` and applies `@keyframes` from 0.96 → 1.0 over 200ms.
+- `StageCanvasInner` subscribes to `subscribeNewlyCreated` to force a re-render so the class actually paints (since the in-memory set is outside Zustand).
+
+### 6. Selection auto-switch override (already in place)
+
+- `WorkspaceShell` already gates the selection effect behind `stageOpenRef.current` (lines 122–131). After insertion, `setSelection({ kind: 'block', ids: [newId] })` will fire but the effect skips. The active tool stays on Library. ✓ Confirmed by reading current code.
+
+### 7. Defensive no-op when no stage is open
+
+- `handleLibraryClick` early-returns if `openStageId` is null.
+- `BlockLibraryTool` itself is hidden in article mode (Prompt 5 wiring already in place), so this is belt-and-suspenders.
+- Drag from a card while no stage is open: `onDragOver` won't be called on the canvas (canvas isn't mounted), and dropping anywhere else does nothing because no other surface accepts `application/x-block-type`.
+
+## Files touched
 
 ```text
-┌──────────────────────────────────────────┐
-│  [hover] ① Stage 1   0 blocks   ⋯  ✕    │   ← header only on hover
-│ · · · · · · · · · · · · · · · · · · · ·  │
-│ · · ·  (React Flow canvas, dark) · · · · │
-│ · · · · · · · · · · · · · · · · · · · ·  │
-│           [hover] + Text  + Prompt …     │   ← footer only on hover
-└──────────────────────────────────────────┘
-                  ═══                          ← thin resize handle on hover
+src/lib/blockInsertion.ts                              (NEW)
+src/components/workspace/tools/BlockLibraryTool.tsx   (add onBlockClick prop, update hint text)
+src/components/workspace/WorkspaceShell.tsx           (pass handleLibraryClick to library)
+src/components/article/stage/StageCanvas.tsx          (ReactFlowProvider split, drop handlers, ghost, scale-in CSS, newly-created subscription)
 ```
 
-Key principles:
-- **One container, one border.** No header strip, no footer strip baked in. Controls float over the canvas and fade in on hover.
-- **Width matches prose.** The grid spans the same 720px as the surrounding paragraphs — never wider, never narrower.
-- **Dark all the way through.** No white React Flow widgets. Minimap removed; zoom controls hidden by default.
-- **Quieter default height.** 280px instead of 400px so it doesn't dominate the page.
-- **Subtle, single-pixel edge** that matches the article's other embedded blocks (images, code blocks).
+No other component is touched. Block Library visuals, canvas pan/zoom, and existing node renderers stay exactly as-is.
 
-## Changes
+## Out of scope (intentionally)
 
-### 1. `src/components/article/stage/StageGridFrame.tsx` — rewrite the chrome
-
-- Remove the always-visible header bar and footer bar.
-- Wrap the canvas in a single rounded rectangle: 1px border at `rgba(255,255,255,0.08)`, no backdrop blur, no drop shadow (matches `.tiptap-article img` styling).
-- Add a **hover overlay header** (absolute, top, fades in with `opacity` on container hover): just the stage badge `①`, the editable title, block count, and a small `⋯` / `✕` cluster on the right. ~28px tall, semi-transparent dark gradient bar so it floats over the canvas.
-- Add a **hover overlay footer** (absolute, bottom, same fade pattern): the four `+ Text / + Prompt / + Code / + Result` chips. Drop the zoom controls and minimap toggle entirely — zoom lives inside React Flow's own controls if needed later.
-- Resize handle stays but becomes a 4px hairline at the bottom edge, only visible on hover.
-- Default `height` prop becomes 280, clamp range becomes 200–600.
-- Drop `widthClasses` — always render at `width: 100%; max-width: 720px` to match the prose column. Remove the `widthMode` prop usage (keep it in the interface as a no-op so callers don't break).
-- Remove the inner dot-grid background (`radial-gradient`) — React Flow already renders dots, doubling them creates moiré.
-
-### 2. `src/components/article/stage/StageCanvas.tsx` — remove white widgets
-
-- Delete the `<MiniMap />` element entirely (this is the white box in the screenshot).
-- Keep `<Background>` dots but bump `color` to `rgba(255,255,255,0.06)` so they read as subtle texture, not a grid.
-- Add a wrapping `<style>` (or inline style on the React Flow root) that sets the React Flow pane background to `transparent` so the frame's color shows through. Specifically override `.react-flow__pane`, `.react-flow__background`, and `.react-flow__minimap` (defensive, in case it ever returns) to transparent / dark.
-- Remove `fitView` default — with no blocks it leaves the canvas in an awkward zoom state. Use a fixed default viewport instead.
-
-### 3. `src/components/article/StageGridNode.tsx` — match new defaults
-
-- Change `persistedHeight` fallback from 400 to 280.
-- Update the `handleResize` clamp from `(280, 800)` to `(200, 600)` to match the frame.
-- Drop the `widthMode` plumbing (always wide / column-width).
-
-### 4. `src/components/article/ArticleEditor.tsx` — small spacing fix
-
-- The TipTap CSS already gives images `margin: 12px 0`. Add the equivalent rule for `[data-stage-grid]` so the embedded grid has the same vertical rhythm as an image: `margin: 16px 0; border-radius: 8px;`.
-- No changes to the toolbar or the Insert Grid button.
-
-### Files touched
-
-- `src/components/article/stage/StageGridFrame.tsx` — major rewrite (chrome → hover overlays)
-- `src/components/article/stage/StageCanvas.tsx` — remove MiniMap, transparent React Flow background
-- `src/components/article/StageGridNode.tsx` — update default height + clamp
-- `src/components/article/ArticleEditor.tsx` — add `[data-stage-grid]` spacing rule
-
-### Out of scope (intentionally)
-
-- The `StageGridExtension`, the slash-command insertion path, and the document store wiring all stay exactly as they are. This is a visual cleanup, not a logic change.
-- Zoom controls and minimap can return later as a hover-only popover if needed — for now they're removed because they're the source of the white-box artifact and they aren't useful on a 280px embed.
-- The 4 protected files (`AppLayout.tsx`, `LeftPanel.tsx`, `RightPanel.tsx`, `BlobBackground.tsx`) are not touched.
-
-## What you'll see after
-
-- A stage grid inserted via the Insert Grid button or `/stage` appears as a clean dark rectangle the same width as the prose, ~280px tall.
-- Hovering it reveals a thin top bar with the stage name and a thin bottom bar with the +Text/+Prompt/+Code/+Result chips, then they fade out when the cursor leaves.
-- No white minimap, no double border, no chunky toolbar — it sits in the document like an image or code block does.
+- No persistence beyond the existing `documentStore.addBlock` (it already adds to `dirty` for the autosave loop).
+- No multi-stage drop targeting — drops are only handled inside the open stage's canvas.
+- No keyboard insertion path (`/` palette is a separate prompt).
