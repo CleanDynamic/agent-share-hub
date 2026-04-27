@@ -174,17 +174,25 @@ export function StageGridFrame({
               onChange={(e) => setEditedName(e.target.value)}
               onBlur={handleNameSubmit}
               onKeyDown={handleKeyDown}
-              className="flex-1 bg-transparent text-[12px] font-semibold text-white/85 outline-none border-b border-white/20 py-0.5 pointer-events-auto"
+              placeholder="Untitled stage"
+              className="flex-1 bg-transparent text-[13px] font-medium text-white/85 outline-none border-b border-white/20 py-0.5 pointer-events-auto placeholder:italic placeholder:text-white/30"
+              style={{ fontFamily: 'Inter, sans-serif' }}
             />
           ) : (
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="flex-1 text-left text-[12px] font-semibold text-white/85 hover:text-white truncate transition-colors pointer-events-auto"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-              title="Click to rename"
+              className="flex-1 text-left truncate transition-colors pointer-events-auto hover:text-white"
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 13,
+                fontWeight: stageName ? 600 : 500,
+                fontStyle: stageName ? 'normal' : 'italic',
+                color: stageName ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.30)',
+              }}
+              title={stageName ? 'Click to rename' : 'Click to name this stage'}
             >
-              {stageName}
+              {stageName || 'Untitled stage'}
             </button>
           )}
 
