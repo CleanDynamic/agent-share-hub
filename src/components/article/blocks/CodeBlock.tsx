@@ -20,6 +20,13 @@ import {
 } from '@/lib/detectLanguage';
 import { runCode, isRunnable } from '@/lib/codeRunner';
 import {
+  describeVariables,
+  extractVariables,
+  indexBlocksByName,
+  isNameUnique,
+} from '@/lib/variables';
+import { VariableChips } from '@/components/article/blocks/shared/VariableChips';
+import {
   Sheet,
   SheetContent,
   SheetHeader,
