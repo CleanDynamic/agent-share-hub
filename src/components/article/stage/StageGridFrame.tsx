@@ -251,27 +251,6 @@ export function StageGridFrame({
               Templates
             </button>
           ) : null}
-          <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto pointer-events-auto" style={{ scrollbarWidth: 'none' }}>
-            {quickInsertButtons.map(({ type, label }) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => onQuickInsert?.(type)}
-                className="flex-shrink-0 px-2 py-0.5 text-[10.5px] font-medium text-white/55 rounded-[5px] border border-dashed border-white/15 hover:border-solid transition-all"
-                style={{ fontFamily: 'Inter, sans-serif' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = blockTypeColors[type];
-                  e.currentTarget.style.color = blockTypeColors[type];
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
