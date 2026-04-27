@@ -7,17 +7,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  useFloating,
-  autoUpdate,
-  offset,
-  flip,
-  shift,
-  useDismiss,
-  useInteractions,
-  FloatingPortal,
-  type ReferenceType,
-} from '@floating-ui/react';
+import { LinkPopover } from './LinkPopover';
 import {
   Undo2,
   Redo2,
