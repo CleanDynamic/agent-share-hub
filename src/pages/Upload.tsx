@@ -1385,7 +1385,9 @@ const Upload = () => {
                 onOpenNotes={() => {}}
                 onGrammarCheck={() => {}}
                 onClearAll={() => {}}
-                onSave={() => saveDraft(false)}
+                saving={savingDraft}
+                defaultDraftName={draftMeta?.name ?? form.getValues('title') ?? ''}
+                onSave={async (draftName) => { await saveDraft(false, draftName); }}
                 onPublish={() => {
                   const title = form.getValues('title');
                   if (!title || !title.trim()) {
