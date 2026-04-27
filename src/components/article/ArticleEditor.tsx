@@ -141,6 +141,7 @@ export function ArticleEditor({
       BlockRefExtension,
       FormattingShortcuts,
       SearchHighlight,
+      BlockReferenceExtension,
     ],
     content: initialContent || {
       type: 'doc',
