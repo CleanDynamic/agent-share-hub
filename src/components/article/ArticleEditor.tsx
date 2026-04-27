@@ -136,6 +136,7 @@ export function ArticleEditor({
       StageGridExtension,
       BlockRefExtension,
       FormattingShortcuts,
+      SearchHighlight,
     ],
     content: initialContent || {
       type: 'doc',
