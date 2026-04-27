@@ -226,8 +226,11 @@ export function StageCanvas({ stageId }: StageCanvasProps) {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        defaultEdgeOptions={{ type: DEFAULT_EDGE_TYPE }}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         minZoom={0.25}
         maxZoom={2}
