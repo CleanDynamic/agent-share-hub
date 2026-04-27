@@ -116,6 +116,11 @@ export function ArticleEditor({
       TextStyle,
       Color,
       Highlight.configure({ multicolor: true }),
+      LinkExtension.configure({
+        openOnClick: false,
+        autolink: true,
+        HTMLAttributes: { rel: 'noopener noreferrer nofollow' },
+      }),
       CharacterCount,
       StageGridExtension,
       BlockRefExtension,
