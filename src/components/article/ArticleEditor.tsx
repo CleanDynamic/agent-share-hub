@@ -583,7 +583,7 @@ export function ArticleEditor({
           line-height: 1.4;
         }
         .tiptap-article p {
-          margin: 0 0 18px;
+          margin: 0;
         }
         .tiptap-article blockquote {
           border-left: 2px solid hsl(18 79% 54% / 0.4);
@@ -709,7 +709,7 @@ export function ArticleEditor({
         .tiptap-article ul,
         .tiptap-article ol {
           padding-left: 1.5rem;
-          margin: 12px 0 18px;
+          margin: 0;
           color: hsl(var(--foreground) / 0.85);
         }
         .tiptap-article ul {
@@ -725,11 +725,11 @@ export function ArticleEditor({
           list-style: square;
         }
         .tiptap-article li {
-          margin: 4px 0;
+          margin: 0;
           padding-left: 4px;
         }
         .tiptap-article li > p {
-          margin: 0 0 4px;
+          margin: 0;
         }
         .tiptap-article ul[data-type="taskList"] {
           list-style: none;
