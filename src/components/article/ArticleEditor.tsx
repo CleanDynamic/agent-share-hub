@@ -544,7 +544,7 @@ export function ArticleEditor({
         .tiptap-article .ProseMirror {
           font-family: 'Inter', sans-serif;
           font-size: 15px;
-          line-height: 1.75;
+          line-height: 1.5;
           color: hsl(var(--foreground) / 0.92);
           padding: 48px 24px 32px;
           min-height: 300px;
