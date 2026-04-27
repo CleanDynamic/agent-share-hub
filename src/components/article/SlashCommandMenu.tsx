@@ -35,6 +35,7 @@ import {
   Cpu,
   StickyNote,
   CheckCircle2,
+  Link2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDocumentStore } from '@/lib/documentStore';
