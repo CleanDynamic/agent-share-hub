@@ -939,7 +939,6 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           <Divider />
 
           <ToolbarGroup>
-            <ToolbarButton icon={FileText} label="Add block" onClick={onInsertBlock ?? soon('Insert')} />
             <ToolbarButton icon={Link} label="Insert link" shortcut="⌘K" onClick={handleLink} />
             <Popover open={imageOpen} onOpenChange={setImageOpen}>
               <PopoverTrigger asChild>
