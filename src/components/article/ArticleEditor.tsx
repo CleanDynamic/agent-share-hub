@@ -91,6 +91,10 @@ export function ArticleEditor({
   const setDocumentTitle = useDocumentStore((state) => state.setDocumentTitle);
   const focusMode = useDocumentStore((state) => state.focusMode);
   const presence = useDocumentStore((state) => state.presence);
+  const documentId = useDocumentStore((state) => state.documentId);
+  const selection = useDocumentStore((state) => state.selection);
+  const [pendingCommentAnchor, setPendingCommentAnchor] = useState<CommentAnchor | null>(null);
+  const [unresolvedComments, setUnresolvedComments] = useState(0);
   const { saveStatus } = usePersistenceStatus();
 
   const handleAddStage = useCallback((): string | null => {
