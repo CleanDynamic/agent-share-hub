@@ -528,6 +528,10 @@ const Upload = () => {
   });
 
   // ── Save Draft Logic ──
+  // IMPORTANT: only write columns that actually exist on `content_items`
+  // and `content_blocks`. Sending removed columns (e.g. `bounty_*`,
+  // `post_category`, block canvas/agent/model fields) makes Supabase
+  // reject the entire save with PGRST204 and the user loses everything.
   const saveDraft = useCallback(async (silent = false, draftName?: string): Promise<string | null> => {
     const values = form.getValues();
     const articleBody = (canvasDoc as any)._articleBody ?? (canvasDoc as any).articleBody ?? useDocumentStore.getState().articleBody;
@@ -549,8 +553,9 @@ const Upload = () => {
         || Object.keys(stageGridsSnapshot.connections ?? {}).length > 0
       ),
     );
-    // Don't create empty drafts
-    const hasContent = values.title || values.content_type || values.description || contentBlocks.some(b => {
+    // Don't create empty drafts (unless an explicit name was passed in
+    // from the Save dialog — that's a clear user intent).
+    const hasContent = !!draftName || values.title || values.content_type || values.description || contentBlocks.some(b => {
       if ((b as any).type === 'group') return (b as GroupBlock).blocks.length > 0 || (b as GroupBlock).title;
       const cb = b as ContentBlock;
       return cb.textContent || cb.file || cb.imageFile;
@@ -561,7 +566,10 @@ const Upload = () => {
     try {
       await supabase.auth.refreshSession();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      if (!user) {
+        if (!silent) toast({ title: "Sign in required", description: "Please sign in to save drafts.", variant: "destructive" });
+        return null;
+      }
 
       const isPwyw = values.monetisation_type === "paid" && pwywFloor >= 0 && values.price_gbp === undefined;
       const wteBlocksJsonb = wteBlocks.length > 0
@@ -574,9 +582,10 @@ const Upload = () => {
           }))
         : null;
 
+      // Whitelist: only columns that exist on `content_items` today.
       const itemData: any = {
         creator_id: user.id,
-        title: values.title || "Untitled draft",
+        title: values.title || draftName || "Untitled draft",
         content_type: values.content_type || "Prompt(s)",
         description: values.description || null,
         difficulty: values.difficulty || "Beginner",
@@ -597,13 +606,9 @@ const Upload = () => {
         pwyw_enabled: isPwyw,
         pwyw_floor_gbp: isPwyw ? pwywFloor : null,
         is_pwyw: isPwyw,
-        post_category: isBountyType ? "bounty" : isBlogType ? "blog" : "blueprint",
-        bounty_enabled: isBountyType ? bountyBlueprintRequired : false,
-        bounty_gap: isBountyType && bountyGap.trim() ? bountyGap.trim() : null,
-        bounty_tip_gbp: isBountyType && bountyTipGbp !== null ? bountyTipGbp : null,
         status: "draft",
         draft_saved_at: new Date().toISOString(),
-        draft_name: draftName?.trim() || values.title || draftMeta?.name || null,
+        draft_name: (draftName?.trim() || values.title || draftMeta?.name || "Untitled draft").slice(0, 100),
         article_body: articleBody ?? null,
         stage_grids: stageGridsSnapshot,
       };
@@ -611,27 +616,67 @@ const Upload = () => {
       let draftIdToUse = currentDraftId;
 
       if (!draftIdToUse) {
-        const { data: inserted, error } = await supabase.from("content_items").insert(itemData).select("id").single();
-        if (error || !inserted) { console.error("Draft save failed:", error); return null; }
+        const { data: inserted, error } = await supabase
+          .from("content_items")
+          .insert(itemData)
+          .select("id")
+          .single();
+        if (error || !inserted) {
+          console.error("Draft save failed:", error);
+          if (!silent) toast({ title: "Failed to save draft", description: error?.message ?? "Unknown error", variant: "destructive" });
+          return null;
+        }
         draftIdToUse = inserted.id;
         setCurrentDraftId(draftIdToUse);
+        // Pin the URL to the draft so back/forward and refresh re-open
+        // this exact draft instead of starting a new upload.
+        try {
+          const params = new URLSearchParams(window.location.search);
+          params.set("draft", draftIdToUse!);
+          params.delete("post_type");
+          window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+        } catch (_) { /* noop */ }
       } else {
         const { creator_id, ...updateData } = itemData;
-        await supabase.from("content_items").update(updateData).eq("id", draftIdToUse);
+        const { error } = await supabase
+          .from("content_items")
+          .update(updateData)
+          .eq("id", draftIdToUse);
+        if (error) {
+          console.error("Draft update failed:", error);
+          if (!silent) toast({ title: "Failed to save draft", description: error.message, variant: "destructive" });
+          return null;
+        }
       }
 
-      // Re-insert blocks: delete existing then re-insert
-      await supabase.from("content_blocks").delete().eq("content_id", draftIdToUse!);
+      // Re-insert content_blocks using only columns that exist in the
+      // current schema. Anything else gets stashed into `sub_blocks`
+      // (jsonb) so we don't lose it on round-trip.
+      const { error: delErr } = await supabase
+        .from("content_blocks")
+        .delete()
+        .eq("content_id", draftIdToUse!);
+      if (delErr) {
+        console.error("Draft block cleanup failed:", delErr);
+      }
+
       const draftFlatBlocks = flattenBlocks(contentBlocks);
       for (let i = 0; i < draftFlatBlocks.length; i++) {
         const block = draftFlatBlocks[i];
-        await supabase.from("content_blocks").insert({
+        const extras: Record<string, unknown> = {};
+        if (block.subheading) extras.subheading = block.subheading.trim();
+        if (block.groupId) extras.groupId = block.groupId;
+        if (block.groupTitle) extras.groupTitle = block.groupTitle;
+        if (block.formatting === "sub_list" && block.subBlocks?.length) {
+          extras.subBlocks = block.subBlocks;
+        }
+        const { error: blkErr } = await supabase.from("content_blocks").insert({
           content_id: draftIdToUse,
           position: i + 1,
-          group_id: block.groupId || null,
-          group_title: block.groupTitle || null,
           block_type: block.type === "long_text" ? "long_text" : block.type,
-          text_content: (block.type === "text" || block.type === "long_text") ? block.textContent : null,
+          text_content: (block.type === "text" || block.type === "long_text" || block.type === "section_heading")
+            ? (block.textContent ?? block.subheading ?? null)
+            : null,
           formatting: (block.type === "text" || block.type === "long_text") ? { type: block.formatting } : null,
           formatting_type: block.formatting || "paragraph",
           file_url: (block as any).fileUrl || null,
@@ -640,102 +685,29 @@ const Upload = () => {
           image_description: block.type === "image" ? block.imageDescription : null,
           is_preview: block.isPreview ?? false,
           use_instructions: block.useInstructions?.trim() || null,
-          sub_blocks: block.formatting === "sub_list" && block.subBlocks?.length > 0 ? block.subBlocks : null,
-
-          subheading: block.subheading?.trim() || null,
-
-          // Prompt
-          prompt_role: block.promptRole || null,
-          prompt_model: block.promptModel || null,
-          prompt_variables: block.promptVariables?.length
-            ? block.promptVariables : null,
-          prompt_example_output: block.promptExampleOutput || null,
-
-          // Agent
-          agent_model: block.agentModel || null,
-          agent_temperature: block.agentTemperature ?? null,
-          agent_max_tokens: block.agentMaxTokens || null,
-          agent_tools: block.agentTools?.length ? block.agentTools : null,
-          agent_memory_type: block.agentMemoryType || null,
-          agent_capabilities: block.agentCapabilities?.length
-            ? block.agentCapabilities : null,
-
-          // Workflow
-          workflow_trigger: block.workflowTrigger || null,
-          workflow_output: block.workflowOutput || null,
-          workflow_steps: block.workflowSteps?.length
-            ? block.workflowSteps : null,
-
-          // Model params
-          model_name: block.modelName || null,
-          model_temperature: block.modelTemperature ?? null,
-          model_top_p: block.modelTopP ?? null,
-          model_max_tokens: block.modelMaxTokens || null,
-          model_system_prompt: block.modelSystemPrompt || null,
-          model_stop_sequences: block.modelStopSequences?.length
-            ? block.modelStopSequences : null,
-          model_reasoning: block.modelReasoning || null,
-
-          // Tool setup
-          tool_name: block.toolName || null,
-          tool_url: block.toolUrl || null,
-          tool_prerequisites: block.toolPrerequisites?.length
-            ? block.toolPrerequisites : null,
-          tool_steps: block.toolSteps?.length ? block.toolSteps : null,
-          tool_errors: block.toolErrors?.length ? block.toolErrors : null,
-          tool_time_estimate: block.toolTimeEstimate || null,
-
-          // Code
-          code_language: block.codeLanguage || null,
-          code_dependencies: block.codeDependencies?.length
-            ? block.codeDependencies : null,
-          code_env_vars: block.codeEnvVars?.length
-            ? block.codeEnvVars : null,
-          code_run_instructions: block.codeRunInstructions || null,
-          code_example_output: block.codeExampleOutput || null,
-
-          // Result
-          result_before: block.resultBefore || null,
-          result_after: block.resultAfter || null,
-          result_metrics: block.resultMetrics?.length
-            ? block.resultMetrics : null,
-          result_verdict: block.resultVerdict || null,
-          result_rating: block.resultRating || null,
-
-          // Comparison
-          comparison_label_a: block.comparisonLabelA || null,
-          comparison_label_b: block.comparisonLabelB || null,
-          comparison_type_a: block.comparisonTypeA || null,
-          comparison_type_b: block.comparisonTypeB || null,
-          comparison_content_a: Object.keys(block.comparisonContentA ?? {}).length
-            ? block.comparisonContentA : null,
-          comparison_content_b: Object.keys(block.comparisonContentB ?? {}).length
-            ? block.comparisonContentB : null,
-          comparison_axis: block.comparisonAxis || null,
-          comparison_verdict: block.comparisonVerdict || null,
-
-          // Resource
-          resource_title: block.resourceTitle || null,
-          resource_type: block.resourceType || null,
-          resource_annotation: block.resourceAnnotation || null,
-          resource_is_paywalled: block.resourceIsPaywalled ?? false,
+          sub_blocks: Object.keys(extras).length > 0 ? extras : null,
+          external_file_url: block.externalFileUrl?.trim() || null,
         } as any);
+        if (blkErr) {
+          console.error("Draft block insert failed:", blkErr);
+        }
       }
 
       const now = new Date().toISOString();
-      const savedName = draftName?.trim() || values.title || draftMeta?.name || "Untitled draft";
+      const savedName = (draftName?.trim() || values.title || draftMeta?.name || "Untitled draft").slice(0, 100);
       setDraftMeta({ name: savedName, savedAt: now });
       lastAutosaveRef.current = new Date();
 
       if (!silent) toast({ title: `Saved “${savedName}”`, description: "Draft saved to your library." });
       return draftIdToUse;
     } catch (err: any) {
+      console.error("Draft save threw:", err);
       if (!silent) toast({ title: "Failed to save draft", description: err?.message, variant: "destructive" });
       return currentDraftId;
     } finally {
       if (!silent) setSavingDraft(false);
     }
-  }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast, isBountyType, isBlogType, bountyBlueprintRequired, bountyGap, bountyTipGbp, draftMeta, canvasDoc, selectedTopics]);
+  }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast, draftMeta, canvasDoc, selectedTopics]);
 
   // ── Autosave every 60 seconds (fallback) ──
   useEffect(() => {
@@ -812,6 +784,77 @@ const Upload = () => {
     setExitDialogOpen(false);
     pendingNavigationRef.current = null;
   };
+
+  // ── Intercept in-app navigation to prompt save ──
+  // Catch link/button clicks anywhere on the page that would navigate
+  // away from /upload, and pop history-back attempts.
+  useEffect(() => {
+    if (success) return;
+
+    const hasUnsaved = () => {
+      if (skipExitGuardRef.current) return false;
+      const v = form.getValues();
+      const articleBody = (canvasDoc as any)._articleBody ?? useDocumentStore.getState().articleBody;
+      const ds = useDocumentStore.getState();
+      const hasGrid =
+        Object.keys(ds.stages).length > 0 ||
+        Object.keys(ds.blocks).length > 0;
+      return Boolean(
+        v.title || v.description || v.use_instructions || v.what_to_expect ||
+        contentBlocks.some(b => {
+          if ((b as any).type === 'group') return (b as GroupBlock).blocks.length > 0;
+          const cb = b as ContentBlock;
+          return cb.textContent || cb.file || cb.imageFile;
+        }) ||
+        articleBody || hasGrid,
+      );
+    };
+
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented) return;
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const anchor = target.closest('a[href]') as HTMLAnchorElement | null;
+      let dest: string | null = null;
+      if (anchor) {
+        const href = anchor.getAttribute('href') || '';
+        if (!href || href.startsWith('#') || anchor.target === '_blank') return;
+        try {
+          const url = new URL(href, window.location.origin);
+          if (url.origin !== window.location.origin) return;
+          dest = url.pathname + url.search + url.hash;
+        } catch { return; }
+      }
+      if (!dest) return;
+      const here = window.location.pathname + window.location.search;
+      if (dest === here) return;
+      try {
+        const u = new URL(dest, window.location.origin);
+        if (u.pathname === '/upload') return;
+      } catch { /* noop */ }
+      if (!hasUnsaved()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      pendingNavigationRef.current = () => navigate(dest!);
+      setExitDialogOpen(true);
+    };
+
+    const onPopState = () => {
+      if (!hasUnsaved()) return;
+      window.history.pushState(null, '', window.location.href);
+      pendingNavigationRef.current = () => window.history.back();
+      setExitDialogOpen(true);
+    };
+
+    document.addEventListener('click', onClick, true);
+    window.addEventListener('popstate', onPopState);
+    window.history.pushState(null, '', window.location.href);
+    return () => {
+      document.removeEventListener('click', onClick, true);
+      window.removeEventListener('popstate', onPopState);
+    };
+  }, [contentBlocks, form, navigate, success, canvasDoc]);
 
   // ── Scroll to a block by id inside the canvas ──
   const scrollToBlock = useCallback((blockId: string) => {
