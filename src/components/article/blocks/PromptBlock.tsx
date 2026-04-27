@@ -179,6 +179,42 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
       return;
     }
 
+    // Pre-flight: check named-block dependencies before assembling the
+    // prompt. If a referenced block exists but hasn't produced output, ask
+    // the user whether to continue (with empty substitution) or run it first.
+    const blocking = variableInfos.filter((v) => v.status !== 'resolved');
+    if (blocking.length > 0) {
+      const missing = blocking.filter((v) => v.status === 'missing');
+      const noOutput = blocking.filter((v) => v.status === 'no_output');
+      if (missing.length > 0) {
+        toast.error(
+          `Unknown variable${missing.length > 1 ? 's' : ''}: ${missing
+            .map((m) => `{{${m.name}}}`)
+            .join(', ')}`,
+        );
+        setStatus('error');
+        return;
+      }
+      if (noOutput.length > 0) {
+        const names = noOutput.map((m) => `'${m.name}'`).join(', ');
+        const proceed = window.confirm(
+          `The block${noOutput.length > 1 ? 's' : ''} ${names} ${
+            noOutput.length > 1 ? 'have' : 'has'
+          } no output yet. Run ${
+            noOutput.length > 1 ? 'them' : 'it'
+          } first?\n\nOK to cancel and run the dependency, Cancel to continue with empty values.`,
+        );
+        if (proceed) {
+          // Focus the first dependency so the user can run it manually.
+          if (noOutput[0].blockId) {
+            setSelection({ kind: 'block', ids: [noOutput[0].blockId] });
+          }
+          setStatus('idle');
+          return;
+        }
+      }
+    }
+
     setStatus('running');
     eventBus.emit('block:run:start', { blockId });
 
