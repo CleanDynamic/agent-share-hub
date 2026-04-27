@@ -32,7 +32,7 @@ import {
   List,
   ListOrdered,
   CheckSquare,
-  ChevronRight,
+  // ChevronRight removed (toggle-list button removed)
   Link,
   Image,
   Video,
