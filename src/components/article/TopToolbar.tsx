@@ -32,7 +32,7 @@ import {
   List,
   ListOrdered,
   CheckSquare,
-  ChevronRight,
+  // ChevronRight removed (toggle-list button removed)
   Link,
   Image,
   Video,
@@ -741,15 +741,22 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
         chain.setHeading({ level: 3 }).run();
         break;
       case 'quote':
-        chain.setParagraph().run();
+        editor.chain().focus().setParagraph().run();
         editor.chain().focus().toggleBlockquote().run();
+        // clear callout flag so it's a plain quote
+        editor.chain().focus().updateAttributes('blockquote', { 'data-callout': null } as never).run();
         break;
       case 'code':
         chain.toggleCodeBlock().run();
         break;
       case 'caption':
+        editor.chain().focus().setParagraph().run();
+        editor.chain().focus().updateAttributes('paragraph', { class: 'caption' } as never).run();
+        break;
       case 'callout':
-        soon(value === 'caption' ? 'Caption' : 'Callout')();
+        editor.chain().focus().setParagraph().run();
+        editor.chain().focus().setBlockquote().run();
+        editor.chain().focus().updateAttributes('blockquote', { 'data-callout': 'true' } as never).run();
         break;
       case 'body':
       default:
@@ -766,6 +773,57 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
       return;
     }
     setLinkOpen(true);
+  };
+
+  // Image insertion popover state
+  const [imageOpen, setImageOpen] = React.useState(false);
+  const [imageUrl, setImageUrl] = React.useState('');
+  const [imageAlt, setImageAlt] = React.useState('');
+  const insertImage = () => {
+    if (!editor) return;
+    const src = imageUrl.trim();
+    if (!src) return;
+    editor.chain().focus().setImage({ src, alt: imageAlt.trim() || undefined }).run();
+    setImageUrl('');
+    setImageAlt('');
+    setImageOpen(false);
+  };
+
+  // Video insertion popover state
+  const [videoOpen, setVideoOpen] = React.useState(false);
+  const [videoUrl, setVideoUrl] = React.useState('');
+  const insertVideo = () => {
+    if (!editor) return;
+    const url = videoUrl.trim();
+    if (!url) return;
+
+    let html = '';
+    // YouTube
+    const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
+    if (ytMatch) {
+      html = `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+    } else {
+      // Vimeo
+      const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+      if (vimeoMatch) {
+        html = `<div class="video-embed"><iframe src="https://player.vimeo.com/video/${vimeoMatch[1]}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>`;
+      } else if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(url)) {
+        // Direct video file
+        html = `<div class="video-embed"><video controls src="${url}"></video></div>`;
+      } else {
+        // Fallback: treat as iframe-able URL
+        html = `<div class="video-embed"><iframe src="${url}" allowfullscreen></iframe></div>`;
+      }
+    }
+
+    editor.chain().focus().insertContent(html).run();
+    setVideoUrl('');
+    setVideoOpen(false);
+  };
+
+  const insertBlockReference = () => {
+    if (!editor) return;
+    editor.chain().focus().insertContent('@').run();
   };
 
   return (
@@ -813,7 +871,7 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           <ToolbarGroup>
             <ToolbarButton icon={Bold} label="Bold" shortcut="⌘B" isActive={isActive('bold')} onClick={run((c) => c.toggleBold().run())} />
             <ToolbarButton icon={Italic} label="Italic" shortcut="⌘I" isActive={isActive('italic')} onClick={run((c) => c.toggleItalic().run())} />
-            <ToolbarButton icon={Underline} label="Underline" shortcut="⌘U" onClick={soon('Underline')} />
+            <ToolbarButton icon={Underline} label="Underline" shortcut="⌘U" isActive={isActive('underline')} onClick={run((c) => c.toggleUnderline().run())} />
             <ToolbarButton icon={Code} label="Inline code" shortcut="⌘E" isActive={isActive('code')} onClick={run((c) => c.toggleCode().run())} />
           </ToolbarGroup>
 
@@ -846,16 +904,16 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
                 else editor.chain().focus().setHighlight({ color }).run();
               }}
             />
-            <ToolbarButton icon={Highlighter} label="Highlight" onClick={soon('Highlight')} />
+            <ToolbarButton icon={Highlighter} label="Highlight" isActive={isActive('highlight')} onClick={run((c) => c.toggleHighlight().run())} />
           </ToolbarGroup>
 
           <Divider />
 
           <ToolbarGroup>
-            <ToolbarButton icon={AlignLeft} label="Align left" isActive={alignment === 'left'} onClick={soon('Alignment')} />
-            <ToolbarButton icon={AlignCenter} label="Align center" onClick={soon('Alignment')} />
-            <ToolbarButton icon={AlignRight} label="Align right" onClick={soon('Alignment')} />
-            <ToolbarButton icon={AlignJustify} label="Justify" onClick={soon('Alignment')} />
+            <ToolbarButton icon={AlignLeft} label="Align left" isActive={editor?.isActive({ textAlign: 'left' } as never) ?? false} onClick={run((c) => c.setTextAlign('left').run())} />
+            <ToolbarButton icon={AlignCenter} label="Align center" isActive={editor?.isActive({ textAlign: 'center' } as never) ?? false} onClick={run((c) => c.setTextAlign('center').run())} />
+            <ToolbarButton icon={AlignRight} label="Align right" isActive={editor?.isActive({ textAlign: 'right' } as never) ?? false} onClick={run((c) => c.setTextAlign('right').run())} />
+            <ToolbarButton icon={AlignJustify} label="Justify" isActive={editor?.isActive({ textAlign: 'justify' } as never) ?? false} onClick={run((c) => c.setTextAlign('justify').run())} />
             <ToolbarButton
               icon={Outdent}
               label="Outdent"
@@ -875,8 +933,7 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           <ToolbarGroup>
             <ToolbarButton icon={List} label="Bulleted list" isActive={isActive('bulletList')} onClick={run((c) => c.toggleBulletList().run())} />
             <ToolbarButton icon={ListOrdered} label="Numbered list" isActive={isActive('orderedList')} onClick={run((c) => c.toggleOrderedList().run())} />
-            <ToolbarButton icon={CheckSquare} label="Checklist" onClick={soon('Checklist')} />
-            <ToolbarButton icon={ChevronRight} label="Toggle list" onClick={soon('Toggle list')} />
+            <ToolbarButton icon={CheckSquare} label="Checklist" isActive={isActive('taskList')} onClick={run((c) => (c as any).toggleTaskList().run())} />
           </ToolbarGroup>
 
           <Divider />
@@ -884,8 +941,109 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           <ToolbarGroup>
             <ToolbarButton icon={FileText} label="Add block" onClick={onInsertBlock ?? soon('Insert')} />
             <ToolbarButton icon={Link} label="Insert link" shortcut="⌘K" onClick={handleLink} />
-            <ToolbarButton icon={Image} label="Insert image" onClick={soon('Image')} />
-            <ToolbarButton icon={Video} label="Insert video" onClick={soon('Video')} />
+            <Popover open={imageOpen} onOpenChange={setImageOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  title="Insert image"
+                  aria-label="Insert image"
+                  style={{
+                    width: 28, height: 28, borderRadius: 6,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', border: 'none', background: 'transparent',
+                    color: 'hsl(var(--foreground) / 0.7)', padding: 0,
+                  }}
+                >
+                  <Image size={14} strokeWidth={1.8} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                sideOffset={6}
+                className="p-3 w-72"
+                style={{
+                  background: 'hsl(240 20% 8% / 0.98)',
+                  border: '1px solid hsl(var(--foreground) / 0.08)',
+                  borderRadius: 10,
+                  fontFamily: 'Inter, sans-serif',
+                  color: 'hsl(var(--foreground) / 0.9)',
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--foreground) / 0.6)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                  Insert image
+                </div>
+                <input
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertImage(); } }}
+                  placeholder="Image URL"
+                  autoFocus
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.03)', color: 'hsl(var(--foreground) / 0.9)', padding: '0 8px', fontSize: 12, marginBottom: 6, outline: 'none', boxSizing: 'border-box' }}
+                />
+                <input
+                  value={imageAlt}
+                  onChange={(e) => setImageAlt(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertImage(); } }}
+                  placeholder="Alt text (optional)"
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.03)', color: 'hsl(var(--foreground) / 0.9)', padding: '0 8px', fontSize: 12, marginBottom: 8, outline: 'none', boxSizing: 'border-box' }}
+                />
+                <button
+                  type="button"
+                  onClick={insertImage}
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.06)', color: 'hsl(var(--foreground) / 0.9)', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}
+                >
+                  Insert
+                </button>
+              </PopoverContent>
+            </Popover>
+            <Popover open={videoOpen} onOpenChange={setVideoOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  title="Insert video"
+                  aria-label="Insert video"
+                  style={{
+                    width: 28, height: 28, borderRadius: 6,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', border: 'none', background: 'transparent',
+                    color: 'hsl(var(--foreground) / 0.7)', padding: 0,
+                  }}
+                >
+                  <Video size={14} strokeWidth={1.8} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                sideOffset={6}
+                className="p-3 w-72"
+                style={{
+                  background: 'hsl(240 20% 8% / 0.98)',
+                  border: '1px solid hsl(var(--foreground) / 0.08)',
+                  borderRadius: 10,
+                  fontFamily: 'Inter, sans-serif',
+                  color: 'hsl(var(--foreground) / 0.9)',
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--foreground) / 0.6)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                  Insert video
+                </div>
+                <input
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertVideo(); } }}
+                  placeholder="YouTube, Vimeo, or .mp4 URL"
+                  autoFocus
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.03)', color: 'hsl(var(--foreground) / 0.9)', padding: '0 8px', fontSize: 12, marginBottom: 8, outline: 'none', boxSizing: 'border-box' }}
+                />
+                <button
+                  type="button"
+                  onClick={insertVideo}
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.06)', color: 'hsl(var(--foreground) / 0.9)', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}
+                >
+                  Insert
+                </button>
+              </PopoverContent>
+            </Popover>
             <TablePickerPopover
               editor={editor}
               trigger={
@@ -923,7 +1081,7 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
               }
             />
             <ToolbarButton icon={LayoutGrid} label="Insert stage grid" onClick={onInsertBlock ?? soon('Stage grid')} />
-            <ToolbarButton icon={FileSymlink} label="Insert block reference" onClick={soon('Block reference')} />
+            <ToolbarButton icon={FileSymlink} label="Insert block reference" onClick={insertBlockReference} />
             <ToolbarButton icon={Minus} label="Insert divider" onClick={run((c) => c.setHorizontalRule().run())} />
           </ToolbarGroup>
 

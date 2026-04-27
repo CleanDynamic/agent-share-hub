@@ -7,6 +7,10 @@ import Highlight from '@tiptap/extension-highlight';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import LinkExtension from '@tiptap/extension-link';
+import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
 import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableHeader } from '@tiptap/extension-table-header';
@@ -143,6 +147,10 @@ export function ArticleEditor({
         autolink: true,
         HTMLAttributes: { rel: 'noopener noreferrer nofollow' },
       }),
+      Underline,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      TaskList,
+      TaskItem.configure({ nested: true }),
       Table.configure({ resizable: true, HTMLAttributes: { class: 'tiptap-table' } }),
       TableRow,
       TableHeader,
@@ -681,6 +689,61 @@ export function ArticleEditor({
         }
         .tiptap-article .sh-match-active {
           background: rgba(232, 87, 26, 0.5);
+        }
+        .tiptap-article p.caption {
+          font-size: 13px;
+          color: hsl(var(--foreground) / 0.55);
+          font-style: italic;
+          text-align: center;
+          margin: 4px 0 16px;
+        }
+        .tiptap-article blockquote[data-callout="true"] {
+          background: hsl(var(--secondary) / 0.08);
+          border-left: 3px solid hsl(var(--secondary));
+          padding: 12px 16px;
+          border-radius: 6px;
+          margin: 16px 0;
+          font-style: normal;
+          color: hsl(var(--foreground) / 0.85);
+        }
+        .tiptap-article ul[data-type="taskList"] {
+          list-style: none;
+          padding: 0;
+        }
+        .tiptap-article ul[data-type="taskList"] li {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          margin: 4px 0;
+        }
+        .tiptap-article ul[data-type="taskList"] li > label {
+          flex-shrink: 0;
+          margin-top: 4px;
+          user-select: none;
+        }
+        .tiptap-article ul[data-type="taskList"] li > div {
+          flex: 1;
+        }
+        .tiptap-article ul[data-type="taskList"] li[data-checked="true"] > div {
+          color: hsl(var(--foreground) / 0.45);
+          text-decoration: line-through;
+        }
+        .tiptap-article .video-embed {
+          position: relative;
+          width: 100%;
+          padding-bottom: 56.25%;
+          margin: 16px 0;
+          border-radius: 8px;
+          overflow: hidden;
+          background: hsl(var(--foreground) / 0.05);
+        }
+        .tiptap-article .video-embed iframe,
+        .tiptap-article .video-embed video {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          border: none;
         }
       `}</style>
 
