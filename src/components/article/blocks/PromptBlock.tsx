@@ -19,7 +19,6 @@ import {
   getBlockValue,
   indexBlocksByName,
   isNameUnique,
-  blockHasOutput,
 } from '@/lib/variables';
 import { VariableChips } from '@/components/article/blocks/shared/VariableChips';
 import { useVariableAutocomplete } from '@/components/article/blocks/shared/VariableAutocomplete';
