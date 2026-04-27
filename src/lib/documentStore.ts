@@ -132,6 +132,7 @@ export const useDocumentStore = create<DocumentState>()(
     stages: {},
     blocks: {},
     connections: {},
+    stageOpen: {},
     selection: emptySelection,
     focusMode: 'edit',
     dirty: new Set<string>(),
