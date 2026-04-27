@@ -518,6 +518,16 @@ export function ArticleEditor({
     item.action(editor);
   };
 
+  const handleSaveClick = useCallback(() => {
+    if (!editor || saving) return;
+    try {
+      const json = editor.getJSON();
+      onChange?.(json);
+      useDocumentStore.getState().setArticleBody(json);
+    } catch (_) { /* noop */ }
+    onSave?.();
+  }, [editor, onChange, onSave, saving]);
+
   // Track editor focus via focusin/focusout on the container
   useEffect(() => {
     const container = editorContainerRef.current;
@@ -889,7 +899,7 @@ export function ArticleEditor({
 
             <button
               type="button"
-              onClick={onSave}
+              onClick={handleSaveClick}
               disabled={saving}
               style={{
                 display: 'inline-flex',

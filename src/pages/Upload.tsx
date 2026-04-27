@@ -530,12 +530,31 @@ const Upload = () => {
   // ── Save Draft Logic ──
   const saveDraft = useCallback(async (silent = false): Promise<string | null> => {
     const values = form.getValues();
+    const articleBody = (canvasDoc as any)._articleBody ?? (canvasDoc as any).articleBody ?? useDocumentStore.getState().articleBody;
+    const stageGridsSnapshot = (() => {
+      try {
+        const ds = useDocumentStore.getState();
+        return {
+          stages: ds.stages,
+          blocks: ds.blocks,
+          connections: ds.connections,
+        };
+      } catch { return null; }
+    })();
+    const hasStageGridContent = Boolean(
+      stageGridsSnapshot
+      && (
+        Object.keys(stageGridsSnapshot.stages ?? {}).length > 0
+        || Object.keys(stageGridsSnapshot.blocks ?? {}).length > 0
+        || Object.keys(stageGridsSnapshot.connections ?? {}).length > 0
+      ),
+    );
     // Don't create empty drafts
     const hasContent = values.title || values.content_type || values.description || contentBlocks.some(b => {
       if ((b as any).type === 'group') return (b as GroupBlock).blocks.length > 0 || (b as GroupBlock).title;
       const cb = b as ContentBlock;
       return cb.textContent || cb.file || cb.imageFile;
-    });
+    }) || articleBody || hasStageGridContent;
     if (!hasContent) return currentDraftId;
 
     if (!silent) setSavingDraft(true);
@@ -585,17 +604,8 @@ const Upload = () => {
         status: "draft",
         draft_saved_at: new Date().toISOString(),
         draft_name: values.title || null,
-        article_body: (canvasDoc as any)._articleBody ?? null,
-        stage_grids: (() => {
-          try {
-            const ds = useDocumentStore.getState();
-            return {
-              stages: ds.stages,
-              blocks: ds.blocks,
-              connections: ds.connections,
-            };
-          } catch { return null; }
-        })(),
+        article_body: articleBody ?? null,
+        stage_grids: stageGridsSnapshot,
       };
 
       let draftIdToUse = currentDraftId;
@@ -1304,7 +1314,10 @@ const Upload = () => {
           // and status strip are NOT mounted here.
           <StageFullscreen
             stageId={openStageId}
-            onClose={() => closeStageAction()}
+            onClose={() => {
+              saveDraft(true);
+              closeStageAction();
+            }}
           />
         ) : (
           // ARTICLE MODE — original editor surface.
@@ -1371,10 +1384,7 @@ const Upload = () => {
                 onOpenNotes={() => {}}
                 onGrammarCheck={() => {}}
                 onClearAll={() => {}}
-                onSave={() => {
-                  saveDraft(false);
-                  canvasDoc.saveDocument(currentDraftId ?? '');
-                }}
+                onSave={() => saveDraft(false)}
                 onPublish={() => {
                   const title = form.getValues('title');
                   if (!title || !title.trim()) {
