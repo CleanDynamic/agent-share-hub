@@ -20,6 +20,7 @@ import { CompareBlockNode } from '../blocks/CompareBlock';
 import { HeadingBlockNode } from '../blocks/HeadingBlock';
 import { ModelBlockNode } from '../blocks/ModelBlock';
 import { NoteBlockNode } from '../blocks/NoteBlock';
+import { ResultBlockNode } from '../blocks/ResultBlock';
 
 interface StageCanvasProps {
   stageId: string;
