@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Bold, Italic, Underline, Strikethrough, Link, Code, Highlighter } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough, Link, Code, Highlighter, MessageCircle } from 'lucide-react';
 import type { Editor } from '@tiptap/react';
 
 interface BubbleToolbarProps {
   editor: Editor | null;
   containerRef: React.RefObject<HTMLDivElement>;
+  onAddComment?: () => void;
 }
 
 interface ToolbarButton {
@@ -15,7 +16,7 @@ interface ToolbarButton {
   action: () => void;
 }
 
-export function BubbleToolbar({ editor, containerRef }: BubbleToolbarProps) {
+export function BubbleToolbar({ editor, containerRef, onAddComment }: BubbleToolbarProps) {
   const [visible, setVisible] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
@@ -129,6 +130,17 @@ export function BubbleToolbar({ editor, containerRef }: BubbleToolbarProps) {
         document.execCommand('hiliteColor', false, 'rgba(232,87,26,0.2)');
       },
     },
+    ...(onAddComment
+      ? [
+          {
+            key: 'comment',
+            icon: <MessageCircle size={16} />,
+            label: 'Add comment (⌘⇧M)',
+            isActive: () => false,
+            action: () => onAddComment(),
+          },
+        ]
+      : []),
   ];
 
   return (
