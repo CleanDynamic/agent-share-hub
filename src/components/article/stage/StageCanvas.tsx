@@ -309,8 +309,10 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
         .stage-canvas-root .react-flow__attribution {
           display: none !important;
         }
-        .stage-canvas-root .react-flow__minimap,
         .stage-canvas-root .react-flow__controls {
+          display: none !important;
+        }
+        .stage-canvas-root.no-minimap .react-flow__minimap {
           display: none !important;
         }
         @keyframes block-scale-in {
