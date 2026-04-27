@@ -528,6 +528,13 @@ export function ArticleEditor({
           background: hsl(var(--primary, 18 79% 54%) / 0.5);
           cursor: col-resize;
         }
+        .tiptap-article .sh-match {
+          background: rgba(232, 87, 26, 0.25);
+          border-radius: 2px;
+        }
+        .tiptap-article .sh-match-active {
+          background: rgba(232, 87, 26, 0.5);
+        }
       `}</style>
 
       <TopToolbar editor={editor} onInsertBlock={() => handleQuickInsert('stage')} />
