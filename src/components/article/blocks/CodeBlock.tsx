@@ -424,24 +424,36 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
 
           <div className="mt-4 space-y-4">
             {/* Name + language */}
-            <div className="flex items-center gap-2">
-              <input
-                value={name}
-                onChange={(e) => onNameChange(e.target.value)}
-                placeholder="Block name"
-                className="flex-1 px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-sm text-white/80 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
-              />
-              <select
-                value={language}
-                onChange={(e) => onLanguageChange(e.target.value as CodeLanguage)}
-                className="px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-xs text-white/80 outline-none focus:border-white/[0.12]"
-              >
-                {SUPPORTED_LANGUAGES.map((l) => (
-                  <option key={l.value} value={l.value} className="bg-[#16161e]">
-                    {l.label}
-                  </option>
-                ))}
-              </select>
+            <div>
+              <div className="flex items-center gap-2">
+                <input
+                  value={name}
+                  onChange={(e) => onNameChange(e.target.value)}
+                  placeholder="Block name"
+                  className={cn(
+                    'flex-1 px-3 py-2 rounded-md bg-white/[0.03] border text-sm text-white/80 placeholder:text-white/30 outline-none transition-colors',
+                    nameError
+                      ? 'border-red-500/50 focus:border-red-500/70'
+                      : 'border-white/[0.06] focus:border-white/[0.12]',
+                  )}
+                />
+                <select
+                  value={language}
+                  onChange={(e) =>
+                    onLanguageChange(e.target.value as CodeLanguage)
+                  }
+                  className="px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-xs text-white/80 outline-none focus:border-white/[0.12]"
+                >
+                  {SUPPORTED_LANGUAGES.map((l) => (
+                    <option key={l.value} value={l.value} className="bg-[#16161e]">
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {nameError && (
+                <p className="mt-1 text-[10.5px] text-red-400">{nameError}</p>
+              )}
             </div>
 
             {/* Editor */}
@@ -479,25 +491,19 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
               <label className="block text-[11px] font-medium text-white/50 mb-1.5">
                 Inputs ({inputs.length})
               </label>
-              {inputs.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {inputs.map((v) => (
-                    <span
-                      key={v}
-                      className="px-2 py-0.5 text-[10px] font-medium rounded-full"
-                      style={{
-                        color: '#2EC4B6',
-                        background: 'rgba(46,196,182,0.1)',
-                        border: '1px solid rgba(46,196,182,0.2)',
-                      }}
-                    >
-                      {`{{${v}}}`}
-                    </span>
-                  ))}
-                </div>
+              {inputInfos.length > 0 ? (
+                <VariableChips
+                  variables={inputInfos}
+                  onChipClick={(info) => {
+                    if (info.blockId) {
+                      setSelection({ kind: 'block', ids: [info.blockId] });
+                    }
+                  }}
+                />
               ) : (
                 <p className="text-[11px] text-white/35">
-                  No <code className="text-white/50">{`{{variable}}`}</code> references detected.
+                  No <code className="text-white/50">{`{{variable}}`}</code>{' '}
+                  references detected.
                 </p>
               )}
             </div>
