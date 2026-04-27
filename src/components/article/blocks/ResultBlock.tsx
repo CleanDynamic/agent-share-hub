@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/lib/documentStore';
 import { isNameUnique } from '@/lib/variables';
+import { useEvent } from '@/lib/eventBus';
 import {
   Sheet,
   SheetContent,
