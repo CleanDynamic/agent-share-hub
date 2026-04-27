@@ -474,15 +474,17 @@ export function ArticleEditor({
 
       <TopToolbar editor={editor} onInsertBlock={() => handleQuickInsert('stage')} />
 
-      <EditorContent
-        editor={editor}
-        className="tiptap-article"
-        style={{
-          width: '100%',
-          maxWidth: 720,
-          margin: '0 auto',
-        }}
-      />
+      <TableContextMenu editor={editor}>
+        <EditorContent
+          editor={editor}
+          className="tiptap-article"
+          style={{
+            width: '100%',
+            maxWidth: 720,
+            margin: '0 auto',
+          }}
+        />
+      </TableContextMenu>
 
       {/* Slash command popup */}
       <SlashCommandMenu
