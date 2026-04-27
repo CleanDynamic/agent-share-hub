@@ -77,6 +77,12 @@ export function ArticleEditor({
   const [insertHovered, setInsertHovered] = useState(false);
   const [findOpen, setFindOpen] = useState(false);
   const [findShowReplace, setFindShowReplace] = useState(false);
+  const [refOpen, setRefOpen] = useState(false);
+  const [refQuery, setRefQuery] = useState('');
+  const [refPos, setRefPos] = useState<{ top: number; left: number } | null>(null);
+  const [refSelectedIndex, setRefSelectedIndex] = useState(0);
+  const [refItems, setRefItems] = useState<BlockPickerItem[]>([]);
+  const refStartPos = useRef<number | null>(null);
   const slashStartPos = useRef<number | null>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const setDocumentTitle = useDocumentStore((state) => state.setDocumentTitle);
