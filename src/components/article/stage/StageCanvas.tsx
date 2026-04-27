@@ -47,15 +47,6 @@ const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
   note: 'note',
 };
 
-const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
-  prompt: 'prompt',
-  code: 'code',
-  text: 'text',
-  agent: 'agent',
-  compare: 'compare',
-  heading: 'heading',
-  model: 'model',
-};
 
 function blockToNode(block: Block): Node {
   return {
