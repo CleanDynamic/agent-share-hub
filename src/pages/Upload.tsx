@@ -39,6 +39,7 @@ import { ArticleEditor } from '@/components/article/ArticleEditor';
 import type { EvidenceMediaType } from '@/components/canvas/CanvasHeader';
 import { CanvasHeader } from '@/components/canvas/CanvasHeader';
 import { TemplateLibrary } from '@/components/canvas/TemplateLibrary';
+import { eventBus } from '@/lib/eventBus';
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
