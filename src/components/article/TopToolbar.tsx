@@ -935,6 +935,7 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           </ToolbarGroup>
         </div>
       </div>
+      <LinkPopover editor={editor} open={linkOpen} onOpenChange={setLinkOpen} />
     </TooltipProvider>
   );
 }
