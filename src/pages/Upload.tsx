@@ -1244,7 +1244,6 @@ const Upload = () => {
 
   // ── Article mode: after type is chosen, render ArticleEditor ──
   if (!showTypeChooser && !success) {
-    const stageOpen = openStageId !== null;
     return (
       <div
         data-editor-middle-panel=""
@@ -1257,20 +1256,25 @@ const Upload = () => {
           position: 'relative',
         }}
       >
-        {/* Main scroll area */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 0,
-        }}>
-          {/* Document header — reuses CanvasHeader. Hidden (display:none, not
-              unmounted) while a stage grid is opened in full mode so the
-              stage can take over the middle panel without disturbing
-              component state. */}
-          <div style={{ display: stageOpen ? 'none' : undefined }} aria-hidden={stageOpen || undefined}>
+        {openStageId !== null ? (
+          // STAGE MODE — replace the article editor entirely. The
+          // CanvasHeader, TipTap toolbar, writing canvas, action row,
+          // and status strip are NOT mounted here.
+          <StageFullscreen
+            stageId={openStageId}
+            onClose={() => closeStageAction()}
+          />
+        ) : (
+          // ARTICLE MODE — original editor surface.
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+          }}>
+            {/* Document header — reuses CanvasHeader. */}
             <CanvasHeader
               mode="edit"
               title={form.watch('title') ?? ''}
@@ -1296,45 +1300,45 @@ const Upload = () => {
               }}
               onEvidenceCaptionChange={setEvidenceCaption}
             />
-          </div>
 
-          {/* Article body — TipTap editor */}
-          <div style={{
-            flex: 1,
-            padding: '0 20px 40px',
-          }}>
-            <ArticleEditor
-              canvasDoc={canvasDoc}
-              initialContent={(canvasDoc as any).articleBody ?? undefined}
-              documentTitle={form.watch('title') ?? ''}
-              onChange={(json) => {
-                // Store article body for save
-                (canvasDoc as any)._articleBody = json;
-              }}
-              onSelectedStageChange={setSelectedStageId}
-              onOpenTemplates={() => setTemplateLibOpen(true)}
-              onOpenHistory={() => {}}
-              onOpenNotes={() => {}}
-              onGrammarCheck={() => {}}
-              onClearAll={() => {}}
-              onSave={() => {
-                saveDraft(false);
-                canvasDoc.saveDocument(currentDraftId ?? '');
-              }}
-              onPublish={() => {
-                const title = form.getValues('title');
-                if (!title || !title.trim()) {
-                  toast({ title: 'Title required', description: 'Add a title before publishing.', variant: 'destructive' });
-                  return;
-                }
-                form.handleSubmit(onSubmit)();
-              }}
-              saving={savingDraft}
-              publishing={submitting}
-              editable
-            />
+            {/* Article body — TipTap editor */}
+            <div style={{
+              flex: 1,
+              padding: '0 20px 40px',
+            }}>
+              <ArticleEditor
+                canvasDoc={canvasDoc}
+                initialContent={(canvasDoc as any).articleBody ?? undefined}
+                documentTitle={form.watch('title') ?? ''}
+                onChange={(json) => {
+                  // Store article body for save
+                  (canvasDoc as any)._articleBody = json;
+                }}
+                onSelectedStageChange={setSelectedStageId}
+                onOpenTemplates={() => setTemplateLibOpen(true)}
+                onOpenHistory={() => {}}
+                onOpenNotes={() => {}}
+                onGrammarCheck={() => {}}
+                onClearAll={() => {}}
+                onSave={() => {
+                  saveDraft(false);
+                  canvasDoc.saveDocument(currentDraftId ?? '');
+                }}
+                onPublish={() => {
+                  const title = form.getValues('title');
+                  if (!title || !title.trim()) {
+                    toast({ title: 'Title required', description: 'Add a title before publishing.', variant: 'destructive' });
+                    return;
+                  }
+                  form.handleSubmit(onSubmit)();
+                }}
+                saving={savingDraft}
+                publishing={submitting}
+                editable
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Template library panel */}
         <TemplateLibrary
