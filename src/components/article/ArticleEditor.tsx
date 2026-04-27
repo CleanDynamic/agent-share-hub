@@ -529,8 +529,21 @@ export function ArticleEditor({
       onChange?.(json);
       useDocumentStore.getState().setArticleBody(json);
     } catch (_) { /* noop */ }
-    onSave?.();
-  }, [editor, onChange, onSave, saving]);
+    const initialName =
+      defaultDraftName?.trim()
+      || documentTitle?.trim()
+      || 'Untitled draft';
+    setDraftNameInput(initialName);
+    setSaveDialogOpen(true);
+  }, [editor, onChange, saving, defaultDraftName, documentTitle]);
+
+  const confirmSave = useCallback(async () => {
+    const name = draftNameInput.trim() || 'Untitled draft';
+    setSaveDialogOpen(false);
+    try {
+      await onSave?.(name);
+    } catch (_) { /* parent shows toast */ }
+  }, [draftNameInput, onSave]);
 
   // Track editor focus via focusin/focusout on the container
   useEffect(() => {
