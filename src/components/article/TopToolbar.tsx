@@ -875,8 +875,7 @@ export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
           <ToolbarGroup>
             <ToolbarButton icon={List} label="Bulleted list" isActive={isActive('bulletList')} onClick={run((c) => c.toggleBulletList().run())} />
             <ToolbarButton icon={ListOrdered} label="Numbered list" isActive={isActive('orderedList')} onClick={run((c) => c.toggleOrderedList().run())} />
-            <ToolbarButton icon={CheckSquare} label="Checklist" onClick={soon('Checklist')} />
-            <ToolbarButton icon={ChevronRight} label="Toggle list" onClick={soon('Toggle list')} />
+            <ToolbarButton icon={CheckSquare} label="Checklist" isActive={isActive('taskList')} onClick={run((c) => (c as any).toggleTaskList().run())} />
           </ToolbarGroup>
 
           <Divider />
