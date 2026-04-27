@@ -22,6 +22,7 @@ import { ModelBlockNode } from '../blocks/ModelBlock';
 import { NoteBlockNode } from '../blocks/NoteBlock';
 import { ResultBlockNode } from '../blocks/ResultBlock';
 import { ResourceBlockNode } from '../blocks/ResourceBlock';
+import { ToolBlockNode } from '../blocks/ToolBlock';
 
 interface StageCanvasProps {
   stageId: string;
@@ -38,6 +39,7 @@ const nodeTypes = {
   note: NoteBlockNode,
   result: ResultBlockNode,
   resource: ResourceBlockNode,
+  tool: ToolBlockNode,
 };
 
 const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
@@ -51,6 +53,7 @@ const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
   note: 'note',
   result: 'result',
   resource: 'resource',
+  tool: 'tool',
 };
 
 
