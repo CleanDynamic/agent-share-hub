@@ -1396,7 +1396,6 @@ const Upload = () => {
                   }
                   form.handleSubmit(onSubmit)();
                 }}
-                saving={savingDraft}
                 publishing={submitting}
                 editable
               />
