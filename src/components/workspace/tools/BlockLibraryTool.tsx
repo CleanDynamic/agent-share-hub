@@ -60,11 +60,14 @@ function withAlpha(color: string, alpha: number): string {
 interface BlockLibraryToolProps {
   onBlockDragStart?: (blockType: string) => void;
   onBlockDoubleClick?: (blockType: string) => void;
+  /** Single-click insert (used while a stage is open in full mode). */
+  onBlockClick?: (blockType: string) => void;
 }
 
 export function BlockLibraryTool({
   onBlockDragStart,
   onBlockDoubleClick,
+  onBlockClick,
 }: BlockLibraryToolProps) {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<Category>('All');
