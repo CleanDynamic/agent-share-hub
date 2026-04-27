@@ -96,6 +96,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
   const blockId = (data as CodeBlockData).blockId ?? id;
 
   const block = useDocumentStore((s) => s.blocks[blockId]);
+  const allBlocks = useDocumentStore((s) => s.blocks);
   const updateBlock = useDocumentStore((s) => s.updateBlock);
   const setSelection = useDocumentStore((s) => s.setSelection);
   const expandedSelection = useDocumentStore(
@@ -106,6 +107,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
   const [showLangDropdown, setShowLangDropdown] = React.useState(false);
   const [hovered, setHovered] = React.useState(false);
   const [status, setStatus] = React.useState<BlockStatus>('idle');
+  const [nameError, setNameError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     ensureMonacoTheme();
@@ -136,16 +138,30 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
 
   const onCodeChange = (v: string | undefined) => patchProps({ code: v ?? '' });
   const onLanguageChange = (v: CodeLanguage) => patchProps({ language: v });
-  const onNameChange = (v: string) => updateBlock(blockId, { name: v });
+  const onNameChange = (v: string) => {
+    if (!isNameUnique(v, blockId, allBlocks)) {
+      setNameError(`Name "${v.trim()}" is already used by another block.`);
+      return;
+    }
+    setNameError(null);
+    updateBlock(blockId, { name: v });
+  };
 
   const selectThis = React.useCallback(() => {
     setSelection({ kind: 'block', ids: [blockId] });
   }, [blockId, setSelection]);
 
-  const inputs = React.useMemo(() => {
-    const re = /\{\{(\w+)\}\}/g;
-    return [...new Set([...code.matchAll(re)].map((m) => m[1]))];
-  }, [code]);
+  const inputs = React.useMemo(() => extractVariables(code), [code]);
+
+  const blocksByName = React.useMemo(
+    () => indexBlocksByName(allBlocks),
+    [allBlocks],
+  );
+
+  const inputInfos = React.useMemo(
+    () => describeVariables(inputs, blocksByName),
+    [inputs, blocksByName],
+  );
 
   const compactPreview = React.useMemo(() => {
     return code.split('\n').slice(0, 6).join('\n');
