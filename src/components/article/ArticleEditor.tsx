@@ -850,6 +850,8 @@ export function ArticleEditor({
               zoom={100}
               focusMode={focusMode}
               collaborators={collaboratorCount}
+              unresolvedComments={unresolvedComments}
+              onCommentsClick={triggerAddComment}
               onZoomChange={() => {}}
               onMoreTemplates={onOpenTemplates}
               onMoreGrammarCheck={onGrammarCheck}
