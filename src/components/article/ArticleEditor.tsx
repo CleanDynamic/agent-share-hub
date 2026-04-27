@@ -20,6 +20,8 @@ import { StatusBar } from './StatusBar';
 import { FormattingShortcuts } from './KeyboardShortcutsExtension';
 import { SearchHighlight } from './SearchHighlight';
 import { FindReplaceBar } from './FindReplaceBar';
+import { BlockReferenceExtension } from './tiptap/BlockReferenceExtension';
+import { BlockPickerMenu, type BlockPickerItem } from './tiptap/BlockPickerMenu';
 import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
 import type { SlashCommandItem } from './SlashCommandMenu';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
