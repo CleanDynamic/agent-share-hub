@@ -8,7 +8,9 @@ export function RightPanel() {
   const location = useLocation();
   const focusMode = useDocumentStore((s) => s.focusMode);
 
-  const isEditorPage = location.pathname.startsWith("/upload/blueprint");
+  const isEditorPage =
+    location.pathname.startsWith("/upload/blueprint") ||
+    location.pathname.startsWith("/upload/blog");
   const showWorkspace = isEditorPage && focusMode === "edit";
 
   if (showWorkspace) {
