@@ -41,7 +41,7 @@ export default function DraftsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
-        .select("id, title, content_type, difficulty, ai_tools, draft_saved_at, draft_name, created_at")
+        .select("id, title, content_type, post_type, difficulty, ai_tools, draft_saved_at, draft_name, created_at")
         .eq("creator_id", profile!.id)
         .eq("status", "draft")
         .order("draft_saved_at", { ascending: false });
@@ -123,6 +123,21 @@ export default function DraftsPage() {
                       {displayName || "Untitled draft"}
                     </p>
                     <div className="flex items-center flex-wrap" style={{ gap: 6 }}>
+                      {(() => {
+                        const pt = (draft.post_type as string | null) || 'blueprint';
+                        const ptMap: Record<string, { label: string; color: string }> = {
+                          blueprint: { label: 'Blueprint', color: '#E8571A' },
+                          blog:       { label: 'Blog',      color: '#2EC4B6' },
+                          discussion: { label: 'Blog',      color: '#2EC4B6' },
+                          bounty:     { label: 'Bounty',    color: '#F59E0B' },
+                        };
+                        const meta = ptMap[pt] ?? ptMap.blueprint;
+                        return (
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 100, background: `${meta.color}14`, color: meta.color, border: `1px solid ${meta.color}40` }}>
+                            {meta.label}
+                          </span>
+                        );
+                      })()}
                       {draft.content_type && (
                         <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(139,69,19,0.08)', color: '#8B4513', border: '1px solid rgba(139,69,19,0.2)' }}>
                           {displayContentType(draft.content_type)}
@@ -145,7 +160,7 @@ export default function DraftsPage() {
                   {/* Right */}
                   <div className="flex items-center shrink-0" style={{ gap: 8 }}>
                     <button
-                      onClick={() => navigate(`/upload?draft=${draft.id}`)}
+                      onClick={() => navigate(`/upload/blueprint?draft=${draft.id}`)}
                       style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(31,122,109,0.3)', color: '#1F7A6D', background: 'rgba(31,122,109,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                     >
                       <Pencil style={{ width: 13, height: 13 }} /> Continue editing

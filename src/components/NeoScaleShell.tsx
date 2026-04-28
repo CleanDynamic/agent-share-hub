@@ -833,6 +833,7 @@ const ROUTE_TO_NAV: Record<string, string> = {
 };
 
 function routeToNav(pathname: string): string {
+  if (pathname.startsWith("/upload")) return "upload";
   return ROUTE_TO_NAV[pathname] ?? "other";
 }
 
@@ -1376,7 +1377,7 @@ export function NeoScaleShell() {
   /* ── Back face content router ── */
   function renderBackFaceContent() {
     const path = location.pathname;
-    const searchParams = new URLSearchParams(location.search);
+    
 
     if (path === '/') {
       // Front face is the home feed — render nothing in back face
@@ -1392,109 +1393,7 @@ export function NeoScaleShell() {
       '/analytics':     { title: 'Neural Analytics', subtitle: 'Your dispatch performance' },
     };
 
-    /* /upload without type param → glass type selector */
-    if (path === '/upload' && !searchParams.get('type') && !searchParams.get('post_type')) {
-      return (
-        <div className="ns-page-shell">
-          <button className="ns-back-btn" onClick={() => navigate(-1)}>
-            ← Back
-          </button>
-            <div className="ns-page-body" style={{ padding: '20px 24px' }}>
-              <div style={{
-                fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                letterSpacing: '0.10em', color: 'rgba(0,0,0,0.30)',
-                marginBottom: 10,
-              }}>
-                Blueprints
-              </div>
-              {POST_TYPES.filter(pt => ['build','technique','discovery'].includes(pt.value)).map(pt => (
-                <div
-                  key={pt.value}
-                  className="ns-glass-card"
-                  style={{
-                    marginBottom: 10,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 16,
-                  }}
-                  onClick={() => navigate(`/upload?post_type=${pt.value}`)}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{
-                      fontFamily: "'Playfair Display', serif",
-                      fontSize: 15, fontWeight: 700,
-                      color: pt.color,
-                    }}>
-                      {pt.label}
-                    </div>
-                  </div>
-                  <span style={{ color: 'rgba(0,0,0,0.30)', fontSize: 18 }}>→</span>
-                </div>
-              ))}
-
-              <div style={{
-                fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                letterSpacing: '0.10em', color: 'rgba(0,0,0,0.30)',
-                marginTop: 20, marginBottom: 10,
-              }}>
-                Writing
-              </div>
-              <div
-                className="ns-glass-card"
-                style={{
-                  marginBottom: 10,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 16,
-                }}
-                onClick={() => navigate('/upload?post_type=discussion')}
-              >
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontSize: 15, fontWeight: 700,
-                    color: '#3B82F6',
-                  }}>
-                    Blog
-                  </div>
-                </div>
-                <span style={{ color: 'rgba(0,0,0,0.30)', fontSize: 18 }}>→</span>
-              </div>
-
-              <div style={{
-                fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                letterSpacing: '0.10em', color: 'rgba(0,0,0,0.30)',
-                marginTop: 20, marginBottom: 10,
-              }}>
-                Community
-              </div>
-              <div
-                className="ns-glass-card"
-                style={{
-                  cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', gap: 16,
-                  border: '1px solid rgba(245,158,11,0.20)',
-                  background: 'rgba(245,158,11,0.06)',
-                }}
-                onClick={() => navigate('/bounty/new')}
-              >
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    fontSize: 15, fontWeight: 700,
-                    color: '#F59E0B',
-                    fontFamily: "'Playfair Display', Georgia, serif",
-                  }}>
-                    Post a Bounty
-                  </div>
-                </div>
-                <span style={{ color: '#F59E0B', fontSize: 18 }}>→</span>
-              </div>
-            </div>
-          </div>
-      );
-    }
+    /* /upload (type selector) — render via Outlet through fallback below */
 
     /* /messages → page shell with search input */
     if (path === '/messages') {
@@ -1737,7 +1636,7 @@ export function NeoScaleShell() {
             ref={rightRef}
             {...initTilt(rightRef)}
           >
-            {location.pathname === '/upload' ? (
+            {location.pathname.startsWith('/upload/blueprint') ? (
               <WorkspaceShell />
             ) : (
             <>
