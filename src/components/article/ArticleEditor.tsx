@@ -843,7 +843,7 @@ export function ArticleEditor({
           className="tiptap-article"
           style={{
             width: '100%',
-            maxWidth: 720,
+            maxWidth: isBlog ? 760 : 720,
             margin: '0 auto',
           }}
         />
