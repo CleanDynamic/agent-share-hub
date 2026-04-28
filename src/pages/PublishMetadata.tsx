@@ -237,21 +237,49 @@ export default function PublishMetadata() {
     toast({ title: "Changes discarded." });
   }, [refetch, toast]);
 
-  // Loading
+  // Document title
+  useEffect(() => {
+    if (!data) return;
+    const title = (data.title || "Untitled").trim();
+    document.title = `Publish: ${title} · NeoScale`;
+    return () => { document.title = "NeoScale"; };
+  }, [data]);
+
+  // Loading — skeleton mirrors the form layout
   if (isLoading || authLoading) {
     return (
-      <div className="w-full min-h-full px-6 py-6">
+      <div className="w-full min-h-full">
         <SeoHead
           title="Publish blueprint"
           description="Finalise metadata before publishing."
           path={`/publish/${contentItemId ?? ""}`}
           noIndex
         />
-        <div className="mx-auto w-full max-w-[720px] space-y-4">
-          <Skeleton className="h-8 w-2/3" />
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
+        {/* Header skeleton */}
+        <div className="h-[60px] flex items-center justify-between px-4 sm:px-6"
+          style={{ borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-5 w-40 hidden sm:block" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+        </div>
+        <div className="h-1 w-full" style={{ backgroundColor: "rgba(255,255,255,0.04)" }} />
+        <div className="mx-auto w-full max-w-[720px] px-4 sm:px-6 py-8 flex flex-col gap-8">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <div key={n} className="rounded-xl p-5" style={{ backgroundColor: "rgba(22,22,30,0.40)" }}>
+              <div className="flex items-center gap-3 mb-4">
+                <Skeleton className="h-5 w-5 rounded-full" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+              <Skeleton className="h-3 w-20 mb-2" />
+              <Skeleton className="h-11 w-full mb-4" />
+              <Skeleton className="h-3 w-16 mb-2" />
+              <div className="flex gap-2 flex-wrap">
+                <Skeleton className="h-7 w-20 rounded-full" />
+                <Skeleton className="h-7 w-24 rounded-full" />
+                <Skeleton className="h-7 w-16 rounded-full" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );

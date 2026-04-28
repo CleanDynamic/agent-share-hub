@@ -1,5 +1,5 @@
 import React from "react";
-import { Brain, Wrench } from "lucide-react";
+import { Brain, Wrench, FileQuestion } from "lucide-react";
 
 interface AutoDetectedCardProps {
   wordCount: number;
@@ -162,6 +162,49 @@ export function AutoDetectedCard({
   tools,
   onEditClick,
 }: AutoDetectedCardProps) {
+  const isEmpty =
+    wordCount === 0 &&
+    stageCount === 0 &&
+    blockCount === 0 &&
+    connectionCount === 0 &&
+    blockTypes.length === 0 &&
+    models.length === 0 &&
+    tools.length === 0;
+
+  if (isEmpty) {
+    return (
+      <div
+        className="w-full flex flex-col items-center justify-center text-center"
+        style={{
+          background: "rgba(22,22,30,0.40)",
+          border: "0.5px dashed rgba(255,255,255,0.10)",
+          borderRadius: "10px",
+          padding: "32px 18px",
+        }}
+        role="status"
+      >
+        <FileQuestion
+          size={32}
+          style={{ color: "rgba(255,255,255,0.30)", marginBottom: 12 }}
+          aria-hidden
+        />
+        <p
+          className="text-[12px]"
+          style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
+        >
+          Nothing detected yet — add some content in the editor first.
+        </p>
+        <button
+          onClick={onEditClick}
+          className="publish-focus mt-4 cursor-pointer text-[11px] font-medium transition-colors rounded"
+          style={{ color: "rgba(46,196,182,0.85)" }}
+        >
+          Open editor →
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       className="w-full"
@@ -221,7 +264,7 @@ export function AutoDetectedCard({
 
       <button
         onClick={onEditClick}
-        className="mt-5 cursor-pointer text-[11px] font-medium transition-colors"
+        className="publish-focus mt-5 cursor-pointer text-[11px] font-medium transition-colors rounded"
         style={{ color: "rgba(46,196,182,0.85)" }}
         onMouseEnter={(e) => {
           e.currentTarget.style.color = "rgba(46,196,182,1.0)";

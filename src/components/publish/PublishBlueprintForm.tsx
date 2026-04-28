@@ -201,16 +201,23 @@ export function PublishBlueprintForm({
     ? `neoscale.ai/${authorUsername}/${state.slug.trim().toLowerCase()}`
     : `neoscale.ai/${authorUsername}/your-slug-here`;
 
+  const isUpdate = publishLabel === "Update";
+
+  const scrollToSection = (n: number) => {
+    const el = document.getElementById(`publish-section-${n}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header
-        className="h-[60px] flex items-center justify-between px-6"
+        className="h-[60px] flex items-center justify-between px-4 sm:px-6"
         style={{ borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}
       >
         <button
           onClick={onBack}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          className="publish-focus rounded flex items-center gap-2 hover:opacity-80 transition-opacity"
           style={{
             color: "rgba(255,255,255,0.65)",
             fontSize: "13px",
@@ -223,6 +230,7 @@ export function PublishBlueprintForm({
         </button>
 
         <h1
+          className="hidden sm:block"
           style={{
             color: "rgba(255,255,255,0.92)",
             fontSize: "18px",
@@ -230,21 +238,21 @@ export function PublishBlueprintForm({
             fontFamily: "Inter, sans-serif",
           }}
         >
-          Publish blueprint
+          {isUpdate ? "Update blueprint" : "Publish blueprint"}
         </h1>
 
         <span
           className="px-3 py-1 rounded-full"
           style={{
-            backgroundColor: "rgba(232,87,26,0.14)",
-            color: "#E8571A",
+            backgroundColor: isUpdate ? "rgba(46,196,182,0.14)" : "rgba(232,87,26,0.14)",
+            color: isUpdate ? "#2EC4B6" : "#E8571A",
             fontSize: "11px",
             fontWeight: 500,
             letterSpacing: "0.04em",
             fontFamily: "Inter, sans-serif",
           }}
         >
-          Blueprint
+          {isUpdate ? "Editing live" : "Blueprint"}
         </span>
       </header>
 
@@ -252,6 +260,11 @@ export function PublishBlueprintForm({
       <div
         className="h-1 w-full relative group cursor-help"
         style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={validation.total}
+        aria-valuenow={validation.requiredFieldsCompleted}
+        aria-label={`${validation.requiredFieldsCompleted} of ${validation.total} required fields complete`}
       >
         <div
           className="h-full transition-all duration-300"
@@ -274,9 +287,9 @@ export function PublishBlueprintForm({
 
       {/* Body */}
       <main className="flex-1 overflow-y-auto pb-[100px]">
-        <div className="max-w-[720px] mx-auto px-6 py-8 flex flex-col gap-8">
+        <div className="max-w-[720px] mx-auto px-4 sm:px-6 py-8 flex flex-col gap-8">{/* gap-8 = 32px */}
           {/* 1 - Basics */}
-          <Section number={1} title="Basics" required>
+          <Section number={1} title="Basics" required onBadgeClick={scrollToSection}>
             <div className="flex flex-col gap-5">
               <div className="flex flex-col gap-2">
                 <input
@@ -285,7 +298,7 @@ export function PublishBlueprintForm({
                   onChange={(e) => set("useCase", e.target.value)}
                   placeholder="What does this blueprint help someone do? (e.g. 'Extract Foucault quotes from PDFs')"
                   maxLength={140}
-                  className="w-full h-[44px] px-4 rounded-lg outline-none transition-all focus:ring-1"
+                  className="publish-focus w-full h-[44px] px-4 rounded-lg outline-none transition-all"
                   style={{
                     backgroundColor: "rgba(30,30,40,0.50)",
                     border: validation.errors.useCase
@@ -351,7 +364,7 @@ export function PublishBlueprintForm({
           </Section>
 
           {/* 2 - Tags */}
-          <Section number={2} title="Tags" required>
+          <Section number={2} title="Tags" required onBadgeClick={scrollToSection}>
             <TagInput
               value={state.tags}
               onChange={(t) => set("tags", t)}
@@ -377,6 +390,7 @@ export function PublishBlueprintForm({
             number={3}
             title="Context"
             helpText="Optional context to help readers understand what they need and what they'll get."
+            onBadgeClick={scrollToSection}
           >
             <div className="flex flex-col gap-4">
               <FieldGroup label="Prerequisites">
@@ -384,7 +398,7 @@ export function PublishBlueprintForm({
                   value={state.prerequisites}
                   onChange={(e) => set("prerequisites", e.target.value)}
                   placeholder="What does the reader need before starting? (e.g. 'A Polymarket account, basic Python')"
-                  className="w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all focus:ring-1 resize-y"
+                  className="publish-focus w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all resize-y"
                   style={{
                     backgroundColor: "rgba(30,30,40,0.50)",
                     border: "0.5px solid rgba(255,255,255,0.08)",
@@ -400,7 +414,7 @@ export function PublishBlueprintForm({
                   value={state.outcome}
                   onChange={(e) => set("outcome", e.target.value)}
                   placeholder="What will the reader have after working through this? (e.g. 'A working arbitrage bot polling weather markets every 30s')"
-                  className="w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all focus:ring-1 resize-y"
+                  className="publish-focus w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all resize-y"
                   style={{
                     backgroundColor: "rgba(30,30,40,0.50)",
                     border: "0.5px solid rgba(255,255,255,0.08)",
@@ -418,6 +432,7 @@ export function PublishBlueprintForm({
             number={4}
             title="Auto-detected"
             helpText="Metadata automatically extracted from your blueprint content."
+            onBadgeClick={scrollToSection}
           >
             <AutoDetectedCard
               wordCount={autoDetected?.word_count ?? 0}
@@ -433,7 +448,7 @@ export function PublishBlueprintForm({
           </Section>
 
           {/* 5 - Visibility & Slug */}
-          <Section number={5} title="Visibility & slug" required>
+          <Section number={5} title="Visibility & slug" required onBadgeClick={scrollToSection}>
             <div className="flex flex-col gap-5">
               <FieldGroup label="Visibility" error={validation.errors.visibility}>
                 <div className="flex flex-wrap gap-2">
@@ -471,7 +486,7 @@ export function PublishBlueprintForm({
                       )
                     }
                     placeholder="your-blueprint-slug"
-                    className="w-full h-[44px] pl-7 pr-32 rounded-lg outline-none transition-all focus:ring-1"
+                    className="publish-focus w-full h-[44px] pl-7 pr-32 rounded-lg outline-none transition-all"
                     style={{
                       backgroundColor: "rgba(30,30,40,0.50)",
                       border: validation.errors.slug
@@ -510,17 +525,17 @@ export function PublishBlueprintForm({
 
       {/* Sticky footer */}
       <footer
-        className="fixed bottom-0 left-0 right-0 h-[80px] flex items-center justify-between px-6 z-40"
+        className="fixed bottom-0 left-0 right-0 h-[80px] flex items-center justify-between px-4 sm:px-6 z-40 gap-3"
         style={{
           borderTop: "0.5px solid rgba(255,255,255,0.06)",
           backgroundColor: "rgba(8,8,12,0.85)",
           backdropFilter: "blur(20px)",
         }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={onSaveDraft}
-            className="px-4 py-2 rounded-lg hover:bg-white/5 transition-colors"
+            className="publish-focus px-3 sm:px-4 py-2 rounded-lg hover:bg-white/5 transition-colors whitespace-nowrap"
             style={{
               color: "rgba(255,255,255,0.65)",
               fontSize: "13px",
@@ -533,7 +548,7 @@ export function PublishBlueprintForm({
           </button>
           <button
             onClick={onDiscard}
-            className="px-4 py-2 rounded-lg hover:bg-white/5 transition-colors"
+            className="publish-focus px-3 sm:px-4 py-2 rounded-lg hover:bg-white/5 transition-colors whitespace-nowrap hidden sm:inline-flex"
             style={{
               color: "rgba(255,255,255,0.65)",
               fontSize: "13px",
@@ -550,9 +565,11 @@ export function PublishBlueprintForm({
           <button
             onClick={handlePublish}
             disabled={!canPublish || isPublishing}
-            className="h-[40px] px-6 rounded-lg flex items-center gap-2 transition-all"
+            className="publish-focus h-[40px] px-6 rounded-lg flex items-center gap-2 transition-all"
             style={{
-              background: "linear-gradient(135deg, #E8571A 0%, #D4470F 100%)",
+              background: isUpdate
+                ? "linear-gradient(135deg, #2EC4B6 0%, #1F9E91 100%)"
+                : "linear-gradient(135deg, #E8571A 0%, #D4470F 100%)",
               color: "white",
               fontSize: "13px",
               fontWeight: 600,
@@ -562,7 +579,7 @@ export function PublishBlueprintForm({
             }}
           >
             {isPublishing && <Loader2 size={14} className="animate-spin" />}
-            {isPublishing ? (publishLabel === "Update" ? "Updating…" : "Publishing…") : publishLabel}
+            {isPublishing ? (isUpdate ? "Updating…" : "Publishing…") : publishLabel}
           </button>
           {!canPublish && (
             <div
@@ -701,21 +718,27 @@ function Section({
   required,
   helpText,
   children,
+  onBadgeClick,
 }: {
   number: number;
   title: string;
   required?: boolean;
   helpText?: string;
   children: React.ReactNode;
+  onBadgeClick?: (n: number) => void;
 }) {
   return (
     <section
-      className="rounded-xl p-5"
+      id={`publish-section-${number}`}
+      className="rounded-xl p-5 scroll-mt-20"
       style={{ backgroundColor: "rgba(22,22,30,0.40)" }}
+      aria-labelledby={`publish-section-${number}-title`}
     >
       <div className="h-6 flex items-center gap-3 mb-4">
-        <span
-          className="w-5 h-5 rounded-full flex items-center justify-center"
+        <button
+          type="button"
+          onClick={() => onBadgeClick?.(number)}
+          className="publish-focus w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
           style={{
             backgroundColor: "rgba(255,255,255,0.04)",
             color: "rgba(255,255,255,0.55)",
@@ -723,19 +746,22 @@ function Section({
             fontWeight: 600,
             fontFamily: "Inter, sans-serif",
           }}
+          aria-label={`Section ${number}: ${title}`}
         >
           {number}
-        </span>
-        <span
+        </button>
+        <h2
+          id={`publish-section-${number}-title`}
           style={{
             color: "rgba(255,255,255,0.92)",
             fontSize: "14px",
             fontWeight: 600,
             fontFamily: "Inter, sans-serif",
+            margin: 0,
           }}
         >
           {title}
-        </span>
+        </h2>
         {required && (
           <span
             className="px-1.5 py-0.5 rounded-full"
@@ -758,6 +784,7 @@ function Section({
               size={14}
               style={{ color: "rgba(255,255,255,0.30)" }}
               className="cursor-help"
+              aria-label={helpText}
             />
             <div
               className="absolute right-0 top-full mt-2 px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
@@ -795,7 +822,9 @@ function ChipButton({
   return (
     <button
       onClick={onClick}
-      className="h-7 px-3.5 rounded-full flex items-center gap-1.5 transition-all"
+      type="button"
+      aria-pressed={active}
+      className="publish-focus h-7 px-3.5 rounded-full flex items-center gap-1.5 transition-all"
       style={{
         backgroundColor: active ? "rgba(232,87,26,0.10)" : "rgba(255,255,255,0.03)",
         border: active
