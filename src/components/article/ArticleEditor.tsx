@@ -58,6 +58,8 @@ interface ArticleEditorProps {
   saving?: boolean;
   publishing?: boolean;
   defaultDraftName?: string;
+  /** 'blueprint' (default) — full editor. 'blog' — pure writing surface. */
+  mode?: 'blueprint' | 'blog';
 }
 
 export function ArticleEditor({
@@ -77,7 +79,9 @@ export function ArticleEditor({
   saving = false,
   publishing = false,
   defaultDraftName,
+  mode = 'blueprint',
 }: ArticleEditorProps) {
+  const isBlog = mode === 'blog';
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [draftNameInput, setDraftNameInput] = useState('');
   const [slashOpen, setSlashOpen] = useState(false);
