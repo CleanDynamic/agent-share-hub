@@ -18,22 +18,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  PublishBlueprintForm,
+  PublishMetadataForm,
+  getPostTypeTheme,
   type PublishFormValues,
   type AutoDetectedMeta,
-} from "@/components/publish/PublishBlueprintForm";
+  type PostType,
+} from "@/components/publish/PublishMetadataForm";
 
-const buildPayload = (values: PublishFormValues): Record<string, any> => ({
-  use_case: values.useCase || null,
-  domain: values.domain || null,
-  difficulty: values.difficulty || null,
-  tags: values.tags,
-  custom_tags: values.tags,
-  prerequisites: values.prerequisites || null,
-  outcome: values.outcome || null,
-  visibility: values.visibility || "public",
-  slug: values.slug ? values.slug.trim().toLowerCase() : null,
-});
+const buildPayload = (
+  values: PublishFormValues,
+  postType: PostType,
+): Record<string, any> => {
+  const payload: Record<string, any> = {
+    use_case: values.useCase || null,
+    domain: values.domain || null,
+    difficulty: values.difficulty || null,
+    tags: values.tags,
+    custom_tags: values.tags,
+    visibility: values.visibility || "public",
+    slug: values.slug ? values.slug.trim().toLowerCase() : null,
+  };
+  if (postType === "blog") {
+    payload.blog_topic_category = values.topicCategory || null;
+  } else {
+    payload.prerequisites = values.prerequisites || null;
+    payload.outcome = values.outcome || null;
+  }
+  return payload;
+};
 
 export default function PublishMetadata() {
   const { contentItemId } = useParams<{ contentItemId: string }>();
