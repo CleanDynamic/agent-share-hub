@@ -550,7 +550,7 @@ export function PublishBlueprintForm({
             }}
           >
             {isPublishing && <Loader2 size={14} className="animate-spin" />}
-            {isPublishing ? `${publishLabel}ing…` : publishLabel}
+            {isPublishing ? (publishLabel === "Update" ? "Updating…" : "Publishing…") : publishLabel}
           </button>
           {!canPublish && (
             <div
