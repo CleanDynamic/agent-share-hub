@@ -282,6 +282,11 @@ export const useDocumentStore = create<DocumentState>()(
         state.focusMode = mode;
       }),
 
+    setEditorMode: (mode) =>
+      set((state) => {
+        state.editorMode = mode;
+      }),
+
     markDirty: (id) =>
       set((state) => {
         state.dirty.add(id);
