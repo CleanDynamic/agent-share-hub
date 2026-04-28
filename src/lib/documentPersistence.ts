@@ -31,6 +31,7 @@ import { toast } from 'sonner';
 
 import { supabase } from '@/integrations/supabase/client';
 import { useDocumentStore } from './documentStore';
+import { scheduleRecompute } from './metadata/scheduleRecompute';
 import type { Block, Connection, Stage } from '@/types/document';
 
 // ── Status store ────────────────────────────────────────────────────────────
