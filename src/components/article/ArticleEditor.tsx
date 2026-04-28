@@ -619,7 +619,64 @@ export function ArticleEditor({
     };
   }, []);
 
-  return (
+  // ---- Blog reference picker: bind extension callbacks to live state ----
+  useEffect(() => {
+    refTriggerCallbacksRef.current = {
+      onOpen: ({ from, to, coords }) => {
+        refPickerRangeRef.current = { from, to };
+        setRefPickerType('blueprints');
+        setRefPickerQuery('');
+        setRefPickerAnchor({ top: coords.bottom + 6, left: coords.left });
+        setRefPickerOpen(true);
+      },
+      onUpdate: ({ from, to, query }) => {
+        refPickerRangeRef.current = { from, to };
+        setRefPickerQuery(query);
+      },
+      onClose: () => {
+        refPickerRangeRef.current = null;
+        setRefPickerOpen(false);
+      },
+    };
+  }, []);
+
+  const closeRefPicker = useCallback(() => {
+    refPickerRangeRef.current = null;
+    setRefPickerOpen(false);
+    setRefPickerQuery('');
+    setRefPickerAnchor(null);
+    editor?.commands.focus();
+  }, [editor]);
+
+  const openRefPickerFromToolbar = useCallback(() => {
+    refPickerRangeRef.current = null; // toolbar trigger has no range to delete
+    setRefPickerType('blueprints');
+    setRefPickerQuery('');
+    setRefPickerAnchor(null); // centered modal
+    setRefPickerOpen(true);
+  }, []);
+
+  const handleRefPickerSelect = useCallback(
+    (item: ResultItem) => {
+      // Delete the typed `@query` range if any.
+      if (editor && refPickerRangeRef.current) {
+        const { from, to } = refPickerRangeRef.current;
+        try {
+          editor.chain().focus().deleteRange({ from, to }).run();
+        } catch (_) { /* noop */ }
+      }
+      // TODO (Phase 4.5): insert inline reference node. For now, log + close.
+      // eslint-disable-next-line no-console
+      console.log('[ReferencePicker] selected', item);
+      refPickerRangeRef.current = null;
+      setRefPickerOpen(false);
+      setRefPickerQuery('');
+      setRefPickerAnchor(null);
+      editor?.commands.focus();
+    },
+    [editor],
+  );
+
     <div
       ref={editorContainerRef}
       style={{ position: 'relative', flex: 1 }}
