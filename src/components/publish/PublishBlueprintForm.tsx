@@ -525,17 +525,17 @@ export function PublishBlueprintForm({
 
       {/* Sticky footer */}
       <footer
-        className="fixed bottom-0 left-0 right-0 h-[80px] flex items-center justify-between px-6 z-40"
+        className="fixed bottom-0 left-0 right-0 h-[80px] flex items-center justify-between px-4 sm:px-6 z-40 gap-3"
         style={{
           borderTop: "0.5px solid rgba(255,255,255,0.06)",
           backgroundColor: "rgba(8,8,12,0.85)",
           backdropFilter: "blur(20px)",
         }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={onSaveDraft}
-            className="px-4 py-2 rounded-lg hover:bg-white/5 transition-colors"
+            className="publish-focus px-3 sm:px-4 py-2 rounded-lg hover:bg-white/5 transition-colors whitespace-nowrap"
             style={{
               color: "rgba(255,255,255,0.65)",
               fontSize: "13px",
@@ -548,7 +548,7 @@ export function PublishBlueprintForm({
           </button>
           <button
             onClick={onDiscard}
-            className="px-4 py-2 rounded-lg hover:bg-white/5 transition-colors"
+            className="publish-focus px-3 sm:px-4 py-2 rounded-lg hover:bg-white/5 transition-colors whitespace-nowrap hidden sm:inline-flex"
             style={{
               color: "rgba(255,255,255,0.65)",
               fontSize: "13px",
@@ -565,9 +565,11 @@ export function PublishBlueprintForm({
           <button
             onClick={handlePublish}
             disabled={!canPublish || isPublishing}
-            className="h-[40px] px-6 rounded-lg flex items-center gap-2 transition-all"
+            className="publish-focus h-[40px] px-6 rounded-lg flex items-center gap-2 transition-all"
             style={{
-              background: "linear-gradient(135deg, #E8571A 0%, #D4470F 100%)",
+              background: isUpdate
+                ? "linear-gradient(135deg, #2EC4B6 0%, #1F9E91 100%)"
+                : "linear-gradient(135deg, #E8571A 0%, #D4470F 100%)",
               color: "white",
               fontSize: "13px",
               fontWeight: 600,
@@ -577,7 +579,7 @@ export function PublishBlueprintForm({
             }}
           >
             {isPublishing && <Loader2 size={14} className="animate-spin" />}
-            {isPublishing ? (publishLabel === "Update" ? "Updating…" : "Publishing…") : publishLabel}
+            {isPublishing ? (isUpdate ? "Updating…" : "Publishing…") : publishLabel}
           </button>
           {!canPublish && (
             <div
