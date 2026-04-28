@@ -220,6 +220,7 @@ export function CanvasBlock({
       {/* The block */}
       <div
         data-canvas-block
+        data-block-id={block.id}
         id={`canvas-block-${block.id}`}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => { setHovered(false); setStagePickerOpen(false); }}
