@@ -286,6 +286,13 @@ export function ArticleEditor({
     setDocumentTitle(documentTitle);
   }, [documentTitle, setDocumentTitle]);
 
+  // Sync editor mode into the document store so peripheral panels (RightPanel
+  // workspace, etc.) can adapt without prop-drilling.
+  const setEditorMode = useDocumentStore((s) => s.setEditorMode);
+  useEffect(() => {
+    setEditorMode(mode);
+  }, [mode, setEditorMode]);
+
   useEffect(() => {
     if (editor) {
       const storage = editor.storage as any;
