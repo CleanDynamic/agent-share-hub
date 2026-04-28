@@ -130,7 +130,7 @@ export function useDiscoverResultCount(params: {
     queryKey: ["discover_result_count", params],
     staleTime: 30 * 1000,
     queryFn: async () => {
-      let q = supabase
+      let q: any = supabase
         .from("content_items")
         .select("id", { count: "exact", head: true })
         .eq("status", "approved");
