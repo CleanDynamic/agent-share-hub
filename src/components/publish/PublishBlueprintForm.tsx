@@ -47,6 +47,8 @@ interface PublishBlueprintFormProps {
   onChange?: (values: PublishFormValues) => void;
   isPublishing?: boolean;
   publishLabel?: string;
+  /** Increment to revert local form state back to defaultValues. */
+  resetSignal?: number;
 }
 
 const DOMAINS = [
@@ -155,10 +157,20 @@ export function PublishBlueprintForm({
   onChange,
   isPublishing = false,
   publishLabel = "Publish",
+  resetSignal = 0,
 }: PublishBlueprintFormProps) {
   const [state, dispatch] = useReducer(formReducer, buildInitial(defaultValues));
   const set = <K extends keyof PublishFormValues>(field: K, value: PublishFormValues[K]) =>
     dispatch({ type: "set", field, value });
+
+  // External reset (Discard changes).
+  const lastResetRef = React.useRef(resetSignal);
+  React.useEffect(() => {
+    if (resetSignal !== lastResetRef.current) {
+      lastResetRef.current = resetSignal;
+      dispatch({ type: "reset", values: buildInitial(defaultValues) });
+    }
+  }, [resetSignal, defaultValues]);
 
   // Notify parent of every change (for debounced autosave).
   const onChangeRef = React.useRef(onChange);
