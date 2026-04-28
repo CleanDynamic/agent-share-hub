@@ -586,7 +586,7 @@ export function ArticleEditor({
       <style>{`
         .tiptap-article {
           width: 100%;
-          max-width: 720px;
+          max-width: ${isBlog ? 760 : 720}px;
           margin: 0 auto;
           min-height: 300px;
           background: ${focusMode === 'focus' ? 'hsl(var(--foreground) / 0.015)' : 'transparent'};
@@ -596,8 +596,8 @@ export function ArticleEditor({
         }
         .tiptap-article .ProseMirror {
           font-family: 'Inter', sans-serif;
-          font-size: 15px;
-          line-height: 1.0;
+          font-size: ${isBlog ? 16 : 15}px;
+          line-height: ${isBlog ? 1.85 : 1.0};
           color: hsl(var(--foreground) / 0.92);
           padding: 48px 24px 32px;
           min-height: 300px;
@@ -612,15 +612,15 @@ export function ArticleEditor({
           background: hsl(18 79% 54% / 0.2);
         }
         .tiptap-article h1 {
-          font-family: 'Inter', sans-serif;
-          font-size: 28px;
+          font-family: ${isBlog ? "'Playfair Display', Georgia, serif" : "'Inter', sans-serif"};
+          font-size: ${isBlog ? 28 : 28}px;
           font-weight: 700;
           color: hsl(var(--foreground) / 0.95);
           margin: 40px 0 12px;
           line-height: 1.3;
         }
         .tiptap-article h2 {
-          font-family: 'Inter', sans-serif;
+          font-family: ${isBlog ? "'Playfair Display', Georgia, serif" : "'Inter', sans-serif"};
           font-size: 22px;
           font-weight: 600;
           color: hsl(var(--foreground) / 0.92);
@@ -643,6 +643,8 @@ export function ArticleEditor({
           padding-left: 20px;
           color: hsl(var(--foreground) / 0.65);
           font-style: italic;
+          font-size: ${isBlog ? 17 : 'inherit'};
+          font-family: ${isBlog ? "'Inter', sans-serif" : 'inherit'};
           margin: 18px 0;
         }
         .tiptap-article pre {
