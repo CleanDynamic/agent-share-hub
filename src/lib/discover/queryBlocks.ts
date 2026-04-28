@@ -31,6 +31,7 @@ export interface BlockSearchResult {
     blueprintId: string;
     blueprintTitle: string;
     blueprintSlug: string | null;
+    stageId: string | null;
     stageName: string;
   };
   author: {
