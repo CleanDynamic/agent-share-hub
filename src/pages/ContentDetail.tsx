@@ -248,7 +248,7 @@ const ContentDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
-        .select("*, profiles!content_items_creator_id_fkey(id, username, display_name, bio)")
+        .select("*, profiles!content_items_creator_id_fkey(id, username, display_name, bio, avatar_url)")
         .eq("id", id!)
         .eq("status", "approved")
         .maybeSingle();
@@ -706,6 +706,53 @@ const ContentDetail = () => {
         </div>
       </div>
     );
+  }
+
+  // Per Phase 4 — branch on post_type so /content/:id serves all post types.
+  // Approach A: one route, type-aware renderer. Slugs/ids are unique app-wide.
+  const postType = (item as any).post_type as string | undefined;
+  if (postType === "blog") {
+    const ogImage = (item as any).cover_image_url || undefined;
+    return (
+      <>
+        <SeoHead
+          title={`${item.title} — NeoScale`}
+          description={
+            (item as any).use_case ||
+            (item as any).description ||
+            item.title
+          }
+          path={`/content/${item.id}`}
+          image={ogImage}
+          type="article"
+        />
+        <div
+          style={{
+            overflowY: "auto",
+            height: "100%",
+            boxSizing: "border-box",
+          }}
+        >
+          <div className="px-4 sm:px-6 pt-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center text-[13px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back
+            </button>
+          </div>
+          <BlogView item={item} />
+          <div className="mx-auto" style={{ maxWidth: 720, padding: "0 24px 80px" }}>
+            <CommentsSection contentId={item.id} />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (postType === "bounty") {
+    // Phase 5 placeholder — fall through to existing renderer for now so
+    // bounty drafts that exist remain viewable.
   }
 
   const SITE_URL = import.meta.env.VITE_SITE_URL || "https://neoscale.ai";
