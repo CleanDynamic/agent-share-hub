@@ -1,68 +1,18 @@
-## Wire `recomputeMetadata` into save + publish
+## Plan: Replace legacy Browse with the new Discover page
 
-Phase 1 extractors are built but never run. This wires them up so the database self-describes whenever content changes — zero UI changes.
+The new Discover page already exists at `/discover`, but the sidebar's "Discover" link historically pointed at `/browse`, which still renders the old `Browse` component. We'll point `/browse` at the new `Discover` component so any cached link, bookmark, or stale tab automatically gets the new UI.
 
-### 1. New file: `src/lib/metadata/scheduleRecompute.ts`
+### Changes
 
-Debounce module with two exports:
-- `scheduleRecompute(id)` — 5s debounce per content_item_id, fire-and-forget. Each new call resets the timer for that id.
-- `flushRecompute(id)` — cancels any pending debounced run and awaits the recompute immediately. Used by publish.
+1. **`src/App.tsx`**
+   - Remove `import Browse from "./pages/Browse"`.
+   - Change the `/browse` route to render `<Discover />` instead of `<Browse />`.
+   - Keep `/discover` → `Discover` and `/discover-legacy` → `DiscoverLegacy` (the backed-up Browse) as a fallback.
 
-Internally uses a `Map<string, Timeout>` so multiple posts being edited in parallel don't clobber each other. Errors are caught and logged, never thrown.
+2. **`src/pages/Browse.tsx`** — leave the file in place for now (it's still importable as `Discover.legacy.tsx`). No deletion this round; safer to remove after a release cycle.
 
-### 2. Edit `src/lib/documentPersistence.ts`
+3. **No nav changes needed** — the previous turn already updated `LeftPanel` and `MobileNav` to point at `/discover`. With `/browse` now also pointing at the new page, both URLs resolve to the same component.
 
-This is the single batched-write pipeline for the document editor (article_body + Stage Grid stages/blocks/connections). It already has a clean success point inside `flush()` after `bumpDocumentVersion` succeeds.
-
-Add one line in `flush()` right after `usePersistenceStatus.getState().markSaved()`:
-
-```ts
-scheduleRecompute(documentId);
-```
-
-That single hook covers every editor change — article body, stage create/update/delete, block create/update/delete, connection create/update/delete — because all of them route through this flush.
-
-Position-only flushes also call `markSaved`, but a position change can't affect any auto-detected field (block types, models, tools, word/stage/block/connection counts are all position-agnostic). To avoid wasted recomputes, only schedule when `kind === 'full'`.
-
-### 3. Edit `src/pages/PostPreview.tsx` (publish handler at line 104)
-
-Before flipping `status` to `'approved'`, run the recompute synchronously so the row goes public with fresh metadata:
-
-```ts
-await flushRecompute(draftId!);
-await supabase.from("content_items").update({ status: "approved", ... });
-```
-
-### 4. Edit `src/pages/Upload.tsx` (one-shot publish at line 1307)
-
-This path inserts a brand-new approved post + its `content_blocks` rows in one go (no document store). After the blocks are written and just before `setSuccess(true)` (line 1307), schedule (don't await — we don't want to delay the success toast):
-
-```ts
-scheduleRecompute(contentId);
-```
-
-5 seconds later the metadata fields populate in the background.
-
-### Why no other write sites
-
-- `ContentEdit.tsx` only edits top-level fields (title, description, monetisation) — none of those affect auto-detected metadata, so no hook needed.
-- `ProjectUploadForm`, `ReblogComposer`, `ForkModal` operate on `projects` / reblogs, not `content_items` body content.
-- `Drafts.tsx` is a list view, no writes to body content.
-
-### Verification (manual)
-
-After approval I'll:
-1. Pick an existing blueprint id with `read_query`.
-2. Run `recomputeMetadata` once via the codepath to confirm it writes.
-3. Read back the row showing `block_types_used`, `models_referenced`, `tools_referenced`, `word_count`, `estimated_reading_minutes`, `stage_count`, `block_count`, `connection_count`, `last_metadata_recompute_at`.
-
-(The full live edit→wait→verify loop you described needs you in the browser; I can't drive the editor from here, but I can prove the row populates correctly end-to-end via a direct invocation.)
-
-### Files touched
-
-- **new**: `src/lib/metadata/scheduleRecompute.ts`
-- **edit**: `src/lib/documentPersistence.ts` (1 import + 1 conditional call inside `flush`)
-- **edit**: `src/pages/PostPreview.tsx` (1 import + 1 await before status flip)
-- **edit**: `src/pages/Upload.tsx` (1 import + 1 fire-and-forget call before `setSuccess(true)`)
-
-Zero UI changes. Zero behaviour changes for users. Database becomes continuously self-describing.
+### Result
+- Visiting `/browse` (the URL in your screenshot) shows the new Discover header (Blueprints / Stages / Blocks tabs, ⌘K search, Filters sheet).
+- The old Browse UI is still reachable at `/discover-legacy` for reference.
