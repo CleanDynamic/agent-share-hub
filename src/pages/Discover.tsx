@@ -10,6 +10,13 @@ import {
   useDiscoverTagSuggestions,
   useDiscoverResultCount,
 } from "@/components/discover/useDiscoverQueries";
+import { BlueprintResultCard } from "@/components/discover/BlueprintResultCard";
+import { StageResultCard } from "@/components/discover/StageResultCard";
+import { BlockResultCard } from "@/components/discover/BlockResultCard";
+import { DiscoverLoadingSkeleton } from "@/components/discover/DiscoverLoadingSkeleton";
+import { DiscoverEmptyState } from "@/components/discover/DiscoverEmptyState";
+import { DiscoverNoResultsState } from "@/components/discover/DiscoverNoResultsState";
+import { MOCK_BLUEPRINTS, MOCK_STAGES, MOCK_BLOCKS } from "@/components/discover/mockDiscoverData";
 
 const MODES: SearchMode[] = ["blueprints", "stages", "blocks"];
 
@@ -170,6 +177,110 @@ const Discover = () => {
     updateParams(filtersToPatch(next));
   };
 
+  // Mock filtering — real queries land in 3.4/3.5.
+  const isLoading = false;
+  const hasActiveFilters = activeFilters.length > 0;
+  const hasQuery = urlQ.trim().length > 0;
+  const qLower = urlQ.trim().toLowerCase();
+
+  const filteredBlueprints = useMemo(() => {
+    if (!hasQuery) return MOCK_BLUEPRINTS;
+    return MOCK_BLUEPRINTS.filter(
+      (b) =>
+        b.title.toLowerCase().includes(qLower) ||
+        b.description.toLowerCase().includes(qLower) ||
+        (b.tools || []).some((t) => t.toLowerCase().includes(qLower)),
+    );
+  }, [hasQuery, qLower]);
+
+  const filteredStages = useMemo(() => {
+    if (!hasQuery) return MOCK_STAGES;
+    return MOCK_STAGES.filter(
+      (s) =>
+        (s.stage.name || "").toLowerCase().includes(qLower) ||
+        s.parent.blueprintTitle.toLowerCase().includes(qLower),
+    );
+  }, [hasQuery, qLower]);
+
+  const filteredBlocks = useMemo(() => {
+    if (!hasQuery) return MOCK_BLOCKS;
+    return MOCK_BLOCKS.filter(
+      (b) =>
+        (b.block.name || "").toLowerCase().includes(qLower) ||
+        (b.block.content || "").toLowerCase().includes(qLower) ||
+        b.block.type.toLowerCase().includes(qLower),
+    );
+  }, [hasQuery, qLower]);
+
+  const currentResultsCount =
+    mode === "blueprints"
+      ? filteredBlueprints.length
+      : mode === "stages"
+        ? filteredStages.length
+        : filteredBlocks.length;
+
+  const renderResults = () => {
+    if (isLoading) return <DiscoverLoadingSkeleton count={6} />;
+
+    if (!hasQuery && !hasActiveFilters && currentResultsCount === 0) {
+      return (
+        <DiscoverEmptyState
+          onSuggestionClick={(s) => {
+            setQueryInput(s);
+            updateParams({ q: s });
+          }}
+        />
+      );
+    }
+
+    if (currentResultsCount === 0) {
+      return (
+        <DiscoverNoResultsState
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={clearAllFilters}
+          onSubmitRequest={() => {
+            /* TODO: open submit modal */
+          }}
+        />
+      );
+    }
+
+    if (mode === "blueprints") {
+      return (
+        <div className="flex flex-col gap-3">
+          {filteredBlueprints.map((bp) => (
+            <BlueprintResultCard key={bp.id} blueprint={bp} />
+          ))}
+        </div>
+      );
+    }
+
+    if (mode === "stages") {
+      return (
+        <div className="flex flex-col gap-3">
+          {filteredStages.map(({ stage, parent, author }) => (
+            <StageResultCard key={stage.id} stage={stage} parent={parent} author={author} />
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col gap-3">
+        {filteredBlocks.map(({ block, parent, author, referenceCount }) => (
+          <BlockResultCard
+            key={block.id}
+            block={block}
+            parent={parent}
+            author={author}
+            referenceCount={referenceCount}
+          />
+        ))}
+      </div>
+    );
+  };
+
+
   return (
     <>
       <SeoHead
@@ -193,23 +304,9 @@ const Discover = () => {
           onSortChange={(s) => updateParams({ sort: s === DEFAULT_SORT ? null : s })}
         />
 
-        {/* Results placeholder (3.3) */}
-        <div
-          className="rounded-xl border p-10 text-center mt-6"
-          style={{
-            background: "rgba(255,255,255,0.02)",
-            borderColor: "rgba(255,255,255,0.06)",
-            color: "rgba(255,255,255,0.45)",
-          }}
-        >
-          <p className="text-sm">Results coming in 3.3</p>
-          <p className="text-xs mt-2" style={{ color: "rgba(255,255,255,0.30)" }}>
-            mode=<code>{mode}</code>
-            {urlQ && <> · q=<code>{urlQ}</code></>}
-            {activeFilters.length > 0 && <> · {activeFilters.length} filter(s)</>}
-          </p>
-        </div>
+        <div className="mt-6">{renderResults()}</div>
       </div>
+
 
       <DiscoverFilterSheet
         isOpen={filtersOpen}
