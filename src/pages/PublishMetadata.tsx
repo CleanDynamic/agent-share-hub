@@ -104,7 +104,7 @@ export default function PublishMetadata() {
   const writeNow = useCallback(
     async (values: PublishFormValues): Promise<boolean> => {
       if (!contentItemId) return false;
-      const payload = buildPayload(values);
+      const payload = buildPayload(values, postTypeRef.current);
       const fingerprint = JSON.stringify(payload);
       if (fingerprint === lastSavedRef.current) return true;
       const { error } = await supabase
@@ -154,8 +154,9 @@ export default function PublishMetadata() {
       outcome: data.outcome || "",
       visibility: data.visibility || "public",
       slug: data.slug || "",
+      topicCategory: data.blog_topic_category || "",
     };
-    lastSavedRef.current = JSON.stringify(buildPayload(serverValues));
+    lastSavedRef.current = JSON.stringify(buildPayload(serverValues, (data.post_type as PostType) ?? "blueprint"));
   }, [data]);
 
   /* ── beforeunload protection ── */
@@ -164,7 +165,7 @@ export default function PublishMetadata() {
       if (suppressUnloadRef.current) return;
       const v = latestValuesRef.current;
       if (!v) return;
-      const fingerprint = JSON.stringify(buildPayload(v));
+      const fingerprint = JSON.stringify(buildPayload(v, postTypeRef.current));
       if (fingerprint !== lastSavedRef.current) {
         e.preventDefault();
         // Modern browsers ignore custom strings but require returnValue.
