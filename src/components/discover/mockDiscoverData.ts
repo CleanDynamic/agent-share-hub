@@ -1,52 +1,59 @@
-import type { BlueprintResultCardData } from "./BlueprintResultCard";
+import type { FeedPost } from "@/components/feed-card";
 import type { DiscoverBlock, BlockParent, BlockAuthor } from "./BlockResultCard";
 import type { DiscoverStage, StageParent, StageAuthor } from "./StageResultCard";
 
-export const MOCK_BLUEPRINTS: BlueprintResultCardData[] = [
+// Blueprints now use FeedPost shape so they render with the existing FeedCard aesthetic.
+export const MOCK_BLUEPRINTS: FeedPost[] = [
   {
     id: "bp-1",
     title: "RAG Pipeline with Claude Sonnet",
     description:
       "Production-ready retrieval augmented generation pipeline using Claude Sonnet, pgvector, and structured chunking.",
-    contentType: "Blueprint",
-    difficulty: "Intermediate",
-    authorName: "Ada Lovelace",
-    authorHandle: "ada",
-    tools: ["Claude", "pgvector", "Supabase", "TypeScript"],
-    rating: 4.7,
-    ratingCount: 32,
-    viewCount: 1240,
-    downloadCount: 87,
+    content_type: "Blueprint",
+    post_type: "build",
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+    view_count: 1240,
+    download_count: 87,
+    ai_tools: ["Claude", "pgvector"],
+    use_cases: ["RAG"],
+    custom_tags: ["production"],
+    author: {
+      display_name: "Ada Lovelace",
+      username: "ada",
+    },
   },
   {
     id: "bp-2",
     title: "Evaluation Suite for Prompt Regression",
     description:
       "Automated eval harness for catching prompt regressions across model upgrades, with diff reports.",
-    contentType: "Blueprint",
-    difficulty: "Advanced",
-    authorName: "Grace Hopper",
-    authorHandle: "grace",
-    tools: ["GPT-5", "Vitest", "Node"],
-    rating: 4.9,
-    ratingCount: 18,
-    viewCount: 612,
-    downloadCount: 41,
+    content_type: "Blueprint",
+    post_type: "build",
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
+    view_count: 612,
+    download_count: 41,
+    ai_tools: ["GPT-5", "Vitest"],
+    custom_tags: ["evals"],
+    author: {
+      display_name: "Grace Hopper",
+      username: "grace",
+    },
   },
   {
     id: "bp-3",
     title: "Multi-agent Research Workflow",
     description:
       "Orchestrate planner, retriever, and writer agents to produce well-cited research briefs.",
-    contentType: "Blueprint",
-    difficulty: "Intermediate",
-    authorName: "Alan Turing",
-    authorHandle: "alan",
-    tools: ["Gemini", "LangGraph"],
-    rating: 4.4,
-    ratingCount: 11,
-    viewCount: 304,
-    downloadCount: 19,
+    content_type: "Blueprint",
+    post_type: "build",
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 21).toISOString(),
+    view_count: 304,
+    download_count: 19,
+    ai_tools: ["Gemini", "LangGraph"],
+    author: {
+      display_name: "Alan Turing",
+      username: "alan",
+    },
   },
 ];
 
@@ -57,8 +64,8 @@ const stageParent = (i: number): StageParent => ({
 });
 
 const stageAuthor = (i: number): StageAuthor => ({
-  name: MOCK_BLUEPRINTS[i - 1]?.authorName || "Anon",
-  handle: MOCK_BLUEPRINTS[i - 1]?.authorHandle || "anon",
+  name: MOCK_BLUEPRINTS[i - 1]?.author.display_name || "Anon",
+  handle: MOCK_BLUEPRINTS[i - 1]?.author.username || "anon",
 });
 
 export const MOCK_STAGES: Array<{
@@ -131,8 +138,8 @@ const blockParent = (i: number, stageName: string): BlockParent => ({
 });
 
 const blockAuthor = (i: number): BlockAuthor => ({
-  name: MOCK_BLUEPRINTS[i - 1]?.authorName || "Anon",
-  handle: MOCK_BLUEPRINTS[i - 1]?.authorHandle || "anon",
+  name: MOCK_BLUEPRINTS[i - 1]?.author.display_name || "Anon",
+  handle: MOCK_BLUEPRINTS[i - 1]?.author.username || "anon",
 });
 
 export const MOCK_BLOCKS: Array<{

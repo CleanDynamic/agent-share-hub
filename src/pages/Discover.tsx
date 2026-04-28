@@ -10,7 +10,7 @@ import {
   useDiscoverTagSuggestions,
   useDiscoverResultCount,
 } from "@/components/discover/useDiscoverQueries";
-import { BlueprintResultCard } from "@/components/discover/BlueprintResultCard";
+import { FeedCard } from "@/components/feed-card";
 import { StageResultCard } from "@/components/discover/StageResultCard";
 import { BlockResultCard } from "@/components/discover/BlockResultCard";
 import { DiscoverLoadingSkeleton } from "@/components/discover/DiscoverLoadingSkeleton";
@@ -188,8 +188,8 @@ const Discover = () => {
     return MOCK_BLUEPRINTS.filter(
       (b) =>
         b.title.toLowerCase().includes(qLower) ||
-        b.description.toLowerCase().includes(qLower) ||
-        (b.tools || []).some((t) => t.toLowerCase().includes(qLower)),
+        (b.description || "").toLowerCase().includes(qLower) ||
+        (b.ai_tools || []).some((t) => t.toLowerCase().includes(qLower)),
     );
   }, [hasQuery, qLower]);
 
@@ -247,9 +247,9 @@ const Discover = () => {
 
     if (mode === "blueprints") {
       return (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col">
           {filteredBlueprints.map((bp) => (
-            <BlueprintResultCard key={bp.id} blueprint={bp} />
+            <FeedCard key={bp.id} post={bp} />
           ))}
         </div>
       );
