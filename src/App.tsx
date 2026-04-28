@@ -14,6 +14,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
 import Home from "./pages/Home";
 import Browse from "./pages/Browse";
+import Discover from "./pages/Discover";
+import DiscoverLegacy from "./pages/Discover.legacy";
 import Upload from "./pages/Upload";
 import About from "./pages/About";
 import ContentDetail from "./pages/ContentDetail";
