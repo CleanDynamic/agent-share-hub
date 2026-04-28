@@ -337,9 +337,26 @@ const Discover = () => {
     if (mode === "blueprints") {
       return (
         <div className="flex flex-col">
-          {filteredBlueprints.map((bp) => (
+          {blueprintRows.map((bp) => (
             <FeedCard key={bp.id} post={bp} />
           ))}
+          {blueprintsError && (
+            <div className="mt-4 rounded-lg p-3 text-[12px]" style={{ background: "rgba(239,68,68,0.10)", color: "#F87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+              {blueprintsError}
+            </div>
+          )}
+          {/* Infinite-scroll sentinel */}
+          <div ref={sentinelRef} style={{ height: 1 }} />
+          {blueprintsLoadingMore && (
+            <div className="mt-3">
+              <DiscoverLoadingSkeleton count={2} />
+            </div>
+          )}
+          {!blueprintsLoadingMore && blueprintRows.length >= blueprintTotal && blueprintTotal > 0 && (
+            <div className="mt-4 text-center text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+              End of results · {blueprintTotal} total
+            </div>
+          )}
         </div>
       );
     }
