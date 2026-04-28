@@ -42,6 +42,7 @@ import { TemplateLibrary } from '@/components/canvas/TemplateLibrary';
 import { useDocumentStore } from '@/lib/documentStore';
 import { StageFullscreen } from '@/components/article/stage/StageFullscreen';
 import { scheduleRecompute, flushRecompute } from '@/lib/metadata/scheduleRecompute';
+import { validateReferences } from '@/lib/blog/validateReferences';
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
