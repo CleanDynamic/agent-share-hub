@@ -5,8 +5,12 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
 import { StageGridExtension } from './StageGridExtension';
 import { BlockRefExtension } from '@/components/canvas/tiptap/BlockRefExtension';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
+import { useDocumentStore } from '@/lib/documentStore';
+import { parseDeepLinkHash, pulseElement } from '@/lib/deepLink';
 
 const lowlight = createLowlight(common);
 
