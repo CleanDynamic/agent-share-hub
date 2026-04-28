@@ -220,14 +220,18 @@ function defaultSubType(uploadType: string): string {
   }
 }
 
-const Upload = () => {
+interface UploadProps {
+  mode?: 'blueprint' | 'blog';
+}
+
+const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const draftId = searchParams.get("draft");
+  const draftId = searchParams.get("draft") || searchParams.get("id");
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const { groups: toolGroups } = useGroupedApprovedTools();
-  const [showTypeChooser, setShowTypeChooser] = useState(true);
+  const [showTypeChooser, setShowTypeChooser] = useState(mode === 'blueprint');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [uploadType, setUploadType] = useState<"blog" | "single" | "bounty">("single");
   const [isProjectMode, setIsProjectMode] = useState(false);
