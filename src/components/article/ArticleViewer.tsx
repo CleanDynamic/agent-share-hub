@@ -5,8 +5,12 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
 import { StageGridExtension } from './StageGridExtension';
 import { BlockRefExtension } from '@/components/canvas/tiptap/BlockRefExtension';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
+import { useDocumentStore } from '@/lib/documentStore';
+import { parseDeepLinkHash, pulseElement } from '@/lib/deepLink';
 
 const lowlight = createLowlight(common);
 
@@ -41,6 +45,90 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
       storage.articleEditor.canvasDoc = canvasDoc;
     }
   }, [editor, canvasDoc]);
+
+  // ---- Deep-link hash handler -------------------------------------------
+  // Supports /content/{id}#stage-{stageId} and /content/{id}#block-{blockId}.
+  // Only runs once per (hash, canvasDoc-ready) pair to avoid re-scrolling on
+  // every store update. Polls briefly for the target DOM node since the
+  // article body / stage grids mount asynchronously after canvasDoc loads.
+  const location = useLocation();
+  const openStage = useDocumentStore((s) => s.openStage);
+  const setSelection = useDocumentStore((s) => s.setSelection);
+  const handledHashRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const parsed = parseDeepLinkHash(location.hash);
+    if (!parsed) {
+      handledHashRef.current = null;
+      return;
+    }
+    if (canvasDoc.loading) return;
+    const key = `${location.pathname}${location.hash}`;
+    if (handledHashRef.current === key) return;
+
+    // Resolve target stage id (and optional block id).
+    let stageId: string | null = null;
+    let blockId: string | null = null;
+    if (parsed.kind === 'stage') {
+      const stageExists = canvasDoc.stages.some((s: any) => s.id === parsed.id);
+      if (!stageExists) {
+        toast.error('That stage no longer exists');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        handledHashRef.current = key;
+        return;
+      }
+      stageId = parsed.id;
+    } else {
+      const block = canvasDoc.blocks.find((b: any) => b.id === parsed.id);
+      if (!block) {
+        toast.error('That block no longer exists');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        handledHashRef.current = key;
+        return;
+      }
+      stageId = (block as any).stageId ?? (block as any).stage_id ?? null;
+      blockId = parsed.id;
+    }
+
+    if (stageId) openStage(stageId);
+
+    // Poll for the DOM element since StageGridNode renders asynchronously.
+    let attempts = 0;
+    const maxAttempts = 30; // ~1.5s @ 50ms
+    const tick = () => {
+      attempts += 1;
+      const stageEl = stageId
+        ? (document.querySelector<HTMLElement>(`[data-stage-id="${stageId}"]`))
+        : null;
+      if (stageEl) {
+        stageEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Give the scroll a beat to settle, then pulse + drill into block.
+        window.setTimeout(() => {
+          pulseElement(stageEl, 700);
+          if (blockId) {
+            // Block DOM mounts only after the stage opens to full mode.
+            let blockAttempts = 0;
+            const blockTick = () => {
+              blockAttempts += 1;
+              const blockEl = document.getElementById(`canvas-block-${blockId}`);
+              if (blockEl) {
+                blockEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setSelection({ kind: 'block', ids: [blockId] });
+                window.setTimeout(() => pulseElement(blockEl, 700), 250);
+                return;
+              }
+              if (blockAttempts < 30) window.setTimeout(blockTick, 50);
+            };
+            window.setTimeout(blockTick, 200);
+          }
+        }, 350);
+        handledHashRef.current = key;
+        return;
+      }
+      if (attempts < maxAttempts) window.setTimeout(tick, 50);
+    };
+    window.setTimeout(tick, 50);
+  }, [location.pathname, location.hash, canvasDoc.loading, canvasDoc.stages, canvasDoc.blocks, openStage, setSelection]);
 
   return (
     <div style={{ maxWidth: 660, margin: '0 auto', padding: '32px 24px' }}>
