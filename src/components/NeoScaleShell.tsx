@@ -2011,6 +2011,8 @@ export function NeoScaleShell() {
           </div>
           </LiquidGlassPanel>
           )}
+
+        </div>
       </div>
     </div>
   );
