@@ -56,7 +56,7 @@ export default function PublishMetadata() {
 
   return (
     <div className="w-full min-h-full px-6 py-6">
-      <SeoHead title="Publish blueprint" description="Finalise metadata before publishing." noIndex />
+      <SeoHead title="Publish blueprint" description="Finalise metadata before publishing." path={`/publish/${contentItemId ?? ""}`} noIndex />
 
       {/* Header strip */}
       <div className="mx-auto w-full max-w-[720px] flex items-center justify-between gap-3 mb-6">
