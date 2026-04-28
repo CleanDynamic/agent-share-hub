@@ -1730,6 +1730,7 @@ export function NeoScaleShell() {
           </div>
 
           {/* ═══ RIGHT PANEL ═══ */}
+          {!location.pathname.startsWith('/publish/') && (
           <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ width: 220, height: 775, flexShrink: 0 }}>
           <div
             className="ns-right-panel"
@@ -2009,6 +2010,7 @@ export function NeoScaleShell() {
             )}
           </div>
           </LiquidGlassPanel>
+          )}
 
         </div>
       </div>

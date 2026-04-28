@@ -43,6 +43,7 @@ import ApiDocs from "./pages/ApiDocs";
 
 import DraftsPage from "./pages/Drafts";
 import PostPreviewPage from "./pages/PostPreview";
+import PublishMetadata from "./pages/PublishMetadata";
 import ContentEditPage from "./pages/ContentEdit";
 import BountyUpload from "@/pages/BountyUpload";
 const queryClient = new QueryClient();
@@ -89,6 +90,7 @@ const App = () => (
                 
                 <Route path="/drafts" element={<ProtectedRoute><DraftsPage /></ProtectedRoute>} />
                 <Route path="/upload/preview/:draftId" element={<ProtectedRoute><PostPreviewPage /></ProtectedRoute>} />
+                <Route path="/publish/:contentItemId" element={<ProtectedRoute><PublishMetadata /></ProtectedRoute>} />
                 <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
