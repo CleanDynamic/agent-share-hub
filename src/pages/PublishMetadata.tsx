@@ -8,10 +8,32 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SeoHead } from "@/components/SeoHead";
 import { useToast } from "@/hooks/use-toast";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   PublishBlueprintForm,
   type PublishFormValues,
   type AutoDetectedMeta,
 } from "@/components/publish/PublishBlueprintForm";
+
+const buildPayload = (values: PublishFormValues): Record<string, any> => ({
+  use_case: values.useCase || null,
+  domain: values.domain || null,
+  difficulty: values.difficulty || null,
+  tags: values.tags,
+  custom_tags: values.tags,
+  prerequisites: values.prerequisites || null,
+  outcome: values.outcome || null,
+  visibility: values.visibility || "public",
+  slug: values.slug ? values.slug.trim().toLowerCase() : null,
+});
 
 export default function PublishMetadata() {
   const { contentItemId } = useParams<{ contentItemId: string }>();
@@ -19,12 +41,24 @@ export default function PublishMetadata() {
   const { toast } = useToast();
   const { profile, loading: authLoading, isLoggedIn } = useAuth();
   const [isPublishing, setIsPublishing] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [resetSignal, setResetSignal] = useState(0);
+
+  // Latest form values, kept in a ref so handlers always read fresh state
+  // without re-binding the form's onChange.
+  const latestValuesRef = useRef<PublishFormValues | null>(null);
+
+  // Fingerprint of the last value successfully written to the server.
+  const lastSavedRef = useRef<string>("");
+
+  // When true, beforeunload/confirm prompts are suppressed (publish path).
+  const suppressUnloadRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !isLoggedIn) navigate("/login", { replace: true });
   }, [authLoading, isLoggedIn, navigate]);
 
-  const { data, isLoading, error, isError } = useQuery({
+  const { data, isLoading, error, isError, refetch } = useQuery({
     queryKey: ["publish_metadata_item", contentItemId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -40,6 +74,7 @@ export default function PublishMetadata() {
   });
 
   const isUpdateMode = data?.status === "approved";
+  const forbidden = !!(data && profile && data.creator_id !== profile.id);
 
   // Not found → /upload
   useEffect(() => {
@@ -48,44 +83,105 @@ export default function PublishMetadata() {
     }
   }, [data, isLoading, isError, navigate]);
 
-  const forbidden = !!(data && profile && data.creator_id !== profile.id);
+  /* ── Save helpers ── */
 
-  /* ── Autosave: debounced upsert of form values (no status change) ── */
+  const writeNow = useCallback(
+    async (values: PublishFormValues): Promise<boolean> => {
+      if (!contentItemId) return false;
+      const payload = buildPayload(values);
+      const fingerprint = JSON.stringify(payload);
+      if (fingerprint === lastSavedRef.current) return true;
+      const { error } = await supabase
+        .from("content_items")
+        .update(payload as any)
+        .eq("id", contentItemId);
+      if (error) {
+        console.warn("[PublishMetadata] save failed", error);
+        return false;
+      }
+      lastSavedRef.current = fingerprint;
+      return true;
+    },
+    [contentItemId],
+  );
+
+  /* ── Debounced autosave on every form change ── */
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSavedRef = useRef<string>("");
 
   const handleFormChange = useCallback(
     (values: PublishFormValues) => {
+      latestValuesRef.current = values;
       if (!contentItemId || forbidden) return;
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
-      autosaveTimer.current = setTimeout(async () => {
-        const payload: Record<string, any> = {
-          use_case: values.useCase || null,
-          domain: values.domain || null,
-          difficulty: values.difficulty || null,
-          tags: values.tags,
-          custom_tags: values.tags,
-          prerequisites: values.prerequisites || null,
-          outcome: values.outcome || null,
-          visibility: values.visibility || "public",
-          slug: values.slug ? values.slug.trim().toLowerCase() : null,
-        };
-        const fingerprint = JSON.stringify(payload);
-        if (fingerprint === lastSavedRef.current) return;
-        lastSavedRef.current = fingerprint;
-        const { error } = await supabase
-          .from("content_items")
-          .update(payload as any)
-          .eq("id", contentItemId);
-        if (error) console.warn("[PublishMetadata] autosave failed", error);
+      autosaveTimer.current = setTimeout(() => {
+        writeNow(values);
       }, 1000);
     },
-    [contentItemId, forbidden],
+    [contentItemId, forbidden, writeNow],
   );
 
   useEffect(() => () => {
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
   }, []);
+
+  /* ── Initialise lastSavedRef from server data so dirty detection works ── */
+  useEffect(() => {
+    if (!data) return;
+    const serverValues: PublishFormValues = {
+      useCase: data.use_case || "",
+      domain: data.domain || "",
+      difficulty: data.difficulty || "",
+      tags: Array.isArray(data.tags) && data.tags.length > 0
+        ? data.tags
+        : Array.isArray(data.custom_tags) ? data.custom_tags : [],
+      prerequisites: data.prerequisites || "",
+      outcome: data.outcome || "",
+      visibility: data.visibility || "public",
+      slug: data.slug || "",
+    };
+    lastSavedRef.current = JSON.stringify(buildPayload(serverValues));
+  }, [data]);
+
+  /* ── beforeunload protection ── */
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (suppressUnloadRef.current) return;
+      const v = latestValuesRef.current;
+      if (!v) return;
+      const fingerprint = JSON.stringify(buildPayload(v));
+      if (fingerprint !== lastSavedRef.current) {
+        e.preventDefault();
+        // Modern browsers ignore custom strings but require returnValue.
+        e.returnValue = "You have unsaved changes — are you sure you want to leave?";
+        return e.returnValue;
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
+  /* ── Flush + navigate helper used by Back / Save-as-draft ── */
+  const flushAndGo = useCallback(
+    async (destination: string, successToast?: { title: string; description?: string }) => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+      const v = latestValuesRef.current;
+      if (v && contentItemId && !forbidden) {
+        const ok = await writeNow(v);
+        if (!ok) {
+          toast({
+            title: "Could not save changes",
+            description: "Try again in a moment.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      if (successToast) toast(successToast);
+      suppressUnloadRef.current = true;
+      navigate(destination);
+    },
+    [contentItemId, forbidden, navigate, toast, writeNow],
+  );
 
   /* ── Publish ── */
   const handlePublish = useCallback(
@@ -95,14 +191,7 @@ export default function PublishMetadata() {
       try {
         const slug = values.slug.trim().toLowerCase();
         const updatePayload: Record<string, any> = {
-          use_case: values.useCase,
-          domain: values.domain,
-          difficulty: values.difficulty,
-          tags: values.tags,
-          custom_tags: values.tags,
-          prerequisites: values.prerequisites || null,
-          outcome: values.outcome || null,
-          visibility: values.visibility,
+          ...buildPayload(values),
           slug,
           status: "approved",
         };
@@ -117,6 +206,8 @@ export default function PublishMetadata() {
           .eq("id", contentItemId);
         if (updateErr) throw updateErr;
 
+        lastSavedRef.current = JSON.stringify(buildPayload(values));
+        suppressUnloadRef.current = true;
         toast({
           title: isUpdateMode ? "Blueprint updated" : "Blueprint published",
         });
@@ -134,6 +225,17 @@ export default function PublishMetadata() {
     },
     [contentItemId, isUpdateMode, navigate, toast],
   );
+
+  /* ── Discard ── */
+  const handleConfirmDiscard = useCallback(async () => {
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    setDiscardOpen(false);
+    // Re-pull authoritative server values, then bump resetSignal so the
+    // form re-initialises from defaultValues.
+    await refetch();
+    setResetSignal((n) => n + 1);
+    toast({ title: "Changes discarded." });
+  }, [refetch, toast]);
 
   // Loading
   if (isLoading || authLoading) {
@@ -155,7 +257,6 @@ export default function PublishMetadata() {
     );
   }
 
-  // Error
   if (isError) {
     return (
       <div className="w-full min-h-full px-6 py-6">
@@ -180,7 +281,6 @@ export default function PublishMetadata() {
     );
   }
 
-  // Forbidden
   if (forbidden) {
     return (
       <div className="w-full min-h-full px-6 py-6">
@@ -205,14 +305,14 @@ export default function PublishMetadata() {
 
   if (!data) return null;
 
-  // Map content_item → form defaults
+  // Map content_item → form defaults (re-derived after refetch on discard).
   const tagsArr: string[] = Array.isArray(data.tags) && data.tags.length > 0
     ? data.tags
     : Array.isArray(data.custom_tags)
     ? data.custom_tags
     : [];
 
-  const defaultValues = {
+  const defaultValues: PublishFormValues = {
     useCase: data.use_case || "",
     domain: data.domain || "",
     difficulty: data.difficulty || "",
@@ -247,18 +347,34 @@ export default function PublishMetadata() {
         defaultValues={defaultValues}
         autoDetected={autoDetected}
         authorUsername={profile?.username || "you"}
-        onBack={() => navigate(`/upload?draft=${contentItemId}`)}
+        onBack={() => flushAndGo(`/upload?draft=${contentItemId}`)}
         onPublish={handlePublish}
         onChange={handleFormChange}
         isPublishing={isPublishing}
         publishLabel={isUpdateMode ? "Update" : "Publish"}
-        onSaveDraft={() => {
-          toast({ title: "Draft saved", description: "Your changes are autosaved as you type." });
-        }}
-        onDiscard={() => {
-          navigate(`/upload?draft=${contentItemId}`);
-        }}
+        resetSignal={resetSignal}
+        onSaveDraft={() =>
+          flushAndGo("/drafts", { title: "Saved as draft" })
+        }
+        onDiscard={() => setDiscardOpen(true)}
       />
+
+      <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard all unsaved metadata changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your blueprint content is safe.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDiscard}>
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
