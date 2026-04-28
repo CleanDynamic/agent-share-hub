@@ -1022,6 +1022,7 @@ export function ArticleEditor({
               onMoreHistory={onOpenHistory}
               onMoreNotes={onOpenNotes}
               onMoreClearAll={onClearAll}
+              mode={mode}
             />
           </div>
         </>
