@@ -1305,6 +1305,9 @@ const Upload = () => {
       }
 
 
+      // Fire-and-forget metadata recompute now that all blocks are written.
+      scheduleRecompute(contentId);
+
       setSuccess(true);
     } catch (err: any) {
       toast({ title: "Something went wrong", description: err?.message ?? "Please try again.", variant: "destructive" });
