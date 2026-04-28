@@ -1636,7 +1636,7 @@ export function NeoScaleShell() {
             ref={rightRef}
             {...initTilt(rightRef)}
           >
-            {location.pathname.startsWith('/upload/blueprint') ? (
+            {(location.pathname.startsWith('/upload/blueprint') || location.pathname.startsWith('/upload/blog')) ? (
               <WorkspaceShell />
             ) : (
             <>
