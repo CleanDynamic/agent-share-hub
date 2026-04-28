@@ -948,7 +948,12 @@ export function ArticleEditor({
         )}
       </div>
 
-      <TopToolbar editor={editor} onInsertBlock={isBlog ? undefined : (() => handleQuickInsert('stage'))} mode={mode} />
+      <TopToolbar
+        editor={editor}
+        onInsertBlock={isBlog ? undefined : (() => handleQuickInsert('stage'))}
+        mode={mode}
+        onOpenReference={isBlog ? openRefPickerFromToolbar : undefined}
+      />
 
       <FindReplaceBar
         editor={editor}
