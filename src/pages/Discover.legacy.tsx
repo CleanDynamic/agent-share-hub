@@ -151,7 +151,7 @@ const DIFF_COLORS: Record<string, string> = {
 
 // ─── Main component ─────────────────────────────────────────
 
-const Browse = () => {
+const DiscoverLegacy = () => {
   const { isLoggedIn, profile } = useAuth();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const { groups: toolGroups } = useGroupedApprovedTools();
