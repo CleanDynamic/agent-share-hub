@@ -129,6 +129,8 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
     };
     window.setTimeout(tick, 50);
   }, [location.pathname, location.hash, canvasDoc.loading, canvasDoc.stages, canvasDoc.blocks, openStage, setSelection]);
+
+  return (
     <div style={{ maxWidth: 660, margin: '0 auto', padding: '32px 24px' }}>
       <style>{`
         .tiptap-article-view {
