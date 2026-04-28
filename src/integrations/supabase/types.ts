@@ -761,11 +761,13 @@ export type Database = {
           post_type: string
           prerequisites: string | null
           price_gbp: number | null
+          published_at: string | null
           pwyw_avg_paid_gbp: number | null
           pwyw_enabled: boolean | null
           pwyw_floor_gbp: number | null
           pwyw_purchase_count: number | null
           rating_count: number
+          slug: string | null
           stage_count: number
           stage_grids: Json | null
           star_rating: number
@@ -782,6 +784,7 @@ export type Database = {
           verification_count: number
           verified_by_creator_at: string | null
           view_count: number
+          visibility: string
           what_to_expect: string | null
           what_to_expect_blocks: Json | null
           word_count: number
@@ -844,11 +847,13 @@ export type Database = {
           post_type?: string
           prerequisites?: string | null
           price_gbp?: number | null
+          published_at?: string | null
           pwyw_avg_paid_gbp?: number | null
           pwyw_enabled?: boolean | null
           pwyw_floor_gbp?: number | null
           pwyw_purchase_count?: number | null
           rating_count?: number
+          slug?: string | null
           stage_count?: number
           stage_grids?: Json | null
           star_rating?: number
@@ -865,6 +870,7 @@ export type Database = {
           verification_count?: number
           verified_by_creator_at?: string | null
           view_count?: number
+          visibility?: string
           what_to_expect?: string | null
           what_to_expect_blocks?: Json | null
           word_count?: number
@@ -927,11 +933,13 @@ export type Database = {
           post_type?: string
           prerequisites?: string | null
           price_gbp?: number | null
+          published_at?: string | null
           pwyw_avg_paid_gbp?: number | null
           pwyw_enabled?: boolean | null
           pwyw_floor_gbp?: number | null
           pwyw_purchase_count?: number | null
           rating_count?: number
+          slug?: string | null
           stage_count?: number
           stage_grids?: Json | null
           star_rating?: number
@@ -948,6 +956,7 @@ export type Database = {
           verification_count?: number
           verified_by_creator_at?: string | null
           view_count?: number
+          visibility?: string
           what_to_expect?: string | null
           what_to_expect_blocks?: Json | null
           word_count?: number
