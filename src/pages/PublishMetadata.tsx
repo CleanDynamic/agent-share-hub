@@ -87,6 +87,10 @@ export default function PublishMetadata() {
 
   const isUpdateMode = data?.status === "approved";
   const forbidden = !!(data && profile && data.creator_id !== profile.id);
+  const postType: PostType = ((data?.post_type as PostType) ?? "blueprint");
+  const postTypeRef = useRef<PostType>(postType);
+  useEffect(() => { postTypeRef.current = postType; }, [postType]);
+  const theme = getPostTypeTheme(postType);
 
   // Not found → /upload
   useEffect(() => {
