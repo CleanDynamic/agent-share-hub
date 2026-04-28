@@ -598,6 +598,19 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
           }))
         : null;
 
+      // Blog mode: validate inline @-references and harvest the unique
+      // parent-blueprint ids. The validator mutates the body's blogReference
+      // node attrs so isBroken / isAccessible reflect current reality.
+      let referencedPostIds: string[] = [];
+      let validatedArticleBody = articleBody;
+      if (mode === 'blog' && articleBody) {
+        try {
+          const v = await validateReferences(articleBody);
+          validatedArticleBody = v.body;
+          referencedPostIds = v.parentIds;
+        } catch (_) { /* non-fatal */ }
+      }
+
       // Whitelist: only columns that exist on `content_items` today.
       const itemData: any = {
         creator_id: user.id,
