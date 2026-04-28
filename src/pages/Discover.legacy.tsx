@@ -1250,4 +1250,4 @@ function EmptyState({ search, hasFilters, onClear }: { search: string; hasFilter
   );
 }
 
-export default Browse;
+export default DiscoverLegacy;
