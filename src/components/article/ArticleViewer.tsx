@@ -86,7 +86,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
         handledHashRef.current = key;
         return;
       }
-      stageId = (block as any).stage_id ?? null;
+      stageId = (block as any).stageId ?? (block as any).stage_id ?? null;
       blockId = parsed.id;
     }
 
