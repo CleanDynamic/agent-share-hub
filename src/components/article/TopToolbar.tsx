@@ -1057,7 +1057,11 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint' }: TopToo
                 </button>
               </PopoverContent>
             </Popover>
-            <ToolbarButton icon={FileSymlink} label="Insert block reference" onClick={insertBlockReference} />
+            {isBlog ? (
+              <ToolbarButton icon={AtSign} label="@ Reference" onClick={() => console.log('@ Reference clicked (wiring in 4.4)')} />
+            ) : (
+              <ToolbarButton icon={FileSymlink} label="Insert block reference" onClick={insertBlockReference} />
+            )}
             <ToolbarButton icon={Minus} label="Insert divider" onClick={run((c) => c.setHorizontalRule().run())} />
           </ToolbarGroup>
 
