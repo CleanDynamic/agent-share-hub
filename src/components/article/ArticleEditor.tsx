@@ -202,6 +202,15 @@ export function ArticleEditor({
       FormattingShortcuts,
       SearchHighlight,
       BlockReferenceExtension,
+      ...(isBlog
+        ? [
+            ReferenceTriggerExtension.configure({
+              onOpen: (p) => refTriggerCallbacksRef.current.onOpen(p),
+              onUpdate: (p) => refTriggerCallbacksRef.current.onUpdate(p),
+              onClose: () => refTriggerCallbacksRef.current.onClose(),
+            }),
+          ]
+        : []),
     ],
     content: initialContent || {
       type: 'doc',
