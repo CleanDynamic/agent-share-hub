@@ -287,7 +287,7 @@ export function PublishBlueprintForm({
 
       {/* Body */}
       <main className="flex-1 overflow-y-auto pb-[100px]">
-        <div className="max-w-[720px] mx-auto px-6 py-8 flex flex-col gap-8">
+        <div className="max-w-[720px] mx-auto px-4 sm:px-6 py-8 flex flex-col gap-8">{/* gap-8 = 32px */}
           {/* 1 - Basics */}
           <Section number={1} title="Basics" required>
             <div className="flex flex-col gap-5">
@@ -298,7 +298,7 @@ export function PublishBlueprintForm({
                   onChange={(e) => set("useCase", e.target.value)}
                   placeholder="What does this blueprint help someone do? (e.g. 'Extract Foucault quotes from PDFs')"
                   maxLength={140}
-                  className="w-full h-[44px] px-4 rounded-lg outline-none transition-all focus:ring-1"
+                  className="publish-focus w-full h-[44px] px-4 rounded-lg outline-none transition-all"
                   style={{
                     backgroundColor: "rgba(30,30,40,0.50)",
                     border: validation.errors.useCase
@@ -397,7 +397,7 @@ export function PublishBlueprintForm({
                   value={state.prerequisites}
                   onChange={(e) => set("prerequisites", e.target.value)}
                   placeholder="What does the reader need before starting? (e.g. 'A Polymarket account, basic Python')"
-                  className="w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all focus:ring-1 resize-y"
+                  className="publish-focus w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all resize-y"
                   style={{
                     backgroundColor: "rgba(30,30,40,0.50)",
                     border: "0.5px solid rgba(255,255,255,0.08)",
@@ -413,7 +413,7 @@ export function PublishBlueprintForm({
                   value={state.outcome}
                   onChange={(e) => set("outcome", e.target.value)}
                   placeholder="What will the reader have after working through this? (e.g. 'A working arbitrage bot polling weather markets every 30s')"
-                  className="w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all focus:ring-1 resize-y"
+                  className="publish-focus w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all resize-y"
                   style={{
                     backgroundColor: "rgba(30,30,40,0.50)",
                     border: "0.5px solid rgba(255,255,255,0.08)",
@@ -484,7 +484,7 @@ export function PublishBlueprintForm({
                       )
                     }
                     placeholder="your-blueprint-slug"
-                    className="w-full h-[44px] pl-7 pr-32 rounded-lg outline-none transition-all focus:ring-1"
+                    className="publish-focus w-full h-[44px] pl-7 pr-32 rounded-lg outline-none transition-all"
                     style={{
                       backgroundColor: "rgba(30,30,40,0.50)",
                       border: validation.errors.slug
