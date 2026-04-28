@@ -714,21 +714,27 @@ function Section({
   required,
   helpText,
   children,
+  onBadgeClick,
 }: {
   number: number;
   title: string;
   required?: boolean;
   helpText?: string;
   children: React.ReactNode;
+  onBadgeClick?: (n: number) => void;
 }) {
   return (
     <section
-      className="rounded-xl p-5"
+      id={`publish-section-${number}`}
+      className="rounded-xl p-5 scroll-mt-20"
       style={{ backgroundColor: "rgba(22,22,30,0.40)" }}
+      aria-labelledby={`publish-section-${number}-title`}
     >
       <div className="h-6 flex items-center gap-3 mb-4">
-        <span
-          className="w-5 h-5 rounded-full flex items-center justify-center"
+        <button
+          type="button"
+          onClick={() => onBadgeClick?.(number)}
+          className="publish-focus w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
           style={{
             backgroundColor: "rgba(255,255,255,0.04)",
             color: "rgba(255,255,255,0.55)",
@@ -736,19 +742,22 @@ function Section({
             fontWeight: 600,
             fontFamily: "Inter, sans-serif",
           }}
+          aria-label={`Section ${number}: ${title}`}
         >
           {number}
-        </span>
-        <span
+        </button>
+        <h2
+          id={`publish-section-${number}-title`}
           style={{
             color: "rgba(255,255,255,0.92)",
             fontSize: "14px",
             fontWeight: 600,
             fontFamily: "Inter, sans-serif",
+            margin: 0,
           }}
         >
           {title}
-        </span>
+        </h2>
         {required && (
           <span
             className="px-1.5 py-0.5 rounded-full"
@@ -771,6 +780,7 @@ function Section({
               size={14}
               style={{ color: "rgba(255,255,255,0.30)" }}
               className="cursor-help"
+              aria-label={helpText}
             />
             <div
               className="absolute right-0 top-full mt-2 px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
