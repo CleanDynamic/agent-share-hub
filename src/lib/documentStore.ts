@@ -154,6 +154,7 @@ export const useDocumentStore = create<DocumentState>()(
         state.stageOpen = {};
         state.selection = { kind: 'none', ids: [] };
         state.focusMode = 'edit';
+        state.editorMode = 'blueprint';
         state.dirty = new Set<string>();
         state.presence = {};
       }),
