@@ -220,14 +220,18 @@ function defaultSubType(uploadType: string): string {
   }
 }
 
-const Upload = () => {
+interface UploadProps {
+  mode?: 'blueprint' | 'blog';
+}
+
+const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const draftId = searchParams.get("draft");
+  const draftId = searchParams.get("draft") || searchParams.get("id");
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const { groups: toolGroups } = useGroupedApprovedTools();
-  const [showTypeChooser, setShowTypeChooser] = useState(true);
+  const [showTypeChooser, setShowTypeChooser] = useState(mode === 'blueprint');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [uploadType, setUploadType] = useState<"blog" | "single" | "bounty">("single");
   const [isProjectMode, setIsProjectMode] = useState(false);
@@ -379,6 +383,16 @@ const Upload = () => {
           .eq("status", "draft")
           .single();
         if (!item) { setDraftLoading(false); return; }
+
+        // Type-mode guard: if URL mode doesn't match the row's post_type, redirect.
+        const rowPostType = (item as any).post_type as string | null;
+        const expected = mode === 'blog' ? 'blog' : 'blueprint';
+        const rowKind = rowPostType === 'blog' ? 'blog' : 'blueprint';
+        if (rowKind !== expected) {
+          const target = rowKind === 'blog' ? '/upload/blog' : '/upload/blueprint';
+          navigate(`${target}?draft=${draftId}`, { replace: true });
+          return;
+        }
 
         // Set form fields
         form.setValue("title", item.title || "");
@@ -595,6 +609,7 @@ const Upload = () => {
         use_instructions: values.use_instructions || null,
         what_to_expect: values.what_to_expect || null,
         what_to_expect_blocks: wteBlocksJsonb,
+        post_type: mode === 'blog' ? 'blog' : 'blueprint',
         other_tool_name: isOtherSelected && otherToolName.trim() ? otherToolName.trim() : null,
         custom_use_case_description: customUseCaseDesc.trim() || null,
         tool_url: toolUrl.trim() || null,
@@ -930,7 +945,7 @@ const Upload = () => {
       const { data: insertedItem, error: insertError } = await supabase.from("content_items").insert({
         creator_id: user.id,
         title: values.title,
-        post_type: 'blueprint',
+        post_type: mode === 'blog' ? 'blog' : 'blueprint',
         content_type: values.content_type,
         description: finalDescription,
         difficulty: values.difficulty,

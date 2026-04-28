@@ -18,7 +18,7 @@ import Discover from "./pages/Discover";
 import DiscoverLegacy from "./pages/Discover.legacy";
 import Upload from "./pages/Upload";
 import UploadTypeSelector from "./pages/UploadTypeSelector";
-import UploadBlogPlaceholder from "./pages/UploadBlogPlaceholder";
+import BlogUpload from "./pages/BlogUpload";
 import UploadBountyPlaceholder from "./pages/UploadBountyPlaceholder";
 import About from "./pages/About";
 import ContentDetail from "./pages/ContentDetail";
@@ -78,7 +78,7 @@ const App = () => (
                 <Route path="/category/:slug" element={<Category />} />
                 <Route path="/upload" element={<UploadTypeSelector />} />
                 <Route path="/upload/blueprint" element={<Upload />} />
-                <Route path="/upload/blog" element={<UploadBlogPlaceholder />} />
+                <Route path="/upload/blog" element={<BlogUpload />} />
                 <Route path="/upload/bounty" element={<UploadBountyPlaceholder />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/api-docs" element={<ApiDocs />} />
