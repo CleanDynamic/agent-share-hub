@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SeoHead } from "@/components/SeoHead";
 import { DiscoverSearchHeader, type SearchMode, type ActiveFilter } from "@/components/discover/DiscoverSearchHeader";
@@ -10,13 +10,23 @@ import {
   useDiscoverTagSuggestions,
   useDiscoverResultCount,
 } from "@/components/discover/useDiscoverQueries";
-import { FeedCard } from "@/components/feed-card";
+import { FeedCard, type FeedPost } from "@/components/feed-card";
 import { StageResultCard } from "@/components/discover/StageResultCard";
 import { BlockResultCard } from "@/components/discover/BlockResultCard";
 import { DiscoverLoadingSkeleton } from "@/components/discover/DiscoverLoadingSkeleton";
 import { DiscoverEmptyState } from "@/components/discover/DiscoverEmptyState";
 import { DiscoverNoResultsState } from "@/components/discover/DiscoverNoResultsState";
-import { MOCK_BLUEPRINTS, MOCK_STAGES, MOCK_BLOCKS } from "@/components/discover/mockDiscoverData";
+import { MOCK_STAGES, MOCK_BLOCKS } from "@/components/discover/mockDiscoverData";
+import { queryBlueprints, type QueryBlueprintsParams } from "@/lib/discover/queryBlueprints";
+
+const PAGE_SIZE = 20;
+
+const SORT_LABEL_TO_KEY: Record<string, QueryBlueprintsParams["sort"]> = {
+  "Most recent": "recent",
+  "Most engaged": "engaged",
+  "Most referenced": "referenced",
+  "Newest": "newest",
+};
 
 const MODES: SearchMode[] = ["blueprints", "stages", "blocks"];
 
@@ -177,22 +187,99 @@ const Discover = () => {
     updateParams(filtersToPatch(next));
   };
 
-  // Mock filtering — real queries land in 3.4/3.5.
-  const isLoading = false;
   const hasActiveFilters = activeFilters.length > 0;
   const hasQuery = urlQ.trim().length > 0;
   const qLower = urlQ.trim().toLowerCase();
 
-  const filteredBlueprints = useMemo(() => {
-    if (!hasQuery) return MOCK_BLUEPRINTS;
-    return MOCK_BLUEPRINTS.filter(
-      (b) =>
-        b.title.toLowerCase().includes(qLower) ||
-        (b.description || "").toLowerCase().includes(qLower) ||
-        (b.ai_tools || []).some((t) => t.toLowerCase().includes(qLower)),
-    );
-  }, [hasQuery, qLower]);
+  // ---- Real Blueprints query (Phase 3.4) ----
+  const blueprintParams: QueryBlueprintsParams = useMemo(() => {
+    const postType = filters.postTypes[0] as QueryBlueprintsParams["postType"] | undefined;
+    return {
+      query: urlQ,
+      postType: postType && ["blueprint", "blog", "bounty"].includes(postType) ? postType : undefined,
+      blockTypes: filters.blockTypes.length ? filters.blockTypes : undefined,
+      models: filters.models.length ? filters.models : undefined,
+      tools: filters.tools.length ? filters.tools : undefined,
+      tags: filters.tags.length ? filters.tags : undefined,
+      domain: filters.domain ?? undefined,
+      difficulty: filters.difficulty ?? undefined,
+      length: (filters.length as QueryBlueprintsParams["length"]) ?? undefined,
+      bountyStatus: (filters.bountyStatus as QueryBlueprintsParams["bountyStatus"]) ?? undefined,
+      timeRange: (filters.timeRange as QueryBlueprintsParams["timeRange"]) ?? undefined,
+      sort: SORT_LABEL_TO_KEY[sort] ?? "recent",
+    };
+  }, [urlQ, filters, sort]);
 
+  const [blueprintRows, setBlueprintRows] = useState<FeedPost[]>([]);
+  const [blueprintTotal, setBlueprintTotal] = useState(0);
+  const [blueprintsLoading, setBlueprintsLoading] = useState(false);
+  const [blueprintsLoadingMore, setBlueprintsLoadingMore] = useState(false);
+  const [blueprintsError, setBlueprintsError] = useState<string | null>(null);
+  const blueprintReqIdRef = useRef(0);
+
+  // Initial / param-changed fetch.
+  useEffect(() => {
+    if (mode !== "blueprints") return;
+    const reqId = ++blueprintReqIdRef.current;
+    setBlueprintsLoading(true);
+    setBlueprintsError(null);
+    queryBlueprints({ ...blueprintParams, limit: PAGE_SIZE, offset: 0 })
+      .then((res) => {
+        if (reqId !== blueprintReqIdRef.current) return;
+        setBlueprintRows(res.rows);
+        setBlueprintTotal(res.total);
+      })
+      .catch((err) => {
+        if (reqId !== blueprintReqIdRef.current) return;
+        setBlueprintsError(err?.message ?? "Failed to load blueprints");
+        setBlueprintRows([]);
+        setBlueprintTotal(0);
+      })
+      .finally(() => {
+        if (reqId !== blueprintReqIdRef.current) return;
+        setBlueprintsLoading(false);
+      });
+  }, [mode, blueprintParams]);
+
+  const loadMoreBlueprints = useCallback(async () => {
+    if (blueprintsLoading || blueprintsLoadingMore) return;
+    if (blueprintRows.length >= blueprintTotal) return;
+    const reqId = blueprintReqIdRef.current;
+    setBlueprintsLoadingMore(true);
+    try {
+      const res = await queryBlueprints({
+        ...blueprintParams,
+        limit: PAGE_SIZE,
+        offset: blueprintRows.length,
+      });
+      if (reqId !== blueprintReqIdRef.current) return;
+      setBlueprintRows((prev) => [...prev, ...res.rows]);
+      setBlueprintTotal(res.total);
+    } catch (err: any) {
+      if (reqId !== blueprintReqIdRef.current) return;
+      setBlueprintsError(err?.message ?? "Failed to load more");
+    } finally {
+      if (reqId === blueprintReqIdRef.current) setBlueprintsLoadingMore(false);
+    }
+  }, [blueprintParams, blueprintRows.length, blueprintTotal, blueprintsLoading, blueprintsLoadingMore]);
+
+  // IntersectionObserver sentinel for infinite scroll.
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (mode !== "blueprints") return;
+    const node = sentinelRef.current;
+    if (!node) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMoreBlueprints();
+      },
+      { rootMargin: "400px 0px" },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [mode, loadMoreBlueprints]);
+
+  // ---- Stages / Blocks (still mock, replaced in 3.5) ----
   const filteredStages = useMemo(() => {
     if (!hasQuery) return MOCK_STAGES;
     return MOCK_STAGES.filter(
@@ -214,10 +301,12 @@ const Discover = () => {
 
   const currentResultsCount =
     mode === "blueprints"
-      ? filteredBlueprints.length
+      ? blueprintRows.length
       : mode === "stages"
         ? filteredStages.length
         : filteredBlocks.length;
+
+  const isLoading = mode === "blueprints" ? blueprintsLoading : false;
 
   const renderResults = () => {
     if (isLoading) return <DiscoverLoadingSkeleton count={6} />;
@@ -248,9 +337,26 @@ const Discover = () => {
     if (mode === "blueprints") {
       return (
         <div className="flex flex-col">
-          {filteredBlueprints.map((bp) => (
+          {blueprintRows.map((bp) => (
             <FeedCard key={bp.id} post={bp} />
           ))}
+          {blueprintsError && (
+            <div className="mt-4 rounded-lg p-3 text-[12px]" style={{ background: "rgba(239,68,68,0.10)", color: "#F87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+              {blueprintsError}
+            </div>
+          )}
+          {/* Infinite-scroll sentinel */}
+          <div ref={sentinelRef} style={{ height: 1 }} />
+          {blueprintsLoadingMore && (
+            <div className="mt-3">
+              <DiscoverLoadingSkeleton count={2} />
+            </div>
+          )}
+          {!blueprintsLoadingMore && blueprintRows.length >= blueprintTotal && blueprintTotal > 0 && (
+            <div className="mt-4 text-center text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+              End of results · {blueprintTotal} total
+            </div>
+          )}
         </div>
       );
     }
