@@ -927,29 +927,31 @@ export function ArticleEditor({
               padding: '8px 0 6px',
             }}
           >
-            <button
-              type="button"
-              onClick={() => handleQuickInsert('stage')}
-              title="Insert Stage Grid"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                height: 30,
-                padding: '0 12px',
-                borderRadius: 6,
-                border: '0.5px solid hsl(18 79% 54% / 0.35)',
-                background: 'hsl(18 79% 54% / 0.10)',
-                color: 'hsl(var(--foreground) / 0.92)',
-                fontFamily: 'Inter, sans-serif',
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
-            >
-              <LayoutGrid size={13} strokeWidth={1.8} />
-              Insert Grid
-            </button>
+            {!isBlog && (
+              <button
+                type="button"
+                onClick={() => handleQuickInsert('stage')}
+                title="Insert Stage Grid"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  height: 30,
+                  padding: '0 12px',
+                  borderRadius: 6,
+                  border: '0.5px solid hsl(18 79% 54% / 0.35)',
+                  background: 'hsl(18 79% 54% / 0.10)',
+                  color: 'hsl(var(--foreground) / 0.92)',
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                <LayoutGrid size={13} strokeWidth={1.8} />
+                Insert Grid
+              </button>
+            )}
 
             <button
               type="button"
