@@ -309,7 +309,7 @@ export function BlogView({ item }: BlogViewProps) {
             count={item.comment_count ?? 0}
             onClick={onComment}
           />
-          <BookmarkButton contentId={item.id} variant="ghost" />
+          <BookmarkButton contentId={item.id} />
           <EngagementButton
             label="Share"
             icon={Share2}
