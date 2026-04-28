@@ -88,6 +88,8 @@ export interface DocumentState {
   stageOpen: Record<string, boolean>;
   selection: Selection;
   focusMode: FocusMode;
+  /** 'blueprint' (default — full editor with workspace) or 'blog' (focus-only writing surface). */
+  editorMode: 'blueprint' | 'blog';
   dirty: Set<string>;
   presence: Record<string, PresenceEntry>;
 
