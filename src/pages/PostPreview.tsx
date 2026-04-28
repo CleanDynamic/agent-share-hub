@@ -110,6 +110,8 @@ export default function PostPreviewPage() {
       return;
     }
     setSubmitting(true);
+    // Ensure metadata is fresh the moment the post goes public.
+    await flushRecompute(draftId!);
     await supabase.from("content_items").update({
       status: "approved",
       approved_at: new Date().toISOString(),
