@@ -10,6 +10,13 @@ import {
   useDiscoverTagSuggestions,
   useDiscoverResultCount,
 } from "@/components/discover/useDiscoverQueries";
+import { BlueprintResultCard } from "@/components/discover/BlueprintResultCard";
+import { StageResultCard } from "@/components/discover/StageResultCard";
+import { BlockResultCard } from "@/components/discover/BlockResultCard";
+import { DiscoverLoadingSkeleton } from "@/components/discover/DiscoverLoadingSkeleton";
+import { DiscoverEmptyState } from "@/components/discover/DiscoverEmptyState";
+import { DiscoverNoResultsState } from "@/components/discover/DiscoverNoResultsState";
+import { MOCK_BLUEPRINTS, MOCK_STAGES, MOCK_BLOCKS } from "@/components/discover/mockDiscoverData";
 
 const MODES: SearchMode[] = ["blueprints", "stages", "blocks"];
 
