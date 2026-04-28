@@ -165,57 +165,112 @@ export function StageResultCard({ stage, parent, author, onClick }: StageResultC
   const sortedTypes = Array.from(blockTypeCounts.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6);
+  const initials = author.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
-    <div
+    <article
       onClick={onClick}
-      className="cursor-pointer rounded-xl p-4 transition-all"
+      className="group relative rounded-xl cursor-pointer transition-all duration-300 hover:bg-white/[0.02]"
       style={{
-        background: "rgba(22, 22, 30, 0.30)",
-        border: "0.5px solid rgba(255, 255, 255, 0.05)",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "rgba(22, 22, 30, 0.50)";
-        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.10)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "rgba(22, 22, 30, 0.30)";
-        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.05)";
+        padding: "14px 16px",
+        marginBottom: "10px",
+        background: "linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.02) 100%)",
+        backdropFilter: "blur(60px)",
+        WebkitBackdropFilter: "blur(60px)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
+        borderTopColor: "rgba(255, 255, 255, 0.06)",
+        borderLeftColor: "rgba(255, 255, 255, 0.06)",
+        boxShadow: "0 2px 12px rgba(0, 0, 0, 0.20)",
       }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <LayoutGrid size={14} style={{ color: "rgba(255,255,255,0.55)" }} />
-          <span
-            className="text-[13px] font-semibold"
-            style={{ color: "rgba(255,255,255,0.95)" }}
+      {/* Author header row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <div
+            style={{
+              width: 36, height: 36, borderRadius: "50%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 12, fontWeight: 600, flexShrink: 0,
+              background: "rgba(46,196,182,0.15)",
+              color: "#2EC4B6",
+              border: "1px solid rgba(46,196,182,0.30)",
+            }}
           >
-            {stageName}
-          </span>
+            {initials}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
+              {author.name}
+            </span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.40)" }}>
+              @{author.handle}
+            </span>
+            <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>·</span>
+            <span
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                padding: "1px 6px", borderRadius: 4,
+                fontSize: 9, fontWeight: 700,
+                textTransform: "uppercase", letterSpacing: "0.05em",
+                background: "rgba(46,196,182,0.15)",
+                color: "#2EC4B6",
+                border: "1px solid rgba(46,196,182,0.30)",
+              }}
+            >
+              <LayoutGrid size={9} />
+              <span>STAGE</span>
+            </span>
+          </div>
         </div>
         <button
           className="flex items-center gap-1 text-[11px] font-medium"
-          style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none" }}
+          style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}
           onClick={(e) => {
             e.stopPropagation();
             onClick?.();
           }}
         >
-          View in blueprint
+          Open
           <ArrowUpRight size={12} />
         </button>
       </div>
 
+      {/* Title (Playfair) */}
+      <h3 style={{
+        fontFamily: "'Playfair Display', Georgia, serif",
+        fontSize: 15, fontWeight: 500, color: "rgba(255,255,255,0.90)",
+        lineHeight: 1.35, marginTop: 10, marginBottom: 0,
+      }}>
+        {stageName}
+      </h3>
+
+      <p style={{
+        marginTop: 6, fontSize: 13,
+        color: "rgba(255,255,255,0.50)", lineHeight: 1.6, margin: 0,
+      }}>
+        From <span style={{ color: "rgba(255,255,255,0.70)" }}>{parent.blueprintTitle}</span>
+      </p>
+
+      {/* Mini-map preview */}
       <div
-        className="mt-3 rounded-md p-2"
         style={{
+          marginTop: 12,
+          borderRadius: 10,
+          overflow: "hidden",
           background: "rgba(0,0,0,0.25)",
-          border: "0.5px solid rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.04)",
+          padding: 8,
         }}
       >
         <StageMiniMap blocks={stage.blocks} connections={stage.connections} />
       </div>
 
+      {/* Block-type chips */}
       <div className="mt-3 flex flex-wrap gap-1.5">
         {sortedTypes.map(([type, count]) => (
           <span
@@ -244,16 +299,10 @@ export function StageResultCard({ stage, parent, author, onClick }: StageResultC
         ))}
       </div>
 
-      <div className="mt-3 text-[11px]" style={{ color: "rgba(255,255,255,0.55)" }}>
+      <div className="mt-3 text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
         {stage.blocks.length} blocks · {stage.connections.length} connections
         {modelCount > 0 && ` · ${modelCount} models`}
       </div>
-
-      <div className="mt-2 text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
-        From <span style={{ color: "rgba(255,255,255,0.65)" }}>{parent.blueprintTitle}</span>
-        {" · by "}
-        <span style={{ color: "rgba(255,255,255,0.65)" }}>@{author.handle}</span>
-      </div>
-    </div>
+    </article>
   );
 }
