@@ -822,7 +822,9 @@ function ChipButton({
   return (
     <button
       onClick={onClick}
-      className="h-7 px-3.5 rounded-full flex items-center gap-1.5 transition-all"
+      type="button"
+      aria-pressed={active}
+      className="publish-focus h-7 px-3.5 rounded-full flex items-center gap-1.5 transition-all"
       style={{
         backgroundColor: active ? "rgba(232,87,26,0.10)" : "rgba(255,255,255,0.03)",
         border: active
