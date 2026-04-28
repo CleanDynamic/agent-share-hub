@@ -67,6 +67,8 @@ const App = () => (
               <Route element={<Layout />}>
                 <Route path="/" element={<Home />} />
                 <Route path="/browse" element={<Browse />} />
+                <Route path="/discover" element={<Discover />} />
+                <Route path="/discover-legacy" element={<DiscoverLegacy />} />
                 <Route path="/recent" element={<RecentPage />} />
                 <Route path="/fyp" element={<FYPPage />} />
                 <Route path="/search" element={<Search />} />
