@@ -120,6 +120,8 @@ export interface DocumentState {
 
   setFocusMode: (mode: FocusMode) => void;
 
+  setEditorMode: (mode: 'blueprint' | 'blog') => void;
+
   markDirty: (id: string) => void;
   clearDirty: (id: string) => void;
 }
