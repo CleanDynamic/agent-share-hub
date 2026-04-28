@@ -8,7 +8,7 @@ export function RightPanel() {
   const location = useLocation();
   const focusMode = useDocumentStore((s) => s.focusMode);
 
-  const isEditorPage = location.pathname === "/upload";
+  const isEditorPage = location.pathname.startsWith("/upload/blueprint");
   const showWorkspace = isEditorPage && focusMode === "edit";
 
   if (showWorkspace) {
