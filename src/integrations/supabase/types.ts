@@ -708,6 +708,12 @@ export type Database = {
           approved_at: string | null
           article_body: Json | null
           avg_rating: number
+          blog_referenced_post_ids: string[] | null
+          blog_topic_category: string | null
+          bounty_acceptance_criteria: string | null
+          bounty_reward_amount: number | null
+          bounty_reward_type: string | null
+          bounty_status: string | null
           comment_count: number
           compatibility_status: string | null
           content_type: string
@@ -719,12 +725,14 @@ export type Database = {
           custom_use_case_description: string | null
           description: string | null
           difficulty: string
+          domain: string | null
           donation_enabled: boolean
           download_count: number
           draft_name: string | null
           draft_saved_at: string | null
           embedding: string | null
           estimated_read_minutes: number | null
+          estimated_reading_minutes: number | null
           evidence_caption: string | null
           evidence_media_type: string | null
           evidence_media_urls: string[] | null
@@ -744,7 +752,9 @@ export type Database = {
           model_run_with: string[] | null
           monetisation_type: string
           other_tool_name: string | null
+          outcome: string | null
           post_type: string
+          prerequisites: string | null
           price_gbp: number | null
           pwyw_avg_paid_gbp: number | null
           pwyw_enabled: boolean | null
@@ -759,6 +769,7 @@ export type Database = {
           tool_subtype: string | null
           tool_url: string | null
           topics: string[] | null
+          use_case: string | null
           use_cases: string[] | null
           use_instructions: string | null
           verification_count: number
@@ -772,6 +783,12 @@ export type Database = {
           approved_at?: string | null
           article_body?: Json | null
           avg_rating?: number
+          blog_referenced_post_ids?: string[] | null
+          blog_topic_category?: string | null
+          bounty_acceptance_criteria?: string | null
+          bounty_reward_amount?: number | null
+          bounty_reward_type?: string | null
+          bounty_status?: string | null
           comment_count?: number
           compatibility_status?: string | null
           content_type: string
@@ -783,12 +800,14 @@ export type Database = {
           custom_use_case_description?: string | null
           description?: string | null
           difficulty: string
+          domain?: string | null
           donation_enabled?: boolean
           download_count?: number
           draft_name?: string | null
           draft_saved_at?: string | null
           embedding?: string | null
           estimated_read_minutes?: number | null
+          estimated_reading_minutes?: number | null
           evidence_caption?: string | null
           evidence_media_type?: string | null
           evidence_media_urls?: string[] | null
@@ -808,7 +827,9 @@ export type Database = {
           model_run_with?: string[] | null
           monetisation_type?: string
           other_tool_name?: string | null
+          outcome?: string | null
           post_type?: string
+          prerequisites?: string | null
           price_gbp?: number | null
           pwyw_avg_paid_gbp?: number | null
           pwyw_enabled?: boolean | null
@@ -823,6 +844,7 @@ export type Database = {
           tool_subtype?: string | null
           tool_url?: string | null
           topics?: string[] | null
+          use_case?: string | null
           use_cases?: string[] | null
           use_instructions?: string | null
           verification_count?: number
@@ -836,6 +858,12 @@ export type Database = {
           approved_at?: string | null
           article_body?: Json | null
           avg_rating?: number
+          blog_referenced_post_ids?: string[] | null
+          blog_topic_category?: string | null
+          bounty_acceptance_criteria?: string | null
+          bounty_reward_amount?: number | null
+          bounty_reward_type?: string | null
+          bounty_status?: string | null
           comment_count?: number
           compatibility_status?: string | null
           content_type?: string
@@ -847,12 +875,14 @@ export type Database = {
           custom_use_case_description?: string | null
           description?: string | null
           difficulty?: string
+          domain?: string | null
           donation_enabled?: boolean
           download_count?: number
           draft_name?: string | null
           draft_saved_at?: string | null
           embedding?: string | null
           estimated_read_minutes?: number | null
+          estimated_reading_minutes?: number | null
           evidence_caption?: string | null
           evidence_media_type?: string | null
           evidence_media_urls?: string[] | null
@@ -872,7 +902,9 @@ export type Database = {
           model_run_with?: string[] | null
           monetisation_type?: string
           other_tool_name?: string | null
+          outcome?: string | null
           post_type?: string
+          prerequisites?: string | null
           price_gbp?: number | null
           pwyw_avg_paid_gbp?: number | null
           pwyw_enabled?: boolean | null
@@ -887,6 +919,7 @@ export type Database = {
           tool_subtype?: string | null
           tool_url?: string | null
           topics?: string[] | null
+          use_case?: string | null
           use_cases?: string[] | null
           use_instructions?: string | null
           verification_count?: number
