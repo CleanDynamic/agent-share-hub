@@ -708,6 +708,8 @@ export type Database = {
           approved_at: string | null
           article_body: Json | null
           avg_rating: number
+          block_count: number
+          block_types_used: string[]
           blog_referenced_post_ids: string[] | null
           blog_topic_category: string | null
           bounty_acceptance_criteria: string | null
@@ -716,6 +718,7 @@ export type Database = {
           bounty_status: string | null
           comment_count: number
           compatibility_status: string | null
+          connection_count: number
           content_type: string
           cover_image_url: string | null
           created_at: string
@@ -744,12 +747,14 @@ export type Database = {
           id: string
           is_pwyw: boolean
           is_verified: boolean
+          last_metadata_recompute_at: string | null
           last_verified_at: string | null
           model_base_architecture: string | null
           model_format: string | null
           model_license: string | null
           model_parameters: string | null
           model_run_with: string[] | null
+          models_referenced: string[]
           monetisation_type: string
           other_tool_name: string | null
           outcome: string | null
@@ -761,6 +766,7 @@ export type Database = {
           pwyw_floor_gbp: number | null
           pwyw_purchase_count: number | null
           rating_count: number
+          stage_count: number
           stage_grids: Json | null
           star_rating: number
           status: string
@@ -768,6 +774,7 @@ export type Database = {
           title: string
           tool_subtype: string | null
           tool_url: string | null
+          tools_referenced: string[]
           topics: string[] | null
           use_case: string | null
           use_cases: string[] | null
@@ -777,12 +784,15 @@ export type Database = {
           view_count: number
           what_to_expect: string | null
           what_to_expect_blocks: Json | null
+          word_count: number
         }
         Insert: {
           ai_tools?: string[] | null
           approved_at?: string | null
           article_body?: Json | null
           avg_rating?: number
+          block_count?: number
+          block_types_used?: string[]
           blog_referenced_post_ids?: string[] | null
           blog_topic_category?: string | null
           bounty_acceptance_criteria?: string | null
@@ -791,6 +801,7 @@ export type Database = {
           bounty_status?: string | null
           comment_count?: number
           compatibility_status?: string | null
+          connection_count?: number
           content_type: string
           cover_image_url?: string | null
           created_at?: string
@@ -819,12 +830,14 @@ export type Database = {
           id?: string
           is_pwyw?: boolean
           is_verified?: boolean
+          last_metadata_recompute_at?: string | null
           last_verified_at?: string | null
           model_base_architecture?: string | null
           model_format?: string | null
           model_license?: string | null
           model_parameters?: string | null
           model_run_with?: string[] | null
+          models_referenced?: string[]
           monetisation_type?: string
           other_tool_name?: string | null
           outcome?: string | null
@@ -836,6 +849,7 @@ export type Database = {
           pwyw_floor_gbp?: number | null
           pwyw_purchase_count?: number | null
           rating_count?: number
+          stage_count?: number
           stage_grids?: Json | null
           star_rating?: number
           status?: string
@@ -843,6 +857,7 @@ export type Database = {
           title: string
           tool_subtype?: string | null
           tool_url?: string | null
+          tools_referenced?: string[]
           topics?: string[] | null
           use_case?: string | null
           use_cases?: string[] | null
@@ -852,12 +867,15 @@ export type Database = {
           view_count?: number
           what_to_expect?: string | null
           what_to_expect_blocks?: Json | null
+          word_count?: number
         }
         Update: {
           ai_tools?: string[] | null
           approved_at?: string | null
           article_body?: Json | null
           avg_rating?: number
+          block_count?: number
+          block_types_used?: string[]
           blog_referenced_post_ids?: string[] | null
           blog_topic_category?: string | null
           bounty_acceptance_criteria?: string | null
@@ -866,6 +884,7 @@ export type Database = {
           bounty_status?: string | null
           comment_count?: number
           compatibility_status?: string | null
+          connection_count?: number
           content_type?: string
           cover_image_url?: string | null
           created_at?: string
@@ -894,12 +913,14 @@ export type Database = {
           id?: string
           is_pwyw?: boolean
           is_verified?: boolean
+          last_metadata_recompute_at?: string | null
           last_verified_at?: string | null
           model_base_architecture?: string | null
           model_format?: string | null
           model_license?: string | null
           model_parameters?: string | null
           model_run_with?: string[] | null
+          models_referenced?: string[]
           monetisation_type?: string
           other_tool_name?: string | null
           outcome?: string | null
@@ -911,6 +932,7 @@ export type Database = {
           pwyw_floor_gbp?: number | null
           pwyw_purchase_count?: number | null
           rating_count?: number
+          stage_count?: number
           stage_grids?: Json | null
           star_rating?: number
           status?: string
@@ -918,6 +940,7 @@ export type Database = {
           title?: string
           tool_subtype?: string | null
           tool_url?: string | null
+          tools_referenced?: string[]
           topics?: string[] | null
           use_case?: string | null
           use_cases?: string[] | null
@@ -927,6 +950,7 @@ export type Database = {
           view_count?: number
           what_to_expect?: string | null
           what_to_expect_blocks?: Json | null
+          word_count?: number
         }
         Relationships: [
           {
