@@ -201,16 +201,23 @@ export function PublishBlueprintForm({
     ? `neoscale.ai/${authorUsername}/${state.slug.trim().toLowerCase()}`
     : `neoscale.ai/${authorUsername}/your-slug-here`;
 
+  const isUpdate = publishLabel === "Update";
+
+  const scrollToSection = (n: number) => {
+    const el = document.getElementById(`publish-section-${n}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header
-        className="h-[60px] flex items-center justify-between px-6"
+        className="h-[60px] flex items-center justify-between px-4 sm:px-6"
         style={{ borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}
       >
         <button
           onClick={onBack}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          className="publish-focus rounded flex items-center gap-2 hover:opacity-80 transition-opacity"
           style={{
             color: "rgba(255,255,255,0.65)",
             fontSize: "13px",
@@ -223,6 +230,7 @@ export function PublishBlueprintForm({
         </button>
 
         <h1
+          className="hidden sm:block"
           style={{
             color: "rgba(255,255,255,0.92)",
             fontSize: "18px",
@@ -230,21 +238,21 @@ export function PublishBlueprintForm({
             fontFamily: "Inter, sans-serif",
           }}
         >
-          Publish blueprint
+          {isUpdate ? "Update blueprint" : "Publish blueprint"}
         </h1>
 
         <span
           className="px-3 py-1 rounded-full"
           style={{
-            backgroundColor: "rgba(232,87,26,0.14)",
-            color: "#E8571A",
+            backgroundColor: isUpdate ? "rgba(46,196,182,0.14)" : "rgba(232,87,26,0.14)",
+            color: isUpdate ? "#2EC4B6" : "#E8571A",
             fontSize: "11px",
             fontWeight: 500,
             letterSpacing: "0.04em",
             fontFamily: "Inter, sans-serif",
           }}
         >
-          Blueprint
+          {isUpdate ? "Editing live" : "Blueprint"}
         </span>
       </header>
 
@@ -252,6 +260,11 @@ export function PublishBlueprintForm({
       <div
         className="h-1 w-full relative group cursor-help"
         style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={validation.total}
+        aria-valuenow={validation.requiredFieldsCompleted}
+        aria-label={`${validation.requiredFieldsCompleted} of ${validation.total} required fields complete`}
       >
         <div
           className="h-full transition-all duration-300"
