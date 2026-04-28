@@ -384,6 +384,16 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
           .single();
         if (!item) { setDraftLoading(false); return; }
 
+        // Type-mode guard: if URL mode doesn't match the row's post_type, redirect.
+        const rowPostType = (item as any).post_type as string | null;
+        const expected = mode === 'blog' ? 'blog' : 'blueprint';
+        const rowKind = rowPostType === 'blog' ? 'blog' : 'blueprint';
+        if (rowKind !== expected) {
+          const target = rowKind === 'blog' ? '/upload/blog' : '/upload/blueprint';
+          navigate(`${target}?draft=${draftId}`, { replace: true });
+          return;
+        }
+
         // Set form fields
         form.setValue("title", item.title || "");
         form.setValue("content_type", item.content_type || "");
