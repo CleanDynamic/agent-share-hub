@@ -289,7 +289,7 @@ export function PublishBlueprintForm({
       <main className="flex-1 overflow-y-auto pb-[100px]">
         <div className="max-w-[720px] mx-auto px-4 sm:px-6 py-8 flex flex-col gap-8">{/* gap-8 = 32px */}
           {/* 1 - Basics */}
-          <Section number={1} title="Basics" required>
+          <Section number={1} title="Basics" required onBadgeClick={scrollToSection}>
             <div className="flex flex-col gap-5">
               <div className="flex flex-col gap-2">
                 <input
@@ -364,7 +364,7 @@ export function PublishBlueprintForm({
           </Section>
 
           {/* 2 - Tags */}
-          <Section number={2} title="Tags" required>
+          <Section number={2} title="Tags" required onBadgeClick={scrollToSection}>
             <TagInput
               value={state.tags}
               onChange={(t) => set("tags", t)}
@@ -390,6 +390,7 @@ export function PublishBlueprintForm({
             number={3}
             title="Context"
             helpText="Optional context to help readers understand what they need and what they'll get."
+            onBadgeClick={scrollToSection}
           >
             <div className="flex flex-col gap-4">
               <FieldGroup label="Prerequisites">
@@ -431,6 +432,7 @@ export function PublishBlueprintForm({
             number={4}
             title="Auto-detected"
             helpText="Metadata automatically extracted from your blueprint content."
+            onBadgeClick={scrollToSection}
           >
             <AutoDetectedCard
               wordCount={autoDetected?.word_count ?? 0}
@@ -446,7 +448,7 @@ export function PublishBlueprintForm({
           </Section>
 
           {/* 5 - Visibility & Slug */}
-          <Section number={5} title="Visibility & slug" required>
+          <Section number={5} title="Visibility & slug" required onBadgeClick={scrollToSection}>
             <div className="flex flex-col gap-5">
               <FieldGroup label="Visibility" error={validation.errors.visibility}>
                 <div className="flex flex-wrap gap-2">
