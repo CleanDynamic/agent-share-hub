@@ -639,7 +639,8 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         status: "draft",
         draft_saved_at: new Date().toISOString(),
         draft_name: (draftName?.trim() || values.title || draftMeta?.name || "Untitled draft").slice(0, 100),
-        article_body: articleBody ?? null,
+        article_body: validatedArticleBody ?? articleBody ?? null,
+        blog_referenced_post_ids: mode === 'blog' ? referencedPostIds : null,
         stage_grids: stageGridsSnapshot,
       };
 
