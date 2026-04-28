@@ -410,8 +410,37 @@ const Discover = () => {
     if (mode === "stages") {
       return (
         <div className="flex flex-col gap-3">
-          {filteredStages.map(({ stage, parent, author }) => (
-            <StageResultCard key={stage.id} stage={stage} parent={parent} author={author} />
+          {stagesError && (
+            <div className="rounded-lg p-3 text-[12px]" style={{ background: "rgba(239,68,68,0.10)", color: "#F87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+              {stagesError}
+            </div>
+          )}
+          {stageRows.map((r) => (
+            <StageResultCard
+              key={r.stage.id}
+              stage={{
+                id: r.stage.id,
+                name: r.stage.name,
+                blocks: r.blocks.map((b) => ({
+                  id: b.id,
+                  type: b.type,
+                  x: b.position_x,
+                  y: b.position_y,
+                  width: b.width,
+                  height: b.height,
+                })),
+                connections: r.connections.map((c) => ({
+                  from: c.from_block_id,
+                  to: c.to_block_id,
+                })),
+              }}
+              parent={{
+                blueprintId: r.parent.blueprintId,
+                blueprintTitle: r.parent.blueprintTitle,
+                slug: r.parent.blueprintSlug ?? r.parent.blueprintId,
+              }}
+              author={{ name: r.author.name, handle: r.author.handle }}
+            />
           ))}
         </div>
       );
@@ -419,13 +448,29 @@ const Discover = () => {
 
     return (
       <div className="flex flex-col gap-3">
-        {filteredBlocks.map(({ block, parent, author, referenceCount }) => (
+        {blocksError && (
+          <div className="rounded-lg p-3 text-[12px]" style={{ background: "rgba(239,68,68,0.10)", color: "#F87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+            {blocksError}
+          </div>
+        )}
+        {blockRows.map((r) => (
           <BlockResultCard
-            key={block.id}
-            block={block}
-            parent={parent}
-            author={author}
-            referenceCount={referenceCount}
+            key={r.block.id}
+            block={{
+              id: r.block.id,
+              type: r.block.type,
+              name: r.block.name,
+              content: r.block.content,
+              properties: r.block.properties,
+            }}
+            parent={{
+              blueprintId: r.parent.blueprintId,
+              blueprintTitle: r.parent.blueprintTitle,
+              stageName: r.parent.stageName,
+              slug: r.parent.blueprintSlug ?? r.parent.blueprintId,
+            }}
+            author={{ name: r.author.name, handle: r.author.handle }}
+            referenceCount={r.referenceCount}
           />
         ))}
       </div>
