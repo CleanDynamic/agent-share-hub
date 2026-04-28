@@ -1061,7 +1061,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
               </PopoverContent>
             </Popover>
             {isBlog ? (
-              <ToolbarButton icon={AtSign} label="@ Reference" onClick={() => console.log('@ Reference clicked (wiring in 4.4)')} />
+              <ToolbarButton icon={AtSign} label="@ Reference" onClick={() => onOpenReference?.()} />
             ) : (
               <ToolbarButton icon={FileSymlink} label="Insert block reference" onClick={insertBlockReference} />
             )}
