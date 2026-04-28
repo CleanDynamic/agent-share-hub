@@ -744,6 +744,7 @@ export type Database = {
           model_run_with: string[] | null
           monetisation_type: string
           other_tool_name: string | null
+          post_type: string
           price_gbp: number | null
           pwyw_avg_paid_gbp: number | null
           pwyw_enabled: boolean | null
@@ -807,6 +808,7 @@ export type Database = {
           model_run_with?: string[] | null
           monetisation_type?: string
           other_tool_name?: string | null
+          post_type?: string
           price_gbp?: number | null
           pwyw_avg_paid_gbp?: number | null
           pwyw_enabled?: boolean | null
@@ -870,6 +872,7 @@ export type Database = {
           model_run_with?: string[] | null
           monetisation_type?: string
           other_tool_name?: string | null
+          post_type?: string
           price_gbp?: number | null
           pwyw_avg_paid_gbp?: number | null
           pwyw_enabled?: boolean | null
