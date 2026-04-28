@@ -16,8 +16,9 @@ import { BlockResultCard } from "@/components/discover/BlockResultCard";
 import { DiscoverLoadingSkeleton } from "@/components/discover/DiscoverLoadingSkeleton";
 import { DiscoverEmptyState } from "@/components/discover/DiscoverEmptyState";
 import { DiscoverNoResultsState } from "@/components/discover/DiscoverNoResultsState";
-import { MOCK_STAGES, MOCK_BLOCKS } from "@/components/discover/mockDiscoverData";
 import { queryBlueprints, type QueryBlueprintsParams } from "@/lib/discover/queryBlueprints";
+import { queryStages, type StageSearchResult } from "@/lib/discover/queryStages";
+import { queryBlocks, type BlockSearchResult } from "@/lib/discover/queryBlocks";
 
 const PAGE_SIZE = 20;
 
