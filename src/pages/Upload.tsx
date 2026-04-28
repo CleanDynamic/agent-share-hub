@@ -41,6 +41,7 @@ import { CanvasHeader } from '@/components/canvas/CanvasHeader';
 import { TemplateLibrary } from '@/components/canvas/TemplateLibrary';
 import { useDocumentStore } from '@/lib/documentStore';
 import { StageFullscreen } from '@/components/article/stage/StageFullscreen';
+import { scheduleRecompute } from '@/lib/metadata/scheduleRecompute';
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -1303,6 +1304,9 @@ const Upload = () => {
         } as any);
       }
 
+
+      // Fire-and-forget metadata recompute now that all blocks are written.
+      scheduleRecompute(contentId);
 
       setSuccess(true);
     } catch (err: any) {

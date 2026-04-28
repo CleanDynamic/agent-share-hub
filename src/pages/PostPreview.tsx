@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Pencil, Download, Lock, Eye, User, Calendar } from "lucide-react";
 import { displayContentType, TYPE_COLORS } from "@/lib/content-types";
+import { flushRecompute } from "@/lib/metadata/scheduleRecompute";
 
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -109,6 +110,8 @@ export default function PostPreviewPage() {
       return;
     }
     setSubmitting(true);
+    // Ensure metadata is fresh the moment the post goes public.
+    await flushRecompute(draftId!);
     await supabase.from("content_items").update({
       status: "approved",
       approved_at: new Date().toISOString(),

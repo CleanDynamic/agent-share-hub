@@ -1,36 +1,68 @@
-Plan to make drafts actually save and reopen correctly
+## Wire `recomputeMetadata` into save + publish
 
-1. Fix the current save failure
-- Remove database fields from the draft save payload that do not exist in the current schema, especially the fields causing the logged error like `bounty_enabled`.
-- Do the same cleanup for block inserts during draft saving, because several canvas/block-specific columns are also not present in the current `content_blocks` schema.
-- Add explicit error checks after every important database write. If an insert/update/delete fails, the save flow will stop and show a clear error instead of pretending it saved.
+Phase 1 extractors are built but never run. This wires them up so the database self-describes whenever content changes — zero UI changes.
 
-2. Make Save create a real draft and keep editing that same draft
-- When a new draft is created, update `currentDraftId` and replace the URL with `/upload?draft=<id>` so refreshing, backing out, or returning to Upload opens the existing draft instead of starting a new upload.
-- Keep `draft_name`, `draft_saved_at`, `article_body`, and `stage_grids` stored on the draft record.
-- After a successful save, show the saved draft name and timestamp.
+### 1. New file: `src/lib/metadata/scheduleRecompute.ts`
 
-3. Preserve the article editor and Stage Grid content
-- Keep the TipTap article JSON as the source for the text editor contents.
-- Save the Stage Grid store as one JSON snapshot in `stage_grids`.
-- Restore both `article_body` and `stage_grids` when opening `/upload?draft=<id>`.
-- On “Back to article” from the Stage Grid canvas, snapshot the grid and silently save if a draft already exists.
+Debounce module with two exports:
+- `scheduleRecompute(id)` — 5s debounce per content_item_id, fire-and-forget. Each new call resets the timer for that id.
+- `flushRecompute(id)` — cancels any pending debounced run and awaits the recompute immediately. Used by publish.
 
-4. Add a proper “save before leaving” prompt
-- Replace the currently-unused `guardedNavigate` logic with a real route-leave blocker for Upload.
-- When the user tries to leave Upload with unsaved article/grid/form changes, show the existing “Save before leaving?” modal.
-- Save Draft will create/update the draft, then continue navigation.
-- Discard will leave without saving, and if it is a newly-created unsaved draft, remove it.
-- Cancel will keep the user on the upload editor.
+Internally uses a `Map<string, Timeout>` so multiple posts being edited in parallel don't clobber each other. Errors are caught and logged, never thrown.
 
-5. Add a safety fallback for “new upload” cases
-- If the user has an unsaved draft and returns to `/upload?post_type=...`, the app should not silently reset their work.
-- Once the draft has an id, the editor URL will stay tied to that draft, so coming back to Upload continues the same draft.
-- Optional silent autosave will only update an existing draft; the naming screen remains the explicit way to create the first named draft.
+### 2. Edit `src/lib/documentPersistence.ts`
 
-Technical details
-- Main files to edit:
-  - `src/pages/Upload.tsx`
-  - `src/components/article/ArticleEditor.tsx` only if the save dialog needs a small state/status refinement
-- No database migration is needed for this fix. The backend already has the draft fields needed: `article_body`, `stage_grids`, `draft_name`, and `draft_saved_at`.
-- The main bug shown in the console is a schema mismatch: draft saving sends removed columns like `bounty_enabled`, so the database rejects the save before the draft can be created.
+This is the single batched-write pipeline for the document editor (article_body + Stage Grid stages/blocks/connections). It already has a clean success point inside `flush()` after `bumpDocumentVersion` succeeds.
+
+Add one line in `flush()` right after `usePersistenceStatus.getState().markSaved()`:
+
+```ts
+scheduleRecompute(documentId);
+```
+
+That single hook covers every editor change — article body, stage create/update/delete, block create/update/delete, connection create/update/delete — because all of them route through this flush.
+
+Position-only flushes also call `markSaved`, but a position change can't affect any auto-detected field (block types, models, tools, word/stage/block/connection counts are all position-agnostic). To avoid wasted recomputes, only schedule when `kind === 'full'`.
+
+### 3. Edit `src/pages/PostPreview.tsx` (publish handler at line 104)
+
+Before flipping `status` to `'approved'`, run the recompute synchronously so the row goes public with fresh metadata:
+
+```ts
+await flushRecompute(draftId!);
+await supabase.from("content_items").update({ status: "approved", ... });
+```
+
+### 4. Edit `src/pages/Upload.tsx` (one-shot publish at line 1307)
+
+This path inserts a brand-new approved post + its `content_blocks` rows in one go (no document store). After the blocks are written and just before `setSuccess(true)` (line 1307), schedule (don't await — we don't want to delay the success toast):
+
+```ts
+scheduleRecompute(contentId);
+```
+
+5 seconds later the metadata fields populate in the background.
+
+### Why no other write sites
+
+- `ContentEdit.tsx` only edits top-level fields (title, description, monetisation) — none of those affect auto-detected metadata, so no hook needed.
+- `ProjectUploadForm`, `ReblogComposer`, `ForkModal` operate on `projects` / reblogs, not `content_items` body content.
+- `Drafts.tsx` is a list view, no writes to body content.
+
+### Verification (manual)
+
+After approval I'll:
+1. Pick an existing blueprint id with `read_query`.
+2. Run `recomputeMetadata` once via the codepath to confirm it writes.
+3. Read back the row showing `block_types_used`, `models_referenced`, `tools_referenced`, `word_count`, `estimated_reading_minutes`, `stage_count`, `block_count`, `connection_count`, `last_metadata_recompute_at`.
+
+(The full live edit→wait→verify loop you described needs you in the browser; I can't drive the editor from here, but I can prove the row populates correctly end-to-end via a direct invocation.)
+
+### Files touched
+
+- **new**: `src/lib/metadata/scheduleRecompute.ts`
+- **edit**: `src/lib/documentPersistence.ts` (1 import + 1 conditional call inside `flush`)
+- **edit**: `src/pages/PostPreview.tsx` (1 import + 1 await before status flip)
+- **edit**: `src/pages/Upload.tsx` (1 import + 1 fire-and-forget call before `setSuccess(true)`)
+
+Zero UI changes. Zero behaviour changes for users. Database becomes continuously self-describing.
