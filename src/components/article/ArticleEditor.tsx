@@ -38,6 +38,16 @@ import { toast } from 'sonner';
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { useDocumentStore } from '@/lib/documentStore';
 import { usePersistenceStatus } from '@/lib/documentPersistence';
+import {
+  ReferencePickerModal,
+  type ReferenceType,
+  type ResultItem,
+} from '@/components/blog/ReferencePickerModal';
+import { ReferenceTriggerExtension } from '@/components/blog/ReferenceTriggerExtension';
+import {
+  useReferenceCounts,
+  useReferenceResults,
+} from '@/components/blog/useReferencePicker';
 
 const lowlight = createLowlight(common);
 
@@ -109,6 +119,29 @@ export function ArticleEditor({
   const [unresolvedComments, setUnresolvedComments] = useState(0);
   const { saveStatus } = usePersistenceStatus();
 
+  // ---- Blog @-reference picker state ----
+  const [refPickerOpen, setRefPickerOpen] = useState(false);
+  const [refPickerType, setRefPickerType] = useState<ReferenceType>('blueprints');
+  const [refPickerQuery, setRefPickerQuery] = useState('');
+  const [refPickerAnchor, setRefPickerAnchor] = useState<{ top: number; left: number } | null>(null);
+  // Range of the typed `@xyz` we should delete on insert (only when triggered via typing).
+  const refPickerRangeRef = useRef<{ from: number; to: number } | null>(null);
+
+  const { data: refCountsData } = useReferenceCounts(refPickerOpen);
+  const refCounts = refCountsData ?? { blueprints: '—', stages: '—', blocks: '—' };
+  const { results: refResults, isLoading: refLoading } = useReferenceResults(
+    refPickerOpen,
+    refPickerType,
+    refPickerQuery,
+  );
+
+  // Stable callbacks for the TipTap extension (captured once at mount).
+  const refTriggerCallbacksRef = useRef({
+    onOpen: (_: { from: number; to: number; coords: { top: number; left: number; bottom: number } }) => {},
+    onUpdate: (_: { from: number; to: number; query: string }) => {},
+    onClose: () => {},
+  });
+
   const handleAddStage = useCallback((): string | null => {
     const title = '';
     canvasDoc.addStage(title);
@@ -169,6 +202,15 @@ export function ArticleEditor({
       FormattingShortcuts,
       SearchHighlight,
       BlockReferenceExtension,
+      ...(isBlog
+        ? [
+            ReferenceTriggerExtension.configure({
+              onOpen: (p) => refTriggerCallbacksRef.current.onOpen(p),
+              onUpdate: (p) => refTriggerCallbacksRef.current.onUpdate(p),
+              onClose: () => refTriggerCallbacksRef.current.onClose(),
+            }),
+          ]
+        : []),
     ],
     content: initialContent || {
       type: 'doc',
@@ -577,6 +619,64 @@ export function ArticleEditor({
     };
   }, []);
 
+  // ---- Blog reference picker: bind extension callbacks to live state ----
+  useEffect(() => {
+    refTriggerCallbacksRef.current = {
+      onOpen: ({ from, to, coords }) => {
+        refPickerRangeRef.current = { from, to };
+        setRefPickerType('blueprints');
+        setRefPickerQuery('');
+        setRefPickerAnchor({ top: coords.bottom + 6, left: coords.left });
+        setRefPickerOpen(true);
+      },
+      onUpdate: ({ from, to, query }) => {
+        refPickerRangeRef.current = { from, to };
+        setRefPickerQuery(query);
+      },
+      onClose: () => {
+        refPickerRangeRef.current = null;
+        setRefPickerOpen(false);
+      },
+    };
+  }, []);
+
+  const closeRefPicker = useCallback(() => {
+    refPickerRangeRef.current = null;
+    setRefPickerOpen(false);
+    setRefPickerQuery('');
+    setRefPickerAnchor(null);
+    editor?.commands.focus();
+  }, [editor]);
+
+  const openRefPickerFromToolbar = useCallback(() => {
+    refPickerRangeRef.current = null; // toolbar trigger has no range to delete
+    setRefPickerType('blueprints');
+    setRefPickerQuery('');
+    setRefPickerAnchor(null); // centered modal
+    setRefPickerOpen(true);
+  }, []);
+
+  const handleRefPickerSelect = useCallback(
+    (item: ResultItem) => {
+      // Delete the typed `@query` range if any.
+      if (editor && refPickerRangeRef.current) {
+        const { from, to } = refPickerRangeRef.current;
+        try {
+          editor.chain().focus().deleteRange({ from, to }).run();
+        } catch (_) { /* noop */ }
+      }
+      // TODO (Phase 4.5): insert inline reference node. For now, log + close.
+      // eslint-disable-next-line no-console
+      console.log('[ReferencePicker] selected', item);
+      refPickerRangeRef.current = null;
+      setRefPickerOpen(false);
+      setRefPickerQuery('');
+      setRefPickerAnchor(null);
+      editor?.commands.focus();
+    },
+    [editor],
+  );
+
   return (
     <div
       ref={editorContainerRef}
@@ -848,7 +948,12 @@ export function ArticleEditor({
         )}
       </div>
 
-      <TopToolbar editor={editor} onInsertBlock={isBlog ? undefined : (() => handleQuickInsert('stage'))} mode={mode} />
+      <TopToolbar
+        editor={editor}
+        onInsertBlock={isBlog ? undefined : (() => handleQuickInsert('stage'))}
+        mode={mode}
+        onOpenReference={isBlog ? openRefPickerFromToolbar : undefined}
+      />
 
       <FindReplaceBar
         editor={editor}
@@ -1138,6 +1243,22 @@ export function ArticleEditor({
             </div>
           </div>
         </div>
+      ) : null}
+
+      {isBlog ? (
+        <ReferencePickerModal
+          isOpen={refPickerOpen}
+          onClose={closeRefPicker}
+          activeType={refPickerType}
+          onTypeChange={setRefPickerType}
+          query={refPickerQuery}
+          onQueryChange={setRefPickerQuery}
+          results={refResults}
+          onSelect={handleRefPickerSelect}
+          counts={refCounts}
+          isLoading={refLoading}
+          anchor={refPickerAnchor}
+        />
       ) : null}
     </div>
   );
