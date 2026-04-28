@@ -44,6 +44,7 @@ import {
   type ResultItem,
 } from '@/components/blog/ReferencePickerModal';
 import { ReferenceTriggerExtension } from '@/components/blog/ReferenceTriggerExtension';
+import { BlogReferenceExtension } from '@/components/blog/BlogReferenceExtension';
 import {
   useReferenceCounts,
   useReferenceResults,
