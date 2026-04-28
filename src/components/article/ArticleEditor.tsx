@@ -827,7 +827,28 @@ export function ArticleEditor({
         }
       `}</style>
 
-      <TopToolbar editor={editor} onInsertBlock={() => handleQuickInsert('stage')} />
+      {/* Post-type pill */}
+      <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '4px 0 6px' }}>
+        {isBlog ? (
+          <span style={{
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 11, fontWeight: 600,
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+            background: 'rgba(46,196,182,0.14)', color: '#2EC4B6',
+            padding: '3px 10px', borderRadius: 100,
+          }}>BLOG</span>
+        ) : (
+          <span style={{
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 11, fontWeight: 600,
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+            background: 'rgba(232,87,26,0.14)', color: '#E8571A',
+            padding: '3px 10px', borderRadius: 100,
+          }}>BLUEPRINT</span>
+        )}
+      </div>
+
+      <TopToolbar editor={editor} onInsertBlock={isBlog ? undefined : (() => handleQuickInsert('stage'))} mode={mode} />
 
       <FindReplaceBar
         editor={editor}
