@@ -18,22 +18,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  PublishBlueprintForm,
+  PublishMetadataForm,
+  getPostTypeTheme,
   type PublishFormValues,
   type AutoDetectedMeta,
-} from "@/components/publish/PublishBlueprintForm";
+  type PostType,
+} from "@/components/publish/PublishMetadataForm";
 
-const buildPayload = (values: PublishFormValues): Record<string, any> => ({
-  use_case: values.useCase || null,
-  domain: values.domain || null,
-  difficulty: values.difficulty || null,
-  tags: values.tags,
-  custom_tags: values.tags,
-  prerequisites: values.prerequisites || null,
-  outcome: values.outcome || null,
-  visibility: values.visibility || "public",
-  slug: values.slug ? values.slug.trim().toLowerCase() : null,
-});
+const buildPayload = (
+  values: PublishFormValues,
+  postType: PostType,
+): Record<string, any> => {
+  const payload: Record<string, any> = {
+    use_case: values.useCase || null,
+    domain: values.domain || null,
+    difficulty: values.difficulty || null,
+    tags: values.tags,
+    custom_tags: values.tags,
+    visibility: values.visibility || "public",
+    slug: values.slug ? values.slug.trim().toLowerCase() : null,
+  };
+  if (postType === "blog") {
+    payload.blog_topic_category = values.topicCategory || null;
+  } else {
+    payload.prerequisites = values.prerequisites || null;
+    payload.outcome = values.outcome || null;
+  }
+  return payload;
+};
 
 export default function PublishMetadata() {
   const { contentItemId } = useParams<{ contentItemId: string }>();
@@ -75,6 +87,10 @@ export default function PublishMetadata() {
 
   const isUpdateMode = data?.status === "approved";
   const forbidden = !!(data && profile && data.creator_id !== profile.id);
+  const postType: PostType = ((data?.post_type as PostType) ?? "blueprint");
+  const postTypeRef = useRef<PostType>(postType);
+  useEffect(() => { postTypeRef.current = postType; }, [postType]);
+  const theme = getPostTypeTheme(postType);
 
   // Not found → /upload
   useEffect(() => {
@@ -88,7 +104,7 @@ export default function PublishMetadata() {
   const writeNow = useCallback(
     async (values: PublishFormValues): Promise<boolean> => {
       if (!contentItemId) return false;
-      const payload = buildPayload(values);
+      const payload = buildPayload(values, postTypeRef.current);
       const fingerprint = JSON.stringify(payload);
       if (fingerprint === lastSavedRef.current) return true;
       const { error } = await supabase
@@ -138,8 +154,9 @@ export default function PublishMetadata() {
       outcome: data.outcome || "",
       visibility: data.visibility || "public",
       slug: data.slug || "",
+      topicCategory: data.blog_topic_category || "",
     };
-    lastSavedRef.current = JSON.stringify(buildPayload(serverValues));
+    lastSavedRef.current = JSON.stringify(buildPayload(serverValues, (data.post_type as PostType) ?? "blueprint"));
   }, [data]);
 
   /* ── beforeunload protection ── */
@@ -148,7 +165,7 @@ export default function PublishMetadata() {
       if (suppressUnloadRef.current) return;
       const v = latestValuesRef.current;
       if (!v) return;
-      const fingerprint = JSON.stringify(buildPayload(v));
+      const fingerprint = JSON.stringify(buildPayload(v, postTypeRef.current));
       if (fingerprint !== lastSavedRef.current) {
         e.preventDefault();
         // Modern browsers ignore custom strings but require returnValue.
@@ -190,8 +207,9 @@ export default function PublishMetadata() {
       setIsPublishing(true);
       try {
         const slug = values.slug.trim().toLowerCase();
+        const pt = postTypeRef.current;
         const updatePayload: Record<string, any> = {
-          ...buildPayload(values),
+          ...buildPayload(values, pt),
           slug,
           status: "approved",
         };
@@ -206,10 +224,11 @@ export default function PublishMetadata() {
           .eq("id", contentItemId);
         if (updateErr) throw updateErr;
 
-        lastSavedRef.current = JSON.stringify(buildPayload(values));
+        lastSavedRef.current = JSON.stringify(buildPayload(values, pt));
         suppressUnloadRef.current = true;
+        const t = getPostTypeTheme(pt);
         toast({
-          title: isUpdateMode ? "Blueprint updated" : "Blueprint published",
+          title: isUpdateMode ? t.updatedToast : t.publishedToast,
         });
         navigate(`/content/${contentItemId}`);
       } catch (err: any) {
@@ -349,6 +368,7 @@ export default function PublishMetadata() {
     outcome: data.outcome || "",
     visibility: data.visibility || "public",
     slug: data.slug || "",
+    topicCategory: data.blog_topic_category || "",
   };
 
   const autoDetected: AutoDetectedMeta = {
@@ -360,18 +380,24 @@ export default function PublishMetadata() {
     block_types_used: data.block_types_used ?? null,
     models_referenced: data.models_referenced ?? null,
     tools_referenced: data.tools_referenced ?? null,
+    blog_referenced_post_ids: data.blog_referenced_post_ids ?? null,
   };
+
+  const headerTitle = isUpdateMode
+    ? `Update ${postType}`
+    : theme.pageTitle;
 
   return (
     <>
       <SeoHead
-        title={isUpdateMode ? "Update blueprint" : "Publish blueprint"}
+        title={headerTitle}
         description="Finalise metadata before publishing."
         path={`/publish/${contentItemId ?? ""}`}
         noIndex
       />
-      <PublishBlueprintForm
+      <PublishMetadataForm
         contentItemId={contentItemId}
+        postType={postType}
         defaultValues={defaultValues}
         autoDetected={autoDetected}
         authorUsername={profile?.username || "you"}
