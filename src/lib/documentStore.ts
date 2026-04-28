@@ -139,6 +139,7 @@ export const useDocumentStore = create<DocumentState>()(
     stageOpen: {},
     selection: emptySelection,
     focusMode: 'edit',
+    editorMode: 'blueprint',
     dirty: new Set<string>(),
     presence: {},
 
