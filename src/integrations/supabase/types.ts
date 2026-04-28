@@ -772,6 +772,7 @@ export type Database = {
           stage_grids: Json | null
           star_rating: number
           status: string
+          subtitle: string | null
           tags: string[]
           title: string
           tool_subtype: string | null
@@ -858,6 +859,7 @@ export type Database = {
           stage_grids?: Json | null
           star_rating?: number
           status?: string
+          subtitle?: string | null
           tags?: string[]
           title: string
           tool_subtype?: string | null
@@ -944,6 +946,7 @@ export type Database = {
           stage_grids?: Json | null
           star_rating?: number
           status?: string
+          subtitle?: string | null
           tags?: string[]
           title?: string
           tool_subtype?: string | null

@@ -58,6 +58,8 @@ interface ArticleEditorProps {
   saving?: boolean;
   publishing?: boolean;
   defaultDraftName?: string;
+  /** 'blueprint' (default) — full editor. 'blog' — pure writing surface. */
+  mode?: 'blueprint' | 'blog';
 }
 
 export function ArticleEditor({
@@ -77,7 +79,9 @@ export function ArticleEditor({
   saving = false,
   publishing = false,
   defaultDraftName,
+  mode = 'blueprint',
 }: ArticleEditorProps) {
+  const isBlog = mode === 'blog';
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [draftNameInput, setDraftNameInput] = useState('');
   const [slashOpen, setSlashOpen] = useState(false);
@@ -282,6 +286,13 @@ export function ArticleEditor({
     setDocumentTitle(documentTitle);
   }, [documentTitle, setDocumentTitle]);
 
+  // Sync editor mode into the document store so peripheral panels (RightPanel
+  // workspace, etc.) can adapt without prop-drilling.
+  const setEditorMode = useDocumentStore((s) => s.setEditorMode);
+  useEffect(() => {
+    setEditorMode(mode);
+  }, [mode, setEditorMode]);
+
   useEffect(() => {
     if (editor) {
       const storage = editor.storage as any;
@@ -375,8 +386,11 @@ export function ArticleEditor({
 
 
   const slashItems = useMemo(() => {
-    return getSlashCommandItems(slashQuery);
-  }, [slashQuery]);
+    const items = getSlashCommandItems(slashQuery);
+    if (!isBlog) return items;
+    const blogHidden = new Set(['stage-grid', 'block-reference', 'inline-block-preview']);
+    return items.filter((i) => !blogHidden.has(i.id));
+  }, [slashQuery, isBlog]);
 
   const metrics = useMemo(() => {
     const storage = editor?.storage as any;
@@ -572,7 +586,7 @@ export function ArticleEditor({
       <style>{`
         .tiptap-article {
           width: 100%;
-          max-width: 720px;
+          max-width: ${isBlog ? 760 : 720}px;
           margin: 0 auto;
           min-height: 300px;
           background: ${focusMode === 'focus' ? 'hsl(var(--foreground) / 0.015)' : 'transparent'};
@@ -582,8 +596,8 @@ export function ArticleEditor({
         }
         .tiptap-article .ProseMirror {
           font-family: 'Inter', sans-serif;
-          font-size: 15px;
-          line-height: 1.0;
+          font-size: ${isBlog ? 16 : 15}px;
+          line-height: ${isBlog ? 1.85 : 1.0};
           color: hsl(var(--foreground) / 0.92);
           padding: 48px 24px 32px;
           min-height: 300px;
@@ -598,15 +612,15 @@ export function ArticleEditor({
           background: hsl(18 79% 54% / 0.2);
         }
         .tiptap-article h1 {
-          font-family: 'Inter', sans-serif;
-          font-size: 28px;
+          font-family: ${isBlog ? "'Playfair Display', Georgia, serif" : "'Inter', sans-serif"};
+          font-size: ${isBlog ? 28 : 28}px;
           font-weight: 700;
           color: hsl(var(--foreground) / 0.95);
           margin: 40px 0 12px;
           line-height: 1.3;
         }
         .tiptap-article h2 {
-          font-family: 'Inter', sans-serif;
+          font-family: ${isBlog ? "'Playfair Display', Georgia, serif" : "'Inter', sans-serif"};
           font-size: 22px;
           font-weight: 600;
           color: hsl(var(--foreground) / 0.92);
@@ -629,6 +643,8 @@ export function ArticleEditor({
           padding-left: 20px;
           color: hsl(var(--foreground) / 0.65);
           font-style: italic;
+          font-size: ${isBlog ? 17 : 'inherit'};
+          font-family: ${isBlog ? "'Inter', sans-serif" : 'inherit'};
           margin: 18px 0;
         }
         .tiptap-article pre {
@@ -811,7 +827,28 @@ export function ArticleEditor({
         }
       `}</style>
 
-      <TopToolbar editor={editor} onInsertBlock={() => handleQuickInsert('stage')} />
+      {/* Post-type pill */}
+      <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '4px 0 6px' }}>
+        {isBlog ? (
+          <span style={{
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 11, fontWeight: 600,
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+            background: 'rgba(46,196,182,0.14)', color: '#2EC4B6',
+            padding: '3px 10px', borderRadius: 100,
+          }}>BLOG</span>
+        ) : (
+          <span style={{
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 11, fontWeight: 600,
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+            background: 'rgba(232,87,26,0.14)', color: '#E8571A',
+            padding: '3px 10px', borderRadius: 100,
+          }}>BLUEPRINT</span>
+        )}
+      </div>
+
+      <TopToolbar editor={editor} onInsertBlock={isBlog ? undefined : (() => handleQuickInsert('stage'))} mode={mode} />
 
       <FindReplaceBar
         editor={editor}
@@ -827,7 +864,7 @@ export function ArticleEditor({
           className="tiptap-article"
           style={{
             width: '100%',
-            maxWidth: 720,
+            maxWidth: isBlog ? 760 : 720,
             margin: '0 auto',
           }}
         />
@@ -890,29 +927,31 @@ export function ArticleEditor({
               padding: '8px 0 6px',
             }}
           >
-            <button
-              type="button"
-              onClick={() => handleQuickInsert('stage')}
-              title="Insert Stage Grid"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                height: 30,
-                padding: '0 12px',
-                borderRadius: 6,
-                border: '0.5px solid hsl(18 79% 54% / 0.35)',
-                background: 'hsl(18 79% 54% / 0.10)',
-                color: 'hsl(var(--foreground) / 0.92)',
-                fontFamily: 'Inter, sans-serif',
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
-            >
-              <LayoutGrid size={13} strokeWidth={1.8} />
-              Insert Grid
-            </button>
+            {!isBlog && (
+              <button
+                type="button"
+                onClick={() => handleQuickInsert('stage')}
+                title="Insert Stage Grid"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  height: 30,
+                  padding: '0 12px',
+                  borderRadius: 6,
+                  border: '0.5px solid hsl(18 79% 54% / 0.35)',
+                  background: 'hsl(18 79% 54% / 0.10)',
+                  color: 'hsl(var(--foreground) / 0.92)',
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                <LayoutGrid size={13} strokeWidth={1.8} />
+                Insert Grid
+              </button>
+            )}
 
             <button
               type="button"
@@ -983,6 +1022,7 @@ export function ArticleEditor({
               onMoreHistory={onOpenHistory}
               onMoreNotes={onOpenNotes}
               onMoreClearAll={onClearAll}
+              mode={mode}
             />
           </div>
         </>

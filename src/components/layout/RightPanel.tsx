@@ -7,11 +7,13 @@ import { useDocumentStore } from "@/lib/documentStore";
 export function RightPanel() {
   const location = useLocation();
   const focusMode = useDocumentStore((s) => s.focusMode);
+  const editorMode = useDocumentStore((s) => s.editorMode);
 
   const isEditorPage =
     location.pathname.startsWith("/upload/blueprint") ||
     location.pathname.startsWith("/upload/blog");
-  const showWorkspace = isEditorPage && focusMode === "edit";
+  // Blog mode: pure focus writing surface — no right workspace panel.
+  const showWorkspace = isEditorPage && focusMode === "edit" && editorMode !== "blog";
 
   if (showWorkspace) {
     return <WorkspaceShell />;

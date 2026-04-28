@@ -88,6 +88,8 @@ export interface DocumentState {
   stageOpen: Record<string, boolean>;
   selection: Selection;
   focusMode: FocusMode;
+  /** 'blueprint' (default — full editor with workspace) or 'blog' (focus-only writing surface). */
+  editorMode: 'blueprint' | 'blog';
   dirty: Set<string>;
   presence: Record<string, PresenceEntry>;
 
@@ -118,6 +120,8 @@ export interface DocumentState {
 
   setFocusMode: (mode: FocusMode) => void;
 
+  setEditorMode: (mode: 'blueprint' | 'blog') => void;
+
   markDirty: (id: string) => void;
   clearDirty: (id: string) => void;
 }
@@ -135,6 +139,7 @@ export const useDocumentStore = create<DocumentState>()(
     stageOpen: {},
     selection: emptySelection,
     focusMode: 'edit',
+    editorMode: 'blueprint',
     dirty: new Set<string>(),
     presence: {},
 
@@ -149,6 +154,7 @@ export const useDocumentStore = create<DocumentState>()(
         state.stageOpen = {};
         state.selection = { kind: 'none', ids: [] };
         state.focusMode = 'edit';
+        state.editorMode = 'blueprint';
         state.dirty = new Set<string>();
         state.presence = {};
       }),
@@ -275,6 +281,11 @@ export const useDocumentStore = create<DocumentState>()(
     setFocusMode: (mode) =>
       set((state) => {
         state.focusMode = mode;
+      }),
+
+    setEditorMode: (mode) =>
+      set((state) => {
+        state.editorMode = mode;
       }),
 
     markDirty: (id) =>
