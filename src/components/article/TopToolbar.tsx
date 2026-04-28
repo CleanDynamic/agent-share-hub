@@ -680,9 +680,11 @@ export interface TopToolbarProps {
   onInsertBlock?: () => void;
   /** 'blueprint' (default) or 'blog' — affects which buttons render. */
   mode?: 'blueprint' | 'blog';
+  /** Blog mode: open the @-Reference picker modal. */
+  onOpenReference?: () => void;
 }
 
-export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint' }: TopToolbarProps) {
+export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenReference }: TopToolbarProps) {
   const isBlog = mode === 'blog';
   // Force re-render on selection / transaction so isActive() reflects state
   const [, forceTick] = React.useReducer((x: number) => x + 1, 0);
