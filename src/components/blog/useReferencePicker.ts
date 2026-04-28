@@ -107,6 +107,7 @@ export function useReferenceResults(
           out.push({
             type: 'blueprint',
             id: r.id,
+            parentSlug: r.id,
             title: r.title,
             useCase: r.description ?? r.use_cases?.[0] ?? '',
             authorAvatar: r.author?.avatar_url ?? '',
@@ -144,6 +145,7 @@ export function useReferenceResults(
         id: r.block.id,
         name: r.block.name ?? r.block.content?.slice(0, 60) ?? null,
         stageName: r.parent.stageName,
+        stageId: r.parent.stageId ?? undefined,
         blueprintTitle: r.parent.blueprintTitle,
         blueprintId: r.parent.blueprintId,
         blockType: r.block.type,

@@ -42,6 +42,7 @@ import { TemplateLibrary } from '@/components/canvas/TemplateLibrary';
 import { useDocumentStore } from '@/lib/documentStore';
 import { StageFullscreen } from '@/components/article/stage/StageFullscreen';
 import { scheduleRecompute, flushRecompute } from '@/lib/metadata/scheduleRecompute';
+import { validateReferences } from '@/lib/blog/validateReferences';
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -597,6 +598,19 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
           }))
         : null;
 
+      // Blog mode: validate inline @-references and harvest the unique
+      // parent-blueprint ids. The validator mutates the body's blogReference
+      // node attrs so isBroken / isAccessible reflect current reality.
+      let referencedPostIds: string[] = [];
+      let validatedArticleBody = articleBody;
+      if (mode === 'blog' && articleBody) {
+        try {
+          const v = await validateReferences(articleBody);
+          validatedArticleBody = v.body;
+          referencedPostIds = v.parentIds;
+        } catch (_) { /* non-fatal */ }
+      }
+
       // Whitelist: only columns that exist on `content_items` today.
       const itemData: any = {
         creator_id: user.id,
@@ -625,7 +639,8 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         status: "draft",
         draft_saved_at: new Date().toISOString(),
         draft_name: (draftName?.trim() || values.title || draftMeta?.name || "Untitled draft").slice(0, 100),
-        article_body: articleBody ?? null,
+        article_body: validatedArticleBody ?? articleBody ?? null,
+        blog_referenced_post_ids: mode === 'blog' ? referencedPostIds : null,
         stage_grids: stageGridsSnapshot,
       };
 

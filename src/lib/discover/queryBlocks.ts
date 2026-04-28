@@ -31,6 +31,7 @@ export interface BlockSearchResult {
     blueprintId: string;
     blueprintTitle: string;
     blueprintSlug: string | null;
+    stageId: string | null;
     stageName: string;
   };
   author: {
@@ -133,6 +134,7 @@ export async function queryBlocks(
           blueprintId: p.id,
           blueprintTitle: p.title,
           blueprintSlug: p.slug,
+          stageId: b.stage_id ?? null,
           stageName,
         },
         author: authorFromParent(p),

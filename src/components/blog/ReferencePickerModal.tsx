@@ -16,6 +16,8 @@ export type ReferenceType = "blueprints" | "stages" | "blocks";
 export interface BlueprintResult {
   type: "blueprint";
   id: string;
+  /** Parent-blueprint id (named "slug" for spec parity). */
+  parentSlug: string;
   title: string;
   useCase: string;
   authorAvatar: string;
