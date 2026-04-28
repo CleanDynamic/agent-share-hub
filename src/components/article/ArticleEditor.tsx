@@ -119,6 +119,29 @@ export function ArticleEditor({
   const [unresolvedComments, setUnresolvedComments] = useState(0);
   const { saveStatus } = usePersistenceStatus();
 
+  // ---- Blog @-reference picker state ----
+  const [refPickerOpen, setRefPickerOpen] = useState(false);
+  const [refPickerType, setRefPickerType] = useState<ReferenceType>('blueprints');
+  const [refPickerQuery, setRefPickerQuery] = useState('');
+  const [refPickerAnchor, setRefPickerAnchor] = useState<{ top: number; left: number } | null>(null);
+  // Range of the typed `@xyz` we should delete on insert (only when triggered via typing).
+  const refPickerRangeRef = useRef<{ from: number; to: number } | null>(null);
+
+  const { data: refCountsData } = useReferenceCounts(refPickerOpen);
+  const refCounts = refCountsData ?? { blueprints: '—', stages: '—', blocks: '—' };
+  const { results: refResults, isLoading: refLoading } = useReferenceResults(
+    refPickerOpen,
+    refPickerType,
+    refPickerQuery,
+  );
+
+  // Stable callbacks for the TipTap extension (captured once at mount).
+  const refTriggerCallbacksRef = useRef({
+    onOpen: (_: { from: number; to: number; coords: { top: number; left: number; bottom: number } }) => {},
+    onUpdate: (_: { from: number; to: number; query: string }) => {},
+    onClose: () => {},
+  });
+
   const handleAddStage = useCallback((): string | null => {
     const title = '';
     canvasDoc.addStage(title);
