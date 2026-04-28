@@ -96,6 +96,7 @@ const Discover = () => {
       <SeoHead
         title="Discover · NeoScale"
         description="Search and discover Blueprints, Stages, and Blocks."
+        path="/discover"
       />
       <div
         className="mx-auto w-full px-4 py-6"
