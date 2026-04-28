@@ -1244,6 +1244,22 @@ export function ArticleEditor({
           </div>
         </div>
       ) : null}
+
+      {isBlog ? (
+        <ReferencePickerModal
+          isOpen={refPickerOpen}
+          onClose={closeRefPicker}
+          activeType={refPickerType}
+          onTypeChange={setRefPickerType}
+          query={refPickerQuery}
+          onQueryChange={setRefPickerQuery}
+          results={refResults}
+          onSelect={handleRefPickerSelect}
+          counts={refCounts}
+          isLoading={refLoading}
+          anchor={refPickerAnchor}
+        />
+      ) : null}
     </div>
   );
 }
