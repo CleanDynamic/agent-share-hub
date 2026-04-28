@@ -123,6 +123,21 @@ export default function DraftsPage() {
                       {displayName || "Untitled draft"}
                     </p>
                     <div className="flex items-center flex-wrap" style={{ gap: 6 }}>
+                      {(() => {
+                        const pt = (draft.post_type as string | null) || 'blueprint';
+                        const ptMap: Record<string, { label: string; color: string }> = {
+                          blueprint: { label: 'Blueprint', color: '#E8571A' },
+                          blog:       { label: 'Blog',      color: '#2EC4B6' },
+                          discussion: { label: 'Blog',      color: '#2EC4B6' },
+                          bounty:     { label: 'Bounty',    color: '#F59E0B' },
+                        };
+                        const meta = ptMap[pt] ?? ptMap.blueprint;
+                        return (
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 100, background: `${meta.color}14`, color: meta.color, border: `1px solid ${meta.color}40` }}>
+                            {meta.label}
+                          </span>
+                        );
+                      })()}
                       {draft.content_type && (
                         <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(139,69,19,0.08)', color: '#8B4513', border: '1px solid rgba(139,69,19,0.2)' }}>
                           {displayContentType(draft.content_type)}
