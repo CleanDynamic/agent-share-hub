@@ -18,7 +18,7 @@ import Discover from "./pages/Discover";
 import DiscoverLegacy from "./pages/Discover.legacy";
 import Upload from "./pages/Upload";
 import UploadTypeSelector from "./pages/UploadTypeSelector";
-import UploadBlogPlaceholder from "./pages/UploadBlogPlaceholder";
+import BlogUpload from "./pages/BlogUpload";
 import UploadBountyPlaceholder from "./pages/UploadBountyPlaceholder";
 import About from "./pages/About";
 import ContentDetail from "./pages/ContentDetail";
