@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Pencil, Download, Lock, Eye, User, Calendar } from "lucide-react";
 import { displayContentType, TYPE_COLORS } from "@/lib/content-types";
+import { flushRecompute } from "@/lib/metadata/scheduleRecompute";
 
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
