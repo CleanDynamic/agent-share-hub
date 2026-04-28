@@ -259,6 +259,11 @@ async function flush(kind: 'position' | 'full'): Promise<void> {
     }
 
     usePersistenceStatus.getState().markSaved();
+
+    // Position-only flushes can't change any auto-detected field
+    // (block types / models / tools / counts are all position-agnostic),
+    // so only schedule a recompute on full flushes.
+    if (kind === 'full') scheduleRecompute(documentId);
   } catch (err) {
     console.error('[documentPersistence] flush failed', err);
     usePersistenceStatus.getState().setSaveStatus(
