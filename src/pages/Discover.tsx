@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { stageDeepLink, blockDeepLink } from "@/lib/deepLink";
 import { SeoHead } from "@/components/SeoHead";
 import { DiscoverSearchHeader, type SearchMode, type ActiveFilter } from "@/components/discover/DiscoverSearchHeader";
 import { DiscoverFilterSheet, type FilterValue } from "@/components/discover/DiscoverFilterSheet";
@@ -73,6 +74,7 @@ function filtersToPatch(filters: FilterValue): Record<string, string | null> {
 
 const Discover = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const modeParam = searchParams.get("mode") as SearchMode | null;
@@ -440,6 +442,7 @@ const Discover = () => {
                 slug: r.parent.blueprintSlug ?? r.parent.blueprintId,
               }}
               author={{ name: r.author.name, handle: r.author.handle }}
+              onClick={() => navigate(stageDeepLink(r.parent.blueprintId, r.stage.id))}
             />
           ))}
         </div>
@@ -471,6 +474,7 @@ const Discover = () => {
             }}
             author={{ name: r.author.name, handle: r.author.handle }}
             referenceCount={r.referenceCount}
+            onClick={() => navigate(blockDeepLink(r.parent.blueprintId, r.block.id))}
           />
         ))}
       </div>
