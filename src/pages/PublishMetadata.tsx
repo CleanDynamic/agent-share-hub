@@ -163,6 +163,7 @@ export default function PublishMetadata() {
         noIndex
       />
       <PublishBlueprintForm
+        contentItemId={contentItemId}
         defaultValues={defaultValues}
         autoDetected={autoDetected}
         authorUsername={profile?.username || "you"}
