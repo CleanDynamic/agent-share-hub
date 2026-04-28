@@ -134,6 +134,7 @@ export async function queryBlocks(
           blueprintId: p.id,
           blueprintTitle: p.title,
           blueprintSlug: p.slug,
+          stageId: b.stage_id ?? null,
           stageName,
         },
         author: authorFromParent(p),
