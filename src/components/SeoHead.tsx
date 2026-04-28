@@ -8,10 +8,12 @@ interface SeoHeadProps {
   path: string;
   noIndex?: boolean;
   ogType?: string;
+  /** Optional Open Graph image URL (og:image / twitter:image). */
+  image?: string;
   jsonLd?: Record<string, any>;
 }
 
-export function SeoHead({ title, description, path, noIndex, ogType = "website", jsonLd }: SeoHeadProps) {
+export function SeoHead({ title, description, path, noIndex, ogType = "website", image, jsonLd }: SeoHeadProps) {
   const canonical = `${SITE_URL}${path}`;
 
   return (
