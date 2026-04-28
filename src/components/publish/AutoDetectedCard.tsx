@@ -1,5 +1,5 @@
 import React from "react";
-import { Brain, Wrench } from "lucide-react";
+import { Brain, Wrench, FileQuestion } from "lucide-react";
 
 interface AutoDetectedCardProps {
   wordCount: number;
