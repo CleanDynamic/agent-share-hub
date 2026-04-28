@@ -207,8 +207,9 @@ export default function PublishMetadata() {
       setIsPublishing(true);
       try {
         const slug = values.slug.trim().toLowerCase();
+        const pt = postTypeRef.current;
         const updatePayload: Record<string, any> = {
-          ...buildPayload(values),
+          ...buildPayload(values, pt),
           slug,
           status: "approved",
         };
@@ -223,10 +224,11 @@ export default function PublishMetadata() {
           .eq("id", contentItemId);
         if (updateErr) throw updateErr;
 
-        lastSavedRef.current = JSON.stringify(buildPayload(values));
+        lastSavedRef.current = JSON.stringify(buildPayload(values, pt));
         suppressUnloadRef.current = true;
+        const t = getPostTypeTheme(pt);
         toast({
-          title: isUpdateMode ? "Blueprint updated" : "Blueprint published",
+          title: isUpdateMode ? t.updatedToast : t.publishedToast,
         });
         navigate(`/content/${contentItemId}`);
       } catch (err: any) {
