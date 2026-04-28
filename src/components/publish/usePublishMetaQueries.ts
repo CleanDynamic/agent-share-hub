@@ -35,7 +35,7 @@ export function useTagSuggestions(limit = 50) {
       return Array.from(counts.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, limit)
-        .map(([t]) => t);
+        .map(([tag, usageCount]) => ({ tag, usageCount }));
     },
   });
 }
