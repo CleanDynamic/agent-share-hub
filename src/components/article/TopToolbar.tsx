@@ -36,6 +36,7 @@ import {
   Link,
   Image,
   Video,
+  AtSign,
   Table,
   LayoutGrid,
   FileSymlink,
