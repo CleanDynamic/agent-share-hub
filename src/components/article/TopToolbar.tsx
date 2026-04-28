@@ -677,9 +677,12 @@ function ToolbarGroup({ children }: { children: React.ReactNode }) {
 export interface TopToolbarProps {
   editor: Editor | null;
   onInsertBlock?: () => void;
+  /** 'blueprint' (default) or 'blog' — affects which buttons render. */
+  mode?: 'blueprint' | 'blog';
 }
 
-export function TopToolbar({ editor, onInsertBlock }: TopToolbarProps) {
+export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint' }: TopToolbarProps) {
+  const isBlog = mode === 'blog';
   // Force re-render on selection / transaction so isActive() reflects state
   const [, forceTick] = React.useReducer((x: number) => x + 1, 0);
   React.useEffect(() => {
