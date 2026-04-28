@@ -386,8 +386,11 @@ export function ArticleEditor({
 
 
   const slashItems = useMemo(() => {
-    return getSlashCommandItems(slashQuery);
-  }, [slashQuery]);
+    const items = getSlashCommandItems(slashQuery);
+    if (!isBlog) return items;
+    const blogHidden = new Set(['stage-grid', 'block-reference', 'inline-block-preview']);
+    return items.filter((i) => !blogHidden.has(i.id));
+  }, [slashQuery, isBlog]);
 
   const metrics = useMemo(() => {
     const storage = editor?.storage as any;
