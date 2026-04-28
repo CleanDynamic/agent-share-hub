@@ -38,6 +38,16 @@ import { toast } from 'sonner';
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { useDocumentStore } from '@/lib/documentStore';
 import { usePersistenceStatus } from '@/lib/documentPersistence';
+import {
+  ReferencePickerModal,
+  type ReferenceType,
+  type ResultItem,
+} from '@/components/blog/ReferencePickerModal';
+import { ReferenceTriggerExtension } from '@/components/blog/ReferenceTriggerExtension';
+import {
+  useReferenceCounts,
+  useReferenceResults,
+} from '@/components/blog/useReferencePicker';
 
 const lowlight = createLowlight(common);
 
