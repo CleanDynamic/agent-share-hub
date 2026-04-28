@@ -16,8 +16,9 @@ import { BlockResultCard } from "@/components/discover/BlockResultCard";
 import { DiscoverLoadingSkeleton } from "@/components/discover/DiscoverLoadingSkeleton";
 import { DiscoverEmptyState } from "@/components/discover/DiscoverEmptyState";
 import { DiscoverNoResultsState } from "@/components/discover/DiscoverNoResultsState";
-import { MOCK_STAGES, MOCK_BLOCKS } from "@/components/discover/mockDiscoverData";
 import { queryBlueprints, type QueryBlueprintsParams } from "@/lib/discover/queryBlueprints";
+import { queryStages, type StageSearchResult } from "@/lib/discover/queryStages";
+import { queryBlocks, type BlockSearchResult } from "@/lib/discover/queryBlocks";
 
 const PAGE_SIZE = 20;
 
@@ -279,34 +280,79 @@ const Discover = () => {
     return () => obs.disconnect();
   }, [mode, loadMoreBlueprints]);
 
-  // ---- Stages / Blocks (still mock, replaced in 3.5) ----
-  const filteredStages = useMemo(() => {
-    if (!hasQuery) return MOCK_STAGES;
-    return MOCK_STAGES.filter(
-      (s) =>
-        (s.stage.name || "").toLowerCase().includes(qLower) ||
-        s.parent.blueprintTitle.toLowerCase().includes(qLower),
-    );
-  }, [hasQuery, qLower]);
+  // ---- Stages query (Phase 3.5) ----
+  const stageBlockParams = useMemo(() => ({
+    query: urlQ,
+    blockTypes: filters.blockTypes.length ? filters.blockTypes : undefined,
+    models: filters.models.length ? filters.models : undefined,
+    tools: filters.tools.length ? filters.tools : undefined,
+    tags: filters.tags.length ? filters.tags : undefined,
+    domain: filters.domain ?? undefined,
+    difficulty: filters.difficulty ?? undefined,
+    length: (filters.length as QueryBlueprintsParams["length"]) ?? undefined,
+    timeRange: (filters.timeRange as QueryBlueprintsParams["timeRange"]) ?? undefined,
+    sort: SORT_LABEL_TO_KEY[sort] ?? "recent",
+  }), [urlQ, filters, sort]);
 
-  const filteredBlocks = useMemo(() => {
-    if (!hasQuery) return MOCK_BLOCKS;
-    return MOCK_BLOCKS.filter(
-      (b) =>
-        (b.block.name || "").toLowerCase().includes(qLower) ||
-        (b.block.content || "").toLowerCase().includes(qLower) ||
-        b.block.type.toLowerCase().includes(qLower),
-    );
-  }, [hasQuery, qLower]);
+  const [stageRows, setStageRows] = useState<StageSearchResult[]>([]);
+  const [stagesLoading, setStagesLoading] = useState(false);
+  const [stagesError, setStagesError] = useState<string | null>(null);
+  const stageReqIdRef = useRef(0);
+  useEffect(() => {
+    if (mode !== "stages") return;
+    const reqId = ++stageReqIdRef.current;
+    setStagesLoading(true);
+    setStagesError(null);
+    queryStages({ ...stageBlockParams, limit: PAGE_SIZE, offset: 0 })
+      .then((res) => {
+        if (reqId !== stageReqIdRef.current) return;
+        setStageRows(res.rows);
+      })
+      .catch((err) => {
+        if (reqId !== stageReqIdRef.current) return;
+        setStagesError(err?.message ?? "Failed to load stages");
+        setStageRows([]);
+      })
+      .finally(() => {
+        if (reqId === stageReqIdRef.current) setStagesLoading(false);
+      });
+  }, [mode, stageBlockParams]);
+
+  const [blockRows, setBlockRows] = useState<BlockSearchResult[]>([]);
+  const [blocksLoading, setBlocksLoading] = useState(false);
+  const [blocksError, setBlocksError] = useState<string | null>(null);
+  const blockReqIdRef = useRef(0);
+  useEffect(() => {
+    if (mode !== "blocks") return;
+    const reqId = ++blockReqIdRef.current;
+    setBlocksLoading(true);
+    setBlocksError(null);
+    queryBlocks({ ...stageBlockParams, limit: PAGE_SIZE, offset: 0 })
+      .then((res) => {
+        if (reqId !== blockReqIdRef.current) return;
+        setBlockRows(res.rows);
+      })
+      .catch((err) => {
+        if (reqId !== blockReqIdRef.current) return;
+        setBlocksError(err?.message ?? "Failed to load blocks");
+        setBlockRows([]);
+      })
+      .finally(() => {
+        if (reqId === blockReqIdRef.current) setBlocksLoading(false);
+      });
+  }, [mode, stageBlockParams]);
 
   const currentResultsCount =
     mode === "blueprints"
       ? blueprintRows.length
       : mode === "stages"
-        ? filteredStages.length
-        : filteredBlocks.length;
+        ? stageRows.length
+        : blockRows.length;
 
-  const isLoading = mode === "blueprints" ? blueprintsLoading : false;
+  const isLoading =
+    mode === "blueprints" ? blueprintsLoading
+    : mode === "stages" ? stagesLoading
+    : blocksLoading;
 
   const renderResults = () => {
     if (isLoading) return <DiscoverLoadingSkeleton count={6} />;
@@ -364,8 +410,37 @@ const Discover = () => {
     if (mode === "stages") {
       return (
         <div className="flex flex-col gap-3">
-          {filteredStages.map(({ stage, parent, author }) => (
-            <StageResultCard key={stage.id} stage={stage} parent={parent} author={author} />
+          {stagesError && (
+            <div className="rounded-lg p-3 text-[12px]" style={{ background: "rgba(239,68,68,0.10)", color: "#F87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+              {stagesError}
+            </div>
+          )}
+          {stageRows.map((r) => (
+            <StageResultCard
+              key={r.stage.id}
+              stage={{
+                id: r.stage.id,
+                name: r.stage.name,
+                blocks: r.blocks.map((b) => ({
+                  id: b.id,
+                  type: b.type,
+                  x: b.position_x,
+                  y: b.position_y,
+                  width: b.width,
+                  height: b.height,
+                })),
+                connections: r.connections.map((c) => ({
+                  from: c.from_block_id,
+                  to: c.to_block_id,
+                })),
+              }}
+              parent={{
+                blueprintId: r.parent.blueprintId,
+                blueprintTitle: r.parent.blueprintTitle,
+                slug: r.parent.blueprintSlug ?? r.parent.blueprintId,
+              }}
+              author={{ name: r.author.name, handle: r.author.handle }}
+            />
           ))}
         </div>
       );
@@ -373,13 +448,29 @@ const Discover = () => {
 
     return (
       <div className="flex flex-col gap-3">
-        {filteredBlocks.map(({ block, parent, author, referenceCount }) => (
+        {blocksError && (
+          <div className="rounded-lg p-3 text-[12px]" style={{ background: "rgba(239,68,68,0.10)", color: "#F87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+            {blocksError}
+          </div>
+        )}
+        {blockRows.map((r) => (
           <BlockResultCard
-            key={block.id}
-            block={block}
-            parent={parent}
-            author={author}
-            referenceCount={referenceCount}
+            key={r.block.id}
+            block={{
+              id: r.block.id,
+              type: r.block.type,
+              name: r.block.name,
+              content: r.block.content,
+              properties: r.block.properties,
+            }}
+            parent={{
+              blueprintId: r.parent.blueprintId,
+              blueprintTitle: r.parent.blueprintTitle,
+              stageName: r.parent.stageName,
+              slug: r.parent.blueprintSlug ?? r.parent.blueprintId,
+            }}
+            author={{ name: r.author.name, handle: r.author.handle }}
+            referenceCount={r.referenceCount}
           />
         ))}
       </div>
