@@ -660,21 +660,48 @@ export function ArticleEditor({
 
   const handleRefPickerSelect = useCallback(
     (item: ResultItem) => {
-      // Delete the typed `@query` range if any.
-      if (editor && refPickerRangeRef.current) {
-        const { from, to } = refPickerRangeRef.current;
-        try {
-          editor.chain().focus().deleteRange({ from, to }).run();
-        } catch (_) { /* noop */ }
+      if (!editor) return;
+
+      // Build node attrs from the picker selection.
+      let attrs: Record<string, unknown> | null = null;
+      if (item.type === 'blueprint') {
+        attrs = {
+          referenceType: 'blueprint',
+          referenceId: item.id,
+          referenceLabel: item.title,
+          parentBlueprintSlug: item.parentSlug,
+        };
+      } else if (item.type === 'stage') {
+        attrs = {
+          referenceType: 'stage',
+          referenceId: item.id,
+          referenceLabel: item.name || 'Untitled stage',
+          parentBlueprintSlug: item.blueprintId,
+        };
+      } else {
+        attrs = {
+          referenceType: 'block',
+          referenceId: item.id,
+          referenceLabel: item.name || 'Untitled prompt',
+          parentBlueprintSlug: item.blueprintId,
+          parentStageId: item.stageId ?? null,
+          blockColor: item.blockTypeColor,
+        };
       }
-      // TODO (Phase 4.5): insert inline reference node. For now, log + close.
-      // eslint-disable-next-line no-console
-      console.log('[ReferencePicker] selected', item);
+
+      const range = refPickerRangeRef.current;
+      const chain = editor.chain().focus();
+      if (range) chain.deleteRange({ from: range.from, to: range.to });
+      chain
+        .insertContent({ type: 'blogReference', attrs })
+        .insertContent(' ')
+        .run();
+
       refPickerRangeRef.current = null;
       setRefPickerOpen(false);
       setRefPickerQuery('');
       setRefPickerAnchor(null);
-      editor?.commands.focus();
+      editor.commands.focus();
     },
     [editor],
   );
