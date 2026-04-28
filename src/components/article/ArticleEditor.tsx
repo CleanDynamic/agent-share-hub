@@ -677,6 +677,7 @@ export function ArticleEditor({
     [editor],
   );
 
+  return (
     <div
       ref={editorContainerRef}
       style={{ position: 'relative', flex: 1 }}
