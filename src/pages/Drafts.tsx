@@ -41,7 +41,7 @@ export default function DraftsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
-        .select("id, title, content_type, difficulty, ai_tools, draft_saved_at, draft_name, created_at")
+        .select("id, title, content_type, post_type, difficulty, ai_tools, draft_saved_at, draft_name, created_at")
         .eq("creator_id", profile!.id)
         .eq("status", "draft")
         .order("draft_saved_at", { ascending: false });
