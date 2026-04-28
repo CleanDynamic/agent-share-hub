@@ -78,7 +78,7 @@ const App = () => (
                 <Route path="/category/:slug" element={<Category />} />
                 <Route path="/upload" element={<UploadTypeSelector />} />
                 <Route path="/upload/blueprint" element={<Upload />} />
-                <Route path="/upload/blog" element={<UploadBlogPlaceholder />} />
+                <Route path="/upload/blog" element={<BlogUpload />} />
                 <Route path="/upload/bounty" element={<UploadBountyPlaceholder />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/api-docs" element={<ApiDocs />} />
