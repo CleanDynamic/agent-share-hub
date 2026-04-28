@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,7 @@ export default function PublishMetadata() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { profile, loading: authLoading, isLoggedIn } = useAuth();
+  const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isLoggedIn) navigate("/login", { replace: true });
@@ -38,13 +39,7 @@ export default function PublishMetadata() {
     retry: false,
   });
 
-  // Already published → redirect
-  useEffect(() => {
-    if (isLoading || !data) return;
-    if (data.status === "approved") {
-      navigate(`/content/${data.id}`, { replace: true });
-    }
-  }, [data, isLoading, navigate]);
+  const isUpdateMode = data?.status === "approved";
 
   // Not found → /upload
   useEffect(() => {
@@ -54,6 +49,91 @@ export default function PublishMetadata() {
   }, [data, isLoading, isError, navigate]);
 
   const forbidden = !!(data && profile && data.creator_id !== profile.id);
+
+  /* ── Autosave: debounced upsert of form values (no status change) ── */
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedRef = useRef<string>("");
+
+  const handleFormChange = useCallback(
+    (values: PublishFormValues) => {
+      if (!contentItemId || forbidden) return;
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+      autosaveTimer.current = setTimeout(async () => {
+        const payload: Record<string, any> = {
+          use_case: values.useCase || null,
+          domain: values.domain || null,
+          difficulty: values.difficulty || null,
+          tags: values.tags,
+          custom_tags: values.tags,
+          prerequisites: values.prerequisites || null,
+          outcome: values.outcome || null,
+          visibility: values.visibility || "public",
+          slug: values.slug ? values.slug.trim().toLowerCase() : null,
+        };
+        const fingerprint = JSON.stringify(payload);
+        if (fingerprint === lastSavedRef.current) return;
+        lastSavedRef.current = fingerprint;
+        const { error } = await supabase
+          .from("content_items")
+          .update(payload as any)
+          .eq("id", contentItemId);
+        if (error) console.warn("[PublishMetadata] autosave failed", error);
+      }, 1000);
+    },
+    [contentItemId, forbidden],
+  );
+
+  useEffect(() => () => {
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+  }, []);
+
+  /* ── Publish ── */
+  const handlePublish = useCallback(
+    async (values: PublishFormValues) => {
+      if (!contentItemId) return;
+      setIsPublishing(true);
+      try {
+        const slug = values.slug.trim().toLowerCase();
+        const updatePayload: Record<string, any> = {
+          use_case: values.useCase,
+          domain: values.domain,
+          difficulty: values.difficulty,
+          tags: values.tags,
+          custom_tags: values.tags,
+          prerequisites: values.prerequisites || null,
+          outcome: values.outcome || null,
+          visibility: values.visibility,
+          slug,
+          status: "approved",
+        };
+        if (!isUpdateMode) {
+          updatePayload.published_at = new Date().toISOString();
+          updatePayload.approved_at = new Date().toISOString();
+        }
+
+        const { error: updateErr } = await supabase
+          .from("content_items")
+          .update(updatePayload as any)
+          .eq("id", contentItemId);
+        if (updateErr) throw updateErr;
+
+        toast({
+          title: isUpdateMode ? "Blueprint updated" : "Blueprint published",
+        });
+        navigate(`/content/${contentItemId}`);
+      } catch (err: any) {
+        console.error("[PublishMetadata] publish failed", err);
+        toast({
+          title: isUpdateMode ? "Could not update" : "Could not publish",
+          description: err?.message ?? "Unknown error",
+          variant: "destructive",
+        });
+      } finally {
+        setIsPublishing(false);
+      }
+    },
+    [contentItemId, isUpdateMode, navigate, toast],
+  );
 
   // Loading
   if (isLoading || authLoading) {
@@ -126,7 +206,7 @@ export default function PublishMetadata() {
   if (!data) return null;
 
   // Map content_item → form defaults
-  const tagsArr: string[] = Array.isArray(data.tags)
+  const tagsArr: string[] = Array.isArray(data.tags) && data.tags.length > 0
     ? data.tags
     : Array.isArray(data.custom_tags)
     ? data.custom_tags
@@ -157,7 +237,7 @@ export default function PublishMetadata() {
   return (
     <>
       <SeoHead
-        title="Publish blueprint"
+        title={isUpdateMode ? "Update blueprint" : "Publish blueprint"}
         description="Finalise metadata before publishing."
         path={`/publish/${contentItemId ?? ""}`}
         noIndex
@@ -168,17 +248,15 @@ export default function PublishMetadata() {
         autoDetected={autoDetected}
         authorUsername={profile?.username || "you"}
         onBack={() => navigate(`/upload?draft=${contentItemId}`)}
-        onPublish={(values: PublishFormValues) => {
-          console.log("[PublishMetadata] onPublish stub", values);
-          toast({ title: "Publish wiring coming in step 2.4" });
-        }}
+        onPublish={handlePublish}
+        onChange={handleFormChange}
+        isPublishing={isPublishing}
+        publishLabel={isUpdateMode ? "Update" : "Publish"}
         onSaveDraft={() => {
-          console.log("[PublishMetadata] onSaveDraft stub");
-          toast({ title: "Save draft wiring coming in step 2.4" });
+          toast({ title: "Draft saved", description: "Your changes are autosaved as you type." });
         }}
         onDiscard={() => {
-          console.log("[PublishMetadata] onDiscard stub");
-          toast({ title: "Discard wiring coming in step 2.4" });
+          navigate(`/upload?draft=${contentItemId}`);
         }}
       />
     </>
