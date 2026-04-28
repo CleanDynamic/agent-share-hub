@@ -41,7 +41,7 @@ import { CanvasHeader } from '@/components/canvas/CanvasHeader';
 import { TemplateLibrary } from '@/components/canvas/TemplateLibrary';
 import { useDocumentStore } from '@/lib/documentStore';
 import { StageFullscreen } from '@/components/article/stage/StageFullscreen';
-import { scheduleRecompute } from '@/lib/metadata/scheduleRecompute';
+import { scheduleRecompute, flushRecompute } from '@/lib/metadata/scheduleRecompute';
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -1435,13 +1435,29 @@ const Upload = () => {
                 saving={savingDraft}
                 defaultDraftName={draftMeta?.name ?? form.getValues('title') ?? ''}
                 onSave={async (draftName) => { await saveDraft(false, draftName); }}
-                onPublish={() => {
+                onPublish={async () => {
                   const title = form.getValues('title');
                   if (!title || !title.trim()) {
                     toast({ title: 'Title required', description: 'Add a title before publishing.', variant: 'destructive' });
                     return;
                   }
-                  form.handleSubmit(onSubmit)();
+                  setSubmitting(true);
+                  try {
+                    const id = await saveDraft(true);
+                    if (!id) throw new Error('Could not save draft before publishing');
+                    try {
+                      await flushRecompute(id);
+                    } catch (err) {
+                      console.warn('[Upload] flushRecompute failed', err);
+                      toast({ title: 'Could not refresh metadata', description: 'Try again in a moment.', variant: 'destructive' });
+                      return;
+                    }
+                    navigate(`/publish/${id}`);
+                  } catch (err: any) {
+                    toast({ title: 'Could not prepare publish', description: err?.message ?? 'Unknown error', variant: 'destructive' });
+                  } finally {
+                    setSubmitting(false);
+                  }
                 }}
                 publishing={submitting}
                 editable

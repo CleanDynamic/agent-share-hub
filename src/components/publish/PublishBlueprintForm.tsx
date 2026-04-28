@@ -44,7 +44,9 @@ interface PublishBlueprintFormProps {
   onSaveDraft: () => void;
   onDiscard: () => void;
   onBack: () => void;
+  onChange?: (values: PublishFormValues) => void;
   isPublishing?: boolean;
+  publishLabel?: string;
 }
 
 const DOMAINS = [
@@ -150,11 +152,22 @@ export function PublishBlueprintForm({
   onSaveDraft,
   onDiscard,
   onBack,
+  onChange,
   isPublishing = false,
+  publishLabel = "Publish",
 }: PublishBlueprintFormProps) {
   const [state, dispatch] = useReducer(formReducer, buildInitial(defaultValues));
   const set = <K extends keyof PublishFormValues>(field: K, value: PublishFormValues[K]) =>
     dispatch({ type: "set", field, value });
+
+  // Notify parent of every change (for debounced autosave).
+  const onChangeRef = React.useRef(onChange);
+  React.useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  const isFirstRender = React.useRef(true);
+  React.useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    onChangeRef.current?.(state);
+  }, [state]);
 
   const validation = useMemo(() => validate(state), [state]);
   const progressPercent = (validation.requiredFieldsCompleted / validation.total) * 100;
@@ -537,7 +550,7 @@ export function PublishBlueprintForm({
             }}
           >
             {isPublishing && <Loader2 size={14} className="animate-spin" />}
-            Publish
+            {isPublishing ? (publishLabel === "Update" ? "Updating…" : "Publishing…") : publishLabel}
           </button>
           {!canPublish && (
             <div
