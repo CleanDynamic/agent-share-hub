@@ -833,6 +833,7 @@ const ROUTE_TO_NAV: Record<string, string> = {
 };
 
 function routeToNav(pathname: string): string {
+  if (pathname.startsWith("/upload")) return "upload";
   return ROUTE_TO_NAV[pathname] ?? "other";
 }
 
