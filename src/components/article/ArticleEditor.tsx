@@ -205,6 +205,7 @@ export function ArticleEditor({
       BlockReferenceExtension,
       ...(isBlog
         ? [
+            BlogReferenceExtension,
             ReferenceTriggerExtension.configure({
               onOpen: (p) => refTriggerCallbacksRef.current.onOpen(p),
               onUpdate: (p) => refTriggerCallbacksRef.current.onUpdate(p),
