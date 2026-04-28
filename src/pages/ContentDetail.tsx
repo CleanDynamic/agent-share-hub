@@ -725,7 +725,7 @@ const ContentDetail = () => {
           }
           path={`/content/${item.id}`}
           image={ogImage}
-          type="article"
+          ogType="article"
         />
         <div
           style={{
@@ -744,7 +744,12 @@ const ContentDetail = () => {
           </div>
           <BlogView item={item} />
           <div className="mx-auto" style={{ maxWidth: 720, padding: "0 24px 80px" }}>
-            <CommentsSection contentId={item.id} />
+            <CommentsSection
+              contentId={item.id}
+              contentTitle={item.title}
+              commentCount={(item as any).comment_count ?? 0}
+              isEligible={true}
+            />
           </div>
         </div>
       </>
