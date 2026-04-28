@@ -76,7 +76,10 @@ const App = () => (
                 <Route path="/fyp" element={<FYPPage />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/category/:slug" element={<Category />} />
-                <Route path="/upload" element={<Upload />} />
+                <Route path="/upload" element={<UploadTypeSelector />} />
+                <Route path="/upload/blueprint" element={<Upload />} />
+                <Route path="/upload/blog" element={<UploadBlogPlaceholder />} />
+                <Route path="/upload/bounty" element={<UploadBountyPlaceholder />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/api-docs" element={<ApiDocs />} />
                 <Route path="/content/:id" element={<ContentDetail />} />
