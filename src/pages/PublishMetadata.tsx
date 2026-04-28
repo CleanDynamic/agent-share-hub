@@ -368,6 +368,7 @@ export default function PublishMetadata() {
     outcome: data.outcome || "",
     visibility: data.visibility || "public",
     slug: data.slug || "",
+    topicCategory: data.blog_topic_category || "",
   };
 
   const autoDetected: AutoDetectedMeta = {
@@ -379,18 +380,24 @@ export default function PublishMetadata() {
     block_types_used: data.block_types_used ?? null,
     models_referenced: data.models_referenced ?? null,
     tools_referenced: data.tools_referenced ?? null,
+    blog_referenced_post_ids: data.blog_referenced_post_ids ?? null,
   };
+
+  const headerTitle = isUpdateMode
+    ? `Update ${postType}`
+    : theme.pageTitle;
 
   return (
     <>
       <SeoHead
-        title={isUpdateMode ? "Update blueprint" : "Publish blueprint"}
+        title={headerTitle}
         description="Finalise metadata before publishing."
         path={`/publish/${contentItemId ?? ""}`}
         noIndex
       />
-      <PublishBlueprintForm
+      <PublishMetadataForm
         contentItemId={contentItemId}
+        postType={postType}
         defaultValues={defaultValues}
         autoDetected={autoDetected}
         authorUsername={profile?.username || "you"}
