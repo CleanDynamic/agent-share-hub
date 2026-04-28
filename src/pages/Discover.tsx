@@ -280,34 +280,79 @@ const Discover = () => {
     return () => obs.disconnect();
   }, [mode, loadMoreBlueprints]);
 
-  // ---- Stages / Blocks (still mock, replaced in 3.5) ----
-  const filteredStages = useMemo(() => {
-    if (!hasQuery) return MOCK_STAGES;
-    return MOCK_STAGES.filter(
-      (s) =>
-        (s.stage.name || "").toLowerCase().includes(qLower) ||
-        s.parent.blueprintTitle.toLowerCase().includes(qLower),
-    );
-  }, [hasQuery, qLower]);
+  // ---- Stages query (Phase 3.5) ----
+  const stageBlockParams = useMemo(() => ({
+    query: urlQ,
+    blockTypes: filters.blockTypes.length ? filters.blockTypes : undefined,
+    models: filters.models.length ? filters.models : undefined,
+    tools: filters.tools.length ? filters.tools : undefined,
+    tags: filters.tags.length ? filters.tags : undefined,
+    domain: filters.domain ?? undefined,
+    difficulty: filters.difficulty ?? undefined,
+    length: (filters.length as QueryBlueprintsParams["length"]) ?? undefined,
+    timeRange: (filters.timeRange as QueryBlueprintsParams["timeRange"]) ?? undefined,
+    sort: SORT_LABEL_TO_KEY[sort] ?? "recent",
+  }), [urlQ, filters, sort]);
 
-  const filteredBlocks = useMemo(() => {
-    if (!hasQuery) return MOCK_BLOCKS;
-    return MOCK_BLOCKS.filter(
-      (b) =>
-        (b.block.name || "").toLowerCase().includes(qLower) ||
-        (b.block.content || "").toLowerCase().includes(qLower) ||
-        b.block.type.toLowerCase().includes(qLower),
-    );
-  }, [hasQuery, qLower]);
+  const [stageRows, setStageRows] = useState<StageSearchResult[]>([]);
+  const [stagesLoading, setStagesLoading] = useState(false);
+  const [stagesError, setStagesError] = useState<string | null>(null);
+  const stageReqIdRef = useRef(0);
+  useEffect(() => {
+    if (mode !== "stages") return;
+    const reqId = ++stageReqIdRef.current;
+    setStagesLoading(true);
+    setStagesError(null);
+    queryStages({ ...stageBlockParams, limit: PAGE_SIZE, offset: 0 })
+      .then((res) => {
+        if (reqId !== stageReqIdRef.current) return;
+        setStageRows(res.rows);
+      })
+      .catch((err) => {
+        if (reqId !== stageReqIdRef.current) return;
+        setStagesError(err?.message ?? "Failed to load stages");
+        setStageRows([]);
+      })
+      .finally(() => {
+        if (reqId === stageReqIdRef.current) setStagesLoading(false);
+      });
+  }, [mode, stageBlockParams]);
+
+  const [blockRows, setBlockRows] = useState<BlockSearchResult[]>([]);
+  const [blocksLoading, setBlocksLoading] = useState(false);
+  const [blocksError, setBlocksError] = useState<string | null>(null);
+  const blockReqIdRef = useRef(0);
+  useEffect(() => {
+    if (mode !== "blocks") return;
+    const reqId = ++blockReqIdRef.current;
+    setBlocksLoading(true);
+    setBlocksError(null);
+    queryBlocks({ ...stageBlockParams, limit: PAGE_SIZE, offset: 0 })
+      .then((res) => {
+        if (reqId !== blockReqIdRef.current) return;
+        setBlockRows(res.rows);
+      })
+      .catch((err) => {
+        if (reqId !== blockReqIdRef.current) return;
+        setBlocksError(err?.message ?? "Failed to load blocks");
+        setBlockRows([]);
+      })
+      .finally(() => {
+        if (reqId === blockReqIdRef.current) setBlocksLoading(false);
+      });
+  }, [mode, stageBlockParams]);
 
   const currentResultsCount =
     mode === "blueprints"
       ? blueprintRows.length
       : mode === "stages"
-        ? filteredStages.length
-        : filteredBlocks.length;
+        ? stageRows.length
+        : blockRows.length;
 
-  const isLoading = mode === "blueprints" ? blueprintsLoading : false;
+  const isLoading =
+    mode === "blueprints" ? blueprintsLoading
+    : mode === "stages" ? stagesLoading
+    : blocksLoading;
 
   const renderResults = () => {
     if (isLoading) return <DiscoverLoadingSkeleton count={6} />;
