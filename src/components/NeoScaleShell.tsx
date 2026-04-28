@@ -1377,7 +1377,7 @@ export function NeoScaleShell() {
   /* ── Back face content router ── */
   function renderBackFaceContent() {
     const path = location.pathname;
-    const searchParams = new URLSearchParams(location.search);
+    
 
     if (path === '/') {
       // Front face is the home feed — render nothing in back face
