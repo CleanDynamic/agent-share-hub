@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useReducer, useMemo } from "react";
 import {
   ArrowLeft,
   HelpCircle,
@@ -6,8 +6,12 @@ import {
   Link2,
   Globe,
   Check,
+  AlertTriangle,
   Loader2,
 } from "lucide-react";
+import { AutoDetectedCard } from "./AutoDetectedCard";
+import { TagInput } from "./TagInput";
+import { useTagSuggestions, useSlugAvailability } from "./usePublishMetaQueries";
 
 export interface AutoDetectedMeta {
   word_count?: number | null;
@@ -32,16 +36,8 @@ export interface PublishFormValues {
 }
 
 interface PublishBlueprintFormProps {
-  defaultValues?: Partial<{
-    useCase: string;
-    domain: string;
-    difficulty: string;
-    tags: string[];
-    prerequisites: string;
-    outcome: string;
-    visibility: string;
-    slug: string;
-  }>;
+  contentItemId?: string;
+  defaultValues?: Partial<PublishFormValues>;
   autoDetected?: AutoDetectedMeta;
   authorUsername?: string;
   onPublish: (values: PublishFormValues) => void;
@@ -70,7 +66,83 @@ const VISIBILITIES = [
   { value: "public", label: "Public", icon: Globe },
 ];
 
+/* ── State ───────────────────────────────────────── */
+
+type FormAction =
+  | { type: "set"; field: keyof PublishFormValues; value: any }
+  | { type: "reset"; values: PublishFormValues };
+
+function formReducer(state: PublishFormValues, action: FormAction): PublishFormValues {
+  switch (action.type) {
+    case "set":
+      return { ...state, [action.field]: action.value };
+    case "reset":
+      return action.values;
+    default:
+      return state;
+  }
+}
+
+function buildInitial(d: Partial<PublishFormValues> = {}): PublishFormValues {
+  return {
+    useCase: d.useCase || "",
+    domain: d.domain || "",
+    difficulty: d.difficulty || "",
+    tags: d.tags || [],
+    prerequisites: d.prerequisites || "",
+    outcome: d.outcome || "",
+    visibility: d.visibility || "public",
+    slug: d.slug || "",
+  };
+}
+
+/* ── Validation ───────────────────────────────────── */
+
+const SLUG_RE = /^[a-z0-9-]+$/;
+
+function validate(v: PublishFormValues) {
+  const errors: Partial<Record<keyof PublishFormValues, string>> = {};
+
+  const useCase = v.useCase.trim();
+  if (!useCase) errors.useCase = "Required";
+  else if (useCase.length < 8) errors.useCase = "At least 8 characters";
+  else if (useCase.length > 140) errors.useCase = "Max 140 characters";
+
+  if (!v.domain) errors.domain = "Required";
+  if (!v.difficulty) errors.difficulty = "Required";
+
+  if (!v.tags.length) errors.tags = "Add at least 1 tag";
+  else if (v.tags.length > 8) errors.tags = "Max 8 tags";
+
+  if (!v.visibility) errors.visibility = "Required";
+
+  const slug = v.slug.trim().toLowerCase();
+  if (!slug) errors.slug = "Required";
+  else if (slug.length < 3) errors.slug = "At least 3 characters";
+  else if (!SLUG_RE.test(slug)) errors.slug = "Lowercase letters, numbers, hyphens only";
+
+  // 5 logical required fields: useCase, domain, difficulty, tags, slug+visibility
+  const completed = {
+    useCase: !errors.useCase,
+    domain: !errors.domain,
+    difficulty: !errors.difficulty,
+    tags: !errors.tags,
+    slugVisibility: !errors.slug && !errors.visibility,
+  };
+  const requiredFieldsCompleted =
+    Number(completed.useCase) +
+    Number(completed.domain) +
+    Number(completed.difficulty) +
+    Number(completed.tags) +
+    Number(completed.slugVisibility);
+
+  return { errors, completed, requiredFieldsCompleted, total: 5 };
+}
+
+/* ── Component ───────────────────────────────────── */
+
 export function PublishBlueprintForm({
+  contentItemId,
   defaultValues = {},
   autoDetected,
   authorUsername = "you",
@@ -80,51 +152,33 @@ export function PublishBlueprintForm({
   onBack,
   isPublishing = false,
 }: PublishBlueprintFormProps) {
-  const [useCase, setUseCase] = useState(defaultValues.useCase || "");
-  const [domain, setDomain] = useState(defaultValues.domain || "");
-  const [difficulty, setDifficulty] = useState(defaultValues.difficulty || "");
-  const [tags, setTags] = useState(defaultValues.tags?.join(", ") || "");
-  const [prerequisites, setPrerequisites] = useState(defaultValues.prerequisites || "");
-  const [outcome, setOutcome] = useState(defaultValues.outcome || "");
-  const [visibility, setVisibility] = useState(defaultValues.visibility || "public");
-  const [slug, setSlug] = useState(defaultValues.slug || "");
+  const [state, dispatch] = useReducer(formReducer, buildInitial(defaultValues));
+  const set = <K extends keyof PublishFormValues>(field: K, value: PublishFormValues[K]) =>
+    dispatch({ type: "set", field, value });
 
-  const requiredFieldsFilled = useMemo(() => {
-    let filled = 0;
-    const total = 5;
-    if (useCase.trim()) filled++;
-    if (domain) filled++;
-    if (difficulty) filled++;
-    if (tags.trim()) filled++;
-    if (visibility && slug.trim()) filled++;
-    return { filled, total };
-  }, [useCase, domain, difficulty, tags, visibility, slug]);
+  const validation = useMemo(() => validate(state), [state]);
+  const progressPercent = (validation.requiredFieldsCompleted / validation.total) * 100;
 
-  const progressPercent =
-    (requiredFieldsFilled.filled / requiredFieldsFilled.total) * 100;
-  const canPublish = requiredFieldsFilled.filled === requiredFieldsFilled.total;
+  const slugAvailability = useSlugAvailability(state.slug, contentItemId);
+  const slugBlockingPublish = slugAvailability === "taken";
+
+  const canPublish =
+    validation.requiredFieldsCompleted === validation.total && !slugBlockingPublish;
+
+  const { data: tagSuggestions } = useTagSuggestions();
 
   const handlePublish = () => {
     if (!canPublish) return;
-    onPublish({
-      useCase,
-      domain,
-      difficulty,
-      tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
-      prerequisites,
-      outcome,
-      visibility,
-      slug,
-    });
+    onPublish({ ...state, slug: state.slug.trim().toLowerCase() });
   };
 
-  const slugPreview = slug
-    ? `neoscale.ai/${authorUsername}/${slug.toLowerCase().split(/\s+/).join("-")}`
+  const slugPreview = state.slug.trim()
+    ? `neoscale.ai/${authorUsername}/${state.slug.trim().toLowerCase()}`
     : `neoscale.ai/${authorUsername}/your-slug-here`;
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header Strip */}
+      {/* Header */}
       <header
         className="h-[60px] flex items-center justify-between px-6"
         style={{ borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}
@@ -188,141 +242,122 @@ export function PublishBlueprintForm({
             fontFamily: "Inter, sans-serif",
           }}
         >
-          Fill required fields to publish ({requiredFieldsFilled.filled} of{" "}
-          {requiredFieldsFilled.total})
+          Fill required fields to publish ({validation.requiredFieldsCompleted} of{" "}
+          {validation.total})
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Body */}
       <main className="flex-1 overflow-y-auto pb-[100px]">
         <div className="max-w-[720px] mx-auto px-6 py-8 flex flex-col gap-8">
-          {/* Section 1 - Basics */}
+          {/* 1 - Basics */}
           <Section number={1} title="Basics" required>
             <div className="flex flex-col gap-5">
               <div className="flex flex-col gap-2">
                 <input
                   type="text"
-                  value={useCase}
-                  onChange={(e) => setUseCase(e.target.value)}
+                  value={state.useCase}
+                  onChange={(e) => set("useCase", e.target.value)}
                   placeholder="What does this blueprint help someone do? (e.g. 'Extract Foucault quotes from PDFs')"
+                  maxLength={140}
                   className="w-full h-[44px] px-4 rounded-lg outline-none transition-all focus:ring-1"
                   style={{
                     backgroundColor: "rgba(30,30,40,0.50)",
-                    border: "0.5px solid rgba(255,255,255,0.08)",
+                    border: validation.errors.useCase
+                      ? "0.5px solid rgba(239,68,68,0.40)"
+                      : "0.5px solid rgba(255,255,255,0.08)",
                     color: "rgba(255,255,255,0.92)",
                     fontSize: "14px",
                     fontFamily: "Inter, sans-serif",
                   }}
                 />
-                <span
-                  style={{
-                    color: "rgba(255,255,255,0.40)",
-                    fontSize: "11px",
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  One sentence. This is what shows up first when someone searches Discover.
-                </span>
+                <div className="flex justify-between">
+                  <span
+                    style={{
+                      color: validation.errors.useCase
+                        ? "rgba(239,68,68,0.85)"
+                        : "rgba(255,255,255,0.40)",
+                      fontSize: "11px",
+                      fontFamily: "Inter, sans-serif",
+                    }}
+                  >
+                    {validation.errors.useCase
+                      ? validation.errors.useCase
+                      : "One sentence. This is what shows up first when someone searches Discover."}
+                  </span>
+                  <span
+                    style={{
+                      color: "rgba(255,255,255,0.30)",
+                      fontSize: "11px",
+                      fontFamily: "Inter, sans-serif",
+                    }}
+                  >
+                    {state.useCase.length}/140
+                  </span>
+                </div>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label
-                  style={{
-                    color: "rgba(255,255,255,0.65)",
-                    fontSize: "12px",
-                    fontWeight: 500,
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  Domain
-                </label>
+              <FieldGroup label="Domain" error={validation.errors.domain}>
                 <div className="flex flex-wrap gap-2">
                   {DOMAINS.map((d) => (
                     <ChipButton
                       key={d}
                       label={d}
-                      active={domain === d}
-                      onClick={() => setDomain(d)}
+                      active={state.domain === d}
+                      onClick={() => set("domain", d)}
                     />
                   ))}
                 </div>
-              </div>
+              </FieldGroup>
 
-              <div className="flex flex-col gap-2">
-                <label
-                  style={{
-                    color: "rgba(255,255,255,0.65)",
-                    fontSize: "12px",
-                    fontWeight: 500,
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  Difficulty
-                </label>
+              <FieldGroup label="Difficulty" error={validation.errors.difficulty}>
                 <div className="flex flex-wrap gap-2">
                   {DIFFICULTIES.map((d) => (
                     <ChipButton
                       key={d}
                       label={d}
-                      active={difficulty === d}
-                      onClick={() => setDifficulty(d)}
+                      active={state.difficulty === d}
+                      onClick={() => set("difficulty", d)}
                     />
                   ))}
                 </div>
-              </div>
+              </FieldGroup>
             </div>
           </Section>
 
-          {/* Section 2 - Tags */}
+          {/* 2 - Tags */}
           <Section number={2} title="Tags" required>
-            <div className="flex flex-col gap-2">
-              <input
-                type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="Add tags (e.g. RAG, fine-tuning, agents)"
-                className="w-full h-[44px] px-4 rounded-lg outline-none transition-all focus:ring-1"
-                style={{
-                  backgroundColor: "rgba(30,30,40,0.50)",
-                  border: "0.5px solid rgba(255,255,255,0.08)",
-                  color: "rgba(255,255,255,0.92)",
-                  fontSize: "14px",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              />
+            <TagInput
+              value={state.tags}
+              onChange={(t) => set("tags", t)}
+              suggestions={tagSuggestions || []}
+              maxTags={8}
+              placeholder="Add tags (e.g. RAG, fine-tuning, agents)"
+            />
+            {validation.errors.tags && (
               <span
                 style={{
-                  color: "rgba(255,255,255,0.40)",
+                  color: "rgba(239,68,68,0.85)",
                   fontSize: "11px",
                   fontFamily: "Inter, sans-serif",
                 }}
               >
-                Press Enter to add. Add 3-8 tags to help people find your work.
+                {validation.errors.tags}
               </span>
-            </div>
+            )}
           </Section>
 
-          {/* Section 3 - Context */}
+          {/* 3 - Context */}
           <Section
             number={3}
             title="Context"
             helpText="Optional context to help readers understand what they need and what they'll get."
           >
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <label
-                  style={{
-                    color: "rgba(255,255,255,0.65)",
-                    fontSize: "12px",
-                    fontWeight: 500,
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  Prerequisites
-                </label>
+              <FieldGroup label="Prerequisites">
                 <textarea
-                  value={prerequisites}
-                  onChange={(e) => setPrerequisites(e.target.value)}
+                  value={state.prerequisites}
+                  onChange={(e) => set("prerequisites", e.target.value)}
                   placeholder="What does the reader need before starting? (e.g. 'A Polymarket account, basic Python')"
                   className="w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all focus:ring-1 resize-y"
                   style={{
@@ -333,22 +368,12 @@ export function PublishBlueprintForm({
                     fontFamily: "Inter, sans-serif",
                   }}
                 />
-              </div>
+              </FieldGroup>
 
-              <div className="flex flex-col gap-2">
-                <label
-                  style={{
-                    color: "rgba(255,255,255,0.65)",
-                    fontSize: "12px",
-                    fontWeight: 500,
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  Outcome
-                </label>
+              <FieldGroup label="Outcome">
                 <textarea
-                  value={outcome}
-                  onChange={(e) => setOutcome(e.target.value)}
+                  value={state.outcome}
+                  onChange={(e) => set("outcome", e.target.value)}
                   placeholder="What will the reader have after working through this? (e.g. 'A working arbitrage bot polling weather markets every 30s')"
                   className="w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all focus:ring-1 resize-y"
                   style={{
@@ -359,74 +384,47 @@ export function PublishBlueprintForm({
                     fontFamily: "Inter, sans-serif",
                   }}
                 />
-              </div>
+              </FieldGroup>
             </div>
           </Section>
 
-          {/* Section 4 - Auto-detected */}
+          {/* 4 - Auto-detected */}
           <Section
             number={4}
             title="Auto-detected"
             helpText="Metadata automatically extracted from your blueprint content."
           >
-            <div
-              className="rounded-lg p-4 flex items-center justify-center"
-              style={{
-                backgroundColor: "rgba(30,30,40,0.50)",
-                border: "0.5px solid rgba(255,255,255,0.08)",
-                minHeight: "80px",
-              }}
-            >
-              <span
-                style={{
-                  color: "rgba(255,255,255,0.40)",
-                  fontSize: "13px",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                Auto-detected card slot — wired in 2.3
-              </span>
-            </div>
+            <AutoDetectedCard
+              wordCount={autoDetected?.word_count ?? 0}
+              readingMinutes={autoDetected?.estimated_reading_minutes ?? 0}
+              stageCount={autoDetected?.stage_count ?? 0}
+              blockCount={autoDetected?.block_count ?? 0}
+              connectionCount={autoDetected?.connection_count ?? 0}
+              blockTypes={autoDetected?.block_types_used ?? []}
+              models={autoDetected?.models_referenced ?? []}
+              tools={autoDetected?.tools_referenced ?? []}
+              onEditClick={onBack}
+            />
           </Section>
 
-          {/* Section 5 - Visibility & Slug */}
+          {/* 5 - Visibility & Slug */}
           <Section number={5} title="Visibility & slug" required>
             <div className="flex flex-col gap-5">
-              <div className="flex flex-col gap-2">
-                <label
-                  style={{
-                    color: "rgba(255,255,255,0.65)",
-                    fontSize: "12px",
-                    fontWeight: 500,
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  Visibility
-                </label>
+              <FieldGroup label="Visibility" error={validation.errors.visibility}>
                 <div className="flex flex-wrap gap-2">
                   {VISIBILITIES.map((v) => (
                     <ChipButton
                       key={v.value}
                       label={v.label}
                       icon={v.icon}
-                      active={visibility === v.value}
-                      onClick={() => setVisibility(v.value)}
+                      active={state.visibility === v.value}
+                      onClick={() => set("visibility", v.value)}
                     />
                   ))}
                 </div>
-              </div>
+              </FieldGroup>
 
-              <div className="flex flex-col gap-2">
-                <label
-                  style={{
-                    color: "rgba(255,255,255,0.65)",
-                    fontSize: "12px",
-                    fontWeight: 500,
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  Slug
-                </label>
+              <FieldGroup label="Slug" error={validation.errors.slug}>
                 <div className="relative">
                   <span
                     className="absolute left-4 top-1/2 -translate-y-1/2"
@@ -440,36 +438,35 @@ export function PublishBlueprintForm({
                   </span>
                   <input
                     type="text"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
+                    value={state.slug}
+                    onChange={(e) =>
+                      set(
+                        "slug",
+                        e.target.value.toLowerCase().split(" ").join("-").slice(0, 80),
+                      )
+                    }
                     placeholder="your-blueprint-slug"
-                    className="w-full h-[44px] pl-7 pr-28 rounded-lg outline-none transition-all focus:ring-1"
+                    className="w-full h-[44px] pl-7 pr-32 rounded-lg outline-none transition-all focus:ring-1"
                     style={{
                       backgroundColor: "rgba(30,30,40,0.50)",
-                      border: "0.5px solid rgba(255,255,255,0.08)",
+                      border: validation.errors.slug
+                        ? "0.5px solid rgba(239,68,68,0.40)"
+                        : "0.5px solid rgba(255,255,255,0.08)",
                       color: "rgba(255,255,255,0.92)",
                       fontSize: "14px",
                       fontFamily: "Inter, sans-serif",
                     }}
                   />
-                  {slug && (
-                    <div
-                      className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-1 rounded"
-                      style={{ backgroundColor: "rgba(46,196,182,0.10)" }}
-                    >
-                      <Check size={12} style={{ color: "#2EC4B6" }} />
-                      <span
-                        style={{
-                          color: "#2EC4B6",
-                          fontSize: "11px",
-                          fontWeight: 500,
-                          fontFamily: "Inter, sans-serif",
-                        }}
-                      >
-                        Available
-                      </span>
-                    </div>
-                  )}
+
+                  <SlugBadge
+                    state={
+                      validation.errors.slug
+                        ? "idle"
+                        : state.slug
+                        ? slugAvailability
+                        : "idle"
+                    }
+                  />
                 </div>
                 <span
                   style={{
@@ -480,13 +477,13 @@ export function PublishBlueprintForm({
                 >
                   {slugPreview}
                 </span>
-              </div>
+              </FieldGroup>
             </div>
           </Section>
         </div>
       </main>
 
-      {/* Sticky Footer */}
+      {/* Sticky footer */}
       <footer
         className="fixed bottom-0 left-0 right-0 h-[80px] flex items-center justify-between px-6 z-40"
         style={{
@@ -553,11 +550,122 @@ export function PublishBlueprintForm({
                 fontFamily: "Inter, sans-serif",
               }}
             >
-              Fill all required fields to publish
+              {slugBlockingPublish
+                ? "That slug is taken — pick another"
+                : "Fill all required fields to publish"}
             </div>
           )}
         </div>
       </footer>
+    </div>
+  );
+}
+
+/* ── Helpers ─────────────────────────────────────── */
+
+function FieldGroup({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <label
+        style={{
+          color: "rgba(255,255,255,0.65)",
+          fontSize: "12px",
+          fontWeight: 500,
+          fontFamily: "Inter, sans-serif",
+        }}
+      >
+        {label}
+      </label>
+      {children}
+      {error && (
+        <span
+          style={{
+            color: "rgba(239,68,68,0.85)",
+            fontSize: "11px",
+            fontFamily: "Inter, sans-serif",
+          }}
+        >
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function SlugBadge({
+  state,
+}: {
+  state: "idle" | "checking" | "available" | "taken" | "unsupported";
+}) {
+  if (state === "idle") return null;
+
+  if (state === "checking") {
+    return (
+      <div
+        className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-1 rounded"
+        style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+      >
+        <Loader2 size={12} className="animate-spin" style={{ color: "rgba(255,255,255,0.55)" }} />
+        <span
+          style={{
+            color: "rgba(255,255,255,0.55)",
+            fontSize: "11px",
+            fontWeight: 500,
+            fontFamily: "Inter, sans-serif",
+          }}
+        >
+          Checking…
+        </span>
+      </div>
+    );
+  }
+
+  if (state === "taken") {
+    return (
+      <div
+        className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-1 rounded"
+        style={{ backgroundColor: "rgba(245,158,11,0.10)" }}
+      >
+        <AlertTriangle size={12} style={{ color: "#F59E0B" }} />
+        <span
+          style={{
+            color: "#F59E0B",
+            fontSize: "11px",
+            fontWeight: 500,
+            fontFamily: "Inter, sans-serif",
+          }}
+        >
+          Taken
+        </span>
+      </div>
+    );
+  }
+
+  // available or unsupported (treat unsupported as available since column missing)
+  return (
+    <div
+      className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-1 rounded"
+      style={{ backgroundColor: "rgba(46,196,182,0.10)" }}
+    >
+      <Check size={12} style={{ color: "#2EC4B6" }} />
+      <span
+        style={{
+          color: "#2EC4B6",
+          fontSize: "11px",
+          fontWeight: 500,
+          fontFamily: "Inter, sans-serif",
+        }}
+      >
+        Available
+      </span>
     </div>
   );
 }
@@ -627,7 +735,7 @@ function Section({
               className="cursor-help"
             />
             <div
-              className="absolute right-0 top-full mt-2 px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10"
+              className="absolute right-0 top-full mt-2 px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
               style={{
                 backgroundColor: "rgba(22,22,30,0.95)",
                 border: "1px solid rgba(255,255,255,0.1)",
