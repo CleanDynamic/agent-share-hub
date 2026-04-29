@@ -1090,15 +1090,43 @@ export function ArticleEditor({
       />
 
       <TableContextMenu editor={editor}>
-        <EditorContent
-          editor={editor}
-          className="tiptap-article"
-          style={{
-            width: '100%',
-            maxWidth: isBlog ? 760 : 720,
-            margin: '0 auto',
-          }}
-        />
+        <div style={{ position: 'relative' }}>
+          <EditorContent
+            editor={editor}
+            className="tiptap-article"
+            style={{
+              width: '100%',
+              maxWidth: isBlog ? 760 : 720,
+              margin: '0 auto',
+            }}
+          />
+          {isBounty &&
+          editor?.isEmpty &&
+          Object.keys(stagesMap).length === 0 &&
+          missingItemCount === 0 ? (
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                top: 80,
+                margin: '0 auto',
+                maxWidth: 520,
+                pointerEvents: 'none',
+                textAlign: 'center',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 13,
+                fontWeight: 400,
+                color: 'rgba(255,255,255,0.40)',
+                lineHeight: 1.5,
+                padding: '0 24px',
+              }}
+            >
+              Bounties usually start with 1–3 stages where you outline what you have, then mark the gaps. Try inserting a stage with <code style={{ fontFamily: 'inherit', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, color: 'rgba(255,255,255,0.65)' }}>/</code>.
+            </div>
+          ) : null}
+        </div>
       </TableContextMenu>
 
       {/* Bubble toolbar over text selection */}
