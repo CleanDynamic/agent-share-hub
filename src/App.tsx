@@ -79,7 +79,7 @@ const App = () => (
                 <Route path="/upload" element={<UploadTypeSelector />} />
                 <Route path="/upload/blueprint" element={<Upload />} />
                 <Route path="/upload/blog" element={<BlogUpload />} />
-                <Route path="/upload/bounty" element={<UploadBountyPlaceholder />} />
+                <Route path="/upload/bounty" element={<BountyUploadShell />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/api-docs" element={<ApiDocs />} />
                 <Route path="/content/:id" element={<ContentDetail />} />
