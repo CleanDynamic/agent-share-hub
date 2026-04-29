@@ -929,7 +929,13 @@ export function ProfileContentZones({
       </div>
 
       {/* Content */}
-      <div>{renderContent()}</div>
+      <div
+        role="tabpanel"
+        id={`zone-panel-${activeZone}`}
+        aria-labelledby={`zone-tab-${activeZone}`}
+      >
+        {renderContent()}
+      </div>
 
       {/* Infinite scroll sentinel + spinner */}
       {hasMore && (
@@ -945,6 +951,10 @@ export function ProfileContentZones({
           {isLoadingMore && <Loader2 size={16} className="animate-spin" />}
         </div>
       )}
+
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+      `}</style>
     </div>
   );
 }
