@@ -1182,7 +1182,8 @@ export function ArticleEditor({
             <button
               type="button"
               onClick={onPublish}
-              disabled={publishing}
+              disabled={publishing || bountyPublishBlocked}
+              title={bountyPublishBlocked ? 'Mark at least one stage or block as missing to publish a bounty' : undefined}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -1197,8 +1198,8 @@ export function ArticleEditor({
                 fontFamily: 'Inter, sans-serif',
                 fontSize: 12,
                 fontWeight: 600,
-                cursor: publishing ? 'not-allowed' : 'pointer',
-                opacity: publishing ? 0.65 : 1,
+                cursor: (publishing || bountyPublishBlocked) ? 'not-allowed' : 'pointer',
+                opacity: bountyPublishBlocked ? 0.4 : (publishing ? 0.65 : 1),
               }}
             >
               <Send size={13} strokeWidth={1.8} />
