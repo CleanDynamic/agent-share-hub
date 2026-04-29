@@ -33,7 +33,7 @@ import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
 import type { SlashCommandItem } from './SlashCommandMenu';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import CharacterCount from '@tiptap/extension-character-count';
-import { LayoutGrid, Heading2, Code, Image, Quote, Minus, Plus, Type, Save, Send } from 'lucide-react';
+import { LayoutGrid, Heading2, Code, Image, Quote, Minus, Plus, Type, Save, Send, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { useDocumentStore } from '@/lib/documentStore';
