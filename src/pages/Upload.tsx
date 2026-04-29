@@ -1501,6 +1501,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 }}
                 publishing={submitting}
                 editable
+                mode={mode}
               />
             </div>
           </div>

@@ -33,7 +33,7 @@ import { SlashCommandMenu, getSlashCommandItems } from './SlashCommandMenu';
 import type { SlashCommandItem } from './SlashCommandMenu';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import CharacterCount from '@tiptap/extension-character-count';
-import { LayoutGrid, Heading2, Code, Image, Quote, Minus, Plus, Type, Save, Send } from 'lucide-react';
+import { LayoutGrid, Heading2, Code, Image, Quote, Minus, Plus, Type, Save, Send, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { useDocumentStore } from '@/lib/documentStore';
@@ -69,8 +69,8 @@ interface ArticleEditorProps {
   saving?: boolean;
   publishing?: boolean;
   defaultDraftName?: string;
-  /** 'blueprint' (default) — full editor. 'blog' — pure writing surface. */
-  mode?: 'blueprint' | 'blog';
+  /** 'blueprint' (default) — full editor. 'blog' — pure writing surface. 'bounty' — blueprint editor with amber bounty markers. */
+  mode?: 'blueprint' | 'blog' | 'bounty';
 }
 
 export function ArticleEditor({
@@ -93,6 +93,19 @@ export function ArticleEditor({
   mode = 'blueprint',
 }: ArticleEditorProps) {
   const isBlog = mode === 'blog';
+  const isBounty = mode === 'bounty';
+
+  // Bounty publish gate: count missing stages + blocks live from the store.
+  const stagesMap = useDocumentStore((s) => s.stages);
+  const blocksMap = useDocumentStore((s) => s.blocks);
+  const missingItemCount = useMemo(() => {
+    if (!isBounty) return 0;
+    let n = 0;
+    for (const s of Object.values(stagesMap)) if (s.is_missing) n += 1;
+    for (const b of Object.values(blocksMap)) if (b.is_missing) n += 1;
+    return n;
+  }, [isBounty, stagesMap, blocksMap]);
+  const bountyPublishBlocked = isBounty && missingItemCount === 0;
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [draftNameInput, setDraftNameInput] = useState('');
   const [slashOpen, setSlashOpen] = useState(false);
@@ -966,6 +979,14 @@ export function ArticleEditor({
             background: 'rgba(46,196,182,0.14)', color: '#2EC4B6',
             padding: '3px 10px', borderRadius: 100,
           }}>BLOG</span>
+        ) : isBounty ? (
+          <span style={{
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 11, fontWeight: 600,
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+            background: 'rgba(245,158,11,0.14)', color: '#F59E0B',
+            padding: '3px 10px', borderRadius: 100,
+          }}>BOUNTY</span>
         ) : (
           <span style={{
             fontFamily: 'Inter, sans-serif',
@@ -976,6 +997,52 @@ export function ArticleEditor({
           }}>BLUEPRINT</span>
         )}
       </div>
+
+      {/* Bounty hint banner (only in bounty mode) */}
+      {isBounty ? (
+        <div
+          style={{
+            height: 32,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '0 4px',
+            borderBottom: '0.5px solid rgba(255,255,255,0.06)',
+            marginBottom: 8,
+          }}
+        >
+          <Target size={14} color="#F59E0B" strokeWidth={1.8} />
+          <span style={{
+            flex: 1,
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 12,
+            fontWeight: 400,
+            color: 'rgba(255,255,255,0.55)',
+          }}>
+            Mark stages or blocks as &lsquo;missing&rsquo; to ask for help. Solvers reply once you publish.
+          </span>
+          <button
+            type="button"
+            title="Bounty docs coming soon"
+            onClick={(e) => {
+              e.preventDefault();
+              toast('Bounty docs coming soon');
+            }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: 11,
+              fontWeight: 500,
+              color: 'rgba(245,158,11,0.85)',
+            }}
+          >
+            Learn more about bounties →
+          </button>
+        </div>
+      ) : null}
 
       <TopToolbar
         editor={editor}
@@ -1115,7 +1182,8 @@ export function ArticleEditor({
             <button
               type="button"
               onClick={onPublish}
-              disabled={publishing}
+              disabled={publishing || bountyPublishBlocked}
+              title={bountyPublishBlocked ? 'Mark at least one stage or block as missing to publish a bounty' : undefined}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -1130,8 +1198,8 @@ export function ArticleEditor({
                 fontFamily: 'Inter, sans-serif',
                 fontSize: 12,
                 fontWeight: 600,
-                cursor: publishing ? 'not-allowed' : 'pointer',
-                opacity: publishing ? 0.65 : 1,
+                cursor: (publishing || bountyPublishBlocked) ? 'not-allowed' : 'pointer',
+                opacity: bountyPublishBlocked ? 0.4 : (publishing ? 0.65 : 1),
               }}
             >
               <Send size={13} strokeWidth={1.8} />
