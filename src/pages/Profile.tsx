@@ -498,6 +498,21 @@ export default function Profile() {
           onCoverEdit={() => coverFileRef.current?.click()}
         />
 
+        {/* Visitor-only "shared interests" banner. */}
+        <MatchBanner
+          targetUserId={summary.id}
+          viewerId={user?.id ?? null}
+          isOwnProfile={summary.isOwnProfile}
+        />
+
+        {/* Own-profile welcome coachmark (zero-content state). */}
+        <ProfileWelcomeCoachmark
+          visible={
+            summary.isOwnProfile &&
+            (summary.counts.blueprints + summary.counts.blogs + summary.counts.bounties) === 0
+          }
+        />
+
         {/* Hidden file inputs for avatar / cover uploads */}
         <input
           ref={avatarFileRef}
@@ -551,6 +566,14 @@ export default function Profile() {
             onLoadMore={() => zoneQuery.fetchNextPage()}
             onItemClick={handleZoneItemClick}
             isOwnProfile={summary.isOwnProfile}
+            onMakeCollection={() => setMakeCollectionOpen(true)}
+            onCreateBlueprint={handleCreateBlueprint}
+            onEditItem={summary.isOwnProfile ? handleEditItem : undefined}
+            onUnpublishItem={summary.isOwnProfile ? handleUnpublishItem : undefined}
+            onDeleteItem={summary.isOwnProfile ? handleDeleteItem : undefined}
+            onBookmarkItem={!summary.isOwnProfile ? handleBookmarkItem : undefined}
+            onRepostItem={!summary.isOwnProfile ? handleRepostItem : undefined}
+            onShareItem={handleShareItem}
           />
         </div>
       </div>
