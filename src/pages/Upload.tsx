@@ -970,7 +970,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
       const { data: insertedItem, error: insertError } = await supabase.from("content_items").insert({
         creator_id: user.id,
         title: values.title,
-        post_type: mode === 'blog' ? 'blog' : 'blueprint',
+        post_type: mode === 'blog' ? 'blog' : mode === 'bounty' ? 'bounty' : 'blueprint',
         content_type: values.content_type,
         description: finalDescription,
         difficulty: values.difficulty,
