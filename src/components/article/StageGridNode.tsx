@@ -127,6 +127,14 @@ export function StageGridNode({ node, updateAttributes, editor }: StageGridNodeP
           connections={stageConnections}
           onOpen={handleOpen}
           onRename={editor?.isEditable ? handleRename : undefined}
+          isBounty={isBounty}
+          isMissing={Boolean(stageRecord?.is_missing)}
+          missingDescription={stageRecord?.missing_description ?? null}
+          onToggleMissing={
+            isBounty && stageId && editor?.isEditable
+              ? () => { toggleStageMissing(stageId); }
+              : undefined
+          }
         />
       </div>
       {stageId ? (
