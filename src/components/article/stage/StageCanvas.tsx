@@ -44,6 +44,8 @@ import { ResourceBlockNode } from '../blocks/ResourceBlock';
 import { ToolBlockNode } from '../blocks/ToolBlock';
 import { WorkflowBlockNode } from '../blocks/WorkflowBlock';
 
+import { withBountyBlockHost } from '@/components/bounty/withBountyBlockHost';
+
 interface StageCanvasProps {
   stageId: string;
   /** Show React Flow's MiniMap inside the canvas. Default false. */
@@ -51,18 +53,18 @@ interface StageCanvasProps {
 }
 
 const nodeTypes = {
-  prompt: PromptBlockNode,
-  code: CodeBlockNode,
-  text: TextBlockNode,
-  agent: AgentBlockNode,
-  compare: CompareBlockNode,
-  heading: HeadingBlockNode,
-  model: ModelBlockNode,
-  note: NoteBlockNode,
-  result: ResultBlockNode,
-  resource: ResourceBlockNode,
-  tool: ToolBlockNode,
-  workflow: WorkflowBlockNode,
+  prompt: withBountyBlockHost(PromptBlockNode as any),
+  code: withBountyBlockHost(CodeBlockNode as any),
+  text: withBountyBlockHost(TextBlockNode as any),
+  agent: withBountyBlockHost(AgentBlockNode as any),
+  compare: withBountyBlockHost(CompareBlockNode as any),
+  heading: withBountyBlockHost(HeadingBlockNode as any),
+  model: withBountyBlockHost(ModelBlockNode as any),
+  note: withBountyBlockHost(NoteBlockNode as any),
+  result: withBountyBlockHost(ResultBlockNode as any),
+  resource: withBountyBlockHost(ResourceBlockNode as any),
+  tool: withBountyBlockHost(ToolBlockNode as any),
+  workflow: withBountyBlockHost(WorkflowBlockNode as any),
 };
 
 const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {
