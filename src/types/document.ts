@@ -67,6 +67,13 @@ export interface Block {
   locked: boolean;
   created_at: string;
   updated_at: string;
+  /**
+   * Bounty-only: when true the block's body renders the MissingBlockOverlay
+   * in place of its normal content. Header (type-dot, name) stays visible.
+   */
+  is_missing?: boolean;
+  /** Bounty-only: short hint shown inside the missing overlay (max 100 chars). */
+  missing_description?: string | null;
 }
 
 export interface Connection {
