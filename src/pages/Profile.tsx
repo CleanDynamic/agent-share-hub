@@ -343,12 +343,25 @@ export default function Profile() {
   // ── Stat click → tab switching (zones not yet built; soft-scroll hook) ─
   const handleStatClick = useCallback(
     (stat: "followers" | "following" | "blueprints" | "blogs" | "bounties") => {
-      // Profile zones (6.6) will listen for this event and switch tabs.
-      window.dispatchEvent(
-        new CustomEvent("profile:stat-click", { detail: { stat } })
-      );
+      // Map header stat → (zone, filter) and update URL.
+      if (stat === "followers") updateParams({ zone: "network", filter: "follower" });
+      else if (stat === "following")
+        updateParams({ zone: "network", filter: "following" });
+      else if (stat === "blueprints")
+        updateParams({ zone: "authored", filter: "blueprint" });
+      else if (stat === "blogs")
+        updateParams({ zone: "authored", filter: "blog" });
+      else if (stat === "bounties")
+        updateParams({ zone: "authored", filter: "bounty" });
+
+      // Scroll the zones into view.
+      requestAnimationFrame(() => {
+        document
+          .getElementById("profile-zones")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     },
-    []
+    [updateParams]
   );
 
   // ── Render ─────────────────────────────────────────────────────────────
