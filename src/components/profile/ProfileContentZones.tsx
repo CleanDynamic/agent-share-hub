@@ -437,11 +437,21 @@ function ActivityRow({ item, onClick }: { item: ZoneItem; onClick: () => void })
 }
 
 // ── Empty / loading ───────────────────────────────────────────────────────
-function EmptyState({ zone, isOwnProfile }: { zone: Zone; isOwnProfile: boolean }) {
+function EmptyState({
+  zone,
+  isOwnProfile,
+  onCreateBlueprint,
+}: {
+  zone: Zone;
+  isOwnProfile: boolean;
+  onCreateBlueprint?: () => void;
+}) {
   const states: Record<Zone, { message: string; link?: { text: string; href: string } }> = {
     authored: {
       message: "Nothing published yet",
-      link: isOwnProfile ? { text: "Create your first blueprint", href: "/upload" } : undefined,
+      link: isOwnProfile && !onCreateBlueprint
+        ? { text: "Create your first blueprint", href: "/upload" }
+        : undefined,
     },
     curated: {
       message: "No bookmarks yet",
@@ -463,6 +473,25 @@ function EmptyState({ zone, isOwnProfile }: { zone: Zone; isOwnProfile: boolean 
       }}
     >
       <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.55)" }}>{s.message}</div>
+      {zone === "authored" && isOwnProfile && onCreateBlueprint && (
+        <button
+          type="button"
+          onClick={onCreateBlueprint}
+          style={{
+            marginTop: 14,
+            padding: "8px 14px",
+            borderRadius: 6,
+            background: ACCENT,
+            color: "white",
+            border: "none",
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Create your first blueprint
+        </button>
+      )}
       {s.link && (
         <a
           href={s.link.href}
