@@ -232,6 +232,101 @@ export default function Profile() {
     [navigate]
   );
 
+  // ── Item-level actions (owner & visitor) ───────────────────────────────
+  const refetchZone = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ["zone-content", summary?.id ?? null] });
+  }, [qc, summary?.id]);
+
+  const handleEditItem = useCallback(
+    (item: ZoneItem) => {
+      const id = item.id;
+      if (!id) return;
+      // Best-effort: route to the upload editor. Different post types share /upload?edit.
+      navigate(`/upload?edit=${id}`);
+    },
+    [navigate]
+  );
+
+  const handleUnpublishItem = useCallback(
+    async (item: ZoneItem) => {
+      if (!item.id) return;
+      const { error: err } = await supabase
+        .from("content_items")
+        .update({ status: "draft" } as any)
+        .eq("id", item.id);
+      if (err) {
+        toast({ title: "Could not unpublish", description: err.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Moved back to drafts" });
+      refetchZone();
+    },
+    [toast, refetchZone]
+  );
+
+  const handleDeleteItem = useCallback(
+    async (item: ZoneItem) => {
+      if (!item.id) return;
+      if (!window.confirm(`Delete "${item.title}"? This cannot be undone.`)) return;
+      const { error: err } = await supabase
+        .from("content_items")
+        .delete()
+        .eq("id", item.id);
+      if (err) {
+        toast({ title: "Could not delete", description: err.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Deleted" });
+      refetchZone();
+    },
+    [toast, refetchZone]
+  );
+
+  const handleBookmarkItem = useCallback(
+    async (item: ZoneItem) => {
+      if (!user?.id) {
+        navigate("/login");
+        return;
+      }
+      if (!item.id) return;
+      const { error: err } = await supabase
+        .from("user_saves")
+        .insert({ user_id: user.id, content_id: item.id } as any);
+      if (err && !err.message.toLowerCase().includes("duplicate")) {
+        toast({ title: "Could not bookmark", description: err.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Saved to your library" });
+    },
+    [user?.id, toast, navigate]
+  );
+
+  const handleRepostItem = useCallback(
+    (_item: ZoneItem) => {
+      toast({ title: "Repost coming soon" });
+    },
+    [toast]
+  );
+
+  const handleShareItem = useCallback(
+    async (item: ZoneItem) => {
+      try {
+        const url = item.href
+          ? `${window.location.origin}${item.href}`
+          : window.location.href;
+        await navigator.clipboard.writeText(url);
+        toast({ title: "Link copied" });
+      } catch {
+        toast({ title: "Could not copy link", variant: "destructive" });
+      }
+    },
+    [toast]
+  );
+
+  const handleCreateBlueprint = useCallback(() => {
+    navigate("/upload");
+  }, [navigate]);
+
   // ── Follow / Unfollow ──────────────────────────────────────────────────
   const handleFollow = useCallback(async () => {
     if (!summary || !user?.id) {
