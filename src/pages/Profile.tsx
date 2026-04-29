@@ -131,6 +131,103 @@ export default function Profile() {
     toast({ title: "Full list coming soon" });
   }, [toast]);
 
+  // ── Zones: URL-driven state ────────────────────────────────────────────
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawZone = searchParams.get("zone");
+  const activeZone: Zone = (VALID_ZONES.includes(rawZone as Zone)
+    ? rawZone
+    : "authored") as Zone;
+  const activeFilter = searchParams.get("filter") ?? "all";
+  const sort = searchParams.get("sort") ?? "recent";
+
+  const updateParams = useCallback(
+    (next: { zone?: Zone; filter?: string; sort?: string }) => {
+      const params = new URLSearchParams(searchParams);
+      if (next.zone !== undefined) params.set("zone", next.zone);
+      if (next.filter !== undefined) {
+        if (next.filter === "all") params.delete("filter");
+        else params.set("filter", next.filter);
+      }
+      if (next.sort !== undefined) {
+        if (next.sort === "recent") params.delete("sort");
+        else params.set("sort", next.sort);
+      }
+      setSearchParams(params, { replace: false });
+    },
+    [searchParams, setSearchParams]
+  );
+
+  const handleZoneChange = useCallback(
+    (z: Zone) => updateParams({ zone: z, filter: "all" }),
+    [updateParams]
+  );
+  const handleFilterChange = useCallback(
+    (f: string) => updateParams({ filter: f }),
+    [updateParams]
+  );
+  const handleSortChange = useCallback(
+    (s: string) => updateParams({ sort: s }),
+    [updateParams]
+  );
+
+  // ── Zone content (paginated) ────────────────────────────────────────────
+  const zoneQuery = useInfiniteQuery({
+    queryKey: ["zone-content", summary?.id ?? null, activeZone, activeFilter, sort],
+    enabled: !!summary?.id,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      getZoneContent({
+        userId: summary!.id,
+        zone: activeZone,
+        filter: activeFilter,
+        sort,
+        offset: pageParam as number,
+        limit: PAGE_SIZE,
+      }),
+    getNextPageParam: (last, all) =>
+      last.hasMore ? all.length * PAGE_SIZE : undefined,
+  });
+
+  const zoneItems: ZoneItem[] = useMemo(
+    () => (zoneQuery.data?.pages ?? []).flatMap((p) => p.items),
+    [zoneQuery.data]
+  );
+
+  // Network filter is client-side (kind matches "follower" / "following" / "collaborator").
+  const visibleZoneItems = useMemo(() => {
+    if (activeZone === "network" && activeFilter !== "all") {
+      return zoneItems.filter((i) => i.kind === activeFilter);
+    }
+    if (activeZone === "activity" && activeFilter !== "all") {
+      return zoneItems.filter((i) => i.kind === activeFilter);
+    }
+    if (activeZone === "curated" && activeFilter !== "all") {
+      return zoneItems.filter((i) => i.kind === activeFilter);
+    }
+    return zoneItems;
+  }, [zoneItems, activeZone, activeFilter]);
+
+  const zoneCounts = useMemo(
+    () => ({
+      authored:
+        (summary?.counts.blueprints ?? 0) +
+        (summary?.counts.blogs ?? 0) +
+        (summary?.counts.bounties ?? 0),
+      curated: 0,
+      activity: 0,
+      network:
+        (summary?.counts.followers ?? 0) + (summary?.counts.following ?? 0),
+    }),
+    [summary]
+  );
+
+  const handleZoneItemClick = useCallback(
+    (item: ZoneItem) => {
+      if (item.href) navigate(item.href);
+    },
+    [navigate]
+  );
+
   // ── Follow / Unfollow ──────────────────────────────────────────────────
   const handleFollow = useCallback(async () => {
     if (!summary || !user?.id) {
