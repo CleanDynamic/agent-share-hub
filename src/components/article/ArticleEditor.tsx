@@ -352,6 +352,29 @@ export function ArticleEditor({
     setEditorMode(mode);
   }, [mode, setEditorMode]);
 
+  // Cmd/Ctrl + Shift + M — toggle missing on the currently-selected stage or
+  // block. Bounty mode only. Toast feedback comes from toggleStage/BlockMissing.
+  useEffect(() => {
+    if (!isBounty) return;
+    const handler = (e: KeyboardEvent) => {
+      const isCombo = (e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'm' || e.key === 'M');
+      if (!isCombo) return;
+      const sel = useDocumentStore.getState().selection;
+      const id = sel.ids[0];
+      if (!id) return;
+      if (sel.kind === 'stage') {
+        e.preventDefault();
+        // Lazy import avoids a top-level cycle with bountyMissing.
+        import('@/lib/bountyMissing').then((m) => m.toggleStageMissing(id));
+      } else if (sel.kind === 'block') {
+        e.preventDefault();
+        import('@/lib/bountyMissing').then((m) => m.toggleBlockMissing(id));
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isBounty]);
+
   useEffect(() => {
     if (editor) {
       const storage = editor.storage as any;
