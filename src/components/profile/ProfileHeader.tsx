@@ -120,7 +120,7 @@ export function ProfileHeader({
 
       {/* Identity Row */}
       <div className="relative px-4 sm:px-6">
-        <div className="flex items-end justify-between gap-4 -mt-12 sm:-mt-14">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4 -mt-12 sm:-mt-14">
           {/* Avatar + Name */}
           <div className="flex items-end gap-4 min-w-0">
             <div className="relative shrink-0">
@@ -175,7 +175,7 @@ export function ProfileHeader({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 pb-1 shrink-0">
+          <div className="flex items-center gap-2 pb-1 shrink-0 flex-wrap">
             {isOwnProfile ? (
               <>
                 <button
@@ -348,23 +348,32 @@ export function ProfileHeader({
         >
           {(
             [
-              ["followers", profile.counts.followers, "followers"],
-              ["following", profile.counts.following, "following"],
-              ["blueprints", profile.counts.blueprints, "blueprints"],
-              ["blogs", profile.counts.blogs, "blogs"],
-              ["bounties", profile.counts.bounties, "bounties"],
+              ["followers", profile.counts.followers, "followers", true],
+              ["following", profile.counts.following, "following", true],
+              ["blueprints", profile.counts.blueprints, "blueprints", false],
+              ["blogs", profile.counts.blogs, "blogs", false],
+              ["bounties", profile.counts.bounties, "bounties", false],
             ] as const
-          ).map(([key, value, label]) => (
+          ).map(([key, value, label, hasViewList]) => (
             <button
               key={key}
               type="button"
               onClick={() => onStatClick?.(key)}
-              className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+              title={hasViewList ? `View ${label} list` : undefined}
+              className="group inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
             >
               <span className="text-sm font-semibold text-foreground">
                 {formatCount(value)}
               </span>
               <span className="text-xs text-muted-foreground">{label}</span>
+              {hasViewList && (
+                <span
+                  aria-hidden
+                  className="text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  View list →
+                </span>
+              )}
             </button>
           ))}
         </div>

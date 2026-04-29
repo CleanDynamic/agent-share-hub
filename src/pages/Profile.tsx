@@ -20,6 +20,9 @@ import {
   ProfileContentZones,
   type Zone,
 } from "@/components/profile/ProfileContentZones";
+import { MatchBanner } from "@/components/profile/MatchBanner";
+import { ProfileWelcomeCoachmark } from "@/components/profile/ProfileWelcomeCoachmark";
+import { MakeCollectionDialog } from "@/components/profile/MakeCollectionDialog";
 import { getProfileSummary } from "@/lib/profile/getProfileSummary";
 import { getAuthorStats } from "@/lib/profile/getAuthorStats";
 import { getMostReferenced } from "@/lib/profile/getMostReferenced";
@@ -55,6 +58,7 @@ export default function Profile() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [makeCollectionOpen, setMakeCollectionOpen] = useState(false);
   const avatarFileRef = useRef<HTMLInputElement | null>(null);
   const coverFileRef = useRef<HTMLInputElement | null>(null);
 
@@ -228,6 +232,101 @@ export default function Profile() {
     [navigate]
   );
 
+  // ── Item-level actions (owner & visitor) ───────────────────────────────
+  const refetchZone = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ["zone-content", summary?.id ?? null] });
+  }, [qc, summary?.id]);
+
+  const handleEditItem = useCallback(
+    (item: ZoneItem) => {
+      const id = item.id;
+      if (!id) return;
+      // Best-effort: route to the upload editor. Different post types share /upload?edit.
+      navigate(`/upload?edit=${id}`);
+    },
+    [navigate]
+  );
+
+  const handleUnpublishItem = useCallback(
+    async (item: ZoneItem) => {
+      if (!item.id) return;
+      const { error: err } = await supabase
+        .from("content_items")
+        .update({ status: "draft" } as any)
+        .eq("id", item.id);
+      if (err) {
+        toast({ title: "Could not unpublish", description: err.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Moved back to drafts" });
+      refetchZone();
+    },
+    [toast, refetchZone]
+  );
+
+  const handleDeleteItem = useCallback(
+    async (item: ZoneItem) => {
+      if (!item.id) return;
+      if (!window.confirm(`Delete "${item.title}"? This cannot be undone.`)) return;
+      const { error: err } = await supabase
+        .from("content_items")
+        .delete()
+        .eq("id", item.id);
+      if (err) {
+        toast({ title: "Could not delete", description: err.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Deleted" });
+      refetchZone();
+    },
+    [toast, refetchZone]
+  );
+
+  const handleBookmarkItem = useCallback(
+    async (item: ZoneItem) => {
+      if (!user?.id) {
+        navigate("/login");
+        return;
+      }
+      if (!item.id) return;
+      const { error: err } = await supabase
+        .from("user_saves")
+        .insert({ user_id: user.id, content_id: item.id } as any);
+      if (err && !err.message.toLowerCase().includes("duplicate")) {
+        toast({ title: "Could not bookmark", description: err.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Saved to your library" });
+    },
+    [user?.id, toast, navigate]
+  );
+
+  const handleRepostItem = useCallback(
+    (_item: ZoneItem) => {
+      toast({ title: "Repost coming soon" });
+    },
+    [toast]
+  );
+
+  const handleShareItem = useCallback(
+    async (item: ZoneItem) => {
+      try {
+        const url = item.href
+          ? `${window.location.origin}${item.href}`
+          : window.location.href;
+        await navigator.clipboard.writeText(url);
+        toast({ title: "Link copied" });
+      } catch {
+        toast({ title: "Could not copy link", variant: "destructive" });
+      }
+    },
+    [toast]
+  );
+
+  const handleCreateBlueprint = useCallback(() => {
+    navigate("/upload");
+  }, [navigate]);
+
   // ── Follow / Unfollow ──────────────────────────────────────────────────
   const handleFollow = useCallback(async () => {
     if (!summary || !user?.id) {
@@ -399,6 +498,21 @@ export default function Profile() {
           onCoverEdit={() => coverFileRef.current?.click()}
         />
 
+        {/* Visitor-only "shared interests" banner. */}
+        <MatchBanner
+          targetUserId={summary.id}
+          viewerId={user?.id ?? null}
+          isOwnProfile={summary.isOwnProfile}
+        />
+
+        {/* Own-profile welcome coachmark (zero-content state). */}
+        <ProfileWelcomeCoachmark
+          visible={
+            summary.isOwnProfile &&
+            (summary.counts.blueprints + summary.counts.blogs + summary.counts.bounties) === 0
+          }
+        />
+
         {/* Hidden file inputs for avatar / cover uploads */}
         <input
           ref={avatarFileRef}
@@ -452,6 +566,14 @@ export default function Profile() {
             onLoadMore={() => zoneQuery.fetchNextPage()}
             onItemClick={handleZoneItemClick}
             isOwnProfile={summary.isOwnProfile}
+            onMakeCollection={() => setMakeCollectionOpen(true)}
+            onCreateBlueprint={handleCreateBlueprint}
+            onEditItem={summary.isOwnProfile ? handleEditItem : undefined}
+            onUnpublishItem={summary.isOwnProfile ? handleUnpublishItem : undefined}
+            onDeleteItem={summary.isOwnProfile ? handleDeleteItem : undefined}
+            onBookmarkItem={!summary.isOwnProfile ? handleBookmarkItem : undefined}
+            onRepostItem={!summary.isOwnProfile ? handleRepostItem : undefined}
+            onShareItem={handleShareItem}
           />
         </div>
       </div>
@@ -469,6 +591,15 @@ export default function Profile() {
             website: summary.website,
           }}
           onSaved={refresh}
+        />
+      )}
+
+      {summary.isOwnProfile && user?.id && (
+        <MakeCollectionDialog
+          open={makeCollectionOpen}
+          onOpenChange={setMakeCollectionOpen}
+          ownerId={user.id}
+          onCreated={() => refetchZone()}
         />
       )}
     </>
