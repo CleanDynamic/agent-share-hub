@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -16,10 +16,18 @@ import {
   MostReferencedPrimitives,
   type PrimitiveCardData,
 } from "@/components/profile/MostReferencedPrimitives";
+import {
+  ProfileContentZones,
+  type Zone,
+} from "@/components/profile/ProfileContentZones";
 import { getProfileSummary } from "@/lib/profile/getProfileSummary";
 import { getAuthorStats } from "@/lib/profile/getAuthorStats";
 import { getMostReferenced } from "@/lib/profile/getMostReferenced";
-import type { Primitive } from "@/lib/profile/types";
+import { getZoneContent } from "@/lib/profile/getZoneContent";
+import type { Primitive, ZoneItem } from "@/lib/profile/types";
+
+const PAGE_SIZE = 20;
+const VALID_ZONES: Zone[] = ["authored", "curated", "activity", "network"];
 
 const BUCKET = "profile-assets";
 
