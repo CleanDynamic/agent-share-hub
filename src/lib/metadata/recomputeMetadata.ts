@@ -48,7 +48,7 @@ export async function recomputeMetadata(contentItemId: string): Promise<void> {
   // 1. Resolve post_type so we know which extractors to run.
   const { data: row, error: fetchErr } = await supabase
     .from("content_items")
-    .select("id, post_type, stage_grids")
+    .select("id, post_type, stage_grids, creator_id")
     .eq("id", contentItemId)
     .maybeSingle();
 
