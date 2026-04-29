@@ -288,7 +288,7 @@ export default function PublishMetadata() {
         setIsPublishing(false);
       }
     },
-    [contentItemId, isUpdateMode, navigate, toast, writeNow],
+    [contentItemId, isUpdateMode, navigate, toast, writeNow, profile?.id],
   );
 
   /* ── Discard ── */
