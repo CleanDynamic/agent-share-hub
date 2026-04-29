@@ -8,6 +8,10 @@ interface ZoneArgs {
   sort?: string;
   offset?: number;
   limit?: number;
+  // Visibility gate. When the profile is private and the viewer is NOT the
+  // owner, every zone returns an empty page.
+  isPrivate?: boolean;
+  isOwnProfile?: boolean;
 }
 
 const DEFAULT_LIMIT = 20;
@@ -203,6 +207,10 @@ async function networkZone({
 
 export async function getZoneContent(args: ZoneArgs): Promise<ZoneContentResult> {
   if (!args.userId) return { items: [], hasMore: false };
+  // Privacy gate: visitors of a private profile see nothing in any zone.
+  if (args.isPrivate && !args.isOwnProfile) {
+    return { items: [], hasMore: false };
+  }
   switch (args.zone) {
     case "authored": return authoredZone(args);
     case "curated":  return curatedZone(args);

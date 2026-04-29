@@ -1,9 +1,23 @@
 import * as React from "react";
-import { Heart, MessageSquare, Repeat2, ChevronDown, Loader2 } from "lucide-react";
+import {
+  Heart,
+  MessageSquare,
+  Repeat2,
+  ChevronDown,
+  Loader2,
+  MoreHorizontal,
+  Bookmark,
+  Share2,
+  Pencil,
+  EyeOff,
+  Trash2,
+  Plus,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ZoneItem } from "@/lib/profile/types";
@@ -32,6 +46,16 @@ export interface ProfileContentZonesProps {
   onLoadMore?: () => void;
   onItemClick: (item: ZoneItem) => void;
   isOwnProfile: boolean;
+  // Affordances
+  onMakeCollection?: () => void;
+  onCreateBlueprint?: () => void;
+  // Item-level menu actions
+  onEditItem?: (item: ZoneItem) => void;
+  onUnpublishItem?: (item: ZoneItem) => void;
+  onDeleteItem?: (item: ZoneItem) => void;
+  onBookmarkItem?: (item: ZoneItem) => void;
+  onRepostItem?: (item: ZoneItem) => void;
+  onShareItem?: (item: ZoneItem) => void;
 }
 
 const ZONE_FILTERS: Record<Zone, { label: string; value: string }[]> = {
@@ -98,16 +122,100 @@ function clearHover(e: React.MouseEvent<HTMLDivElement>, lift = false) {
   if (lift) e.currentTarget.style.transform = "translateY(0)";
 }
 
+// Per-item overflow menu, anchored top-right of a card.
+interface ItemMenuOption {
+  key: string;
+  label: string;
+  icon?: React.ReactNode;
+  destructive?: boolean;
+  onSelect: () => void;
+}
+
+function ItemOverflowMenu({ options }: { options: ItemMenuOption[] }) {
+  if (options.length === 0) return null;
+  return (
+    <div
+      style={{ position: "absolute", top: 8, right: 8 }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="More actions"
+            className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 4,
+              background: "rgba(0,0,0,0.45)",
+              border: "0.5px solid rgba(255,255,255,0.10)",
+              color: "rgba(255,255,255,0.75)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+            }}
+          >
+            <MoreHorizontal size={12} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-[160px]">
+          {options.map((opt, i) => {
+            const isLastDestructive =
+              opt.destructive && i > 0 && !options[i - 1].destructive;
+            return (
+              <React.Fragment key={opt.key}>
+                {isLastDestructive && <DropdownMenuSeparator />}
+                <DropdownMenuItem
+                  onClick={opt.onSelect}
+                  style={{
+                    fontSize: "12px",
+                    color: opt.destructive
+                      ? "hsl(var(--destructive))"
+                      : undefined,
+                  }}
+                >
+                  {opt.icon}
+                  {opt.label}
+                </DropdownMenuItem>
+              </React.Fragment>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
 // ── Card variants ─────────────────────────────────────────────────────────
-function AuthoredCard({ item, onClick }: { item: ZoneItem; onClick: () => void }) {
+function AuthoredCard({
+  item,
+  onClick,
+  menuOptions,
+}: {
+  item: ZoneItem;
+  onClick: () => void;
+  menuOptions: ItemMenuOption[];
+}) {
   const views = (item.meta?.views as number | undefined) ?? undefined;
   return (
     <div
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className="group relative"
       style={cardBaseStyle}
       onMouseEnter={(e) => applyHover(e)}
       onMouseLeave={(e) => clearHover(e)}
     >
+      <ItemOverflowMenu options={menuOptions} />
       <div
         style={{
           fontFamily: "Inter, sans-serif",
@@ -116,6 +224,7 @@ function AuthoredCard({ item, onClick }: { item: ZoneItem; onClick: () => void }
           letterSpacing: "0.08em",
           textTransform: "uppercase",
           color: "rgba(255,255,255,0.45)",
+          paddingRight: 28,
         }}
       >
         {item.kind}
@@ -162,15 +271,33 @@ function AuthoredCard({ item, onClick }: { item: ZoneItem; onClick: () => void }
   );
 }
 
-function CuratedCard({ item, onClick }: { item: ZoneItem; onClick: () => void }) {
+function CuratedCard({
+  item,
+  onClick,
+  menuOptions,
+}: {
+  item: ZoneItem;
+  onClick: () => void;
+  menuOptions: ItemMenuOption[];
+}) {
   const isCollection = item.kind === "collection";
   return (
     <div
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className="group relative"
       style={cardBaseStyle}
       onMouseEnter={(e) => applyHover(e)}
       onMouseLeave={(e) => clearHover(e)}
     >
+      <ItemOverflowMenu options={menuOptions} />
       <div
         style={{
           fontFamily: "Inter, sans-serif",
@@ -310,11 +437,21 @@ function ActivityRow({ item, onClick }: { item: ZoneItem; onClick: () => void })
 }
 
 // ── Empty / loading ───────────────────────────────────────────────────────
-function EmptyState({ zone, isOwnProfile }: { zone: Zone; isOwnProfile: boolean }) {
+function EmptyState({
+  zone,
+  isOwnProfile,
+  onCreateBlueprint,
+}: {
+  zone: Zone;
+  isOwnProfile: boolean;
+  onCreateBlueprint?: () => void;
+}) {
   const states: Record<Zone, { message: string; link?: { text: string; href: string } }> = {
     authored: {
       message: "Nothing published yet",
-      link: isOwnProfile ? { text: "Create your first blueprint", href: "/upload" } : undefined,
+      link: isOwnProfile && !onCreateBlueprint
+        ? { text: "Create your first blueprint", href: "/upload" }
+        : undefined,
     },
     curated: {
       message: "No bookmarks yet",
@@ -336,6 +473,25 @@ function EmptyState({ zone, isOwnProfile }: { zone: Zone; isOwnProfile: boolean 
       }}
     >
       <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.55)" }}>{s.message}</div>
+      {zone === "authored" && isOwnProfile && onCreateBlueprint && (
+        <button
+          type="button"
+          onClick={onCreateBlueprint}
+          style={{
+            marginTop: 14,
+            padding: "8px 14px",
+            borderRadius: 6,
+            background: ACCENT,
+            color: "white",
+            border: "none",
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Create your first blueprint
+        </button>
+      )}
       {s.link && (
         <a
           href={s.link.href}
@@ -413,6 +569,14 @@ export function ProfileContentZones({
   onLoadMore,
   onItemClick,
   isOwnProfile,
+  onMakeCollection,
+  onCreateBlueprint,
+  onEditItem,
+  onUnpublishItem,
+  onDeleteItem,
+  onBookmarkItem,
+  onRepostItem,
+  onShareItem,
 }: ProfileContentZonesProps) {
   const sentinelRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -443,10 +607,67 @@ export function ProfileContentZones({
   const currentSortLabel =
     currentSorts.find((s) => s.value === sort)?.label ?? currentSorts[0].label;
 
+  const buildMenuOptions = (item: ZoneItem): ItemMenuOption[] => {
+    const opts: ItemMenuOption[] = [];
+    if (isOwnProfile && activeZone === "authored") {
+      if (onEditItem)
+        opts.push({
+          key: "edit",
+          label: "Edit",
+          icon: <Pencil size={12} className="mr-2" />,
+          onSelect: () => onEditItem(item),
+        });
+      if (onUnpublishItem)
+        opts.push({
+          key: "unpublish",
+          label: "Unpublish",
+          icon: <EyeOff size={12} className="mr-2" />,
+          onSelect: () => onUnpublishItem(item),
+        });
+      if (onDeleteItem)
+        opts.push({
+          key: "delete",
+          label: "Delete",
+          icon: <Trash2 size={12} className="mr-2" />,
+          destructive: true,
+          onSelect: () => onDeleteItem(item),
+        });
+    } else if (!isOwnProfile) {
+      if (onBookmarkItem)
+        opts.push({
+          key: "bookmark",
+          label: "Bookmark",
+          icon: <Bookmark size={12} className="mr-2" />,
+          onSelect: () => onBookmarkItem(item),
+        });
+      if (onRepostItem)
+        opts.push({
+          key: "repost",
+          label: "Repost",
+          icon: <Repeat2 size={12} className="mr-2" />,
+          onSelect: () => onRepostItem(item),
+        });
+      if (onShareItem)
+        opts.push({
+          key: "share",
+          label: "Share",
+          icon: <Share2 size={12} className="mr-2" />,
+          onSelect: () => onShareItem(item),
+        });
+    }
+    return opts;
+  };
+
   const renderContent = () => {
     if (isLoading) return <LoadingSkeleton zone={activeZone} />;
     if (items.length === 0)
-      return <EmptyState zone={activeZone} isOwnProfile={isOwnProfile} />;
+      return (
+        <EmptyState
+          zone={activeZone}
+          isOwnProfile={isOwnProfile}
+          onCreateBlueprint={onCreateBlueprint}
+        />
+      );
 
     switch (activeZone) {
       case "authored":
@@ -459,7 +680,12 @@ export function ProfileContentZones({
             }}
           >
             {items.map((item) => (
-              <AuthoredCard key={item.id} item={item} onClick={() => onItemClick(item)} />
+              <AuthoredCard
+                key={item.id}
+                item={item}
+                onClick={() => onItemClick(item)}
+                menuOptions={buildMenuOptions(item)}
+              />
             ))}
           </div>
         );
@@ -468,6 +694,31 @@ export function ProfileContentZones({
         const bookmarks = items.filter((i) => i.kind !== "collection");
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {isOwnProfile && onMakeCollection && (
+              <div>
+                <button
+                  type="button"
+                  onClick={onMakeCollection}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "6px 12px",
+                    borderRadius: 6,
+                    border: "0.5px solid rgba(46,196,182,0.40)",
+                    background: "rgba(46,196,182,0.08)",
+                    color: "rgba(46,196,182,0.90)",
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <Plus size={12} />
+                  Make collection
+                </button>
+              </div>
+            )}
             {collections.length > 0 && (
               <div
                 style={{
@@ -477,7 +728,12 @@ export function ProfileContentZones({
                 }}
               >
                 {collections.map((item) => (
-                  <CuratedCard key={item.id} item={item} onClick={() => onItemClick(item)} />
+                  <CuratedCard
+                    key={item.id}
+                    item={item}
+                    onClick={() => onItemClick(item)}
+                    menuOptions={buildMenuOptions(item)}
+                  />
                 ))}
               </div>
             )}
@@ -489,7 +745,12 @@ export function ProfileContentZones({
               }}
             >
               {bookmarks.map((item) => (
-                <CuratedCard key={item.id} item={item} onClick={() => onItemClick(item)} />
+                <CuratedCard
+                  key={item.id}
+                  item={item}
+                  onClick={() => onItemClick(item)}
+                  menuOptions={buildMenuOptions(item)}
+                />
               ))}
             </div>
           </div>
@@ -526,18 +787,27 @@ export function ProfileContentZones({
     <div style={{ width: "100%", marginTop: "32px" }}>
       {/* Outer Tab Row */}
       <div
+        role="tablist"
+        aria-label="Profile sections"
         style={{
           display: "flex",
           gap: "4px",
           borderBottom: "0.5px solid rgba(255,255,255,0.08)",
           marginBottom: "16px",
+          overflowX: "auto",
+          scrollbarWidth: "none",
         }}
+        className="hide-scrollbar"
       >
         {zones.map((zone) => {
           const isActive = activeZone === zone.value;
           return (
             <button
               key={zone.value}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`zone-panel-${zone.value}`}
+              id={`zone-tab-${zone.value}`}
               onClick={() => onZoneChange(zone.value)}
               style={{
                 display: "flex",
@@ -551,6 +821,7 @@ export function ProfileContentZones({
                 cursor: "pointer",
                 transition: "all 0.15s ease",
                 marginBottom: "-0.5px",
+                flexShrink: 0,
               }}
             >
               <span
@@ -658,7 +929,13 @@ export function ProfileContentZones({
       </div>
 
       {/* Content */}
-      <div>{renderContent()}</div>
+      <div
+        role="tabpanel"
+        id={`zone-panel-${activeZone}`}
+        aria-labelledby={`zone-tab-${activeZone}`}
+      >
+        {renderContent()}
+      </div>
 
       {/* Infinite scroll sentinel + spinner */}
       {hasMore && (
@@ -674,6 +951,10 @@ export function ProfileContentZones({
           {isLoadingMore && <Loader2 size={16} className="animate-spin" />}
         </div>
       )}
+
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+      `}</style>
     </div>
   );
 }

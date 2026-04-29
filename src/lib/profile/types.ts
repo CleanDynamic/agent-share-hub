@@ -19,12 +19,16 @@ export interface ProfileSummary {
   avatarUrl: string | null;
   coverUrl: string | null;
   isVerified: boolean;
+  isPrivate: boolean;
   level: ProfileLevel;
   derivedBio: string | null;
   customBio: string | null;
   joinedAt: string;
   location: string | null;
   website: string | null;
+  // Optional self-reported domain (used for visitor "Match" banner). Falls back
+  // to derivedBio heuristics if not present.
+  domain: string | null;
   counts: {
     followers: number;
     following: number;
