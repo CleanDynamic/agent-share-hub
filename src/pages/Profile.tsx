@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -16,10 +16,18 @@ import {
   MostReferencedPrimitives,
   type PrimitiveCardData,
 } from "@/components/profile/MostReferencedPrimitives";
+import {
+  ProfileContentZones,
+  type Zone,
+} from "@/components/profile/ProfileContentZones";
 import { getProfileSummary } from "@/lib/profile/getProfileSummary";
 import { getAuthorStats } from "@/lib/profile/getAuthorStats";
 import { getMostReferenced } from "@/lib/profile/getMostReferenced";
-import type { Primitive } from "@/lib/profile/types";
+import { getZoneContent } from "@/lib/profile/getZoneContent";
+import type { Primitive, ZoneItem } from "@/lib/profile/types";
+
+const PAGE_SIZE = 20;
+const VALID_ZONES: Zone[] = ["authored", "curated", "activity", "network"];
 
 const BUCKET = "profile-assets";
 
@@ -122,6 +130,103 @@ export default function Profile() {
   const handleViewAllReferenced = useCallback(() => {
     toast({ title: "Full list coming soon" });
   }, [toast]);
+
+  // ── Zones: URL-driven state ────────────────────────────────────────────
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawZone = searchParams.get("zone");
+  const activeZone: Zone = (VALID_ZONES.includes(rawZone as Zone)
+    ? rawZone
+    : "authored") as Zone;
+  const activeFilter = searchParams.get("filter") ?? "all";
+  const sort = searchParams.get("sort") ?? "recent";
+
+  const updateParams = useCallback(
+    (next: { zone?: Zone; filter?: string; sort?: string }) => {
+      const params = new URLSearchParams(searchParams);
+      if (next.zone !== undefined) params.set("zone", next.zone);
+      if (next.filter !== undefined) {
+        if (next.filter === "all") params.delete("filter");
+        else params.set("filter", next.filter);
+      }
+      if (next.sort !== undefined) {
+        if (next.sort === "recent") params.delete("sort");
+        else params.set("sort", next.sort);
+      }
+      setSearchParams(params, { replace: false });
+    },
+    [searchParams, setSearchParams]
+  );
+
+  const handleZoneChange = useCallback(
+    (z: Zone) => updateParams({ zone: z, filter: "all" }),
+    [updateParams]
+  );
+  const handleFilterChange = useCallback(
+    (f: string) => updateParams({ filter: f }),
+    [updateParams]
+  );
+  const handleSortChange = useCallback(
+    (s: string) => updateParams({ sort: s }),
+    [updateParams]
+  );
+
+  // ── Zone content (paginated) ────────────────────────────────────────────
+  const zoneQuery = useInfiniteQuery({
+    queryKey: ["zone-content", summary?.id ?? null, activeZone, activeFilter, sort],
+    enabled: !!summary?.id,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      getZoneContent({
+        userId: summary!.id,
+        zone: activeZone,
+        filter: activeFilter,
+        sort,
+        offset: pageParam as number,
+        limit: PAGE_SIZE,
+      }),
+    getNextPageParam: (last, all) =>
+      last.hasMore ? all.length * PAGE_SIZE : undefined,
+  });
+
+  const zoneItems: ZoneItem[] = useMemo(
+    () => (zoneQuery.data?.pages ?? []).flatMap((p) => p.items),
+    [zoneQuery.data]
+  );
+
+  // Network filter is client-side (kind matches "follower" / "following" / "collaborator").
+  const visibleZoneItems = useMemo(() => {
+    if (activeZone === "network" && activeFilter !== "all") {
+      return zoneItems.filter((i) => i.kind === activeFilter);
+    }
+    if (activeZone === "activity" && activeFilter !== "all") {
+      return zoneItems.filter((i) => i.kind === activeFilter);
+    }
+    if (activeZone === "curated" && activeFilter !== "all") {
+      return zoneItems.filter((i) => i.kind === activeFilter);
+    }
+    return zoneItems;
+  }, [zoneItems, activeZone, activeFilter]);
+
+  const zoneCounts = useMemo(
+    () => ({
+      authored:
+        (summary?.counts.blueprints ?? 0) +
+        (summary?.counts.blogs ?? 0) +
+        (summary?.counts.bounties ?? 0),
+      curated: 0,
+      activity: 0,
+      network:
+        (summary?.counts.followers ?? 0) + (summary?.counts.following ?? 0),
+    }),
+    [summary]
+  );
+
+  const handleZoneItemClick = useCallback(
+    (item: ZoneItem) => {
+      if (item.href) navigate(item.href);
+    },
+    [navigate]
+  );
 
   // ── Follow / Unfollow ──────────────────────────────────────────────────
   const handleFollow = useCallback(async () => {
@@ -238,12 +343,25 @@ export default function Profile() {
   // ── Stat click → tab switching (zones not yet built; soft-scroll hook) ─
   const handleStatClick = useCallback(
     (stat: "followers" | "following" | "blueprints" | "blogs" | "bounties") => {
-      // Profile zones (6.6) will listen for this event and switch tabs.
-      window.dispatchEvent(
-        new CustomEvent("profile:stat-click", { detail: { stat } })
-      );
+      // Map header stat → (zone, filter) and update URL.
+      if (stat === "followers") updateParams({ zone: "network", filter: "follower" });
+      else if (stat === "following")
+        updateParams({ zone: "network", filter: "following" });
+      else if (stat === "blueprints")
+        updateParams({ zone: "authored", filter: "blueprint" });
+      else if (stat === "blogs")
+        updateParams({ zone: "authored", filter: "blog" });
+      else if (stat === "bounties")
+        updateParams({ zone: "authored", filter: "bounty" });
+
+      // Scroll the zones into view.
+      requestAnimationFrame(() => {
+        document
+          .getElementById("profile-zones")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     },
-    []
+    [updateParams]
   );
 
   // ── Render ─────────────────────────────────────────────────────────────
@@ -317,8 +435,25 @@ export default function Profile() {
           onViewAllClick={handleViewAllReferenced}
         />
 
-        {/* Profile zones (authored / curated / activity / network) land here in 6.6. */}
-        <div className="mt-8" id="profile-zones" />
+        {/* Profile zones (authored / curated / activity / network). */}
+        <div id="profile-zones">
+          <ProfileContentZones
+            activeZone={activeZone}
+            onZoneChange={handleZoneChange}
+            activeFilter={activeFilter}
+            onFilterChange={handleFilterChange}
+            sort={sort}
+            onSortChange={handleSortChange}
+            counts={zoneCounts}
+            items={visibleZoneItems}
+            isLoading={zoneQuery.isLoading}
+            isLoadingMore={zoneQuery.isFetchingNextPage}
+            hasMore={!!zoneQuery.hasNextPage}
+            onLoadMore={() => zoneQuery.fetchNextPage()}
+            onItemClick={handleZoneItemClick}
+            isOwnProfile={summary.isOwnProfile}
+          />
+        </div>
       </div>
 
       {summary.isOwnProfile && user?.id && (
