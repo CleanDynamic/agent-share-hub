@@ -1,27 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { SeoHead } from "@/components/SeoHead";
+import Upload from "./Upload";
 
 /**
- * /upload/bounty route shell (Phase 5.1).
+ * /upload/bounty — mounts the shared editor in 'bounty' mode.
  *
- * Reads ?id= from the URL. If absent, creates a fresh draft
- * content_item with post_type='bounty' and redirects to
- * /upload/bounty?id={newId}. The real editor lands in 5.3 —
- * for now we render a placeholder.
+ * Bootstrap: if no ?id is present, create a fresh draft
+ * content_item with post_type='bounty' and redirect to
+ * /upload/bounty?id={newId} so the editor loads it as a draft.
  */
-export default function BountyUpload() {
+export default function BountyUploadShell() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [params] = useSearchParams();
-  const contentItemId = params.get("id");
+  const contentItemId = params.get("id") || params.get("draft");
   const creatingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Bootstrap: if no ?id, create a draft row and redirect.
   useEffect(() => {
     if (authLoading) return;
     if (contentItemId) return;
@@ -59,66 +56,22 @@ export default function BountyUpload() {
     })();
   }, [authLoading, user, contentItemId, navigate]);
 
-  return (
-    <div
-      style={{
-        maxWidth: 920,
-        margin: "0 auto",
-        padding: "60px 24px",
-        textAlign: "center",
-      }}
-    >
-      <SeoHead
-        title="Bounty — NeoScale AI"
-        description="Create a bounty."
-        path="/upload/bounty"
-        noIndex
-      />
-      <Target
-        size={40}
-        color="#F59E0B"
-        style={{ margin: "0 auto 16px" }}
-      />
-      <h1
+  if (!contentItemId) {
+    return (
+      <div
         style={{
-          fontFamily: "Inter, sans-serif",
-          fontSize: 22,
-          fontWeight: 600,
-          color: "rgba(255,255,255,0.92)",
-          marginBottom: 8,
-        }}
-      >
-        Bounty editor coming in 5.3
-      </h1>
-      <p
-        style={{
-          fontSize: 13,
+          maxWidth: 920,
+          margin: "0 auto",
+          padding: "60px 24px",
+          textAlign: "center",
           color: "rgba(255,255,255,0.55)",
-          marginBottom: 8,
-        }}
-      >
-        {contentItemId
-          ? `Draft ready · id ${contentItemId.slice(0, 8)}…`
-          : error
-          ? `Error: ${error}`
-          : "Preparing your bounty draft…"}
-      </p>
-      <button
-        onClick={() => navigate("/upload")}
-        style={{
-          marginTop: 16,
           fontSize: 13,
-          fontWeight: 500,
-          padding: "8px 20px",
-          borderRadius: 100,
-          border: "1px solid rgba(255,255,255,0.12)",
-          color: "rgba(255,255,255,0.70)",
-          background: "transparent",
-          cursor: "pointer",
         }}
       >
-        ← Back
-      </button>
-    </div>
-  );
+        {error ? `Error: ${error}` : "Preparing your bounty draft…"}
+      </div>
+    );
+  }
+
+  return <Upload mode="bounty" />;
 }

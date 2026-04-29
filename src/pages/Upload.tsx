@@ -222,7 +222,7 @@ function defaultSubType(uploadType: string): string {
 }
 
 interface UploadProps {
-  mode?: 'blueprint' | 'blog';
+  mode?: 'blueprint' | 'blog' | 'bounty';
 }
 
 const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
@@ -232,6 +232,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const { groups: toolGroups } = useGroupedApprovedTools();
+  // Type-chooser only relevant for blueprint mode
   const [showTypeChooser, setShowTypeChooser] = useState(mode === 'blueprint');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [uploadType, setUploadType] = useState<"blog" | "single" | "bounty">("single");
@@ -387,11 +388,20 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
 
         // Type-mode guard: if URL mode doesn't match the row's post_type, redirect.
         const rowPostType = (item as any).post_type as string | null;
-        const expected = mode === 'blog' ? 'blog' : 'blueprint';
-        const rowKind = rowPostType === 'blog' ? 'blog' : 'blueprint';
+        const expected: 'blueprint' | 'blog' | 'bounty' =
+          mode === 'blog' ? 'blog' : mode === 'bounty' ? 'bounty' : 'blueprint';
+        const rowKind: 'blueprint' | 'blog' | 'bounty' =
+          rowPostType === 'blog' ? 'blog' : rowPostType === 'bounty' ? 'bounty' : 'blueprint';
         if (rowKind !== expected) {
-          const target = rowKind === 'blog' ? '/upload/blog' : '/upload/blueprint';
-          navigate(`${target}?draft=${draftId}`, { replace: true });
+          const targetMap = {
+            blog: '/upload/blog',
+            bounty: '/upload/bounty',
+            blueprint: '/upload/blueprint',
+          } as const;
+          const target = targetMap[rowKind];
+          // /upload/bounty uses ?id=, others use ?draft=
+          const param = rowKind === 'bounty' ? 'id' : 'draft';
+          navigate(`${target}?${param}=${draftId}`, { replace: true });
           return;
         }
 
@@ -623,7 +633,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         use_instructions: values.use_instructions || null,
         what_to_expect: values.what_to_expect || null,
         what_to_expect_blocks: wteBlocksJsonb,
-        post_type: mode === 'blog' ? 'blog' : 'blueprint',
+        post_type: mode === 'blog' ? 'blog' : mode === 'bounty' ? 'bounty' : 'blueprint',
         other_tool_name: isOtherSelected && otherToolName.trim() ? otherToolName.trim() : null,
         custom_use_case_description: customUseCaseDesc.trim() || null,
         tool_url: toolUrl.trim() || null,
@@ -960,7 +970,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
       const { data: insertedItem, error: insertError } = await supabase.from("content_items").insert({
         creator_id: user.id,
         title: values.title,
-        post_type: mode === 'blog' ? 'blog' : 'blueprint',
+        post_type: mode === 'blog' ? 'blog' : mode === 'bounty' ? 'bounty' : 'blueprint',
         content_type: values.content_type,
         description: finalDescription,
         difficulty: values.difficulty,
