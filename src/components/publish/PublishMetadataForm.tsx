@@ -688,10 +688,68 @@ export function PublishMetadataForm({
                 onEditClick={onBack}
               />
             )}
+            {isBounty && (
+              <div
+                id="bounty-missing-line"
+                className="mt-3 flex items-center gap-2"
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: missingItemCount === 0 ? "rgba(239,68,68,0.85)" : "#F59E0B",
+                }}
+              >
+                <span style={{ opacity: 0.7 }}>Missing items:</span>
+                <span>
+                  {missingStageCount} missing stage{missingStageCount === 1 ? "" : "s"} ·{" "}
+                  {missingBlockCount} missing block{missingBlockCount === 1 ? "" : "s"}
+                </span>
+                {missingItemCount === 0 && (
+                  <span style={{ opacity: 0.8 }}>
+                    — open the editor and mark at least one
+                  </span>
+                )}
+              </div>
+            )}
           </Section>
 
-          {/* 5 - Visibility & Slug */}
-          <Section number={isBlog ? 4 : 5} title="Visibility & slug" required onBadgeClick={scrollToSection} accent={theme.accent}>
+          {/* Bounty details (bounty only — between Tags-area and Visibility) */}
+          {isBounty && (
+            <Section
+              number={5}
+              title="Bounty details"
+              required
+              onBadgeClick={scrollToSection}
+              accent={theme.accent}
+            >
+              <BountyDetailsCard
+                value={{
+                  rewardType: state.bountyRewardType,
+                  rewardAmount: state.bountyRewardAmount,
+                  rewardCurrency: state.bountyRewardCurrency,
+                  deadline: state.bountyDeadline,
+                  acceptanceCriteria: state.bountyAcceptanceCriteria,
+                }}
+                onChange={(v) => {
+                  set("bountyRewardType", v.rewardType);
+                  set("bountyRewardAmount", v.rewardAmount);
+                  set("bountyRewardCurrency", v.rewardCurrency);
+                  set("bountyDeadline", v.deadline);
+                  set("bountyAcceptanceCriteria", v.acceptanceCriteria);
+                }}
+                errors={validation.bountyErrors}
+              />
+            </Section>
+          )}
+
+          {/* 5/6 - Visibility & Slug */}
+          <Section
+            number={isBlog ? 4 : isBounty ? 6 : 5}
+            title="Visibility & slug"
+            required
+            onBadgeClick={scrollToSection}
+            accent={theme.accent}
+          >
             <div className="flex flex-col gap-5">
               <FieldGroup label="Visibility" error={validation.errors.visibility}>
                 <div className="flex flex-wrap gap-2">
