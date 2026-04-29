@@ -222,7 +222,7 @@ function defaultSubType(uploadType: string): string {
 }
 
 interface UploadProps {
-  mode?: 'blueprint' | 'blog';
+  mode?: 'blueprint' | 'blog' | 'bounty';
 }
 
 const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
@@ -232,6 +232,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const { groups: toolGroups } = useGroupedApprovedTools();
+  // Type-chooser only relevant for blueprint mode
   const [showTypeChooser, setShowTypeChooser] = useState(mode === 'blueprint');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [uploadType, setUploadType] = useState<"blog" | "single" | "bounty">("single");
