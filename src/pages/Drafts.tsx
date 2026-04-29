@@ -160,7 +160,12 @@ export default function DraftsPage() {
                   {/* Right */}
                   <div className="flex items-center shrink-0" style={{ gap: 8 }}>
                     <button
-                      onClick={() => navigate(`/upload/blueprint?draft=${draft.id}`)}
+                      onClick={() => {
+                        const pt = (draft.post_type as string | null) || 'blueprint';
+                        if (pt === 'blog') navigate(`/upload/blog?draft=${draft.id}`);
+                        else if (pt === 'bounty') navigate(`/upload/bounty?id=${draft.id}`);
+                        else navigate(`/upload/blueprint?draft=${draft.id}`);
+                      }}
                       style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(31,122,109,0.3)', color: '#1F7A6D', background: 'rgba(31,122,109,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                     >
                       <Pencil style={{ width: 13, height: 13 }} /> Continue editing
