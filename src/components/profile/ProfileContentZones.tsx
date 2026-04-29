@@ -202,10 +202,20 @@ function AuthoredCard({
   return (
     <div
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className="group relative"
       style={cardBaseStyle}
       onMouseEnter={(e) => applyHover(e)}
       onMouseLeave={(e) => clearHover(e)}
     >
+      <ItemOverflowMenu options={menuOptions} />
       <div
         style={{
           fontFamily: "Inter, sans-serif",
@@ -214,6 +224,7 @@ function AuthoredCard({
           letterSpacing: "0.08em",
           textTransform: "uppercase",
           color: "rgba(255,255,255,0.45)",
+          paddingRight: 28,
         }}
       >
         {item.kind}
@@ -260,15 +271,33 @@ function AuthoredCard({
   );
 }
 
-function CuratedCard({ item, onClick }: { item: ZoneItem; onClick: () => void }) {
+function CuratedCard({
+  item,
+  onClick,
+  menuOptions,
+}: {
+  item: ZoneItem;
+  onClick: () => void;
+  menuOptions: ItemMenuOption[];
+}) {
   const isCollection = item.kind === "collection";
   return (
     <div
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className="group relative"
       style={cardBaseStyle}
       onMouseEnter={(e) => applyHover(e)}
       onMouseLeave={(e) => clearHover(e)}
     >
+      <ItemOverflowMenu options={menuOptions} />
       <div
         style={{
           fontFamily: "Inter, sans-serif",
