@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StageThumbnail, type ThumbnailBlock } from './stage/StageThumbnail';
 import { TemplatePicker } from './stage/TemplatePicker';
 import { useDocumentStore } from '@/lib/documentStore';
+import { toggleStageMissing } from '@/lib/bountyMissing';
 
 interface StageGridNodeProps {
   node: any;
