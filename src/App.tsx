@@ -19,7 +19,7 @@ import DiscoverLegacy from "./pages/Discover.legacy";
 import Upload from "./pages/Upload";
 import UploadTypeSelector from "./pages/UploadTypeSelector";
 import BlogUpload from "./pages/BlogUpload";
-import UploadBountyPlaceholder from "./pages/UploadBountyPlaceholder";
+import BountyUploadShell from "./pages/BountyUploadShell";
 import About from "./pages/About";
 import ContentDetail from "./pages/ContentDetail";
 import ProjectDetail from "./pages/ProjectDetail";
