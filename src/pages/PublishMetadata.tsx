@@ -390,6 +390,11 @@ export default function PublishMetadata() {
     visibility: data.visibility || "public",
     slug: data.slug || "",
     topicCategory: data.blog_topic_category || "",
+    bountyRewardType: (data.bounty_reward_type as any) || "none",
+    bountyRewardAmount: data.bounty_reward_amount ?? null,
+    bountyRewardCurrency: data.bounty_reward_currency ?? null,
+    bountyDeadline: data.bounty_deadline ? new Date(data.bounty_deadline) : null,
+    bountyAcceptanceCriteria: data.bounty_acceptance_criteria || "",
   };
 
   const autoDetected: AutoDetectedMeta = {
