@@ -98,13 +98,15 @@ export function ArticleEditor({
   // Bounty publish gate: count missing stages + blocks live from the store.
   const stagesMap = useDocumentStore((s) => s.stages);
   const blocksMap = useDocumentStore((s) => s.blocks);
-  const missingItemCount = useMemo(() => {
-    if (!isBounty) return 0;
-    let n = 0;
-    for (const s of Object.values(stagesMap)) if (s.is_missing) n += 1;
-    for (const b of Object.values(blocksMap)) if (b.is_missing) n += 1;
-    return n;
+  const missingBreakdown = useMemo(() => {
+    if (!isBounty) return { stages: 0, blocks: 0, total: 0 };
+    let stagesN = 0;
+    let blocksN = 0;
+    for (const s of Object.values(stagesMap)) if (s.is_missing) stagesN += 1;
+    for (const b of Object.values(blocksMap)) if (b.is_missing) blocksN += 1;
+    return { stages: stagesN, blocks: blocksN, total: stagesN + blocksN };
   }, [isBounty, stagesMap, blocksMap]);
+  const missingItemCount = missingBreakdown.total;
   const bountyPublishBlocked = isBounty && missingItemCount === 0;
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [draftNameInput, setDraftNameInput] = useState('');
