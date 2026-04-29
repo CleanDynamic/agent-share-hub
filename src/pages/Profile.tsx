@@ -8,7 +8,12 @@ import { SeoHead } from "@/components/SeoHead";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { EditProfileSheet } from "@/components/profile/EditProfileSheet";
+import {
+  AuthorStatsPanel,
+  AuthorStatsPanelSkeleton,
+} from "@/components/profile/AuthorStatsPanel";
 import { getProfileSummary } from "@/lib/profile/getProfileSummary";
+import { getAuthorStats } from "@/lib/profile/getAuthorStats";
 
 const BUCKET = "profile-assets";
 
@@ -66,6 +71,13 @@ export default function Profile() {
   const refresh = useCallback(() => {
     qc.invalidateQueries({ queryKey });
   }, [qc, queryKey]);
+
+  // Author stats — fetched in parallel once we know the profile id.
+  const { data: authorStats, isLoading: statsLoading } = useQuery({
+    queryKey: ["author-stats", summary?.id ?? null],
+    enabled: !!summary?.id,
+    queryFn: () => getAuthorStats(summary!.id),
+  });
 
   // ── Follow / Unfollow ──────────────────────────────────────────────────
   const handleFollow = useCallback(async () => {
@@ -248,6 +260,12 @@ export default function Profile() {
             e.target.value = "";
           }}
         />
+
+        {statsLoading || !authorStats ? (
+          <AuthorStatsPanelSkeleton />
+        ) : (
+          <AuthorStatsPanel stats={authorStats} />
+        )}
 
         {/* Profile zones (authored / curated / activity / network) land here in 6.6. */}
         <div className="mt-8" id="profile-zones" />
