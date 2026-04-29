@@ -1,0 +1,4 @@
+ALTER TABLE public.content_items
+  ADD COLUMN IF NOT EXISTS bounty_deadline TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS missing_stage_count INT NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS missing_block_count INT NOT NULL DEFAULT 0;
