@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { Maximize2 } from 'lucide-react';
+import { Maximize2, MoreHorizontal } from 'lucide-react';
+import { MissingStageBadge } from '@/components/bounty/MissingStageBadge';
 
 export type ThumbnailBlockType =
   | 'prompt'
