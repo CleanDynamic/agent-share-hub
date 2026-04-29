@@ -714,6 +714,7 @@ export type Database = {
           blog_topic_category: string | null
           bounty_acceptance_criteria: string | null
           bounty_reward_amount: number | null
+          bounty_reward_currency: string | null
           bounty_reward_type: string | null
           bounty_status: string | null
           comment_count: number
@@ -801,6 +802,7 @@ export type Database = {
           blog_topic_category?: string | null
           bounty_acceptance_criteria?: string | null
           bounty_reward_amount?: number | null
+          bounty_reward_currency?: string | null
           bounty_reward_type?: string | null
           bounty_status?: string | null
           comment_count?: number
@@ -888,6 +890,7 @@ export type Database = {
           blog_topic_category?: string | null
           bounty_acceptance_criteria?: string | null
           bounty_reward_amount?: number | null
+          bounty_reward_currency?: string | null
           bounty_reward_type?: string | null
           bounty_status?: string | null
           comment_count?: number
