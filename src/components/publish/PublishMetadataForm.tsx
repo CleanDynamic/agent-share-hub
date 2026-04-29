@@ -187,6 +187,11 @@ function buildInitial(d: Partial<PublishFormValues> = {}): PublishFormValues {
     visibility: d.visibility || "public",
     slug: d.slug || "",
     topicCategory: d.topicCategory || "",
+    bountyRewardType: d.bountyRewardType ?? "none",
+    bountyRewardAmount: d.bountyRewardAmount ?? null,
+    bountyRewardCurrency: d.bountyRewardCurrency ?? null,
+    bountyDeadline: d.bountyDeadline ?? null,
+    bountyAcceptanceCriteria: d.bountyAcceptanceCriteria || "",
   };
 }
 
@@ -194,8 +199,22 @@ function buildInitial(d: Partial<PublishFormValues> = {}): PublishFormValues {
 
 const SLUG_RE = /^[a-z0-9-]+$/;
 
-function validate(v: PublishFormValues) {
+export interface BountyValidationContext {
+  postType: PostType;
+  missingItemCount: number;
+}
+
+function validate(
+  v: PublishFormValues,
+  ctx: BountyValidationContext = { postType: "blueprint", missingItemCount: 0 },
+) {
   const errors: Partial<Record<keyof PublishFormValues, string>> = {};
+  const bountyErrors: Partial<
+    Record<
+      "rewardType" | "rewardAmount" | "rewardCurrency" | "acceptanceCriteria" | "missingItems",
+      string
+    >
+  > = {};
 
   const useCase = v.useCase.trim();
   if (!useCase) errors.useCase = "Required";
@@ -215,22 +234,58 @@ function validate(v: PublishFormValues) {
   else if (slug.length < 3) errors.slug = "At least 3 characters";
   else if (!SLUG_RE.test(slug)) errors.slug = "Lowercase letters, numbers, hyphens only";
 
-  // 5 logical required fields: useCase, domain, difficulty, tags, slug+visibility
+  const isBounty = ctx.postType === "bounty";
+  let bountyComplete = true;
+
+  if (isBounty) {
+    if (v.bountyRewardType === "cash" || v.bountyRewardType === "token") {
+      if (v.bountyRewardAmount === null || v.bountyRewardAmount <= 0) {
+        bountyErrors.rewardAmount = "Enter an amount greater than 0";
+      }
+      if (
+        !v.bountyRewardCurrency ||
+        v.bountyRewardCurrency.trim().length === 0
+      ) {
+        bountyErrors.rewardCurrency = "Pick a currency";
+      }
+    }
+    const criteria = v.bountyAcceptanceCriteria.trim();
+    if (criteria.length < 50) {
+      bountyErrors.acceptanceCriteria =
+        "At least 50 characters — describe what 'done' looks like";
+    }
+    if (ctx.missingItemCount === 0) {
+      bountyErrors.missingItems =
+        "Mark at least one stage or block as missing in the editor";
+    }
+
+    bountyComplete =
+      !bountyErrors.rewardAmount &&
+      !bountyErrors.rewardCurrency &&
+      !bountyErrors.acceptanceCriteria &&
+      !bountyErrors.missingItems;
+  }
+
+  // 5 logical required fields: useCase, domain, difficulty, tags, slug+visibility.
+  // Bounties add a 6th logical field (bounty section) so the progress bar reflects it.
   const completed = {
     useCase: !errors.useCase,
     domain: !errors.domain,
     difficulty: !errors.difficulty,
     tags: !errors.tags,
     slugVisibility: !errors.slug && !errors.visibility,
+    bounty: isBounty ? bountyComplete : true,
   };
+  const total = isBounty ? 6 : 5;
   const requiredFieldsCompleted =
     Number(completed.useCase) +
     Number(completed.domain) +
     Number(completed.difficulty) +
     Number(completed.tags) +
-    Number(completed.slugVisibility);
+    Number(completed.slugVisibility) +
+    (isBounty ? Number(completed.bounty) : 0);
 
-  return { errors, completed, requiredFieldsCompleted, total: 5 };
+  return { errors, bountyErrors, completed, requiredFieldsCompleted, total };
 }
 
 /* ── Component ───────────────────────────────────── */
