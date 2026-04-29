@@ -388,11 +388,20 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
 
         // Type-mode guard: if URL mode doesn't match the row's post_type, redirect.
         const rowPostType = (item as any).post_type as string | null;
-        const expected = mode === 'blog' ? 'blog' : 'blueprint';
-        const rowKind = rowPostType === 'blog' ? 'blog' : 'blueprint';
+        const expected: 'blueprint' | 'blog' | 'bounty' =
+          mode === 'blog' ? 'blog' : mode === 'bounty' ? 'bounty' : 'blueprint';
+        const rowKind: 'blueprint' | 'blog' | 'bounty' =
+          rowPostType === 'blog' ? 'blog' : rowPostType === 'bounty' ? 'bounty' : 'blueprint';
         if (rowKind !== expected) {
-          const target = rowKind === 'blog' ? '/upload/blog' : '/upload/blueprint';
-          navigate(`${target}?draft=${draftId}`, { replace: true });
+          const targetMap = {
+            blog: '/upload/blog',
+            bounty: '/upload/bounty',
+            blueprint: '/upload/blueprint',
+          } as const;
+          const target = targetMap[rowKind];
+          // /upload/bounty uses ?id=, others use ?draft=
+          const param = rowKind === 'bounty' ? 'id' : 'draft';
+          navigate(`${target}?${param}=${draftId}`, { replace: true });
           return;
         }
 
