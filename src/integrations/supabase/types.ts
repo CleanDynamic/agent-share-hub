@@ -713,6 +713,7 @@ export type Database = {
           blog_referenced_post_ids: string[] | null
           blog_topic_category: string | null
           bounty_acceptance_criteria: string | null
+          bounty_deadline: string | null
           bounty_reward_amount: number | null
           bounty_reward_currency: string | null
           bounty_reward_type: string | null
@@ -750,6 +751,8 @@ export type Database = {
           is_verified: boolean
           last_metadata_recompute_at: string | null
           last_verified_at: string | null
+          missing_block_count: number
+          missing_stage_count: number
           model_base_architecture: string | null
           model_format: string | null
           model_license: string | null
@@ -801,6 +804,7 @@ export type Database = {
           blog_referenced_post_ids?: string[] | null
           blog_topic_category?: string | null
           bounty_acceptance_criteria?: string | null
+          bounty_deadline?: string | null
           bounty_reward_amount?: number | null
           bounty_reward_currency?: string | null
           bounty_reward_type?: string | null
@@ -838,6 +842,8 @@ export type Database = {
           is_verified?: boolean
           last_metadata_recompute_at?: string | null
           last_verified_at?: string | null
+          missing_block_count?: number
+          missing_stage_count?: number
           model_base_architecture?: string | null
           model_format?: string | null
           model_license?: string | null
@@ -889,6 +895,7 @@ export type Database = {
           blog_referenced_post_ids?: string[] | null
           blog_topic_category?: string | null
           bounty_acceptance_criteria?: string | null
+          bounty_deadline?: string | null
           bounty_reward_amount?: number | null
           bounty_reward_currency?: string | null
           bounty_reward_type?: string | null
@@ -926,6 +933,8 @@ export type Database = {
           is_verified?: boolean
           last_metadata_recompute_at?: string | null
           last_verified_at?: string | null
+          missing_block_count?: number
+          missing_stage_count?: number
           model_base_architecture?: string | null
           model_format?: string | null
           model_license?: string | null

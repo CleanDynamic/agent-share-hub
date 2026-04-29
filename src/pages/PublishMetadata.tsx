@@ -24,6 +24,8 @@ import {
   type AutoDetectedMeta,
   type PostType,
 } from "@/components/publish/PublishMetadataForm";
+import { validateBountyForPublish } from "@/lib/bounty/validateBountyForPublish";
+import { toast as sonnerToast } from "sonner";
 
 const buildPayload = (
   values: PublishFormValues,
@@ -229,6 +231,23 @@ export default function PublishMetadata() {
       try {
         const slug = values.slug.trim().toLowerCase();
         const pt = postTypeRef.current;
+
+        // Bounty pre-flight: flush the latest values so the server-side row
+        // matches the form, then mirror the validate_bounty_publish trigger
+        // client-side. Surfaces every error as its own toast so the author
+        // can see the full list at once.
+        if (pt === "bounty") {
+          await writeNow(values);
+          const result = await validateBountyForPublish(contentItemId);
+          if (!result.isValid) {
+            for (const msg of result.errors) {
+              sonnerToast.error(msg);
+            }
+            setIsPublishing(false);
+            return;
+          }
+        }
+
         const updatePayload: Record<string, any> = {
           ...buildPayload(values, pt),
           slug,
@@ -263,7 +282,7 @@ export default function PublishMetadata() {
         setIsPublishing(false);
       }
     },
-    [contentItemId, isUpdateMode, navigate, toast],
+    [contentItemId, isUpdateMode, navigate, toast, writeNow],
   );
 
   /* ── Discard ── */
