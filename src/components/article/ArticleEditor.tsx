@@ -98,13 +98,15 @@ export function ArticleEditor({
   // Bounty publish gate: count missing stages + blocks live from the store.
   const stagesMap = useDocumentStore((s) => s.stages);
   const blocksMap = useDocumentStore((s) => s.blocks);
-  const missingItemCount = useMemo(() => {
-    if (!isBounty) return 0;
-    let n = 0;
-    for (const s of Object.values(stagesMap)) if (s.is_missing) n += 1;
-    for (const b of Object.values(blocksMap)) if (b.is_missing) n += 1;
-    return n;
+  const missingBreakdown = useMemo(() => {
+    if (!isBounty) return { stages: 0, blocks: 0, total: 0 };
+    let stagesN = 0;
+    let blocksN = 0;
+    for (const s of Object.values(stagesMap)) if (s.is_missing) stagesN += 1;
+    for (const b of Object.values(blocksMap)) if (b.is_missing) blocksN += 1;
+    return { stages: stagesN, blocks: blocksN, total: stagesN + blocksN };
   }, [isBounty, stagesMap, blocksMap]);
+  const missingItemCount = missingBreakdown.total;
   const bountyPublishBlocked = isBounty && missingItemCount === 0;
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [draftNameInput, setDraftNameInput] = useState('');
@@ -349,6 +351,29 @@ export function ArticleEditor({
   useEffect(() => {
     setEditorMode(mode);
   }, [mode, setEditorMode]);
+
+  // Cmd/Ctrl + Shift + M — toggle missing on the currently-selected stage or
+  // block. Bounty mode only. Toast feedback comes from toggleStage/BlockMissing.
+  useEffect(() => {
+    if (!isBounty) return;
+    const handler = (e: KeyboardEvent) => {
+      const isCombo = (e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'm' || e.key === 'M');
+      if (!isCombo) return;
+      const sel = useDocumentStore.getState().selection;
+      const id = sel.ids[0];
+      if (!id) return;
+      if (sel.kind === 'stage') {
+        e.preventDefault();
+        // Lazy import avoids a top-level cycle with bountyMissing.
+        import('@/lib/bountyMissing').then((m) => m.toggleStageMissing(id));
+      } else if (sel.kind === 'block') {
+        e.preventDefault();
+        import('@/lib/bountyMissing').then((m) => m.toggleBlockMissing(id));
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isBounty]);
 
   useEffect(() => {
     if (editor) {
@@ -1021,6 +1046,34 @@ export function ArticleEditor({
           }}>
             Mark stages or blocks as &lsquo;missing&rsquo; to ask for help. Solvers reply once you publish.
           </span>
+          {missingItemCount > 0 ? (
+            <span
+              title="Items currently marked as missing"
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 11,
+                fontWeight: 500,
+                color: '#F59E0B',
+                background: 'rgba(245,158,11,0.08)',
+                padding: '2px 8px',
+                borderRadius: 100,
+              }}
+            >
+              {missingBreakdown.stages} {missingBreakdown.stages === 1 ? 'stage' : 'stages'} · {missingBreakdown.blocks} {missingBreakdown.blocks === 1 ? 'block' : 'blocks'} marked as missing
+            </span>
+          ) : (
+            <span
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 11,
+                fontWeight: 500,
+                color: 'rgba(255,255,255,0.45)',
+                padding: '2px 8px',
+              }}
+            >
+              0 missing items — mark at least one to publish
+            </span>
+          )}
           <button
             type="button"
             title="Bounty docs coming soon"
@@ -1060,15 +1113,43 @@ export function ArticleEditor({
       />
 
       <TableContextMenu editor={editor}>
-        <EditorContent
-          editor={editor}
-          className="tiptap-article"
-          style={{
-            width: '100%',
-            maxWidth: isBlog ? 760 : 720,
-            margin: '0 auto',
-          }}
-        />
+        <div style={{ position: 'relative' }}>
+          <EditorContent
+            editor={editor}
+            className="tiptap-article"
+            style={{
+              width: '100%',
+              maxWidth: isBlog ? 760 : 720,
+              margin: '0 auto',
+            }}
+          />
+          {isBounty &&
+          editor?.isEmpty &&
+          Object.keys(stagesMap).length === 0 &&
+          missingItemCount === 0 ? (
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                top: 80,
+                margin: '0 auto',
+                maxWidth: 520,
+                pointerEvents: 'none',
+                textAlign: 'center',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 13,
+                fontWeight: 400,
+                color: 'rgba(255,255,255,0.40)',
+                lineHeight: 1.5,
+                padding: '0 24px',
+              }}
+            >
+              Bounties usually start with 1–3 stages where you outline what you have, then mark the gaps. Try inserting a stage with <code style={{ fontFamily: 'inherit', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, color: 'rgba(255,255,255,0.65)' }}>/</code>.
+            </div>
+          ) : null}
+        </div>
       </TableContextMenu>
 
       {/* Bubble toolbar over text selection */}

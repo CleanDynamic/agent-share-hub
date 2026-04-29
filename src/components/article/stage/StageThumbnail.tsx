@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { Maximize2 } from 'lucide-react';
+import { BountyMoreMenu } from '@/components/bounty/BountyMoreMenu';
+import { MissingStageBadge } from '@/components/bounty/MissingStageBadge';
 
 export type ThumbnailBlockType =
   | 'prompt'
@@ -45,6 +47,11 @@ interface StageThumbnailProps {
   connections?: ThumbnailConnection[];
   onOpen?: () => void;
   onRename?: (name: string) => void;
+  /** Bounty mode UI affordances. Adds the ⋯ more-menu and missing badge swap. */
+  isBounty?: boolean;
+  isMissing?: boolean;
+  missingDescription?: string | null;
+  onToggleMissing?: () => void;
 }
 
 // Block-type colour palette (full hex; opacity applied at render time)
@@ -105,6 +112,10 @@ export function StageThumbnail({
   connections = [],
   onOpen,
   onRename,
+  isBounty = false,
+  isMissing = false,
+  missingDescription = null,
+  onToggleMissing,
 }: StageThumbnailProps) {
   const [hovered, setHovered] = React.useState(false);
   const [isEditing, setIsEditing] = React.useState(false);
@@ -197,8 +208,8 @@ export function StageThumbnail({
             width: 20,
             height: 20,
             borderRadius: '50%',
-            background: 'rgba(232,87,26,0.14)',
-            color: '#E8571A',
+            background: isBounty && isMissing ? 'rgba(245,158,11,0.18)' : 'rgba(232,87,26,0.14)',
+            color: isBounty && isMissing ? '#F59E0B' : '#E8571A',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -314,107 +325,127 @@ export function StageThumbnail({
         >
           <Maximize2 size={14} strokeWidth={1.8} />
         </button>
+
+        {/* Bounty more-menu (⋯) */}
+        {isBounty && onToggleMissing ? (
+          <div data-stop-open="true" style={{ flexShrink: 0 }}>
+            <BountyMoreMenu
+              isMissing={isMissing}
+              onToggleMissing={onToggleMissing}
+              triggerTitle={isMissing ? 'Stage marked as missing' : 'Stage actions'}
+            />
+          </div>
+        ) : null}
       </div>
 
-      {/* SPATIAL PREVIEW (mini-map) */}
-      {blockCount > 0 ? (
-        <SpatialPreview blocks={blocks} connections={connections} />
-      ) : null}
+      {/* Body — when bounty + missing, replace preview/strip/list with MissingStageBadge */}
+      {isBounty && isMissing ? (
+        <div style={{ padding: 12, borderTop: '0.5px solid rgba(245,158,11,0.18)' }}>
+          <MissingStageBadge description={missingDescription} />
+        </div>
+      ) : (
+        <>
+          {/* SPATIAL PREVIEW (mini-map) */}
+          {blockCount > 0 ? (
+            <SpatialPreview blocks={blocks} connections={connections} />
+          ) : null}
 
-      {/* COLOUR STRIP */}
-      <div
-        style={{
-          position: 'relative',
-          height: 28,
-          padding: '4px 12px',
-          borderTop: '0.5px solid rgba(255,255,255,0.06)',
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
-        {blockCount === 0 ? (
-          <span
+          {/* COLOUR STRIP */}
+          <div
             style={{
-              fontFamily: 'Inter, sans-serif',
-              fontSize: 11,
-              fontWeight: 400,
-              color: 'rgba(255,255,255,0.30)',
+              position: 'relative',
+              height: 28,
+              padding: '4px 12px',
+              borderTop: '0.5px solid rgba(255,255,255,0.06)',
+              display: 'flex',
+              alignItems: 'center',
             }}
           >
-            Empty stage
-          </span>
-        ) : (
-          <>
+            {blockCount === 0 ? (
+              <span
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: 11,
+                  fontWeight: 400,
+                  color: 'rgba(255,255,255,0.30)',
+                }}
+              >
+                Empty stage
+              </span>
+            ) : (
+              <>
+                <div
+                  ref={stripRef}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    width: '100%',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none' as any,
+                  }}
+                >
+                  {blocks.map((b) => {
+                    const c = colorForType(b.type);
+                    return (
+                      <div
+                        key={b.id}
+                        title={b.name || placeholderForType(b.type)}
+                        style={{
+                          flexShrink: 0,
+                          width: 18,
+                          height: 16,
+                          borderRadius: 4,
+                          background: withAlpha(c, 0.22),
+                          border: `0.5px solid ${withAlpha(c, 0.35)}`,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                {stripScrollable ? (
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      pointerEvents: 'none',
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      right: 0,
+                      width: 32,
+                      background:
+                        'linear-gradient(to left, rgba(15,15,20,0.85), rgba(15,15,20,0))',
+                    }}
+                  />
+                ) : null}
+              </>
+            )}
+          </div>
+
+          {/* BLOCK LIST (omitted when empty) */}
+          {blockCount > 0 ? (
             <div
-              ref={stripRef}
               style={{
+                padding: '8px 12px',
+                borderTop: '0.5px solid rgba(255,255,255,0.06)',
                 display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                overflowX: 'auto',
-                overflowY: 'hidden',
-                width: '100%',
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none' as any,
+                flexWrap: 'wrap',
+                gap: '4px 6px',
               }}
             >
               {blocks.map((b) => {
                 const c = colorForType(b.type);
+                const label = b.name || placeholderForType(b.type);
                 return (
-                  <div
-                    key={b.id}
-                    title={b.name || placeholderForType(b.type)}
-                    style={{
-                      flexShrink: 0,
-                      width: 18,
-                      height: 16,
-                      borderRadius: 4,
-                      background: withAlpha(c, 0.22),
-                      border: `0.5px solid ${withAlpha(c, 0.35)}`,
-                    }}
-                  />
+                  <BlockLabelPill key={b.id} dotColor={c} label={label} />
                 );
               })}
             </div>
-            {stripScrollable ? (
-              <div
-                aria-hidden="true"
-                style={{
-                  pointerEvents: 'none',
-                  position: 'absolute',
-                  top: 0,
-                  bottom: 0,
-                  right: 0,
-                  width: 32,
-                  background:
-                    'linear-gradient(to left, rgba(15,15,20,0.85), rgba(15,15,20,0))',
-                }}
-              />
-            ) : null}
-          </>
-        )}
-      </div>
-
-      {/* BLOCK LIST (omitted when empty) */}
-      {blockCount > 0 ? (
-        <div
-          style={{
-            padding: '8px 12px',
-            borderTop: '0.5px solid rgba(255,255,255,0.06)',
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '4px 6px',
-          }}
-        >
-          {blocks.map((b) => {
-            const c = colorForType(b.type);
-            const label = b.name || placeholderForType(b.type);
-            return (
-              <BlockLabelPill key={b.id} dotColor={c} label={label} />
-            );
-          })}
-        </div>
-      ) : null}
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

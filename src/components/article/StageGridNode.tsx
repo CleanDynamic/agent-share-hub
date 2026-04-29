@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StageThumbnail, type ThumbnailBlock } from './stage/StageThumbnail';
 import { TemplatePicker } from './stage/TemplatePicker';
 import { useDocumentStore } from '@/lib/documentStore';
+import { toggleStageMissing } from '@/lib/bountyMissing';
 
 interface StageGridNodeProps {
   node: any;
@@ -25,6 +26,8 @@ export function StageGridNode({ node, updateAttributes, editor }: StageGridNodeP
   const connectionsMap = useDocumentStore((s) => s.connections);
   const updateStage = useDocumentStore((s) => s.updateStage);
   const openStageAction = useDocumentStore((s) => s.openStage);
+  const editorMode = useDocumentStore((s) => s.editorMode);
+  const isBounty = editorMode === 'bounty';
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerWithEmpty, setPickerWithEmpty] = useState(false);
@@ -124,6 +127,14 @@ export function StageGridNode({ node, updateAttributes, editor }: StageGridNodeP
           connections={stageConnections}
           onOpen={handleOpen}
           onRename={editor?.isEditable ? handleRename : undefined}
+          isBounty={isBounty}
+          isMissing={Boolean(stageRecord?.is_missing)}
+          missingDescription={stageRecord?.missing_description ?? null}
+          onToggleMissing={
+            isBounty && stageId && editor?.isEditable
+              ? () => { toggleStageMissing(stageId); }
+              : undefined
+          }
         />
       </div>
       {stageId ? (

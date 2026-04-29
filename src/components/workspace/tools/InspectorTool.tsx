@@ -6,6 +6,7 @@ import { useDocumentStore } from '@/lib/documentStore';
 
 import { InspectorDocument } from './InspectorDocument';
 import { ArrowInspector } from './ArrowInspector';
+import { BountyInspector } from './BountyInspector';
 import { EmptyPanelState } from './toolPanelStyles';
 
 type Visibility = 'public' | 'private' | 'unlisted';
@@ -149,14 +150,26 @@ function DocumentInspectorContainer() {
 
 export function InspectorTool() {
   const { selection } = useSelection();
+  const editorMode = useDocumentStore((s) => s.editorMode);
+  const isBounty = editorMode === 'bounty';
 
   switch (selection.kind) {
     case 'none':
       return <DocumentInspectorContainer />;
-    case 'block':
+    case 'block': {
+      const blockId = selection.ids[0];
+      if (isBounty && blockId) {
+        return <BountyInspector kind="block" id={blockId} />;
+      }
       return <PlaceholderInspector label="Block inspector coming in Step 2" />;
-    case 'stage':
+    }
+    case 'stage': {
+      const stageId = selection.ids[0];
+      if (isBounty && stageId) {
+        return <BountyInspector kind="stage" id={stageId} />;
+      }
       return <PlaceholderInspector label="Stage inspector coming in Step 3" />;
+    }
     case 'arrow': {
       const arrowId = selection.ids[0];
       if (!arrowId) {
