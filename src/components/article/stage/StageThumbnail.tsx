@@ -112,6 +112,10 @@ export function StageThumbnail({
   connections = [],
   onOpen,
   onRename,
+  isBounty = false,
+  isMissing = false,
+  missingDescription = null,
+  onToggleMissing,
 }: StageThumbnailProps) {
   const [hovered, setHovered] = React.useState(false);
   const [isEditing, setIsEditing] = React.useState(false);
