@@ -25,6 +25,7 @@ import {
   type PostType,
 } from "@/components/publish/PublishMetadataForm";
 import { validateBountyForPublish } from "@/lib/bounty/validateBountyForPublish";
+import { recomputeDerivedBio } from "@/lib/profile/recomputeDerivedBio";
 import { toast as sonnerToast } from "sonner";
 
 const buildPayload = (
@@ -264,6 +265,11 @@ export default function PublishMetadata() {
           .eq("id", contentItemId);
         if (updateErr) throw updateErr;
 
+        // Refresh the author's derived bio in the background. Non-blocking.
+        if (profile?.id) {
+          void recomputeDerivedBio(profile.id);
+        }
+
         lastSavedRef.current = JSON.stringify(buildPayload(values, pt));
         suppressUnloadRef.current = true;
         const t = getPostTypeTheme(pt);
@@ -282,7 +288,7 @@ export default function PublishMetadata() {
         setIsPublishing(false);
       }
     },
-    [contentItemId, isUpdateMode, navigate, toast, writeNow],
+    [contentItemId, isUpdateMode, navigate, toast, writeNow, profile?.id],
   );
 
   /* ── Discard ── */

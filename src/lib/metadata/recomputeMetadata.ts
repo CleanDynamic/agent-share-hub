@@ -3,6 +3,7 @@ import { extractBlockTypes } from "./extractBlockTypes";
 import { extractModels, extractTools } from "./extractModelsAndTools";
 import { extractStats, type ContentStats } from "./extractStats";
 import { countMissingInStageGrids } from "@/lib/bounty/countMissing";
+import { recomputeDerivedBio } from "@/lib/profile/recomputeDerivedBio";
 
 /**
  * Run any async extractor with a label. If it throws, log + return `fallback`
@@ -47,7 +48,7 @@ export async function recomputeMetadata(contentItemId: string): Promise<void> {
   // 1. Resolve post_type so we know which extractors to run.
   const { data: row, error: fetchErr } = await supabase
     .from("content_items")
-    .select("id, post_type, stage_grids")
+    .select("id, post_type, stage_grids, creator_id")
     .eq("id", contentItemId)
     .maybeSingle();
 
@@ -113,5 +114,11 @@ export async function recomputeMetadata(contentItemId: string): Promise<void> {
       `[recomputeMetadata] update failed for ${contentItemId}:`,
       updateErr
     );
+  }
+
+  // Refresh the author's derived bio in the background. Non-blocking.
+  const creatorId = (row as { creator_id?: string }).creator_id;
+  if (creatorId) {
+    void recomputeDerivedBio(creatorId);
   }
 }
