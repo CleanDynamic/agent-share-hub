@@ -12,8 +12,14 @@ import {
   AuthorStatsPanel,
   AuthorStatsPanelSkeleton,
 } from "@/components/profile/AuthorStatsPanel";
+import {
+  MostReferencedPrimitives,
+  type PrimitiveCardData,
+} from "@/components/profile/MostReferencedPrimitives";
 import { getProfileSummary } from "@/lib/profile/getProfileSummary";
 import { getAuthorStats } from "@/lib/profile/getAuthorStats";
+import { getMostReferenced } from "@/lib/profile/getMostReferenced";
+import type { Primitive } from "@/lib/profile/types";
 
 const BUCKET = "profile-assets";
 
@@ -78,6 +84,44 @@ export default function Profile() {
     enabled: !!summary?.id,
     queryFn: () => getAuthorStats(summary!.id),
   });
+
+  // Most-referenced primitives strip.
+  const { data: mostReferenced } = useQuery({
+    queryKey: ["most-referenced", summary?.id ?? null],
+    enabled: !!summary?.id,
+    queryFn: () => getMostReferenced(summary!.id, 8),
+  });
+
+  const referencedCards = useMemo<PrimitiveCardData[]>(() => {
+    return (mostReferenced ?? []).map((p: Primitive) => ({
+      id: p.blockId,
+      type: "block",
+      blockType: p.blockType,
+      name: p.parent?.title ?? "",
+      contentPreview: p.preview,
+      referenceCount: p.referenceCount,
+      parent: {
+        blueprintId: p.parent?.contentId ?? "",
+        blueprintTitle: p.parent?.title ?? "Untitled",
+        slug: p.parent?.slug ?? "",
+      },
+    }));
+  }, [mostReferenced]);
+
+  const handlePrimitiveClick = useCallback(
+    (primitive: PrimitiveCardData) => {
+      if (primitive.parent.slug) {
+        navigate(`/p/${primitive.parent.slug}#block-${primitive.id}`);
+      } else if (primitive.parent.blueprintId) {
+        navigate(`/p/${primitive.parent.blueprintId}#block-${primitive.id}`);
+      }
+    },
+    [navigate]
+  );
+
+  const handleViewAllReferenced = useCallback(() => {
+    toast({ title: "Full list coming soon" });
+  }, [toast]);
 
   // ── Follow / Unfollow ──────────────────────────────────────────────────
   const handleFollow = useCallback(async () => {
