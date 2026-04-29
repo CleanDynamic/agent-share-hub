@@ -1,9 +1,23 @@
 import * as React from "react";
-import { Heart, MessageSquare, Repeat2, ChevronDown, Loader2 } from "lucide-react";
+import {
+  Heart,
+  MessageSquare,
+  Repeat2,
+  ChevronDown,
+  Loader2,
+  MoreHorizontal,
+  Bookmark,
+  Share2,
+  Pencil,
+  EyeOff,
+  Trash2,
+  Plus,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ZoneItem } from "@/lib/profile/types";
@@ -32,6 +46,16 @@ export interface ProfileContentZonesProps {
   onLoadMore?: () => void;
   onItemClick: (item: ZoneItem) => void;
   isOwnProfile: boolean;
+  // Affordances
+  onMakeCollection?: () => void;
+  onCreateBlueprint?: () => void;
+  // Item-level menu actions
+  onEditItem?: (item: ZoneItem) => void;
+  onUnpublishItem?: (item: ZoneItem) => void;
+  onDeleteItem?: (item: ZoneItem) => void;
+  onBookmarkItem?: (item: ZoneItem) => void;
+  onRepostItem?: (item: ZoneItem) => void;
+  onShareItem?: (item: ZoneItem) => void;
 }
 
 const ZONE_FILTERS: Record<Zone, { label: string; value: string }[]> = {
