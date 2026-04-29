@@ -979,6 +979,14 @@ export function ArticleEditor({
             background: 'rgba(46,196,182,0.14)', color: '#2EC4B6',
             padding: '3px 10px', borderRadius: 100,
           }}>BLOG</span>
+        ) : isBounty ? (
+          <span style={{
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 11, fontWeight: 600,
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+            background: 'rgba(245,158,11,0.14)', color: '#F59E0B',
+            padding: '3px 10px', borderRadius: 100,
+          }}>BOUNTY</span>
         ) : (
           <span style={{
             fontFamily: 'Inter, sans-serif',
@@ -989,6 +997,52 @@ export function ArticleEditor({
           }}>BLUEPRINT</span>
         )}
       </div>
+
+      {/* Bounty hint banner (only in bounty mode) */}
+      {isBounty ? (
+        <div
+          style={{
+            height: 32,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '0 4px',
+            borderBottom: '0.5px solid rgba(255,255,255,0.06)',
+            marginBottom: 8,
+          }}
+        >
+          <Target size={14} color="#F59E0B" strokeWidth={1.8} />
+          <span style={{
+            flex: 1,
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 12,
+            fontWeight: 400,
+            color: 'rgba(255,255,255,0.55)',
+          }}>
+            Mark stages or blocks as &lsquo;missing&rsquo; to ask for help. Solvers reply once you publish.
+          </span>
+          <button
+            type="button"
+            title="Bounty docs coming soon"
+            onClick={(e) => {
+              e.preventDefault();
+              toast('Bounty docs coming soon');
+            }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: 11,
+              fontWeight: 500,
+              color: 'rgba(245,158,11,0.85)',
+            }}
+          >
+            Learn more about bounties →
+          </button>
+        </div>
+      ) : null}
 
       <TopToolbar
         editor={editor}
