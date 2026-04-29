@@ -311,6 +311,12 @@ export default function Profile() {
           <AuthorStatsPanel stats={authorStats} />
         )}
 
+        <MostReferencedPrimitives
+          primitives={referencedCards}
+          onPrimitiveClick={handlePrimitiveClick}
+          onViewAllClick={handleViewAllReferenced}
+        />
+
         {/* Profile zones (authored / curated / activity / network) land here in 6.6. */}
         <div className="mt-8" id="profile-zones" />
       </div>
