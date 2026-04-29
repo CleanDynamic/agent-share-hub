@@ -265,6 +265,11 @@ export default function PublishMetadata() {
           .eq("id", contentItemId);
         if (updateErr) throw updateErr;
 
+        // Refresh the author's derived bio in the background. Non-blocking.
+        if (profile?.id) {
+          void recomputeDerivedBio(profile.id);
+        }
+
         lastSavedRef.current = JSON.stringify(buildPayload(values, pt));
         suppressUnloadRef.current = true;
         const t = getPostTypeTheme(pt);
