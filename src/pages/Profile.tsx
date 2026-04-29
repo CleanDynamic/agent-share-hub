@@ -20,6 +20,9 @@ import {
   ProfileContentZones,
   type Zone,
 } from "@/components/profile/ProfileContentZones";
+import { MatchBanner } from "@/components/profile/MatchBanner";
+import { ProfileWelcomeCoachmark } from "@/components/profile/ProfileWelcomeCoachmark";
+import { MakeCollectionDialog } from "@/components/profile/MakeCollectionDialog";
 import { getProfileSummary } from "@/lib/profile/getProfileSummary";
 import { getAuthorStats } from "@/lib/profile/getAuthorStats";
 import { getMostReferenced } from "@/lib/profile/getMostReferenced";
@@ -55,6 +58,7 @@ export default function Profile() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [makeCollectionOpen, setMakeCollectionOpen] = useState(false);
   const avatarFileRef = useRef<HTMLInputElement | null>(null);
   const coverFileRef = useRef<HTMLInputElement | null>(null);
 
