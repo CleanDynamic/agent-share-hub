@@ -115,4 +115,10 @@ export async function recomputeMetadata(contentItemId: string): Promise<void> {
       updateErr
     );
   }
+
+  // Refresh the author's derived bio in the background. Non-blocking.
+  const creatorId = (row as { creator_id?: string }).creator_id;
+  if (creatorId) {
+    void recomputeDerivedBio(creatorId);
+  }
 }
