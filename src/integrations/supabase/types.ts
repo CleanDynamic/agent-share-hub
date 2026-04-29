@@ -2277,6 +2277,7 @@ export type Database = {
           is_admin: boolean
           is_creator: boolean
           is_curator: boolean | null
+          is_private: boolean
           is_verified: boolean
           joined_at: string
           last_derived_at: string | null
@@ -2306,6 +2307,7 @@ export type Database = {
           is_admin?: boolean
           is_creator?: boolean
           is_curator?: boolean | null
+          is_private?: boolean
           is_verified?: boolean
           joined_at?: string
           last_derived_at?: string | null
@@ -2335,6 +2337,7 @@ export type Database = {
           is_admin?: boolean
           is_creator?: boolean
           is_curator?: boolean | null
+          is_private?: boolean
           is_verified?: boolean
           joined_at?: string
           last_derived_at?: string | null
