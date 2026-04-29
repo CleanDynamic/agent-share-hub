@@ -93,6 +93,26 @@ export function ArticleEditor({
   mode = 'blueprint',
 }: ArticleEditorProps) {
   const isBlog = mode === 'blog';
+  const isBounty = mode === 'bounty';
+
+  // Sync the chosen mode into the document store so child components
+  // (StageGridNode, inspectors, etc.) can react to it without prop drilling.
+  const setEditorMode = useDocumentStore((s) => s.setEditorMode);
+  useEffect(() => {
+    setEditorMode(mode);
+  }, [mode, setEditorMode]);
+
+  // Bounty publish gate: count missing stages + blocks live from the store.
+  const stagesMap = useDocumentStore((s) => s.stages);
+  const blocksMap = useDocumentStore((s) => s.blocks);
+  const missingItemCount = useMemo(() => {
+    if (!isBounty) return 0;
+    let n = 0;
+    for (const s of Object.values(stagesMap)) if (s.is_missing) n += 1;
+    for (const b of Object.values(blocksMap)) if (b.is_missing) n += 1;
+    return n;
+  }, [isBounty, stagesMap, blocksMap]);
+  const bountyPublishBlocked = isBounty && missingItemCount === 0;
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [draftNameInput, setDraftNameInput] = useState('');
   const [slashOpen, setSlashOpen] = useState(false);
