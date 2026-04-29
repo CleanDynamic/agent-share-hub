@@ -95,13 +95,6 @@ export function ArticleEditor({
   const isBlog = mode === 'blog';
   const isBounty = mode === 'bounty';
 
-  // Sync the chosen mode into the document store so child components
-  // (StageGridNode, inspectors, etc.) can react to it without prop drilling.
-  const setEditorMode = useDocumentStore((s) => s.setEditorMode);
-  useEffect(() => {
-    setEditorMode(mode);
-  }, [mode, setEditorMode]);
-
   // Bounty publish gate: count missing stages + blocks live from the store.
   const stagesMap = useDocumentStore((s) => s.stages);
   const blocksMap = useDocumentStore((s) => s.blocks);
