@@ -207,6 +207,7 @@ export default function Profile() {
         description={
           summary.customBio ?? summary.derivedBio ?? `Profile of ${summary.displayName}`
         }
+        path={handle ? `/profile/${handle}` : "/profile"}
       />
       <div className="w-full max-w-[880px] mx-auto px-4 py-6">
         <ProfileHeader
