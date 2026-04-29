@@ -122,8 +122,82 @@ function clearHover(e: React.MouseEvent<HTMLDivElement>, lift = false) {
   if (lift) e.currentTarget.style.transform = "translateY(0)";
 }
 
+// Per-item overflow menu, anchored top-right of a card.
+interface ItemMenuOption {
+  key: string;
+  label: string;
+  icon?: React.ReactNode;
+  destructive?: boolean;
+  onSelect: () => void;
+}
+
+function ItemOverflowMenu({ options }: { options: ItemMenuOption[] }) {
+  if (options.length === 0) return null;
+  return (
+    <div
+      style={{ position: "absolute", top: 8, right: 8 }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="More actions"
+            className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 4,
+              background: "rgba(0,0,0,0.45)",
+              border: "0.5px solid rgba(255,255,255,0.10)",
+              color: "rgba(255,255,255,0.75)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+            }}
+          >
+            <MoreHorizontal size={12} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-[160px]">
+          {options.map((opt, i) => {
+            const isLastDestructive =
+              opt.destructive && i > 0 && !options[i - 1].destructive;
+            return (
+              <React.Fragment key={opt.key}>
+                {isLastDestructive && <DropdownMenuSeparator />}
+                <DropdownMenuItem
+                  onClick={opt.onSelect}
+                  style={{
+                    fontSize: "12px",
+                    color: opt.destructive
+                      ? "hsl(var(--destructive))"
+                      : undefined,
+                  }}
+                >
+                  {opt.icon}
+                  {opt.label}
+                </DropdownMenuItem>
+              </React.Fragment>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
 // ── Card variants ─────────────────────────────────────────────────────────
-function AuthoredCard({ item, onClick }: { item: ZoneItem; onClick: () => void }) {
+function AuthoredCard({
+  item,
+  onClick,
+  menuOptions,
+}: {
+  item: ZoneItem;
+  onClick: () => void;
+  menuOptions: ItemMenuOption[];
+}) {
   const views = (item.meta?.views as number | undefined) ?? undefined;
   return (
     <div
