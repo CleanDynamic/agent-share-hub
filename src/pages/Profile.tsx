@@ -593,6 +593,15 @@ export default function Profile() {
           onSaved={refresh}
         />
       )}
+
+      {summary.isOwnProfile && user?.id && (
+        <MakeCollectionDialog
+          open={makeCollectionOpen}
+          onOpenChange={setMakeCollectionOpen}
+          ownerId={user.id}
+          onCreated={() => refetchZone()}
+        />
+      )}
     </>
   );
 }
