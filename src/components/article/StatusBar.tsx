@@ -47,7 +47,7 @@ interface StatusBarProps {
   onMoreNotes?: () => void;
   onMoreClearAll?: () => void;
   /** 'blueprint' (default) or 'blog' — blog hides the zoom control. */
-  mode?: 'blueprint' | 'blog';
+  mode?: 'blueprint' | 'blog' | 'bounty';
 }
 
 const itemButtonStyle = {
