@@ -44,6 +44,22 @@ const buildPayload = (
     payload.prerequisites = values.prerequisites || null;
     payload.outcome = values.outcome || null;
   }
+  if (postType === "bounty") {
+    payload.bounty_reward_type = values.bountyRewardType || null;
+    payload.bounty_reward_amount =
+      values.bountyRewardType === "cash" || values.bountyRewardType === "token"
+        ? values.bountyRewardAmount
+        : null;
+    payload.bounty_reward_currency =
+      values.bountyRewardType === "cash" || values.bountyRewardType === "token"
+        ? values.bountyRewardCurrency || null
+        : null;
+    payload.bounty_deadline = values.bountyDeadline
+      ? values.bountyDeadline.toISOString()
+      : null;
+    payload.bounty_acceptance_criteria =
+      values.bountyAcceptanceCriteria.trim() || null;
+  }
   return payload;
 };
 
