@@ -25,6 +25,7 @@ import {
   type PostType,
 } from "@/components/publish/PublishMetadataForm";
 import { validateBountyForPublish } from "@/lib/bounty/validateBountyForPublish";
+import { recomputeDerivedBio } from "@/lib/profile/recomputeDerivedBio";
 import { toast as sonnerToast } from "sonner";
 
 const buildPayload = (
