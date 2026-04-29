@@ -6,6 +6,7 @@ import { useDocumentStore } from '@/lib/documentStore';
 
 import { InspectorDocument } from './InspectorDocument';
 import { ArrowInspector } from './ArrowInspector';
+import { BountyInspector } from './BountyInspector';
 import { EmptyPanelState } from './toolPanelStyles';
 
 type Visibility = 'public' | 'private' | 'unlisted';
