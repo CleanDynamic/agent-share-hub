@@ -569,6 +569,14 @@ export function ProfileContentZones({
   onLoadMore,
   onItemClick,
   isOwnProfile,
+  onMakeCollection,
+  onCreateBlueprint,
+  onEditItem,
+  onUnpublishItem,
+  onDeleteItem,
+  onBookmarkItem,
+  onRepostItem,
+  onShareItem,
 }: ProfileContentZonesProps) {
   const sentinelRef = React.useRef<HTMLDivElement | null>(null);
 
