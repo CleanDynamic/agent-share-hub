@@ -12,10 +12,16 @@ import {
   LayoutGrid,
   Box,
 } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
 import { AutoDetectedCard } from "./AutoDetectedCard";
 import { TagInput } from "./TagInput";
 import { useTagSuggestions, useSlugAvailability } from "./usePublishMetaQueries";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  BountyDetailsCard,
+  type BountyDetailsValue,
+  type RewardType,
+} from "./BountyDetailsCard";
 
 export type PostType = "blueprint" | "blog" | "bounty";
 
