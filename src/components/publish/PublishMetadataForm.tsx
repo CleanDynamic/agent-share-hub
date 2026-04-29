@@ -49,6 +49,12 @@ export interface PublishFormValues {
   slug: string;
   /** Blog-only */
   topicCategory: string;
+  /** Bounty-only */
+  bountyRewardType: RewardType;
+  bountyRewardAmount: number | null;
+  bountyRewardCurrency: string | null;
+  bountyDeadline: Date | null;
+  bountyAcceptanceCriteria: string;
 }
 
 interface PublishMetadataFormProps {
@@ -56,6 +62,9 @@ interface PublishMetadataFormProps {
   postType?: PostType;
   defaultValues?: Partial<PublishFormValues>;
   autoDetected?: AutoDetectedMeta;
+  /** Bounty-only: live counts derived from the document's stage_grids JSONB. */
+  missingStageCount?: number;
+  missingBlockCount?: number;
   authorUsername?: string;
   onPublish: (values: PublishFormValues) => void;
   onSaveDraft: () => void;
