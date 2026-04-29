@@ -120,7 +120,7 @@ export function ProfileHeader({
 
       {/* Identity Row */}
       <div className="relative px-4 sm:px-6">
-        <div className="flex items-end justify-between gap-4 -mt-12 sm:-mt-14">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4 -mt-12 sm:-mt-14">
           {/* Avatar + Name */}
           <div className="flex items-end gap-4 min-w-0">
             <div className="relative shrink-0">
