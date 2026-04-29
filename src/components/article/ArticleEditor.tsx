@@ -1023,6 +1023,34 @@ export function ArticleEditor({
           }}>
             Mark stages or blocks as &lsquo;missing&rsquo; to ask for help. Solvers reply once you publish.
           </span>
+          {missingItemCount > 0 ? (
+            <span
+              title="Items currently marked as missing"
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 11,
+                fontWeight: 500,
+                color: '#F59E0B',
+                background: 'rgba(245,158,11,0.08)',
+                padding: '2px 8px',
+                borderRadius: 100,
+              }}
+            >
+              {missingBreakdown.stages} {missingBreakdown.stages === 1 ? 'stage' : 'stages'} · {missingBreakdown.blocks} {missingBreakdown.blocks === 1 ? 'block' : 'blocks'} marked as missing
+            </span>
+          ) : (
+            <span
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 11,
+                fontWeight: 500,
+                color: 'rgba(255,255,255,0.45)',
+                padding: '2px 8px',
+              }}
+            >
+              0 missing items — mark at least one to publish
+            </span>
+          )}
           <button
             type="button"
             title="Bounty docs coming soon"
