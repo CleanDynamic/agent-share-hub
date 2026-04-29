@@ -282,7 +282,7 @@ export default function PublishMetadata() {
         setIsPublishing(false);
       }
     },
-    [contentItemId, isUpdateMode, navigate, toast],
+    [contentItemId, isUpdateMode, navigate, toast, writeNow],
   );
 
   /* ── Discard ── */
