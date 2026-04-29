@@ -435,8 +435,25 @@ export default function Profile() {
           onViewAllClick={handleViewAllReferenced}
         />
 
-        {/* Profile zones (authored / curated / activity / network) land here in 6.6. */}
-        <div className="mt-8" id="profile-zones" />
+        {/* Profile zones (authored / curated / activity / network). */}
+        <div id="profile-zones">
+          <ProfileContentZones
+            activeZone={activeZone}
+            onZoneChange={handleZoneChange}
+            activeFilter={activeFilter}
+            onFilterChange={handleFilterChange}
+            sort={sort}
+            onSortChange={handleSortChange}
+            counts={zoneCounts}
+            items={visibleZoneItems}
+            isLoading={zoneQuery.isLoading}
+            isLoadingMore={zoneQuery.isFetchingNextPage}
+            hasMore={!!zoneQuery.hasNextPage}
+            onLoadMore={() => zoneQuery.fetchNextPage()}
+            onItemClick={handleZoneItemClick}
+            isOwnProfile={summary.isOwnProfile}
+          />
+        </div>
       </div>
 
       {summary.isOwnProfile && user?.id && (
