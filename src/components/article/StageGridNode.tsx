@@ -26,6 +26,8 @@ export function StageGridNode({ node, updateAttributes, editor }: StageGridNodeP
   const connectionsMap = useDocumentStore((s) => s.connections);
   const updateStage = useDocumentStore((s) => s.updateStage);
   const openStageAction = useDocumentStore((s) => s.openStage);
+  const editorMode = useDocumentStore((s) => s.editorMode);
+  const isBounty = editorMode === 'bounty';
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerWithEmpty, setPickerWithEmpty] = useState(false);
