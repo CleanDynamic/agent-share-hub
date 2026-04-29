@@ -633,7 +633,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         use_instructions: values.use_instructions || null,
         what_to_expect: values.what_to_expect || null,
         what_to_expect_blocks: wteBlocksJsonb,
-        post_type: mode === 'blog' ? 'blog' : 'blueprint',
+        post_type: mode === 'blog' ? 'blog' : mode === 'bounty' ? 'bounty' : 'blueprint',
         other_tool_name: isOtherSelected && otherToolName.trim() ? otherToolName.trim() : null,
         custom_use_case_description: customUseCaseDesc.trim() || null,
         tool_url: toolUrl.trim() || null,
