@@ -44,6 +44,22 @@ const buildPayload = (
     payload.prerequisites = values.prerequisites || null;
     payload.outcome = values.outcome || null;
   }
+  if (postType === "bounty") {
+    payload.bounty_reward_type = values.bountyRewardType || null;
+    payload.bounty_reward_amount =
+      values.bountyRewardType === "cash" || values.bountyRewardType === "token"
+        ? values.bountyRewardAmount
+        : null;
+    payload.bounty_reward_currency =
+      values.bountyRewardType === "cash" || values.bountyRewardType === "token"
+        ? values.bountyRewardCurrency || null
+        : null;
+    payload.bounty_deadline = values.bountyDeadline
+      ? values.bountyDeadline.toISOString()
+      : null;
+    payload.bounty_acceptance_criteria =
+      values.bountyAcceptanceCriteria.trim() || null;
+  }
   return payload;
 };
 
@@ -155,6 +171,11 @@ export default function PublishMetadata() {
       visibility: data.visibility || "public",
       slug: data.slug || "",
       topicCategory: data.blog_topic_category || "",
+      bountyRewardType: (data.bounty_reward_type as any) || "none",
+      bountyRewardAmount: data.bounty_reward_amount ?? null,
+      bountyRewardCurrency: data.bounty_reward_currency ?? null,
+      bountyDeadline: data.bounty_deadline ? new Date(data.bounty_deadline) : null,
+      bountyAcceptanceCriteria: data.bounty_acceptance_criteria || "",
     };
     lastSavedRef.current = JSON.stringify(buildPayload(serverValues, (data.post_type as PostType) ?? "blueprint"));
   }, [data]);

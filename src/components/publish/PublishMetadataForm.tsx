@@ -12,10 +12,16 @@ import {
   LayoutGrid,
   Box,
 } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
 import { AutoDetectedCard } from "./AutoDetectedCard";
 import { TagInput } from "./TagInput";
 import { useTagSuggestions, useSlugAvailability } from "./usePublishMetaQueries";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  BountyDetailsCard,
+  type BountyDetailsValue,
+  type RewardType,
+} from "./BountyDetailsCard";
 
 export type PostType = "blueprint" | "blog" | "bounty";
 
@@ -43,6 +49,12 @@ export interface PublishFormValues {
   slug: string;
   /** Blog-only */
   topicCategory: string;
+  /** Bounty-only */
+  bountyRewardType: RewardType;
+  bountyRewardAmount: number | null;
+  bountyRewardCurrency: string | null;
+  bountyDeadline: Date | null;
+  bountyAcceptanceCriteria: string;
 }
 
 interface PublishMetadataFormProps {
@@ -50,6 +62,9 @@ interface PublishMetadataFormProps {
   postType?: PostType;
   defaultValues?: Partial<PublishFormValues>;
   autoDetected?: AutoDetectedMeta;
+  /** Bounty-only: live counts derived from the document's stage_grids JSONB. */
+  missingStageCount?: number;
+  missingBlockCount?: number;
   authorUsername?: string;
   onPublish: (values: PublishFormValues) => void;
   onSaveDraft: () => void;
@@ -172,6 +187,11 @@ function buildInitial(d: Partial<PublishFormValues> = {}): PublishFormValues {
     visibility: d.visibility || "public",
     slug: d.slug || "",
     topicCategory: d.topicCategory || "",
+    bountyRewardType: d.bountyRewardType ?? "none",
+    bountyRewardAmount: d.bountyRewardAmount ?? null,
+    bountyRewardCurrency: d.bountyRewardCurrency ?? null,
+    bountyDeadline: d.bountyDeadline ?? null,
+    bountyAcceptanceCriteria: d.bountyAcceptanceCriteria || "",
   };
 }
 
@@ -179,8 +199,22 @@ function buildInitial(d: Partial<PublishFormValues> = {}): PublishFormValues {
 
 const SLUG_RE = /^[a-z0-9-]+$/;
 
-function validate(v: PublishFormValues) {
+export interface BountyValidationContext {
+  postType: PostType;
+  missingItemCount: number;
+}
+
+function validate(
+  v: PublishFormValues,
+  ctx: BountyValidationContext = { postType: "blueprint", missingItemCount: 0 },
+) {
   const errors: Partial<Record<keyof PublishFormValues, string>> = {};
+  const bountyErrors: Partial<
+    Record<
+      "rewardType" | "rewardAmount" | "rewardCurrency" | "acceptanceCriteria" | "missingItems",
+      string
+    >
+  > = {};
 
   const useCase = v.useCase.trim();
   if (!useCase) errors.useCase = "Required";
@@ -200,22 +234,58 @@ function validate(v: PublishFormValues) {
   else if (slug.length < 3) errors.slug = "At least 3 characters";
   else if (!SLUG_RE.test(slug)) errors.slug = "Lowercase letters, numbers, hyphens only";
 
-  // 5 logical required fields: useCase, domain, difficulty, tags, slug+visibility
+  const isBounty = ctx.postType === "bounty";
+  let bountyComplete = true;
+
+  if (isBounty) {
+    if (v.bountyRewardType === "cash" || v.bountyRewardType === "token") {
+      if (v.bountyRewardAmount === null || v.bountyRewardAmount <= 0) {
+        bountyErrors.rewardAmount = "Enter an amount greater than 0";
+      }
+      if (
+        !v.bountyRewardCurrency ||
+        v.bountyRewardCurrency.trim().length === 0
+      ) {
+        bountyErrors.rewardCurrency = "Pick a currency";
+      }
+    }
+    const criteria = v.bountyAcceptanceCriteria.trim();
+    if (criteria.length < 50) {
+      bountyErrors.acceptanceCriteria =
+        "At least 50 characters — describe what 'done' looks like";
+    }
+    if (ctx.missingItemCount === 0) {
+      bountyErrors.missingItems =
+        "Mark at least one stage or block as missing in the editor";
+    }
+
+    bountyComplete =
+      !bountyErrors.rewardAmount &&
+      !bountyErrors.rewardCurrency &&
+      !bountyErrors.acceptanceCriteria &&
+      !bountyErrors.missingItems;
+  }
+
+  // 5 logical required fields: useCase, domain, difficulty, tags, slug+visibility.
+  // Bounties add a 6th logical field (bounty section) so the progress bar reflects it.
   const completed = {
     useCase: !errors.useCase,
     domain: !errors.domain,
     difficulty: !errors.difficulty,
     tags: !errors.tags,
     slugVisibility: !errors.slug && !errors.visibility,
+    bounty: isBounty ? bountyComplete : true,
   };
+  const total = isBounty ? 6 : 5;
   const requiredFieldsCompleted =
     Number(completed.useCase) +
     Number(completed.domain) +
     Number(completed.difficulty) +
     Number(completed.tags) +
-    Number(completed.slugVisibility);
+    Number(completed.slugVisibility) +
+    (isBounty ? Number(completed.bounty) : 0);
 
-  return { errors, completed, requiredFieldsCompleted, total: 5 };
+  return { errors, bountyErrors, completed, requiredFieldsCompleted, total };
 }
 
 /* ── Component ───────────────────────────────────── */
@@ -225,6 +295,8 @@ export function PublishMetadataForm({
   postType = "blueprint",
   defaultValues = {},
   autoDetected,
+  missingStageCount = 0,
+  missingBlockCount = 0,
   authorUsername = "you",
   onPublish,
   onSaveDraft,
@@ -242,6 +314,7 @@ export function PublishMetadataForm({
   const theme = getPostTypeTheme(postType);
   const isBlog = postType === "blog";
   const isBounty = postType === "bounty";
+  const missingItemCount = missingStageCount + missingBlockCount;
 
   // External reset (Discard changes).
   const lastResetRef = React.useRef(resetSignal);
@@ -261,7 +334,10 @@ export function PublishMetadataForm({
     onChangeRef.current?.(state);
   }, [state]);
 
-  const validation = useMemo(() => validate(state), [state]);
+  const validation = useMemo(
+    () => validate(state, { postType, missingItemCount }),
+    [state, postType, missingItemCount],
+  );
   const progressPercent = (validation.requiredFieldsCompleted / validation.total) * 100;
 
   const slugAvailability = useSlugAvailability(state.slug, contentItemId);
@@ -273,8 +349,48 @@ export function PublishMetadataForm({
   const { data: tagSuggestions } = useTagSuggestions();
 
   const handlePublish = () => {
-    if (!canPublish) return;
+    if (!canPublish) {
+      // Surface the first failing reason and scroll to its section.
+      if (isBounty) {
+        if (validation.bountyErrors.missingItems) {
+          sonnerToast.error(validation.bountyErrors.missingItems);
+          scrollToBountySection("missing");
+          return;
+        }
+        if (validation.bountyErrors.rewardAmount) {
+          sonnerToast.error(validation.bountyErrors.rewardAmount);
+          scrollToBountySection("reward-amount");
+          return;
+        }
+        if (validation.bountyErrors.rewardCurrency) {
+          sonnerToast.error(validation.bountyErrors.rewardCurrency);
+          scrollToBountySection("reward-amount");
+          return;
+        }
+        if (validation.bountyErrors.acceptanceCriteria) {
+          sonnerToast.error(validation.bountyErrors.acceptanceCriteria);
+          scrollToBountySection("acceptance");
+          return;
+        }
+      }
+      sonnerToast.error("Fill all required fields to publish");
+      return;
+    }
     onPublish({ ...state, slug: state.slug.trim().toLowerCase() });
+  };
+
+  const scrollToBountySection = (
+    sub: "reward-type" | "reward-amount" | "acceptance" | "missing",
+  ) => {
+    if (sub === "missing") {
+      const el = document.getElementById("bounty-missing-line");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+    }
+    const el = document.getElementById(`bounty-details-card-${sub}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   const slugPreview = state.slug.trim()
@@ -572,10 +688,68 @@ export function PublishMetadataForm({
                 onEditClick={onBack}
               />
             )}
+            {isBounty && (
+              <div
+                id="bounty-missing-line"
+                className="mt-3 flex items-center gap-2"
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: missingItemCount === 0 ? "rgba(239,68,68,0.85)" : "#F59E0B",
+                }}
+              >
+                <span style={{ opacity: 0.7 }}>Missing items:</span>
+                <span>
+                  {missingStageCount} missing stage{missingStageCount === 1 ? "" : "s"} ·{" "}
+                  {missingBlockCount} missing block{missingBlockCount === 1 ? "" : "s"}
+                </span>
+                {missingItemCount === 0 && (
+                  <span style={{ opacity: 0.8 }}>
+                    — open the editor and mark at least one
+                  </span>
+                )}
+              </div>
+            )}
           </Section>
 
-          {/* 5 - Visibility & Slug */}
-          <Section number={isBlog ? 4 : 5} title="Visibility & slug" required onBadgeClick={scrollToSection} accent={theme.accent}>
+          {/* Bounty details (bounty only — between Tags-area and Visibility) */}
+          {isBounty && (
+            <Section
+              number={5}
+              title="Bounty details"
+              required
+              onBadgeClick={scrollToSection}
+              accent={theme.accent}
+            >
+              <BountyDetailsCard
+                value={{
+                  rewardType: state.bountyRewardType,
+                  rewardAmount: state.bountyRewardAmount,
+                  rewardCurrency: state.bountyRewardCurrency,
+                  deadline: state.bountyDeadline,
+                  acceptanceCriteria: state.bountyAcceptanceCriteria,
+                }}
+                onChange={(v) => {
+                  set("bountyRewardType", v.rewardType);
+                  set("bountyRewardAmount", v.rewardAmount);
+                  set("bountyRewardCurrency", v.rewardCurrency);
+                  set("bountyDeadline", v.deadline);
+                  set("bountyAcceptanceCriteria", v.acceptanceCriteria);
+                }}
+                errors={validation.bountyErrors}
+              />
+            </Section>
+          )}
+
+          {/* 5/6 - Visibility & Slug */}
+          <Section
+            number={isBlog ? 4 : isBounty ? 6 : 5}
+            title="Visibility & slug"
+            required
+            onBadgeClick={scrollToSection}
+            accent={theme.accent}
+          >
             <div className="flex flex-col gap-5">
               <FieldGroup label="Visibility" error={validation.errors.visibility}>
                 <div className="flex flex-wrap gap-2">
