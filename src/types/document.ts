@@ -43,6 +43,14 @@ export interface Stage {
   stage_name: string | null;
   created_at: string;
   updated_at: string;
+  /**
+   * Bounty-only: when true the stage's body renders the MissingStageBadge in
+   * place of the normal preview, signalling the author wants solvers to fill
+   * this stage in. Persisted via `content_items.stage_grids`.
+   */
+  is_missing?: boolean;
+  /** Bounty-only: short hint shown inside the missing badge (max 200 chars). */
+  missing_description?: string | null;
 }
 
 export interface Block {
