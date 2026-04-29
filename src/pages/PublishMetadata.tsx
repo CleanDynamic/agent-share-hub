@@ -24,6 +24,8 @@ import {
   type AutoDetectedMeta,
   type PostType,
 } from "@/components/publish/PublishMetadataForm";
+import { validateBountyForPublish } from "@/lib/bounty/validateBountyForPublish";
+import { toast as sonnerToast } from "sonner";
 
 const buildPayload = (
   values: PublishFormValues,
