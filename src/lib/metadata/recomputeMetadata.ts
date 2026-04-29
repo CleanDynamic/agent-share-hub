@@ -3,6 +3,7 @@ import { extractBlockTypes } from "./extractBlockTypes";
 import { extractModels, extractTools } from "./extractModelsAndTools";
 import { extractStats, type ContentStats } from "./extractStats";
 import { countMissingInStageGrids } from "@/lib/bounty/countMissing";
+import { recomputeDerivedBio } from "@/lib/profile/recomputeDerivedBio";
 
 /**
  * Run any async extractor with a label. If it throws, log + return `fallback`
