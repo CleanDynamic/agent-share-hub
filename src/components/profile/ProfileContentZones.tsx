@@ -607,10 +607,67 @@ export function ProfileContentZones({
   const currentSortLabel =
     currentSorts.find((s) => s.value === sort)?.label ?? currentSorts[0].label;
 
+  const buildMenuOptions = (item: ZoneItem): ItemMenuOption[] => {
+    const opts: ItemMenuOption[] = [];
+    if (isOwnProfile && activeZone === "authored") {
+      if (onEditItem)
+        opts.push({
+          key: "edit",
+          label: "Edit",
+          icon: <Pencil size={12} className="mr-2" />,
+          onSelect: () => onEditItem(item),
+        });
+      if (onUnpublishItem)
+        opts.push({
+          key: "unpublish",
+          label: "Unpublish",
+          icon: <EyeOff size={12} className="mr-2" />,
+          onSelect: () => onUnpublishItem(item),
+        });
+      if (onDeleteItem)
+        opts.push({
+          key: "delete",
+          label: "Delete",
+          icon: <Trash2 size={12} className="mr-2" />,
+          destructive: true,
+          onSelect: () => onDeleteItem(item),
+        });
+    } else if (!isOwnProfile) {
+      if (onBookmarkItem)
+        opts.push({
+          key: "bookmark",
+          label: "Bookmark",
+          icon: <Bookmark size={12} className="mr-2" />,
+          onSelect: () => onBookmarkItem(item),
+        });
+      if (onRepostItem)
+        opts.push({
+          key: "repost",
+          label: "Repost",
+          icon: <Repeat2 size={12} className="mr-2" />,
+          onSelect: () => onRepostItem(item),
+        });
+      if (onShareItem)
+        opts.push({
+          key: "share",
+          label: "Share",
+          icon: <Share2 size={12} className="mr-2" />,
+          onSelect: () => onShareItem(item),
+        });
+    }
+    return opts;
+  };
+
   const renderContent = () => {
     if (isLoading) return <LoadingSkeleton zone={activeZone} />;
     if (items.length === 0)
-      return <EmptyState zone={activeZone} isOwnProfile={isOwnProfile} />;
+      return (
+        <EmptyState
+          zone={activeZone}
+          isOwnProfile={isOwnProfile}
+          onCreateBlueprint={onCreateBlueprint}
+        />
+      );
 
     switch (activeZone) {
       case "authored":
@@ -623,7 +680,12 @@ export function ProfileContentZones({
             }}
           >
             {items.map((item) => (
-              <AuthoredCard key={item.id} item={item} onClick={() => onItemClick(item)} />
+              <AuthoredCard
+                key={item.id}
+                item={item}
+                onClick={() => onItemClick(item)}
+                menuOptions={buildMenuOptions(item)}
+              />
             ))}
           </div>
         );
@@ -632,6 +694,31 @@ export function ProfileContentZones({
         const bookmarks = items.filter((i) => i.kind !== "collection");
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {isOwnProfile && onMakeCollection && (
+              <div>
+                <button
+                  type="button"
+                  onClick={onMakeCollection}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "6px 12px",
+                    borderRadius: 6,
+                    border: "0.5px solid rgba(46,196,182,0.40)",
+                    background: "rgba(46,196,182,0.08)",
+                    color: "rgba(46,196,182,0.90)",
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <Plus size={12} />
+                  Make collection
+                </button>
+              </div>
+            )}
             {collections.length > 0 && (
               <div
                 style={{
@@ -641,7 +728,12 @@ export function ProfileContentZones({
                 }}
               >
                 {collections.map((item) => (
-                  <CuratedCard key={item.id} item={item} onClick={() => onItemClick(item)} />
+                  <CuratedCard
+                    key={item.id}
+                    item={item}
+                    onClick={() => onItemClick(item)}
+                    menuOptions={buildMenuOptions(item)}
+                  />
                 ))}
               </div>
             )}
@@ -653,7 +745,12 @@ export function ProfileContentZones({
               }}
             >
               {bookmarks.map((item) => (
-                <CuratedCard key={item.id} item={item} onClick={() => onItemClick(item)} />
+                <CuratedCard
+                  key={item.id}
+                  item={item}
+                  onClick={() => onItemClick(item)}
+                  menuOptions={buildMenuOptions(item)}
+                />
               ))}
             </div>
           </div>
