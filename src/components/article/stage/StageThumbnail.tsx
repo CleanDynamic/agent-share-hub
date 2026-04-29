@@ -47,6 +47,11 @@ interface StageThumbnailProps {
   connections?: ThumbnailConnection[];
   onOpen?: () => void;
   onRename?: (name: string) => void;
+  /** Bounty mode UI affordances. Adds the ⋯ more-menu and missing badge swap. */
+  isBounty?: boolean;
+  isMissing?: boolean;
+  missingDescription?: string | null;
+  onToggleMissing?: () => void;
 }
 
 // Block-type colour palette (full hex; opacity applied at render time)
