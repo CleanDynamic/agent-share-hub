@@ -787,18 +787,27 @@ export function ProfileContentZones({
     <div style={{ width: "100%", marginTop: "32px" }}>
       {/* Outer Tab Row */}
       <div
+        role="tablist"
+        aria-label="Profile sections"
         style={{
           display: "flex",
           gap: "4px",
           borderBottom: "0.5px solid rgba(255,255,255,0.08)",
           marginBottom: "16px",
+          overflowX: "auto",
+          scrollbarWidth: "none",
         }}
+        className="hide-scrollbar"
       >
         {zones.map((zone) => {
           const isActive = activeZone === zone.value;
           return (
             <button
               key={zone.value}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`zone-panel-${zone.value}`}
+              id={`zone-tab-${zone.value}`}
               onClick={() => onZoneChange(zone.value)}
               style={{
                 display: "flex",
@@ -812,6 +821,7 @@ export function ProfileContentZones({
                 cursor: "pointer",
                 transition: "all 0.15s ease",
                 marginBottom: "-0.5px",
+                flexShrink: 0,
               }}
             >
               <span
