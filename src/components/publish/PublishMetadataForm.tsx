@@ -295,6 +295,8 @@ export function PublishMetadataForm({
   postType = "blueprint",
   defaultValues = {},
   autoDetected,
+  missingStageCount = 0,
+  missingBlockCount = 0,
   authorUsername = "you",
   onPublish,
   onSaveDraft,
@@ -312,6 +314,7 @@ export function PublishMetadataForm({
   const theme = getPostTypeTheme(postType);
   const isBlog = postType === "blog";
   const isBounty = postType === "bounty";
+  const missingItemCount = missingStageCount + missingBlockCount;
 
   // External reset (Discard changes).
   const lastResetRef = React.useRef(resetSignal);
@@ -331,7 +334,10 @@ export function PublishMetadataForm({
     onChangeRef.current?.(state);
   }, [state]);
 
-  const validation = useMemo(() => validate(state), [state]);
+  const validation = useMemo(
+    () => validate(state, { postType, missingItemCount }),
+    [state, postType, missingItemCount],
+  );
   const progressPercent = (validation.requiredFieldsCompleted / validation.total) * 100;
 
   const slugAvailability = useSlugAvailability(state.slug, contentItemId);
@@ -343,8 +349,48 @@ export function PublishMetadataForm({
   const { data: tagSuggestions } = useTagSuggestions();
 
   const handlePublish = () => {
-    if (!canPublish) return;
+    if (!canPublish) {
+      // Surface the first failing reason and scroll to its section.
+      if (isBounty) {
+        if (validation.bountyErrors.missingItems) {
+          sonnerToast.error(validation.bountyErrors.missingItems);
+          scrollToBountySection("missing");
+          return;
+        }
+        if (validation.bountyErrors.rewardAmount) {
+          sonnerToast.error(validation.bountyErrors.rewardAmount);
+          scrollToBountySection("reward-amount");
+          return;
+        }
+        if (validation.bountyErrors.rewardCurrency) {
+          sonnerToast.error(validation.bountyErrors.rewardCurrency);
+          scrollToBountySection("reward-amount");
+          return;
+        }
+        if (validation.bountyErrors.acceptanceCriteria) {
+          sonnerToast.error(validation.bountyErrors.acceptanceCriteria);
+          scrollToBountySection("acceptance");
+          return;
+        }
+      }
+      sonnerToast.error("Fill all required fields to publish");
+      return;
+    }
     onPublish({ ...state, slug: state.slug.trim().toLowerCase() });
+  };
+
+  const scrollToBountySection = (
+    sub: "reward-type" | "reward-amount" | "acceptance" | "missing",
+  ) => {
+    if (sub === "missing") {
+      const el = document.getElementById("bounty-missing-line");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+    }
+    const el = document.getElementById(`bounty-details-card-${sub}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   const slugPreview = state.slug.trim()
