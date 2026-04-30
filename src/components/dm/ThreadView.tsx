@@ -681,9 +681,10 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     if (msg.kind === "content-share" && msg.shared_content_id && msg.shared_content_type) {
       const { variant, value } = buildShareValue(msg, null);
       const isBroken = (msg.shared_content_meta as any)?.is_broken === true;
+      const viewedAt = viewedShareMap.get(msg.id) ?? null;
       let readState: ReadState = null;
       if (isMine) {
-        readState = viewedShareIds.has(msg.id) ? "opened" : "delivered";
+        readState = viewedAt ? "opened" : "delivered";
       }
       return (
         <div key={msg.id}>
@@ -714,8 +715,10 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
               isFromCurrentUser={isMine}
               timestamp={formatMessageTime(msg.sent_at)}
               readState={readState}
+              viewedAt={viewedAt}
               isBroken={isBroken}
               onContentClick={() => handleContentClick(msg, value)}
+              onViewed={isMine ? undefined : () => { markContentViewed(msg.id).catch(() => {}); }}
             />
           </div>
         </div>
