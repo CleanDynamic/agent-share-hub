@@ -112,7 +112,20 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
               >
                 <item.icon className="h-[22px] w-[22px] shrink-0 transition-colors" />
                 {!collapsed && <span>{item.label}</span>}
-                {item.badge && (
+                {item.badge && item.to === "/messages" && (
+                  <span
+                    className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex items-center justify-center rounded-full text-white`}
+                    style={{
+                      height: 16, minWidth: 16, padding: '0 4px',
+                      background: '#E8571A',
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                      fontSize: 9, fontWeight: 600, lineHeight: 1,
+                    }}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+                {item.badge && item.to !== "/messages" && (
                   <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full ${item.to === "/drafts" ? "bg-[#353439] text-slate-400" : "bg-[#8B4513] text-white"} px-1.5 text-[11px] font-bold`}>
                     {item.badge}
                   </span>
