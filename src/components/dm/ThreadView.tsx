@@ -12,6 +12,8 @@ import { motion, PanInfo } from "framer-motion";
 import { MessageInputBar } from "./MessageInputBar";
 import { displayContentType } from "@/lib/content-types";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ContentShareBubble, type ContentShareValue, type ReadState } from "@/components/messages/ContentShareBubble";
+import { markContentViewed } from "@/lib/messaging";
 
 const initials = (name: string) => (name || "?").slice(0, 2).toUpperCase();
 
