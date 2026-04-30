@@ -555,6 +555,39 @@ const ContentDetail = () => {
   const isBounty = !!(item as any)?.bounty_enabled;
   const isPoster = item?.creator_id === user?.id;
 
+  const handleStartDiscussion = useCallback(async (args: {
+    memberIds: string[]; title: string; firstMessage: string;
+  }) => {
+    if (!item) return;
+    if (!isLoggedIn) { setAccountGateOpen(true); return; }
+    setDiscussionBusy(true);
+    try {
+      const itemPostType = (item as any).post_type as string | undefined;
+      let threadId: string;
+      if (itemPostType === "bounty") {
+        // Single recipient (author or self → solver discussion w/ first picked).
+        const otherUserId = isPoster ? args.memberIds[0] : item.creator_id;
+        threadId = await createBountyThread(item.id, otherUserId);
+      } else {
+        const groupTitle = args.title || `${item.title} discussion`;
+        threadId = await createBlueprintGroup(item.id, args.memberIds, groupTitle);
+      }
+      if (args.firstMessage) {
+        await sendTextMessage(threadId, args.firstMessage);
+      }
+      setDiscussionOpen(false);
+      navigate(`/messages/${threadId}`);
+    } catch (err: any) {
+      toast({
+        title: "Could not start discussion",
+        description: err?.message ?? String(err),
+        variant: "destructive",
+      });
+    } finally {
+      setDiscussionBusy(false);
+    }
+  }, [item, isPoster, isLoggedIn, navigate, toast]);
+
   // Bounty responses query
   const { data: bountyResponses, refetch: refetchResponses } = useQuery({
     queryKey: ["bounty_responses", id, bountySort],
