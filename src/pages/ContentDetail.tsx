@@ -1159,6 +1159,28 @@ const ContentDetail = () => {
 
           {/* Fork button — top right aligned */}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+            {(() => {
+              const itemPostType = (item as any).post_type as string | undefined;
+              const label = itemPostType === "bounty"
+                ? (isPoster ? "Open solver discussion" : "Ask the author a question")
+                : "Start discussion about this";
+              return (
+                <button
+                  onClick={() => { if (!isLoggedIn) { setAccountGateOpen(true); return; } setDiscussionOpen(true); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    fontSize: 12, color: 'rgba(255,255,255,0.40)',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    padding: '4px 8px', borderRadius: 6, transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.80)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.40)'}
+                  title={label}
+                >
+                  <MessageCircle style={{ width: 12, height: 12 }} /> {label}
+                </button>
+              );
+            })()}
             <button
               onClick={() => { if (!isLoggedIn) { setAccountGateOpen(true); return; } setForkModalOpen(true); }}
               style={{
