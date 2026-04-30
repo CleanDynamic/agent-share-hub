@@ -339,6 +339,10 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
   const [showNewMsgButton, setShowNewMsgButton] = useState(false);
   const prevMsgCountRef = useRef(0);
   const isInitialLoadRef = useRef(true);
+  const newDividerRef = useRef<HTMLDivElement | null>(null);
+  const newDividerScrolledRef = useRef(false);
+  const [unreadCutoff, setUnreadCutoff] = useState<Date | null>(null);
+  const cutoffCapturedRef = useRef(false);
   const displayName = otherUser.display_name || otherUser.username || "User";
 
   // Fetch presence
