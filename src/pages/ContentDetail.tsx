@@ -1759,6 +1759,24 @@ const ContentDetail = () => {
           </div>
         </div>
 
+      <StartDiscussionModal
+        open={discussionOpen}
+        onOpenChange={setDiscussionOpen}
+        defaultTitle={`${item.title} discussion`}
+        onSubmit={handleStartDiscussion}
+        submitting={discussionBusy}
+        singleRecipientId={
+          (item as any).post_type === "bounty" && !isPoster
+            ? item.creator_id
+            : undefined
+        }
+        singleRecipientLabel={
+          (item as any).post_type === "bounty" && !isPoster
+            ? (creator?.display_name ?? creator?.username ?? "the author")
+            : undefined
+        }
+      />
+
       <GuestDownloadModal
         open={guestModalOpen}
         onOpenChange={setGuestModalOpen}
