@@ -1187,6 +1187,49 @@ export type Database = {
           },
         ]
       }
+      content_share_views: {
+        Row: {
+          id: string
+          message_id: string
+          viewed_at: string
+          viewer_id: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          viewed_at?: string
+          viewer_id: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          viewed_at?: string
+          viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_share_views_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "dm_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_share_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "content_share_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_tips: {
         Row: {
           ai_tool_context: string | null
@@ -1519,51 +1562,66 @@ export type Database = {
       }
       dm_messages: {
         Row: {
+          body: string | null
           delivered_at: string | null
+          edited_at: string | null
           id: string
           image_url: string | null
           is_liked: boolean | null
           is_unsent: boolean | null
+          kind: string
           message_type: string
           read_at: string | null
           reply_to_message_id: string | null
           sender_id: string
           sent_at: string | null
           shared_content_id: string | null
+          shared_content_meta: Json | null
+          shared_content_type: string | null
           text_content: string | null
           thread_id: string
           voice_duration_seconds: number | null
           voice_url: string | null
         }
         Insert: {
+          body?: string | null
           delivered_at?: string | null
+          edited_at?: string | null
           id?: string
           image_url?: string | null
           is_liked?: boolean | null
           is_unsent?: boolean | null
+          kind?: string
           message_type?: string
           read_at?: string | null
           reply_to_message_id?: string | null
           sender_id: string
           sent_at?: string | null
           shared_content_id?: string | null
+          shared_content_meta?: Json | null
+          shared_content_type?: string | null
           text_content?: string | null
           thread_id: string
           voice_duration_seconds?: number | null
           voice_url?: string | null
         }
         Update: {
+          body?: string | null
           delivered_at?: string | null
+          edited_at?: string | null
           id?: string
           image_url?: string | null
           is_liked?: boolean | null
           is_unsent?: boolean | null
+          kind?: string
           message_type?: string
           read_at?: string | null
           reply_to_message_id?: string | null
           sender_id?: string
           sent_at?: string | null
           shared_content_id?: string | null
+          shared_content_meta?: Json | null
+          shared_content_type?: string | null
           text_content?: string | null
           thread_id?: string
           voice_duration_seconds?: number | null
@@ -1686,10 +1744,64 @@ export type Database = {
           },
         ]
       }
+      dm_thread_members: {
+        Row: {
+          is_admin: boolean
+          is_muted: boolean
+          is_pinned: boolean
+          joined_at: string
+          last_read_at: string | null
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          is_admin?: boolean
+          is_muted?: boolean
+          is_pinned?: boolean
+          joined_at?: string
+          last_read_at?: string | null
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          is_admin?: boolean
+          is_muted?: boolean
+          is_pinned?: boolean
+          joined_at?: string
+          last_read_at?: string | null
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_thread_members_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "dm_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_thread_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "dm_thread_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dm_threads: {
         Row: {
           created_at: string | null
+          created_by: string | null
           id: string
+          is_archived: boolean
           is_deleted_a: boolean | null
           is_deleted_b: boolean | null
           is_muted_a: boolean | null
@@ -1699,15 +1811,21 @@ export type Database = {
           last_message_at: string | null
           last_message_preview: string | null
           last_message_sender_id: string | null
-          participant_a: string
-          participant_b: string
+          participant_a: string | null
+          participant_b: string | null
+          pinned_content_id: string | null
+          pinned_content_type: string | null
           request_status: string | null
+          title: string | null
+          type: string
           unread_count_a: number | null
           unread_count_b: number | null
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           id?: string
+          is_archived?: boolean
           is_deleted_a?: boolean | null
           is_deleted_b?: boolean | null
           is_muted_a?: boolean | null
@@ -1717,15 +1835,21 @@ export type Database = {
           last_message_at?: string | null
           last_message_preview?: string | null
           last_message_sender_id?: string | null
-          participant_a: string
-          participant_b: string
+          participant_a?: string | null
+          participant_b?: string | null
+          pinned_content_id?: string | null
+          pinned_content_type?: string | null
           request_status?: string | null
+          title?: string | null
+          type?: string
           unread_count_a?: number | null
           unread_count_b?: number | null
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           id?: string
+          is_archived?: boolean
           is_deleted_a?: boolean | null
           is_deleted_b?: boolean | null
           is_muted_a?: boolean | null
@@ -1735,14 +1859,32 @@ export type Database = {
           last_message_at?: string | null
           last_message_preview?: string | null
           last_message_sender_id?: string | null
-          participant_a?: string
-          participant_b?: string
+          participant_a?: string | null
+          participant_b?: string | null
+          pinned_content_id?: string | null
+          pinned_content_type?: string | null
           request_status?: string | null
+          title?: string | null
+          type?: string
           unread_count_a?: number | null
           unread_count_b?: number | null
         }
         Relationships: [
           {
+            foreignKeyName: "dm_threads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "dm_threads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "dm_threads_last_message_sender_id_fkey"
             columns: ["last_message_sender_id"]
             isOneToOne: false
@@ -1782,6 +1924,13 @@ export type Database = {
             columns: ["participant_b"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_threads_pinned_content_id_fkey"
+            columns: ["pinned_content_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
         ]
@@ -3042,6 +3191,14 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_thread_admin: {
+        Args: { _thread_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_thread_member: {
+        Args: { _thread_id: string; _user_id: string }
+        Returns: boolean
+      }
       semantic_search: {
         Args: { match_count: number; query_embedding: string }
         Returns: {
