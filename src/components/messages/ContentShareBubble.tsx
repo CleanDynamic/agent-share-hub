@@ -70,8 +70,17 @@ export interface ContentShareBubbleProps {
   isFromCurrentUser: boolean;
   timestamp: string;
   readState?: ReadState;
+  /** ISO timestamp the recipient first viewed the share (sender side only). */
+  viewedAt?: string | null;
   isBroken?: boolean;
   onContentClick: (content: ContentShareValue) => void;
+  /**
+   * Recipient-only callback fired automatically after either:
+   *  - hovering the bubble for >2 seconds, or
+   *  - having the bubble fully on-screen for >5 seconds.
+   * Should be idempotent (will fire at most once per mount).
+   */
+  onViewed?: () => void;
 }
 
 function StageMiniMap({
