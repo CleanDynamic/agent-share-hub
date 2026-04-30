@@ -195,29 +195,180 @@ export default function MessagesPage() {
   // Sync URL on initial mount when tab param changes externally
   useEffect(() => { setActiveTab(tabParam); }, [tabParam]);
 
-  // Resolve other-user info for ThreadView (legacy participant model)
+  // Resolve active thread metadata: full thread row + other-user profile +
+  // pinned content lookup. Powers ConversationHeader.
   const activeThreadId = routeThreadId ?? null;
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [searchInThreadOpen, setSearchInThreadOpen] = useState(false);
+  const [inThreadQuery, setInThreadQuery] = useState("");
+
   const { data: activeThreadInfo } = useQuery({
-    queryKey: ["dm_thread_other_user", activeThreadId, user?.id],
+    queryKey: ["active_thread_meta", activeThreadId, user?.id],
     queryFn: async () => {
       if (!activeThreadId || !user) return null;
       const { data: t } = await supabase
         .from("dm_threads")
-        .select("participant_a, participant_b")
+        .select("id, type, title, participant_a, participant_b, pinned_content_id, pinned_content_type, is_pinned_a, is_pinned_b, is_muted_a, is_muted_b")
         .eq("id", activeThreadId)
         .maybeSingle();
       if (!t) return null;
-      const otherId = (t as any).participant_a === user.id ? (t as any).participant_b : (t as any).participant_a;
-      if (!otherId) return null;
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("id, username, display_name, avatar_url")
-        .eq("id", otherId)
-        .maybeSingle();
-      return prof ?? { id: otherId, display_name: "User", username: "", avatar_url: null };
+      const tt = t as any;
+
+      // Other user profile (for direct threads + ThreadView)
+      const otherId = tt.participant_a === user.id ? tt.participant_b : tt.participant_a;
+      let otherUser: any = { id: otherId, display_name: "User", username: "", avatar_url: null };
+      if (otherId) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id, username, display_name, avatar_url")
+          .eq("id", otherId)
+          .maybeSingle();
+        if (prof) otherUser = prof;
+      }
+
+      // Member list (for groups) + their avatars
+      let memberAvatars: string[] = [];
+      let memberCount = 2;
+      if (tt.type !== "direct") {
+        const { data: members } = await supabase
+          .from("dm_thread_members")
+          .select("user_id")
+          .eq("thread_id", activeThreadId);
+        const ids = (members ?? []).map((m: any) => m.user_id);
+        memberCount = ids.length || 2;
+        if (ids.length > 0) {
+          const { data: profs } = await supabase
+            .from("profiles")
+            .select("id, avatar_url")
+            .in("id", ids);
+          memberAvatars = (profs ?? [])
+            .map((p: any) => p.avatar_url)
+            .filter((u: string | null): u is string => !!u)
+            .slice(0, 4);
+        }
+      }
+
+      // Pinned content lookup
+      let pinnedContent: ConversationHeaderThread["pinnedContent"] = null;
+      if (tt.pinned_content_id) {
+        const { data: ci } = await supabase
+          .from("content_items")
+          .select("id, title, slug, post_type, bounty_reward_amount, bounty_reward_currency, bounty_reward_type, bounty_status")
+          .eq("id", tt.pinned_content_id)
+          .maybeSingle();
+        if (ci) {
+          const c = ci as any;
+          let rewardLabel: string | null = null;
+          if (tt.type === "bounty" && c.bounty_reward_amount) {
+            const cur = c.bounty_reward_currency || c.bounty_reward_type || "";
+            const symbol = cur === "GBP" ? "£" : cur === "USD" ? "$" : cur === "EUR" ? "€" : "";
+            rewardLabel = symbol
+              ? `${symbol}${c.bounty_reward_amount}`
+              : `${c.bounty_reward_amount} ${cur}`.trim();
+          }
+          let statusLabel: string | null = null;
+          if (tt.type === "bounty" && c.bounty_status) {
+            statusLabel =
+              c.bounty_status === "open"
+                ? "Open"
+                : c.bounty_status === "in_progress"
+                  ? "In progress"
+                  : c.bounty_status === "closed"
+                    ? "Closed"
+                    : c.bounty_status;
+          }
+          pinnedContent = {
+            id: c.id,
+            type: (tt.pinned_content_type as string) || c.post_type || "blueprint",
+            title: c.title,
+            slug: c.slug ?? null,
+            rewardLabel,
+            statusLabel,
+          };
+        }
+      }
+
+      const headerThread: ConversationHeaderThread = {
+        id: tt.id,
+        type: (tt.type ?? "direct") as ConversationHeaderThread["type"],
+        title:
+          tt.title ||
+          otherUser.display_name ||
+          otherUser.username ||
+          "Conversation",
+        subtitle: otherUser.username ? `@${otherUser.username}` : null,
+        avatarUrls:
+          tt.type === "direct"
+            ? otherUser.avatar_url
+              ? [otherUser.avatar_url]
+              : []
+            : memberAvatars,
+        memberCount,
+        pinnedContent,
+      };
+
+      const isA = tt.participant_a === user.id;
+      return {
+        otherUser,
+        headerThread,
+        isPinnedForMe: isA ? !!tt.is_pinned_a : !!tt.is_pinned_b,
+        isMutedForMe: isA ? !!tt.is_muted_a : !!tt.is_muted_b,
+        isA,
+        type: tt.type,
+      };
     },
     enabled: !!activeThreadId && !!user,
   });
+
+  // Reset in-thread search when switching threads
+  useEffect(() => {
+    setSearchInThreadOpen(false);
+    setInThreadQuery("");
+    setSettingsOpen(false);
+  }, [activeThreadId]);
+
+  // Settings actions
+  const togglePin = useCallback(async () => {
+    if (!activeThreadId || !activeThreadInfo || !user) return;
+    const field = activeThreadInfo.isA ? "is_pinned_a" : "is_pinned_b";
+    await supabase
+      .from("dm_threads")
+      .update({ [field]: !activeThreadInfo.isPinnedForMe } as any)
+      .eq("id", activeThreadId);
+    queryClient.invalidateQueries({ queryKey: ["active_thread_meta"] });
+    queryClient.invalidateQueries({ queryKey: ["messaging_threads"] });
+  }, [activeThreadId, activeThreadInfo, user, queryClient]);
+
+  const toggleMute = useCallback(async () => {
+    if (!activeThreadId || !activeThreadInfo || !user) return;
+    const field = activeThreadInfo.isA ? "is_muted_a" : "is_muted_b";
+    await supabase
+      .from("dm_threads")
+      .update({ [field]: !activeThreadInfo.isMutedForMe } as any)
+      .eq("id", activeThreadId);
+    queryClient.invalidateQueries({ queryKey: ["active_thread_meta"] });
+  }, [activeThreadId, activeThreadInfo, user, queryClient]);
+
+  const leaveThread = useCallback(async () => {
+    if (!activeThreadId || !user) return;
+    if (!confirm("Leave this conversation?")) return;
+    await supabase
+      .from("dm_thread_members")
+      .delete()
+      .eq("thread_id", activeThreadId)
+      .eq("user_id", user.id);
+    setSettingsOpen(false);
+    queryClient.invalidateQueries({ queryKey: ["messaging_threads"] });
+    navigate("/messages");
+  }, [activeThreadId, user, queryClient, navigate]);
+
+  const openPinnedContent = useCallback(() => {
+    const pinned = activeThreadInfo?.headerThread.pinnedContent;
+    if (!pinned) return;
+    if (pinned.slug) navigate(`/b/${pinned.slug}`);
+    else navigate(`/content/${pinned.id}`);
+  }, [activeThreadInfo, navigate]);
+
 
   // Map ThreadSummary → list-item shape expected by MessagesThreadList
   const threadItems = useMemo(() => {
