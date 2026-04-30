@@ -11,8 +11,8 @@ export function AppLayout() {
   const isTablet = useIsTablet();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const isMessagesRoute = location.pathname === "/messages";
-  const isMessagesThread = isMessagesRoute && (searchParams.has("thread") || searchParams.has("recipient"));
+  const isMessagesRoute = location.pathname === "/messages" || location.pathname.startsWith("/messages/");
+  const isMessagesThread = isMessagesRoute && (searchParams.has("thread") || searchParams.has("recipient") || location.pathname.startsWith("/messages/"));
 
   if (isMobile) {
     return (
