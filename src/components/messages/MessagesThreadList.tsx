@@ -306,7 +306,7 @@ export function MessagesThreadList({
 
   return (
     <div
-      className="flex flex-col"
+      className="flex flex-col flex-shrink-0"
       style={{
         width: 320,
         height: "100%",

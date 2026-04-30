@@ -1012,6 +1012,23 @@ export function NeoScaleShell() {
     return () => { document.head.removeChild(tag); };
   }, [isMobile]);
 
+  /* ── Snap flipper to the correct face when the route changes
+        (covers cold loads of /messages, /library, etc.) ── */
+  useEffect(() => {
+    if (isMobile) return;
+    const flipper = flipperRef.current;
+    if (!flipper) return;
+    const wantsFront = location.pathname === "/";
+    if (wantsFront === showingFront.current) return;
+    showingFront.current = wantsFront;
+    currentRotation.current = wantsFront ? 0 : 180;
+    flipper.style.transition = "none";
+    flipper.style.transform = `rotateY(${currentRotation.current}deg)`;
+    requestAnimationFrame(() => {
+      if (flipper) flipper.style.transition = "transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)";
+    });
+  }, [location.pathname, isMobile]);
+
   /* ── Fetch feed posts (infinite scroll) ── */
   const INITIAL_PAGE = 50;
   const NEXT_PAGE = 25;
@@ -1386,29 +1403,18 @@ export function NeoScaleShell() {
 
     /* Page title/subtitle map */
     const pageMeta: Record<string, { title: string; subtitle?: string }> = {
-      '/messages':      { title: 'Messages' },
       '/library':       { title: 'Your Archives', subtitle: 'Everything you\'ve saved' },
       '/drafts':        { title: 'Drafts', subtitle: 'Work in progress' },
       '/notifications': { title: 'Notifications' },
       '/analytics':     { title: 'Neural Analytics', subtitle: 'Your dispatch performance' },
     };
 
-    /* /upload (type selector) — render via Outlet through fallback below */
-
-    /* /messages → page shell with search input */
-    if (path === '/messages') {
+    /* /messages and /messages/{id} → bare full-bleed surface,
+       the page owns its own chrome (thread list + conversation pane). */
+    if (path === '/messages' || path.startsWith('/messages/')) {
       return (
-        <div className="ns-page-shell">
-          <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
-          <div className="ns-page-header">
-            <div className="ns-page-title">Messages</div>
-          </div>
-          <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-            <input className="ns-glass-input" placeholder="Search messages..." />
-          </div>
-          <div className="ns-page-body">
-            <Outlet />
-          </div>
+        <div style={{ height: '100%', width: '100%' }}>
+          <Outlet />
         </div>
       );
     }
@@ -1629,7 +1635,7 @@ export function NeoScaleShell() {
           </div>
 
           {/* ═══ RIGHT PANEL ═══ */}
-          {!location.pathname.startsWith('/publish/') && location.pathname !== '/discover' && (
+          {!location.pathname.startsWith('/publish/') && location.pathname !== '/discover' && location.pathname !== '/messages' && !location.pathname.startsWith('/messages/') && (
           <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ width: 220, height: 775, flexShrink: 0 }}>
           <div
             className="ns-right-panel"

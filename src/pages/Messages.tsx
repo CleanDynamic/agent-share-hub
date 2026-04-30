@@ -431,7 +431,7 @@ export default function MessagesPage() {
   return (
     <>
       <SeoHead title="Messages" description="Your conversations on NeoScale AI." path="/messages" />
-      <div className="flex" style={{ height: "100vh", background: "#08080C" }}>
+      <div className="flex" style={{ height: "100%", background: "#08080C" }}>
         <MessagesThreadList
           threads={threadItems}
           activeTab={activeTab}
