@@ -1,5 +1,18 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Target, ArrowRight, AlertCircle } from "lucide-react";
+
+function relativeOpenedLabel(iso: string | null | undefined): string {
+  if (!iso) return "Opened";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Opened just now";
+  if (mins < 60) return `Opened ${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `Opened ${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `Opened ${days}d ago`;
+  return `Opened ${new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
+}
 
 const BLOCK_TYPE_COLORS: Record<string, string> = {
   prompt: "#A855F7",
