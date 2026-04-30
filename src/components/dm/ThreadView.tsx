@@ -417,10 +417,15 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     },
     enabled: sentShareIds.length > 0,
   });
-  const viewedShareIds = useMemo(() => {
-    const set = new Set<string>();
-    (shareViews ?? []).forEach((v: any) => set.add(v.message_id));
-    return set;
+  const viewedShareMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (shareViews ?? []).forEach((v: any) => {
+      const existing = map.get(v.message_id);
+      if (!existing || new Date(v.viewed_at) < new Date(existing)) {
+        map.set(v.message_id, v.viewed_at);
+      }
+    });
+    return map;
   }, [shareViews]);
 
   // Realtime: content_share_views for my sent shares
