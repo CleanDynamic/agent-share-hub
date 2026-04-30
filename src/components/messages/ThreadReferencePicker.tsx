@@ -77,15 +77,16 @@ export function ThreadReferencePicker({
 }: ThreadReferencePickerProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const { refs, floatingStyles } = useFloating({
+  const floating = useFloating({
     open: isOpen,
     placement: "top-start",
     middleware: [offset(8), flip(), shift({ padding: 8 })],
     whileElementsMounted: autoUpdate,
     elements: { reference: anchorEl },
   });
+  const { refs, floatingStyles, context } = floating;
 
-  const { isMounted, styles: transitionStyles } = useTransitionStyles(refs.floating, {
+  const { isMounted, styles: transitionStyles } = useTransitionStyles(context, {
     duration: 150,
     initial: { opacity: 0, transform: "translateY(8px)" },
   });
