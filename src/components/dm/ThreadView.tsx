@@ -397,6 +397,51 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     return map;
   }, [allReactions]);
 
+  // Read-receipts for content-share messages I sent
+  const sentShareIds = useMemo(
+    () =>
+      (messages ?? [])
+        .filter((m: any) => m.sender_id === user?.id && m.kind === "content-share")
+        .map((m: any) => m.id),
+    [messages, user]
+  );
+  const { data: shareViews } = useQuery({
+    queryKey: ["content_share_views", threadId, sentShareIds],
+    queryFn: async () => {
+      if (sentShareIds.length === 0) return [];
+      const { data } = await supabase
+        .from("content_share_views" as any)
+        .select("message_id, viewer_id, viewed_at")
+        .in("message_id", sentShareIds);
+      return (data ?? []) as any[];
+    },
+    enabled: sentShareIds.length > 0,
+  });
+  const viewedShareIds = useMemo(() => {
+    const set = new Set<string>();
+    (shareViews ?? []).forEach((v: any) => set.add(v.message_id));
+    return set;
+  }, [shareViews]);
+
+  // Realtime: content_share_views for my sent shares
+  useEffect(() => {
+    if (sentShareIds.length === 0) return;
+    const channelName = `share-views-${threadId}-${crypto.randomUUID()}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "content_share_views" },
+        (payload: any) => {
+          if (sentShareIds.includes(payload.new?.message_id)) {
+            queryClient.invalidateQueries({ queryKey: ["content_share_views", threadId] });
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [threadId, sentShareIds, queryClient]);
+
   // Mark as read
   useEffect(() => {
     if (!threadId || !user) return;
