@@ -458,7 +458,7 @@ export function ContentShareBubble({
   };
 
   return (
-    <div className={`flex flex-col ${isFromCurrentUser ? "items-end" : "items-start"}`}>
+    <div ref={rootRef} className={`flex flex-col ${isFromCurrentUser ? "items-end" : "items-start"}`}>
       <div
         role="button"
         tabIndex={0}
