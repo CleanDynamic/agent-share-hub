@@ -339,6 +339,10 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
   const [showNewMsgButton, setShowNewMsgButton] = useState(false);
   const prevMsgCountRef = useRef(0);
   const isInitialLoadRef = useRef(true);
+  const newDividerRef = useRef<HTMLDivElement | null>(null);
+  const newDividerScrolledRef = useRef(false);
+  const [unreadCutoff, setUnreadCutoff] = useState<Date | null>(null);
+  const cutoffCapturedRef = useRef(false);
   const displayName = otherUser.display_name || otherUser.username || "User";
 
   // Fetch presence
@@ -417,10 +421,15 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     },
     enabled: sentShareIds.length > 0,
   });
-  const viewedShareIds = useMemo(() => {
-    const set = new Set<string>();
-    (shareViews ?? []).forEach((v: any) => set.add(v.message_id));
-    return set;
+  const viewedShareMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (shareViews ?? []).forEach((v: any) => {
+      const existing = map.get(v.message_id);
+      if (!existing || new Date(v.viewed_at) < new Date(existing)) {
+        map.set(v.message_id, v.viewed_at);
+      }
+    });
+    return map;
   }, [shareViews]);
 
   // Realtime: content_share_views for my sent shares
@@ -442,7 +451,43 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     return () => { supabase.removeChannel(channel); };
   }, [threadId, sentShareIds, queryClient]);
 
-  // Mark as read
+  // Capture unread cutoff BEFORE marking as read, so the "New" divider has a stable anchor
+  useEffect(() => {
+    if (!threadId || !user) return;
+    cutoffCapturedRef.current = false;
+    setUnreadCutoff(null);
+    newDividerScrolledRef.current = false;
+    (async () => {
+      // Prefer dm_thread_members.last_read_at (multi-thread aware)
+      const { data: mem } = await supabase
+        .from("dm_thread_members")
+        .select("last_read_at")
+        .eq("thread_id", threadId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      let cutoff: Date | null = (mem as any)?.last_read_at ? new Date((mem as any).last_read_at) : null;
+      if (!cutoff) {
+        // Fallback: earliest unread message from the other user
+        const { data: firstUnread } = await supabase
+          .from("dm_messages")
+          .select("sent_at")
+          .eq("thread_id", threadId)
+          .neq("sender_id", user.id)
+          .is("read_at", null)
+          .order("sent_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if ((firstUnread as any)?.sent_at) {
+          // Anchor cutoff just before the first unread message
+          cutoff = new Date(new Date((firstUnread as any).sent_at).getTime() - 1);
+        }
+      }
+      cutoffCapturedRef.current = true;
+      setUnreadCutoff(cutoff);
+    })();
+  }, [threadId, user]);
+
+  // Mark as read (runs after cutoff capture effect above)
   useEffect(() => {
     if (!threadId || !user) return;
     const resetUnread = async () => {
@@ -463,6 +508,12 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
         .eq("thread_id", threadId)
         .neq("sender_id", user.id)
         .is("read_at", null);
+      // Update member-level last_read_at too
+      await supabase
+        .from("dm_thread_members")
+        .update({ last_read_at: new Date().toISOString() } as any)
+        .eq("thread_id", threadId)
+        .eq("user_id", user.id);
       queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
     };
     resetUnread();
@@ -661,6 +712,46 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     const reactions = reactionsByMessage.get(msg.id) || [];
     const showingTimestamp = showTimestampId === msg.id;
 
+    // "New" divider: between last read message and first unread (other-user) message
+    const showNewDivider =
+      !isMine &&
+      !!unreadCutoff &&
+      cutoffCapturedRef.current &&
+      new Date(msg.sent_at) > unreadCutoff &&
+      (!prevMsg ||
+        prevMsg.sender_id === user?.id ||
+        new Date(prevMsg.sent_at) <= unreadCutoff);
+
+    const newDivider = showNewDivider ? (
+      <div
+        key={`new-divider-${msg.id}`}
+        ref={(el) => {
+          if (el && !newDividerScrolledRef.current) {
+            newDividerScrolledRef.current = true;
+            requestAnimationFrame(() => el.scrollIntoView({ block: "center", behavior: "auto" }));
+          }
+          newDividerRef.current = el;
+        }}
+        className="flex items-center gap-2 my-3 px-1"
+        aria-label="New messages"
+      >
+        <span className="flex-1 h-[0.5px]" style={{ backgroundColor: "rgba(46,196,182,0.30)" }} />
+        <span
+          style={{
+            fontFamily: "Inter, sans-serif",
+            fontSize: 9,
+            fontWeight: 600,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "#2EC4B6",
+          }}
+        >
+          New
+        </span>
+        <span className="flex-1 h-[0.5px]" style={{ backgroundColor: "rgba(46,196,182,0.30)" }} />
+      </div>
+    ) : null;
+
     // ── kind='system': centred system note ──
     if (msg.kind === "system") {
       return (
@@ -676,9 +767,10 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     if (msg.kind === "content-share" && msg.shared_content_id && msg.shared_content_type) {
       const { variant, value } = buildShareValue(msg, null);
       const isBroken = (msg.shared_content_meta as any)?.is_broken === true;
+      const viewedAt = viewedShareMap.get(msg.id) ?? null;
       let readState: ReadState = null;
       if (isMine) {
-        readState = viewedShareIds.has(msg.id) ? "opened" : "delivered";
+        readState = viewedAt ? "opened" : "delivered";
       }
       return (
         <div key={msg.id}>
@@ -709,8 +801,10 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
               isFromCurrentUser={isMine}
               timestamp={formatMessageTime(msg.sent_at)}
               readState={readState}
+              viewedAt={viewedAt}
               isBroken={isBroken}
               onContentClick={() => handleContentClick(msg, value)}
+              onViewed={isMine ? undefined : () => { markContentViewed(msg.id).catch(() => {}); }}
             />
           </div>
         </div>
