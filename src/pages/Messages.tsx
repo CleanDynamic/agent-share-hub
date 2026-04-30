@@ -444,14 +444,57 @@ export default function MessagesPage() {
           counts={counts}
         />
 
-        <div className="flex-1 min-w-0 h-full">
+        <div className="flex-1 min-w-0 h-full flex flex-col">
           {activeThreadId && activeThreadInfo ? (
-            <ThreadView
-              key={activeThreadId}
-              threadId={activeThreadId}
-              otherUser={activeThreadInfo as any}
-              onBack={() => navigate("/messages")}
-            />
+            <>
+              <ConversationHeader
+                thread={activeThreadInfo.headerThread}
+                onBack={() => navigate("/messages")}
+                onSearchInThread={() => setSearchInThreadOpen((v) => !v)}
+                onSettings={() => setSettingsOpen(true)}
+                onOpenPinnedContent={openPinnedContent}
+              />
+              {searchInThreadOpen && (
+                <div
+                  className="flex items-center gap-2 flex-shrink-0"
+                  style={{
+                    padding: "8px 14px",
+                    borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+                    background: "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  <Search size={12} style={{ color: "rgba(255,255,255,0.40)" }} />
+                  <input
+                    autoFocus
+                    type="text"
+                    value={inThreadQuery}
+                    onChange={(e) => setInThreadQuery(e.target.value)}
+                    placeholder="Search in conversation..."
+                    className="flex-1 bg-transparent outline-none placeholder:text-white/40"
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 12,
+                      color: "rgba(255,255,255,0.85)",
+                    }}
+                  />
+                  <button
+                    onClick={() => { setSearchInThreadOpen(false); setInThreadQuery(""); }}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+              <div className="flex-1 min-h-0">
+                <ThreadView
+                  key={activeThreadId}
+                  threadId={activeThreadId}
+                  otherUser={activeThreadInfo.otherUser as any}
+                  onBack={() => navigate("/messages")}
+                  hideHeader
+                />
+              </div>
+            </>
           ) : activeThreadId && !activeThreadInfo ? (
             <div className="flex h-full items-center justify-center">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -488,6 +531,71 @@ export default function MessagesPage() {
           )}
         </div>
       </div>
+
+      {/* Settings drawer */}
+      <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <SheetContent side="right" className="w-[340px] sm:w-[380px] bg-[#0E0E16] border-l border-border">
+          <SheetHeader>
+            <SheetTitle className="text-base">Conversation settings</SheetTitle>
+          </SheetHeader>
+          {activeThreadInfo && (
+            <div className="mt-4 space-y-1">
+              {/* Members */}
+              <div className="px-1 pb-2">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+                  Members ({activeThreadInfo.headerThread.memberCount})
+                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {activeThreadInfo.headerThread.avatarUrls.map((url, i) => (
+                    <Avatar key={i} className="h-7 w-7">
+                      <AvatarImage src={url} />
+                      <AvatarFallback className="text-[9px] bg-accent text-muted-foreground">??</AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {activeThreadInfo.type === "direct" && (
+                    <span className="text-xs text-muted-foreground">
+                      You & {activeThreadInfo.otherUser?.display_name || activeThreadInfo.otherUser?.username || "User"}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={togglePin}
+                className="flex items-center gap-2 w-full px-2 py-2 rounded-md text-sm hover:bg-white/5 transition-colors"
+              >
+                <Pin size={14} className="text-muted-foreground" />
+                {activeThreadInfo.isPinnedForMe ? "Unpin thread" : "Pin thread"}
+              </button>
+              <button
+                onClick={toggleMute}
+                className="flex items-center gap-2 w-full px-2 py-2 rounded-md text-sm hover:bg-white/5 transition-colors"
+              >
+                <BellOff size={14} className="text-muted-foreground" />
+                {activeThreadInfo.isMutedForMe ? "Unmute" : "Mute notifications"}
+              </button>
+              {activeThreadInfo.headerThread.pinnedContent && (
+                <button
+                  onClick={() => { setSettingsOpen(false); openPinnedContent(); }}
+                  className="flex items-center gap-2 w-full px-2 py-2 rounded-md text-sm hover:bg-white/5 transition-colors"
+                >
+                  <ExternalLink size={14} className="text-muted-foreground" />
+                  Open pinned {activeThreadInfo.headerThread.pinnedContent.type}
+                </button>
+              )}
+              {activeThreadInfo.type !== "direct" && (
+                <button
+                  onClick={leaveThread}
+                  className="flex items-center gap-2 w-full px-2 py-2 rounded-md text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <LogOut size={14} />
+                  Leave thread
+                </button>
+              )}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       <ComposeModal
         open={composeOpen}
