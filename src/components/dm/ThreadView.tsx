@@ -706,55 +706,58 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 shrink-0 border-b border-border" style={{ height: 52 }}>
-        <button onClick={onBack} className="lg:hidden p-1 text-muted-foreground hover:text-foreground shrink-0">
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <Avatar className="h-9 w-9 shrink-0">
-          {otherUser.avatar_url && <AvatarImage src={otherUser.avatar_url} />}
-          <AvatarFallback className="bg-accent text-muted-foreground text-xs">
-            {initials(displayName)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-foreground truncate">{displayName}</p>
-          {presence && presenceLabel(presence.is_online, presence.last_seen_at) && (
-            <p className={`text-[12px] ${presence.is_online ? "text-[#22C55E]" : "text-muted-foreground"}`}>
-              {presenceLabel(presence.is_online, presence.last_seen_at)}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => setInfoOpen(!infoOpen)}
-            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <Info className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Info panel */}
-      {infoOpen && (
-        <div className="border-b border-border bg-card p-4 shrink-0">
-          <div className="flex items-center gap-3 mb-3">
-            <Avatar className="h-12 w-12">
+      {/* Header (suppressed when wrapper provides ConversationHeader) */}
+      {!hideHeader && (
+        <>
+          <div className="flex items-center gap-3 px-4 shrink-0 border-b border-border" style={{ height: 52 }}>
+            <button onClick={onBack} className="lg:hidden p-1 text-muted-foreground hover:text-foreground shrink-0">
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <Avatar className="h-9 w-9 shrink-0">
               {otherUser.avatar_url && <AvatarImage src={otherUser.avatar_url} />}
-              <AvatarFallback className="bg-accent text-muted-foreground">{initials(displayName)}</AvatarFallback>
+              <AvatarFallback className="bg-accent text-muted-foreground text-xs">
+                {initials(displayName)}
+              </AvatarFallback>
             </Avatar>
-            <div>
-              <p className="text-sm font-bold text-foreground">{displayName}</p>
-              {otherUser.username && <p className="text-xs text-muted-foreground">@{otherUser.username}</p>}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground truncate">{displayName}</p>
+              {presence && presenceLabel(presence.is_online, presence.last_seen_at) && (
+                <p className={`text-[12px] ${presence.is_online ? "text-[#22C55E]" : "text-muted-foreground"}`}>
+                  {presenceLabel(presence.is_online, presence.last_seen_at)}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setInfoOpen(!infoOpen)}
+                className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Info className="h-5 w-5" />
+              </button>
             </div>
           </div>
-          <button
-            onClick={() => navigate(`/creator/${otherUser.username}`)}
-            className="text-xs text-secondary hover:underline"
-          >
-            View profile →
-          </button>
-        </div>
+
+          {infoOpen && (
+            <div className="border-b border-border bg-card p-4 shrink-0">
+              <div className="flex items-center gap-3 mb-3">
+                <Avatar className="h-12 w-12">
+                  {otherUser.avatar_url && <AvatarImage src={otherUser.avatar_url} />}
+                  <AvatarFallback className="bg-accent text-muted-foreground">{initials(displayName)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-bold text-foreground">{displayName}</p>
+                  {otherUser.username && <p className="text-xs text-muted-foreground">@{otherUser.username}</p>}
+                </div>
+              </div>
+              <button
+                onClick={() => navigate(`/creator/${otherUser.username}`)}
+                className="text-xs text-secondary hover:underline"
+              >
+                View profile →
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Message list */}
