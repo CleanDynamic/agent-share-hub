@@ -712,6 +712,46 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     const reactions = reactionsByMessage.get(msg.id) || [];
     const showingTimestamp = showTimestampId === msg.id;
 
+    // "New" divider: between last read message and first unread (other-user) message
+    const showNewDivider =
+      !isMine &&
+      !!unreadCutoff &&
+      cutoffCapturedRef.current &&
+      new Date(msg.sent_at) > unreadCutoff &&
+      (!prevMsg ||
+        prevMsg.sender_id === user?.id ||
+        new Date(prevMsg.sent_at) <= unreadCutoff);
+
+    const newDivider = showNewDivider ? (
+      <div
+        key={`new-divider-${msg.id}`}
+        ref={(el) => {
+          if (el && !newDividerScrolledRef.current) {
+            newDividerScrolledRef.current = true;
+            requestAnimationFrame(() => el.scrollIntoView({ block: "center", behavior: "auto" }));
+          }
+          newDividerRef.current = el;
+        }}
+        className="flex items-center gap-2 my-3 px-1"
+        aria-label="New messages"
+      >
+        <span className="flex-1 h-[0.5px]" style={{ backgroundColor: "rgba(46,196,182,0.30)" }} />
+        <span
+          style={{
+            fontFamily: "Inter, sans-serif",
+            fontSize: 9,
+            fontWeight: 600,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "#2EC4B6",
+          }}
+        >
+          New
+        </span>
+        <span className="flex-1 h-[0.5px]" style={{ backgroundColor: "rgba(46,196,182,0.30)" }} />
+      </div>
+    ) : null;
+
     // ── kind='system': centred system note ──
     if (msg.kind === "system") {
       return (
