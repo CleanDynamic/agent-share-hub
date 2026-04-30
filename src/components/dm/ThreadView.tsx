@@ -318,9 +318,10 @@ interface ThreadViewProps {
   };
   onBack: () => void;
   enquiryRef?: string | null;
+  hideHeader?: boolean;
 }
 
-export function ThreadView({ threadId, otherUser, onBack, enquiryRef }: ThreadViewProps) {
+export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader }: ThreadViewProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
