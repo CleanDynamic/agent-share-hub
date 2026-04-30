@@ -28,6 +28,8 @@ import { getAuthorStats } from "@/lib/profile/getAuthorStats";
 import { getMostReferenced } from "@/lib/profile/getMostReferenced";
 import { getZoneContent } from "@/lib/profile/getZoneContent";
 import type { Primitive, ZoneItem } from "@/lib/profile/types";
+import { createDirectThread, sendTextMessage } from "@/lib/messaging";
+import { MessageComposeModal } from "@/components/messages/MessageComposeModal";
 
 const PAGE_SIZE = 20;
 const VALID_ZONES: Zone[] = ["authored", "curated", "activity", "network"];
@@ -59,6 +61,8 @@ export default function Profile() {
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [makeCollectionOpen, setMakeCollectionOpen] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeBusy, setComposeBusy] = useState(false);
   const avatarFileRef = useRef<HTMLInputElement | null>(null);
   const coverFileRef = useRef<HTMLInputElement | null>(null);
 
@@ -397,9 +401,31 @@ export default function Profile() {
 
   const handleMessage = useCallback(() => {
     if (!summary) return;
-    // Phase 7 will own the messaging integration; route is stubbed for now.
-    navigate(`/messages?compose=${summary.id}`);
-  }, [navigate, summary]);
+    if (!isLoggedIn) { navigate("/login"); return; }
+    if (summary.isOwnProfile) return;
+    setComposeOpen(true);
+  }, [summary, isLoggedIn, navigate]);
+
+  const handleComposeSubmit = useCallback(async (firstMessage: string) => {
+    if (!summary) return;
+    setComposeBusy(true);
+    try {
+      const threadId = await createDirectThread(summary.id);
+      if (firstMessage.trim()) {
+        await sendTextMessage(threadId, firstMessage.trim());
+      }
+      setComposeOpen(false);
+      navigate(`/messages/${threadId}`);
+    } catch (err: any) {
+      toast({
+        title: "Could not start conversation",
+        description: err?.message ?? String(err),
+        variant: "destructive",
+      });
+    } finally {
+      setComposeBusy(false);
+    }
+  }, [summary, navigate, toast]);
 
   // ── Avatar / Cover upload ──────────────────────────────────────────────
   const uploadAsset = useCallback(
@@ -600,6 +626,16 @@ export default function Profile() {
           onOpenChange={setMakeCollectionOpen}
           ownerId={user.id}
           onCreated={() => refetchZone()}
+        />
+      )}
+
+      {summary && !summary.isOwnProfile && (
+        <MessageComposeModal
+          open={composeOpen}
+          onOpenChange={setComposeOpen}
+          recipientLabel={summary.displayName ?? `@${summary.handle}`}
+          onSubmit={handleComposeSubmit}
+          submitting={composeBusy}
         />
       )}
     </>

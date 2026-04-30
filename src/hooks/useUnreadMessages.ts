@@ -48,6 +48,11 @@ export function useUnreadMessages() {
         { event: "*", schema: "public", table: "dm_threads" },
         () => refresh()
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "dm_messages" },
+        () => refresh()
+      )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [isLoggedIn, user, refresh]);

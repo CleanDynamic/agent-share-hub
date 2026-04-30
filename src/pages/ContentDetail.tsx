@@ -26,7 +26,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2, Eye, GitFork, ExternalLink, Clock, ShieldCheck } from "lucide-react";
+import { Download, Lock, Loader2, ArrowLeft, User, Heart, Calendar, Users, CheckCircle2, Eye, GitFork, ExternalLink, Clock, ShieldCheck, MessageCircle } from "lucide-react";
+import { createBlueprintGroup, createBountyThread, sendTextMessage } from "@/lib/messaging";
+import { StartDiscussionModal } from "@/components/messages/StartDiscussionModal";
 import { VersionHistory } from "@/components/VersionHistory";
 import { ForkModal } from "@/components/ForkModal";
 import { DependencyDisplay } from "@/components/DependencyDisplay";
@@ -234,6 +236,8 @@ const ContentDetail = () => {
   const [accountGateOpen, setAccountGateOpen] = useState(false);
   const [accountGateMode, setAccountGateMode] = useState<"purchase" | "subscription">("purchase");
   const [forkModalOpen, setForkModalOpen] = useState(false);
+  const [discussionOpen, setDiscussionOpen] = useState(false);
+  const [discussionBusy, setDiscussionBusy] = useState(false);
   const [forksModalOpen, setForksModalOpen] = useState(false);
   const [curatorModalOpen, setCuratorModalOpen] = useState(false);
   const [curatorText, setCuratorText] = useState("");
@@ -550,6 +554,39 @@ const ContentDetail = () => {
 
   const isBounty = !!(item as any)?.bounty_enabled;
   const isPoster = item?.creator_id === user?.id;
+
+  const handleStartDiscussion = useCallback(async (args: {
+    memberIds: string[]; title: string; firstMessage: string;
+  }) => {
+    if (!item) return;
+    if (!isLoggedIn) { setAccountGateOpen(true); return; }
+    setDiscussionBusy(true);
+    try {
+      const itemPostType = (item as any).post_type as string | undefined;
+      let threadId: string;
+      if (itemPostType === "bounty") {
+        // Single recipient (author or self → solver discussion w/ first picked).
+        const otherUserId = isPoster ? args.memberIds[0] : item.creator_id;
+        threadId = await createBountyThread(item.id, otherUserId);
+      } else {
+        const groupTitle = args.title || `${item.title} discussion`;
+        threadId = await createBlueprintGroup(item.id, args.memberIds, groupTitle);
+      }
+      if (args.firstMessage) {
+        await sendTextMessage(threadId, args.firstMessage);
+      }
+      setDiscussionOpen(false);
+      navigate(`/messages/${threadId}`);
+    } catch (err: any) {
+      toast({
+        title: "Could not start discussion",
+        description: err?.message ?? String(err),
+        variant: "destructive",
+      });
+    } finally {
+      setDiscussionBusy(false);
+    }
+  }, [item, isPoster, isLoggedIn, navigate, toast]);
 
   // Bounty responses query
   const { data: bountyResponses, refetch: refetchResponses } = useQuery({
@@ -1122,6 +1159,28 @@ const ContentDetail = () => {
 
           {/* Fork button — top right aligned */}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+            {(() => {
+              const itemPostType = (item as any).post_type as string | undefined;
+              const label = itemPostType === "bounty"
+                ? (isPoster ? "Open solver discussion" : "Ask the author a question")
+                : "Start discussion about this";
+              return (
+                <button
+                  onClick={() => { if (!isLoggedIn) { setAccountGateOpen(true); return; } setDiscussionOpen(true); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    fontSize: 12, color: 'rgba(255,255,255,0.40)',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    padding: '4px 8px', borderRadius: 6, transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.80)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.40)'}
+                  title={label}
+                >
+                  <MessageCircle style={{ width: 12, height: 12 }} /> {label}
+                </button>
+              );
+            })()}
             <button
               onClick={() => { if (!isLoggedIn) { setAccountGateOpen(true); return; } setForkModalOpen(true); }}
               style={{
@@ -1699,6 +1758,24 @@ const ContentDetail = () => {
             )}
           </div>
         </div>
+
+      <StartDiscussionModal
+        open={discussionOpen}
+        onOpenChange={setDiscussionOpen}
+        defaultTitle={`${item.title} discussion`}
+        onSubmit={handleStartDiscussion}
+        submitting={discussionBusy}
+        singleRecipientId={
+          (item as any).post_type === "bounty" && !isPoster
+            ? item.creator_id
+            : undefined
+        }
+        singleRecipientLabel={
+          (item as any).post_type === "bounty" && !isPoster
+            ? (creator?.display_name ?? creator?.username ?? "the author")
+            : undefined
+        }
+      />
 
       <GuestDownloadModal
         open={guestModalOpen}
