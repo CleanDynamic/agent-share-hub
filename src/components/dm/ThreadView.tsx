@@ -584,6 +584,71 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     navigator.clipboard.writeText(text);
   };
 
+  /* ═══════ Build content-share value from meta + resolved row ═══════ */
+  const buildShareValue = (msg: any, resolved: any | null): { variant: "blueprint" | "stage" | "block"; value: ContentShareValue } => {
+    const meta = msg.shared_content_meta || {};
+    const variant = (msg.shared_content_type === "stage" || msg.shared_content_type === "block")
+      ? msg.shared_content_type
+      : "blueprint";
+    const author = meta.author_username || meta.author_display_name || "user";
+    if (variant === "stage") {
+      return {
+        variant,
+        value: {
+          id: msg.shared_content_id,
+          name: meta.title || resolved?.title || "Stage",
+          blueprintTitle: (meta.parent_title as string) || resolved?.title || "Blueprint",
+          blockCount: 0,
+          connectionCount: 0,
+          blocks: [],
+          connections: [],
+        },
+      };
+    }
+    if (variant === "block") {
+      return {
+        variant,
+        value: {
+          id: msg.shared_content_id,
+          name: meta.title || "Block",
+          type: (meta.block_type as string) || "text",
+          stageName: (meta.stage_name as string) || "Stage",
+          blueprintTitle: (meta.parent_title as string) || resolved?.title || "Blueprint",
+          preview: (meta.preview as string) || "",
+          thumbnail: (meta.cover_image_url as string) || resolved?.cover_image_url || null,
+        },
+      };
+    }
+    return {
+      variant: "blueprint",
+      value: {
+        id: msg.shared_content_id,
+        title: meta.title || resolved?.title || "Blueprint",
+        author,
+        coverImage: meta.cover_image_url || resolved?.cover_image_url || null,
+        useCase: (meta.use_case as string) || null,
+        blockTypes: [],
+        stageCount: 0,
+        blockCount: 0,
+        readTime: "",
+      },
+    };
+  };
+
+  const handleContentClick = async (msg: any, value: ContentShareValue) => {
+    try { await markContentViewed(msg.id); } catch {}
+    const slug = (msg.shared_content_meta as any)?.slug;
+    const variant = msg.shared_content_type;
+    if (!slug && !msg.shared_content_id) return;
+    if (variant === "stage") {
+      navigate(`/b/${slug || msg.shared_content_id}#stage-${(value as any).id}`);
+    } else if (variant === "block") {
+      navigate(`/b/${slug || msg.shared_content_id}#block-${(value as any).id}`);
+    } else {
+      navigate(`/b/${slug || msg.shared_content_id}`);
+    }
+  };
+
   /* ═══════ Render message bubble ═══════ */
   const renderMessage = (msg: any, idx: number, allMsgs: any[]) => {
     const isMine = msg.sender_id === user?.id;
@@ -595,6 +660,63 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     const repliedMsg = msg.reply_to_message_id ? replyToRef(msg.reply_to_message_id) : null;
     const reactions = reactionsByMessage.get(msg.id) || [];
     const showingTimestamp = showTimestampId === msg.id;
+
+    // ── kind='system': centred system note ──
+    if (msg.kind === "system") {
+      return (
+        <div key={msg.id} className="flex justify-center my-3">
+          <span className="text-[11px] text-muted-foreground bg-background/60 px-3 py-1 rounded-full">
+            {msg.body || msg.text_content || "—"}
+          </span>
+        </div>
+      );
+    }
+
+    // ── kind='content-share': rich card bubble ──
+    if (msg.kind === "content-share" && msg.shared_content_id && msg.shared_content_type) {
+      const { variant, value } = buildShareValue(msg, null);
+      const isBroken = (msg.shared_content_meta as any)?.is_broken === true;
+      let readState: ReadState = null;
+      if (isMine) {
+        readState = viewedShareIds.has(msg.id) ? "opened" : "delivered";
+      }
+      return (
+        <div key={msg.id}>
+          {showDate && (
+            <div className="flex justify-center my-4">
+              <span className="text-[12px] text-muted-foreground bg-background px-3 py-1 rounded-full">
+                {dateSeparatorLabel(msg.sent_at)}
+              </span>
+            </div>
+          )}
+          <div className={`flex ${isMine ? "justify-end" : "justify-start"} mb-1.5`}>
+            {!isMine && (
+              <div className="w-7 shrink-0 mr-1.5 self-end">
+                {showAvatar && (
+                  <Avatar className="h-6 w-6">
+                    {otherUser.avatar_url && <AvatarImage src={otherUser.avatar_url} />}
+                    <AvatarFallback className="text-[8px] bg-accent text-muted-foreground">
+                      {initials(displayName)}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            )}
+            <ContentShareBubble
+              variant={variant}
+              content={value}
+              senderNote={msg.body || msg.text_content || null}
+              isFromCurrentUser={isMine}
+              timestamp={formatMessageTime(msg.sent_at)}
+              readState={readState}
+              isBroken={isBroken}
+              onContentClick={() => handleContentClick(msg, value)}
+            />
+          </div>
+        </div>
+      );
+    }
+
 
     const bubbleContent = () => {
       switch (msg.message_type) {
