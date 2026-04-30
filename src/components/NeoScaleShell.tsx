@@ -1012,6 +1012,23 @@ export function NeoScaleShell() {
     return () => { document.head.removeChild(tag); };
   }, [isMobile]);
 
+  /* ── Snap flipper to the correct face when the route changes
+        (covers cold loads of /messages, /library, etc.) ── */
+  useEffect(() => {
+    if (isMobile) return;
+    const flipper = flipperRef.current;
+    if (!flipper) return;
+    const wantsFront = location.pathname === "/";
+    if (wantsFront === showingFront.current) return;
+    showingFront.current = wantsFront;
+    currentRotation.current = wantsFront ? 0 : 180;
+    flipper.style.transition = "none";
+    flipper.style.transform = `rotateY(${currentRotation.current}deg)`;
+    requestAnimationFrame(() => {
+      if (flipper) flipper.style.transition = "transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)";
+    });
+  }, [location.pathname, isMobile]);
+
   /* ── Fetch feed posts (infinite scroll) ── */
   const INITIAL_PAGE = 50;
   const NEXT_PAGE = 25;
