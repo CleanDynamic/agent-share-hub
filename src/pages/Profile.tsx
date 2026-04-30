@@ -28,6 +28,8 @@ import { getAuthorStats } from "@/lib/profile/getAuthorStats";
 import { getMostReferenced } from "@/lib/profile/getMostReferenced";
 import { getZoneContent } from "@/lib/profile/getZoneContent";
 import type { Primitive, ZoneItem } from "@/lib/profile/types";
+import { createDirectThread, sendTextMessage } from "@/lib/messaging";
+import { MessageComposeModal } from "@/components/messages/MessageComposeModal";
 
 const PAGE_SIZE = 20;
 const VALID_ZONES: Zone[] = ["authored", "curated", "activity", "network"];
