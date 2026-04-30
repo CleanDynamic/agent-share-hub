@@ -628,6 +628,16 @@ export default function Profile() {
           onCreated={() => refetchZone()}
         />
       )}
+
+      {summary && !summary.isOwnProfile && (
+        <MessageComposeModal
+          open={composeOpen}
+          onOpenChange={setComposeOpen}
+          recipientLabel={summary.displayName ?? `@${summary.handle}`}
+          onSubmit={handleComposeSubmit}
+          submitting={composeBusy}
+        />
+      )}
     </>
   );
 }
