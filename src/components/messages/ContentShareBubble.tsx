@@ -153,10 +153,78 @@ export function ContentShareBubble({
   isFromCurrentUser,
   timestamp,
   readState,
+  viewedAt,
   isBroken,
   onContentClick,
+  onViewed,
 }: ContentShareBubbleProps) {
   const [hovered, setHovered] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const firedRef = useRef(false);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const visibleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [, forceTick] = useState(0);
+
+  const fireViewed = () => {
+    if (firedRef.current) return;
+    if (!onViewed) return;
+    firedRef.current = true;
+    try { onViewed(); } catch { /* noop */ }
+  };
+
+  // Hover-2s trigger (recipient only)
+  useEffect(() => {
+    if (isFromCurrentUser || !onViewed || firedRef.current) return;
+    if (!hovered) {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+      }
+      return;
+    }
+    hoverTimerRef.current = setTimeout(fireViewed, 2000);
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hovered, isFromCurrentUser, onViewed]);
+
+  // IntersectionObserver-5s on-screen fallback (recipient only)
+  useEffect(() => {
+    if (isFromCurrentUser || !onViewed || firedRef.current) return;
+    const el = rootRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.85 && document.hasFocus()) {
+          if (visibleTimerRef.current) return;
+          visibleTimerRef.current = setTimeout(() => {
+            fireViewed();
+            visibleTimerRef.current = null;
+          }, 5000);
+        } else if (visibleTimerRef.current) {
+          clearTimeout(visibleTimerRef.current);
+          visibleTimerRef.current = null;
+        }
+      },
+      { threshold: [0, 0.85, 1] }
+    );
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (visibleTimerRef.current) clearTimeout(visibleTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFromCurrentUser, onViewed]);
+
+  // Re-render the relative "Opened Xm ago" label every 30s
+  useEffect(() => {
+    if (!viewedAt) return;
+    const t = setInterval(() => forceTick((x) => x + 1), 30000);
+    return () => clearInterval(t);
+  }, [viewedAt]);
 
   const bubbleBg = isFromCurrentUser
     ? "rgba(46,196,182,0.12)"
@@ -170,11 +238,12 @@ export function ContentShareBubble({
 
   const renderReadState = () => {
     if (!isFromCurrentUser || !readState) return null;
+    const openedText = relativeOpenedLabel(viewedAt ?? null);
     const cfg: Record<string, { text: string; color: string }> = {
       sending: { text: "Sending…", color: "rgba(255,255,255,0.40)" },
       delivered: { text: "Delivered", color: "rgba(255,255,255,0.40)" },
       seen: { text: `Seen ${timestamp}`, color: "rgba(46,196,182,0.65)" },
-      opened: { text: "Opened", color: "rgba(46,196,182,0.85)" },
+      opened: { text: openedText, color: "rgba(46,196,182,0.85)" },
     };
     const c = cfg[readState];
     if (!c) return null;
