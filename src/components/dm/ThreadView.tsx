@@ -451,7 +451,43 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     return () => { supabase.removeChannel(channel); };
   }, [threadId, sentShareIds, queryClient]);
 
-  // Mark as read
+  // Capture unread cutoff BEFORE marking as read, so the "New" divider has a stable anchor
+  useEffect(() => {
+    if (!threadId || !user) return;
+    cutoffCapturedRef.current = false;
+    setUnreadCutoff(null);
+    newDividerScrolledRef.current = false;
+    (async () => {
+      // Prefer dm_thread_members.last_read_at (multi-thread aware)
+      const { data: mem } = await supabase
+        .from("dm_thread_members")
+        .select("last_read_at")
+        .eq("thread_id", threadId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      let cutoff: Date | null = (mem as any)?.last_read_at ? new Date((mem as any).last_read_at) : null;
+      if (!cutoff) {
+        // Fallback: earliest unread message from the other user
+        const { data: firstUnread } = await supabase
+          .from("dm_messages")
+          .select("sent_at")
+          .eq("thread_id", threadId)
+          .neq("sender_id", user.id)
+          .is("read_at", null)
+          .order("sent_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if ((firstUnread as any)?.sent_at) {
+          // Anchor cutoff just before the first unread message
+          cutoff = new Date(new Date((firstUnread as any).sent_at).getTime() - 1);
+        }
+      }
+      cutoffCapturedRef.current = true;
+      setUnreadCutoff(cutoff);
+    })();
+  }, [threadId, user]);
+
+  // Mark as read (runs after cutoff capture effect above)
   useEffect(() => {
     if (!threadId || !user) return;
     const resetUnread = async () => {
@@ -472,6 +508,12 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
         .eq("thread_id", threadId)
         .neq("sender_id", user.id)
         .is("read_at", null);
+      // Update member-level last_read_at too
+      await supabase
+        .from("dm_thread_members")
+        .update({ last_read_at: new Date().toISOString() } as any)
+        .eq("thread_id", threadId)
+        .eq("user_id", user.id);
       queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
     };
     resetUnread();
