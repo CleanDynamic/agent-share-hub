@@ -1015,14 +1015,19 @@ export function NeoScaleShell() {
 
   /* ── Snap flipper to the correct face when the route changes
         (covers cold loads of /messages, /library, etc.) ── */
+  const wasMessagesRef = useRef(false);
   useEffect(() => {
     if (isMobile) return;
+    if (isMessages) {
+      wasMessagesRef.current = true;
+      return;
+    }
     const flipper = flipperRef.current;
     if (!flipper) return;
-    // Messages renders outside the flipper entirely, so don't fight its transform.
-    if (isMessages) return;
     const wantsFront = location.pathname === "/";
-    if (wantsFront === showingFront.current) return;
+    const justLeftMessages = wasMessagesRef.current;
+    wasMessagesRef.current = false;
+    if (!justLeftMessages && wantsFront === showingFront.current) return;
     showingFront.current = wantsFront;
     currentRotation.current = wantsFront ? 0 : 180;
     flipper.style.transition = "none";
