@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PresenceProvider } from "@/components/PresenceProvider";
+import { ShareMenuProvider } from "@/components/share/ShareMenuProvider";
 import { Layout } from "@/components/Layout";
 import { AdminRoute } from "@/components/AdminRoute";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -66,6 +67,7 @@ const App = () => (
           <AuthProvider>
             <PresenceProvider />
             <ConnectionBanner />
+            <ShareMenuProvider>
             <Routes>
               <Route element={<Layout />}>
                 <Route path="/" element={<Home />} />
