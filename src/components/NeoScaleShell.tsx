@@ -1019,6 +1019,8 @@ export function NeoScaleShell() {
     if (isMobile) return;
     const flipper = flipperRef.current;
     if (!flipper) return;
+    // Messages renders outside the flipper entirely, so don't fight its transform.
+    if (isMessages) return;
     const wantsFront = location.pathname === "/";
     if (wantsFront === showingFront.current) return;
     showingFront.current = wantsFront;
@@ -1028,7 +1030,7 @@ export function NeoScaleShell() {
     requestAnimationFrame(() => {
       if (flipper) flipper.style.transition = "transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)";
     });
-  }, [location.pathname, isMobile]);
+  }, [location.pathname, isMobile, isMessages]);
 
   /* ── Fetch feed posts (infinite scroll) ── */
   const INITIAL_PAGE = 50;
