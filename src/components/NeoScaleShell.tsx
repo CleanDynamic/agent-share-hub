@@ -1539,6 +1539,24 @@ export function NeoScaleShell() {
 
           {/* ═══ MIDDLE PANEL ═══ */}
           <div className="ns-middle-wrapper">
+            {isMessages ? (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: 20,
+                  overflow: 'hidden',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  background: 'rgba(14, 14, 22, 0.92)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.40)',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <Outlet />
+              </div>
+            ) : (
             <LiquidGlassPanel cornerRadius={20} elasticity={0.15} contentStyle={{ overflow: 'hidden', perspective: 1400, transformStyle: 'preserve-3d' as any }}>
             <div className="ns-middle-flipper" ref={flipperRef}>
 
