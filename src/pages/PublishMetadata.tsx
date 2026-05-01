@@ -282,8 +282,10 @@ export default function PublishMetadata() {
         // the publish flow.
         try {
           const pt2 = (data as any)?.post_type ?? "blueprint";
-          const refIds: string[] = Array.isArray(values.blog_referenced_post_ids)
-            ? (values.blog_referenced_post_ids as string[])
+          const refIds: string[] = Array.isArray(
+            (data as any)?.blog_referenced_post_ids,
+          )
+            ? ((data as any).blog_referenced_post_ids as string[])
             : [];
           if (pt2 === "blog" && refIds.length > 0 && profile?.id && !isUpdateMode) {
             void notifyReferencesReceived({
