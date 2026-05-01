@@ -46,7 +46,9 @@ import {
   reorderCollectionItems,
   updateCollection,
   getCollections,
+  createCollection,
 } from "@/lib/library";
+import { Library as LibraryIcon } from "lucide-react";
 import { deleteCollection } from "@/lib/library/updateCollection";
 import type {
   CollectionItemKind,
@@ -113,6 +115,7 @@ export default function CollectionDetailRoute() {
   const [pickerQuery, setPickerQuery] = React.useState("");
   const [moveTarget, setMoveTarget] = React.useState<DetailItem | null>(null);
   const [saving, setSaving] = React.useState(false);
+  const [bulkSaving, setBulkSaving] = React.useState(false);
 
   const detailQuery = useQuery({
     queryKey: [
@@ -198,6 +201,47 @@ export default function CollectionDetailRoute() {
       toast({ title: "Link copied to clipboard" });
     } catch {
       toast({ title: "Share URL", description: url });
+    }
+  };
+
+  const handleBulkSave = async () => {
+    if (!profile || !detailQuery.data) return;
+    const { collection: c, items: srcItems } = detailQuery.data;
+    setBulkSaving(true);
+    try {
+      const ownerHandle = await getOwnerHandle(c.ownerId);
+      const suffix = ownerHandle ? ` (from @${ownerHandle})` : "";
+      const newName = `${c.name}${suffix}`;
+      const created = await createCollection({
+        ownerId: profile.id,
+        name: newName,
+        description: c.description ?? null,
+        accentColor: c.accentColor,
+        isPrivate: true,
+      });
+      let copied = 0;
+      for (const it of srcItems) {
+        try {
+          await saveToCollection(created.id, it.kind, it.id);
+          copied++;
+        } catch {
+          /* skip duplicates / failures */
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["library_collections"] });
+      qc.invalidateQueries({ queryKey: ["library_all_items"] });
+      toast({
+        title: `Added ${copied} item${copied === 1 ? "" : "s"} to your library`,
+        description: `Saved as "${newName}"`,
+      });
+    } catch (e: any) {
+      toast({
+        title: "Couldn't import collection",
+        description: e?.message,
+        variant: "destructive",
+      });
+    } finally {
+      setBulkSaving(false);
     }
   };
 
@@ -329,6 +373,51 @@ export default function CollectionDetailRoute() {
         path={`/library/collections/${collection.id}`}
         noIndex={collection.isPrivate}
       />
+      {!isOwnCollection && profile && items.length > 0 && (
+        <div
+          style={{
+            maxWidth: 1100,
+            margin: "20px auto 0",
+            padding: "12px 16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            background: "rgba(46, 196, 182, 0.08)",
+            border: "1px solid rgba(46, 196, 182, 0.25)",
+            borderRadius: 12,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              fontFamily: "Inter, sans-serif",
+              fontSize: 13,
+              color: "rgba(255,255,255,0.85)",
+            }}
+          >
+            <LibraryIcon size={16} color="#2EC4B6" />
+            <span>
+              Like this collection? Copy all {items.length} item
+              {items.length === 1 ? "" : "s"} into your own library.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            onClick={handleBulkSave}
+            disabled={bulkSaving}
+            style={{
+              background: "#2EC4B6",
+              color: "#07070D",
+              border: "none",
+            }}
+          >
+            {bulkSaving ? "Saving…" : "Add all to my library"}
+          </Button>
+        </div>
+      )}
       <CollectionDetailPage
         collection={{
           id: collection.id,

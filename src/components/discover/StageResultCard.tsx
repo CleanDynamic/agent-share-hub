@@ -1,6 +1,7 @@
 import { ArrowUpRight, LayoutGrid } from "lucide-react";
 import { ShareTrigger } from "@/components/share/ShareTrigger";
 import { useShareMenu, virtualAnchorFromPoint } from "@/components/share/ShareMenuProvider";
+import { CollectionBookmarkButton } from "@/components/library/CollectionBookmarkButton";
 
 const BLOCK_TYPE_COLORS: Record<string, string> = {
   prompt: "#2EC4B6",
@@ -240,6 +241,11 @@ export function StageResultCard({ stage, parent, author, onClick }: StageResultC
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+          <CollectionBookmarkButton
+            contentType="stage"
+            contentId={stage.id}
+            contentMeta={{ title: stageName, parentSlug: parent.blueprintId }}
+          />
           <ShareTrigger
             contentType="stage"
             contentId={stage.id}

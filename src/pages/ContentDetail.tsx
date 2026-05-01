@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getDownloadLabel, triggerDownload } from "@/lib/download";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { CollectionBookmarkButton } from "@/components/library/CollectionBookmarkButton";
 import { AddToCollectionButton } from "@/components/AddToCollectionButton";
 
 import { TipSelector } from "@/components/TipSelector";
@@ -1344,6 +1345,13 @@ const ContentDetail = () => {
             isEligible={isEligible}
           />
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <CollectionBookmarkButton
+              contentType={(((item as any).post_type as any) || "blueprint")}
+              contentId={item.id}
+              contentMeta={{ title: item.title, slug: (item as any).slug }}
+              variant="subtle"
+              size={16}
+            />
             <BookmarkButton contentId={item.id} />
             <AddToCollectionButton contentId={item.id} contentTitle={item.title} />
             {item.donation_enabled && creator && (
