@@ -1,4 +1,6 @@
 import { ArrowUpRight, LayoutGrid } from "lucide-react";
+import { ShareTrigger } from "@/components/share/ShareTrigger";
+import { useShareMenu, virtualAnchorFromPoint } from "@/components/share/ShareMenuProvider";
 
 const BLOCK_TYPE_COLORS: Record<string, string> = {
   prompt: "#2EC4B6",
@@ -159,6 +161,7 @@ function StageMiniMap({
 }
 
 export function StageResultCard({ stage, parent, author, onClick }: StageResultCardProps) {
+  const { openShareMenu } = useShareMenu();
   const blockTypeCounts = countBlockTypes(stage.blocks);
   const modelCount = countModels(stage.blocks);
   const stageName = stage.name || `Stage ${stage.id}`;
@@ -175,6 +178,15 @@ export function StageResultCard({ stage, parent, author, onClick }: StageResultC
   return (
     <article
       onClick={onClick}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        openShareMenu({
+          contentType: "stage",
+          contentId: stage.id,
+          contentMeta: { title: stageName, parentSlug: parent.blueprintId },
+          anchorEl: virtualAnchorFromPoint(e.clientX, e.clientY),
+        });
+      }}
       className="group relative rounded-xl cursor-pointer transition-all duration-300 hover:bg-white/[0.02]"
       style={{
         padding: "14px 16px",
@@ -227,17 +239,24 @@ export function StageResultCard({ stage, parent, author, onClick }: StageResultC
             </span>
           </div>
         </div>
-        <button
-          className="flex items-center gap-1 text-[11px] font-medium"
-          style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick?.();
-          }}
-        >
-          Open
-          <ArrowUpRight size={12} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+          <ShareTrigger
+            contentType="stage"
+            contentId={stage.id}
+            contentMeta={{ title: stageName, parentSlug: parent.blueprintId }}
+          />
+          <button
+            className="flex items-center gap-1 text-[11px] font-medium"
+            style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick?.();
+            }}
+          >
+            Open
+            <ArrowUpRight size={12} />
+          </button>
+        </div>
       </div>
 
       {/* Title (Playfair) */}

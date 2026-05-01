@@ -1,4 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
+import { ShareTrigger } from "@/components/share/ShareTrigger";
+import { useShareMenu, virtualAnchorFromPoint } from "@/components/share/ShareMenuProvider";
 
 const BLOCK_TYPE_COLORS: Record<string, string> = {
   prompt: "#2EC4B6",
@@ -108,6 +110,7 @@ export function BlockResultCard({
   referenceCount,
   onClick,
 }: BlockResultCardProps) {
+  const { openShareMenu } = useShareMenu();
   const color = getBlockColor(block.type);
   const blockName = block.name || getDefaultBlockName(block.type);
   const { content, isCode } = getContentPreview(block);
@@ -122,6 +125,15 @@ export function BlockResultCard({
   return (
     <article
       onClick={onClick}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        openShareMenu({
+          contentType: "block",
+          contentId: block.id,
+          contentMeta: { title: blockName, parentSlug: parent.blueprintId },
+          anchorEl: virtualAnchorFromPoint(e.clientX, e.clientY),
+        });
+      }}
       className="group relative rounded-xl cursor-pointer transition-all duration-300 hover:bg-white/[0.02]"
       style={{
         padding: "14px 16px",
@@ -174,17 +186,24 @@ export function BlockResultCard({
             </span>
           </div>
         </div>
-        <button
-          className="flex items-center gap-1 text-[11px] font-medium"
-          style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick?.();
-          }}
-        >
-          Open
-          <ArrowUpRight size={12} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+          <ShareTrigger
+            contentType="block"
+            contentId={block.id}
+            contentMeta={{ title: blockName, parentSlug: parent.blueprintId }}
+          />
+          <button
+            className="flex items-center gap-1 text-[11px] font-medium"
+            style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick?.();
+            }}
+          >
+            Open
+            <ArrowUpRight size={12} />
+          </button>
+        </div>
       </div>
 
       {/* Title (Playfair) */}

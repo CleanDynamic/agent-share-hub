@@ -1,4 +1,6 @@
 import { ArrowUpRight, Star, Download, Eye } from "lucide-react";
+import { ShareTrigger } from "@/components/share/ShareTrigger";
+import { useShareMenu, virtualAnchorFromPoint } from "@/components/share/ShareMenuProvider";
 
 export interface BlueprintResultCardData {
   id: string;
@@ -22,9 +24,20 @@ interface BlueprintResultCardProps {
 }
 
 export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardProps) {
+  const { openShareMenu } = useShareMenu();
+  const meta = { title: blueprint.title, slug: blueprint.slug };
   return (
     <div
       onClick={onClick}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        openShareMenu({
+          contentType: "blueprint",
+          contentId: blueprint.id,
+          contentMeta: meta,
+          anchorEl: virtualAnchorFromPoint(e.clientX, e.clientY),
+        });
+      }}
       className="cursor-pointer rounded-xl p-5 transition-all"
       style={{
         background: "rgba(22, 22, 30, 0.30)",
@@ -59,17 +72,24 @@ export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardP
             </span>
           )}
         </div>
-        <button
-          className="flex items-center gap-1 text-[11px] font-medium transition-colors"
-          style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick?.();
-          }}
-        >
-          Open
-          <ArrowUpRight size={12} />
-        </button>
+        <div className="flex items-center gap-1">
+          <ShareTrigger
+            contentType="blueprint"
+            contentId={blueprint.id}
+            contentMeta={meta}
+          />
+          <button
+            className="flex items-center gap-1 text-[11px] font-medium transition-colors"
+            style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick?.();
+            }}
+          >
+            Open
+            <ArrowUpRight size={12} />
+          </button>
+        </div>
       </div>
 
       <h3
