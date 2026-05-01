@@ -373,6 +373,51 @@ export default function CollectionDetailRoute() {
         path={`/library/collections/${collection.id}`}
         noIndex={collection.isPrivate}
       />
+      {!isOwnCollection && profile && items.length > 0 && (
+        <div
+          style={{
+            maxWidth: 1100,
+            margin: "20px auto 0",
+            padding: "12px 16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            background: "rgba(46, 196, 182, 0.08)",
+            border: "1px solid rgba(46, 196, 182, 0.25)",
+            borderRadius: 12,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              fontFamily: "Inter, sans-serif",
+              fontSize: 13,
+              color: "rgba(255,255,255,0.85)",
+            }}
+          >
+            <LibraryIcon size={16} color="#2EC4B6" />
+            <span>
+              Like this collection? Copy all {items.length} item
+              {items.length === 1 ? "" : "s"} into your own library.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            onClick={handleBulkSave}
+            disabled={bulkSaving}
+            style={{
+              background: "#2EC4B6",
+              color: "#07070D",
+              border: "none",
+            }}
+          >
+            {bulkSaving ? "Saving…" : "Add all to my library"}
+          </Button>
+        </div>
+      )}
       <CollectionDetailPage
         collection={{
           id: collection.id,
