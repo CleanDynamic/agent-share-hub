@@ -1,6 +1,7 @@
 import { ArrowUpRight, Star, Download, Eye } from "lucide-react";
 import { ShareTrigger } from "@/components/share/ShareTrigger";
 import { useShareMenu, virtualAnchorFromPoint } from "@/components/share/ShareMenuProvider";
+import { CollectionBookmarkButton } from "@/components/library/CollectionBookmarkButton";
 
 export interface BlueprintResultCardData {
   id: string;
@@ -73,6 +74,11 @@ export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardP
           )}
         </div>
         <div className="flex items-center gap-1">
+          <CollectionBookmarkButton
+            contentType="blueprint"
+            contentId={blueprint.id}
+            contentMeta={{ title: blueprint.title, slug: blueprint.slug }}
+          />
           <ShareTrigger
             contentType="blueprint"
             contentId={blueprint.id}
