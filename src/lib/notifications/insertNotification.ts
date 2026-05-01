@@ -1,8 +1,11 @@
+/**
+ * Legacy fire-and-forget notification insert. Kept for backwards
+ * compatibility with the many places in the codebase that still call
+ * `insertNotification(...)` directly. New code should prefer the typed
+ * `notify*` triggers from `./triggers`.
+ */
 import { supabase } from "@/integrations/supabase/client";
 
-/**
- * Fire-and-forget notification insert. Never throws.
- */
 export async function insertNotification(params: {
   recipient_id: string;
   actor_id?: string | null;
@@ -13,9 +16,7 @@ export async function insertNotification(params: {
   metadata?: Record<string, any>;
 }) {
   try {
-    // Don't notify yourself
     if (params.actor_id && params.actor_id === params.recipient_id) return;
-
     await supabase.from("notifications" as any).insert({
       recipient_id: params.recipient_id,
       actor_id: params.actor_id ?? null,
@@ -26,6 +27,6 @@ export async function insertNotification(params: {
       metadata: params.metadata ?? {},
     } as any);
   } catch {
-    // silent — notifications are non-critical
+    /* silent — notifications are non-critical */
   }
 }
