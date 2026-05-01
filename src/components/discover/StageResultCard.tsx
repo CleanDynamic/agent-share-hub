@@ -239,17 +239,24 @@ export function StageResultCard({ stage, parent, author, onClick }: StageResultC
             </span>
           </div>
         </div>
-        <button
-          className="flex items-center gap-1 text-[11px] font-medium"
-          style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick?.();
-          }}
-        >
-          Open
-          <ArrowUpRight size={12} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+          <ShareTrigger
+            contentType="stage"
+            contentId={stage.id}
+            contentMeta={{ title: stageName, parentSlug: parent.blueprintId }}
+          />
+          <button
+            className="flex items-center gap-1 text-[11px] font-medium"
+            style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick?.();
+            }}
+          >
+            Open
+            <ArrowUpRight size={12} />
+          </button>
+        </div>
       </div>
 
       {/* Title (Playfair) */}
