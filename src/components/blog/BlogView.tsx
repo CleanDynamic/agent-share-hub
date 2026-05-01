@@ -21,6 +21,8 @@ import { BlogReferenceExtension } from "./BlogReferenceExtension";
 import { validateReferences } from "@/lib/blog/validateReferences";
 import { absoluteUrl, copyToClipboard } from "@/lib/deepLink";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { notifyEngagement } from "@/lib/notifications";
 import { toast } from "sonner";
 import { BookmarkButton } from "@/components/BookmarkButton";
 
@@ -111,11 +113,20 @@ export function BlogView({ item }: BlogViewProps) {
     [validatedBody],
   );
 
-  // Like button — best-effort (uses content_views increment as a placeholder
-  // when no dedicated likes table is wired for blogs yet).
+  // Like button — best-effort optimistic toggle. Fires a non-blocking
+  // engagement notification (24h throttled inside notifyEngagement).
+  const { user } = useAuth();
   const onLike = () => {
-    setLiked((v) => !v);
+    const willLike = !liked;
+    setLiked(willLike);
     setLikeCount((n) => (liked ? Math.max(0, n - 1) : n + 1));
+    if (willLike && user?.id && item?.id) {
+      void notifyEngagement({
+        kind: "like",
+        postId: item.id,
+        actorId: user.id,
+      }).catch(console.error);
+    }
   };
 
   const onShare = async () => {
