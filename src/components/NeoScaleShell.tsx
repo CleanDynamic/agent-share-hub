@@ -1001,6 +1001,7 @@ export function NeoScaleShell() {
 
   const isHome  = location.pathname === "/";
   const navPage = routeToNav(location.pathname);
+  const isMessages = location.pathname === "/messages" || location.pathname.startsWith("/messages/");
 
   /* ── CSS injection ── */
   useEffect(() => {
@@ -1014,12 +1015,19 @@ export function NeoScaleShell() {
 
   /* ── Snap flipper to the correct face when the route changes
         (covers cold loads of /messages, /library, etc.) ── */
+  const wasMessagesRef = useRef(false);
   useEffect(() => {
     if (isMobile) return;
+    if (isMessages) {
+      wasMessagesRef.current = true;
+      return;
+    }
     const flipper = flipperRef.current;
     if (!flipper) return;
     const wantsFront = location.pathname === "/";
-    if (wantsFront === showingFront.current) return;
+    const justLeftMessages = wasMessagesRef.current;
+    wasMessagesRef.current = false;
+    if (!justLeftMessages && wantsFront === showingFront.current) return;
     showingFront.current = wantsFront;
     currentRotation.current = wantsFront ? 0 : 180;
     flipper.style.transition = "none";
@@ -1027,7 +1035,7 @@ export function NeoScaleShell() {
     requestAnimationFrame(() => {
       if (flipper) flipper.style.transition = "transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)";
     });
-  }, [location.pathname, isMobile]);
+  }, [location.pathname, isMobile, isMessages]);
 
   /* ── Fetch feed posts (infinite scroll) ── */
   const INITIAL_PAGE = 50;
@@ -1482,6 +1490,9 @@ export function NeoScaleShell() {
                       if (item.key === 'home') {
                         doFlip('front', 'left');
                         navigate("/");
+                      } else if (item.key === 'messages') {
+                        // Messages uses its own static surface — skip the 3D flip.
+                        navigate(item.route);
                       } else {
                         doFlip('back', 'left');
                         navigate(item.route);
@@ -1533,6 +1544,24 @@ export function NeoScaleShell() {
 
           {/* ═══ MIDDLE PANEL ═══ */}
           <div className="ns-middle-wrapper">
+            {isMessages ? (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: 20,
+                  overflow: 'hidden',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  background: 'rgba(14, 14, 22, 0.92)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.40)',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <Outlet />
+              </div>
+            ) : (
             <LiquidGlassPanel cornerRadius={20} elasticity={0.15} contentStyle={{ overflow: 'hidden', perspective: 1400, transformStyle: 'preserve-3d' as any }}>
             <div className="ns-middle-flipper" ref={flipperRef}>
 
@@ -1632,6 +1661,7 @@ export function NeoScaleShell() {
 
             </div>
             </LiquidGlassPanel>
+            )}
           </div>
 
           {/* ═══ RIGHT PANEL ═══ */}
