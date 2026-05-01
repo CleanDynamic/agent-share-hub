@@ -9,7 +9,7 @@ import {
   markAllNotificationsRead,
   useNewNotifications,
   type Notification as DataNotification,
-} from "@/lib/notifications";
+} from "@/lib/notifications/index";
 import {
   NotificationCard,
   NotificationGroupHeader,
@@ -334,7 +334,7 @@ export default function NotificationsPage() {
 
   return (
     <div style={{ padding: "8px 0 32px" }}>
-      <SeoHead title="Notifications" description="Your latest activity and mentions." />
+      <SeoHead title="Notifications" description="Your latest activity and mentions." path="/notifications" />
 
       {/* Back link */}
       <Link
