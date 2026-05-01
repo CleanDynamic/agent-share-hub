@@ -74,19 +74,8 @@ export function DiscoverSearchHeader({
 
   return (
     <div className="w-full flex flex-col gap-0">
-      {/* ROW 1 — Page header */}
-      <div className="flex items-center justify-between" style={{ height: 50 }}>
-        <h1
-          style={{
-            fontFamily: 'Inter, sans-serif',
-            fontSize: 24,
-            fontWeight: 700,
-            color: 'rgba(255,255,255,0.95)',
-            margin: 0,
-          }}
-        >
-          Discover
-        </h1>
+      {/* ROW 1 — Submit blueprint action (title banner removed) */}
+      <div className="flex items-center justify-end" style={{ height: 40 }}>
         <button
           style={{
             fontFamily: 'Inter, sans-serif',
