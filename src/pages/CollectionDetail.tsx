@@ -204,6 +204,47 @@ export default function CollectionDetailRoute() {
     }
   };
 
+  const handleBulkSave = async () => {
+    if (!profile || !detailQuery.data) return;
+    const { collection: c, items: srcItems } = detailQuery.data;
+    setBulkSaving(true);
+    try {
+      const ownerHandle = await getOwnerHandle(c.ownerId);
+      const suffix = ownerHandle ? ` (from @${ownerHandle})` : "";
+      const newName = `${c.name}${suffix}`;
+      const created = await createCollection({
+        ownerId: profile.id,
+        name: newName,
+        description: c.description ?? null,
+        accentColor: c.accentColor,
+        isPrivate: true,
+      });
+      let copied = 0;
+      for (const it of srcItems) {
+        try {
+          await saveToCollection(created.id, it.kind, it.id);
+          copied++;
+        } catch {
+          /* skip duplicates / failures */
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["library_collections"] });
+      qc.invalidateQueries({ queryKey: ["library_all_items"] });
+      toast({
+        title: `Added ${copied} item${copied === 1 ? "" : "s"} to your library`,
+        description: `Saved as "${newName}"`,
+      });
+    } catch (e: any) {
+      toast({
+        title: "Couldn't import collection",
+        description: e?.message,
+        variant: "destructive",
+      });
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
   const handleEditSubmit = async (values: {
     name: string;
     description: string;
