@@ -46,7 +46,9 @@ import {
   reorderCollectionItems,
   updateCollection,
   getCollections,
+  createCollection,
 } from "@/lib/library";
+import { Library as LibraryIcon } from "lucide-react";
 import { deleteCollection } from "@/lib/library/updateCollection";
 import type {
   CollectionItemKind,
