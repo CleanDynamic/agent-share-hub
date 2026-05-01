@@ -72,17 +72,24 @@ export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardP
             </span>
           )}
         </div>
-        <button
-          className="flex items-center gap-1 text-[11px] font-medium transition-colors"
-          style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick?.();
-          }}
-        >
-          Open
-          <ArrowUpRight size={12} />
-        </button>
+        <div className="flex items-center gap-1">
+          <ShareTrigger
+            contentType="blueprint"
+            contentId={blueprint.id}
+            contentMeta={meta}
+          />
+          <button
+            className="flex items-center gap-1 text-[11px] font-medium transition-colors"
+            style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick?.();
+            }}
+          >
+            Open
+            <ArrowUpRight size={12} />
+          </button>
+        </div>
       </div>
 
       <h3
