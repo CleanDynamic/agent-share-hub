@@ -26,6 +26,10 @@ import {
 } from "@/components/publish/PublishMetadataForm";
 import { validateBountyForPublish } from "@/lib/bounty/validateBountyForPublish";
 import { recomputeDerivedBio } from "@/lib/profile/recomputeDerivedBio";
+import {
+  notifyReferencesReceived,
+  recomputeUserLevel,
+} from "@/lib/notifications";
 import { toast as sonnerToast } from "sonner";
 
 const buildPayload = (
@@ -268,6 +272,28 @@ export default function PublishMetadata() {
         // Refresh the author's derived bio in the background. Non-blocking.
         if (profile?.id) {
           void recomputeDerivedBio(profile.id);
+          // Recompute creator level — fires a system notification when the
+          // user crosses a threshold (reader → builder → creator → curator).
+          void recomputeUserLevel(profile.id).catch(console.error);
+        }
+
+        // Reference notifications: fan out to every referenced item's owner
+        // when a blog is (first) published. Fire-and-forget — never blocks
+        // the publish flow.
+        try {
+          const pt2 = (data as any)?.post_type ?? "blueprint";
+          const refIds: string[] = Array.isArray(values.blog_referenced_post_ids)
+            ? (values.blog_referenced_post_ids as string[])
+            : [];
+          if (pt2 === "blog" && refIds.length > 0 && profile?.id && !isUpdateMode) {
+            void notifyReferencesReceived({
+              blogId: contentItemId!,
+              blogAuthorId: profile.id,
+              referencedContentIds: refIds,
+            }).catch(console.error);
+          }
+        } catch (e) {
+          console.error("[publish] reference notification failed", e);
         }
 
         lastSavedRef.current = JSON.stringify(buildPayload(values, pt));
