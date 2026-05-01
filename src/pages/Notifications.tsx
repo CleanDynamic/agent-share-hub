@@ -359,48 +359,43 @@ export default function NotificationsPage() {
   const showEmpty = !loading && items.length === 0;
 
   return (
-    <div style={{ padding: "8px 0 32px" }}>
+    <div style={{ padding: "0 0 32px" }}>
       <SeoHead title="Notifications" description="Your latest activity and mentions." path="/notifications" />
 
-      {/* Back link */}
-      <Link
-        to="/"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 4,
-          fontFamily: "Inter, sans-serif",
-          fontSize: 12,
-          color: "rgba(255,255,255,0.55)",
-          textDecoration: "none",
-          marginBottom: 12,
-        }}
-      >
-        <ChevronLeft size={14} />
-        Back
-      </Link>
-
-      {/* Header */}
+      {/* Toolbar: tabs (left) + Mark all as read (right) */}
       <div
+        role="tablist"
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 12,
-          marginBottom: 8,
+          borderBottom: "0.5px solid rgba(255,255,255,0.10)",
+          marginBottom: 14,
         }}
       >
-        <h1
-          style={{
-            fontFamily: "Inter, sans-serif",
-            fontSize: 22,
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.95)",
-            margin: 0,
-          }}
-        >
-          Notifications
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filter === "all"}
+            onClick={() => setFilter("all")}
+            style={{ ...tabBase, ...(filter === "all" ? tabActive : {}) }}
+          >
+            All
+            <span style={countPill}>{allCount}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filter === "unread"}
+            onClick={() => setFilter("unread")}
+            style={{ ...tabBase, ...(filter === "unread" ? tabActive : {}) }}
+          >
+            Unread
+            <span style={countPill}>{unreadCount}</span>
+          </button>
+        </div>
         <button
           type="button"
           onClick={handleMarkAll}
@@ -418,39 +413,6 @@ export default function NotificationsPage() {
           }}
         >
           Mark all as read
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div
-        role="tablist"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-          borderBottom: "0.5px solid rgba(255,255,255,0.10)",
-          marginBottom: 12,
-        }}
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={filter === "all"}
-          onClick={() => setFilter("all")}
-          style={{ ...tabBase, ...(filter === "all" ? tabActive : {}) }}
-        >
-          All
-          <span style={countPill}>{allCount}</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={filter === "unread"}
-          onClick={() => setFilter("unread")}
-          style={{ ...tabBase, ...(filter === "unread" ? tabActive : {}) }}
-        >
-          Unread
-          <span style={countPill}>{unreadCount}</span>
         </button>
       </div>
 
