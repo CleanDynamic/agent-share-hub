@@ -33,6 +33,7 @@ import Onboarding from "./pages/Onboarding";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import LibraryPage from "./pages/Library";
+import CollectionDetailRoute from "./pages/CollectionDetail";
 import Feed from "./pages/Feed";
 import MyUploads from "./pages/MyUploads";
 import RecentPage from "./pages/Recent";
@@ -100,6 +101,8 @@ const App = () => (
                 <Route path="/profile/:handle" element={<Profile />} />
                 <Route path="/saved" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
                 <Route path="/library" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
+                <Route path="/library/collections/:collectionId" element={<CollectionDetailRoute />} />
+                <Route path="/library/:handle/collections/:collectionId" element={<CollectionDetailRoute />} />
                 <Route path="/library/:handle" element={<LibraryPage />} />
                 
                 <Route path="/drafts" element={<ProtectedRoute><DraftsPage /></ProtectedRoute>} />
