@@ -378,14 +378,19 @@ export function notifyBountySolutionAccepted(args: {
 // 9. SYSTEM — level achievement.
 // ────────────────────────────────────────────────────────────
 
-export type CreatorLevel = "reader" | "builder" | "creator" | "sage";
+/**
+ * Levels match the `profiles.level` check constraint:
+ *   reader → builder → creator → curator
+ * (Curator is the platform's highest tier; "sage" in the spec maps here.)
+ */
+export type CreatorLevel = "reader" | "builder" | "creator" | "curator";
 
-const LEVEL_ORDER: CreatorLevel[] = ["reader", "builder", "creator", "sage"];
+const LEVEL_ORDER: CreatorLevel[] = ["reader", "builder", "creator", "curator"];
 const LEVEL_LABEL: Record<CreatorLevel, string> = {
   reader: "Reader",
   builder: "Builder",
   creator: "Creator",
-  sage: "Sage",
+  curator: "Curator",
 };
 
 export function notifyLevelEarned(args: {
@@ -430,26 +435,25 @@ export function recomputeUserLevel(userId: string) {
           .eq("status", "approved"),
         supabase
           .from("profiles")
-          .select("follower_count, derived_level")
+          .select("follower_count, level")
           .eq("id", userId)
           .maybeSingle(),
       ]);
 
       const followers = ((prof as any)?.follower_count ?? 0) as number;
       const posts = (postCount ?? 0) as number;
-      const previous = ((prof as any)?.derived_level ?? "reader") as CreatorLevel;
+      const previous = (((prof as any)?.level as CreatorLevel) ?? "reader");
 
       let next: CreatorLevel = "reader";
-      if (posts >= 25 || followers >= 1000) next = "sage";
+      if (posts >= 25 || followers >= 1000) next = "curator";
       else if (posts >= 5 || followers >= 100) next = "creator";
       else if (posts >= 1) next = "builder";
 
       if (LEVEL_ORDER.indexOf(next) > LEVEL_ORDER.indexOf(previous)) {
-        // Persist (best effort — column may not exist yet on old schemas).
         try {
           await supabase
             .from("profiles")
-            .update({ derived_level: next } as any)
+            .update({ level: next } as any)
             .eq("id", userId);
         } catch {
           /* ignore — we still send the notification below */
