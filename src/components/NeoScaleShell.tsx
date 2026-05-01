@@ -1485,6 +1485,9 @@ export function NeoScaleShell() {
                       if (item.key === 'home') {
                         doFlip('front', 'left');
                         navigate("/");
+                      } else if (item.key === 'messages') {
+                        // Messages uses its own static surface — skip the 3D flip.
+                        navigate(item.route);
                       } else {
                         doFlip('back', 'left');
                         navigate(item.route);
