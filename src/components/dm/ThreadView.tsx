@@ -968,7 +968,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full min-h-0 flex flex-col overflow-hidden relative">
       {/* Header (suppressed when wrapper provides ConversationHeader) */}
       {!hideHeader && (
         <>
