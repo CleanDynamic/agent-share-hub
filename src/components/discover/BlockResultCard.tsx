@@ -186,17 +186,24 @@ export function BlockResultCard({
             </span>
           </div>
         </div>
-        <button
-          className="flex items-center gap-1 text-[11px] font-medium"
-          style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick?.();
-          }}
-        >
-          Open
-          <ArrowUpRight size={12} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+          <ShareTrigger
+            contentType="block"
+            contentId={block.id}
+            contentMeta={{ title: blockName, parentSlug: parent.blueprintId }}
+          />
+          <button
+            className="flex items-center gap-1 text-[11px] font-medium"
+            style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick?.();
+            }}
+          >
+            Open
+            <ArrowUpRight size={12} />
+          </button>
+        </div>
       </div>
 
       {/* Title (Playfair) */}
