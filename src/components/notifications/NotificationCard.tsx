@@ -486,7 +486,7 @@ export function NotificationGroupHeader({ label }: { label: string }) {
   return (
     <div
       style={{
-        marginTop: 18,
+        marginTop: 14,
         marginBottom: 6,
         paddingLeft: 4,
         fontFamily: "Inter, sans-serif",
