@@ -42,6 +42,7 @@ interface MessagesThreadListProps {
   onThreadClick: (id: string) => void;
   onCompose: () => void;
   counts: { primary: number; requests: number };
+  width?: number;
 }
 
 function TypePill({ type }: { type: ThreadType }) {
