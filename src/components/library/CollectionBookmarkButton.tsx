@@ -18,7 +18,7 @@ import type { CollectionItemKind } from "@/lib/library/types";
 interface CollectionBookmarkButtonProps {
   contentType: ShareableType; // "blueprint" | "blog" | "bounty" | "stage" | "block"
   contentId: string;
-  contentMeta: { title?: string; slug?: string; parentSlug?: string };
+  contentMeta: { title: string; slug?: string; parentSlug?: string };
   /** Override pixel size (icon stroke). Default 14. */
   size?: number;
   className?: string;
