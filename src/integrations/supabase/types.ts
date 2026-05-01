@@ -361,27 +361,36 @@ export type Database = {
         Row: {
           added_at: string
           added_by: string
+          cached_meta: Json | null
           collection_id: string
           content_id: string
           id: string
+          item_id: string | null
+          item_kind: string | null
           note: string | null
           position: number
         }
         Insert: {
           added_at?: string
           added_by: string
+          cached_meta?: Json | null
           collection_id: string
           content_id: string
           id?: string
+          item_id?: string | null
+          item_kind?: string | null
           note?: string | null
           position: number
         }
         Update: {
           added_at?: string
           added_by?: string
+          cached_meta?: Json | null
           collection_id?: string
           content_id?: string
           id?: string
+          item_id?: string | null
+          item_kind?: string | null
           note?: string | null
           position?: number
         }
@@ -418,10 +427,12 @@ export type Database = {
       }
       collections: {
         Row: {
+          accent_color: string
           created_at: string
           description: string | null
           follower_count: number
           id: string
+          is_default: boolean
           is_public: boolean
           item_count: number
           owner_id: string
@@ -432,10 +443,12 @@ export type Database = {
           visibility: string | null
         }
         Insert: {
+          accent_color?: string
           created_at?: string
           description?: string | null
           follower_count?: number
           id?: string
+          is_default?: boolean
           is_public?: boolean
           item_count?: number
           owner_id: string
@@ -446,10 +459,12 @@ export type Database = {
           visibility?: string | null
         }
         Update: {
+          accent_color?: string
           created_at?: string
           description?: string | null
           follower_count?: number
           id?: string
+          is_default?: boolean
           is_public?: boolean
           item_count?: number
           owner_id?: string
@@ -2324,6 +2339,7 @@ export type Database = {
       notifications: {
         Row: {
           actor_id: string | null
+          body: string | null
           collection_id: string | null
           content_id: string | null
           created_at: string
@@ -2332,10 +2348,14 @@ export type Database = {
           metadata: Json | null
           notification_type: string
           project_id: string | null
+          read_at: string | null
           recipient_id: string
+          target_id: string | null
+          target_type: string | null
         }
         Insert: {
           actor_id?: string | null
+          body?: string | null
           collection_id?: string | null
           content_id?: string | null
           created_at?: string
@@ -2344,10 +2364,14 @@ export type Database = {
           metadata?: Json | null
           notification_type: string
           project_id?: string | null
+          read_at?: string | null
           recipient_id: string
+          target_id?: string | null
+          target_type?: string | null
         }
         Update: {
           actor_id?: string | null
+          body?: string | null
           collection_id?: string | null
           content_id?: string | null
           created_at?: string
@@ -2356,7 +2380,10 @@ export type Database = {
           metadata?: Json | null
           notification_type?: string
           project_id?: string | null
+          read_at?: string | null
           recipient_id?: string
+          target_id?: string | null
+          target_type?: string | null
         }
         Relationships: [
           {
