@@ -1427,18 +1427,13 @@ export function NeoScaleShell() {
       );
     }
 
-    /* /library, /drafts, /notifications, /analytics → page shell with title/subtitle */
+    /* /library, /drafts, /notifications, /analytics → page shell, no title banner.
+       Pages render their own headers when needed. */
     const meta = pageMeta[path];
     if (meta) {
       return (
         <div className="ns-page-shell">
           <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
-          <div className="ns-page-header">
-            <div className="ns-page-title">{meta.title}</div>
-            {meta.subtitle && (
-              <div className="ns-page-subtitle">{meta.subtitle}</div>
-            )}
-          </div>
           <div className="ns-page-body">
             <Outlet />
           </div>
