@@ -431,7 +431,16 @@ export default function MessagesPage() {
   return (
     <>
       <SeoHead title="Messages" description="Your conversations on NeoScale AI." path="/messages" />
-      <div className="flex" style={{ height: "100%", background: "#08080C" }}>
+      <div
+        className="flex"
+        style={{
+          height: "100%",
+          width: "100%",
+          position: "relative",
+          overflow: "hidden",
+          background: "#08080C",
+        }}
+      >
         <MessagesThreadList
           threads={threadItems}
           activeTab={activeTab}
@@ -442,6 +451,7 @@ export default function MessagesPage() {
           onThreadClick={(id) => navigate(`/messages/${id}`)}
           onCompose={() => setComposeOpen(true)}
           counts={counts}
+          width={220}
         />
 
         <div className="flex-1 min-w-0 h-full flex flex-col">

@@ -42,6 +42,7 @@ interface MessagesThreadListProps {
   onThreadClick: (id: string) => void;
   onCompose: () => void;
   counts: { primary: number; requests: number };
+  width?: number;
 }
 
 function TypePill({ type }: { type: ThreadType }) {
@@ -294,6 +295,7 @@ export function MessagesThreadList({
   onThreadClick,
   onCompose,
   counts,
+  width = 320,
 }: MessagesThreadListProps) {
   // Pinned-first sort (parent already filtered/searched server-side)
   const sortedThreads = React.useMemo(() => {
@@ -308,7 +310,7 @@ export function MessagesThreadList({
     <div
       className="flex flex-col flex-shrink-0"
       style={{
-        width: 320,
+        width,
         height: "100%",
         borderRight: "0.5px solid rgba(255,255,255,0.06)",
       }}
