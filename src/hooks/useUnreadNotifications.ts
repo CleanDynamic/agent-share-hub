@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { subscribeToNewNotifications } from "@/lib/notifications/realtime";
 
 export function useUnreadNotifications() {
   const { isLoggedIn, user } = useAuth();
@@ -26,6 +27,36 @@ export function useUnreadNotifications() {
     window.addEventListener("focus", handler);
     return () => window.removeEventListener("focus", handler);
   }, [refresh]);
+
+  // Live updates: bump on insert, re-sync on any change.
+  useEffect(() => {
+    if (!user?.id) return;
+    const unsubInsert = subscribeToNewNotifications(user.id, () => {
+      setCount((c) => c + 1);
+    });
+
+    const channel = supabase
+      .channel(`notifications-read:${user.id}:${crypto.randomUUID()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        () => {
+          // A row was marked read (or otherwise updated) — re-sync.
+          refresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      unsubInsert();
+      try { supabase.removeChannel(channel); } catch { /* noop */ }
+    };
+  }, [user?.id, refresh]);
 
   const display = count > 9 ? "9+" : count > 0 ? String(count) : null;
 
