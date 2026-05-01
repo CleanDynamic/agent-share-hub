@@ -1001,6 +1001,7 @@ export function NeoScaleShell() {
 
   const isHome  = location.pathname === "/";
   const navPage = routeToNav(location.pathname);
+  const isMessages = location.pathname === "/messages" || location.pathname.startsWith("/messages/");
 
   /* ── CSS injection ── */
   useEffect(() => {
