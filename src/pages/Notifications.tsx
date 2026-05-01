@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { CheckCircle, ChevronLeft, Loader2 } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Bell, CheckCircle, Loader2 } from "lucide-react";
 import { SeoHead } from "@/components/SeoHead";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -85,21 +85,45 @@ function resolveDeepLink(n: NotificationCardData, raw: DataNotification): string
 }
 
 // ── Empty states ──────────────────────────────────────────────────────────
+function EmptyStateBadge({ icon, color }: { icon: React.ReactNode; color: string }) {
+  return (
+    <div
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: "50%",
+        background: `${color}1F`,
+        border: `1px solid ${color}55`,
+        color,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        margin: "0 auto 14px",
+      }}
+    >
+      {icon}
+    </div>
+  );
+}
+
 function EmptyAll() {
   return (
     <div
       style={{
         textAlign: "center",
-        padding: "64px 24px",
+        padding: "72px 24px",
+        maxWidth: 360,
+        margin: "0 auto",
         color: "rgba(255,255,255,0.55)",
         fontFamily: "Inter, sans-serif",
       }}
     >
+      <EmptyStateBadge icon={<Bell size={20} />} color="#2EC4B6" />
       <div style={{ fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
-        No notifications yet
+        You're all clear
       </div>
-      <div style={{ marginTop: 8, fontSize: 13 }}>
-        When others reference, follow, or message you, you'll see it here.
+      <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5 }}>
+        Follows, references, mentions and messages will land here.
       </div>
     </div>
   );
@@ -110,17 +134,19 @@ function EmptyUnread() {
     <div
       style={{
         textAlign: "center",
-        padding: "64px 24px",
+        padding: "72px 24px",
+        maxWidth: 360,
+        margin: "0 auto",
         color: "rgba(255,255,255,0.65)",
         fontFamily: "Inter, sans-serif",
       }}
     >
-      <CheckCircle
-        size={28}
-        style={{ color: "#2EC4B6", margin: "0 auto 10px", display: "block" }}
-      />
+      <EmptyStateBadge icon={<CheckCircle size={20} />} color="#2EC4B6" />
       <div style={{ fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
         All caught up
+      </div>
+      <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5 }}>
+        Nothing new since your last visit.
       </div>
     </div>
   );
@@ -333,48 +359,43 @@ export default function NotificationsPage() {
   const showEmpty = !loading && items.length === 0;
 
   return (
-    <div style={{ padding: "8px 0 32px" }}>
+    <div style={{ padding: "0 0 32px" }}>
       <SeoHead title="Notifications" description="Your latest activity and mentions." path="/notifications" />
 
-      {/* Back link */}
-      <Link
-        to="/"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 4,
-          fontFamily: "Inter, sans-serif",
-          fontSize: 12,
-          color: "rgba(255,255,255,0.55)",
-          textDecoration: "none",
-          marginBottom: 12,
-        }}
-      >
-        <ChevronLeft size={14} />
-        Back
-      </Link>
-
-      {/* Header */}
+      {/* Toolbar: tabs (left) + Mark all as read (right) */}
       <div
+        role="tablist"
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 12,
-          marginBottom: 8,
+          borderBottom: "0.5px solid rgba(255,255,255,0.10)",
+          marginBottom: 14,
         }}
       >
-        <h1
-          style={{
-            fontFamily: "Inter, sans-serif",
-            fontSize: 22,
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.95)",
-            margin: 0,
-          }}
-        >
-          Notifications
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filter === "all"}
+            onClick={() => setFilter("all")}
+            style={{ ...tabBase, ...(filter === "all" ? tabActive : {}) }}
+          >
+            All
+            <span style={countPill}>{allCount}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filter === "unread"}
+            onClick={() => setFilter("unread")}
+            style={{ ...tabBase, ...(filter === "unread" ? tabActive : {}) }}
+          >
+            Unread
+            <span style={countPill}>{unreadCount}</span>
+          </button>
+        </div>
         <button
           type="button"
           onClick={handleMarkAll}
@@ -392,39 +413,6 @@ export default function NotificationsPage() {
           }}
         >
           Mark all as read
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div
-        role="tablist"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-          borderBottom: "0.5px solid rgba(255,255,255,0.10)",
-          marginBottom: 12,
-        }}
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={filter === "all"}
-          onClick={() => setFilter("all")}
-          style={{ ...tabBase, ...(filter === "all" ? tabActive : {}) }}
-        >
-          All
-          <span style={countPill}>{allCount}</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={filter === "unread"}
-          onClick={() => setFilter("unread")}
-          style={{ ...tabBase, ...(filter === "unread" ? tabActive : {}) }}
-        >
-          Unread
-          <span style={countPill}>{unreadCount}</span>
         </button>
       </div>
 

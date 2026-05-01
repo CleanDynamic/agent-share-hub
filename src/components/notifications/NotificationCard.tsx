@@ -8,6 +8,7 @@ import {
   Sparkles,
   UserPlus,
   AtSign,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -323,10 +324,16 @@ export function NotificationCard({
     notification.kind === "new_follower" && !notification.metadata.isFollowing;
 
   const background = pulseActive
-    ? "rgba(46,196,182,0.15)"
+    ? "rgba(46,196,182,0.06)"
     : hovered
     ? "rgba(22,22,30,0.50)"
     : "rgba(22,22,30,0.30)";
+
+  const leftRule = !notification.isRead
+    ? "rgba(46,196,182,0.55)"
+    : pulseActive
+    ? "rgba(46,196,182,0.40)"
+    : "transparent";
 
   return (
     <div
@@ -345,12 +352,12 @@ export function NotificationCard({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className={cn(
-        "group relative mb-1.5 flex cursor-pointer gap-3 rounded-lg border-[0.5px] border-white/5 px-4 py-3.5"
+        "group relative mb-2 flex cursor-pointer gap-3 rounded-lg border-[0.5px] border-white/5 px-4 py-3"
       )}
       style={{
         background,
-        borderLeft: `4px solid ${notification.isRead ? "transparent" : "#2EC4B6"}`,
-        transition: "background 280ms ease, opacity 200ms ease",
+        borderLeft: `2px solid ${leftRule}`,
+        transition: "background 280ms ease, border-color 600ms ease, opacity 200ms ease",
       }}
     >
       {/* Left — icon/avatar */}
@@ -367,6 +374,7 @@ export function NotificationCard({
             fontWeight: 500,
             color: "rgba(255,255,255,0.92)",
             lineHeight: 1.4,
+            paddingRight: 28,
           }}
         >
           {title}
@@ -428,35 +436,47 @@ export function NotificationCard({
             fontFamily: "Inter, sans-serif",
             fontSize: 11,
             fontWeight: 600,
-            padding: "5px 10px",
+            padding: "4px 9px",
             borderRadius: 6,
             cursor: "pointer",
           }}
         >
           {ctaLabel}
         </button>
-
-        {!notification.isRead && hovered && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onMarkAsRead(notification.id);
-            }}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "rgba(255,255,255,0.45)",
-              fontFamily: "Inter, sans-serif",
-              fontSize: 10,
-              cursor: "pointer",
-              padding: 0,
-            }}
-          >
-            Mark as read
-          </button>
-        )}
       </div>
+
+      {/* Mark-as-read check, top-right corner, no layout shift */}
+      {!notification.isRead && (
+        <button
+          type="button"
+          aria-label="Mark as read"
+          title="Mark as read"
+          onClick={(e) => {
+            e.stopPropagation();
+            onMarkAsRead(notification.id);
+          }}
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            width: 20,
+            height: 20,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "transparent",
+            border: "0.5px solid rgba(255,255,255,0.10)",
+            borderRadius: 999,
+            color: "rgba(255,255,255,0.55)",
+            cursor: "pointer",
+            opacity: hovered ? 1 : 0,
+            transition: "opacity 160ms ease",
+            padding: 0,
+          }}
+        >
+          <Check size={12} />
+        </button>
+      )}
     </div>
   );
 }
@@ -466,7 +486,7 @@ export function NotificationGroupHeader({ label }: { label: string }) {
   return (
     <div
       style={{
-        marginTop: 18,
+        marginTop: 14,
         marginBottom: 6,
         paddingLeft: 4,
         fontFamily: "Inter, sans-serif",
