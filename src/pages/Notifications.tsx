@@ -85,21 +85,45 @@ function resolveDeepLink(n: NotificationCardData, raw: DataNotification): string
 }
 
 // ── Empty states ──────────────────────────────────────────────────────────
+function EmptyStateBadge({ icon, color }: { icon: React.ReactNode; color: string }) {
+  return (
+    <div
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: "50%",
+        background: `${color}1F`,
+        border: `1px solid ${color}55`,
+        color,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        margin: "0 auto 14px",
+      }}
+    >
+      {icon}
+    </div>
+  );
+}
+
 function EmptyAll() {
   return (
     <div
       style={{
         textAlign: "center",
-        padding: "64px 24px",
+        padding: "72px 24px",
+        maxWidth: 360,
+        margin: "0 auto",
         color: "rgba(255,255,255,0.55)",
         fontFamily: "Inter, sans-serif",
       }}
     >
+      <EmptyStateBadge icon={<Bell size={20} />} color="#2EC4B6" />
       <div style={{ fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
-        No notifications yet
+        You're all clear
       </div>
-      <div style={{ marginTop: 8, fontSize: 13 }}>
-        When others reference, follow, or message you, you'll see it here.
+      <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5 }}>
+        Follows, references, mentions and messages will land here.
       </div>
     </div>
   );
@@ -110,17 +134,19 @@ function EmptyUnread() {
     <div
       style={{
         textAlign: "center",
-        padding: "64px 24px",
+        padding: "72px 24px",
+        maxWidth: 360,
+        margin: "0 auto",
         color: "rgba(255,255,255,0.65)",
         fontFamily: "Inter, sans-serif",
       }}
     >
-      <CheckCircle
-        size={28}
-        style={{ color: "#2EC4B6", margin: "0 auto 10px", display: "block" }}
-      />
+      <EmptyStateBadge icon={<CheckCircle size={20} />} color="#2EC4B6" />
       <div style={{ fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
         All caught up
+      </div>
+      <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5 }}>
+        Nothing new since your last visit.
       </div>
     </div>
   );
