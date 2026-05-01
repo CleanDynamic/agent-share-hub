@@ -1656,6 +1656,7 @@ export function NeoScaleShell() {
 
             </div>
             </LiquidGlassPanel>
+            )}
           </div>
 
           {/* ═══ RIGHT PANEL ═══ */}
