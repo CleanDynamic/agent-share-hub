@@ -115,6 +115,7 @@ export default function CollectionDetailRoute() {
   const [pickerQuery, setPickerQuery] = React.useState("");
   const [moveTarget, setMoveTarget] = React.useState<DetailItem | null>(null);
   const [saving, setSaving] = React.useState(false);
+  const [bulkSaving, setBulkSaving] = React.useState(false);
 
   const detailQuery = useQuery({
     queryKey: [
