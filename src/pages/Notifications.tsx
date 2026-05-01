@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { CheckCircle, ChevronLeft, Loader2 } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Bell, CheckCircle, Loader2 } from "lucide-react";
 import { SeoHead } from "@/components/SeoHead";
 import { useAuth } from "@/contexts/AuthContext";
 import {
