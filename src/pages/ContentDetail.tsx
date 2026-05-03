@@ -1225,6 +1225,21 @@ export default function ContentDetail() {
           expandedIds={expandedSolutionIds}
           onToggleExpand={handleToggleExpandSolution}
         />
+        {acceptDialog && (
+          <AcceptSolutionDialog
+            open={!!acceptDialog}
+            onOpenChange={(o) => {
+              if (!o) setAcceptDialog(null);
+            }}
+            solverHandle={acceptDialog.solverHandle}
+            solverDisplayName={acceptDialog.solverDisplayName}
+            slotName={acceptDialog.slotName}
+            remainingSlotsAfter={acceptDialog.remainingSlotsAfter}
+            isLastSlot={acceptDialog.isLastSlot}
+            onConfirm={confirmAcceptSolution}
+            submitting={acceptSubmitting}
+          />
+        )}
       </>
     ) : null;
 
