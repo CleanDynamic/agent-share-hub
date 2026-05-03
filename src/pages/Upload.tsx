@@ -38,6 +38,7 @@ import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { ArticleEditor } from '@/components/article/ArticleEditor';
 import type { EvidenceMediaType } from '@/components/canvas/CanvasHeader';
 import { CompactUploadHeader } from '@/components/upload/CompactUploadHeader';
+import { ResultsSection } from '@/components/upload/ResultsSection';
 import { TemplateLibrary } from '@/components/canvas/TemplateLibrary';
 import { useDocumentStore } from '@/lib/documentStore';
 import { StageFullscreen } from '@/components/article/stage/StageFullscreen';
@@ -1498,6 +1499,11 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 editable
                 mode={mode}
               />
+            </div>
+
+            {/* Results carousel — multi-slide media + written results */}
+            <div style={{ padding: '0 20px 40px', maxWidth: 720, width: '100%', alignSelf: 'center' }}>
+              <ResultsSection contentItemId={currentDraftId} />
             </div>
           </div>
         )}
