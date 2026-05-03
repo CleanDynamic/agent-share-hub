@@ -1499,6 +1499,11 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 mode={mode}
               />
             </div>
+
+            {/* Results carousel — multi-slide media + written results */}
+            <div style={{ padding: '0 20px 40px', maxWidth: 720, width: '100%', alignSelf: 'center' }}>
+              <ResultsSection contentItemId={currentDraftId} />
+            </div>
           </div>
         )}
 
