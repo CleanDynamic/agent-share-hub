@@ -5,6 +5,21 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# Structured JSON for any post (AI-agent friendly)
+[[redirects]]
+  from = "/b/:slug.json"
+  to = "https://zybdotagjwektucfdkri.supabase.co/functions/v1/post-json?slug=:slug"
+  status = 200
+  force = true
+
+# Dynamic sitemap (overrides static public/sitemap.xml)
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "https://zybdotagjwektucfdkri.supabase.co/functions/v1/sitemap-xml"
+  status = 200
+  force = true
+
+# SPA fallback
 [[redirects]]
   from = "/*"
   to = "/index.html"
