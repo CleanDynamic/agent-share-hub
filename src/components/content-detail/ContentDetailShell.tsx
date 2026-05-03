@@ -269,6 +269,7 @@ export function ContentDetailShell({
   onUnfollow,
   onPostMenu,
   onScrollProgress,
+  onScrollActivity,
   resultsSlot,
   bountyExtrasSlot,
   children,
