@@ -247,8 +247,8 @@ interface WorkspaceTabButtonProps {
 function WorkspaceTabButton({ tool, active, iconVisible, onClick }: WorkspaceTabButtonProps) {
   const Icon = tool.icon;
   const iconColor = active
-    ? '#E8571A'
-    : 'rgba(255,255,255,0.45)';
+    ? '#2EC4B6'
+    : 'rgba(255,255,255,0.65)';
 
   return (
     <Tooltip>
@@ -261,28 +261,28 @@ function WorkspaceTabButton({ tool, active, iconVisible, onClick }: WorkspaceTab
           style={{
             width: 40,
             height: 40,
-            borderRadius: 6,
+            borderRadius: 5,
             border: 'none',
-            background: active ? 'rgba(232,87,26,0.10)' : 'transparent',
-            borderBottom: active ? '2px solid #E8571A' : '2px solid transparent',
+            background: active ? 'rgba(46,196,182,0.06)' : 'transparent',
+            borderBottom: active ? '2px solid #2EC4B6' : '2px solid transparent',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
             padding: 0,
-            transition: 'background-color 120ms ease, color 120ms ease',
+            transition: 'all 120ms ease-out',
           }}
           onMouseEnter={(e) => {
             if (active) return;
             e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
             const svg = e.currentTarget.querySelector('svg');
-            if (svg) svg.style.color = 'rgba(255,255,255,0.70)';
+            if (svg) svg.style.color = 'rgba(255,255,255,0.85)';
           }}
           onMouseLeave={(e) => {
             if (active) return;
             e.currentTarget.style.background = 'transparent';
             const svg = e.currentTarget.querySelector('svg');
-            if (svg) svg.style.color = 'rgba(255,255,255,0.45)';
+            if (svg) svg.style.color = 'rgba(255,255,255,0.65)';
           }}
         >
           <Icon

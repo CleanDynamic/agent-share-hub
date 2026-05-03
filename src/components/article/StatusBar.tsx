@@ -56,17 +56,17 @@ const itemButtonStyle = {
   gap: 5,
   height: 22,
   padding: '0 6px',
-  borderRadius: 4,
+  borderRadius: 5,
   border: 'none',
   background: 'transparent',
-  color: 'hsl(var(--foreground) / 0.62)',
+  color: 'rgba(255,255,255,0.65)',
   fontFamily: 'Inter, sans-serif',
   fontSize: 11,
   fontWeight: 500,
   cursor: 'pointer',
   whiteSpace: 'nowrap' as const,
   flexShrink: 0,
-  transition: 'background 120ms ease, color 120ms ease',
+  transition: 'all 120ms ease-out',
 } satisfies React.CSSProperties;
 
 export function StatusBar({
