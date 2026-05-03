@@ -573,13 +573,68 @@ export default function ContentDetail() {
 
   return (
     <CommentDrawerProvider value={drawerContextValue}>
-      <SeoHead
-        title={`${shellPost.title} — NeoScale`}
-        description={shellPost.description || shellPost.title}
-        path={`/content/${shellPost.slug}`}
-        image={shellPost.coverUrl}
-        ogType="article"
-      />
+      {(() => {
+        const SITE = (import.meta as any).env?.VITE_SITE_URL || "https://neoscaleai.com";
+        const postUrl = `${SITE}/b/${shellPost.slug}`;
+        const authorUrl = shellAuthor?.handle ? `${SITE}/u/${shellAuthor.handle}` : `${SITE}/profile`;
+        const schemaType =
+          shellPost.postType === "bounty"
+            ? "Question"
+            : shellPost.postType === "blueprint"
+            ? "TechArticle"
+            : "Article";
+        const articleLd: Record<string, any> = {
+          "@context": "https://schema.org",
+          "@type": schemaType,
+          headline: shellPost.title,
+          description: shellPost.description || shellPost.title,
+          image: shellPost.coverUrl ? [shellPost.coverUrl] : undefined,
+          datePublished: shellPost.publishedAt?.toISOString?.() ?? undefined,
+          dateModified: ((post as any)?.updated_at as string) ?? shellPost.publishedAt?.toISOString?.() ?? undefined,
+          author: {
+            "@type": "Person",
+            name: shellAuthor?.displayName ?? "Anonymous",
+            url: authorUrl,
+          },
+          publisher: {
+            "@type": "Organization",
+            name: "NeoScale",
+            url: SITE,
+          },
+          mainEntityOfPage: postUrl,
+          keywords: (shellPost.tags ?? []).join(", "),
+        };
+        if (shellPost.postType === "bounty") {
+          articleLd.answerCount = (data?.bountySolvers ?? []).length;
+          articleLd.acceptedAnswer = (post as any)?.bounty_solved_at
+            ? { "@type": "Answer", text: "Accepted solution available" }
+            : undefined;
+        }
+        const breadcrumbLd = {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: SITE },
+            { "@type": "ListItem", position: 2, name: "Browse", item: `${SITE}/browse` },
+            { "@type": "ListItem", position: 3, name: shellPost.title, item: postUrl },
+          ],
+        };
+        return (
+          <SeoHead
+            title={`${shellPost.title} — NeoScale`}
+            description={shellPost.description || shellPost.title}
+            path={`/b/${shellPost.slug}`}
+            image={shellPost.coverUrl}
+            ogType="article"
+            twitterCreator={shellAuthor?.handle}
+            publishedTime={shellPost.publishedAt?.toISOString?.()}
+            modifiedTime={((post as any)?.updated_at as string) ?? undefined}
+            articleAuthor={shellAuthor?.displayName}
+            articleTags={shellPost.tags}
+            jsonLd={[articleLd, breadcrumbLd]}
+          />
+        );
+      })()}
       <ContentDetailShell
         post={shellPost}
         author={shellAuthor}
