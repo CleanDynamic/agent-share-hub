@@ -1234,6 +1234,134 @@ export default function ContentDetail() {
       />
     ) : null;
 
+  // Discussion data mapping + handlers
+  const acceptedSolverIds = useMemo(
+    () => (provenanceData?.acceptedSolvers ?? []).map((e) => e.user?.id).filter(Boolean) as string[],
+    [provenanceData],
+  );
+  const justPostedIdsRef = useRef<Set<string>>(new Set());
+  const mapDiscussion = useCallback(
+    (rows: any[]): DiscussionComment[] =>
+      rows.map((r) => ({
+        id: r.id,
+        author: {
+          id: r.author?.id ?? "unknown",
+          displayName: r.author?.display_name || r.author?.username || "User",
+          handle: r.author?.username || (r.author?.id ?? "user").slice(0, 8),
+          avatarUrl: r.author?.avatar_url ?? null,
+          isTrustedSolver: !!r.author?.is_trusted_solver,
+        },
+        content: r.body,
+        timestamp: new Date(r.createdAt),
+        reactions: (r.reactions ?? [])
+          .filter((x: any) => ["upvote", "lightbulb", "heart"].includes(x.reaction))
+          .map((x: any) => ({
+            type: x.reaction as DiscussionReactionType,
+            count: x.count,
+            hasReacted: !!x.reactedByViewer,
+          })),
+        replies: r.replies ? mapDiscussion(r.replies) : [],
+        isUnread: !!r.isUnread,
+        isFromBountyAuthor: !!r.isFromBountyAuthor,
+        isFromAcceptedSolver: !!r.isFromAcceptedSolver,
+        isJustPosted: justPostedIdsRef.current.has(r.id),
+      })),
+    [],
+  );
+  const discussionThreads = useMemo(
+    () => mapDiscussion(discussionData?.comments ?? []),
+    [discussionData, mapDiscussion],
+  );
+
+  const handleDiscussionPost = useCallback(
+    async (text: string, options: { tagBountyAuthor?: boolean }) => {
+      if (!user?.id || !post?.id) {
+        toast({ title: "Sign in to post", variant: "destructive" });
+        return;
+      }
+      try {
+        const row = await postDiscussionComment({
+          bountyId: post.id as string,
+          authorId: user.id,
+          body: text,
+          taggedBountyAuthor: !!options.tagBountyAuthor,
+        });
+        if (row?.id) justPostedIdsRef.current.add(row.id);
+        await refetchDiscussion();
+      } catch (e: any) {
+        toast({ title: "Post failed", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, post?.id, refetchDiscussion, toast],
+  );
+
+  const handleDiscussionReply = useCallback(
+    async (parentId: string, text: string) => {
+      if (!user?.id || !post?.id) {
+        toast({ title: "Sign in to reply", variant: "destructive" });
+        return;
+      }
+      try {
+        const row = await postDiscussionComment({
+          bountyId: post.id as string,
+          authorId: user.id,
+          body: text,
+          parentCommentId: parentId,
+        });
+        if (row?.id) justPostedIdsRef.current.add(row.id);
+        await refetchDiscussion();
+      } catch (e: any) {
+        toast({ title: "Reply failed", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, post?.id, refetchDiscussion, toast],
+  );
+
+  const handleDiscussionReact = useCallback(
+    async (commentId: string, reaction: DiscussionReactionType) => {
+      if (!user?.id) {
+        toast({ title: "Sign in to react", variant: "destructive" });
+        return;
+      }
+      try {
+        await reactToBountyComment({ commentId, reactorId: user.id, reaction });
+        await refetchDiscussion();
+      } catch (e: any) {
+        toast({ title: "Reaction failed", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, refetchDiscussion, toast],
+  );
+
+  const handleDiscussionMore = useCallback(
+    (commentId: string) => {
+      void navigator.clipboard?.writeText(
+        `${window.location.origin}${window.location.pathname}#discussion-${commentId}`,
+      );
+      toast({ title: "Link copied" });
+    },
+    [toast],
+  );
+
+  const handleDiscussionFilterChange = useCallback(
+    (f: DiscussionFilterValue) => {
+      const next = new URLSearchParams(searchParams);
+      if (f === "all") next.delete("discussionFilter");
+      else next.set("discussionFilter", f);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+  const handleDiscussionSortChange = useCallback(
+    (s: DiscussionSortValue) => {
+      const next = new URLSearchParams(searchParams);
+      if (s === "newest") next.delete("discussionSort");
+      else next.set("discussionSort", s);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
   const bountyExtras =
     isBounty ? (
       <>
