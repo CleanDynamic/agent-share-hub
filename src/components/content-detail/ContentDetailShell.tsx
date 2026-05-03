@@ -74,6 +74,7 @@ export interface ContentDetailShellProps {
   onUnfollow: (authorId: string) => void;
   onPostMenu: () => void;
   onScrollProgress?: (pct: number) => void;
+  onScrollActivity?: () => void;
   resultsSlot?: React.ReactNode;
   bountyExtrasSlot?: React.ReactNode;
   children?: React.ReactNode;
@@ -268,6 +269,7 @@ export function ContentDetailShell({
   onUnfollow,
   onPostMenu,
   onScrollProgress,
+  onScrollActivity,
   resultsSlot,
   bountyExtrasSlot,
   children,
@@ -302,6 +304,7 @@ export function ContentDetailShell({
         lastReportRef.current = now;
         onScrollProgress(clamped);
       }
+      onScrollActivity?.();
     };
     const el = containerRef.current;
     el?.addEventListener("scroll", onScroll);

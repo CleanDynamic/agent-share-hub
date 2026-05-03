@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { SeoHead } from "@/components/SeoHead";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContentDetailShell } from "@/components/content-detail/ContentDetailShell";
 import { ResultsViewerSection } from "@/components/content-detail/ResultsViewerSection";
+import { FloatingEngagementBar } from "@/components/content-detail/FloatingEngagementBar";
 import { ArticleViewer } from "@/components/article/ArticleViewer";
 import { StageTimeline } from "@/components/canvas/StageTimeline";
 import { BlogView } from "@/components/blog/BlogView";
@@ -152,6 +154,177 @@ export default function ContentDetail() {
     recordReadingProgress({ readerId: user.id, postId: post.id, progressPct: pct });
   };
 
+  // ─── Floating engagement bar: scroll-pause visibility ───
+  const { toast } = useToast();
+  const [barVisible, setBarVisible] = useState(false);
+  const idleTimerRef = useRef<number | null>(null);
+  const handleScrollActivity = useCallback(() => {
+    setBarVisible(false);
+    if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = window.setTimeout(() => setBarVisible(true), 800);
+  }, []);
+  useEffect(() => {
+    // Show after initial settle
+    idleTimerRef.current = window.setTimeout(() => setBarVisible(true), 800);
+    return () => {
+      if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
+    };
+  }, []);
+
+  // ─── Engagement state ───
+  const [hasLiked, setHasLiked] = useState(false);
+  const [hasBookmarked, setHasBookmarked] = useState(false);
+  const [hasReposted, setHasReposted] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
+  const [repostCount, setRepostCount] = useState(0);
+
+  useEffect(() => {
+    if (!data?.viewer || !post) return;
+    setHasLiked(data.viewer.hasLiked);
+    setHasBookmarked(data.viewer.hasBookmarked);
+    setHasReposted(data.viewer.hasReposted);
+    setLikeCount(((post as any).like_count as number) ?? 0);
+    setCommentCount(((post as any).comment_count as number) ?? 0);
+    setRepostCount(((post as any).reblog_count as number) ?? ((post as any).repost_count as number) ?? 0);
+  }, [data?.viewer, post]);
+
+  const handleLike = useCallback(async () => {
+    if (!user?.id || !post?.id) {
+      toast({ title: "Sign in to like", variant: "destructive" });
+      return;
+    }
+    const next = !hasLiked;
+    setHasLiked(next);
+    setLikeCount((c) => Math.max(0, c + (next ? 1 : -1)));
+    try {
+      if (next) {
+        await (supabase as any).from("user_interactions").insert({
+          user_id: user.id,
+          content_id: post.id,
+          interaction_type: "liked",
+        } as any);
+      } else {
+        await (supabase as any)
+          .from("user_interactions")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("content_id", post.id)
+          .eq("interaction_type", "liked");
+      }
+    } catch (e) {
+      // revert
+      setHasLiked(!next);
+      setLikeCount((c) => Math.max(0, c + (next ? -1 : 1)));
+    }
+  }, [hasLiked, post?.id, user?.id, toast]);
+
+  const handleRepost = useCallback(async () => {
+    if (!user?.id || !post?.id) {
+      toast({ title: "Sign in to repost", variant: "destructive" });
+      return;
+    }
+    const next = !hasReposted;
+    setHasReposted(next);
+    setRepostCount((c) => Math.max(0, c + (next ? 1 : -1)));
+    try {
+      if (next) {
+        await (supabase as any).from("user_interactions").insert({
+          user_id: user.id,
+          content_id: post.id,
+          interaction_type: "reposted",
+        } as any);
+      } else {
+        await (supabase as any)
+          .from("user_interactions")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("content_id", post.id)
+          .eq("interaction_type", "reposted");
+      }
+    } catch {
+      setHasReposted(!next);
+      setRepostCount((c) => Math.max(0, c + (next ? -1 : 1)));
+    }
+  }, [hasReposted, post?.id, user?.id, toast]);
+
+  const handleBookmark = useCallback(
+    async (_anchor: HTMLButtonElement) => {
+      if (!user?.id || !post?.id) {
+        toast({ title: "Sign in to save", variant: "destructive" });
+        return;
+      }
+      // Phase 8 ShareMenu's Save-to-Library popover anchors here.
+      // Stub: toggle a default-collection bookmark.
+      const next = !hasBookmarked;
+      setHasBookmarked(next);
+      try {
+        const { data: col } = await (supabase as any)
+          .from("collections")
+          .select("id")
+          .eq("owner_id", user.id)
+          .eq("is_default", true)
+          .maybeSingle();
+        if (!col?.id) return;
+        if (next) {
+          await (supabase as any).from("collection_items").insert({
+            collection_id: col.id,
+            content_id: post.id,
+            added_by: user.id,
+          } as any);
+        } else {
+          await (supabase as any)
+            .from("collection_items")
+            .delete()
+            .eq("collection_id", col.id)
+            .eq("content_id", post.id);
+        }
+      } catch {
+        setHasBookmarked(!next);
+      }
+    },
+    [hasBookmarked, post?.id, user?.id, toast]
+  );
+
+  const handleShare = useCallback(
+    async (_anchor: HTMLButtonElement) => {
+      const url = `${window.location.origin}/content/${(post as any)?.slug ?? post?.id}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        toast({ title: "Link copied" });
+      } catch {
+        toast({ title: "Copy failed", variant: "destructive" });
+      }
+    },
+    [post, toast]
+  );
+
+  const handleExport = useCallback(
+    (_anchor: HTMLButtonElement) => {
+      // AIExportMenu mounts here in step 11.7
+      toast({ title: "Export menu", description: "AI export menu coming soon." });
+    },
+    [toast]
+  );
+
+  const handleComment = useCallback(() => {
+    // Opens post-level PrimitiveCommentDrawer in next step.
+    const el = document.querySelector('[data-comments-anchor="post"]') as HTMLElement | null;
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const handleSubmitSolution = useCallback(() => {
+    const el = document.querySelector('[data-bounty-solutions-anchor]') as HTMLElement | null;
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const handleEdit = useCallback(() => {
+    if (!post) return;
+    const t = NORMALIZE_TYPE((post as any).post_type);
+    navigate(`/upload/${t}?draft=${post.id}`);
+  }, [navigate, post]);
+
+
   if (isLoading) {
     return (
       <div className="p-8 max-w-3xl mx-auto space-y-4">
@@ -265,6 +438,7 @@ export default function ContentDetail() {
           // Anchor for AI export menu and post-level actions (Phase 10+)
         }}
         onScrollProgress={handleScrollProgress}
+        onScrollActivity={handleScrollActivity}
         resultsSlot={
           <ResultsViewerSection
             contentItemId={post.id as string}
@@ -275,6 +449,28 @@ export default function ContentDetail() {
       >
         {bodyNode}
       </ContentDetailShell>
+      <FloatingEngagementBar
+        post={{
+          id: shellPost.id,
+          postType: shellPost.postType,
+          slug: shellPost.slug,
+          hasLiked,
+          hasBookmarked,
+          hasReposted,
+        }}
+        counts={{ likes: likeCount, comments: commentCount, reposts: repostCount }}
+        isOwnPost={isOwnPost}
+        isVisible={barVisible}
+        onLike={handleLike}
+        onComment={handleComment}
+        onRepost={handleRepost}
+        onBookmark={handleBookmark}
+        onShare={handleShare}
+        onExport={handleExport}
+        onSubmitSolution={shellPost.postType === "bounty" ? handleSubmitSolution : undefined}
+        onEdit={isOwnPost ? handleEdit : undefined}
+      />
     </>
   );
 }
+
