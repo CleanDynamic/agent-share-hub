@@ -733,26 +733,72 @@ export default function ContentDetail() {
     }
   }
 
-  // Bounty extras placeholder — Phase 11 will mount BountySolutionsSection,
-  // BountyDiscussionForum, ProvenanceOverview, BountyByline upgrades, and
-  // InlineSolutionMarker components here.
-  const bountyExtras =
-    postType === "bounty" ? (
-      // Phase 11 mounts here
-      <div
-        style={{
-          marginTop: 32,
-          padding: 24,
-          borderRadius: 12,
-          border: "1px dashed rgba(255,255,255,0.10)",
-          textAlign: "center",
-          fontSize: 12,
-          color: "rgba(255,255,255,0.40)",
-          fontFamily: "Inter, sans-serif",
+  // Build SolverInfo[] for byline + provenance overview
+  const solversInfo: SolverInfo[] = useMemo(() => {
+    const accepted = provenanceData?.acceptedSolvers ?? [];
+    return accepted
+      .filter((e) => !!e.user)
+      .map((e) => ({
+        id: e.user!.id,
+        displayName: e.user!.display_name || e.user!.username || "Solver",
+        handle: e.user!.username || e.user!.id.slice(0, 8),
+        avatarUrl: e.user!.avatar_url || "",
+        slotName: e.slotName || `${e.slotKind}`,
+        acceptedAt: relativeShort(e.acceptedAt),
+        isTrustedSolver: !!e.user!.is_trusted_solver,
+      }));
+  }, [provenanceData]);
+
+  const bountyAuthorMeta = useMemo(() => {
+    if (!shellAuthor) return null;
+    return {
+      id: shellAuthor.id,
+      displayName: shellAuthor.displayName,
+      handle: shellAuthor.handle,
+      avatarUrl: shellAuthor.avatarUrl,
+    };
+  }, [shellAuthor]);
+
+  const bountyByline =
+    isBounty && bountyAuthorMeta ? (
+      <BountyByline
+        bountyAuthor={bountyAuthorMeta}
+        solvers={solversInfo}
+        isExpanded={bylineExpanded}
+        onToggleExpand={() => setBylineExpanded((v) => !v)}
+        onViewProvenance={() => {
+          const el = document.querySelector("[data-provenance-overview]") as HTMLElement | null;
+          el?.scrollIntoView({ behavior: "smooth", block: "start" });
         }}
-      >
-        Bounty solutions & discussion mount here — Phase 11
-      </div>
+        onAuthorClick={(authorId) => navigate(`/profile/${shellAuthor?.handle || authorId}`)}
+      />
+    ) : null;
+
+  const bountyExtras =
+    isBounty ? (
+      <>
+        {solversInfo.length > 0 && bountyAuthorMeta && (
+          <div data-provenance-overview>
+            <ProvenanceOverview
+              bountyAuthor={{
+                ...bountyAuthorMeta,
+                postedAt: relativeShort(
+                  ((post as any)?.published_at as string) ||
+                    ((post as any)?.created_at as string) ||
+                    new Date().toISOString()
+                ),
+              }}
+              solvers={solversInfo}
+              onSolverClick={(id) => {
+                const s = solversInfo.find((x) => x.id === id);
+                navigate(`/profile/${s?.handle || id}`);
+              }}
+              onLearnMore={() => navigate("/about/provenance")}
+            />
+          </div>
+        )}
+        <div data-bounty-solutions-anchor />
+      </>
     ) : null;
 
   return (
