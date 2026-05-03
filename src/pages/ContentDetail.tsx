@@ -21,7 +21,9 @@ import {
   postComment,
   reactToComment,
   useCommentsRealtime,
+  exportToFormat,
 } from "@/lib/content-detail";
+import { AIExportMenu, type ExportFormat } from "@/components/content-detail/AIExportMenu";
 import {
   PrimitiveCommentDrawer,
   type AnchorType,
