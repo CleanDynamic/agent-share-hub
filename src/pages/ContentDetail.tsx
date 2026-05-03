@@ -190,6 +190,16 @@ export default function ContentDetail() {
     original: any;
     current: any;
   } | null>(null);
+  const [acceptDialog, setAcceptDialog] = useState<{
+    solutionId: string;
+    solverHandle: string;
+    solverDisplayName?: string;
+    slotName: string;
+    remainingSlotsAfter: number;
+    isLastSlot: boolean;
+  } | null>(null);
+  const [acceptSubmitting, setAcceptSubmitting] = useState(false);
+  const [solvedPulse, setSolvedPulse] = useState(false);
 
   const handleViewOriginalSolution = useCallback(
     async (slotId: string) => {
