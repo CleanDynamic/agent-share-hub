@@ -35,6 +35,11 @@ import {
 import { CommentDrawerProvider } from "@/components/content-detail/CommentDrawerContext";
 import type { ThreadedComment } from "@/lib/content-detail/types";
 import { supabase } from "@/integrations/supabase/client";
+import { getProvenance, getSolutions } from "@/lib/bounty-solver";
+import { BountyProvenanceProvider } from "@/components/bounty/BountyProvenanceContext";
+import { BountyByline, type SolverInfo } from "@/components/bounty/BountyByline";
+import { ProvenanceOverview } from "@/components/bounty/ProvenanceOverview";
+import { OriginalSolutionDialog } from "@/components/bounty/OriginalSolutionDialog";
 
 const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" | "bounty" => {
   if (raw === "blog") return "blog";
