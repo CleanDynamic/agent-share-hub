@@ -52,6 +52,7 @@ interface StageThumbnailProps {
   isMissing?: boolean;
   missingDescription?: string | null;
   onToggleMissing?: () => void;
+  stageId?: string | null;
 }
 
 // Block-type colour palette (full hex; opacity applied at render time)
@@ -116,6 +117,7 @@ export function StageThumbnail({
   isMissing = false,
   missingDescription = null,
   onToggleMissing,
+  stageId = null,
 }: StageThumbnailProps) {
   const [hovered, setHovered] = React.useState(false);
   const [isEditing, setIsEditing] = React.useState(false);
@@ -341,7 +343,7 @@ export function StageThumbnail({
       {/* Body — when bounty + missing, replace preview/strip/list with MissingStageBadge */}
       {isBounty && isMissing ? (
         <div style={{ padding: 12, borderTop: '0.5px solid rgba(245,158,11,0.18)' }}>
-          <MissingStageBadge description={missingDescription} />
+          <MissingStageBadge description={missingDescription} slotId={stageId} />
         </div>
       ) : (
         <>

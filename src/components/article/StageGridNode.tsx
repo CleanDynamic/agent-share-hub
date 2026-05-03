@@ -4,6 +4,8 @@ import { StageThumbnail, type ThumbnailBlock } from './stage/StageThumbnail';
 import { TemplatePicker } from './stage/TemplatePicker';
 import { useDocumentStore } from '@/lib/documentStore';
 import { toggleStageMissing } from '@/lib/bountyMissing';
+import { InlineSolutionMarker } from '@/components/bounty/InlineSolutionMarker';
+import { useBountyProvenance } from '@/components/bounty/BountyProvenanceContext';
 
 interface StageGridNodeProps {
   node: any;
@@ -116,26 +118,51 @@ export function StageGridNode({ node, updateAttributes, editor }: StageGridNodeP
     openStageAction(stageId);
   }, [stageId, openStageAction, editor]);
 
-  // ── Render ────────────────────────────────────────────────
+  // Accepted-solution provenance for this stage (read view, in bounty)
+  const provenance = useBountyProvenance();
+  const acceptance = stageId ? provenance?.slotAcceptance[stageId] : undefined;
+
+  const thumb = (
+    <StageThumbnail
+      stageNumber={stageNumber}
+      stageName={stageName}
+      blocks={stageBlocks}
+      connections={stageConnections}
+      onOpen={handleOpen}
+      onRename={editor?.isEditable ? handleRename : undefined}
+      isBounty={isBounty}
+      isMissing={Boolean(stageRecord?.is_missing)}
+      missingDescription={stageRecord?.missing_description ?? null}
+      stageId={stageId}
+      onToggleMissing={
+        isBounty && stageId && editor?.isEditable
+          ? () => { toggleStageMissing(stageId); }
+          : undefined
+      }
+    />
+  );
+
   return (
     <NodeViewWrapper data-stage-grid="" data-stage-id={stageId ?? undefined}>
       <div ref={wrapperRef}>
-        <StageThumbnail
-          stageNumber={stageNumber}
-          stageName={stageName}
-          blocks={stageBlocks}
-          connections={stageConnections}
-          onOpen={handleOpen}
-          onRename={editor?.isEditable ? handleRename : undefined}
-          isBounty={isBounty}
-          isMissing={Boolean(stageRecord?.is_missing)}
-          missingDescription={stageRecord?.missing_description ?? null}
-          onToggleMissing={
-            isBounty && stageId && editor?.isEditable
-              ? () => { toggleStageMissing(stageId); }
-              : undefined
-          }
-        />
+        {acceptance && acceptance.solver ? (
+          <InlineSolutionMarker
+            kind="stage"
+            solver={{
+              id: acceptance.solver.id,
+              displayName: acceptance.solver.display_name || acceptance.solver.username || "Solver",
+              handle: acceptance.solver.username || acceptance.solver.id.slice(0, 8),
+              avatarUrl: acceptance.solver.avatar_url || "",
+              isTrustedSolver: !!acceptance.solver.is_trusted_solver,
+            }}
+            acceptedAt={formatRelativeShort(acceptance.acceptedAt)}
+            onViewOriginal={() => provenance?.onViewOriginalSolution?.(stageId!)}
+          >
+            {thumb}
+          </InlineSolutionMarker>
+        ) : (
+          thumb
+        )}
       </div>
       {stageId ? (
         <TemplatePicker
@@ -147,4 +174,17 @@ export function StageGridNode({ node, updateAttributes, editor }: StageGridNodeP
       ) : null}
     </NodeViewWrapper>
   );
+}
+
+function formatRelativeShort(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const diff = Date.now() - d.getTime();
+    const day = 86400_000;
+    if (diff < day) return "today";
+    if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  } catch {
+    return "";
+  }
 }
