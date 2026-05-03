@@ -74,6 +74,7 @@ export interface ContentDetailShellProps {
   onUnfollow: (authorId: string) => void;
   onPostMenu: () => void;
   onScrollProgress?: (pct: number) => void;
+  onScrollActivity?: () => void;
   resultsSlot?: React.ReactNode;
   bountyExtrasSlot?: React.ReactNode;
   children?: React.ReactNode;
