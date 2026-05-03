@@ -572,7 +572,7 @@ export default function ContentDetail() {
     ) : null;
 
   return (
-    <>
+    <CommentDrawerProvider value={drawerContextValue}>
       <SeoHead
         title={`${shellPost.title} — NeoScale`}
         description={shellPost.description || shellPost.title}
@@ -636,7 +636,24 @@ export default function ContentDetail() {
         onSubmitSolution={shellPost.postType === "bounty" ? handleSubmitSolution : undefined}
         onEdit={isOwnPost ? handleEdit : undefined}
       />
-    </>
+      {drawerAnchor && (
+        <PrimitiveCommentDrawer
+          isOpen={drawerOpen}
+          onClose={closeDrawer}
+          anchorType={drawerAnchor.anchorType}
+          anchorId={drawerAnchor.anchorId}
+          anchorPreview={drawerAnchor.preview}
+          threads={drawerThreads}
+          viewerId={user?.id ?? ""}
+          postAuthorId={(post as any).creator_id ?? ""}
+          onPost={handleDrawerPost}
+          onReply={handleDrawerReply}
+          onReact={handleDrawerReact}
+          onMore={handleDrawerMore}
+          isLoading={drawerLoading}
+        />
+      )}
+    </CommentDrawerProvider>
   );
 }
 
