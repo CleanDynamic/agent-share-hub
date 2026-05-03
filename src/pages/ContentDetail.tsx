@@ -35,6 +35,11 @@ import {
 import { CommentDrawerProvider } from "@/components/content-detail/CommentDrawerContext";
 import type { ThreadedComment } from "@/lib/content-detail/types";
 import { supabase } from "@/integrations/supabase/client";
+import { getProvenance, getSolutions } from "@/lib/bounty-solver";
+import { BountyProvenanceProvider } from "@/components/bounty/BountyProvenanceContext";
+import { BountyByline, type SolverInfo } from "@/components/bounty/BountyByline";
+import { ProvenanceOverview } from "@/components/bounty/ProvenanceOverview";
+import { OriginalSolutionDialog } from "@/components/bounty/OriginalSolutionDialog";
 
 const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" | "bounty" => {
   if (raw === "blog") return "blog";
@@ -91,6 +96,90 @@ export default function ContentDetail() {
   const postType = useMemo(
     () => NORMALIZE_TYPE((post as any)?.post_type),
     [post]
+  );
+
+  // ─── Bounty: provenance + per-slot solution counts ───
+  const isBounty = postType === "bounty";
+  const { data: provenanceData, refetch: refetchProvenance } = useQuery({
+    queryKey: ["bounty_provenance", post?.id],
+    queryFn: () => getProvenance(post!.id as string),
+    enabled: !!post?.id && isBounty,
+  });
+  const { data: solutionsData } = useQuery({
+    queryKey: ["bounty_solutions", post?.id, user?.id ?? null],
+    queryFn: () =>
+      getSolutions({
+        bountyId: post!.id as string,
+        slotId: "all",
+        sort: "most_votes",
+        viewerId: user?.id ?? null,
+      }),
+    enabled: !!post?.id && isBounty,
+  });
+
+  const bountyStatus: "open" | "closed" | "solved" = useMemo(() => {
+    const raw = (post as any)?.bounty_status as string | undefined;
+    if (raw === "solved" || (post as any)?.bounty_solved_at) return "solved";
+    if (raw === "closed") return "closed";
+    return "open";
+  }, [post]);
+
+  const slotSolutionCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const s of solutionsData?.solutions ?? []) {
+      out[s.slot_id] = (out[s.slot_id] ?? 0) + 1;
+    }
+    return out;
+  }, [solutionsData]);
+
+  const slotAcceptance = useMemo(() => {
+    const out: Record<string, { solver: any; acceptedAt: string; slotKind: "stage" | "block"; solutionId?: string }> = {};
+    const profileById = new Map<string, any>();
+    for (const e of provenanceData?.acceptedSolvers ?? []) {
+      if (e.user) profileById.set(e.user.id, e.user);
+    }
+    for (const e of provenanceData?.acceptedSolvers ?? []) {
+      out[e.slotId] = {
+        solver: e.user,
+        acceptedAt: e.acceptedAt,
+        slotKind: e.slotKind,
+      };
+    }
+    // Also attach solutionId from solutions table where status = accepted
+    for (const s of solutionsData?.solutions ?? []) {
+      if (s.status === "accepted" && out[s.slot_id]) {
+        out[s.slot_id].solutionId = s.id;
+      }
+    }
+    return out;
+  }, [provenanceData, solutionsData]);
+
+  const [bylineExpanded, setBylineExpanded] = useState(false);
+  const [originalDialog, setOriginalDialog] = useState<{
+    slotId: string;
+    slotKind: "stage" | "block";
+    original: any;
+    current: any;
+  } | null>(null);
+
+  const handleViewOriginalSolution = useCallback(
+    async (slotId: string) => {
+      const acc = slotAcceptance[slotId];
+      if (!acc) return;
+      const sol = (solutionsData?.solutions ?? []).find(
+        (s) => s.slot_id === slotId && s.status === "accepted"
+      );
+      const grids = ((post as any)?.stage_grids ?? {}) as any;
+      const current =
+        acc.slotKind === "stage" ? grids?.stages?.[slotId] : grids?.blocks?.[slotId];
+      setOriginalDialog({
+        slotId,
+        slotKind: acc.slotKind,
+        original: sol?.content_payload ?? null,
+        current,
+      });
+    },
+    [slotAcceptance, solutionsData, post]
   );
 
   const shellPost = useMemo(() => {
@@ -644,30 +733,88 @@ export default function ContentDetail() {
     }
   }
 
-  // Bounty extras placeholder — Phase 11 will mount BountySolutionsSection,
-  // BountyDiscussionForum, ProvenanceOverview, BountyByline upgrades, and
-  // InlineSolutionMarker components here.
-  const bountyExtras =
-    postType === "bounty" ? (
-      // Phase 11 mounts here
-      <div
-        style={{
-          marginTop: 32,
-          padding: 24,
-          borderRadius: 12,
-          border: "1px dashed rgba(255,255,255,0.10)",
-          textAlign: "center",
-          fontSize: 12,
-          color: "rgba(255,255,255,0.40)",
-          fontFamily: "Inter, sans-serif",
+  // Build SolverInfo[] for byline + provenance overview
+  const solversInfo: SolverInfo[] = useMemo(() => {
+    const accepted = provenanceData?.acceptedSolvers ?? [];
+    return accepted
+      .filter((e) => !!e.user)
+      .map((e) => ({
+        id: e.user!.id,
+        displayName: e.user!.display_name || e.user!.username || "Solver",
+        handle: e.user!.username || e.user!.id.slice(0, 8),
+        avatarUrl: e.user!.avatar_url || "",
+        slotName: e.slotName || `${e.slotKind}`,
+        acceptedAt: relativeShort(e.acceptedAt),
+        isTrustedSolver: !!e.user!.is_trusted_solver,
+      }));
+  }, [provenanceData]);
+
+  const bountyAuthorMeta = useMemo(() => {
+    if (!shellAuthor) return null;
+    return {
+      id: shellAuthor.id,
+      displayName: shellAuthor.displayName,
+      handle: shellAuthor.handle,
+      avatarUrl: shellAuthor.avatarUrl,
+    };
+  }, [shellAuthor]);
+
+  const bountyByline =
+    isBounty && bountyAuthorMeta ? (
+      <BountyByline
+        bountyAuthor={bountyAuthorMeta}
+        solvers={solversInfo}
+        isExpanded={bylineExpanded}
+        onToggleExpand={() => setBylineExpanded((v) => !v)}
+        onViewProvenance={() => {
+          const el = document.querySelector("[data-provenance-overview]") as HTMLElement | null;
+          el?.scrollIntoView({ behavior: "smooth", block: "start" });
         }}
-      >
-        Bounty solutions & discussion mount here — Phase 11
-      </div>
+        onAuthorClick={(authorId) => navigate(`/profile/${shellAuthor?.handle || authorId}`)}
+      />
+    ) : null;
+
+  const bountyExtras =
+    isBounty ? (
+      <>
+        {solversInfo.length > 0 && bountyAuthorMeta && (
+          <div data-provenance-overview>
+            <ProvenanceOverview
+              bountyAuthor={{
+                ...bountyAuthorMeta,
+                postedAt: relativeShort(
+                  ((post as any)?.published_at as string) ||
+                    ((post as any)?.created_at as string) ||
+                    new Date().toISOString()
+                ),
+              }}
+              solvers={solversInfo}
+              onSolverClick={(id) => {
+                const s = solversInfo.find((x) => x.id === id);
+                navigate(`/profile/${s?.handle || id}`);
+              }}
+              onLearnMore={() => navigate("/about/provenance")}
+            />
+          </div>
+        )}
+        <div data-bounty-solutions-anchor />
+      </>
     ) : null;
 
   return (
     <CommentDrawerProvider value={drawerContextValue}>
+      <BountyProvenanceProvider
+        value={{
+          bountySlug: shellPost.slug,
+          bountyId: shellPost.id,
+          bountyStatus,
+          slotSolutionCounts,
+          slotAcceptance,
+          bountyAuthor: provenanceData?.bountyAuthor ?? null,
+          acceptedSolvers: provenanceData?.acceptedSolvers ?? [],
+          onViewOriginalSolution: handleViewOriginalSolution,
+        }}
+      >
       {(() => {
         const SITE = (import.meta as any).env?.VITE_SITE_URL || "https://neoscaleai.com";
         const postUrl = `${SITE}/b/${shellPost.slug}`;
@@ -762,6 +909,7 @@ export default function ContentDetail() {
           />
         }
         bountyExtrasSlot={bountyExtras}
+        bylineSlot={bountyByline}
       >
         {bodyNode}
       </ContentDetailShell>
@@ -816,7 +964,31 @@ export default function ContentDetail() {
           isLoading={drawerLoading}
         />
       )}
+      {originalDialog && (
+        <OriginalSolutionDialog
+          open={!!originalDialog}
+          onClose={() => setOriginalDialog(null)}
+          original={originalDialog.original}
+          current={originalDialog.current}
+          slotKind={originalDialog.slotKind}
+          slotId={originalDialog.slotId}
+        />
+      )}
+      </BountyProvenanceProvider>
     </CommentDrawerProvider>
   );
 }
 
+
+function relativeShort(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const diff = Date.now() - d.getTime();
+    const day = 86400_000;
+    if (diff < day) return "today";
+    if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  } catch {
+    return "";
+  }
+}

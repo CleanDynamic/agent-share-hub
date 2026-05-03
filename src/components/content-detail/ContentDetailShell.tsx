@@ -77,6 +77,8 @@ export interface ContentDetailShellProps {
   onScrollActivity?: () => void;
   resultsSlot?: React.ReactNode;
   bountyExtrasSlot?: React.ReactNode;
+  /** When provided, replaces the default byline (author row + follow button). */
+  bylineSlot?: React.ReactNode;
   children?: React.ReactNode;
 }
 
@@ -272,6 +274,7 @@ export function ContentDetailShell({
   onScrollActivity,
   resultsSlot,
   bountyExtrasSlot,
+  bylineSlot,
   children,
 }: ContentDetailShellProps) {
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -500,6 +503,9 @@ export function ContentDetailShell({
         )}
 
         {/* Byline */}
+        {bylineSlot ? (
+          <div style={{ marginBottom: 12 }}>{bylineSlot}</div>
+        ) : (
         <div
           style={{
             display: "flex",
@@ -556,6 +562,7 @@ export function ContentDetailShell({
             </button>
           )}
         </div>
+        )}
 
         {author.derivedBio && (
           <div

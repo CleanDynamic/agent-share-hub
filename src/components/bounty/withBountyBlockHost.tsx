@@ -4,20 +4,10 @@ import type { NodeProps } from '@xyflow/react';
 import { useDocumentStore } from '@/lib/documentStore';
 import { BountyMoreMenu } from '@/components/bounty/BountyMoreMenu';
 import { MissingBlockOverlay } from '@/components/bounty/MissingBlockOverlay';
+import { InlineSolutionMarker } from '@/components/bounty/InlineSolutionMarker';
+import { useBountyProvenance } from '@/components/bounty/BountyProvenanceContext';
 import { toggleBlockMissing } from '@/lib/bountyMissing';
 
-/**
- * Higher-order node wrapper used in bounty mode. Accepts any existing
- * ReactFlow block node component and adds:
- *   • A floating ⋯ menu in the top-right (visible on hover) that lets the
- *     author toggle `is_missing` on the block.
- *   • A MissingBlockOverlay that replaces the block's body when
- *     `is_missing` is true. The wrapped node still mounts so the block
- *     keeps its position/size; the overlay just paints over it.
- *
- * Outside bounty mode this wrapper is invisible — it just renders the
- * underlying node component.
- */
 export function withBountyBlockHost<P extends NodeProps>(
   WrappedNode: React.ComponentType<P>,
 ) {
@@ -27,13 +17,15 @@ export function withBountyBlockHost<P extends NodeProps>(
     const blockId = (props as any).id as string;
     const block = useDocumentStore((s) => s.blocks[blockId]);
     const [hovered, setHovered] = React.useState(false);
+    const provenance = useBountyProvenance();
+    const acceptance = provenance?.slotAcceptance[blockId];
 
     if (!isBounty) return <WrappedNode {...props} />;
 
     const isMissing = Boolean(block?.is_missing);
     const description = block?.missing_description ?? null;
 
-    return (
+    const inner = (
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -53,10 +45,10 @@ export function withBountyBlockHost<P extends NodeProps>(
               background: 'rgba(15,15,20,0.55)',
               backdropFilter: 'blur(2px)',
               borderRadius: 8,
-              pointerEvents: 'none',
+              pointerEvents: 'auto',
             }}
           >
-            <MissingBlockOverlay description={description} />
+            <MissingBlockOverlay description={description} slotId={blockId} />
           </div>
         ) : null}
 
@@ -71,6 +63,27 @@ export function withBountyBlockHost<P extends NodeProps>(
         ) : null}
       </div>
     );
+
+    if (acceptance && acceptance.solver && !isMissing) {
+      return (
+        <InlineSolutionMarker
+          kind="block"
+          solver={{
+            id: acceptance.solver.id,
+            displayName: acceptance.solver.display_name || acceptance.solver.username || 'Solver',
+            handle: acceptance.solver.username || acceptance.solver.id.slice(0, 8),
+            avatarUrl: acceptance.solver.avatar_url || '',
+            isTrustedSolver: !!acceptance.solver.is_trusted_solver,
+          }}
+          acceptedAt={new Date(acceptance.acceptedAt).toLocaleDateString()}
+          onViewOriginal={() => provenance?.onViewOriginalSolution?.(blockId)}
+        >
+          {inner}
+        </InlineSolutionMarker>
+      );
+    }
+
+    return inner;
   }
 
   BountyBlockHost.displayName = `BountyBlockHost(${WrappedNode.displayName ?? WrappedNode.name ?? 'Block'})`;
