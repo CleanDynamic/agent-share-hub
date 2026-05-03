@@ -15,6 +15,7 @@ import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { CanvasShell } from '@/components/canvas/CanvasShell';
 import { StageTimeline } from '@/components/canvas/StageTimeline';
 import { ArticleViewer } from '@/components/article/ArticleViewer';
+import { ResultsViewerSection } from '@/components/content-detail/ResultsViewerSection';
 import { BlogView } from '@/components/blog/BlogView';
 import { StarRating } from "@/components/StarRating";
 import { RatingDisplay } from "@/components/RatingDisplay";
