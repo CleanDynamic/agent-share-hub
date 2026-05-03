@@ -66,6 +66,7 @@ function LevelBadge({ level }: { level: ProfileLevel }) {
 export function ProfileHeader({
   profile,
   isFollowing = false,
+  isTrustedSolver = false,
   onEditProfile,
   onShareProfile,
   onFollow,
