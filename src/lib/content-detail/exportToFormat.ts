@@ -125,15 +125,16 @@ export async function exportToFormat({
       break;
     }
     case "ai-pdf": {
-      // AI-PDF template hook — same payload, marked for downstream renderer.
-      // If a cached ai_pdf_url exists, reuse it; else return HTML stub.
-      const { data } = await (supabase as any)
-        .from("content_items")
-        .select("ai_pdf_url")
-        .eq("id", postId)
-        .maybeSingle();
-      const url = (data as any)?.ai_pdf_url;
-      result = url ? { url } : { content: payloadToHtml(payload) };
+      // Always call the edge function — it handles caching internally
+      // (returns the cached URL if `ai_pdf_generated_at >= updated_at`).
+      try {
+        const { generateAIPdf } = await import("./generateAIPdf");
+        const { url } = await generateAIPdf(postId);
+        result = { url };
+      } catch (e) {
+        console.warn("[exportToFormat:ai-pdf] generation failed, falling back to HTML", e);
+        result = { content: payloadToHtml(payload) };
+      }
       break;
     }
     default:
