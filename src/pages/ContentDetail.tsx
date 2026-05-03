@@ -803,6 +803,18 @@ export default function ContentDetail() {
 
   return (
     <CommentDrawerProvider value={drawerContextValue}>
+      <BountyProvenanceProvider
+        value={{
+          bountySlug: shellPost.slug,
+          bountyId: shellPost.id,
+          bountyStatus,
+          slotSolutionCounts,
+          slotAcceptance,
+          bountyAuthor: provenanceData?.bountyAuthor ?? null,
+          acceptedSolvers: provenanceData?.acceptedSolvers ?? [],
+          onViewOriginalSolution: handleViewOriginalSolution,
+        }}
+      >
       {(() => {
         const SITE = (import.meta as any).env?.VITE_SITE_URL || "https://neoscaleai.com";
         const postUrl = `${SITE}/b/${shellPost.slug}`;
@@ -897,6 +909,7 @@ export default function ContentDetail() {
           />
         }
         bountyExtrasSlot={bountyExtras}
+        bylineSlot={bountyByline}
       >
         {bodyNode}
       </ContentDetailShell>
@@ -951,6 +964,17 @@ export default function ContentDetail() {
           isLoading={drawerLoading}
         />
       )}
+      {originalDialog && (
+        <OriginalSolutionDialog
+          open={!!originalDialog}
+          onClose={() => setOriginalDialog(null)}
+          original={originalDialog.original}
+          current={originalDialog.current}
+          slotKind={originalDialog.slotKind}
+          slotId={originalDialog.slotId}
+        />
+      )}
+      </BountyProvenanceProvider>
     </CommentDrawerProvider>
   );
 }
