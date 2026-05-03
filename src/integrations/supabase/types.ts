@@ -808,6 +808,47 @@ export type Database = {
           },
         ]
       }
+      content_item_results: {
+        Row: {
+          caption: string | null
+          content_item_id: string
+          created_at: string
+          id: string
+          kind: string
+          media_url: string | null
+          position: number
+          text_content: string | null
+        }
+        Insert: {
+          caption?: string | null
+          content_item_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          media_url?: string | null
+          position?: number
+          text_content?: string | null
+        }
+        Update: {
+          caption?: string | null
+          content_item_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          media_url?: string | null
+          position?: number
+          text_content?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_item_results_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_items: {
         Row: {
           ai_tools: string[] | null
