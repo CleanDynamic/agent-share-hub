@@ -1121,6 +1121,26 @@ export default function ContentDetail() {
           </div>
         )}
         <div data-bounty-solutions-anchor />
+        <BountySolutionsSection
+          slots={bountySlots}
+          solutions={solutionItems}
+          filterSlotId={solutionFilter}
+          onFilterChange={handleFilterChange}
+          sort={solutionSort}
+          onSortChange={handleSortChange}
+          onVote={handleVoteSolution}
+          onIWouldImplement={handleIWouldImplement}
+          onShareSolution={handleShareSolution}
+          onSaveSolution={handleSaveSolution}
+          onForkSolution={handleForkSolution}
+          onAccept={handleAcceptSolution}
+          onSubmitFirstSolution={handleSubmitFirstSolution}
+          isBountyAuthor={isBountyAuthor}
+          bountyStatus={bountyStatus}
+          viewerId={user?.id ?? null}
+          expandedIds={expandedSolutionIds}
+          onToggleExpand={handleToggleExpandSolution}
+        />
       </>
     ) : null;
 
