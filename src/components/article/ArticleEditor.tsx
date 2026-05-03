@@ -69,8 +69,8 @@ interface ArticleEditorProps {
   saving?: boolean;
   publishing?: boolean;
   defaultDraftName?: string;
-  /** 'blueprint' (default) — full editor. 'blog' — pure writing surface. 'bounty' — blueprint editor with amber bounty markers. */
-  mode?: 'blueprint' | 'blog' | 'bounty';
+  /** 'blueprint' (default) — full editor. 'blog' — pure writing surface. 'bounty' — blueprint editor with amber bounty markers. 'solve' — single-slot solver surface (chrome stripped, mounted by SolutionSubmissionShell). */
+  mode?: 'blueprint' | 'blog' | 'bounty' | 'solve';
 }
 
 export function ArticleEditor({
