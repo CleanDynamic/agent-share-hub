@@ -27,6 +27,32 @@ async function authoredZone({
   offset = 0,
   limit = DEFAULT_LIMIT,
 }: ZoneArgs): Promise<ZoneContentResult> {
+  // Special filter: surface accepted bounty solutions for this user.
+  if (filter === "solution") {
+    const { data, error } = await (supabase as any)
+      .from("solution_acceptance_log")
+      .select(
+        "id, accepted_at, slot_kind, bounty_id, solution_id, content_items!solution_acceptance_log_bounty_id_fkey(id, title, slug, post_type)"
+      )
+      .eq("solver_id", userId)
+      .order("accepted_at", { ascending: false })
+      .range(offset, offset + limit);
+    if (error) throw error;
+    const items: ZoneItem[] = (data ?? []).map((r: any) => ({
+      id: `solution:${r.id}`,
+      kind: "solution",
+      title: r.content_items?.title
+        ? `Solution accepted on “${r.content_items.title}”`
+        : "Solution accepted",
+      subtitle: `${r.slot_kind} slot`,
+      href: r.content_items?.slug
+        ? `/content/${r.content_items.slug}#solution-${r.solution_id}`
+        : `/content/${r.bounty_id}#solution-${r.solution_id}`,
+      occurredAt: r.accepted_at,
+    }));
+    return pack(items, limit);
+  }
+
   let q = supabase
     .from("content_items")
     .select("id, title, subtitle, post_type, slug, view_count, created_at, published_at")
