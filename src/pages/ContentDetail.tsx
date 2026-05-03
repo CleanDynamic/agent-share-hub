@@ -1166,7 +1166,16 @@ export default function ContentDetail() {
     isBounty ? (
       <>
         {solversInfo.length > 0 && bountyAuthorMeta && (
-          <div data-provenance-overview>
+          <div
+            data-provenance-overview
+            style={{
+              transition: "box-shadow 600ms ease-out",
+              boxShadow: solvedPulse
+                ? "0 0 0 2px rgba(46,196,182,0.55), 0 0 32px rgba(46,196,182,0.35)"
+                : "none",
+              borderRadius: 12,
+            }}
+          >
             <ProvenanceOverview
               bountyAuthor={{
                 ...bountyAuthorMeta,
@@ -1183,6 +1192,16 @@ export default function ContentDetail() {
               }}
               onLearnMore={() => navigate("/about/provenance")}
             />
+            {isBountyAuthor && bountyStatus === "solved" && (
+              <div className="mt-3 flex justify-end">
+                <button
+                  onClick={handlePromoteToBlueprint}
+                  className="px-3 py-1.5 rounded text-xs font-semibold border border-teal-500/40 text-teal-300 hover:bg-teal-500/10"
+                >
+                  Promote to blueprint
+                </button>
+              </div>
+            )}
           </div>
         )}
         <div data-bounty-solutions-anchor />
