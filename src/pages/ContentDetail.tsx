@@ -1317,6 +1317,14 @@ const ContentDetail = () => {
           </>
         )}
 
+        {/* Results carousel — multi-slide media + written results */}
+        {(!isSub || subscriberUnlocked) && (
+          <ResultsViewerSection
+            contentItemId={item.id}
+            postSlug={(item as any).slug ?? item.id}
+          />
+        )}
+
         {/* 9a. Local model CTA */}
         {item.content_type === "AI Tools (LLMs)" && (item as any).tool_subtype === "local" && (item as any).tool_url && (
           <div className="rounded-xl border border-border bg-card p-4 mb-3">
