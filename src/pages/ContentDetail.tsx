@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { SeoHead } from "@/components/SeoHead";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContentDetailShell } from "@/components/content-detail/ContentDetailShell";
 import { ResultsViewerSection } from "@/components/content-detail/ResultsViewerSection";
+import { FloatingEngagementBar } from "@/components/content-detail/FloatingEngagementBar";
 import { ArticleViewer } from "@/components/article/ArticleViewer";
 import { StageTimeline } from "@/components/canvas/StageTimeline";
 import { BlogView } from "@/components/blog/BlogView";
