@@ -8,5 +8,6 @@ export { recordReadingProgress } from "./recordReadingProgress";
 export { recordPostView, isBotUserAgent } from "./recordPostView";
 export { getCanonicalPayload, recomputeCanonicalPayload } from "./getCanonicalPayload";
 export { exportToFormat } from "./exportToFormat";
+export { generateAIPdf } from "./generateAIPdf";
 export { recomputeCanonicalPayloadFor } from "./recomputeCanonicalPayload";
 export { useCommentsRealtime } from "./realtime";

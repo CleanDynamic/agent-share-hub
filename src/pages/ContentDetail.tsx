@@ -330,6 +330,9 @@ export default function ContentDetail() {
       const filenameBase = String(slug).split("/").join("-");
       try {
         setExportBusy(format);
+        if (format === "ai-pdf") {
+          toast({ title: "Generating AI-PDF…", description: "This can take a few seconds." });
+        }
         const res = await exportToFormat({
           postId: post.id as string,
           format,
