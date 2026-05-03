@@ -15,6 +15,7 @@ import type { ProfileLevel, ProfileSummary } from "@/lib/profile/types";
 interface ProfileHeaderProps {
   profile: ProfileSummary;
   isFollowing?: boolean;
+  isTrustedSolver?: boolean;
   onEditProfile?: () => void;
   onShareProfile?: () => void;
   onFollow?: () => void;
