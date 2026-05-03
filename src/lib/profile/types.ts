@@ -55,6 +55,12 @@ export interface AuthorStats {
   bountiesPosted: number;
   avgReadingMinutes: number;
   blockTypeDistribution: BlockTypeBreakdown[];
+  // Bounty solver stats (Phase 5)
+  bountySolutionsAccepted: number;
+  bountySolutionsSubmitted: number;
+  bountySolverAcceptanceRate: number | null;
+  bountyTotalRewardEarned: number;
+  isTrustedSolver: boolean;
 }
 
 export interface Primitive {

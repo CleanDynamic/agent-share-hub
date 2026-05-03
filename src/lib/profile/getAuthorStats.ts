@@ -82,16 +82,31 @@ export async function getAuthorStats(userId: string): Promise<AuthorStats> {
       .sort((a, b) => b.count - a.count);
   }
 
+  // Bounty solver stats from profiles
+  const { data: solverProf } = await (supabase as any)
+    .from("profiles")
+    .select(
+      "bounty_solutions_accepted, bounty_solutions_submitted, bounty_solver_acceptance_rate, bounty_total_reward_earned, is_trusted_solver",
+    )
+    .eq("id", userId)
+    .maybeSingle();
+  const sp = (solverProf ?? {}) as any;
+
   return {
     totalViews: Number(stats.total_views ?? 0),
     blueprintsCount: Number(stats.blueprints_count ?? 0),
     referencesReceived,
-    // TODO(phase-5): once a bounty_solutions table exists, count accepted
-    // solutions where solver = userId. For now we lean on bounty_status='solved'
-    // on bounties posted by this user, which is the only signal available.
     bountiesSolved: Number(stats.bounties_solved ?? 0),
     bountiesPosted: Number(stats.bounties_posted ?? 0),
     avgReadingMinutes: Number(stats.avg_reading_minutes ?? 0),
     blockTypeDistribution,
+    bountySolutionsAccepted: Number(sp.bounty_solutions_accepted ?? 0),
+    bountySolutionsSubmitted: Number(sp.bounty_solutions_submitted ?? 0),
+    bountySolverAcceptanceRate:
+      sp.bounty_solver_acceptance_rate == null
+        ? null
+        : Number(sp.bounty_solver_acceptance_rate),
+    bountyTotalRewardEarned: Number(sp.bounty_total_reward_earned ?? 0),
+    isTrustedSolver: !!sp.is_trusted_solver,
   };
 }

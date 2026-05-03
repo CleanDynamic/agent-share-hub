@@ -100,6 +100,8 @@ export async function recomputeMetadata(contentItemId: string): Promise<void> {
     connection_count: isBlog ? 0 : stats.connectionCount,
     missing_stage_count: missing.stages,
     missing_block_count: missing.blocks,
+    // Bounty: total slots = sum of missing stages + missing blocks.
+    ...(isBounty ? { bounty_total_slots: missing.total } : {}),
     last_metadata_recompute_at: new Date().toISOString(),
   };
 
