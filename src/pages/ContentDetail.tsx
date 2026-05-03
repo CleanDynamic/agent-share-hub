@@ -695,6 +695,301 @@ export default function ContentDetail() {
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
+  // ─── Bounty solutions UI state ───
+  const [expandedSolutionIds, setExpandedSolutionIds] = useState<Set<string>>(new Set());
+  const handleToggleExpandSolution = useCallback((solutionId: string) => {
+    setExpandedSolutionIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(solutionId)) next.delete(solutionId);
+      else next.add(solutionId);
+      return next;
+    });
+  }, []);
+
+  // Build the slot list from the bounty's stage_grids (any slot ever marked
+  // missing — including those that have since been filled by an accepted
+  // solution).
+  const bountySlots: SolutionSlot[] = useMemo(() => {
+    if (!isBounty || !post) return [];
+    const grids = ((post as any).stage_grids ?? {}) as any;
+    const out: SolutionSlot[] = [];
+    const stagesObj = grids.stages ?? {};
+    const blocksObj = grids.blocks ?? {};
+    const acceptedSlotIds = new Set(
+      (provenanceData?.acceptedSolvers ?? []).map((e) => e.slotId),
+    );
+    for (const [sid, raw] of Object.entries(stagesObj)) {
+      const v = raw as any;
+      if (v?.is_missing || acceptedSlotIds.has(sid)) {
+        out.push({
+          id: sid,
+          kind: "stage",
+          name: v?.stage_name || v?.name || v?.title || "Missing stage",
+          missingDescription: v?.missing_description || v?.description || "",
+        });
+      }
+    }
+    for (const [bid, raw] of Object.entries(blocksObj)) {
+      const v = raw as any;
+      if (v?.is_missing || acceptedSlotIds.has(bid)) {
+        out.push({
+          id: bid,
+          kind: "block",
+          name: v?.title || v?.name || "Missing block",
+          missingDescription: v?.missing_description || v?.description || "",
+        });
+      }
+    }
+    return out;
+  }, [isBounty, post, provenanceData]);
+
+  // Map solver Solution rows → SolutionItem cards.
+  const solutionItems: SolutionItem[] = useMemo(() => {
+    const rows = solutionsData?.solutions ?? [];
+    return rows.map((s) => {
+      const payload = (s.content_payload ?? {}) as any;
+      let preview: SolutionItem["contentPreview"] = { type: "other" };
+      if (s.slot_kind === "stage") {
+        const blocks = Array.isArray(payload?.blocks) ? payload.blocks : [];
+        preview = {
+          type: "stage",
+          stageNodes: blocks.slice(0, 12).map((b: any, i: number) => ({
+            x: Number(b?.position?.col ?? i),
+            y: Number(b?.position?.row ?? 0),
+            type: String(b?.type ?? "default"),
+          })),
+          blockTypes: Array.from(
+            new Set(blocks.map((b: any) => String(b?.type ?? "default"))),
+          ).slice(0, 6),
+        };
+      } else {
+        const t = String(payload?.type ?? "");
+        if (t === "prompt") {
+          preview = { type: "prompt", text: String(payload?.content ?? payload?.text ?? "") };
+        } else if (t === "code") {
+          preview = {
+            type: "code",
+            text: String(payload?.content ?? payload?.code ?? ""),
+            language: String(payload?.language ?? "javascript"),
+          };
+        } else {
+          preview = { type: "other" };
+        }
+      }
+      return {
+        id: s.id,
+        slotId: s.slot_id,
+        solverUser: {
+          id: s.solver?.id ?? s.solver_id,
+          displayName: s.solver?.display_name || s.solver?.username || "Solver",
+          handle: s.solver?.username || (s.solver?.id ?? s.solver_id).slice(0, 8),
+          avatarUrl: s.solver?.avatar_url || "",
+          isTrustedSolver: !!s.solver?.is_trusted_solver,
+        },
+        solverNote: s.solver_note ?? "",
+        contentPreview: preview,
+        voteCount: s.vote_count ?? 0,
+        hasVoted: !!s.hasVoted,
+        iWouldImplementCount: s.i_would_implement_count ?? 0,
+        hasIWouldImplement: !!s.hasIWouldImplement,
+        commentCount: s.commentCount ?? 0,
+        isAccepted: s.status === "accepted",
+        isOwnSolution: !!user?.id && user.id === s.solver_id,
+        createdAt: s.created_at,
+      } as SolutionItem;
+    });
+  }, [solutionsData, user?.id]);
+
+  const isBountyAuthor = !!user?.id && !!post && user.id === ((post as any).creator_id as string);
+
+  // Handlers for solutions section.
+  const updateSolutionsCache = useCallback(
+    (updater: (prev: any) => any) => {
+      queryClient.setQueryData(
+        ["bounty_solutions", post?.id, user?.id ?? null, solutionFilter, solutionSort],
+        (prev: any) => {
+          if (!prev) return prev;
+          return updater(prev);
+        },
+      );
+    },
+    [queryClient, post?.id, user?.id, solutionFilter, solutionSort],
+  );
+
+  const handleVoteSolution = useCallback(
+    async (solutionId: string) => {
+      if (!user?.id) {
+        toast({ title: "Sign in to vote", variant: "destructive" });
+        return;
+      }
+      // Optimistic
+      updateSolutionsCache((prev) => ({
+        ...prev,
+        solutions: prev.solutions.map((s: any) =>
+          s.id === solutionId
+            ? {
+                ...s,
+                hasVoted: !s.hasVoted,
+                vote_count: Math.max(0, (s.vote_count ?? 0) + (s.hasVoted ? -1 : 1)),
+              }
+            : s,
+        ),
+      }));
+      try {
+        await voteOnSolution({ solutionId, voterId: user.id, voteKind: "upvote" });
+      } catch (e: any) {
+        toast({ title: "Vote failed", description: e?.message, variant: "destructive" });
+        void refetchSolutions();
+      }
+    },
+    [user?.id, updateSolutionsCache, refetchSolutions, toast],
+  );
+
+  const handleIWouldImplement = useCallback(
+    async (solutionId: string) => {
+      if (!user?.id) {
+        toast({ title: "Sign in to vote", variant: "destructive" });
+        return;
+      }
+      updateSolutionsCache((prev) => ({
+        ...prev,
+        solutions: prev.solutions.map((s: any) =>
+          s.id === solutionId
+            ? {
+                ...s,
+                hasIWouldImplement: !s.hasIWouldImplement,
+                i_would_implement_count: Math.max(
+                  0,
+                  (s.i_would_implement_count ?? 0) + (s.hasIWouldImplement ? -1 : 1),
+                ),
+              }
+            : s,
+        ),
+      }));
+      try {
+        await voteOnSolution({
+          solutionId,
+          voterId: user.id,
+          voteKind: "i_would_implement",
+        });
+      } catch (e: any) {
+        toast({ title: "Failed", description: e?.message, variant: "destructive" });
+        void refetchSolutions();
+      }
+    },
+    [user?.id, updateSolutionsCache, refetchSolutions, toast],
+  );
+
+  const handleShareSolution = useCallback(
+    (solutionId: string, anchorEl: HTMLElement | null) => {
+      if (!post || !shellPost) return;
+      const url = `${window.location.origin}/b/${shellPost.slug}#solution-${solutionId}`;
+      const fallbackAnchor = (anchorEl ?? document.getElementById(`solution-${solutionId}`)) as HTMLElement | null;
+      shareMenu.openShareMenu({
+        contentType: "blueprint",
+        contentId: solutionId,
+        contentMeta: { title: `Solution on ${shellPost.title}`, parentSlug: shellPost.slug },
+        anchorEl:
+          fallbackAnchor ??
+          ({ getBoundingClientRect: () => ({ x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, toJSON: () => ({}) } as DOMRect) } as any),
+      });
+      void navigator.clipboard.writeText(url).catch(() => {});
+    },
+    [post, shellPost, shareMenu],
+  );
+
+  const handleSaveSolution = useCallback(
+    (solutionId: string) => {
+      handleShareSolution(solutionId, null);
+    },
+    [handleShareSolution],
+  );
+
+  const handleForkSolution = useCallback(
+    async (solutionId: string) => {
+      if (!user?.id) {
+        toast({ title: "Sign in to fork", variant: "destructive" });
+        return;
+      }
+      try {
+        const { newDraftId } = await forkSolution({ solutionId, forkerId: user.id });
+        toast({ title: "Forked into a new draft" });
+        navigate(`/upload/blueprint?draft=${newDraftId}`);
+      } catch (e: any) {
+        toast({ title: "Fork failed", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, navigate, toast],
+  );
+
+  const handleAcceptSolution = useCallback(
+    async (solutionId: string) => {
+      if (!user?.id) return;
+      const ok = window.confirm(
+        "Accept this solution? It will be merged into the bounty and the slot will be marked filled. This is permanent.",
+      );
+      if (!ok) return;
+      try {
+        await acceptSolution({ solutionId, accepterId: user.id });
+        toast({ title: "Solution accepted" });
+        void refetchSolutions();
+        void refetchProvenance();
+        void queryClient.invalidateQueries({ queryKey: ["post_for_viewer", id, user.id] });
+      } catch (e: any) {
+        toast({ title: "Accept failed", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, id, refetchSolutions, refetchProvenance, queryClient, toast],
+  );
+
+  const handleSubmitFirstSolution = useCallback(
+    (slotId: string) => {
+      if (!shellPost) return;
+      const slot = bountySlots.find((s) => s.id === slotId);
+      const kind = slot?.kind ?? "stage";
+      navigate(`/b/${shellPost.slug}/solve/${slotId}?kind=${kind}`);
+    },
+    [shellPost, bountySlots, navigate],
+  );
+
+  const handleFilterChange = useCallback(
+    (slotId: string | "all") => {
+      const next = new URLSearchParams(searchParams);
+      if (slotId === "all") next.delete("solutionFilter");
+      else next.set("solutionFilter", slotId);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+  const handleSortChange = useCallback(
+    (sort: string) => {
+      const next = new URLSearchParams(searchParams);
+      if (sort === "most_votes") next.delete("solutionSort");
+      else next.set("solutionSort", sort);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  // Deep-link: if URL hash is #solution-{id}, scroll + auto-expand.
+  useEffect(() => {
+    if (!isBounty || !solutionsData) return;
+    const hash = typeof window !== "undefined" ? window.location.hash : "";
+    if (!hash.startsWith("#solution-")) return;
+    const sid = hash.replace("#solution-", "");
+    setExpandedSolutionIds((prev) => {
+      if (prev.has(sid)) return prev;
+      const next = new Set(prev);
+      next.add(sid);
+      return next;
+    });
+    const t = window.setTimeout(() => {
+      document.getElementById(`solution-${sid}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 200);
+    return () => window.clearTimeout(t);
+  }, [isBounty, solutionsData]);
+
+
   const handleEdit = useCallback(() => {
     if (!post) return;
     const t = NORMALIZE_TYPE((post as any).post_type);
