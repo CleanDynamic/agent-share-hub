@@ -161,6 +161,63 @@ export default function ContentDetail() {
     }, [refetchSolutions]),
   );
 
+  // Discussion forum data
+  const discussionApiFilter = useMemo(() => {
+    switch (discussionFilter) {
+      case "author": return "from_author" as const;
+      case "solvers": return "from_solvers" as const;
+      case "me": return "mentions" as const;
+      case "unread": return "unread" as const;
+      default: return "all" as const;
+    }
+  }, [discussionFilter]);
+  const discussionApiSort = useMemo(() => {
+    if (discussionSort === "reactions") return "most_reactions" as const;
+    return discussionSort;
+  }, [discussionSort]);
+
+  const { data: discussionData, refetch: refetchDiscussion } = useQuery({
+    queryKey: [
+      "bounty_discussion",
+      post?.id,
+      user?.id ?? null,
+      discussionApiFilter,
+      discussionApiSort,
+    ],
+    queryFn: () =>
+      getDiscussionThread({
+        bountyId: post!.id as string,
+        filter: discussionApiFilter,
+        sort: discussionApiSort,
+        viewerId: user?.id ?? null,
+      }),
+    enabled: !!post?.id && isBounty,
+  });
+
+  useBountyDiscussionUpdates(
+    isBounty ? (post?.id as string | undefined) : undefined,
+    useCallback(() => {
+      void refetchDiscussion();
+    }, [refetchDiscussion]),
+  );
+
+  // Mark discussion read once when entering a bounty page.
+  const discussionReadOnceRef = useRef(false);
+  useEffect(() => {
+    if (
+      isBounty &&
+      user?.id &&
+      post?.id &&
+      !discussionReadOnceRef.current
+    ) {
+      discussionReadOnceRef.current = true;
+      void markBountyDiscussionRead({
+        bountyId: post.id as string,
+        userId: user.id,
+      }).catch(() => {});
+    }
+  }, [isBounty, user?.id, post?.id]);
+
   const bountyStatus: "open" | "closed" | "solved" = useMemo(() => {
     const raw = (post as any)?.bounty_status as string | undefined;
     if (raw === "solved" || (post as any)?.bounty_solved_at) return "solved";
