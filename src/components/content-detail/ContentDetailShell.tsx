@@ -77,6 +77,8 @@ export interface ContentDetailShellProps {
   onScrollActivity?: () => void;
   resultsSlot?: React.ReactNode;
   bountyExtrasSlot?: React.ReactNode;
+  /** When provided, replaces the default byline (author row + follow button). */
+  bylineSlot?: React.ReactNode;
   children?: React.ReactNode;
 }
 
