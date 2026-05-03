@@ -17,7 +17,21 @@ import {
   getPostForViewer,
   recordPostView,
   recordReadingProgress,
+  getComments,
+  postComment,
+  reactToComment,
+  useCommentsRealtime,
 } from "@/lib/content-detail";
+import {
+  PrimitiveCommentDrawer,
+  type AnchorType,
+  type AnchorPreview,
+  type Comment as DrawerComment,
+  type ReactionType,
+  type CommentReactions,
+} from "@/components/content-detail/PrimitiveCommentDrawer";
+import { CommentDrawerProvider } from "@/components/content-detail/CommentDrawerContext";
+import type { ThreadedComment } from "@/lib/content-detail/types";
 import { supabase } from "@/integrations/supabase/client";
 
 const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" | "bounty" => {
