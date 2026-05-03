@@ -98,6 +98,90 @@ export default function ContentDetail() {
     [post]
   );
 
+  // ─── Bounty: provenance + per-slot solution counts ───
+  const isBounty = postType === "bounty";
+  const { data: provenanceData, refetch: refetchProvenance } = useQuery({
+    queryKey: ["bounty_provenance", post?.id],
+    queryFn: () => getProvenance(post!.id as string),
+    enabled: !!post?.id && isBounty,
+  });
+  const { data: solutionsData } = useQuery({
+    queryKey: ["bounty_solutions", post?.id, user?.id ?? null],
+    queryFn: () =>
+      getSolutions({
+        bountyId: post!.id as string,
+        slotId: "all",
+        sort: "most_votes",
+        viewerId: user?.id ?? null,
+      }),
+    enabled: !!post?.id && isBounty,
+  });
+
+  const bountyStatus: "open" | "closed" | "solved" = useMemo(() => {
+    const raw = (post as any)?.bounty_status as string | undefined;
+    if (raw === "solved" || (post as any)?.bounty_solved_at) return "solved";
+    if (raw === "closed") return "closed";
+    return "open";
+  }, [post]);
+
+  const slotSolutionCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const s of solutionsData?.solutions ?? []) {
+      out[s.slot_id] = (out[s.slot_id] ?? 0) + 1;
+    }
+    return out;
+  }, [solutionsData]);
+
+  const slotAcceptance = useMemo(() => {
+    const out: Record<string, { solver: any; acceptedAt: string; slotKind: "stage" | "block"; solutionId?: string }> = {};
+    const profileById = new Map<string, any>();
+    for (const e of provenanceData?.acceptedSolvers ?? []) {
+      if (e.user) profileById.set(e.user.id, e.user);
+    }
+    for (const e of provenanceData?.acceptedSolvers ?? []) {
+      out[e.slotId] = {
+        solver: e.user,
+        acceptedAt: e.acceptedAt,
+        slotKind: e.slotKind,
+      };
+    }
+    // Also attach solutionId from solutions table where status = accepted
+    for (const s of solutionsData?.solutions ?? []) {
+      if (s.status === "accepted" && out[s.slot_id]) {
+        out[s.slot_id].solutionId = s.id;
+      }
+    }
+    return out;
+  }, [provenanceData, solutionsData]);
+
+  const [bylineExpanded, setBylineExpanded] = useState(false);
+  const [originalDialog, setOriginalDialog] = useState<{
+    slotId: string;
+    slotKind: "stage" | "block";
+    original: any;
+    current: any;
+  } | null>(null);
+
+  const handleViewOriginalSolution = useCallback(
+    async (slotId: string) => {
+      const acc = slotAcceptance[slotId];
+      if (!acc) return;
+      const sol = (solutionsData?.solutions ?? []).find(
+        (s) => s.slot_id === slotId && s.status === "accepted"
+      );
+      const grids = ((post as any)?.stage_grids ?? {}) as any;
+      const current =
+        acc.slotKind === "stage" ? grids?.stages?.[slotId] : grids?.blocks?.[slotId];
+      setOriginalDialog({
+        slotId,
+        slotKind: acc.slotKind,
+        original: sol?.content_payload ?? null,
+        current,
+      });
+    },
+    [slotAcceptance, solutionsData, post]
+  );
+
   const shellPost = useMemo(() => {
     if (!post) return null;
     const tagsRaw = (post as any).custom_tags || (post as any).tags || [];
