@@ -934,24 +934,78 @@ export default function ContentDetail() {
   );
 
   const handleAcceptSolution = useCallback(
-    async (solutionId: string) => {
+    (solutionId: string) => {
       if (!user?.id) return;
-      const ok = window.confirm(
-        "Accept this solution? It will be merged into the bounty and the slot will be marked filled. This is permanent.",
-      );
-      if (!ok) return;
-      try {
-        await acceptSolution({ solutionId, accepterId: user.id });
-        toast({ title: "Solution accepted" });
+      const sol = solutionItems.find((s) => s.id === solutionId);
+      if (!sol) return;
+      const slot = bountySlots.find((s) => s.id === sol.slotId);
+      const totalSlots = bountySlots.length || 0;
+      const acceptedCount = Object.keys(slotAcceptance).length;
+      const remainingSlotsAfter = Math.max(0, totalSlots - acceptedCount - 1);
+      const isLastSlot = totalSlots > 0 && remainingSlotsAfter === 0;
+      setAcceptDialog({
+        solutionId,
+        solverHandle: sol.solverUser.handle,
+        solverDisplayName: sol.solverUser.displayName,
+        slotName: slot?.name ?? "this slot",
+        remainingSlotsAfter,
+        isLastSlot,
+      });
+    },
+    [user?.id, solutionItems, bountySlots, slotAcceptance],
+  );
+
+  const confirmAcceptSolution = useCallback(async () => {
+    if (!user?.id || !acceptDialog) return;
+    const { solutionId, solverHandle, isLastSlot } = acceptDialog;
+    setAcceptSubmitting(true);
+    try {
+      await acceptSolution({ solutionId, accepterId: user.id });
+      toast({
+        title: "Solution accepted",
+        description: `@${solverHandle} is now a co-author.`,
+      });
+      setAcceptDialog(null);
+      if (isLastSlot) {
+        setSolvedPulse(true);
+        window.setTimeout(() => setSolvedPulse(false), 700);
+      }
+      void refetchSolutions();
+      void refetchProvenance();
+      void queryClient.invalidateQueries({ queryKey: ["post_for_viewer", id, user.id] });
+    } catch (e: any) {
+      const msg = String(e?.message ?? "");
+      if (/already.*accepted/i.test(msg) || /conflict/i.test(msg)) {
+        toast({
+          title: "This slot was already solved. Refreshing…",
+          variant: "destructive",
+        });
+        setAcceptDialog(null);
         void refetchSolutions();
         void refetchProvenance();
         void queryClient.invalidateQueries({ queryKey: ["post_for_viewer", id, user.id] });
-      } catch (e: any) {
-        toast({ title: "Accept failed", description: e?.message, variant: "destructive" });
+      } else {
+        toast({ title: "Accept failed", description: msg, variant: "destructive" });
       }
-    },
-    [user?.id, id, refetchSolutions, refetchProvenance, queryClient, toast],
-  );
+    } finally {
+      setAcceptSubmitting(false);
+    }
+  }, [
+    user?.id,
+    acceptDialog,
+    id,
+    refetchSolutions,
+    refetchProvenance,
+    queryClient,
+    toast,
+  ]);
+
+  const handlePromoteToBlueprint = useCallback(() => {
+    toast({
+      title: "Coming soon",
+      description: "The bounty stays as the canonical record.",
+    });
+  }, [toast]);
 
   const handleSubmitFirstSolution = useCallback(
     (slotId: string) => {
