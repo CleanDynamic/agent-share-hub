@@ -41,8 +41,20 @@ import {
   voteOnSolution,
   forkSolution,
   acceptSolution,
+  getDiscussionThread,
+  postDiscussionComment,
+  reactToComment as reactToBountyComment,
+  markBountyDiscussionRead,
   useBountySolutionUpdates,
+  useBountyDiscussionUpdates,
 } from "@/lib/bounty-solver";
+import {
+  BountyDiscussionForum,
+  type DiscussionFilterValue,
+  type DiscussionSortValue,
+  type DiscussionComment,
+  type ReactionType as DiscussionReactionType,
+} from "@/components/bounty/BountyDiscussionForum";
 import { BountyProvenanceProvider } from "@/components/bounty/BountyProvenanceContext";
 import { BountyByline, type SolverInfo } from "@/components/bounty/BountyByline";
 import { ProvenanceOverview } from "@/components/bounty/ProvenanceOverview";
@@ -73,6 +85,9 @@ export default function ContentDetail() {
 
   const solutionFilter = (searchParams.get("solutionFilter") as string) || "all";
   const solutionSort = (searchParams.get("solutionSort") as any) || "most_votes";
+  const discussionFilter = (searchParams.get("discussionFilter") as DiscussionFilterValue) || "all";
+  const discussionSort = (searchParams.get("discussionSort") as DiscussionSortValue) || "newest";
+  const [composerExpanded, setComposerExpanded] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["post_for_viewer", id, user?.id ?? null],
@@ -145,6 +160,63 @@ export default function ContentDetail() {
       void refetchSolutions();
     }, [refetchSolutions]),
   );
+
+  // Discussion forum data
+  const discussionApiFilter = useMemo(() => {
+    switch (discussionFilter) {
+      case "author": return "from_author" as const;
+      case "solvers": return "from_solvers" as const;
+      case "me": return "mentions" as const;
+      case "unread": return "unread" as const;
+      default: return "all" as const;
+    }
+  }, [discussionFilter]);
+  const discussionApiSort = useMemo(() => {
+    if (discussionSort === "reactions") return "most_reactions" as const;
+    return discussionSort;
+  }, [discussionSort]);
+
+  const { data: discussionData, refetch: refetchDiscussion } = useQuery({
+    queryKey: [
+      "bounty_discussion",
+      post?.id,
+      user?.id ?? null,
+      discussionApiFilter,
+      discussionApiSort,
+    ],
+    queryFn: () =>
+      getDiscussionThread({
+        bountyId: post!.id as string,
+        filter: discussionApiFilter,
+        sort: discussionApiSort,
+        viewerId: user?.id ?? null,
+      }),
+    enabled: !!post?.id && isBounty,
+  });
+
+  useBountyDiscussionUpdates(
+    isBounty ? (post?.id as string | undefined) : undefined,
+    useCallback(() => {
+      void refetchDiscussion();
+    }, [refetchDiscussion]),
+  );
+
+  // Mark discussion read once when entering a bounty page.
+  const discussionReadOnceRef = useRef(false);
+  useEffect(() => {
+    if (
+      isBounty &&
+      user?.id &&
+      post?.id &&
+      !discussionReadOnceRef.current
+    ) {
+      discussionReadOnceRef.current = true;
+      void markBountyDiscussionRead({
+        bountyId: post.id as string,
+        userId: user.id,
+      }).catch(() => {});
+    }
+  }, [isBounty, user?.id, post?.id]);
 
   const bountyStatus: "open" | "closed" | "solved" = useMemo(() => {
     const raw = (post as any)?.bounty_status as string | undefined;
@@ -1162,6 +1234,134 @@ export default function ContentDetail() {
       />
     ) : null;
 
+  // Discussion data mapping + handlers
+  const acceptedSolverIds = useMemo(
+    () => (provenanceData?.acceptedSolvers ?? []).map((e) => e.user?.id).filter(Boolean) as string[],
+    [provenanceData],
+  );
+  const justPostedIdsRef = useRef<Set<string>>(new Set());
+  const mapDiscussion = useCallback(
+    (rows: any[]): DiscussionComment[] =>
+      rows.map((r) => ({
+        id: r.id,
+        author: {
+          id: r.author?.id ?? "unknown",
+          displayName: r.author?.display_name || r.author?.username || "User",
+          handle: r.author?.username || (r.author?.id ?? "user").slice(0, 8),
+          avatarUrl: r.author?.avatar_url ?? null,
+          isTrustedSolver: !!r.author?.is_trusted_solver,
+        },
+        content: r.body,
+        timestamp: new Date(r.createdAt),
+        reactions: (r.reactions ?? [])
+          .filter((x: any) => ["upvote", "lightbulb", "heart"].includes(x.reaction))
+          .map((x: any) => ({
+            type: x.reaction as DiscussionReactionType,
+            count: x.count,
+            hasReacted: !!x.reactedByViewer,
+          })),
+        replies: r.replies ? mapDiscussion(r.replies) : [],
+        isUnread: !!r.isUnread,
+        isFromBountyAuthor: !!r.isFromBountyAuthor,
+        isFromAcceptedSolver: !!r.isFromAcceptedSolver,
+        isJustPosted: justPostedIdsRef.current.has(r.id),
+      })),
+    [],
+  );
+  const discussionThreads = useMemo(
+    () => mapDiscussion(discussionData?.comments ?? []),
+    [discussionData, mapDiscussion],
+  );
+
+  const handleDiscussionPost = useCallback(
+    async (text: string, options: { tagBountyAuthor?: boolean }) => {
+      if (!user?.id || !post?.id) {
+        toast({ title: "Sign in to post", variant: "destructive" });
+        return;
+      }
+      try {
+        const row = await postDiscussionComment({
+          bountyId: post.id as string,
+          authorId: user.id,
+          body: text,
+          taggedBountyAuthor: !!options.tagBountyAuthor,
+        });
+        if (row?.id) justPostedIdsRef.current.add(row.id);
+        await refetchDiscussion();
+      } catch (e: any) {
+        toast({ title: "Post failed", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, post?.id, refetchDiscussion, toast],
+  );
+
+  const handleDiscussionReply = useCallback(
+    async (parentId: string, text: string) => {
+      if (!user?.id || !post?.id) {
+        toast({ title: "Sign in to reply", variant: "destructive" });
+        return;
+      }
+      try {
+        const row = await postDiscussionComment({
+          bountyId: post.id as string,
+          authorId: user.id,
+          body: text,
+          parentCommentId: parentId,
+        });
+        if (row?.id) justPostedIdsRef.current.add(row.id);
+        await refetchDiscussion();
+      } catch (e: any) {
+        toast({ title: "Reply failed", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, post?.id, refetchDiscussion, toast],
+  );
+
+  const handleDiscussionReact = useCallback(
+    async (commentId: string, reaction: DiscussionReactionType) => {
+      if (!user?.id) {
+        toast({ title: "Sign in to react", variant: "destructive" });
+        return;
+      }
+      try {
+        await reactToBountyComment({ commentId, reactorId: user.id, reaction });
+        await refetchDiscussion();
+      } catch (e: any) {
+        toast({ title: "Reaction failed", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, refetchDiscussion, toast],
+  );
+
+  const handleDiscussionMore = useCallback(
+    (commentId: string) => {
+      void navigator.clipboard?.writeText(
+        `${window.location.origin}${window.location.pathname}#discussion-${commentId}`,
+      );
+      toast({ title: "Link copied" });
+    },
+    [toast],
+  );
+
+  const handleDiscussionFilterChange = useCallback(
+    (f: DiscussionFilterValue) => {
+      const next = new URLSearchParams(searchParams);
+      if (f === "all") next.delete("discussionFilter");
+      else next.set("discussionFilter", f);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+  const handleDiscussionSortChange = useCallback(
+    (s: DiscussionSortValue) => {
+      const next = new URLSearchParams(searchParams);
+      if (s === "newest") next.delete("discussionSort");
+      else next.set("discussionSort", s);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
   const bountyExtras =
     isBounty ? (
       <>
@@ -1240,6 +1440,23 @@ export default function ContentDetail() {
             submitting={acceptSubmitting}
           />
         )}
+        <BountyDiscussionForum
+          bountyId={post?.id as string}
+          bountyAuthorId={(post as any)?.creator_id as string}
+          acceptedSolverIds={acceptedSolverIds}
+          threads={discussionThreads}
+          filter={discussionFilter}
+          sort={discussionSort}
+          onFilterChange={handleDiscussionFilterChange}
+          onSortChange={handleDiscussionSortChange}
+          onPost={handleDiscussionPost}
+          onReply={handleDiscussionReply}
+          onReact={handleDiscussionReact}
+          onMore={handleDiscussionMore}
+          composerExpanded={composerExpanded}
+          onToggleComposer={() => setComposerExpanded((v) => !v)}
+          viewerId={user?.id ?? null}
+        />
       </>
     ) : null;
 
