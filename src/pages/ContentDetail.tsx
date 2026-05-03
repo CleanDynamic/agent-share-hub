@@ -438,6 +438,7 @@ export default function ContentDetail() {
           // Anchor for AI export menu and post-level actions (Phase 10+)
         }}
         onScrollProgress={handleScrollProgress}
+        onScrollActivity={handleScrollActivity}
         resultsSlot={
           <ResultsViewerSection
             contentItemId={post.id as string}
@@ -448,6 +449,28 @@ export default function ContentDetail() {
       >
         {bodyNode}
       </ContentDetailShell>
+      <FloatingEngagementBar
+        post={{
+          id: shellPost.id,
+          postType: shellPost.postType,
+          slug: shellPost.slug,
+          hasLiked,
+          hasBookmarked,
+          hasReposted,
+        }}
+        counts={{ likes: likeCount, comments: commentCount, reposts: repostCount }}
+        isOwnPost={isOwnPost}
+        isVisible={barVisible}
+        onLike={handleLike}
+        onComment={handleComment}
+        onRepost={handleRepost}
+        onBookmark={handleBookmark}
+        onShare={handleShare}
+        onExport={handleExport}
+        onSubmitSolution={shellPost.postType === "bounty" ? handleSubmitSolution : undefined}
+        onEdit={isOwnPost ? handleEdit : undefined}
+      />
     </>
   );
 }
+
