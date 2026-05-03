@@ -59,18 +59,18 @@ const styles = {
     borderBottom: '1px solid hsl(var(--foreground) / 0.06)',
   },
   divider: {
-    background: 'hsl(var(--foreground) / 0.06)',
+    background: 'rgba(255,255,255,0.06)',
   },
   iconButton: {
-    color: 'hsl(var(--foreground) / 0.7)',
+    color: 'rgba(255,255,255,0.65)',
   },
   iconButtonHover: {
-    color: 'hsl(var(--foreground) / 0.95)',
-    background: 'hsl(var(--foreground) / 0.06)',
+    color: 'rgba(255,255,255,0.85)',
+    background: 'rgba(255,255,255,0.04)',
   },
   iconButtonActive: {
-    color: 'hsl(var(--secondary))',
-    background: 'hsl(var(--secondary) / 0.12)',
+    color: '#2EC4B6',
+    background: 'rgba(46,196,182,0.06)',
   },
   dropdown: {
     background: 'hsl(240 20% 8% / 0.95)',
@@ -125,13 +125,13 @@ function ToolbarButton({
   const buttonStyle: React.CSSProperties = {
     width: 28,
     height: 28,
-    borderRadius: 6,
+    borderRadius: 5,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.4 : 1,
-    transition: 'all 0.15s ease',
+    transition: 'all 120ms ease-out',
     border: 'none',
     padding: 0,
     background: 'transparent',
@@ -198,7 +198,7 @@ function DropdownItem({
       style={{
         width: '100%',
         height: 28,
-        borderRadius: 6,
+        borderRadius: 5,
         border: 'none',
         background: isHovered ? styles.dropdownItemHover.background : 'transparent',
         color: isSelected ? 'hsl(var(--foreground) / 0.95)' : styles.dropdownItem.color,
@@ -244,12 +244,12 @@ function ToolbarDropdown({
     minWidth: width,
     paddingLeft: 10,
     paddingRight: 6,
-    borderRadius: 6,
+    borderRadius: 5,
     display: 'flex',
     alignItems: 'center',
     gap: 4,
     cursor: 'pointer',
-    transition: 'all 0.15s ease',
+    transition: 'all 120ms ease-out',
     fontSize: 13,
     fontWeight: 400,
     fontFamily: 'Inter, sans-serif',
@@ -334,15 +334,15 @@ function ColorSwatch({ color, label, shortcut, onClick }: ColorSwatchProps) {
           style={{
             width: 28,
             height: 28,
-            borderRadius: 6,
+            borderRadius: 5,
             border: 'none',
             padding: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            background: isHovered ? 'hsl(var(--foreground) / 0.06)' : 'transparent',
-            transition: 'all 0.15s ease',
+            background: isHovered ? 'rgba(255,255,255,0.04)' : 'transparent',
+            transition: 'all 120ms ease-out',
           }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -447,15 +447,15 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
           style={{
             width: 28,
             height: 28,
-            borderRadius: 6,
+            borderRadius: 5,
             border: 'none',
             padding: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            background: hovered ? 'hsl(var(--foreground) / 0.06)' : 'transparent',
-            transition: 'all 0.15s ease',
+            background: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
+            transition: 'all 120ms ease-out',
           }}
         >
           <span
@@ -633,8 +633,8 @@ function Divider() {
     <div
       style={{
         width: 1,
-        height: 20,
-        borderRadius: 999,
+        height: 16,
+        margin: '0 8px',
         flexShrink: 0,
         ...styles.divider,
       }}
