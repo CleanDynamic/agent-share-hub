@@ -321,14 +321,165 @@ export default function ContentDetail() {
     [toast]
   );
 
+  // ─── Comment drawer state ───
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerAnchor, setDrawerAnchor] = useState<{
+    anchorType: AnchorType;
+    anchorId: string;
+    preview: AnchorPreview;
+  } | null>(null);
+  const [drawerThreads, setDrawerThreads] = useState<DrawerComment[]>([]);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+
+  const reactionsToCounts = (rs: ThreadedComment["reactions"]): CommentReactions => {
+    const out: CommentReactions = { thumbsup: 0, lightbulb: 0, heart: 0, eyes: 0 };
+    for (const r of rs) {
+      if (r.reaction in out) (out as any)[r.reaction] = r.count;
+    }
+    return out;
+  };
+
+  const toDrawerComment = useCallback(
+    (c: ThreadedComment): DrawerComment => ({
+      id: c.id,
+      author: {
+        id: c.author?.id ?? "unknown",
+        displayName: c.author?.display_name || c.author?.username || "User",
+        handle: c.author?.username || (c.author?.id ?? "user").slice(0, 8),
+        avatarUrl: c.author?.avatar_url || undefined,
+        role:
+          c.author?.id && post && c.author.id === (post as any).creator_id
+            ? "author"
+            : c.author?.is_trusted_solver
+            ? "trusted_solver"
+            : null,
+      },
+      body: c.bodyText || "",
+      reactions: reactionsToCounts(c.reactions),
+      timestamp: new Date(c.createdAt),
+      replies: (c.replies || []).map(toDrawerComment),
+    }),
+    [post]
+  );
+
+  const refetchDrawerThreads = useCallback(async () => {
+    if (!drawerAnchor) return;
+    setDrawerLoading(true);
+    try {
+      const { threads, total } = await getComments({
+        anchorType: drawerAnchor.anchorType,
+        anchorId: drawerAnchor.anchorId,
+        sort: "newest",
+        viewerId: user?.id ?? null,
+      });
+      setDrawerThreads(threads.map(toDrawerComment));
+      // Keep post-level comment count badge in sync.
+      if (drawerAnchor.anchorType === "post") setCommentCount(total);
+    } catch (e) {
+      console.warn("[drawer] getComments failed", e);
+    } finally {
+      setDrawerLoading(false);
+    }
+  }, [drawerAnchor, user?.id, toDrawerComment]);
+
+  useEffect(() => {
+    if (drawerOpen && drawerAnchor) refetchDrawerThreads();
+  }, [drawerOpen, drawerAnchor, refetchDrawerThreads]);
+
+  // Realtime: live updates for the currently-open anchor.
+  useCommentsRealtime(
+    drawerAnchor?.anchorType ?? "post",
+    drawerAnchor?.anchorId ?? null,
+    useCallback(() => {
+      refetchDrawerThreads();
+    }, [refetchDrawerThreads])
+  );
+
+  const openDrawer = useCallback(
+    (args: { anchorType: AnchorType; anchorId: string; preview: AnchorPreview }) => {
+      setDrawerAnchor(args);
+      setDrawerOpen(true);
+    },
+    []
+  );
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+
+  const drawerContextValue = useMemo(
+    () => ({ open: openDrawer, close: closeDrawer }),
+    [openDrawer, closeDrawer]
+  );
+
   const handleComment = useCallback(() => {
-    // Opens post-level PrimitiveCommentDrawer in next step.
-    const el = document.querySelector('[data-comments-anchor="post"]') as HTMLElement | null;
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!post || !shellPost) return;
+    openDrawer({
+      anchorType: "post",
+      anchorId: post.id as string,
+      preview: { type: "post", title: shellPost.title },
+    });
+  }, [post, shellPost, openDrawer]);
+
+  const handleDrawerPost = useCallback(
+    async (text: string) => {
+      if (!user?.id || !drawerAnchor) {
+        toast({ title: "Sign in to comment", variant: "destructive" });
+        return;
+      }
+      try {
+        await postComment({
+          anchorType: drawerAnchor.anchorType,
+          anchorId: drawerAnchor.anchorId,
+          authorId: user.id,
+          body: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text }] }] },
+        });
+        await refetchDrawerThreads();
+      } catch (e: any) {
+        toast({ title: "Could not post", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, drawerAnchor, refetchDrawerThreads, toast]
+  );
+
+  const handleDrawerReply = useCallback(
+    async (parentId: string, text: string) => {
+      if (!user?.id || !drawerAnchor) return;
+      try {
+        await postComment({
+          anchorType: drawerAnchor.anchorType,
+          anchorId: drawerAnchor.anchorId,
+          parentCommentId: parentId,
+          authorId: user.id,
+          body: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text }] }] },
+        });
+        await refetchDrawerThreads();
+      } catch (e: any) {
+        toast({ title: "Could not reply", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, drawerAnchor, refetchDrawerThreads, toast]
+  );
+
+  const handleDrawerReact = useCallback(
+    async (commentId: string, reaction: ReactionType) => {
+      if (!user?.id) {
+        toast({ title: "Sign in to react", variant: "destructive" });
+        return;
+      }
+      try {
+        await reactToComment({ commentId, reactorId: user.id, reaction });
+        await refetchDrawerThreads();
+      } catch (e: any) {
+        toast({ title: "Reaction failed", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, refetchDrawerThreads, toast]
+  );
+
+  const handleDrawerMore = useCallback((_commentId: string) => {
+    // Edit / Delete / Report menu — wired in a follow-up step.
   }, []);
 
   const handleSubmitSolution = useCallback(() => {
-    const el = document.querySelector('[data-bounty-solutions-anchor]') as HTMLElement | null;
+    const el = document.querySelector("[data-bounty-solutions-anchor]") as HTMLElement | null;
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
@@ -337,6 +488,7 @@ export default function ContentDetail() {
     const t = NORMALIZE_TYPE((post as any).post_type);
     navigate(`/upload/${t}?draft=${post.id}`);
   }, [navigate, post]);
+
 
 
   if (isLoading) {
