@@ -47,6 +47,7 @@ import { BountyProvenanceProvider } from "@/components/bounty/BountyProvenanceCo
 import { BountyByline, type SolverInfo } from "@/components/bounty/BountyByline";
 import { ProvenanceOverview } from "@/components/bounty/ProvenanceOverview";
 import { OriginalSolutionDialog } from "@/components/bounty/OriginalSolutionDialog";
+import { AcceptSolutionDialog } from "@/components/bounty/AcceptSolutionDialog";
 import {
   BountySolutionsSection,
   type SolutionItem,
@@ -189,6 +190,16 @@ export default function ContentDetail() {
     original: any;
     current: any;
   } | null>(null);
+  const [acceptDialog, setAcceptDialog] = useState<{
+    solutionId: string;
+    solverHandle: string;
+    solverDisplayName?: string;
+    slotName: string;
+    remainingSlotsAfter: number;
+    isLastSlot: boolean;
+  } | null>(null);
+  const [acceptSubmitting, setAcceptSubmitting] = useState(false);
+  const [solvedPulse, setSolvedPulse] = useState(false);
 
   const handleViewOriginalSolution = useCallback(
     async (slotId: string) => {
@@ -923,24 +934,78 @@ export default function ContentDetail() {
   );
 
   const handleAcceptSolution = useCallback(
-    async (solutionId: string) => {
+    (solutionId: string) => {
       if (!user?.id) return;
-      const ok = window.confirm(
-        "Accept this solution? It will be merged into the bounty and the slot will be marked filled. This is permanent.",
-      );
-      if (!ok) return;
-      try {
-        await acceptSolution({ solutionId, accepterId: user.id });
-        toast({ title: "Solution accepted" });
+      const sol = solutionItems.find((s) => s.id === solutionId);
+      if (!sol) return;
+      const slot = bountySlots.find((s) => s.id === sol.slotId);
+      const totalSlots = bountySlots.length || 0;
+      const acceptedCount = Object.keys(slotAcceptance).length;
+      const remainingSlotsAfter = Math.max(0, totalSlots - acceptedCount - 1);
+      const isLastSlot = totalSlots > 0 && remainingSlotsAfter === 0;
+      setAcceptDialog({
+        solutionId,
+        solverHandle: sol.solverUser.handle,
+        solverDisplayName: sol.solverUser.displayName,
+        slotName: slot?.name ?? "this slot",
+        remainingSlotsAfter,
+        isLastSlot,
+      });
+    },
+    [user?.id, solutionItems, bountySlots, slotAcceptance],
+  );
+
+  const confirmAcceptSolution = useCallback(async () => {
+    if (!user?.id || !acceptDialog) return;
+    const { solutionId, solverHandle, isLastSlot } = acceptDialog;
+    setAcceptSubmitting(true);
+    try {
+      await acceptSolution({ solutionId, accepterId: user.id });
+      toast({
+        title: "Solution accepted",
+        description: `@${solverHandle} is now a co-author.`,
+      });
+      setAcceptDialog(null);
+      if (isLastSlot) {
+        setSolvedPulse(true);
+        window.setTimeout(() => setSolvedPulse(false), 700);
+      }
+      void refetchSolutions();
+      void refetchProvenance();
+      void queryClient.invalidateQueries({ queryKey: ["post_for_viewer", id, user.id] });
+    } catch (e: any) {
+      const msg = String(e?.message ?? "");
+      if (/already.*accepted/i.test(msg) || /conflict/i.test(msg)) {
+        toast({
+          title: "This slot was already solved. Refreshing…",
+          variant: "destructive",
+        });
+        setAcceptDialog(null);
         void refetchSolutions();
         void refetchProvenance();
         void queryClient.invalidateQueries({ queryKey: ["post_for_viewer", id, user.id] });
-      } catch (e: any) {
-        toast({ title: "Accept failed", description: e?.message, variant: "destructive" });
+      } else {
+        toast({ title: "Accept failed", description: msg, variant: "destructive" });
       }
-    },
-    [user?.id, id, refetchSolutions, refetchProvenance, queryClient, toast],
-  );
+    } finally {
+      setAcceptSubmitting(false);
+    }
+  }, [
+    user?.id,
+    acceptDialog,
+    id,
+    refetchSolutions,
+    refetchProvenance,
+    queryClient,
+    toast,
+  ]);
+
+  const handlePromoteToBlueprint = useCallback(() => {
+    toast({
+      title: "Coming soon",
+      description: "The bounty stays as the canonical record.",
+    });
+  }, [toast]);
 
   const handleSubmitFirstSolution = useCallback(
     (slotId: string) => {
@@ -1101,7 +1166,16 @@ export default function ContentDetail() {
     isBounty ? (
       <>
         {solversInfo.length > 0 && bountyAuthorMeta && (
-          <div data-provenance-overview>
+          <div
+            data-provenance-overview
+            style={{
+              transition: "box-shadow 600ms ease-out",
+              boxShadow: solvedPulse
+                ? "0 0 0 2px rgba(46,196,182,0.55), 0 0 32px rgba(46,196,182,0.35)"
+                : "none",
+              borderRadius: 12,
+            }}
+          >
             <ProvenanceOverview
               bountyAuthor={{
                 ...bountyAuthorMeta,
@@ -1118,6 +1192,16 @@ export default function ContentDetail() {
               }}
               onLearnMore={() => navigate("/about/provenance")}
             />
+            {isBountyAuthor && bountyStatus === "solved" && (
+              <div className="mt-3 flex justify-end">
+                <button
+                  onClick={handlePromoteToBlueprint}
+                  className="px-3 py-1.5 rounded text-xs font-semibold border border-teal-500/40 text-teal-300 hover:bg-teal-500/10"
+                >
+                  Promote to blueprint
+                </button>
+              </div>
+            )}
           </div>
         )}
         <div data-bounty-solutions-anchor />
@@ -1141,6 +1225,21 @@ export default function ContentDetail() {
           expandedIds={expandedSolutionIds}
           onToggleExpand={handleToggleExpandSolution}
         />
+        {acceptDialog && (
+          <AcceptSolutionDialog
+            open={!!acceptDialog}
+            onOpenChange={(o) => {
+              if (!o) setAcceptDialog(null);
+            }}
+            solverHandle={acceptDialog.solverHandle}
+            solverDisplayName={acceptDialog.solverDisplayName}
+            slotName={acceptDialog.slotName}
+            remainingSlotsAfter={acceptDialog.remainingSlotsAfter}
+            isLastSlot={acceptDialog.isLastSlot}
+            onConfirm={confirmAcceptSolution}
+            submitting={acceptSubmitting}
+          />
+        )}
       </>
     ) : null;
 
