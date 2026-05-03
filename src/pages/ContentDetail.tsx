@@ -21,7 +21,9 @@ import {
   postComment,
   reactToComment,
   useCommentsRealtime,
+  exportToFormat,
 } from "@/lib/content-detail";
+import { AIExportMenu, type ExportFormat } from "@/components/content-detail/AIExportMenu";
 import {
   PrimitiveCommentDrawer,
   type AnchorType,
@@ -313,13 +315,103 @@ export default function ContentDetail() {
     [post, toast]
   );
 
-  const handleExport = useCallback(
-    (_anchor: HTMLButtonElement) => {
-      // AIExportMenu mounts here in step 11.7
-      toast({ title: "Export menu", description: "AI export menu coming soon." });
+  // ─── AI Export menu ───
+  const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null);
+  const [exportBusy, setExportBusy] = useState<ExportFormat | null>(null);
+
+  const handleExport = useCallback((anchor: HTMLButtonElement) => {
+    setExportAnchor((prev) => (prev ? null : anchor));
+  }, []);
+
+  const triggerExport = useCallback(
+    async (format: ExportFormat) => {
+      if (!post?.id || !shellPost) return;
+      const slug = shellPost.slug || post.id;
+      const filenameBase = String(slug).split("/").join("-");
+      try {
+        setExportBusy(format);
+        const res = await exportToFormat({
+          postId: post.id as string,
+          format,
+          exporterId: user?.id ?? null,
+        });
+
+        const downloadBlob = (data: BlobPart, mime: string, ext: string) => {
+          const blob = new Blob([data], { type: mime });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${filenameBase}${ext}`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        };
+
+        switch (format) {
+          case "markdown":
+            downloadBlob(res.content ?? "", "text/markdown;charset=utf-8", ".md");
+            toast({ title: "Markdown downloaded" });
+            break;
+          case "plain":
+            downloadBlob(res.content ?? "", "text/plain;charset=utf-8", ".txt");
+            toast({ title: "Plain text downloaded" });
+            break;
+          case "json":
+            downloadBlob(res.content ?? "", "application/json;charset=utf-8", ".json");
+            toast({ title: "JSON downloaded" });
+            break;
+          case "copy-json":
+            try {
+              await navigator.clipboard.writeText(res.content ?? "");
+              toast({ title: "Copied to clipboard", description: "Paste into ChatGPT or Claude." });
+            } catch {
+              toast({ title: "Copy failed", variant: "destructive" });
+            }
+            break;
+          case "pdf": {
+            if (res.url) {
+              window.open(res.url, "_blank", "noopener");
+            } else {
+              // Open print-ready HTML in a new window so the user can save as PDF.
+              const w = window.open("", "_blank");
+              if (w) {
+                w.document.write(res.content ?? "");
+                w.document.close();
+                w.focus();
+                setTimeout(() => w.print(), 250);
+              }
+            }
+            toast({ title: "PDF ready", description: "Use your browser's Save as PDF." });
+            break;
+          }
+          case "ai-pdf": {
+            if (res.url) {
+              const a = document.createElement("a");
+              a.href = res.url;
+              a.download = `${filenameBase}-ai.pdf`;
+              a.target = "_blank";
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              toast({ title: "AI-PDF downloaded" });
+            } else {
+              downloadBlob(res.content ?? "", "text/html;charset=utf-8", "-ai.html");
+              toast({ title: "AI-PDF queued", description: "Renderer not yet available — HTML draft downloaded." });
+            }
+            break;
+          }
+        }
+        setExportAnchor(null);
+      } catch (e: any) {
+        toast({ title: "Export failed", description: e?.message ?? "Try again.", variant: "destructive" });
+      } finally {
+        setExportBusy(null);
+      }
     },
-    [toast]
+    [post?.id, shellPost, user?.id, toast]
   );
+
 
   // ─── Comment drawer state ───
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -690,6 +782,19 @@ export default function ContentDetail() {
         onExport={handleExport}
         onSubmitSolution={shellPost.postType === "bounty" ? handleSubmitSolution : undefined}
         onEdit={isOwnPost ? handleEdit : undefined}
+      />
+      <AIExportMenu
+        isOpen={!!exportAnchor}
+        anchorEl={exportAnchor}
+        onClose={() => setExportAnchor(null)}
+        post={{
+          id: shellPost.id,
+          slug: shellPost.slug,
+          postType: shellPost.postType,
+          title: shellPost.title,
+        }}
+        onExport={triggerExport}
+        busyFormat={exportBusy}
       />
       {drawerAnchor && (
         <PrimitiveCommentDrawer
