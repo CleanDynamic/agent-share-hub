@@ -63,6 +63,38 @@ export type Database = {
           },
         ]
       }
+      ai_export_log: {
+        Row: {
+          exported_at: string
+          exporter_id: string | null
+          format: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          exported_at?: string
+          exporter_id?: string | null
+          format: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          exported_at?: string
+          exporter_id?: string | null
+          format?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_export_log_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_tools_registry: {
         Row: {
           approved_at: string | null
@@ -851,6 +883,8 @@ export type Database = {
       }
       content_items: {
         Row: {
+          ai_pdf_generated_at: string | null
+          ai_pdf_url: string | null
           ai_tools: string[] | null
           approved_at: string | null
           article_body: Json | null
@@ -865,6 +899,7 @@ export type Database = {
           bounty_reward_currency: string | null
           bounty_reward_type: string | null
           bounty_status: string | null
+          canonical_export_payload: Json | null
           comment_count: number
           compatibility_status: string | null
           connection_count: number
@@ -918,6 +953,7 @@ export type Database = {
           pwyw_floor_gbp: number | null
           pwyw_purchase_count: number | null
           rating_count: number
+          reading_completion_count: number
           slug: string | null
           stage_count: number
           stage_grids: Json | null
@@ -942,6 +978,8 @@ export type Database = {
           word_count: number
         }
         Insert: {
+          ai_pdf_generated_at?: string | null
+          ai_pdf_url?: string | null
           ai_tools?: string[] | null
           approved_at?: string | null
           article_body?: Json | null
@@ -956,6 +994,7 @@ export type Database = {
           bounty_reward_currency?: string | null
           bounty_reward_type?: string | null
           bounty_status?: string | null
+          canonical_export_payload?: Json | null
           comment_count?: number
           compatibility_status?: string | null
           connection_count?: number
@@ -1009,6 +1048,7 @@ export type Database = {
           pwyw_floor_gbp?: number | null
           pwyw_purchase_count?: number | null
           rating_count?: number
+          reading_completion_count?: number
           slug?: string | null
           stage_count?: number
           stage_grids?: Json | null
@@ -1033,6 +1073,8 @@ export type Database = {
           word_count?: number
         }
         Update: {
+          ai_pdf_generated_at?: string | null
+          ai_pdf_url?: string | null
           ai_tools?: string[] | null
           approved_at?: string | null
           article_body?: Json | null
@@ -1047,6 +1089,7 @@ export type Database = {
           bounty_reward_currency?: string | null
           bounty_reward_type?: string | null
           bounty_status?: string | null
+          canonical_export_payload?: Json | null
           comment_count?: number
           compatibility_status?: string | null
           connection_count?: number
@@ -1100,6 +1143,7 @@ export type Database = {
           pwyw_floor_gbp?: number | null
           pwyw_purchase_count?: number | null
           rating_count?: number
+          reading_completion_count?: number
           slug?: string | null
           stage_count?: number
           stage_grids?: Json | null
@@ -2478,6 +2522,120 @@ export type Database = {
           },
         ]
       }
+      post_view_log: {
+        Row: {
+          id: string
+          is_bot_or_crawler: boolean
+          post_id: string
+          referrer: string | null
+          user_agent: string | null
+          viewed_at: string
+          viewer_id: string | null
+        }
+        Insert: {
+          id?: string
+          is_bot_or_crawler?: boolean
+          post_id: string
+          referrer?: string | null
+          user_agent?: string | null
+          viewed_at?: string
+          viewer_id?: string | null
+        }
+        Update: {
+          id?: string
+          is_bot_or_crawler?: boolean
+          post_id?: string
+          referrer?: string | null
+          user_agent?: string | null
+          viewed_at?: string
+          viewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_view_log_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      primitive_comment_reactions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          reaction: string
+          reactor_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          reaction: string
+          reactor_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          reaction?: string
+          reactor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "primitive_comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "primitive_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      primitive_comments: {
+        Row: {
+          anchor_id: string
+          anchor_type: string
+          author_id: string
+          body: Json
+          body_text: string
+          created_at: string
+          id: string
+          is_edited: boolean
+          parent_comment_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          anchor_id: string
+          anchor_type: string
+          author_id: string
+          body?: Json
+          body_text?: string
+          created_at?: string
+          id?: string
+          is_edited?: boolean
+          parent_comment_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          anchor_id?: string
+          anchor_type?: string
+          author_id?: string
+          body?: Json
+          body_text?: string
+          created_at?: string
+          id?: string
+          is_edited?: boolean
+          parent_comment_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "primitive_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "primitive_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_type: string
@@ -2734,6 +2892,41 @@ export type Database = {
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reading_progress: {
+        Row: {
+          completed_at: string | null
+          first_read_at: string
+          last_progress_pct: number
+          last_read_at: string
+          post_id: string
+          reader_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          first_read_at?: string
+          last_progress_pct?: number
+          last_read_at?: string
+          post_id: string
+          reader_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          first_read_at?: string
+          last_progress_pct?: number
+          last_read_at?: string
+          post_id?: string
+          reader_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_progress_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
         ]
@@ -3245,6 +3438,10 @@ export type Database = {
       }
     }
     Functions: {
+      can_delete_primitive_comment: {
+        Args: { _comment_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_email_by_username: { Args: { _username: string }; Returns: string }
       increment_content_view_count: {
         Args: { _content_id: string }
