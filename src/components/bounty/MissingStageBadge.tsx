@@ -1,9 +1,12 @@
 import { Puzzle } from 'lucide-react';
+import { SubmitSolutionButton } from './SubmitSolutionButton';
+import { useBountyProvenance } from './BountyProvenanceContext';
 
 interface MissingStageBadgeProps {
   description?: string | null;
   solutionCount?: number;
   status?: 'open' | 'closed' | 'solved';
+  slotId?: string | null;
 }
 
 /**
@@ -12,10 +15,15 @@ interface MissingStageBadgeProps {
  */
 export function MissingStageBadge({
   description,
-  solutionCount = 0,
-  status = 'open',
+  solutionCount,
+  status,
+  slotId,
 }: MissingStageBadgeProps) {
-  const statusLabel = status === 'open' ? 'Open' : status === 'closed' ? 'Closed' : 'Solved';
+  const ctx = useBountyProvenance();
+  const effectiveStatus = status ?? ctx?.bountyStatus ?? 'open';
+  const effectiveCount =
+    solutionCount ?? (slotId ? ctx?.slotSolutionCounts[slotId] ?? 0 : 0);
+  const statusLabel = effectiveStatus === 'open' ? 'Open' : effectiveStatus === 'closed' ? 'Closed' : 'Solved';
 
   return (
     <div
@@ -65,8 +73,11 @@ export function MissingStageBadge({
           borderRadius: 100,
         }}
       >
-        {statusLabel} · {solutionCount} solution{solutionCount !== 1 ? 's' : ''}
+        {statusLabel} · {effectiveCount} solution{effectiveCount !== 1 ? 's' : ''}
       </span>
+      {slotId && ctx && effectiveStatus !== 'solved' ? (
+        <SubmitSolutionButton slotKind="stage" slotId={slotId} size="stage" />
+      ) : null}
     </div>
   );
 }
