@@ -37,7 +37,7 @@ import { CanvasShell } from '@/components/canvas/CanvasShell';
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { ArticleEditor } from '@/components/article/ArticleEditor';
 import type { EvidenceMediaType } from '@/components/canvas/CanvasHeader';
-import { CanvasHeader } from '@/components/canvas/CanvasHeader';
+import { CompactUploadHeader } from '@/components/upload/CompactUploadHeader';
 import { TemplateLibrary } from '@/components/canvas/TemplateLibrary';
 import { useDocumentStore } from '@/lib/documentStore';
 import { StageFullscreen } from '@/components/article/stage/StageFullscreen';
@@ -1417,32 +1417,27 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
             flexDirection: 'column',
             minHeight: 0,
           }}>
-            {/* Document header — reuses CanvasHeader. */}
-            <CanvasHeader
-              mode="edit"
-              title={form.watch('title') ?? ''}
-              description={form.watch('description') ?? ''}
-              postType={form.watch('post_type') ?? 'build'}
-              difficulty={form.watch('difficulty') ?? null}
-              coverPreview={coverImagePreview}
-              onTitleChange={v => form.setValue('title', v)}
-              onDescriptionChange={v => form.setValue('description', v)}
-              onPostTypeClick={() => setShowTypeChooser(true)}
-              onCoverChange={(f, p) => {
-                setCoverImageFile(f);
-                setCoverImagePreview(p);
-              }}
-              evidenceMediaType={evidenceMediaType}
-              evidenceMediaFiles={evidenceMediaFiles}
-              evidenceMediaPreviews={evidenceMediaPreviews}
-              evidenceCaption={evidenceCaption}
-              onEvidenceMediaTypeChange={setEvidenceMediaType}
-              onEvidenceMediaFilesChange={(files, previews) => {
-                setEvidenceMediaFiles(files);
-                setEvidenceMediaPreviews(previews);
-              }}
-              onEvidenceCaptionChange={setEvidenceCaption}
-            />
+            {/* Document header — compact upload header. */}
+            <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'center' }}>
+              <CompactUploadHeader
+                postType={(mode as 'blueprint' | 'blog' | 'bounty') ?? 'blueprint'}
+                mode={(form.watch('post_type') as string | undefined)?.toUpperCase()}
+                title={form.watch('title') ?? ''}
+                description={form.watch('description') ?? ''}
+                coverUrl={coverImagePreview}
+                onTitleChange={(v) => form.setValue('title', v)}
+                onDescriptionChange={(v) => form.setValue('description', v)}
+                onCoverUpload={(file) => {
+                  setCoverImageFile(file);
+                  setCoverImagePreview(URL.createObjectURL(file));
+                }}
+                onCoverRemove={() => {
+                  setCoverImageFile(null);
+                  setCoverImagePreview(null);
+                }}
+                maxDescriptionLength={500}
+              />
+            </div>
 
             {/* Article body — TipTap editor */}
             <div style={{
