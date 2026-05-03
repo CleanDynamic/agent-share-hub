@@ -47,6 +47,7 @@ import { BountyProvenanceProvider } from "@/components/bounty/BountyProvenanceCo
 import { BountyByline, type SolverInfo } from "@/components/bounty/BountyByline";
 import { ProvenanceOverview } from "@/components/bounty/ProvenanceOverview";
 import { OriginalSolutionDialog } from "@/components/bounty/OriginalSolutionDialog";
+import { AcceptSolutionDialog } from "@/components/bounty/AcceptSolutionDialog";
 import {
   BountySolutionsSection,
   type SolutionItem,
