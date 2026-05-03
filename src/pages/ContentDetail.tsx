@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -35,11 +35,25 @@ import {
 import { CommentDrawerProvider } from "@/components/content-detail/CommentDrawerContext";
 import type { ThreadedComment } from "@/lib/content-detail/types";
 import { supabase } from "@/integrations/supabase/client";
-import { getProvenance, getSolutions } from "@/lib/bounty-solver";
+import {
+  getProvenance,
+  getSolutions,
+  voteOnSolution,
+  forkSolution,
+  acceptSolution,
+  useBountySolutionUpdates,
+} from "@/lib/bounty-solver";
 import { BountyProvenanceProvider } from "@/components/bounty/BountyProvenanceContext";
 import { BountyByline, type SolverInfo } from "@/components/bounty/BountyByline";
 import { ProvenanceOverview } from "@/components/bounty/ProvenanceOverview";
 import { OriginalSolutionDialog } from "@/components/bounty/OriginalSolutionDialog";
+import {
+  BountySolutionsSection,
+  type SolutionItem,
+  type SolutionSlot,
+} from "@/components/bounty/BountySolutionsSection";
+import { useShareMenu } from "@/components/share/ShareMenuProvider";
+import { useQueryClient } from "@tanstack/react-query";
 
 const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" | "bounty" => {
   if (raw === "blog") return "blog";
