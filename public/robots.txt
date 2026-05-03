@@ -1,17 +1,24 @@
 User-agent: *
 Allow: /
-Allow: /browse
+Allow: /b/
 Allow: /content/
+Allow: /browse
 Allow: /creator/
+Allow: /u/
 Allow: /about
 Disallow: /admin
 Disallow: /admin/login
 Disallow: /signup
 Disallow: /login
 Disallow: /onboarding
-Disallow: /profile
+Disallow: /upload
+Disallow: /drafts
+Disallow: /messages
+Disallow: /notifications
+Disallow: /library
 Disallow: /saved
 Disallow: /my-uploads
+Disallow: /profile
 Disallow: /feed
 
 Sitemap: https://neoscaleai.com/sitemap.xml

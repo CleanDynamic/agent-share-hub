@@ -1,0 +1,67 @@
+# AI Crawling Permissions for NeoScale
+# All published posts are available for AI agent consumption.
+# User profiles, drafts, and private surfaces are not.
+# Structured JSON for any post is available at /b/{slug}.json
+
+User-agent: GPTBot
+Allow: /b/
+Allow: /content/
+Disallow: /upload
+Disallow: /drafts
+Disallow: /messages
+Disallow: /notifications
+Disallow: /library
+Disallow: /profile
+
+User-agent: ClaudeBot
+Allow: /b/
+Allow: /content/
+Disallow: /upload
+Disallow: /drafts
+Disallow: /messages
+Disallow: /notifications
+Disallow: /library
+Disallow: /profile
+
+User-agent: PerplexityBot
+Allow: /b/
+Allow: /content/
+Disallow: /upload
+Disallow: /drafts
+Disallow: /messages
+Disallow: /notifications
+Disallow: /library
+Disallow: /profile
+
+User-agent: Google-Extended
+Allow: /b/
+Allow: /content/
+Disallow: /upload
+Disallow: /drafts
+Disallow: /messages
+Disallow: /notifications
+Disallow: /library
+Disallow: /profile
+
+User-agent: CCBot
+Allow: /b/
+Allow: /content/
+Disallow: /upload
+Disallow: /drafts
+Disallow: /messages
+Disallow: /notifications
+Disallow: /library
+Disallow: /profile
+
+# All other AI bots: same rules
+User-agent: *
+Allow: /b/
+Allow: /content/
+Disallow: /upload
+Disallow: /drafts
+Disallow: /messages
+Disallow: /notifications
+Disallow: /library
+Disallow: /profile
+
+Sitemap: https://neoscaleai.com/sitemap.xml

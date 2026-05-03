@@ -86,6 +86,7 @@ const App = () => (
                 <Route path="/about" element={<About />} />
                 <Route path="/api-docs" element={<ApiDocs />} />
                 <Route path="/content/:id" element={<ContentDetail />} />
+                <Route path="/b/:id" element={<ContentDetail />} />
                 <Route path="/content/:id/edit" element={<ProtectedRoute requireCreator><ContentEditPage /></ProtectedRoute>} />
                 <Route path="/project/:id" element={<ProjectDetail />} />
                 <Route path="/creator/:username" element={<CreatorProfile />} />

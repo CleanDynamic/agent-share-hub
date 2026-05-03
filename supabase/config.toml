@@ -23,3 +23,9 @@ verify_jwt = false
 
 [functions.seed-new-posts]
 verify_jwt = false
+
+[functions.post-json]
+verify_jwt = false
+
+[functions.sitemap-xml]
+verify_jwt = false
