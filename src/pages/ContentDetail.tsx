@@ -955,3 +955,16 @@ export default function ContentDetail() {
   );
 }
 
+
+function relativeShort(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const diff = Date.now() - d.getTime();
+    const day = 86400_000;
+    if (diff < day) return "today";
+    if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  } catch {
+    return "";
+  }
+}
