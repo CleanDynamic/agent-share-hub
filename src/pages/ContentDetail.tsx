@@ -66,6 +66,12 @@ export default function ContentDetail() {
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAuth();
   const viewLoggedRef = useRef(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  const shareMenu = useShareMenu();
+
+  const solutionFilter = (searchParams.get("solutionFilter") as string) || "all";
+  const solutionSort = (searchParams.get("solutionSort") as any) || "most_votes";
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["post_for_viewer", id, user?.id ?? null],
@@ -119,17 +125,25 @@ export default function ContentDetail() {
     queryFn: () => getProvenance(post!.id as string),
     enabled: !!post?.id && isBounty,
   });
-  const { data: solutionsData } = useQuery({
-    queryKey: ["bounty_solutions", post?.id, user?.id ?? null],
+  const { data: solutionsData, refetch: refetchSolutions } = useQuery({
+    queryKey: ["bounty_solutions", post?.id, user?.id ?? null, solutionFilter, solutionSort],
     queryFn: () =>
       getSolutions({
         bountyId: post!.id as string,
-        slotId: "all",
-        sort: "most_votes",
+        slotId: solutionFilter,
+        sort: solutionSort,
         viewerId: user?.id ?? null,
       }),
     enabled: !!post?.id && isBounty,
   });
+
+  // Realtime: refetch solutions on any change (votes, new submissions, accepts)
+  useBountySolutionUpdates(
+    isBounty ? (post?.id as string | undefined) : undefined,
+    useCallback(() => {
+      void refetchSolutions();
+    }, [refetchSolutions]),
+  );
 
   const bountyStatus: "open" | "closed" | "solved" = useMemo(() => {
     const raw = (post as any)?.bounty_status as string | undefined;
