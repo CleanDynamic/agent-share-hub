@@ -85,6 +85,9 @@ export default function ContentDetail() {
 
   const solutionFilter = (searchParams.get("solutionFilter") as string) || "all";
   const solutionSort = (searchParams.get("solutionSort") as any) || "most_votes";
+  const discussionFilter = (searchParams.get("discussionFilter") as DiscussionFilterValue) || "all";
+  const discussionSort = (searchParams.get("discussionSort") as DiscussionSortValue) || "newest";
+  const [composerExpanded, setComposerExpanded] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["post_for_viewer", id, user?.id ?? null],
