@@ -783,6 +783,19 @@ export default function ContentDetail() {
         onSubmitSolution={shellPost.postType === "bounty" ? handleSubmitSolution : undefined}
         onEdit={isOwnPost ? handleEdit : undefined}
       />
+      <AIExportMenu
+        isOpen={!!exportAnchor}
+        anchorEl={exportAnchor}
+        onClose={() => setExportAnchor(null)}
+        post={{
+          id: shellPost.id,
+          slug: shellPost.slug,
+          postType: shellPost.postType,
+          title: shellPost.title,
+        }}
+        onExport={triggerExport}
+        busyFormat={exportBusy}
+      />
       {drawerAnchor && (
         <PrimitiveCommentDrawer
           isOpen={drawerOpen}
