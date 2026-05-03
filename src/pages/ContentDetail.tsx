@@ -1440,6 +1440,23 @@ export default function ContentDetail() {
             submitting={acceptSubmitting}
           />
         )}
+        <BountyDiscussionForum
+          bountyId={post?.id as string}
+          bountyAuthorId={(post as any)?.creator_id as string}
+          acceptedSolverIds={acceptedSolverIds}
+          threads={discussionThreads}
+          filter={discussionFilter}
+          sort={discussionSort}
+          onFilterChange={handleDiscussionFilterChange}
+          onSortChange={handleDiscussionSortChange}
+          onPost={handleDiscussionPost}
+          onReply={handleDiscussionReply}
+          onReact={handleDiscussionReact}
+          onMore={handleDiscussionMore}
+          composerExpanded={composerExpanded}
+          onToggleComposer={() => setComposerExpanded((v) => !v)}
+          viewerId={user?.id ?? null}
+        />
       </>
     ) : null;
 
