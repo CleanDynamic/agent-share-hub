@@ -121,4 +121,15 @@ export async function recomputeMetadata(contentItemId: string): Promise<void> {
   if (creatorId) {
     void recomputeDerivedBio(creatorId);
   }
+
+  // Refresh the cached canonical export payload. Non-blocking; lazy-imported
+  // to avoid a circular dependency with content-detail → results → metadata.
+  void import("@/lib/content-detail/recomputeCanonicalPayload")
+    .then((m) => m.recomputeCanonicalPayload(contentItemId))
+    .catch((err) =>
+      console.warn(
+        `[recomputeMetadata] canonical payload refresh failed for ${contentItemId}:`,
+        err,
+      ),
+    );
 }
