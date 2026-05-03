@@ -15,6 +15,7 @@ import type { ProfileLevel, ProfileSummary } from "@/lib/profile/types";
 interface ProfileHeaderProps {
   profile: ProfileSummary;
   isFollowing?: boolean;
+  isTrustedSolver?: boolean;
   onEditProfile?: () => void;
   onShareProfile?: () => void;
   onFollow?: () => void;
@@ -65,6 +66,7 @@ function LevelBadge({ level }: { level: ProfileLevel }) {
 export function ProfileHeader({
   profile,
   isFollowing = false,
+  isTrustedSolver = false,
   onEditProfile,
   onShareProfile,
   onFollow,
@@ -164,6 +166,20 @@ export function ProfileHeader({
                   <BadgeCheck size={18} className="text-primary shrink-0" aria-label="Verified" />
                 )}
                 <LevelBadge level={profile.level} />
+                {isTrustedSolver && (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      backgroundColor: "hsl(var(--accent) / 0.15)",
+                      color: "hsl(var(--accent-foreground))",
+                    }}
+                    title="Accepted ≥5 bounty solutions with ≥60% acceptance rate"
+                  >
+                    <BadgeCheck size={10} />
+                    TRUSTED SOLVER
+                  </span>
+                )}
               </div>
               <p
                 className="text-sm text-muted-foreground"

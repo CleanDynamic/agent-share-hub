@@ -512,6 +512,7 @@ export default function Profile() {
         <ProfileHeader
           profile={summary}
           isFollowing={!!summary.isFollowing}
+          isTrustedSolver={!!authorStats?.isTrustedSolver}
           onEditProfile={() => setEditOpen(true)}
           onShareProfile={handleShare}
           onFollow={handleFollow}
