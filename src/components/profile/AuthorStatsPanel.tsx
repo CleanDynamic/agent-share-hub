@@ -216,6 +216,10 @@ export function AuthorStatsPanel({ stats }: AuthorStatsPanelProps) {
     ? "grid-cols-1 sm:grid-cols-3"
     : "grid-cols-2 lg:grid-cols-4";
 
+  const hasPosts =
+    blueprintsCount > 0 ||
+    (blockTypeDistribution && blockTypeDistribution.length > 0);
+
   return (
     <div
       className="w-full"
