@@ -38,6 +38,7 @@ import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { ArticleEditor } from '@/components/article/ArticleEditor';
 import type { EvidenceMediaType } from '@/components/canvas/CanvasHeader';
 import { CompactUploadHeader } from '@/components/upload/CompactUploadHeader';
+import { ResultsSection } from '@/components/upload/ResultsSection';
 import { TemplateLibrary } from '@/components/canvas/TemplateLibrary';
 import { useDocumentStore } from '@/lib/documentStore';
 import { StageFullscreen } from '@/components/article/stage/StageFullscreen';
