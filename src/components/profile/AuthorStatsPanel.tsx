@@ -190,23 +190,25 @@ export function AuthorStatsPanel({ stats }: AuthorStatsPanelProps) {
     blockTypeDistribution,
   } = stats;
 
-  const hideBountyCell = bountiesSolved === 0 && bountiesPosted === 0;
-  const hasPosts =
-    blockTypeDistribution.length > 0 &&
-    blockTypeDistribution.some((b) => b.count > 0);
+  const sp: any = stats as any;
+  const accepted = Number(sp.bountySolutionsAccepted ?? 0);
+  const submitted = Number(sp.bountySolutionsSubmitted ?? 0);
+  const hideBountyCell =
+    accepted === 0 && submitted === 0 && bountiesSolved === 0 && bountiesPosted === 0;
 
   let bountyValue = "";
   let bountySubtitle = "";
   if (!hideBountyCell) {
-    if (bountiesPosted > 0 && bountiesSolved > 0) {
-      bountyValue = `${bountiesSolved} of ${bountiesPosted}`;
-      bountySubtitle = "posted vs solved";
-    } else if (bountiesSolved > 0) {
-      bountyValue = `${bountiesSolved}`;
-      bountySubtitle = "accepted by authors";
+    if (submitted > 0) {
+      bountyValue = `${accepted} of ${submitted}`;
+      const rate = Math.round((accepted / submitted) * 100);
+      bountySubtitle = `${rate}% acceptance rate`;
+    } else if (accepted > 0) {
+      bountyValue = `${accepted}`;
+      bountySubtitle = "accepted";
     } else {
-      bountyValue = `${bountiesPosted}`;
-      bountySubtitle = "posted";
+      bountyValue = "0";
+      bountySubtitle = "No bounties submitted yet";
     }
   }
 
