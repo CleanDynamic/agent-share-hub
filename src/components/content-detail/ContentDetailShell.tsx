@@ -563,54 +563,6 @@ export function ContentDetailShell({
           )}
         </div>
         )}
-          <button
-            onClick={() => onAuthorClick(author.id)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-            }}
-          >
-            <img
-              src={author.avatarUrl}
-              alt={author.displayName}
-              style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.10)" }}
-            />
-            <div style={{ textAlign: "left" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.90)" }}>
-                  {author.displayName}
-                </span>
-                {author.isVerified && <BadgeCheck size={14} color="#2EC4B6" />}
-              </div>
-              <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
-                @{author.handle}
-              </span>
-            </div>
-          </button>
-          {!isOwnPost && (
-            <button
-              onClick={handleFollow}
-              style={{
-                fontFamily: "Inter, sans-serif",
-                fontSize: 12,
-                fontWeight: 500,
-                color: isFollowing ? "rgba(255,255,255,0.60)" : "#E8571A",
-                backgroundColor: isFollowing ? "rgba(255,255,255,0.06)" : "rgba(232,87,26,0.14)",
-                border: "none",
-                borderRadius: 100,
-                padding: "6px 14px",
-                cursor: "pointer",
-              }}
-            >
-              {isFollowing ? "Following" : "Follow"}
-            </button>
-          )}
-        </div>
 
         {author.derivedBio && (
           <div
