@@ -760,7 +760,7 @@ export default function ContentDetail() {
           })),
           blockTypes: Array.from(
             new Set(blocks.map((b: any) => String(b?.type ?? "default"))),
-          ).slice(0, 6),
+          ).slice(0, 6) as string[],
         };
       } else {
         const t = String(payload?.type ?? "");
