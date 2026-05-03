@@ -1,6 +1,7 @@
 export * from "./types";
 export { createSolutionDraft } from "./createSolutionDraft";
 export { updateSolutionDraft } from "./updateSolutionDraft";
+export { deleteSolutionDraft } from "./deleteSolutionDraft";
 export { submitSolution } from "./submitSolution";
 export { getSolutions } from "./getSolutions";
 export { voteOnSolution } from "./voteOnSolution";
