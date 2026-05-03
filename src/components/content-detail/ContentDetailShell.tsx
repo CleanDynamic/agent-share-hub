@@ -304,6 +304,7 @@ export function ContentDetailShell({
         lastReportRef.current = now;
         onScrollProgress(clamped);
       }
+      onScrollActivity?.();
     };
     const el = containerRef.current;
     el?.addEventListener("scroll", onScroll);
