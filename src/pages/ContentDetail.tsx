@@ -41,8 +41,20 @@ import {
   voteOnSolution,
   forkSolution,
   acceptSolution,
+  getDiscussionThread,
+  postDiscussionComment,
+  reactToComment as reactToBountyComment,
+  markBountyDiscussionRead,
   useBountySolutionUpdates,
+  useBountyDiscussionUpdates,
 } from "@/lib/bounty-solver";
+import {
+  BountyDiscussionForum,
+  type DiscussionFilterValue,
+  type DiscussionSortValue,
+  type DiscussionComment,
+  type ReactionType as DiscussionReactionType,
+} from "@/components/bounty/BountyDiscussionForum";
 import { BountyProvenanceProvider } from "@/components/bounty/BountyProvenanceContext";
 import { BountyByline, type SolverInfo } from "@/components/bounty/BountyByline";
 import { ProvenanceOverview } from "@/components/bounty/ProvenanceOverview";
