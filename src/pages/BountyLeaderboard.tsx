@@ -102,7 +102,7 @@ export default function BountyLeaderboardPage() {
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 24px" }}>
-      <SeoHead title={`${bountyTitle} — Leaderboard`} description="Top solvers for this bounty" />
+      <SeoHead title={`${bountyTitle} — Leaderboard`} description="Top solvers for this bounty" path={`/b/${slug}/leaderboard`} />
       <div style={{ marginBottom: 16 }}>
         <button
           onClick={() => navigate(`/b/${slug}`)}
