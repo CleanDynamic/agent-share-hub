@@ -1356,7 +1356,19 @@ export default function ContentDetail() {
   // ─── Body renderer per post type ──────────────────────────────────────────
   let bodyNode: React.ReactNode = null;
 
-  if (postType === "blog") {
+  if (isMeta) {
+    bodyNode = metaState ? (
+      <MetaBountyBody
+        meta={metaState}
+        viewerId={user?.id ?? null}
+        onPledged={() => void refetchMeta()}
+      />
+    ) : (
+      <div style={{ padding: 40, textAlign: "center", color: "rgba(255,255,255,0.20)", fontSize: 13 }}>
+        Loading meta-bounty…
+      </div>
+    );
+  } else if (postType === "blog") {
     bodyNode = <BlogView item={post as any} />;
   } else {
     // blueprint or bounty — same article body renderer, with bounty using
@@ -1389,6 +1401,17 @@ export default function ContentDetail() {
       );
     }
   }
+
+  // Spawned-from-meta attribution banner (for spawned bounties)
+  if (spawnedFromMetaId && !isMeta) {
+    bodyNode = (
+      <>
+        <SpawnedFromMetaBanner parentId={spawnedFromMetaId} />
+        {bodyNode}
+      </>
+    );
+  }
+
 
   // Build SolverInfo[] for byline + provenance overview
   const solversInfo: SolverInfo[] = useMemo(() => {
