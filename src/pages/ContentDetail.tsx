@@ -1491,7 +1491,7 @@ export default function ContentDetail() {
       solutionItems.length;
     const activeSolverCount =
       ((post as any).bounty_active_solvers as number | null) ??
-      new Set(solutionItems.map((s) => s.solver?.id).filter(Boolean)).size;
+      new Set(solutionItems.map((s) => (s.solverUser as any)?.id).filter(Boolean)).size;
     const commentCount =
       ((post as any).comment_count as number | null) ??
       discussionThreads.length;
