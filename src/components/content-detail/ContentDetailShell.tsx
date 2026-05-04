@@ -277,6 +277,7 @@ export function ContentDetailShell({
   resultsSlot,
   bountyExtrasSlot,
   bylineSlot,
+  headerSlot,
   children,
 }: ContentDetailShellProps) {
   const [scrollProgress, setScrollProgress] = useState(0);
