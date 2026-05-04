@@ -1120,6 +1120,150 @@ export default function ContentDetail() {
     });
   }, [toast]);
 
+  // ============== Bounty Manage Handlers ==============
+  const handleManageReject = useCallback(
+    async (solutionId: string) => {
+      if (!user?.id || !post?.id) return;
+      try {
+        await markSolutionReviewStatus({
+          bountyId: post.id as string,
+          solutionId,
+          authorId: user.id,
+          status: "rejected",
+        });
+        toast({ title: "Marked rejected (private to you)" });
+        void refetchManageAnalytics();
+      } catch (e: any) {
+        toast({ title: "Could not reject", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, post?.id, toast, refetchManageAnalytics],
+  );
+
+  const handleManageShortlist = useCallback(
+    async (solutionId: string) => {
+      if (!user?.id || !post?.id) return;
+      try {
+        await markSolutionReviewStatus({
+          bountyId: post.id as string,
+          solutionId,
+          authorId: user.id,
+          status: "shortlisted",
+        });
+        toast({ title: "Shortlisted" });
+        void refetchManageAnalytics();
+      } catch (e: any) {
+        toast({ title: "Could not shortlist", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, post?.id, toast, refetchManageAnalytics],
+  );
+
+  const handleManageMessageUser = useCallback(
+    async (otherUserId: string) => {
+      if (!user?.id) return;
+      if (otherUserId === user.id) return;
+      try {
+        const threadId = await createDirectThread(otherUserId);
+        navigate(`/messages?thread=${threadId}`);
+      } catch (e: any) {
+        toast({ title: "Could not open thread", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, navigate, toast],
+  );
+
+  const handleManageExtendDeadline = useCallback(
+    async (days: number) => {
+      if (!user?.id || !post?.id) return;
+      const current = (post as any).bounty_deadline as string | null;
+      const base = current ? new Date(current) : new Date();
+      base.setDate(base.getDate() + days);
+      try {
+        await extendBountyDeadline({
+          bountyId: post.id as string,
+          extenderUserId: user.id,
+          newDeadline: base.toISOString(),
+        });
+        toast({ title: `Deadline extended by ${days} days` });
+        void queryClient.invalidateQueries({ queryKey: ["post_for_viewer", id, user.id] });
+      } catch (e: any) {
+        toast({ title: "Could not extend", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, post, id, toast, queryClient],
+  );
+
+  const handleManageUpdateCriteria = useCallback(
+    async (text: string) => {
+      if (!user?.id || !post?.id) return;
+      if (criteriaSaving) return;
+      setCriteriaSaving(true);
+      try {
+        const { error } = await (supabase as any)
+          .from("content_items")
+          .update({ bounty_acceptance_criteria: text } as any)
+          .eq("id", post.id as string);
+        if (error) throw error;
+        void queryClient.invalidateQueries({ queryKey: ["post_for_viewer", id, user.id] });
+      } catch (e: any) {
+        toast({ title: "Could not save criteria", description: e?.message, variant: "destructive" });
+      } finally {
+        setCriteriaSaving(false);
+      }
+    },
+    [user?.id, post?.id, criteriaSaving, id, queryClient, toast],
+  );
+
+  const handleManagePauseToggle = useCallback(
+    async (paused: boolean) => {
+      if (!user?.id || !post?.id) return;
+      try {
+        const { error } = await (supabase as any)
+          .from("content_items")
+          .update({ bounty_submissions_paused: paused } as any)
+          .eq("id", post.id as string);
+        if (error) throw error;
+        toast({ title: paused ? "Submissions paused" : "Submissions reopened" });
+        void queryClient.invalidateQueries({ queryKey: ["post_for_viewer", id, user.id] });
+      } catch (e: any) {
+        toast({ title: "Update failed", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, post?.id, id, queryClient, toast],
+  );
+
+  const handleManageCloseBounty = useCallback(async () => {
+    if (!user?.id || !post?.id) return;
+    try {
+      const { error } = await (supabase as any)
+        .from("content_items")
+        .update({ bounty_status: "closed" } as any)
+        .eq("id", post.id as string);
+      if (error) throw error;
+      toast({ title: "Bounty closed" });
+      setManagePanelOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ["post_for_viewer", id, user.id] });
+    } catch (e: any) {
+      toast({ title: "Close failed", description: e?.message, variant: "destructive" });
+    }
+  }, [user?.id, post?.id, id, queryClient, toast]);
+
+  const handleManagePreviewSolution = useCallback(
+    (solutionId: string) => {
+      // Scroll to the solution and let the solutions section reveal it.
+      const el = document.querySelector(`[data-solution-id="${solutionId}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        const next = new URLSearchParams(searchParams);
+        next.set("solution", solutionId);
+        setSearchParams(next, { replace: true });
+      }
+    },
+    [searchParams, setSearchParams],
+  );
+
   const handleSubmitFirstSolution = useCallback(
     (slotId: string) => {
       if (!shellPost) return;
