@@ -1487,6 +1487,105 @@ export default function ContentDetail() {
       </>
     ) : null;
 
+  // ─── Solver Leaderboard (Phase 11) ───
+  const lbSortRaw = (searchParams.get("lbSort") as string) || "votes";
+  const lbSort = ["votes", "submissions", "accepted", "newest"].includes(lbSortRaw) ? lbSortRaw : "votes";
+  const setLbSort = useCallback(
+    (s: string) => {
+      const next = new URLSearchParams(searchParams);
+      if (s === "votes") next.delete("lbSort");
+      else next.set("lbSort", s);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+  const [lbContributors, setLbContributors] = useState<LbContributor[]>([]);
+  const [lbActivity, setLbActivity] = useState<LbActivity[]>([]);
+  const [lbHighlightId, setLbHighlightId] = useState<string | null>(null);
+  const [isWideViewport, setIsWideViewport] = useState<boolean>(
+    typeof window !== "undefined" ? window.innerWidth >= 1280 : true,
+  );
+  useEffect(() => {
+    const onResize = () => setIsWideViewport(window.innerWidth >= 1280);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const refreshLeaderboard = useCallback(async () => {
+    if (!isBounty || !post?.id) return;
+    const sortMap: Record<string, "votes" | "submissions" | "acceptances" | "rank"> = {
+      votes: "votes",
+      submissions: "submissions",
+      accepted: "acceptances",
+      newest: "rank",
+    };
+    try {
+      const [entries, acts] = await Promise.all([
+        getLeaderboard({ bountyId: post.id as string, sort: sortMap[lbSort], limit: 20 }),
+        getLeaderboardActivity(post.id as string, 5),
+      ]);
+      setLbContributors((prev) => {
+        const next: LbContributor[] = entries.map((e) => ({
+          rank: e.rank,
+          user: {
+            id: e.profile?.id ?? e.userId,
+            displayName: e.profile?.displayName || e.profile?.username || "Anonymous",
+            handle: e.profile?.username || "user",
+            avatarUrl: e.profile?.avatarUrl || "",
+            isTrustedSolver: !!e.profile?.isTrustedSolver,
+          },
+          voteCount: e.voteTotal,
+          submissionCount: e.submissionCount,
+          acceptedCount: e.acceptanceCount,
+          hasActiveDraft: e.hasActiveDraft,
+          publicActiveDraft: true,
+        }));
+        // Detect rank change → highlight 600ms
+        if (prev.length > 0) {
+          const prevMap = new Map(prev.map((c) => [c.user.id, c.rank]));
+          const moved = next.find((c) => prevMap.has(c.user.id) && prevMap.get(c.user.id) !== c.rank);
+          if (moved) {
+            setLbHighlightId(moved.user.id);
+            setTimeout(() => setLbHighlightId(null), 600);
+          }
+        }
+        return next;
+      });
+      setLbActivity(acts);
+    } catch (e) {
+      console.warn("[leaderboard] refresh failed", e);
+    }
+  }, [isBounty, post?.id, lbSort]);
+
+  useEffect(() => {
+    refreshLeaderboard();
+  }, [refreshLeaderboard]);
+
+  useLeaderboardUpdates(isBounty ? (post?.id as string | undefined) : undefined, refreshLeaderboard);
+
+  const leaderboardNarrow = useMemo(() => {
+    if (!isBounty || !post?.id || isWideViewport) return null;
+    return (
+      <div style={{ marginBottom: 16 }}>
+        <SolverLeaderboard
+          bountyId={post.id as string}
+          variant="narrow"
+          contributors={lbContributors}
+          sort={lbSort}
+          onSortChange={setLbSort}
+          onContributorClick={(uid) => {
+            const c = lbContributors.find((x) => x.user.id === uid);
+            navigate(`/profile/${c?.user.handle || uid}`);
+          }}
+          recentActivity={lbActivity}
+          onViewAll={() => navigate(`/b/${shellPost?.slug ?? post.id}/leaderboard`)}
+          isLive
+          highlightedUserId={lbHighlightId}
+        />
+      </div>
+    );
+  }, [isBounty, post, isWideViewport, lbContributors, lbSort, setLbSort, lbActivity, lbHighlightId, navigate, shellPost?.slug]);
+
   // ─── Bounty competition header (Phase 11) ───
   const bountyHeaderNode = useMemo(() => {
     if (!isBounty || !post) return null;
