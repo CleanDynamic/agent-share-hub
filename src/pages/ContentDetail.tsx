@@ -149,6 +149,15 @@ export default function ContentDetail() {
 
   // ─── Bounty: provenance + per-slot solution counts ───
   const isBounty = postType === "bounty";
+  const isMeta = isBounty && !!(post as any)?.bounty_is_meta;
+  const spawnedFromMetaId = isBounty
+    ? ((post as any)?.bounty_meta_parent_id as string | null) ?? null
+    : null;
+  const { data: metaState, refetch: refetchMeta } = useQuery({
+    queryKey: ["meta_bounty_state", post?.id],
+    queryFn: () => getMetaBountyState(post!.id as string),
+    enabled: !!post?.id && isMeta,
+  });
   const { data: provenanceData, refetch: refetchProvenance } = useQuery({
     queryKey: ["bounty_provenance", post?.id],
     queryFn: () => getProvenance(post!.id as string),
