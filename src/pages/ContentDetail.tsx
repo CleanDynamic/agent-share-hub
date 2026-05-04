@@ -1704,6 +1704,7 @@ export default function ContentDetail() {
           />
         }
         bountyExtrasSlot={bountyExtras}
+        headerSlot={bountyHeaderNode}
         bylineSlot={bountyByline}
       >
         {bodyNode}
