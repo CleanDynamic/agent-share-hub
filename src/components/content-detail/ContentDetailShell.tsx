@@ -79,6 +79,8 @@ export interface ContentDetailShellProps {
   bountyExtrasSlot?: React.ReactNode;
   /** When provided, replaces the default byline (author row + follow button). */
   bylineSlot?: React.ReactNode;
+  /** When provided, renders ABOVE the standard header (used for bounty competition header). */
+  headerSlot?: React.ReactNode;
   children?: React.ReactNode;
 }
 
