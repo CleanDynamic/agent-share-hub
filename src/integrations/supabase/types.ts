@@ -225,6 +225,47 @@ export type Database = {
           },
         ]
       }
+      bounty_author_review: {
+        Row: {
+          author_id: string
+          bounty_id: string
+          created_at: string
+          id: string
+          private_note: string | null
+          solution_id: string
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          bounty_id: string
+          created_at?: string
+          id?: string
+          private_note?: string | null
+          solution_id: string
+          state: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          bounty_id?: string
+          created_at?: string
+          id?: string
+          private_note?: string | null
+          solution_id?: string
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bounty_author_review_bounty_id_fkey"
+            columns: ["bounty_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bounty_comment_last_read: {
         Row: {
           bounty_id: string
@@ -276,6 +317,44 @@ export type Database = {
             columns: ["comment_id"]
             isOneToOne: false
             referencedRelation: "bounty_discussion_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bounty_deadline_extensions: {
+        Row: {
+          bounty_id: string
+          created_at: string
+          extended_by: string
+          id: string
+          new_deadline: string
+          previous_deadline: string | null
+          reason: string | null
+        }
+        Insert: {
+          bounty_id: string
+          created_at?: string
+          extended_by: string
+          id?: string
+          new_deadline: string
+          previous_deadline?: string | null
+          reason?: string | null
+        }
+        Update: {
+          bounty_id?: string
+          created_at?: string
+          extended_by?: string
+          id?: string
+          new_deadline?: string
+          previous_deadline?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bounty_deadline_extensions_bounty_id_fkey"
+            columns: ["bounty_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
         ]
@@ -997,13 +1076,18 @@ export type Database = {
           blog_referenced_post_ids: string[] | null
           blog_topic_category: string | null
           bounty_acceptance_criteria: string | null
+          bounty_active_solvers: number
           bounty_deadline: string | null
+          bounty_health_score: number | null
+          bounty_is_meta: boolean
+          bounty_meta_parent_id: string | null
           bounty_reward_amount: number | null
           bounty_reward_currency: string | null
           bounty_reward_type: string | null
           bounty_solved_count: number
           bounty_status: string | null
           bounty_total_slots: number
+          bounty_total_submissions: number
           canonical_export_payload: Json | null
           comment_count: number
           compatibility_status: string | null
@@ -1095,13 +1179,18 @@ export type Database = {
           blog_referenced_post_ids?: string[] | null
           blog_topic_category?: string | null
           bounty_acceptance_criteria?: string | null
+          bounty_active_solvers?: number
           bounty_deadline?: string | null
+          bounty_health_score?: number | null
+          bounty_is_meta?: boolean
+          bounty_meta_parent_id?: string | null
           bounty_reward_amount?: number | null
           bounty_reward_currency?: string | null
           bounty_reward_type?: string | null
           bounty_solved_count?: number
           bounty_status?: string | null
           bounty_total_slots?: number
+          bounty_total_submissions?: number
           canonical_export_payload?: Json | null
           comment_count?: number
           compatibility_status?: string | null
@@ -1193,13 +1282,18 @@ export type Database = {
           blog_referenced_post_ids?: string[] | null
           blog_topic_category?: string | null
           bounty_acceptance_criteria?: string | null
+          bounty_active_solvers?: number
           bounty_deadline?: string | null
+          bounty_health_score?: number | null
+          bounty_is_meta?: boolean
+          bounty_meta_parent_id?: string | null
           bounty_reward_amount?: number | null
           bounty_reward_currency?: string | null
           bounty_reward_type?: string | null
           bounty_solved_count?: number
           bounty_status?: string | null
           bounty_total_slots?: number
+          bounty_total_submissions?: number
           canonical_export_payload?: Json | null
           comment_count?: number
           compatibility_status?: string | null
@@ -1280,6 +1374,13 @@ export type Database = {
           word_count?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "content_items_bounty_meta_parent_id_fkey"
+            columns: ["bounty_meta_parent_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "content_items_creator_id_fkey"
             columns: ["creator_id"]
@@ -2518,6 +2619,117 @@ export type Database = {
           },
         ]
       }
+      meta_bounty_pledges: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          is_anonymous: boolean
+          meta_bounty_id: string
+          note: string | null
+          pledger_id: string
+          status: string
+          sub_definition_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          is_anonymous?: boolean
+          meta_bounty_id: string
+          note?: string | null
+          pledger_id: string
+          status?: string
+          sub_definition_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          is_anonymous?: boolean
+          meta_bounty_id?: string
+          note?: string | null
+          pledger_id?: string
+          status?: string
+          sub_definition_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_bounty_pledges_meta_bounty_id_fkey"
+            columns: ["meta_bounty_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_bounty_pledges_sub_def_fkey"
+            columns: ["sub_definition_id"]
+            isOneToOne: false
+            referencedRelation: "meta_bounty_sub_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meta_bounty_sub_definitions: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          meta_bounty_id: string
+          position: number
+          spawn_threshold_pct: number
+          spawned_bounty_id: string | null
+          target_amount: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          meta_bounty_id: string
+          position?: number
+          spawn_threshold_pct?: number
+          spawned_bounty_id?: string | null
+          target_amount: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          meta_bounty_id?: string
+          position?: number
+          spawn_threshold_pct?: number
+          spawned_bounty_id?: string | null
+          target_amount?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_bounty_sub_definitions_meta_bounty_id_fkey"
+            columns: ["meta_bounty_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_bounty_sub_definitions_spawned_bounty_id_fkey"
+            columns: ["spawned_bounty_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       microtag_definitions: {
         Row: {
           description: string | null
@@ -2754,6 +2966,9 @@ export type Database = {
           avatar_url: string | null
           banner_url: string | null
           bio: string | null
+          bounty_lifetime_acceptances: number
+          bounty_lifetime_submissions: number
+          bounty_lifetime_votes_received: number
           bounty_solutions_accepted: number
           bounty_solutions_submitted: number
           bounty_solver_acceptance_rate: number | null
@@ -2789,6 +3004,9 @@ export type Database = {
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
+          bounty_lifetime_acceptances?: number
+          bounty_lifetime_submissions?: number
+          bounty_lifetime_votes_received?: number
           bounty_solutions_accepted?: number
           bounty_solutions_submitted?: number
           bounty_solver_acceptance_rate?: number | null
@@ -2824,6 +3042,9 @@ export type Database = {
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
+          bounty_lifetime_acceptances?: number
+          bounty_lifetime_submissions?: number
+          bounty_lifetime_votes_received?: number
           bounty_solutions_accepted?: number
           bounty_solutions_submitted?: number
           bounty_solver_acceptance_rate?: number | null
@@ -3391,6 +3612,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "solutions_bounty_id_fkey"
+            columns: ["bounty_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solver_leaderboard_cache: {
+        Row: {
+          acceptance_count: number
+          bounty_id: string
+          computed_at: string
+          id: string
+          rank: number
+          submission_count: number
+          user_id: string
+          vote_total: number
+        }
+        Insert: {
+          acceptance_count?: number
+          bounty_id: string
+          computed_at?: string
+          id?: string
+          rank: number
+          submission_count?: number
+          user_id: string
+          vote_total?: number
+        }
+        Update: {
+          acceptance_count?: number
+          bounty_id?: string
+          computed_at?: string
+          id?: string
+          rank?: number
+          submission_count?: number
+          user_id?: string
+          vote_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solver_leaderboard_cache_bounty_id_fkey"
             columns: ["bounty_id"]
             isOneToOne: false
             referencedRelation: "content_items"
