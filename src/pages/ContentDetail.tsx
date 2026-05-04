@@ -2060,6 +2060,29 @@ export default function ContentDetail() {
           slotId={originalDialog.slotId}
         />
       )}
+      {isBounty && post && (
+        <BountyManagementPanelContainer
+          open={managePanelOpen}
+          onClose={() => setManagePanelOpen(false)}
+          isAuthor={isBountyAuthor}
+          post={post as any}
+          analytics={manageAnalytics}
+          solutionsRaw={solutionsData?.solutions ?? []}
+          bountySlots={bountySlots}
+          bountyStatus={bountyStatus}
+          onAcceptSolution={handleAcceptSolution}
+          onRejectSolution={handleManageReject}
+          onShortlistSolution={handleManageShortlist}
+          onPreviewSolution={handleManagePreviewSolution}
+          onMessageUser={handleManageMessageUser}
+          onExtendDeadline={handleManageExtendDeadline}
+          onUpdateAcceptanceCriteria={handleManageUpdateCriteria}
+          onPauseSubmissions={() => handleManagePauseToggle(true)}
+          onResumeSubmissions={() => handleManagePauseToggle(false)}
+          onCloseBounty={handleManageCloseBounty}
+          onPromoteToBlueprint={handlePromoteToBlueprint}
+        />
+      )}
       </BountyProvenanceProvider>
     </CommentDrawerProvider>
   );
