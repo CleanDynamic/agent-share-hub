@@ -429,6 +429,7 @@ export function ContentDetailShell({
 
       {/* POST HEADER REGION */}
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 24px 0" }}>
+        {headerSlot}
         <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
           <PostTypePill postType={post.postType} bountyMeta={post.bountyMeta} />
           <span style={{ fontSize: 12, color: "rgba(255,255,255,0.40)", fontFamily: "Inter, sans-serif" }}>
