@@ -66,6 +66,9 @@ import {
   type SolutionSlot,
 } from "@/components/bounty/BountySolutionsSection";
 import { BountyCompetitionHeader, type BountyCompetitionHeaderBounty } from "@/components/bounty-competition/BountyCompetitionHeader";
+import { MetaBountyHeader } from "@/components/bounty-competition/MetaBountyHeader";
+import { MetaBountyBody } from "@/components/bounty-competition/MetaBountyBody";
+import { getMetaBountyState } from "@/lib/bounty-competition/getMetaBountyState";
 import { SolverLeaderboard, type Contributor as LbContributor, type ActivityEvent as LbActivity } from "@/components/bounty-competition/SolverLeaderboard";
 import { BountyManagementPanelContainer } from "@/components/bounty-competition/BountyManagementPanelContainer";
 import { getLeaderboard } from "@/lib/bounty-competition/getLeaderboard";
