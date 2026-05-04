@@ -61,6 +61,11 @@ export interface AuthorStats {
   bountySolverAcceptanceRate: number | null;
   bountyTotalRewardEarned: number;
   isTrustedSolver: boolean;
+  // Phase 6 — competition surface tags.
+  /** Distinct number of bounties this user has submitted any solution to. */
+  bountiesSubmittedToCount: number;
+  /** Distinct number of meta-bounties this user has pledged to. */
+  metaBountyPledgesCount: number;
 }
 
 export interface Primitive {

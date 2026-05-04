@@ -42,11 +42,20 @@ export interface NotificationTarget {
 
 export interface NotificationMetadata {
   engagementType?: EngagementType;
-  bountySubType?: "solution_submitted" | "solution_accepted" | "new_comment";
+  bountySubType?:
+    | "solution_submitted"
+    | "solution_accepted"
+    | "new_comment"
+    | "bounty_solver_overtaken"
+    | "meta_bounty_sub_spawned"
+    | "bounty_deadline_approaching"
+    | "bounty_promoted_to_blueprint";
   commentText?: string;
   domain?: string;
   badgeName?: string;
   isFollowing?: boolean;
+  /** Server-side metadata uses `sub` for bounty subkinds; mirrored here for typing. */
+  sub?: string;
   [key: string]: unknown;
 }
 
@@ -242,9 +251,32 @@ function getTitle(n: NotificationCardData): string {
     case "new_follower":
       return `${handle} followed you`;
     case "bounty_interaction": {
-      const s = n.metadata.bountySubType;
+      const s =
+        (n.metadata.bountySubType as string | undefined) ??
+        (n.metadata.sub as string | undefined);
       if (s === "solution_submitted") return `${handle} submitted a solution to your bounty`;
       if (s === "solution_accepted") return `Your solution was accepted by ${handle}`;
+      if (s === "bounty_solver_overtaken") {
+        const prev = n.metadata.previous_rank;
+        const next = n.metadata.new_rank;
+        return prev != null && next != null
+          ? `${handle} overtook your rank (#${prev} → #${next})`
+          : `${handle} overtook your rank`;
+      }
+      if (s === "meta_bounty_sub_spawned") {
+        const t = (n.metadata.sub_title as string | undefined) ?? "a sub-bounty";
+        return `Sub-bounty '${t}' has spawned`;
+      }
+      if (s === "bounty_deadline_approaching") {
+        const hrs = n.metadata.hours_remaining;
+        return typeof hrs === "number"
+          ? `Bounty deadline in ~${Math.max(1, Math.round(hrs))}h`
+          : "Bounty deadline approaching";
+      }
+      if (s === "bounty_promoted_to_blueprint") {
+        const t = (n.metadata.bounty_title as string | undefined) ?? "a bounty";
+        return `${handle} promoted '${t}' to a blueprint`;
+      }
       return "New comment on your bounty";
     }
     case "engagement": {

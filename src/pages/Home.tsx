@@ -11,6 +11,7 @@ import { ReblogCard } from "@/components/ReblogCard";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Download, Loader2, Upload, Search as SearchIcon } from "lucide-react";
+import { ActiveCompetitionsSection } from "@/components/home/ActiveCompetitionsSection";
 
 const PAGE_SIZE = 20;
 
@@ -457,6 +458,8 @@ const Home = () => {
       )}
 
       {!isLoggedIn && <HowItWorks />}
+
+      <ActiveCompetitionsSection />
 
       <div
         className="sticky top-0 z-10"

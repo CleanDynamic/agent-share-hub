@@ -15,10 +15,55 @@ interface AuthorStats {
   bountiesPosted: number;
   avgReadingMinutes: number;
   blockTypeDistribution: BlockTypeData[];
+  // Phase 6 (optional, additional fields read via `sp` cast for backwards-compat).
+  bountiesSubmittedToCount?: number;
+  metaBountyPledgesCount?: number;
 }
 
 interface AuthorStatsPanelProps {
   stats: AuthorStats;
+}
+
+function CompetitionTag({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: "contributor" | "creator";
+}) {
+  const palette =
+    tone === "contributor"
+      ? {
+          bg: "rgba(31,122,109,0.12)",
+          color: "#2EC4B6",
+          border: "rgba(46,196,182,0.30)",
+        }
+      : {
+          bg: "rgba(232,87,26,0.12)",
+          color: "#E8571A",
+          border: "rgba(232,87,26,0.30)",
+        };
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        fontFamily: "Inter, sans-serif",
+        fontSize: 10,
+        fontWeight: 600,
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+        padding: "2px 8px",
+        borderRadius: 100,
+        background: palette.bg,
+        color: palette.color,
+        border: `0.5px solid ${palette.border}`,
+      }}
+    >
+      🏆 {label}
+    </span>
+  );
 }
 
 function formatNumber(num: number): string {
@@ -220,6 +265,17 @@ export function AuthorStatsPanel({ stats }: AuthorStatsPanelProps) {
     blueprintsCount > 0 ||
     (blockTypeDistribution && blockTypeDistribution.length > 0);
 
+  // Phase 6 — Bounty contributor / creator tags.
+  const bountiesSubmittedToCount = Number(
+    sp.bountiesSubmittedToCount ?? stats.bountiesSubmittedToCount ?? 0,
+  );
+  const metaBountyPledgesCount = Number(
+    sp.metaBountyPledgesCount ?? stats.metaBountyPledgesCount ?? 0,
+  );
+  const isBountyContributor =
+    bountiesSubmittedToCount > 2 || metaBountyPledgesCount > 0;
+  const isBountyCreator = bountiesPosted > 2;
+
   return (
     <div
       className="w-full"
@@ -231,6 +287,20 @@ export function AuthorStatsPanel({ stats }: AuthorStatsPanelProps) {
         marginTop: "24px",
       }}
     >
+      {(isBountyContributor || isBountyCreator) && (
+        <div
+          className="flex flex-wrap items-center"
+          style={{ gap: 6, marginBottom: 14 }}
+        >
+          {isBountyContributor && (
+            <CompetitionTag label="Bounty contributor" tone="contributor" />
+          )}
+          {isBountyCreator && (
+            <CompetitionTag label="Bounty creator" tone="creator" />
+          )}
+        </div>
+      )}
+
       <div className={`grid ${gridCols} gap-6`}>
         <StatCell
           label="Total Views"

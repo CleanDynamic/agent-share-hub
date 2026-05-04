@@ -46,6 +46,14 @@ export interface FeedPost {
   bounty_enabled?: boolean
   bounty_amount?: number | null
   bounty_status?: string | null
+  bounty_reward_type?: string | null
+  bounty_reward_currency?: string | null
+  bounty_total_slots?: number
+  bounty_solved_count?: number
+  bounty_active_solvers?: number
+  bounty_deadline?: string | null
+  bounty_health_score?: number | null
+  bounty_is_meta?: boolean
   ai_tools?: string[]
   use_cases?: string[]
   custom_tags?: string[]
@@ -77,6 +85,36 @@ function getTimeAgo(dateStr: string): string {
 
 function getInitials(name: string): string {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+}
+
+function getDeadlineCountdown(deadline?: string | null): { label: string; urgent: boolean } | null {
+  if (!deadline) return null
+  const ms = new Date(deadline).getTime() - Date.now()
+  if (Number.isNaN(ms)) return null
+  if (ms <= 0) return { label: "Closed", urgent: true }
+  const day = 86_400_000
+  const hr = 3_600_000
+  const days = Math.floor(ms / day)
+  const hours = Math.floor((ms % day) / hr)
+  if (days >= 2) return { label: `${days}d left`, urgent: false }
+  if (days === 1) return { label: `1d ${hours}h left`, urgent: true }
+  return { label: `${Math.max(1, hours)}h left`, urgent: true }
+}
+
+function formatBountyReward(p: FeedPost): string | null {
+  const rt = (p.bounty_reward_type ?? "").toLowerCase()
+  if (rt === "kudos") return "Kudos"
+  if (rt === "none") return null
+  const amt = p.bounty_amount
+  if (typeof amt !== "number" || amt <= 0) {
+    if (rt === "token") return "Token"
+    return null
+  }
+  if (rt === "token") return `${amt} ${(p.bounty_reward_currency ?? "TOKEN").toUpperCase()}`
+  // Default to currency formatting (cash).
+  const cur = (p.bounty_reward_currency ?? "GBP").toUpperCase()
+  const symbol = cur === "GBP" ? "£" : cur === "USD" ? "$" : cur === "EUR" ? "€" : ""
+  return symbol ? `${symbol}${amt}` : `${amt} ${cur}`
 }
 
 function getAvatarStyle(name: string) {
@@ -312,6 +350,104 @@ export function FeedCard({ post }: { post: FeedPost }) {
       }}>
         {post.title}
       </h3>
+
+      {/* Bounty meta strip — deadline / reward / slots / active solvers */}
+      {(post.post_type === "bounty" || post.bounty_enabled) && (() => {
+        const countdown = getDeadlineCountdown(post.bounty_deadline)
+        const reward = formatBountyReward(post)
+        const totalSlots = post.bounty_total_slots ?? 0
+        const solvedSlots = post.bounty_solved_count ?? 0
+        const slotsPct = totalSlots > 0 ? Math.min(100, Math.round((solvedSlots / totalSlots) * 100)) : null
+        const activeSolvers = post.bounty_active_solvers ?? 0
+        const showAny = countdown || reward || slotsPct !== null || activeSolvers > 0
+        if (!showAny) return null
+
+        return (
+          <div
+            style={{
+              marginTop: 8,
+              padding: "8px 10px",
+              borderRadius: 8,
+              background: "rgba(245,158,11,0.05)",
+              border: "1px solid rgba(245,158,11,0.18)",
+              display: "flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 14,
+              fontSize: 12,
+              color: "rgba(255,255,255,0.75)",
+            }}
+          >
+            {countdown && (
+              <span
+                title="Deadline"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  fontWeight: 600,
+                  color: countdown.urgent ? "#F87171" : "#F59E0B",
+                }}
+              >
+                ⏳ {countdown.label}
+              </span>
+            )}
+            {reward && (
+              <span
+                title="Reward"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  fontWeight: 600,
+                  color: "#F59E0B",
+                }}
+              >
+                💰 {reward}
+              </span>
+            )}
+            {slotsPct !== null && (
+              <span
+                title="Slots solved"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  minWidth: 120,
+                  flex: "0 1 160px",
+                }}
+              >
+                <span style={{ flexShrink: 0, color: "rgba(255,255,255,0.55)" }}>
+                  Slots {solvedSlots}/{totalSlots}
+                </span>
+                <span
+                  style={{
+                    flex: 1,
+                    height: 4,
+                    borderRadius: 2,
+                    background: "rgba(255,255,255,0.06)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "block",
+                      width: `${slotsPct}%`,
+                      height: "100%",
+                      background: "rgba(34,197,94,0.55)",
+                    }}
+                  />
+                </span>
+              </span>
+            )}
+            {activeSolvers > 0 && (
+              <span title="Active solvers" style={{ color: "rgba(255,255,255,0.55)" }}>
+                👥 {activeSolvers} solver{activeSolvers === 1 ? "" : "s"}
+              </span>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Preview text */}
       {previewText && (

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { notifyBountyPromotedToBlueprint } from "@/lib/notifications/triggers";
 
 /**
  * Clone a fully-solved bounty into a new published blueprint.
@@ -96,6 +97,38 @@ export async function promoteBountyToBlueprint(
         .from("content_collaborators")
         .insert(row as any);
     }
+  }
+
+  // Phase 8 — notify every contributor (solvers + commenters) that the bounty
+  // was promoted to a blueprint.
+  try {
+    const [solversRes, commentersRes] = await Promise.all([
+      (supabase as any)
+        .from("solutions")
+        .select("solver_id")
+        .eq("bounty_id", bountyId),
+      (supabase as any)
+        .from("bounty_discussion_comments")
+        .select("author_id")
+        .eq("bounty_id", bountyId),
+    ]);
+    const contributorIds = Array.from(
+      new Set<string>(
+        [
+          ...(((solversRes?.data ?? []) as any[]).map((r) => r.solver_id)),
+          ...(((commentersRes?.data ?? []) as any[]).map((r) => r.author_id)),
+        ].filter(Boolean),
+      ),
+    ).filter((id) => id !== (src as any).creator_id);
+
+    void notifyBountyPromotedToBlueprint({
+      bountyId,
+      blueprintId: newBlueprintId,
+      contributorIds,
+      promoterId: (src as any).creator_id ?? null,
+    });
+  } catch {
+    /* notification failures must never break promotion */
   }
 
   return { newBlueprintId };

@@ -13,6 +13,11 @@ export interface FilterValue {
   length: string | null
   bountyStatus: string | null
   timeRange: string | null
+  // Competitions (Phase 3) — only meaningful when the Competitions chip is on.
+  competitionsOnly: boolean
+  bountyRewardType: string | null
+  bountyHasUnsolvedSlots: string | null
+  bountyHealthScore: string | null
 }
 
 export interface DiscoverFilterSheetProps {
@@ -52,7 +57,10 @@ const postTypes = ['Blueprint', 'Blog', 'Bounty']
 const domains = ['Academic', 'Finance', 'Marketing', 'Engineering', 'Creative', 'Productivity', 'Research', 'Other']
 const difficulties = ['Beginner', 'Intermediate', 'Advanced']
 const lengths = ['Quick (<5 min)', 'Medium (5–15 min)', 'Deep (>15 min)', 'Any']
-const bountyStatuses = ['Open', 'Closed', 'Solved']
+const bountyStatuses = ['Open', 'Closed', 'Solved', 'Partially-solved']
+const bountyRewardTypes = ['Cash', 'Token', 'Kudos', 'None']
+const bountyHasUnsolvedSlotsOptions = ['Yes', 'No']
+const bountyHealthScores = ['High', 'Medium', 'Low']
 const timeRanges = ['Past 24h', 'Past week', 'Past month', 'Past 3 months', 'All time']
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -395,7 +403,18 @@ export function DiscoverFilterSheet({
     }
   }
 
-  const toggleSingleSelect = (key: 'domain' | 'difficulty' | 'length' | 'bountyStatus' | 'timeRange', item: string) => {
+  const toggleSingleSelect = (
+    key:
+      | 'domain'
+      | 'difficulty'
+      | 'length'
+      | 'bountyStatus'
+      | 'timeRange'
+      | 'bountyRewardType'
+      | 'bountyHasUnsolvedSlots'
+      | 'bountyHealthScore',
+    item: string,
+  ) => {
     updateValue(key, value[key] === item ? null : item)
   }
 
@@ -468,8 +487,33 @@ export function DiscoverFilterSheet({
         {/* Body */}
         <div className="flex-1 overflow-y-auto" style={{ padding: 20 }}>
           <div className="flex flex-col" style={{ gap: 24 }}>
-            {/* Post type */}
+            {/* Competitions toggle (Phase 3) */}
             {activeMode === 'blueprints' && (
+              <div className="flex flex-col" style={{ gap: 8 }}>
+                <SectionLabel>Competitions</SectionLabel>
+                <div className="flex flex-wrap" style={{ gap: 6 }}>
+                  <Chip
+                    selected={value.competitionsOnly}
+                    onClick={() => updateValue('competitionsOnly', !value.competitionsOnly)}
+                  >
+                    🏆 Bounties only
+                  </Chip>
+                </div>
+                <span
+                  style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 10,
+                    color: 'rgba(255,255,255,0.35)',
+                    marginTop: 2,
+                  }}
+                >
+                  Filter results to bounties with bounty-specific sub-filters
+                </span>
+              </div>
+            )}
+
+            {/* Post type — hidden while Competitions filter is on */}
+            {activeMode === 'blueprints' && !value.competitionsOnly && (
               <div className="flex flex-col" style={{ gap: 8 }}>
                 <SectionLabel>Post type</SectionLabel>
                 <div className="flex flex-wrap" style={{ gap: 6 }}>
@@ -591,22 +635,69 @@ export function DiscoverFilterSheet({
               </div>
             </div>
 
-            {/* Bounty status */}
-            {value.postTypes.includes('Bounty') && (
-              <div className="flex flex-col" style={{ gap: 8 }}>
-                <SectionLabel>Bounty status</SectionLabel>
-                <div className="flex flex-wrap" style={{ gap: 6 }}>
-                  {bountyStatuses.map((status) => (
-                    <Chip
-                      key={status}
-                      selected={value.bountyStatus === status}
-                      onClick={() => toggleSingleSelect('bountyStatus', status)}
-                    >
-                      {status}
-                    </Chip>
-                  ))}
+            {/* Bounty sub-filters — visible when Competitions is on or Bounty post-type is selected */}
+            {(value.competitionsOnly || value.postTypes.includes('Bounty')) && (
+              <>
+                <div className="flex flex-col" style={{ gap: 8 }}>
+                  <SectionLabel>Bounty status</SectionLabel>
+                  <div className="flex flex-wrap" style={{ gap: 6 }}>
+                    {bountyStatuses.map((status) => (
+                      <Chip
+                        key={status}
+                        selected={value.bountyStatus === status}
+                        onClick={() => toggleSingleSelect('bountyStatus', status)}
+                      >
+                        {status}
+                      </Chip>
+                    ))}
+                  </div>
                 </div>
-              </div>
+
+                <div className="flex flex-col" style={{ gap: 8 }}>
+                  <SectionLabel>Reward type</SectionLabel>
+                  <div className="flex flex-wrap" style={{ gap: 6 }}>
+                    {bountyRewardTypes.map((rt) => (
+                      <Chip
+                        key={rt}
+                        selected={value.bountyRewardType === rt}
+                        onClick={() => toggleSingleSelect('bountyRewardType', rt)}
+                      >
+                        {rt}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col" style={{ gap: 8 }}>
+                  <SectionLabel>Has unsolved slots</SectionLabel>
+                  <div className="flex flex-wrap" style={{ gap: 6 }}>
+                    {bountyHasUnsolvedSlotsOptions.map((opt) => (
+                      <Chip
+                        key={opt}
+                        selected={value.bountyHasUnsolvedSlots === opt}
+                        onClick={() => toggleSingleSelect('bountyHasUnsolvedSlots', opt)}
+                      >
+                        {opt}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col" style={{ gap: 8 }}>
+                  <SectionLabel>Bounty health score</SectionLabel>
+                  <div className="flex flex-wrap" style={{ gap: 6 }}>
+                    {bountyHealthScores.map((h) => (
+                      <Chip
+                        key={h}
+                        selected={value.bountyHealthScore === h}
+                        onClick={() => toggleSingleSelect('bountyHealthScore', h)}
+                      >
+                        {h}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Time range */}
