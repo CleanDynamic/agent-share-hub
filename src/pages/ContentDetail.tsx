@@ -1892,6 +1892,8 @@ export default function ContentDetail() {
     );
   }, [
     isBounty,
+    isMeta,
+    metaState,
     post,
     solutionItems,
     discussionThreads,
