@@ -65,6 +65,8 @@ import {
   type SolutionItem,
   type SolutionSlot,
 } from "@/components/bounty/BountySolutionsSection";
+import { BountyCompetitionHeader, type BountyCompetitionHeaderBounty } from "@/components/bounty-competition/BountyCompetitionHeader";
+import { createBountyThread } from "@/lib/messaging";
 import { useShareMenu } from "@/components/share/ShareMenuProvider";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -778,6 +780,26 @@ export default function ContentDetail() {
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
+  const handleScrollToDiscussion = useCallback(() => {
+    const el = document.querySelector("[data-bounty-discussion-anchor]") as HTMLElement | null;
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const handleAskAuthor = useCallback(async () => {
+    if (!user?.id || !post) {
+      navigate("/login");
+      return;
+    }
+    const authorId = (post as any).creator_id as string;
+    if (!authorId || authorId === user.id) return;
+    try {
+      const threadId = await createBountyThread(post.id as string, authorId);
+      navigate(`/messages?thread=${threadId}`);
+    } catch (e: any) {
+      toast({ title: "Could not start conversation", description: e?.message ?? String(e), variant: "destructive" });
+    }
+  }, [user?.id, post, navigate, toast]);
+
   // ─── Bounty solutions UI state ───
   const [expandedSolutionIds, setExpandedSolutionIds] = useState<Set<string>>(new Set());
   const handleToggleExpandSolution = useCallback((solutionId: string) => {
@@ -1440,6 +1462,7 @@ export default function ContentDetail() {
             submitting={acceptSubmitting}
           />
         )}
+        <div data-bounty-discussion-anchor />
         <BountyDiscussionForum
           bountyId={post?.id as string}
           bountyAuthorId={(post as any)?.creator_id as string}
@@ -1459,6 +1482,119 @@ export default function ContentDetail() {
         />
       </>
     ) : null;
+
+  // ─── Bounty competition header (Phase 11) ───
+  const bountyHeaderNode = useMemo(() => {
+    if (!isBounty || !post) return null;
+    const submissionCount =
+      ((post as any).bounty_total_submissions as number | null) ??
+      solutionItems.length;
+    const activeSolverCount =
+      ((post as any).bounty_active_solvers as number | null) ??
+      new Set(solutionItems.map((s) => (s.solverUser as any)?.id).filter(Boolean)).size;
+    const commentCount =
+      ((post as any).comment_count as number | null) ??
+      discussionThreads.length;
+    const slotsTotal =
+      ((post as any).bounty_total_slots as number | null) ??
+      bountySlots.length;
+    const slotsSolved =
+      ((post as any).bounty_solved_count as number | null) ??
+      Object.keys(slotAcceptance).length;
+
+    let derivedStatus: "open" | "closed" | "solved" | "partially_solved" =
+      bountyStatus;
+    if (
+      bountyStatus === "open" &&
+      slotsTotal > 0 &&
+      slotsSolved > 0 &&
+      slotsSolved < slotsTotal
+    ) {
+      derivedStatus = "partially_solved";
+    }
+
+    const rewardRaw = (post as any).bounty_reward_type as string | null;
+    const rewardType: "cash" | "token" | "kudos" | "none" =
+      rewardRaw === "cash" || rewardRaw === "token" || rewardRaw === "kudos"
+        ? rewardRaw
+        : (post as any).bounty_reward
+          ? "cash"
+          : "none";
+
+    const deadlineRaw = (post as any).bounty_deadline as string | null;
+    const createdRaw =
+      ((post as any).published_at as string | null) ||
+      ((post as any).created_at as string | null) ||
+      new Date().toISOString();
+    const solvedRaw = (post as any).bounty_solved_at as string | null;
+
+    const headerBounty: BountyCompetitionHeaderBounty = {
+      id: post.id as string,
+      slug: ((post as any).slug as string) ?? (post.id as string),
+      title: ((post as any).title as string) ?? "Untitled bounty",
+      description: ((post as any).description as string) ?? "",
+      status: derivedStatus,
+      sequentialId: ((post as any).bounty_sequential_id as number) ?? 0,
+      rewardType,
+      rewardAmount: ((post as any).bounty_reward as number) ?? undefined,
+      rewardCurrency:
+        ((post as any).bounty_reward_currency as string) ?? undefined,
+      deadline: deadlineRaw ? new Date(deadlineRaw) : null,
+      submissionCount,
+      activeSolverCount,
+      commentCount,
+      slotsTotal,
+      slotsSolved,
+      createdAt: new Date(createdRaw),
+      solvedAt: solvedRaw ? new Date(solvedRaw) : null,
+    };
+
+    const missingSlots = bountySlots.filter(
+      (s) => !slotAcceptance[s.id],
+    );
+
+    const onSubmit = () => {
+      if (missingSlots.length === 1 && shellPost) {
+        const slot = missingSlots[0];
+        navigate(`/b/${shellPost.slug}/solve/${slot.id}?kind=${slot.kind}`);
+      } else {
+        handleSubmitSolution();
+      }
+    };
+
+    return (
+      <BountyCompetitionHeader
+        bounty={headerBounty}
+        isOwnBounty={isBountyAuthor}
+        onSubmitSolution={onSubmit}
+        onDiscussion={handleScrollToDiscussion}
+        onAskAuthor={handleAskAuthor}
+        onManageBounty={() =>
+          toast({
+            title: "Manage bounty",
+            description: "The full management panel ships in step 12.5.",
+          })
+        }
+        onPromoteToBlueprint={handlePromoteToBlueprint}
+      />
+    );
+  }, [
+    isBounty,
+    post,
+    solutionItems,
+    discussionThreads,
+    bountySlots,
+    slotAcceptance,
+    bountyStatus,
+    isBountyAuthor,
+    shellPost,
+    navigate,
+    handleSubmitSolution,
+    handleScrollToDiscussion,
+    handleAskAuthor,
+    handlePromoteToBlueprint,
+    toast,
+  ]);
 
   return (
     <CommentDrawerProvider value={drawerContextValue}>
@@ -1568,6 +1704,7 @@ export default function ContentDetail() {
           />
         }
         bountyExtrasSlot={bountyExtras}
+        headerSlot={bountyHeaderNode}
         bylineSlot={bountyByline}
       >
         {bodyNode}

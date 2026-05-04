@@ -79,6 +79,8 @@ export interface ContentDetailShellProps {
   bountyExtrasSlot?: React.ReactNode;
   /** When provided, replaces the default byline (author row + follow button). */
   bylineSlot?: React.ReactNode;
+  /** When provided, renders ABOVE the standard header (used for bounty competition header). */
+  headerSlot?: React.ReactNode;
   children?: React.ReactNode;
 }
 
@@ -275,6 +277,7 @@ export function ContentDetailShell({
   resultsSlot,
   bountyExtrasSlot,
   bylineSlot,
+  headerSlot,
   children,
 }: ContentDetailShellProps) {
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -426,6 +429,7 @@ export function ContentDetailShell({
 
       {/* POST HEADER REGION */}
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 24px 0" }}>
+        {headerSlot}
         <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
           <PostTypePill postType={post.postType} bountyMeta={post.bountyMeta} />
           <span style={{ fontSize: 12, color: "rgba(255,255,255,0.40)", fontFamily: "Inter, sans-serif" }}>
