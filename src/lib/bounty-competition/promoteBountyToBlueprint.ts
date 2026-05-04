@@ -80,53 +80,61 @@ export async function promoteBountyToBlueprint(
     await (supabase as any).from("content_blocks").insert(cloned as any);
   }
 
-  // Copy collaborators (preserve attribution)
-  const { data: collabs } = await (supabase as any)
+  // Build the blueprint's co-author roster: bounty author + every accepted
+  // solver. This is what BountyByline/ProvenanceOverview reads from.
+  const collaboratorRoster = new Map<string, boolean>();
+  const bountyCreatorId = (src as any).creator_id as string | null;
+  if (bountyCreatorId) collaboratorRoster.set(bountyCreatorId, true);
+
+  const { data: existingCollabs } = await (supabase as any)
     .from("content_collaborators")
     .select("collaborator_id, is_primary_author")
     .eq("content_id", bountyId);
-  if ((collabs ?? []).length > 0) {
-    const cloned = (collabs as any[]).map((c) => ({
-      content_id: newBlueprintId,
-      collaborator_id: c.collaborator_id,
-      is_primary_author: c.is_primary_author,
-    }));
-    // Insert one at a time so RLS per-row checks pass cleanly
-    for (const row of cloned) {
-      await (supabase as any)
-        .from("content_collaborators")
-        .insert(row as any);
+  for (const c of (existingCollabs ?? []) as any[]) {
+    if (!c?.collaborator_id) continue;
+    const prior = collaboratorRoster.get(c.collaborator_id) ?? false;
+    collaboratorRoster.set(c.collaborator_id, prior || !!c.is_primary_author);
+  }
+
+  const { data: acceptedSolvers } = await (supabase as any)
+    .from("solutions")
+    .select("solver_id")
+    .eq("bounty_id", bountyId)
+    .eq("status", "accepted");
+  for (const s of (acceptedSolvers ?? []) as any[]) {
+    if (!s?.solver_id) continue;
+    if (!collaboratorRoster.has(s.solver_id)) {
+      collaboratorRoster.set(s.solver_id, false);
     }
   }
 
-  // Phase 8 — notify every contributor (solvers + commenters) that the bounty
-  // was promoted to a blueprint.
-  try {
-    const [solversRes, commentersRes] = await Promise.all([
-      (supabase as any)
-        .from("solutions")
-        .select("solver_id")
-        .eq("bounty_id", bountyId),
-      (supabase as any)
-        .from("bounty_discussion_comments")
-        .select("author_id")
-        .eq("bounty_id", bountyId),
-    ]);
-    const contributorIds = Array.from(
-      new Set<string>(
-        [
-          ...(((solversRes?.data ?? []) as any[]).map((r) => r.solver_id)),
-          ...(((commentersRes?.data ?? []) as any[]).map((r) => r.author_id)),
-        ].filter(Boolean),
-      ),
-    ).filter((id) => id !== (src as any).creator_id);
+  for (const [collaboratorId, isPrimary] of collaboratorRoster) {
+    await (supabase as any).from("content_collaborators").insert({
+      content_id: newBlueprintId,
+      collaborator_id: collaboratorId,
+      is_primary_author: isPrimary,
+    } as any);
+  }
 
-    void notifyBountyPromotedToBlueprint({
-      bountyId,
-      blueprintId: newBlueprintId,
-      contributorIds,
-      promoterId: (src as any).creator_id ?? null,
-    });
+  // Notify every accepted solver that the bounty was promoted. Commenters and
+  // unaccepted submitters are intentionally excluded — the "you're a
+  // co-author" copy only applies to people who carry forward in the byline.
+  try {
+    const acceptedSolverIds = Array.from(
+      new Set<string>(
+        Array.from(collaboratorRoster.keys()).filter(
+          (uid) => uid !== bountyCreatorId,
+        ),
+      ),
+    );
+    if (acceptedSolverIds.length > 0) {
+      void notifyBountyPromotedToBlueprint({
+        bountyId,
+        blueprintId: newBlueprintId,
+        contributorIds: acceptedSolverIds,
+        promoterId: bountyCreatorId,
+      });
+    }
   } catch {
     /* notification failures must never break promotion */
   }

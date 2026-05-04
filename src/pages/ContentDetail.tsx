@@ -71,12 +71,15 @@ import { MetaBountyBody } from "@/components/bounty-competition/MetaBountyBody";
 import { getMetaBountyState } from "@/lib/bounty-competition/getMetaBountyState";
 import { SolverLeaderboard, type Contributor as LbContributor, type ActivityEvent as LbActivity } from "@/components/bounty-competition/SolverLeaderboard";
 import { BountyManagementPanelContainer } from "@/components/bounty-competition/BountyManagementPanelContainer";
+import { PromoteToBlueprintDialog } from "@/components/bounty-competition/PromoteToBlueprintDialog";
+import { BlueprintAttributionBanner } from "@/components/bounty-competition/BlueprintAttributionBanner";
 import { getLeaderboard } from "@/lib/bounty-competition/getLeaderboard";
 import { getLeaderboardActivity } from "@/lib/bounty-competition/getLeaderboardActivity";
 import { useLeaderboardUpdates } from "@/lib/bounty-competition/realtime";
 import { getBountyAnalytics } from "@/lib/bounty-competition/getBountyAnalytics";
 import { markSolutionReviewStatus } from "@/lib/bounty-competition/markSolutionReviewStatus";
 import { extendBountyDeadline } from "@/lib/bounty-competition/extendBountyDeadline";
+import { promoteBountyToBlueprint } from "@/lib/bounty-competition/promoteBountyToBlueprint";
 import { createBountyThread, createDirectThread } from "@/lib/messaging";
 import { useShareMenu } from "@/components/share/ShareMenuProvider";
 import { useQueryClient } from "@tanstack/react-query";
@@ -1125,12 +1128,46 @@ export default function ContentDetail() {
     toast,
   ]);
 
+  const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
+  const [promoteSubmitting, setPromoteSubmitting] = useState(false);
+
   const handlePromoteToBlueprint = useCallback(() => {
-    toast({
-      title: "Coming soon",
-      description: "The bounty stays as the canonical record.",
-    });
-  }, [toast]);
+    if (!post?.id) return;
+    if ((post as any).bounty_status !== "solved") {
+      toast({
+        title: "Bounty must be fully solved before it can be promoted.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setPromoteDialogOpen(true);
+  }, [post, toast]);
+
+  const handleConfirmPromote = useCallback(async () => {
+    if (!post?.id) return;
+    if (promoteSubmitting) return;
+    setPromoteSubmitting(true);
+    try {
+      const { newBlueprintId } = await promoteBountyToBlueprint(
+        post.id as string,
+      );
+      setPromoteDialogOpen(false);
+      setManagePanelOpen(false);
+      toast({
+        title: "Promoted to blueprint",
+        description: "The bounty stays as the canonical record.",
+      });
+      navigate(`/content/${newBlueprintId}`);
+    } catch (e: any) {
+      toast({
+        title: "Promotion failed",
+        description: e?.message ?? String(e),
+        variant: "destructive",
+      });
+    } finally {
+      setPromoteSubmitting(false);
+    }
+  }, [post, promoteSubmitting, navigate, toast]);
 
   // ============== Bounty Manage Handlers ==============
   const handleManageReject = useCallback(
@@ -1407,6 +1444,22 @@ export default function ContentDetail() {
     bodyNode = (
       <>
         <SpawnedFromMetaBanner parentId={spawnedFromMetaId} />
+        {bodyNode}
+      </>
+    );
+  }
+
+  // Promoted-from-bounty attribution banner — permanent on blueprints that
+  // were promoted from a solved bounty. Click → opens the original bounty in
+  // a new tab. Cannot be dismissed.
+  const promotedFromBountyId =
+    postType === "blueprint"
+      ? ((post as any)?.fork_of_content_id as string | null) ?? null
+      : null;
+  if (promotedFromBountyId) {
+    bodyNode = (
+      <>
+        <BlueprintAttributionBanner bountyId={promotedFromBountyId} />
         {bodyNode}
       </>
     );
@@ -2135,6 +2188,17 @@ export default function ContentDetail() {
           onResumeSubmissions={() => handleManagePauseToggle(false)}
           onCloseBounty={handleManageCloseBounty}
           onPromoteToBlueprint={handlePromoteToBlueprint}
+        />
+      )}
+      {isBounty && post && isBountyAuthor && (
+        <PromoteToBlueprintDialog
+          open={promoteDialogOpen}
+          onOpenChange={(o) => {
+            if (!promoteSubmitting) setPromoteDialogOpen(o);
+          }}
+          bountyTitle={(post as any)?.title ?? "this bounty"}
+          onConfirm={handleConfirmPromote}
+          submitting={promoteSubmitting}
         />
       )}
       </BountyProvenanceProvider>

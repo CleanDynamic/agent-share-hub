@@ -526,7 +526,7 @@ export function notifyBountyPromotedToBlueprint(args: {
             actorId: args.promoterId ?? null,
             targetType: "blueprint",
             targetId: args.blueprintId,
-            body: `${actorName ?? "The author"} promoted '${title}' to a blueprint — your contribution is in there`,
+            body: `${actorName ?? "The author"} promoted '${title}' to a blueprint. You're a co-author.`,
             metadata: {
               sub: "bounty_promoted_to_blueprint" satisfies BountyCompetitionSubkind,
               bounty_id: args.bountyId,
