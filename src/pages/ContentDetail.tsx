@@ -1783,6 +1783,23 @@ export default function ContentDetail() {
   // ─── Bounty competition header (Phase 11) ───
   const bountyHeaderNode = useMemo(() => {
     if (!isBounty || !post) return null;
+    if (isMeta) {
+      if (!metaState) return null;
+      return (
+        <MetaBountyHeader
+          meta={{
+            id: metaState.bountyId,
+            title: metaState.title,
+            description: metaState.description ?? "",
+            totalPledged: metaState.totalPledged,
+            totalPledgers: metaState.totalPledgers,
+            fundingDeadline: metaState.fundingDeadline,
+            subBountyCount: metaState.subBounties.length,
+            spawnedCount: metaState.subBounties.filter((s) => !!s.spawnedBountyId).length,
+          }}
+        />
+      );
+    }
     const submissionCount =
       ((post as any).bounty_total_submissions as number | null) ??
       solutionItems.length;
