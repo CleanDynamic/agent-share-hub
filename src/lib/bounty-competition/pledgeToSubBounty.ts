@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { createNotification } from "@/lib/notifications/createNotification";
+import { notifyMetaBountySubSpawned } from "@/lib/notifications/triggers";
 
 interface PledgeArgs {
   metaBountyId: string;
@@ -104,27 +104,17 @@ export async function pledgeToSubBounty({
       .update({ spawned_bounty_id: spawnedId } as any)
       .eq("id", sub.id);
 
-    // Notify pledgers
-    const pledgerIds = new Set<string>(
-      ((subPledges ?? []) as any[]).map((p) => p.pledger_id),
+    // Notify pledgers using the canonical 'meta_bounty_sub_spawned' subkind.
+    const pledgerIds = Array.from(
+      new Set<string>(((subPledges ?? []) as any[]).map((p) => p.pledger_id)),
     );
-    void Promise.all(
-      [...pledgerIds].map((rid) =>
-        createNotification({
-          recipientId: rid,
-          actorId: pledgerId,
-          kind: "bounty_interaction",
-          targetType: "bounty",
-          targetId: spawnedId,
-          metadata: {
-            subkind: "sub_bounty_spawned",
-            meta_bounty_id: metaBountyId,
-            sub_definition_id: sub.id,
-            pledged_total: pledgedTotal,
-          },
-        }).catch(() => null),
-      ),
-    );
+    void notifyMetaBountySubSpawned({
+      metaBountyId,
+      spawnedBountyId: spawnedId,
+      subDefinitionId: sub.id,
+      subTitle: sub.title,
+      pledgerIds,
+    });
   }
 
   return { pledgeId };

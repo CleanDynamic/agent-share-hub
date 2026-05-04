@@ -20,6 +20,7 @@ import { DiscoverNoResultsState } from "@/components/discover/DiscoverNoResultsS
 import { queryBlueprints, type QueryBlueprintsParams } from "@/lib/discover/queryBlueprints";
 import { queryStages, type StageSearchResult } from "@/lib/discover/queryStages";
 import { queryBlocks, type BlockSearchResult } from "@/lib/discover/queryBlocks";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PAGE_SIZE = 20;
 
@@ -35,8 +36,19 @@ const MODES: SearchMode[] = ["blueprints", "stages", "blocks"];
 // Multi-value URL params (comma-separated).
 const MULTI_KEYS = ["postTypes", "blockTypes", "models", "tools", "tags"] as const;
 // Single-value URL params.
-const SINGLE_KEYS = ["domain", "difficulty", "length", "bountyStatus", "timeRange"] as const;
-const ALL_FILTER_KEYS = [...MULTI_KEYS, ...SINGLE_KEYS] as const;
+const SINGLE_KEYS = [
+  "domain",
+  "difficulty",
+  "length",
+  "bountyStatus",
+  "timeRange",
+  "bountyRewardType",
+  "bountyHasUnsolvedSlots",
+  "bountyHealthScore",
+] as const;
+// Bool URL params ("1" / null).
+const BOOL_KEYS = ["competitionsOnly"] as const;
+const ALL_FILTER_KEYS = [...MULTI_KEYS, ...SINGLE_KEYS, ...BOOL_KEYS] as const;
 
 const DEFAULT_SORT = "Most recent";
 
@@ -57,6 +69,10 @@ function parseFilters(sp: URLSearchParams): FilterValue {
     length: sp.get("length"),
     bountyStatus: sp.get("bountyStatus"),
     timeRange: sp.get("timeRange"),
+    competitionsOnly: sp.get("competitionsOnly") === "1",
+    bountyRewardType: sp.get("bountyRewardType"),
+    bountyHasUnsolvedSlots: sp.get("bountyHasUnsolvedSlots"),
+    bountyHealthScore: sp.get("bountyHealthScore"),
   };
 }
 
@@ -69,6 +85,7 @@ function filtersToPatch(filters: FilterValue): Record<string, string | null> {
   for (const k of SINGLE_KEYS) {
     patch[k] = filters[k] || null;
   }
+  patch.competitionsOnly = filters.competitionsOnly ? "1" : null;
   return patch;
 }
 
@@ -76,6 +93,11 @@ const Discover = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const { profile } = useAuth();
+  const specialtyBoostTags = useMemo<string[] | undefined>(() => {
+    const t = (profile?.user_interests ?? []).filter(Boolean) as string[];
+    return t.length > 0 ? t : undefined;
+  }, [profile?.user_interests]);
 
   const modeParam = searchParams.get("mode") as SearchMode | null;
   const mode: SearchMode = MODES.includes(modeParam as SearchMode)
@@ -154,6 +176,9 @@ const Discover = () => {
   // Active filter chips (Row 4).
   const activeFilters: ActiveFilter[] = useMemo(() => {
     const out: ActiveFilter[] = [];
+    if (filters.competitionsOnly) {
+      out.push({ key: "competitionsOnly:1", label: "Competitions" });
+    }
     for (const k of MULTI_KEYS) {
       for (const v of filters[k]) {
         out.push({ key: `${k}:${v}`, label: v });
@@ -196,10 +221,15 @@ const Discover = () => {
 
   // ---- Real Blueprints query (Phase 3.4) ----
   const blueprintParams: QueryBlueprintsParams = useMemo(() => {
-    const postType = filters.postTypes[0] as QueryBlueprintsParams["postType"] | undefined;
+    const explicitPostType = filters.postTypes[0] as QueryBlueprintsParams["postType"] | undefined;
+    const postType: QueryBlueprintsParams["postType"] | undefined = filters.competitionsOnly
+      ? "bounty"
+      : explicitPostType && ["blueprint", "blog", "bounty"].includes(explicitPostType)
+        ? explicitPostType
+        : undefined;
     return {
       query: urlQ,
-      postType: postType && ["blueprint", "blog", "bounty"].includes(postType) ? postType : undefined,
+      postType,
       blockTypes: filters.blockTypes.length ? filters.blockTypes : undefined,
       models: filters.models.length ? filters.models : undefined,
       tools: filters.tools.length ? filters.tools : undefined,
@@ -208,10 +238,20 @@ const Discover = () => {
       difficulty: filters.difficulty ?? undefined,
       length: (filters.length as QueryBlueprintsParams["length"]) ?? undefined,
       bountyStatus: (filters.bountyStatus as QueryBlueprintsParams["bountyStatus"]) ?? undefined,
+      bountyRewardType: (filters.bountyRewardType as QueryBlueprintsParams["bountyRewardType"]) ?? undefined,
+      bountyHasUnsolvedSlots:
+        filters.bountyHasUnsolvedSlots === "Yes"
+          ? true
+          : filters.bountyHasUnsolvedSlots === "No"
+            ? false
+            : undefined,
+      bountyHealthScore:
+        (filters.bountyHealthScore as QueryBlueprintsParams["bountyHealthScore"]) ?? undefined,
       timeRange: (filters.timeRange as QueryBlueprintsParams["timeRange"]) ?? undefined,
       sort: SORT_LABEL_TO_KEY[sort] ?? "recent",
+      specialtyBoostTags,
     };
-  }, [urlQ, filters, sort]);
+  }, [urlQ, filters, sort, specialtyBoostTags]);
 
   const [blueprintRows, setBlueprintRows] = useState<FeedPost[]>([]);
   const [blueprintTotal, setBlueprintTotal] = useState(0);

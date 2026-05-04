@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { notifyBountySolverOvertaken } from "@/lib/notifications/triggers";
 
 interface SolverAgg {
   user_id: string;
@@ -64,6 +65,16 @@ export async function refreshLeaderboardCache(
     computed_at: computedAt,
   }));
 
+  // Snapshot the existing ranks so we can detect overtakes after the rewrite.
+  const { data: prevRows } = await (supabase as any)
+    .from("solver_leaderboard_cache")
+    .select("user_id, rank")
+    .eq("bounty_id", bountyId);
+  const prevRankByUser = new Map<string, number>();
+  for (const r of (prevRows ?? []) as any[]) {
+    prevRankByUser.set(r.user_id as string, Number(r.rank));
+  }
+
   // Wipe + reinsert keeps ranks consistent and removes stale rows.
   const { error: delErr } = await (supabase as any)
     .from("solver_leaderboard_cache")
@@ -76,5 +87,31 @@ export async function refreshLeaderboardCache(
       .from("solver_leaderboard_cache")
       .insert(upserts as any);
     if (insErr) throw insErr;
+  }
+
+  // Fire 'bounty_solver_overtaken' for each solver whose rank slipped (i.e.
+  // somebody above them is now newly above them). For each demoted solver we
+  // pick the solver who took their old rank as the actor.
+  const newRankByUser = new Map<string, number>();
+  for (const u of upserts) newRankByUser.set(u.user_id, u.rank);
+
+  const userByNewRank = new Map<number, string>();
+  for (const [uid, r] of newRankByUser) userByNewRank.set(r, uid);
+
+  for (const [userId, newRank] of newRankByUser) {
+    const prevRank = prevRankByUser.get(userId);
+    if (prevRank === undefined) continue;
+    if (newRank > prevRank) {
+      const actor = userByNewRank.get(prevRank);
+      if (actor && actor !== userId) {
+        notifyBountySolverOvertaken({
+          bountyId,
+          overtakenSolverId: userId,
+          overtakingSolverId: actor,
+          previousRank: prevRank,
+          newRank,
+        });
+      }
+    }
   }
 }

@@ -92,6 +92,28 @@ export async function getAuthorStats(userId: string): Promise<AuthorStats> {
     .maybeSingle();
   const sp = (solverProf ?? {}) as any;
 
+  // Phase 6 — distinct-bounty submission count and meta-bounty pledge count.
+  const [bountiesSubmittedRes, metaPledgesRes] = await Promise.all([
+    (supabase as any)
+      .from("solutions")
+      .select("bounty_id")
+      .eq("solver_id", userId),
+    (supabase as any)
+      .from("meta_bounty_pledges")
+      .select("meta_bounty_id")
+      .eq("pledger_id", userId),
+  ]);
+  const distinctSubmittedBounties = new Set(
+    ((bountiesSubmittedRes?.data ?? []) as any[])
+      .map((r) => r.bounty_id)
+      .filter(Boolean),
+  );
+  const distinctPledgedMetas = new Set(
+    ((metaPledgesRes?.data ?? []) as any[])
+      .map((r) => r.meta_bounty_id)
+      .filter(Boolean),
+  );
+
   return {
     totalViews: Number(stats.total_views ?? 0),
     blueprintsCount: Number(stats.blueprints_count ?? 0),
@@ -108,5 +130,7 @@ export async function getAuthorStats(userId: string): Promise<AuthorStats> {
         : Number(sp.bounty_solver_acceptance_rate),
     bountyTotalRewardEarned: Number(sp.bounty_total_reward_earned ?? 0),
     isTrustedSolver: !!sp.is_trusted_solver,
+    bountiesSubmittedToCount: distinctSubmittedBounties.size,
+    metaBountyPledgesCount: distinctPledgedMetas.size,
   };
 }

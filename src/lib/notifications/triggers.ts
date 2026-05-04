@@ -375,6 +375,173 @@ export function notifyBountySolutionAccepted(args: {
 }
 
 // ────────────────────────────────────────────────────────────
+// 8b. BOUNTY competition events (Phase 8 — competition surfacing)
+//      Subkinds:
+//        - bounty_solver_overtaken
+//        - meta_bounty_sub_spawned
+//        - bounty_deadline_approaching
+//        - bounty_promoted_to_blueprint
+//      All four use kind='bounty_interaction' so the existing notification
+//      stream picks them up automatically; the subkind lives in metadata.sub
+//      so card renderers can branch on it.
+// ────────────────────────────────────────────────────────────
+
+export type BountyCompetitionSubkind =
+  | "bounty_solver_overtaken"
+  | "meta_bounty_sub_spawned"
+  | "bounty_deadline_approaching"
+  | "bounty_promoted_to_blueprint";
+
+export function notifyBountySolverOvertaken(args: {
+  bountyId: string;
+  /** The user whose rank slipped (recipient). */
+  overtakenSolverId: string;
+  /** The user who took their slot. */
+  overtakingSolverId: string;
+  previousRank: number;
+  newRank: number;
+}) {
+  return silent(
+    (async () => {
+      if (args.overtakenSolverId === args.overtakingSolverId) return null;
+      const post = await getPostMeta(args.bountyId);
+      if (!post) return null;
+      const overtaker = await getActorUsername(args.overtakingSolverId);
+      return createNotification({
+        recipientId: args.overtakenSolverId,
+        kind: "bounty_interaction",
+        actorId: args.overtakingSolverId,
+        targetType: "bounty",
+        targetId: args.bountyId,
+        body: `${overtaker ?? "Another solver"} overtook your rank on '${post.title}' (#${args.previousRank} → #${args.newRank})`,
+        metadata: {
+          sub: "bounty_solver_overtaken" satisfies BountyCompetitionSubkind,
+          bounty_title: post.title,
+          previous_rank: args.previousRank,
+          new_rank: args.newRank,
+        },
+      });
+    })(),
+  );
+}
+
+export function notifyMetaBountySubSpawned(args: {
+  metaBountyId: string;
+  spawnedBountyId: string;
+  subDefinitionId: string;
+  subTitle: string;
+  /** Recipients to notify — typically every pledger to the sub-bounty. */
+  pledgerIds: string[];
+}) {
+  return silent(
+    (async () => {
+      const recipients = Array.from(new Set(args.pledgerIds)).filter(Boolean);
+      if (recipients.length === 0) return null;
+      const meta = await getPostMeta(args.metaBountyId);
+      const metaTitle = meta?.title ?? "a meta-bounty";
+      await Promise.all(
+        recipients.map((rid) =>
+          createNotification({
+            recipientId: rid,
+            kind: "bounty_interaction",
+            actorId: null,
+            targetType: "bounty",
+            targetId: args.spawnedBountyId,
+            body: `A sub-bounty you pledged to in '${metaTitle}' just spawned: '${args.subTitle}'`,
+            metadata: {
+              sub: "meta_bounty_sub_spawned" satisfies BountyCompetitionSubkind,
+              meta_bounty_id: args.metaBountyId,
+              spawned_bounty_id: args.spawnedBountyId,
+              sub_definition_id: args.subDefinitionId,
+              sub_title: args.subTitle,
+            },
+          }),
+        ),
+      );
+      return null;
+    })(),
+  );
+}
+
+/**
+ * Fires once per submitter when a bounty is < 24h from its deadline. Caller
+ * is responsible for de-duping so each submitter is only nudged once per
+ * bounty-deadline-window.
+ */
+export function notifyBountyDeadlineApproaching(args: {
+  bountyId: string;
+  /** Recipients — typically every distinct solver who has submitted. */
+  submitterIds: string[];
+  hoursRemaining: number;
+}) {
+  return silent(
+    (async () => {
+      const recipients = Array.from(new Set(args.submitterIds)).filter(Boolean);
+      if (recipients.length === 0) return null;
+      const post = await getPostMeta(args.bountyId);
+      if (!post) return null;
+      await Promise.all(
+        recipients.map((rid) =>
+          createNotification({
+            recipientId: rid,
+            kind: "bounty_interaction",
+            actorId: null,
+            targetType: "bounty",
+            targetId: args.bountyId,
+            body: `Bounty '${post.title}' closes in ~${Math.max(1, Math.round(args.hoursRemaining))}h`,
+            metadata: {
+              sub: "bounty_deadline_approaching" satisfies BountyCompetitionSubkind,
+              bounty_title: post.title,
+              hours_remaining: args.hoursRemaining,
+            },
+          }),
+        ),
+      );
+      return null;
+    })(),
+  );
+}
+
+export function notifyBountyPromotedToBlueprint(args: {
+  bountyId: string;
+  blueprintId: string;
+  /** Recipients — every user who contributed (solvers + commenters). */
+  contributorIds: string[];
+  promoterId?: string | null;
+}) {
+  return silent(
+    (async () => {
+      const recipients = Array.from(new Set(args.contributorIds)).filter(Boolean);
+      if (recipients.length === 0) return null;
+      const post = await getPostMeta(args.bountyId);
+      const title = post?.title ?? "a bounty";
+      const actorName = args.promoterId
+        ? await getActorUsername(args.promoterId)
+        : null;
+      await Promise.all(
+        recipients.map((rid) =>
+          createNotification({
+            recipientId: rid,
+            kind: "bounty_interaction",
+            actorId: args.promoterId ?? null,
+            targetType: "blueprint",
+            targetId: args.blueprintId,
+            body: `${actorName ?? "The author"} promoted '${title}' to a blueprint — your contribution is in there`,
+            metadata: {
+              sub: "bounty_promoted_to_blueprint" satisfies BountyCompetitionSubkind,
+              bounty_id: args.bountyId,
+              blueprint_id: args.blueprintId,
+              bounty_title: title,
+            },
+          }),
+        ),
+      );
+      return null;
+    })(),
+  );
+}
+
+// ────────────────────────────────────────────────────────────
 // 9. SYSTEM — level achievement.
 // ────────────────────────────────────────────────────────────
 
