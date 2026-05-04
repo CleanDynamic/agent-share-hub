@@ -66,6 +66,9 @@ import {
   type SolutionSlot,
 } from "@/components/bounty/BountySolutionsSection";
 import { BountyCompetitionHeader, type BountyCompetitionHeaderBounty } from "@/components/bounty-competition/BountyCompetitionHeader";
+import { MetaBountyHeader } from "@/components/bounty-competition/MetaBountyHeader";
+import { MetaBountyBody } from "@/components/bounty-competition/MetaBountyBody";
+import { getMetaBountyState } from "@/lib/bounty-competition/getMetaBountyState";
 import { SolverLeaderboard, type Contributor as LbContributor, type ActivityEvent as LbActivity } from "@/components/bounty-competition/SolverLeaderboard";
 import { BountyManagementPanelContainer } from "@/components/bounty-competition/BountyManagementPanelContainer";
 import { getLeaderboard } from "@/lib/bounty-competition/getLeaderboard";
@@ -146,6 +149,15 @@ export default function ContentDetail() {
 
   // ─── Bounty: provenance + per-slot solution counts ───
   const isBounty = postType === "bounty";
+  const isMeta = isBounty && !!(post as any)?.bounty_is_meta;
+  const spawnedFromMetaId = isBounty
+    ? ((post as any)?.bounty_meta_parent_id as string | null) ?? null
+    : null;
+  const { data: metaState, refetch: refetchMeta } = useQuery({
+    queryKey: ["meta_bounty_state", post?.id],
+    queryFn: () => getMetaBountyState(post!.id as string),
+    enabled: !!post?.id && isMeta,
+  });
   const { data: provenanceData, refetch: refetchProvenance } = useQuery({
     queryKey: ["bounty_provenance", post?.id],
     queryFn: () => getProvenance(post!.id as string),
@@ -1344,7 +1356,19 @@ export default function ContentDetail() {
   // ─── Body renderer per post type ──────────────────────────────────────────
   let bodyNode: React.ReactNode = null;
 
-  if (postType === "blog") {
+  if (isMeta) {
+    bodyNode = metaState ? (
+      <MetaBountyBody
+        meta={metaState}
+        viewerId={user?.id ?? null}
+        onPledged={() => void refetchMeta()}
+      />
+    ) : (
+      <div style={{ padding: 40, textAlign: "center", color: "rgba(255,255,255,0.20)", fontSize: 13 }}>
+        Loading meta-bounty…
+      </div>
+    );
+  } else if (postType === "blog") {
     bodyNode = <BlogView item={post as any} />;
   } else {
     // blueprint or bounty — same article body renderer, with bounty using
@@ -1377,6 +1401,17 @@ export default function ContentDetail() {
       );
     }
   }
+
+  // Spawned-from-meta attribution banner (for spawned bounties)
+  if (spawnedFromMetaId && !isMeta) {
+    bodyNode = (
+      <>
+        <SpawnedFromMetaBanner parentId={spawnedFromMetaId} />
+        {bodyNode}
+      </>
+    );
+  }
+
 
   // Build SolverInfo[] for byline + provenance overview
   const solversInfo: SolverInfo[] = useMemo(() => {
@@ -1748,6 +1783,23 @@ export default function ContentDetail() {
   // ─── Bounty competition header (Phase 11) ───
   const bountyHeaderNode = useMemo(() => {
     if (!isBounty || !post) return null;
+    if (isMeta) {
+      if (!metaState) return null;
+      return (
+        <MetaBountyHeader
+          meta={{
+            id: metaState.bountyId,
+            title: metaState.title,
+            description: metaState.description ?? "",
+            totalPledged: metaState.totalPledged,
+            totalPledgers: metaState.totalPledgers,
+            fundingDeadline: metaState.fundingDeadline,
+            subBountyCount: metaState.subBounties.length,
+            spawnedCount: metaState.subBounties.filter((s) => !!s.spawnedBountyId).length,
+          }}
+        />
+      );
+    }
     const submissionCount =
       ((post as any).bounty_total_submissions as number | null) ??
       solutionItems.length;
@@ -1840,6 +1892,8 @@ export default function ContentDetail() {
     );
   }, [
     isBounty,
+    isMeta,
+    metaState,
     post,
     solutionItems,
     discussionThreads,
@@ -2085,6 +2139,43 @@ export default function ContentDetail() {
       )}
       </BountyProvenanceProvider>
     </CommentDrawerProvider>
+  );
+}
+
+
+function SpawnedFromMetaBanner({ parentId }: { parentId: string }) {
+  const navigate = useNavigate();
+  const { data } = useQuery({
+    queryKey: ["spawned_from_meta", parentId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("content_items")
+        .select("id, title")
+        .eq("id", parentId)
+        .single();
+      return data as { id: string; title: string } | null;
+    },
+    enabled: !!parentId,
+  });
+  if (!data) return null;
+  return (
+    <div
+      onClick={() => navigate(`/content/${parentId}`)}
+      style={{
+        background: "rgba(124,58,237,0.08)",
+        border: "1px solid rgba(124,58,237,0.25)",
+        borderRadius: 8,
+        padding: "8px 12px",
+        marginBottom: 16,
+        fontFamily: "Inter, sans-serif",
+        fontSize: 12,
+        color: "rgba(255,255,255,0.75)",
+        cursor: "pointer",
+      }}
+    >
+      Spawned from meta-bounty:{" "}
+      <span style={{ color: "#A78BFA", fontWeight: 600 }}>{data.title}</span>
+    </div>
   );
 }
 
