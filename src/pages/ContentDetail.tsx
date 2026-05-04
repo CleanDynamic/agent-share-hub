@@ -1666,20 +1666,23 @@ export default function ContentDetail() {
     };
 
     return (
-      <BountyCompetitionHeader
-        bounty={headerBounty}
-        isOwnBounty={isBountyAuthor}
-        onSubmitSolution={onSubmit}
-        onDiscussion={handleScrollToDiscussion}
-        onAskAuthor={handleAskAuthor}
-        onManageBounty={() =>
-          toast({
-            title: "Manage bounty",
-            description: "The full management panel ships in step 12.5.",
-          })
-        }
-        onPromoteToBlueprint={handlePromoteToBlueprint}
-      />
+      <>
+        <BountyCompetitionHeader
+          bounty={headerBounty}
+          isOwnBounty={isBountyAuthor}
+          onSubmitSolution={onSubmit}
+          onDiscussion={handleScrollToDiscussion}
+          onAskAuthor={handleAskAuthor}
+          onManageBounty={() =>
+            toast({
+              title: "Manage bounty",
+              description: "The full management panel ships in step 12.5.",
+            })
+          }
+          onPromoteToBlueprint={handlePromoteToBlueprint}
+        />
+        {leaderboardNarrow}
+      </>
     );
   }, [
     isBounty,
@@ -1697,6 +1700,7 @@ export default function ContentDetail() {
     handleAskAuthor,
     handlePromoteToBlueprint,
     toast,
+    leaderboardNarrow,
   ]);
 
   return (
