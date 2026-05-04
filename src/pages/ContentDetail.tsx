@@ -67,10 +67,14 @@ import {
 } from "@/components/bounty/BountySolutionsSection";
 import { BountyCompetitionHeader, type BountyCompetitionHeaderBounty } from "@/components/bounty-competition/BountyCompetitionHeader";
 import { SolverLeaderboard, type Contributor as LbContributor, type ActivityEvent as LbActivity } from "@/components/bounty-competition/SolverLeaderboard";
+import { BountyManagementPanelContainer } from "@/components/bounty-competition/BountyManagementPanelContainer";
 import { getLeaderboard } from "@/lib/bounty-competition/getLeaderboard";
 import { getLeaderboardActivity } from "@/lib/bounty-competition/getLeaderboardActivity";
 import { useLeaderboardUpdates } from "@/lib/bounty-competition/realtime";
-import { createBountyThread } from "@/lib/messaging";
+import { getBountyAnalytics } from "@/lib/bounty-competition/getBountyAnalytics";
+import { markSolutionReviewStatus } from "@/lib/bounty-competition/markSolutionReviewStatus";
+import { extendBountyDeadline } from "@/lib/bounty-competition/extendBountyDeadline";
+import { createBountyThread, createDirectThread } from "@/lib/messaging";
 import { useShareMenu } from "@/components/share/ShareMenuProvider";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -911,6 +915,17 @@ export default function ContentDetail() {
 
   const isBountyAuthor = !!user?.id && !!post && user.id === ((post as any).creator_id as string);
 
+  // ============== Bounty Management Panel ==============
+  const [managePanelOpen, setManagePanelOpen] = useState(false);
+  const [criteriaSaving, setCriteriaSaving] = useState(false);
+
+  const { data: manageAnalytics, refetch: refetchManageAnalytics } = useQuery({
+    queryKey: ["bounty_management_analytics", post?.id, user?.id ?? null],
+    queryFn: () => getBountyAnalytics(post!.id as string, user!.id as string),
+    enabled: !!post?.id && isBounty && isBountyAuthor && managePanelOpen,
+    staleTime: 30_000,
+  });
+
   // Handlers for solutions section.
   const updateSolutionsCache = useCallback(
     (updater: (prev: any) => any) => {
@@ -1104,6 +1119,150 @@ export default function ContentDetail() {
       description: "The bounty stays as the canonical record.",
     });
   }, [toast]);
+
+  // ============== Bounty Manage Handlers ==============
+  const handleManageReject = useCallback(
+    async (solutionId: string) => {
+      if (!user?.id || !post?.id) return;
+      try {
+        await markSolutionReviewStatus({
+          bountyId: post.id as string,
+          solutionId,
+          authorId: user.id,
+          status: "rejected",
+        });
+        toast({ title: "Marked rejected (private to you)" });
+        void refetchManageAnalytics();
+      } catch (e: any) {
+        toast({ title: "Could not reject", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, post?.id, toast, refetchManageAnalytics],
+  );
+
+  const handleManageShortlist = useCallback(
+    async (solutionId: string) => {
+      if (!user?.id || !post?.id) return;
+      try {
+        await markSolutionReviewStatus({
+          bountyId: post.id as string,
+          solutionId,
+          authorId: user.id,
+          status: "shortlisted",
+        });
+        toast({ title: "Shortlisted" });
+        void refetchManageAnalytics();
+      } catch (e: any) {
+        toast({ title: "Could not shortlist", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, post?.id, toast, refetchManageAnalytics],
+  );
+
+  const handleManageMessageUser = useCallback(
+    async (otherUserId: string) => {
+      if (!user?.id) return;
+      if (otherUserId === user.id) return;
+      try {
+        const threadId = await createDirectThread(otherUserId);
+        navigate(`/messages?thread=${threadId}`);
+      } catch (e: any) {
+        toast({ title: "Could not open thread", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, navigate, toast],
+  );
+
+  const handleManageExtendDeadline = useCallback(
+    async (days: number) => {
+      if (!user?.id || !post?.id) return;
+      const current = (post as any).bounty_deadline as string | null;
+      const base = current ? new Date(current) : new Date();
+      base.setDate(base.getDate() + days);
+      try {
+        await extendBountyDeadline({
+          bountyId: post.id as string,
+          extenderUserId: user.id,
+          newDeadline: base.toISOString(),
+        });
+        toast({ title: `Deadline extended by ${days} days` });
+        void queryClient.invalidateQueries({ queryKey: ["post_for_viewer", id, user.id] });
+      } catch (e: any) {
+        toast({ title: "Could not extend", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, post, id, toast, queryClient],
+  );
+
+  const handleManageUpdateCriteria = useCallback(
+    async (text: string) => {
+      if (!user?.id || !post?.id) return;
+      if (criteriaSaving) return;
+      setCriteriaSaving(true);
+      try {
+        const { error } = await (supabase as any)
+          .from("content_items")
+          .update({ bounty_acceptance_criteria: text } as any)
+          .eq("id", post.id as string);
+        if (error) throw error;
+        void queryClient.invalidateQueries({ queryKey: ["post_for_viewer", id, user.id] });
+      } catch (e: any) {
+        toast({ title: "Could not save criteria", description: e?.message, variant: "destructive" });
+      } finally {
+        setCriteriaSaving(false);
+      }
+    },
+    [user?.id, post?.id, criteriaSaving, id, queryClient, toast],
+  );
+
+  const handleManagePauseToggle = useCallback(
+    async (paused: boolean) => {
+      if (!user?.id || !post?.id) return;
+      try {
+        const { error } = await (supabase as any)
+          .from("content_items")
+          .update({ bounty_submissions_paused: paused } as any)
+          .eq("id", post.id as string);
+        if (error) throw error;
+        toast({ title: paused ? "Submissions paused" : "Submissions reopened" });
+        void queryClient.invalidateQueries({ queryKey: ["post_for_viewer", id, user.id] });
+      } catch (e: any) {
+        toast({ title: "Update failed", description: e?.message, variant: "destructive" });
+      }
+    },
+    [user?.id, post?.id, id, queryClient, toast],
+  );
+
+  const handleManageCloseBounty = useCallback(async () => {
+    if (!user?.id || !post?.id) return;
+    try {
+      const { error } = await (supabase as any)
+        .from("content_items")
+        .update({ bounty_status: "closed" } as any)
+        .eq("id", post.id as string);
+      if (error) throw error;
+      toast({ title: "Bounty closed" });
+      setManagePanelOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ["post_for_viewer", id, user.id] });
+    } catch (e: any) {
+      toast({ title: "Close failed", description: e?.message, variant: "destructive" });
+    }
+  }, [user?.id, post?.id, id, queryClient, toast]);
+
+  const handleManagePreviewSolution = useCallback(
+    (solutionId: string) => {
+      // Scroll to the solution and let the solutions section reveal it.
+      const el = document.querySelector(`[data-solution-id="${solutionId}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        const next = new URLSearchParams(searchParams);
+        next.set("solution", solutionId);
+        setSearchParams(next, { replace: true });
+      }
+    },
+    [searchParams, setSearchParams],
+  );
 
   const handleSubmitFirstSolution = useCallback(
     (slotId: string) => {
@@ -1673,12 +1832,7 @@ export default function ContentDetail() {
           onSubmitSolution={onSubmit}
           onDiscussion={handleScrollToDiscussion}
           onAskAuthor={handleAskAuthor}
-          onManageBounty={() =>
-            toast({
-              title: "Manage bounty",
-              description: "The full management panel ships in step 12.5.",
-            })
-          }
+          onManageBounty={() => setManagePanelOpen(true)}
           onPromoteToBlueprint={handlePromoteToBlueprint}
         />
         {leaderboardNarrow}
@@ -1904,6 +2058,29 @@ export default function ContentDetail() {
           current={originalDialog.current}
           slotKind={originalDialog.slotKind}
           slotId={originalDialog.slotId}
+        />
+      )}
+      {isBounty && post && (
+        <BountyManagementPanelContainer
+          open={managePanelOpen}
+          onClose={() => setManagePanelOpen(false)}
+          isAuthor={isBountyAuthor}
+          post={post as any}
+          analytics={manageAnalytics}
+          solutionsRaw={solutionsData?.solutions ?? []}
+          bountySlots={bountySlots}
+          bountyStatus={bountyStatus}
+          onAcceptSolution={handleAcceptSolution}
+          onRejectSolution={handleManageReject}
+          onShortlistSolution={handleManageShortlist}
+          onPreviewSolution={handleManagePreviewSolution}
+          onMessageUser={handleManageMessageUser}
+          onExtendDeadline={handleManageExtendDeadline}
+          onUpdateAcceptanceCriteria={handleManageUpdateCriteria}
+          onPauseSubmissions={() => handleManagePauseToggle(true)}
+          onResumeSubmissions={() => handleManagePauseToggle(false)}
+          onCloseBounty={handleManageCloseBounty}
+          onPromoteToBlueprint={handlePromoteToBlueprint}
         />
       )}
       </BountyProvenanceProvider>
