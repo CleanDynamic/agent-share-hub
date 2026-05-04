@@ -1677,12 +1677,7 @@ export default function ContentDetail() {
           onSubmitSolution={onSubmit}
           onDiscussion={handleScrollToDiscussion}
           onAskAuthor={handleAskAuthor}
-          onManageBounty={() =>
-            toast({
-              title: "Manage bounty",
-              description: "The full management panel ships in step 12.5.",
-            })
-          }
+          onManageBounty={() => setManagePanelOpen(true)}
           onPromoteToBlueprint={handlePromoteToBlueprint}
         />
         {leaderboardNarrow}
