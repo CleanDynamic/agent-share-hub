@@ -1462,6 +1462,7 @@ export default function ContentDetail() {
             submitting={acceptSubmitting}
           />
         )}
+        <div data-bounty-discussion-anchor />
         <BountyDiscussionForum
           bountyId={post?.id as string}
           bountyAuthorId={(post as any)?.creator_id as string}
