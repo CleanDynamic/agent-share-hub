@@ -780,6 +780,26 @@ export default function ContentDetail() {
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
+  const handleScrollToDiscussion = useCallback(() => {
+    const el = document.querySelector("[data-bounty-discussion-anchor]") as HTMLElement | null;
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const handleAskAuthor = useCallback(async () => {
+    if (!user?.id || !post) {
+      navigate("/login");
+      return;
+    }
+    const authorId = (post as any).creator_id as string;
+    if (!authorId || authorId === user.id) return;
+    try {
+      const threadId = await createBountyThread(post.id as string, authorId);
+      navigate(`/messages?thread=${threadId}`);
+    } catch (e: any) {
+      toast({ title: "Could not start conversation", description: e?.message ?? String(e), variant: "destructive" });
+    }
+  }, [user?.id, post, navigate, toast]);
+
   // ─── Bounty solutions UI state ───
   const [expandedSolutionIds, setExpandedSolutionIds] = useState<Set<string>>(new Set());
   const handleToggleExpandSolution = useCallback((solutionId: string) => {
