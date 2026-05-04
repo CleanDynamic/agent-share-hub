@@ -1816,6 +1816,35 @@ export default function ContentDetail() {
       >
         {bodyNode}
       </ContentDetailShell>
+      {isBounty && isWideViewport && shellPost && (
+        <div
+          style={{
+            position: "fixed",
+            top: 96,
+            right: 24,
+            width: 320,
+            maxHeight: "calc(100vh - 140px)",
+            overflow: "auto",
+            zIndex: 30,
+          }}
+        >
+          <SolverLeaderboard
+            bountyId={post!.id as string}
+            variant="desktop"
+            contributors={lbContributors}
+            sort={lbSort}
+            onSortChange={setLbSort}
+            onContributorClick={(uid) => {
+              const c = lbContributors.find((x) => x.user.id === uid);
+              navigate(`/profile/${c?.user.handle || uid}`);
+            }}
+            recentActivity={lbActivity}
+            onViewAll={() => navigate(`/b/${shellPost.slug}/leaderboard`)}
+            isLive
+            highlightedUserId={lbHighlightId}
+          />
+        </div>
+      )}
       <FloatingEngagementBar
         post={{
           id: shellPost.id,
