@@ -65,6 +65,8 @@ import {
   type SolutionItem,
   type SolutionSlot,
 } from "@/components/bounty/BountySolutionsSection";
+import { BountyCompetitionHeader, type BountyCompetitionHeaderBounty } from "@/components/bounty-competition/BountyCompetitionHeader";
+import { createBountyThread } from "@/lib/messaging";
 import { useShareMenu } from "@/components/share/ShareMenuProvider";
 import { useQueryClient } from "@tanstack/react-query";
 
