@@ -1087,6 +1087,7 @@ export type Database = {
           bounty_sequential_id: number | null
           bounty_solved_count: number
           bounty_status: string | null
+          bounty_submissions_paused: boolean
           bounty_total_slots: number
           bounty_total_submissions: number
           canonical_export_payload: Json | null
@@ -1191,6 +1192,7 @@ export type Database = {
           bounty_sequential_id?: number | null
           bounty_solved_count?: number
           bounty_status?: string | null
+          bounty_submissions_paused?: boolean
           bounty_total_slots?: number
           bounty_total_submissions?: number
           canonical_export_payload?: Json | null
@@ -1295,6 +1297,7 @@ export type Database = {
           bounty_sequential_id?: number | null
           bounty_solved_count?: number
           bounty_status?: string | null
+          bounty_submissions_paused?: boolean
           bounty_total_slots?: number
           bounty_total_submissions?: number
           canonical_export_payload?: Json | null
