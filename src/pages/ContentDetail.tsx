@@ -2143,6 +2143,43 @@ export default function ContentDetail() {
 }
 
 
+function SpawnedFromMetaBanner({ parentId }: { parentId: string }) {
+  const navigate = useNavigate();
+  const { data } = useQuery({
+    queryKey: ["spawned_from_meta", parentId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("content_items")
+        .select("id, title")
+        .eq("id", parentId)
+        .single();
+      return data as { id: string; title: string } | null;
+    },
+    enabled: !!parentId,
+  });
+  if (!data) return null;
+  return (
+    <div
+      onClick={() => navigate(`/content/${parentId}`)}
+      style={{
+        background: "rgba(124,58,237,0.08)",
+        border: "1px solid rgba(124,58,237,0.25)",
+        borderRadius: 8,
+        padding: "8px 12px",
+        marginBottom: 16,
+        fontFamily: "Inter, sans-serif",
+        fontSize: 12,
+        color: "rgba(255,255,255,0.75)",
+        cursor: "pointer",
+      }}
+    >
+      Spawned from meta-bounty:{" "}
+      <span style={{ color: "#A78BFA", fontWeight: 600 }}>{data.title}</span>
+    </div>
+  );
+}
+
+
 function relativeShort(iso: string): string {
   try {
     const d = new Date(iso);
