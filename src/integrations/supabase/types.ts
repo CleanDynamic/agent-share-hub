@@ -1084,6 +1084,7 @@ export type Database = {
           bounty_reward_amount: number | null
           bounty_reward_currency: string | null
           bounty_reward_type: string | null
+          bounty_sequential_id: number | null
           bounty_solved_count: number
           bounty_status: string | null
           bounty_total_slots: number
@@ -1187,6 +1188,7 @@ export type Database = {
           bounty_reward_amount?: number | null
           bounty_reward_currency?: string | null
           bounty_reward_type?: string | null
+          bounty_sequential_id?: number | null
           bounty_solved_count?: number
           bounty_status?: string | null
           bounty_total_slots?: number
@@ -1290,6 +1292,7 @@ export type Database = {
           bounty_reward_amount?: number | null
           bounty_reward_currency?: string | null
           bounty_reward_type?: string | null
+          bounty_sequential_id?: number | null
           bounty_solved_count?: number
           bounty_status?: string | null
           bounty_total_slots?: number
