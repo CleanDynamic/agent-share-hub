@@ -915,6 +915,17 @@ export default function ContentDetail() {
 
   const isBountyAuthor = !!user?.id && !!post && user.id === ((post as any).creator_id as string);
 
+  // ============== Bounty Management Panel ==============
+  const [managePanelOpen, setManagePanelOpen] = useState(false);
+  const [criteriaSaving, setCriteriaSaving] = useState(false);
+
+  const { data: manageAnalytics, refetch: refetchManageAnalytics } = useQuery({
+    queryKey: ["bounty_management_analytics", post?.id, user?.id ?? null],
+    queryFn: () => getBountyAnalytics(post!.id as string, user!.id as string),
+    enabled: !!post?.id && isBounty && isBountyAuthor && managePanelOpen,
+    staleTime: 30_000,
+  });
+
   // Handlers for solutions section.
   const updateSolutionsCache = useCallback(
     (updater: (prev: any) => any) => {
