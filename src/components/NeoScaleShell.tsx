@@ -1697,8 +1697,8 @@ export function NeoScaleShell() {
             )}
           </div>
 
-          {/* ═══ RIGHT PANEL ═══ */}
-          {!location.pathname.startsWith('/publish/') && location.pathname !== '/discover' && location.pathname !== '/notifications' && (
+          {/* ═══ RIGHT PANEL ═══ (xl only — at lg/md it lives in a drawer, wired in 14.2) */}
+          {showRightPanel && !location.pathname.startsWith('/publish/') && location.pathname !== '/discover' && location.pathname !== '/notifications' && (
           <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ width: 220, height: 775, flexShrink: 0 }}>
           <div
             className="ns-right-panel"
