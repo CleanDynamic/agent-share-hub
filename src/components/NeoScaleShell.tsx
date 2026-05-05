@@ -12,7 +12,27 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useDraftCount } from "@/hooks/useDraftCount";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { MobileNav } from "@/components/layout/MobileNav";
+
+/* ────────────────────────────────────────────────
+   Shell structure (Step 14.1 — responsive chrome)
+   ────────────────────────────────────────────────
+   Current desktop chrome (≥768px):
+     .ns-root
+       └─ .ns-scale-wrapper            (centres + scales the app)
+            └─ .ns-app-container       (transform: scale(N), N computed from viewport)
+                 ├─ LEFT  PANEL  (200px, LiquidGlassPanel + .ns-left-panel)
+                 ├─ MIDDLE WRAPPER (600px, 3D flipper: front feed / back outlet)
+                 └─ RIGHT PANEL (220px, LiquidGlassPanel + .ns-right-panel)
+
+   Responsive tiers (via useBreakpoint):
+     xl     ≥1280px  three-column, scale formula uses native 1068×775
+     lg     1024–1279 right rail hidden (drawer in 14.2), native 824×775
+     md     768–1023  left rail collapsed (icon-only 72px), right hidden, native 696×775
+     mobile <768px    desktop chrome replaced by <MobileNav/> top+bottom bars,
+                      centre column flows naturally (NO transform scaling).
+*/
 import { FollowButton } from "@/components/FollowButton";
 import LiquidGlassPanel from "./LiquidGlassPanel";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
@@ -101,8 +121,29 @@ const NEOSCALE_CSS = `
   flex-shrink: 0;
   overflow: hidden;
   scrollbar-width: none;
+  transition: width 0.18s ease;
 }
 .ns-left-panel::-webkit-scrollbar { display: none; }
+
+/* ── Collapsed (icon-only) variant — md breakpoint ── */
+.ns-left-panel.collapsed { width: 72px; padding: 24px 8px; }
+.ns-left-panel.collapsed .ns-logo { font-size: 0; padding: 0; text-align: center; margin-bottom: 28px; }
+.ns-left-panel.collapsed .ns-logo::before {
+  content: 'N'; font-size: 20px; font-weight: 700; color: #8B4513;
+}
+.ns-left-panel.collapsed .ns-nav-item { justify-content: center; padding: 10px 0; }
+.ns-left-panel.collapsed .ns-nav-label { display: none; }
+.ns-left-panel.collapsed .ns-nav-badge {
+  position: absolute; top: 2px; right: 6px; min-width: 14px; height: 14px;
+  font-size: 9px; padding: 0 3px;
+}
+.ns-left-panel.collapsed .ns-user-name,
+.ns-left-panel.collapsed .ns-user-dots { display: none; }
+.ns-left-panel.collapsed .ns-user-btn { justify-content: center; padding: 8px 0; }
+.ns-left-panel.collapsed .ns-auth-btn { font-size: 0; padding: 0; height: 32px; width: 32px; margin: 0 auto; border-radius: 50%; }
+.ns-left-panel.collapsed .ns-auth-btn::before { font-size: 11px; }
+.ns-left-panel.collapsed .ns-auth-btn.signin::before { content: '→'; }
+.ns-left-panel.collapsed .ns-auth-btn.join::before { content: '+'; }
 .ns-logo {
   font-size: 15px;
   font-weight: 700;
@@ -993,6 +1034,9 @@ export function NeoScaleShell() {
   const [filterColor, setFilterColor] = useState<string>('');
 
   const isMobile = useIsMobile();
+  const breakpoint = useBreakpoint();
+  const showRightPanel = breakpoint === "xl";
+  const leftCollapsed = breakpoint === "md";
   const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
   const { display: msgBadge } = useUnreadMessages();
   const { display: notifBadge } = useUnreadNotifications();
@@ -1147,13 +1191,28 @@ export function NeoScaleShell() {
   }
 
 
-  /* ── Responsive scale ── */
+  /* ── Responsive scale ──
+     The .ns-app-container is transform-scaled to fit smaller-but-still-desktop
+     viewports. Native width changes per breakpoint as panels drop out:
+       xl:  left(200) + gap(24) + middle(600) + gap(24) + right(220)  = 1068
+       lg:  left(200) + gap(24) + middle(600)                          = 824
+       md:  left(72)  + gap(24) + middle(600)                          = 696
+       mobile: scale forced to 1 (chrome is replaced by MobileNav, the
+               centre column reflows naturally — never scaled). */
   useEffect(() => {
     if (isMobile) return;
     const el = containerRef.current;
     if (!el) return;
-    const nativeW = 1068, nativeH = 775, pad = 48;
+    const nativeH = 775, pad = 48;
+    const nativeW =
+      breakpoint === "xl" ? 1068 :
+      breakpoint === "lg" ? 824 :
+      /* md */              696;
     function rescale() {
+      if (breakpoint === "mobile") {
+        el!.style.transform = "scale(1)";
+        return;
+      }
       const scale = Math.min(
         (window.innerWidth  - pad * 2) / nativeW,
         (window.innerHeight - pad * 2) / nativeH,
@@ -1164,7 +1223,7 @@ export function NeoScaleShell() {
     window.addEventListener("resize", rescale);
     rescale();
     return () => window.removeEventListener("resize", rescale);
-  }, [isMobile]);
+  }, [isMobile, breakpoint]);
 
   /* ── Supabase: recent feed ── */
   const { data: feedItems, isLoading: feedItemsLoading } = useQuery({
@@ -1465,9 +1524,9 @@ export function NeoScaleShell() {
         <div className="ns-app-container" ref={containerRef}>
 
           {/* ═══ LEFT PANEL ═══ */}
-          <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ width: 200, height: 775, flexShrink: 0 }}>
+          <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ width: leftCollapsed ? 72 : 200, height: 775, flexShrink: 0 }}>
           <div
-            className={`ns-left-panel${pulsing ? " pulse" : ""}`}
+            className={`ns-left-panel${pulsing ? " pulse" : ""}${leftCollapsed ? " collapsed" : ""}`}
             ref={leftRef}
             {...initTilt(leftRef)}
           >
@@ -1659,8 +1718,8 @@ export function NeoScaleShell() {
             )}
           </div>
 
-          {/* ═══ RIGHT PANEL ═══ */}
-          {!location.pathname.startsWith('/publish/') && location.pathname !== '/discover' && location.pathname !== '/notifications' && (
+          {/* ═══ RIGHT PANEL ═══ (xl only — at lg/md it lives in a drawer, wired in 14.2) */}
+          {showRightPanel && !location.pathname.startsWith('/publish/') && location.pathname !== '/discover' && location.pathname !== '/notifications' && (
           <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ width: 220, height: 775, flexShrink: 0 }}>
           <div
             className="ns-right-panel"
