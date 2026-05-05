@@ -121,8 +121,29 @@ const NEOSCALE_CSS = `
   flex-shrink: 0;
   overflow: hidden;
   scrollbar-width: none;
+  transition: width 0.18s ease;
 }
 .ns-left-panel::-webkit-scrollbar { display: none; }
+
+/* ── Collapsed (icon-only) variant — md breakpoint ── */
+.ns-left-panel.collapsed { width: 72px; padding: 24px 8px; }
+.ns-left-panel.collapsed .ns-logo { font-size: 0; padding: 0; text-align: center; margin-bottom: 28px; }
+.ns-left-panel.collapsed .ns-logo::before {
+  content: 'N'; font-size: 20px; font-weight: 700; color: #8B4513;
+}
+.ns-left-panel.collapsed .ns-nav-item { justify-content: center; padding: 10px 0; }
+.ns-left-panel.collapsed .ns-nav-label { display: none; }
+.ns-left-panel.collapsed .ns-nav-badge {
+  position: absolute; top: 2px; right: 6px; min-width: 14px; height: 14px;
+  font-size: 9px; padding: 0 3px;
+}
+.ns-left-panel.collapsed .ns-user-name,
+.ns-left-panel.collapsed .ns-user-dots { display: none; }
+.ns-left-panel.collapsed .ns-user-btn { justify-content: center; padding: 8px 0; }
+.ns-left-panel.collapsed .ns-auth-btn { font-size: 0; padding: 0; height: 32px; width: 32px; margin: 0 auto; border-radius: 50%; }
+.ns-left-panel.collapsed .ns-auth-btn::before { font-size: 11px; }
+.ns-left-panel.collapsed .ns-auth-btn.signin::before { content: '→'; }
+.ns-left-panel.collapsed .ns-auth-btn.join::before { content: '+'; }
 .ns-logo {
   font-size: 15px;
   font-weight: 700;
