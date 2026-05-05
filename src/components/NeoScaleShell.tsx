@@ -1013,6 +1013,9 @@ export function NeoScaleShell() {
   const [filterColor, setFilterColor] = useState<string>('');
 
   const isMobile = useIsMobile();
+  const breakpoint = useBreakpoint();
+  const showRightPanel = breakpoint === "xl";
+  const leftCollapsed = breakpoint === "md";
   const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
   const { display: msgBadge } = useUnreadMessages();
   const { display: notifBadge } = useUnreadNotifications();
