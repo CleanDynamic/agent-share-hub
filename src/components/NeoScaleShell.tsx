@@ -1170,13 +1170,28 @@ export function NeoScaleShell() {
   }
 
 
-  /* ── Responsive scale ── */
+  /* ── Responsive scale ──
+     The .ns-app-container is transform-scaled to fit smaller-but-still-desktop
+     viewports. Native width changes per breakpoint as panels drop out:
+       xl:  left(200) + gap(24) + middle(600) + gap(24) + right(220)  = 1068
+       lg:  left(200) + gap(24) + middle(600)                          = 824
+       md:  left(72)  + gap(24) + middle(600)                          = 696
+       mobile: scale forced to 1 (chrome is replaced by MobileNav, the
+               centre column reflows naturally — never scaled). */
   useEffect(() => {
     if (isMobile) return;
     const el = containerRef.current;
     if (!el) return;
-    const nativeW = 1068, nativeH = 775, pad = 48;
+    const nativeH = 775, pad = 48;
+    const nativeW =
+      breakpoint === "xl" ? 1068 :
+      breakpoint === "lg" ? 824 :
+      /* md */              696;
     function rescale() {
+      if (breakpoint === "mobile") {
+        el!.style.transform = "scale(1)";
+        return;
+      }
       const scale = Math.min(
         (window.innerWidth  - pad * 2) / nativeW,
         (window.innerHeight - pad * 2) / nativeH,
@@ -1187,7 +1202,7 @@ export function NeoScaleShell() {
     window.addEventListener("resize", rescale);
     rescale();
     return () => window.removeEventListener("resize", rescale);
-  }, [isMobile]);
+  }, [isMobile, breakpoint]);
 
   /* ── Supabase: recent feed ── */
   const { data: feedItems, isLoading: feedItemsLoading } = useQuery({
