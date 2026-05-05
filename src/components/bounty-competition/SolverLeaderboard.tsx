@@ -127,7 +127,7 @@ function LiveDot() {
         height: 9,
         borderRadius: "50%",
         background: "#2EC4B6",
-        border: "2px solid #07070D",
+        border: "2px solid #25252F",
         boxShadow: "0 0 6px rgba(46,196,182,0.7)",
       }}
     />
@@ -291,7 +291,7 @@ export function SolverLeaderboard({
 
   const panelStyle: React.CSSProperties = {
     backgroundColor: "rgba(22,22,30,0.40)",
-    border: "0.5px solid rgba(255,255,255,0.06)",
+    border: "0.5px solid rgba(255, 255, 255, 0.14)",
     borderRadius: 10,
     backdropFilter: "blur(12px)",
     WebkitBackdropFilter: "blur(12px)",
@@ -300,7 +300,7 @@ export function SolverLeaderboard({
   const headerStyle: React.CSSProperties = {
     height: 44,
     padding: "0 12px",
-    borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+    borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -371,7 +371,7 @@ export function SolverLeaderboard({
 
         {/* Activity feed */}
         {recentActivity.length > 0 && (
-          <div style={{ padding: "12px 16px", borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ padding: "12px 16px", borderTop: "0.5px solid rgba(255, 255, 255, 0.14)" }}>
             <div style={{ fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.40)", marginBottom: 8 }}>
               Activity feed
             </div>
@@ -382,7 +382,7 @@ export function SolverLeaderboard({
         )}
 
         {/* View all */}
-        <div style={{ padding: "10px 16px", borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ padding: "10px 16px", borderTop: "0.5px solid rgba(255, 255, 255, 0.14)" }}>
           <button
             onClick={onViewAll}
             style={{

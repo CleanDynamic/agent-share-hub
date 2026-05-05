@@ -40,7 +40,7 @@ function HeaderAvatar({ urls, fallback }: { urls: string[]; fallback: string }) 
         style={{
           width: 36,
           height: 36,
-          background: "rgba(255,255,255,0.06)",
+          background: "rgba(255, 255, 255, 0.14)",
           color: "rgba(255,255,255,0.55)",
           fontSize: 11,
           fontWeight: 600,
@@ -67,7 +67,7 @@ function HeaderAvatar({ urls, fallback }: { urls: string[]; fallback: string }) 
             left: i * 7,
             top: i * 3,
             zIndex: display.length - i,
-            border: "1.5px solid #08080C",
+            border: "1.5px solid #25252F",
           }}
         >
           <img src={url} alt="" className="h-full w-full object-cover" />
@@ -102,7 +102,7 @@ function PinnedContextStrip({
       className="flex flex-col"
       style={{
         background: accentBg,
-        borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+        borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
       }}
     >
       <button
@@ -144,7 +144,7 @@ function PinnedContextStrip({
               style={{
                 width: 36,
                 height: 36,
-                background: "rgba(255,255,255,0.04)",
+                background: "rgba(255, 255, 255, 0.12)",
                 border: `0.5px solid ${accentBorder}`,
               }}
             >
@@ -185,7 +185,7 @@ function PinnedContextStrip({
                         color: "rgba(255,255,255,0.55)",
                         padding: "1px 6px",
                         borderRadius: 100,
-                        background: "rgba(255,255,255,0.06)",
+                        background: "rgba(255, 255, 255, 0.14)",
                       }}
                     >
                       {pinned.statusLabel}
@@ -257,7 +257,7 @@ export function ConversationHeader({
         style={{
           height: 56,
           padding: "0 14px",
-          borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+          borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
           background: "rgba(8,8,12,0.85)",
           backdropFilter: "blur(8px)",
         }}
@@ -295,7 +295,7 @@ export function ConversationHeader({
                   color: "rgba(255,255,255,0.55)",
                   padding: "1px 6px",
                   borderRadius: 100,
-                  background: "rgba(255,255,255,0.06)",
+                  background: "rgba(255, 255, 255, 0.14)",
                 }}
               >
                 <Users size={9} />

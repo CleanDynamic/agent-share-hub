@@ -1140,7 +1140,7 @@ const ContentDetail = () => {
           {(item.ai_tools ?? []).slice(0, 3).map((t: string) => (
             <span key={t} style={{
               padding: '2px 8px', borderRadius: 9999, fontSize: 11,
-              background: 'rgba(255,255,255,0.06)',
+              background: 'rgba(255, 255, 255, 0.14)',
               border: '1px solid rgba(255,255,255,0.10)',
               color: 'rgba(255,255,255,0.45)',
             }}>
@@ -1219,7 +1219,7 @@ const ContentDetail = () => {
             padding: '14px 16px',
             marginBottom: 28,
             background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.14)',
             borderRadius: 10,
           }}>
             <div style={{
@@ -1342,8 +1342,8 @@ const ContentDetail = () => {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '14px 0',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.14)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
           marginBottom: 20, marginTop: 4,
         }}>
           <StarRating
@@ -1442,7 +1442,7 @@ const ContentDetail = () => {
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
                 paddingBottom: 12,
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                 marginBottom: 20,
               }}
             >

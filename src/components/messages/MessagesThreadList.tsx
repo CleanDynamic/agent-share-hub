@@ -52,7 +52,7 @@ function TypePill({ type }: { type: ThreadType }) {
     group: {
       label: "Group",
       color: "rgba(255,255,255,0.55)",
-      bg: "rgba(255,255,255,0.06)",
+      bg: "rgba(255, 255, 255, 0.14)",
     },
     bounty: {
       label: "Bounty",
@@ -114,7 +114,7 @@ function AvatarStack({ urls }: { urls: string[] }) {
     return (
       <div
         className="relative flex-shrink-0 overflow-hidden rounded-full"
-        style={{ width: 32, height: 32, background: "rgba(255,255,255,0.06)" }}
+        style={{ width: 32, height: 32, background: "rgba(255, 255, 255, 0.14)" }}
       >
         {displayUrls[0] && (
           <img
@@ -312,7 +312,7 @@ export function MessagesThreadList({
       style={{
         width,
         height: "100%",
-        borderRight: "0.5px solid rgba(255,255,255,0.06)",
+        borderRight: "0.5px solid rgba(255, 255, 255, 0.14)",
       }}
     >
       {/* Header */}
@@ -321,7 +321,7 @@ export function MessagesThreadList({
         style={{
           height: 52,
           padding: "12px 14px",
-          borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+          borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
         }}
       >
         <span
@@ -354,7 +354,7 @@ export function MessagesThreadList({
         className="flex"
         style={{
           height: 40,
-          borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+          borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
         }}
       >
         <button

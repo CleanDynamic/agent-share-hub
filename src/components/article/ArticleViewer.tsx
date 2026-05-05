@@ -177,7 +177,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
         }
         .tiptap-article-view pre {
           background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.06);
+          border: 1px solid rgba(255, 255, 255, 0.14);
           border-radius: 8px;
           padding: 16px;
           overflow-x: auto;
@@ -188,7 +188,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
           color: rgba(255,255,255,0.75);
         }
         .tiptap-article-view code {
-          background: rgba(255,255,255,0.06);
+          background: rgba(255, 255, 255, 0.14);
           border-radius: 4px;
           padding: 1px 4px;
           font-family: 'JetBrains Mono', 'Fira Code', monospace;
@@ -212,7 +212,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
         .tiptap-article-view [data-stage-grid] {
           margin: 24px 0;
           border-radius: 10px;
-          border: 1px solid rgba(255,255,255,0.06);
+          border: 1px solid rgba(255, 255, 255, 0.14);
         }
       `}</style>
 

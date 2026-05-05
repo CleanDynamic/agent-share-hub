@@ -192,7 +192,7 @@ export function DiscoverSearchHeader({
               fontSize: 10,
               fontWeight: 500,
               color: 'rgba(255,255,255,0.30)',
-              border: '1px solid rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.14)',
               padding: '1px 5px',
               borderRadius: 4,
               flexShrink: 0,

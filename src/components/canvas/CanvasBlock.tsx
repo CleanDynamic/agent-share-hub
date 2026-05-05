@@ -213,7 +213,7 @@ export function CanvasBlock({
   // Selection ring style
   const selectionBorder = selected
     ? '2px solid rgba(59,130,246,0.70)'
-    : hovered ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(255,255,255,0.06)';
+    : hovered ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(255, 255, 255, 0.14)';
 
   return (
     <>
@@ -438,7 +438,7 @@ export function CanvasBlock({
               <div style={{
                 fontSize: 10, fontWeight: 500,
                 color: 'rgba(255,255,255,0.55)',
-                background: 'rgba(255,255,255,0.06)',
+                background: 'rgba(255, 255, 255, 0.14)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 100, padding: '1px 8px',
               }}>

@@ -225,14 +225,14 @@ function TypeCardButton({
         e.currentTarget.style.transform = "scale(1.02)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.14)";
         e.currentTarget.style.transform = "scale(1)";
       }}
       style={{
         width: 280,
         height: 200,
         background: "rgba(22,22,30,0.40)",
-        border: "0.5px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255, 255, 255, 0.14)",
         borderRadius: 12,
         padding: 24,
         display: "flex",

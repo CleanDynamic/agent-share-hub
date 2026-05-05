@@ -24,7 +24,7 @@ export function LibraryControls({
       className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-5"
       style={{
         background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255, 255, 255, 0.14)",
         borderRadius: 12,
         padding: "12px 16px",
       }}
@@ -35,9 +35,9 @@ export function LibraryControls({
         <div
           className="flex items-center"
           style={{
-            background: "rgba(255,255,255,0.04)",
+            background: "rgba(255, 255, 255, 0.12)",
             borderRadius: 8,
-            border: "1px solid rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255, 255, 255, 0.14)",
           }}
         >
           <button
@@ -121,8 +121,8 @@ export function LibraryControls({
             placeholder="Search your library..."
             className="w-full sm:w-52 outline-none placeholder:text-[rgba(255,255,255,0.28)]"
             style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background: "rgba(255, 255, 255, 0.12)",
+              border: "1px solid rgba(255, 255, 255, 0.14)",
               borderRadius: 8,
               padding: "7px 12px 7px 32px",
               fontSize: 13,

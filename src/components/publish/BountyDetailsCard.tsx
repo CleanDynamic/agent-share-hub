@@ -423,7 +423,7 @@ function Divider() {
     <div
       style={{
         height: "0.5px",
-        background: "rgba(255,255,255,0.04)",
+        background: "rgba(255, 255, 255, 0.12)",
         margin: "12px 0",
       }}
     />

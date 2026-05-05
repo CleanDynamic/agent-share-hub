@@ -196,8 +196,8 @@ export function StageResultCard({ stage, parent, author, onClick }: StageResultC
         backdropFilter: "blur(60px)",
         WebkitBackdropFilter: "blur(60px)",
         border: "1px solid rgba(255, 255, 255, 0.08)",
-        borderTopColor: "rgba(255, 255, 255, 0.06)",
-        borderLeftColor: "rgba(255, 255, 255, 0.06)",
+        borderTopColor: "rgba(255, 255, 255, 0.14)",
+        borderLeftColor: "rgba(255, 255, 255, 0.14)",
         boxShadow: "0 2px 12px rgba(0, 0, 0, 0.20)",
       }}
     >
@@ -288,7 +288,7 @@ export function StageResultCard({ stage, parent, author, onClick }: StageResultC
           borderRadius: 10,
           overflow: "hidden",
           background: "rgba(0,0,0,0.25)",
-          border: "1px solid rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
           padding: 8,
         }}
       >
@@ -302,8 +302,8 @@ export function StageResultCard({ stage, parent, author, onClick }: StageResultC
             key={type}
             className="flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium"
             style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "0.5px solid rgba(255,255,255,0.06)",
+              background: "rgba(255, 255, 255, 0.12)",
+              border: "0.5px solid rgba(255, 255, 255, 0.14)",
               color: "rgba(255,255,255,0.75)",
             }}
           >

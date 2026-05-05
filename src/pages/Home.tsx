@@ -428,7 +428,7 @@ const Home = () => {
           className="flex items-center gap-3 mx-6 mt-7 mb-5"
           style={{
             background: 'rgba(255,255,255,0.025)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.14)',
             borderRadius: 14,
             padding: '12px 16px',
           }}
@@ -467,7 +467,7 @@ const Home = () => {
       >
         <div
           className="flex items-center gap-1 px-6"
-          style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 20 }}
+          style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255, 255, 255, 0.14)', marginBottom: 20 }}
         >
           {TABS.map((tab) => (
             <button

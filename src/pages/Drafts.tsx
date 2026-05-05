@@ -105,7 +105,7 @@ export default function DraftsPage() {
                   key={draft.id}
                   style={{
                     background: 'rgba(255,255,255,0.025)',
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255, 255, 255, 0.14)',
                     borderRadius: 14,
                     padding: '18px 20px',
                     marginBottom: 12,
@@ -115,7 +115,7 @@ export default function DraftsPage() {
                     transition: 'border-color 0.2s ease',
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.14)')}
                 >
                   {/* Left */}
                   <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -144,7 +144,7 @@ export default function DraftsPage() {
                         </span>
                       )}
                       {draft.difficulty && (
-                        <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(255, 255, 255, 0.12)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.08)' }}>
                           {draft.difficulty}
                         </span>
                       )}

@@ -188,7 +188,7 @@ export function DiscussionCompose({
 
       {/* Bottom bar */}
       <div style={{
-        borderTop: '1px solid rgba(255,255,255,0.06)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.14)',
         paddingTop: 12, marginTop: 12,
         display: 'flex', alignItems: 'center',
         justifyContent: 'space-between',

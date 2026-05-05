@@ -113,7 +113,7 @@ export function ProjectFeedCard({ item }: ProjectFeedCardProps) {
       ) : null}
 
       {/* Stats */}
-      <div className="flex items-center" style={{ gap: 16, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.04)', fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>
+      <div className="flex items-center" style={{ gap: 16, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.12)', fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>
         <span className="inline-flex items-center gap-1 shrink-0">
           <ClipboardList style={{ width: 15, height: 15 }} />{item._component_count ?? 0} blueprints
         </span>

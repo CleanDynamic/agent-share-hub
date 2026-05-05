@@ -873,7 +873,7 @@ const ChipInput = ({ values, onChange, placeholder }: {
           onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), add())}
           placeholder={placeholder ?? 'Type and press Enter'}
           style={{
-            flex: 1, background: 'rgba(255,255,255,0.04)',
+            flex: 1, background: 'rgba(255, 255, 255, 0.12)',
             border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 8, padding: '6px 10px', fontSize: 13,
             color: '#fff', outline: 'none',
@@ -923,7 +923,7 @@ const PromptBlockEditor = ({ block, update, index }: {
               padding: '4px 12px', borderRadius: 6, fontSize: 11,
               fontWeight: 600, textTransform: 'uppercase', cursor: 'pointer',
               background: block.promptRole === r
-                ? 'rgba(139,69,19,0.20)' : 'rgba(255,255,255,0.04)',
+                ? 'rgba(139,69,19,0.20)' : 'rgba(255, 255, 255, 0.12)',
               border: `1px solid ${block.promptRole === r
                 ? 'rgba(139,69,19,0.50)' : 'rgba(255,255,255,0.08)'}`,
               color: block.promptRole === r
@@ -939,7 +939,7 @@ const PromptBlockEditor = ({ block, update, index }: {
         onChange={e => update(index, { promptModel: e.target.value })}
         placeholder="e.g. Claude Sonnet, GPT-4o, Any"
         style={{
-          width: '100%', background: 'rgba(255,255,255,0.04)',
+          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
           color: '#fff', outline: 'none', boxSizing: 'border-box',
@@ -997,7 +997,7 @@ const PromptBlockEditor = ({ block, update, index }: {
         rows={4}
         style={{
           width: '100%', background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
           color: 'rgba(255,255,255,0.60)', outline: 'none',
           resize: 'vertical', fontFamily: 'Inter, sans-serif',
@@ -1060,7 +1060,7 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
             onChange={e => update(index, { agentModel: e.target.value })}
             placeholder="e.g. claude-sonnet-4-6"
             style={{
-              width: '100%', background: 'rgba(255,255,255,0.04)',
+              width: '100%', background: 'rgba(255, 255, 255, 0.12)',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 8, padding: '7px 10px', fontSize: 13,
               color: '#fff', outline: 'none', boxSizing: 'border-box',
@@ -1072,7 +1072,7 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
             value={block.agentTemperature}
             onChange={e => update(index, { agentTemperature: parseFloat(e.target.value) })}
             style={{
-              width: '100%', background: 'rgba(255,255,255,0.04)',
+              width: '100%', background: 'rgba(255, 255, 255, 0.12)',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 8, padding: '7px 10px', fontSize: 13,
               color: '#fff', outline: 'none', boxSizing: 'border-box',
@@ -1084,7 +1084,7 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
             value={block.agentMaxTokens}
             onChange={e => update(index, { agentMaxTokens: parseInt(e.target.value) })}
             style={{
-              width: '100%', background: 'rgba(255,255,255,0.04)',
+              width: '100%', background: 'rgba(255, 255, 255, 0.12)',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 8, padding: '7px 10px', fontSize: 13,
               color: '#fff', outline: 'none', boxSizing: 'border-box',
@@ -1106,7 +1106,7 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
               style={{
                 padding: '4px 10px', borderRadius: 6, fontSize: 12,
                 cursor: 'pointer',
-                background: active ? 'rgba(31,122,109,0.15)' : 'rgba(255,255,255,0.04)',
+                background: active ? 'rgba(31,122,109,0.15)' : 'rgba(255, 255, 255, 0.12)',
                 border: `1px solid ${active ? 'rgba(31,122,109,0.40)' : 'rgba(255,255,255,0.08)'}`,
                 color: active ? '#1F7A6D' : 'rgba(255,255,255,0.45)',
               }}>
@@ -1126,7 +1126,7 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
               style={{
                 padding: '4px 12px', borderRadius: 6, fontSize: 12,
                 cursor: 'pointer',
-                background: active ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.04)',
+                background: active ? 'rgba(139,92,246,0.15)' : 'rgba(255, 255, 255, 0.12)',
                 border: `1px solid ${active ? 'rgba(139,92,246,0.40)' : 'rgba(255,255,255,0.08)'}`,
                 color: active ? '#8B5CF6' : 'rgba(255,255,255,0.45)',
               }}>
@@ -1176,7 +1176,7 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
               rows={3}
               style={{
                 width: '100%', background: 'rgba(0,0,0,0.20)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
                 borderRadius: 6, padding: '6px 8px', fontSize: 12,
                 color: 'rgba(255,255,255,0.70)', outline: 'none',
                 resize: 'vertical', fontFamily: 'Courier New, monospace',
@@ -1192,7 +1192,7 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
           })}
           style={{
             padding: '6px 12px', borderRadius: 8, fontSize: 12,
-            background: 'rgba(255,255,255,0.04)',
+            background: 'rgba(255, 255, 255, 0.12)',
             border: '1px solid rgba(255,255,255,0.10)',
             color: 'rgba(255,255,255,0.50)', cursor: 'pointer',
           }}>
@@ -1249,7 +1249,7 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
         onChange={e => update(index, { workflowTrigger: e.target.value })}
         placeholder="e.g. New email arrives in Gmail, User submits form..."
         style={{
-          width: '100%', background: 'rgba(255,255,255,0.04)',
+          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
           color: '#fff', outline: 'none', boxSizing: 'border-box',
@@ -1320,7 +1320,7 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
                 rows={2}
                 style={{
                   width: '100%', background: 'rgba(0,0,0,0.15)',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.14)',
                   borderRadius: 6, padding: '6px 8px', fontSize: 12,
                   color: 'rgba(255,255,255,0.70)', outline: 'none',
                   resize: 'vertical', fontFamily: 'Inter, sans-serif',
@@ -1333,7 +1333,7 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
                 style={{
                   width: '100%', background: 'transparent',
                   border: 'none',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                   fontSize: 12, color: 'rgba(255,255,255,0.45)',
                   outline: 'none', padding: '4px 0', marginTop: 6,
                   boxSizing: 'border-box',
@@ -1380,7 +1380,7 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
         onChange={e => update(index, { workflowOutput: e.target.value })}
         placeholder="e.g. Drafted reply email sent to Gmail drafts..."
         style={{
-          width: '100%', background: 'rgba(255,255,255,0.04)',
+          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
           color: '#fff', outline: 'none', boxSizing: 'border-box',
@@ -1407,7 +1407,7 @@ const CodeBlockEditor = ({ block, update, index }: {
               padding: '3px 10px', borderRadius: 6, fontSize: 12,
               cursor: 'pointer', textTransform: 'uppercase', fontWeight: 600,
               background: block.codeLanguage === l
-                ? 'rgba(59,130,246,0.20)' : 'rgba(255,255,255,0.04)',
+                ? 'rgba(59,130,246,0.20)' : 'rgba(255, 255, 255, 0.12)',
               border: `1px solid ${block.codeLanguage === l
                 ? 'rgba(59,130,246,0.50)' : 'rgba(255,255,255,0.08)'}`,
               color: block.codeLanguage === l
@@ -1455,7 +1455,7 @@ const CodeBlockEditor = ({ block, update, index }: {
         rows={2}
         style={{
           width: '100%', background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
           color: 'rgba(255,255,255,0.70)', outline: 'none',
           resize: 'vertical', fontFamily: 'Inter',
@@ -1469,7 +1469,7 @@ const CodeBlockEditor = ({ block, update, index }: {
         rows={3}
         style={{
           width: '100%', background: 'rgba(0,0,0,0.25)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
           borderRadius: 8, padding: '7px 10px', fontSize: 12,
           color: 'rgba(255,255,255,0.55)', outline: 'none',
           resize: 'vertical', fontFamily: 'Courier New, monospace',
@@ -1531,7 +1531,7 @@ const ResultBlockEditor = ({ block, update, index }: {
       rows={2}
       style={{
         width: '100%', background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        border: '1px solid rgba(255, 255, 255, 0.14)',
         borderRadius: 8, padding: '7px 10px', fontSize: 13,
         color: 'rgba(255,255,255,0.70)', outline: 'none',
         resize: 'vertical', fontFamily: 'Inter',
@@ -1547,7 +1547,7 @@ const ResultBlockEditor = ({ block, update, index }: {
             width: 32, height: 32, borderRadius: 6, fontSize: 16,
             cursor: 'pointer', border: 'none',
             background: block.resultRating >= r
-              ? 'rgba(245,158,11,0.20)' : 'rgba(255,255,255,0.04)',
+              ? 'rgba(245,158,11,0.20)' : 'rgba(255, 255, 255, 0.12)',
           }}>
           {block.resultRating >= r ? '★' : '☆'}
         </button>
@@ -1581,7 +1581,7 @@ const ComparisonBlockEditor = ({ block, update, index }: {
       <input value={label} onChange={e => onLabelChange(e.target.value)}
         placeholder="Label (e.g. GPT-4o)"
         style={{
-          width: '100%', background: 'rgba(255,255,255,0.04)',
+          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
           border: '1px solid rgba(255,255,255,0.10)',
           borderRadius: 6, padding: '6px 8px', fontSize: 13,
           fontWeight: 600, color: '#fff', outline: 'none',
@@ -1595,7 +1595,7 @@ const ComparisonBlockEditor = ({ block, update, index }: {
               padding: '2px 8px', borderRadius: 4, fontSize: 11,
               cursor: 'pointer',
               background: type === t.v
-                ? 'rgba(139,69,19,0.20)' : 'rgba(255,255,255,0.04)',
+                ? 'rgba(139,69,19,0.20)' : 'rgba(255, 255, 255, 0.12)',
               border: `1px solid ${type === t.v
                 ? 'rgba(139,69,19,0.40)' : 'rgba(255,255,255,0.08)'}`,
               color: type === t.v
@@ -1631,7 +1631,7 @@ const ComparisonBlockEditor = ({ block, update, index }: {
         onChange={e => update(index, { comparisonAxis: e.target.value })}
         placeholder="e.g. Output quality, Speed, Cost, Tone..."
         style={{
-          width: '100%', background: 'rgba(255,255,255,0.04)',
+          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
           color: '#fff', outline: 'none',
@@ -1668,7 +1668,7 @@ const ComparisonBlockEditor = ({ block, update, index }: {
         rows={2}
         style={{
           width: '100%', background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
           color: 'rgba(255,255,255,0.70)', outline: 'none',
           resize: 'vertical', fontFamily: 'Inter',
@@ -1692,7 +1692,7 @@ const ResourceBlockEditor = ({ block, update, index }: {
         placeholder="https://..."
         type="url"
         style={{
-          width: '100%', background: 'rgba(255,255,255,0.04)',
+          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
           color: '#fff', outline: 'none', boxSizing: 'border-box',
@@ -1703,7 +1703,7 @@ const ResourceBlockEditor = ({ block, update, index }: {
         onChange={e => update(index, { resourceTitle: e.target.value })}
         placeholder="Resource title"
         style={{
-          width: '100%', background: 'rgba(255,255,255,0.04)',
+          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
           color: '#fff', outline: 'none', boxSizing: 'border-box',
@@ -1718,7 +1718,7 @@ const ResourceBlockEditor = ({ block, update, index }: {
               padding: '3px 10px', borderRadius: 6, fontSize: 12,
               cursor: 'pointer', textTransform: 'capitalize',
               background: block.resourceType === t
-                ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.04)',
+                ? 'rgba(139,92,246,0.15)' : 'rgba(255, 255, 255, 0.12)',
               border: `1px solid ${block.resourceType === t
                 ? 'rgba(139,92,246,0.40)' : 'rgba(255,255,255,0.08)'}`,
               color: block.resourceType === t
@@ -1736,7 +1736,7 @@ const ResourceBlockEditor = ({ block, update, index }: {
         rows={3}
         style={{
           width: '100%', background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
           color: 'rgba(255,255,255,0.70)', outline: 'none',
           resize: 'vertical', fontFamily: 'Inter',
@@ -1859,7 +1859,7 @@ const BlockTypePicker = ({ onAdd }: { onAdd: (type: BlockType) => void }) => {
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
           padding: '8px 14px', borderRadius: 10,
-          background: 'rgba(255,255,255,0.04)',
+          background: 'rgba(255, 255, 255, 0.12)',
           border: '1px solid rgba(255,255,255,0.08)',
           color: 'rgba(255,255,255,0.50)',
           fontSize: 12, fontWeight: 500,
@@ -1879,7 +1879,7 @@ const BlockTypePicker = ({ onAdd }: { onAdd: (type: BlockType) => void }) => {
           marginTop: 8,
           padding: 8,
           background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
           borderRadius: 10,
         }}>
           {NEW_BLOCK_TYPES.map((bt) => (
@@ -1898,7 +1898,7 @@ const BlockTypePicker = ({ onAdd }: { onAdd: (type: BlockType) => void }) => {
                 transition: 'background 0.15s, border-color 0.15s',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)';
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255, 255, 255, 0.12)';
                 (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.10)';
               }}
               onMouseLeave={(e) => {
@@ -1960,7 +1960,7 @@ const TutorialStepEditor = ({ block, update, index }: {
               fontSize: 11, cursor: 'pointer',
               background: mediaType === opt.value
                 ? 'rgba(139,69,19,0.20)'
-                : 'rgba(255,255,255,0.04)',
+                : 'rgba(255, 255, 255, 0.12)',
               border: `1px solid ${mediaType === opt.value
                 ? 'rgba(139,69,19,0.40)'
                 : 'rgba(255,255,255,0.08)'}`,
@@ -2033,7 +2033,7 @@ const TutorialStepEditor = ({ block, update, index }: {
                 placeholder={`Paste ${mediaType} URL...`}
                 style={{
                   width: '100%', background: 'rgba(0,0,0,0.15)',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.14)',
                   borderRadius: 6, padding: '5px 10px',
                   fontSize: 11, color: '#fff', outline: 'none',
                 }}
@@ -2116,7 +2116,7 @@ const TutorialStepEditor = ({ block, update, index }: {
               rows={2}
               style={{
                 width: '100%', background: 'rgba(0,0,0,0.15)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
                 borderRadius: 6, padding: '6px 10px',
                 fontSize: 11, color: '#fff', outline: 'none',
                 resize: 'none', boxSizing: 'border-box',
@@ -2422,7 +2422,7 @@ const GroupBlockEditor = ({
                     style={{
                       padding: '3px 9px', borderRadius: 6,
                       fontSize: 11, cursor: 'pointer',
-                      background: 'rgba(255,255,255,0.04)',
+                      background: 'rgba(255, 255, 255, 0.12)',
                       border: '1px solid rgba(255,255,255,0.10)',
                       color: 'rgba(255,255,255,0.45)',
                     }}

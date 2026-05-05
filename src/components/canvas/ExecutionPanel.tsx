@@ -140,7 +140,7 @@ export function ExecutionPanel({
       <div style={{
         padding: '16px 16px 12px 16px',
         borderBottom:
-          '1px solid rgba(255,255,255,0.06)',
+          '1px solid rgba(255, 255, 255, 0.14)',
         display: 'flex', alignItems: 'center',
         justifyContent: 'space-between',
       }}>
@@ -170,7 +170,7 @@ export function ExecutionPanel({
       <div style={{
         padding: '10px 16px',
         borderBottom:
-          '1px solid rgba(255,255,255,0.06)',
+          '1px solid rgba(255, 255, 255, 0.14)',
         display: 'flex', gap: 6, flexWrap: 'wrap',
       }}>
         {MODELS.map(m => (
@@ -183,7 +183,7 @@ export function ExecutionPanel({
               background:
                 selectedModel.id === m.id
                   ? 'rgba(139,69,19,0.15)'
-                  : 'rgba(255,255,255,0.04)',
+                  : 'rgba(255, 255, 255, 0.12)',
               border: `1px solid ${
                 selectedModel.id === m.id
                   ? 'rgba(139,69,19,0.35)'
@@ -301,7 +301,7 @@ export function ExecutionPanel({
       <div style={{
         padding: '12px 16px',
         borderTop:
-          '1px solid rgba(255,255,255,0.06)',
+          '1px solid rgba(255, 255, 255, 0.14)',
         display: 'flex', gap: 8,
       }}>
         {running ? (

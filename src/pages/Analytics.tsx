@@ -155,7 +155,7 @@ function OverviewCards({ userId, rangeStart, prevRangeStart, days }: { userId: s
   return (
     <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: 12 }}>
       {cards.map((c) => (
-        <div key={c.label} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div key={c.label} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: 14, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div className="flex items-center" style={{ gap: 6, fontSize: 11, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
             <c.icon style={{ width: 13, height: 13 }} />
             {c.label}
@@ -230,7 +230,7 @@ function ViewsDownloadsChart({ userId, rangeStart, days }: { userId: string; ran
   const hasData = (chartData || []).some((d) => d.views > 0 || d.downloads > 0);
 
   return (
-    <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 20 }}>
+    <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: 14, padding: 20 }}>
       <h2 style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.80)', marginBottom: 16 }}>Views vs Downloads</h2>
       <div className="relative" style={{ maxHeight: 200, height: 200 }}>
         <ResponsiveContainer width="100%" height="100%">
@@ -299,7 +299,7 @@ function ContentPerformanceTable({ userId }: { userId: string }) {
   if (isLoading) return <Skeleton className="h-48 rounded-xl" />;
 
   return (
-    <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 20 }}>
+    <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: 14, padding: 20 }}>
       <h2 style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.80)', marginBottom: 16 }}>Your posts</h2>
       <div className="overflow-x-auto">
         <Table>
@@ -417,7 +417,7 @@ function BlockEngagementHeatmap({ userId }: { userId: string }) {
   };
 
   return (
-    <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 20 }}>
+    <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: 14, padding: 20 }}>
       <h2 style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.80)', marginBottom: 4 }}>Which blocks are people actually reading?</h2>
       <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>Based on View button clicks per block.</p>
 

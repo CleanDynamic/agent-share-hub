@@ -111,7 +111,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
       style={{
         padding: '14px 16px',
         marginBottom: 0,
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
         cursor: 'pointer',
         transition: 'background 0.15s',
       }}
@@ -288,7 +288,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
                 letterSpacing: '0.08em',
                 color: 'rgba(255,255,255,0.35)',
                 padding: '1px 6px', borderRadius: 4,
-                background: 'rgba(255,255,255,0.06)',
+                background: 'rgba(255, 255, 255, 0.14)',
               }}>
                 {(resolvedOriginal.post_type
                   || resolvedOriginal.content_type)

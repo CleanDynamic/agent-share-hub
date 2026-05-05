@@ -84,7 +84,7 @@ function ReblogComposePanel({
       {/* Header */}
       <div style={{
         padding: '14px 16px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
         fontSize: 11, fontWeight: 700,
         textTransform: 'uppercase',
         letterSpacing: '0.10em',
@@ -270,7 +270,7 @@ function ReblogComposePanel({
               {/* Side A — original */}
               <div style={{
                 flex: 1, padding: '10px 12px',
-                borderRight: '1px solid rgba(255,255,255,0.06)',
+                borderRight: '1px solid rgba(255, 255, 255, 0.14)',
               }}>
                 <div style={{
                   fontSize: 9, fontWeight: 700,
@@ -341,7 +341,7 @@ function ReblogComposePanel({
       {/* Submit bar */}
       <div style={{
         padding: '12px 16px',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.14)',
         display: 'flex', alignItems: 'center',
         justifyContent: 'space-between',
       }}>
@@ -385,7 +385,7 @@ function OriginalPostPanel({
       {/* Header */}
       <div style={{
         padding: '14px 16px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
         fontSize: 11, fontWeight: 700,
         textTransform: 'uppercase',
         letterSpacing: '0.10em',
@@ -429,7 +429,7 @@ function OriginalPostPanel({
                 marginBottom: 16,
                 border: isAnnotated
                   ? '1px solid rgba(139,69,19,0.30)'
-                  : '1px solid rgba(255,255,255,0.06)',
+                  : '1px solid rgba(255, 255, 255, 0.14)',
                 borderRadius: 8, overflow: 'hidden',
                 transition: 'border-color 0.15s',
                 cursor: 'pointer',
@@ -444,7 +444,7 @@ function OriginalPostPanel({
               onMouseLeave={e => {
                 if (!isAnnotated) {
                   (e.currentTarget as HTMLElement).style.borderColor =
-                    'rgba(255,255,255,0.06)';
+                    'rgba(255, 255, 255, 0.14)';
                 }
               }}
             >

@@ -40,7 +40,7 @@ export function AnnotationsList({
         <div style={{
           padding: '14px 16px 10px 16px',
           borderBottom:
-            '1px solid rgba(255,255,255,0.06)',
+            '1px solid rgba(255, 255, 255, 0.14)',
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between',
         }}>
@@ -87,7 +87,7 @@ export function AnnotationsList({
                 style={{
                   padding: '10px 16px',
                   borderBottom:
-                    '1px solid rgba(255,255,255,0.04)',
+                    '1px solid rgba(255, 255, 255, 0.12)',
                   cursor: 'pointer',
                 }}
                 onClick={() =>

@@ -700,7 +700,7 @@ function EmptyState({
           width: 56,
           height: 56,
           borderRadius: 14,
-          background: "rgba(255,255,255,0.04)",
+          background: "rgba(255, 255, 255, 0.12)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

@@ -227,7 +227,7 @@ export function CanvasHeader({
             />
           </label>
         ) : (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 4px 2px 8px', borderRadius: 9999, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 4px 2px 8px', borderRadius: 9999, background: 'rgba(255, 255, 255, 0.12)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <img src={coverPreview} style={{ width: 16, height: 16, objectFit: 'cover', borderRadius: '50%' }} />
             <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>Cover</span>
             <button type="button" onClick={() => onCoverChange?.(null, null)}
@@ -259,7 +259,7 @@ export function CanvasHeader({
             fontSize: 15, fontWeight: 400,
             color: 'rgba(255,255,255,0.90)',
             background: 'rgba(255,255,255,0.02)',
-            border: `1px solid ${titleFocused ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)'}`,
+            border: `1px solid ${titleFocused ? 'rgba(255,255,255,0.15)' : 'rgba(255, 255, 255, 0.14)'}`,
             borderRadius: 8,
             outline: 'none',
             padding: '12px 16px',
@@ -291,7 +291,7 @@ export function CanvasHeader({
             color: 'rgba(255,255,255,0.90)',
             lineHeight: 1.4,
             background: 'rgba(255,255,255,0.02)',
-            border: `1px solid ${descFocused ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)'}`,
+            border: `1px solid ${descFocused ? 'rgba(255,255,255,0.15)' : 'rgba(255, 255, 255, 0.14)'}`,
             borderRadius: 8,
             outline: 'none',
             resize: 'none',
@@ -401,7 +401,7 @@ function EvidenceEditor({
             <label style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               padding: '4px 10px', borderRadius: 6, fontSize: 11,
-              cursor: 'pointer', background: 'rgba(255,255,255,0.04)',
+              cursor: 'pointer', background: 'rgba(255, 255, 255, 0.12)',
               border: '1px dashed rgba(255,255,255,0.12)',
               color: 'rgba(255,255,255,0.40)',
             }}>
@@ -436,7 +436,7 @@ function EvidenceEditor({
             <label style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               padding: '4px 10px', borderRadius: 6, fontSize: 11,
-              cursor: 'pointer', background: 'rgba(255,255,255,0.04)',
+              cursor: 'pointer', background: 'rgba(255, 255, 255, 0.12)',
               border: '1px dashed rgba(255,255,255,0.12)',
               color: 'rgba(255,255,255,0.40)',
             }}>

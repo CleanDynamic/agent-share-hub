@@ -120,7 +120,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
   const navBtn = (id: string): React.CSSProperties => ({
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     width: 28, height: 28,
-    background: hoveredBtn === id ? 'rgba(255,255,255,0.06)' : 'transparent',
+    background: hoveredBtn === id ? 'rgba(255, 255, 255, 0.14)' : 'transparent',
     border: 'none',
     borderRadius: 6,
     color: 'rgba(255,255,255,0.45)',
@@ -180,7 +180,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                 fontWeight: 400,
                 fontFamily: 'Inter, sans-serif',
                 padding: '10px 14px',
-                background: 'rgba(255,255,255,0.04)',
+                background: 'rgba(255, 255, 255, 0.12)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 8,
                 color: 'rgba(255,255,255,0.80)',
@@ -284,7 +284,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
         zIndex: 100,
         background: 'rgba(16,16,24,0.80)',
         backdropFilter: 'blur(16px)',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.14)',
         borderRadius: 0,
         padding: '6px 16px',
       }}>
@@ -336,7 +336,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
           style={{
             display: 'flex', alignItems: 'center', gap: 4,
             padding: '6px 14px',
-            background: hoveredBtn === 'addblock' ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)',
+            background: hoveredBtn === 'addblock' ? 'rgba(255,255,255,0.10)' : 'rgba(255, 255, 255, 0.14)',
             border: '1px solid rgba(255,255,255,0.10)',
             borderRadius: 6,
             color: 'rgba(255,255,255,0.70)',
@@ -456,7 +456,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
               {/* Divider */}
               <div style={{
                 height: 1,
-                background: 'rgba(255,255,255,0.04)',
+                background: 'rgba(255, 255, 255, 0.12)',
                 margin: '4px 0',
               }} />
 
@@ -491,7 +491,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                 <>
                   <div style={{
                     height: 1,
-                    background: 'rgba(255,255,255,0.04)',
+                    background: 'rgba(255, 255, 255, 0.12)',
                     margin: '4px 0',
                   }} />
 
@@ -532,7 +532,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                         onClick={() => setClearConfirm(false)}
                         style={{
                           padding: '3px 10px', fontSize: 11, fontWeight: 500,
-                          background: 'rgba(255,255,255,0.06)',
+                          background: 'rgba(255, 255, 255, 0.14)',
                           border: '1px solid rgba(255,255,255,0.10)',
                           borderRadius: 6,
                           color: 'rgba(255,255,255,0.50)',
@@ -579,7 +579,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             style={{
               display: 'flex', alignItems: 'center', gap: 4,
               padding: '6px 14px',
-              background: hoveredBtn === 'save' ? 'rgba(255,255,255,0.06)' : 'transparent',
+              background: hoveredBtn === 'save' ? 'rgba(255, 255, 255, 0.14)' : 'transparent',
               border: '1px solid rgba(255,255,255,0.10)',
               borderRadius: 6,
               color: 'rgba(255,255,255,0.60)',
@@ -651,7 +651,7 @@ function Divider() {
   return (
     <div style={{
       width: 1, height: 20,
-      background: 'rgba(255,255,255,0.06)',
+      background: 'rgba(255, 255, 255, 0.14)',
       margin: '0 4px',
       flexShrink: 0,
     }} />

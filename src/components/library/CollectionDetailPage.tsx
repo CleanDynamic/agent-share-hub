@@ -150,7 +150,7 @@ function ItemCard({
           style={{
             width: "100%",
             aspectRatio: "16 / 10",
-            background: "rgba(255,255,255,0.04)",
+            background: "rgba(255, 255, 255, 0.12)",
             overflow: "hidden",
           }}
         >
@@ -391,7 +391,7 @@ function FilterChip({
           fontSize: 10,
           padding: "1px 5px",
           borderRadius: 8,
-          background: isActive ? "rgba(232, 87, 26, 0.15)" : "rgba(255,255,255,0.06)",
+          background: isActive ? "rgba(232, 87, 26, 0.15)" : "rgba(255, 255, 255, 0.14)",
         }}
       >
         {count}
@@ -417,7 +417,7 @@ function EmptyState({ isOwn }: { isOwn: boolean }) {
           width: 56,
           height: 56,
           borderRadius: 14,
-          background: "rgba(255,255,255,0.04)",
+          background: "rgba(255, 255, 255, 0.12)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

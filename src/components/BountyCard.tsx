@@ -126,7 +126,7 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
         )}
 
         {/* ROW 5 — Stats */}
-        <div className="flex items-center justify-between" style={{ paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div className="flex items-center justify-between" style={{ paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.12)' }}>
           <div className="flex items-center" style={{ gap: 16, fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>
             <span className="flex items-center gap-1">
               <Eye style={{ width: 15, height: 15 }} />{formatNum(item.view_count ?? 0)}

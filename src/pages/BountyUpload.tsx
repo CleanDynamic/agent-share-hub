@@ -101,7 +101,7 @@ export default function BountyUpload() {
               placeholder="e.g. I need a prompt that rewrites my emails in my tone of voice..."
               rows={4}
               style={{
-                width: '100%', background: 'rgba(255,255,255,0.04)',
+                width: '100%', background: 'rgba(255, 255, 255, 0.12)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 10, padding: '12px 14px',
                 fontSize: 14, color: '#fff', outline: 'none',
@@ -167,7 +167,7 @@ export default function BountyUpload() {
               placeholder="Give context. What tool are you using? What's the end goal? What have you tried?"
               rows={4}
               style={{
-                width: '100%', background: 'rgba(255,255,255,0.04)',
+                width: '100%', background: 'rgba(255, 255, 255, 0.12)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 10, padding: '12px 14px',
                 fontSize: 14, color: '#fff', outline: 'none',
@@ -188,7 +188,7 @@ export default function BountyUpload() {
               placeholder="e.g. It should work with Claude, handle 3 different tones, and produce output under 200 words..."
               rows={3}
               style={{
-                width: '100%', background: 'rgba(255,255,255,0.04)',
+                width: '100%', background: 'rgba(255, 255, 255, 0.12)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 10, padding: '12px 14px',
                 fontSize: 14, color: '#fff', outline: 'none',
@@ -232,7 +232,7 @@ export default function BountyUpload() {
                 placeholder="50"
                 min="5"
                 style={{
-                  width: '100%', background: 'rgba(255,255,255,0.04)',
+                  width: '100%', background: 'rgba(255, 255, 255, 0.12)',
                   border: '1px solid rgba(245,158,11,0.30)',
                   borderRadius: 10, padding: '14px 14px 14px 32px',
                   fontSize: 22, fontWeight: 700, color: '#F59E0B',
@@ -265,7 +265,7 @@ export default function BountyUpload() {
                     fontSize: 12, fontWeight: 600, cursor: 'pointer',
                     background: deadline === d
                       ? 'rgba(245,158,11,0.15)'
-                      : 'rgba(255,255,255,0.04)',
+                      : 'rgba(255, 255, 255, 0.12)',
                     border: `1px solid ${deadline === d
                       ? 'rgba(245,158,11,0.40)'
                       : 'rgba(255,255,255,0.08)'}`,
@@ -294,7 +294,7 @@ export default function BountyUpload() {
         position: 'sticky', bottom: 0, marginTop: 'auto',
         background: 'rgba(8,8,12,0.95)',
         backdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.14)',
         padding: '12px 20px 16px 20px',
       }}>
         {/* Step dots */}

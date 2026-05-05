@@ -120,7 +120,7 @@ function AnchorIndicator({
     gap: 6,
     padding: "4px 8px",
     borderRadius: 4,
-    background: "rgba(255,255,255,0.06)",
+    background: "rgba(255, 255, 255, 0.14)",
   };
   const textStyle: React.CSSProperties = {
     fontFamily: "Inter, sans-serif",
@@ -194,7 +194,7 @@ function AnchorPreviewStrip({
 }) {
   const containerStyle: React.CSSProperties = {
     padding: "12px 18px",
-    borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+    borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
     position: "relative",
   };
   const toggleStyle: React.CSSProperties = {
@@ -322,8 +322,8 @@ function ReactionButton({
         gap: 4,
         padding: "2px 6px",
         borderRadius: 10,
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        background: "rgba(255, 255, 255, 0.12)",
+        border: "1px solid rgba(255, 255, 255, 0.14)",
         color: "rgba(255,255,255,0.65)",
         fontFamily: "Inter, sans-serif",
         fontSize: 11,
@@ -384,7 +384,7 @@ function CommentCard({
       style={{
         paddingLeft: depth > 0 ? 24 : 0,
         paddingBottom: depth === 0 ? 12 : 8,
-        borderBottom: depth === 0 ? "0.5px solid rgba(255,255,255,0.06)" : "none",
+        borderBottom: depth === 0 ? "0.5px solid rgba(255, 255, 255, 0.14)" : "none",
         marginBottom: depth === 0 ? 12 : 0,
         animation: comment.isNew ? "tealFlash 1s ease-out" : undefined,
       }}
@@ -485,7 +485,7 @@ function CommentCard({
                   width: "100%",
                   minHeight: 60,
                   padding: 10,
-                  background: "rgba(255,255,255,0.04)",
+                  background: "rgba(255, 255, 255, 0.12)",
                   border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: 6,
                   color: "rgba(255,255,255,0.9)",
@@ -646,7 +646,7 @@ function Composer({
           minHeight: 80,
           maxHeight: 160,
           padding: 12,
-          background: "rgba(255,255,255,0.04)",
+          background: "rgba(255, 255, 255, 0.12)",
           border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: 6,
           color: "rgba(255,255,255,0.9)",
@@ -824,7 +824,7 @@ export function PrimitiveCommentDrawer({
           style={{
             height: 60,
             padding: "14px 18px",
-            borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+            borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",

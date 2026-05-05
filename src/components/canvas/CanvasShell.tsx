@@ -762,7 +762,7 @@ export function CanvasShell(props: CanvasShellProps) {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '6px 12px',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
             flexShrink: 0,
             overflow: 'hidden',
             position: 'relative',
@@ -805,7 +805,7 @@ export function CanvasShell(props: CanvasShellProps) {
                   style={{
                     padding: '4px 12px', fontSize: 11, fontWeight: 600,
                     borderRadius: 6, border: 'none', cursor: 'pointer',
-                    background: !activeStageTab ? 'rgba(139,69,19,0.15)' : 'rgba(255,255,255,0.04)',
+                    background: !activeStageTab ? 'rgba(139,69,19,0.15)' : 'rgba(255, 255, 255, 0.12)',
                     color: !activeStageTab ? '#8B4513' : 'rgba(255,255,255,0.40)',
                     transition: 'all 0.15s',
                     flexShrink: 0,
@@ -820,7 +820,7 @@ export function CanvasShell(props: CanvasShellProps) {
                     style={{
                       padding: '4px 12px', fontSize: 11, fontWeight: 600,
                       borderRadius: 6, border: 'none', cursor: 'pointer',
-                      background: activeStageTab === s.id ? 'rgba(139,69,19,0.15)' : 'rgba(255,255,255,0.04)',
+                      background: activeStageTab === s.id ? 'rgba(139,69,19,0.15)' : 'rgba(255, 255, 255, 0.12)',
                       color: activeStageTab === s.id ? '#8B4513' : 'rgba(255,255,255,0.40)',
                       transition: 'all 0.15s',
                       whiteSpace: 'nowrap',

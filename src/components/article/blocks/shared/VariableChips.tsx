@@ -39,7 +39,7 @@ export function VariableChips({ variables, onChipClick }: VariableChipsProps) {
           onClick={() => onChipClick?.(v)}
           className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-medium rounded-full text-white/80 hover:text-white transition-colors"
           style={{
-            background: 'rgba(255,255,255,0.04)',
+            background: 'rgba(255, 255, 255, 0.12)',
             border: '1px solid rgba(255,255,255,0.08)',
           }}
         >

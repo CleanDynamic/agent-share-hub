@@ -57,11 +57,11 @@ const NEOSCALE_CSS = `
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.14) 1px, transparent 1px),
     radial-gradient(ellipse 60% 50% at 20% 40%, rgba(46,196,182,0.07) 0%, transparent 70%),
     radial-gradient(ellipse 50% 40% at 80% 30%, rgba(232,87,26,0.05) 0%, transparent 70%),
     radial-gradient(ellipse 70% 60% at 50% 80%, rgba(46,196,182,0.04) 0%, transparent 70%),
-    #07070D;
+    #25252F;
   background-size: 20px 20px, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
   font-family: 'Inter', sans-serif;
   overflow: hidden;
@@ -123,7 +123,7 @@ const NEOSCALE_CSS = `
   transition: all 0.25s ease;
   position: relative;
 }
-.ns-nav-item:hover { background: rgba(255,255,255,0.04); }
+.ns-nav-item:hover { background: rgba(255, 255, 255, 0.12); }
 .ns-nav-item.active { background: rgba(139,69,19,0.1); }
 .ns-nav-icon {
   width: 18px; height: 18px;
@@ -144,14 +144,14 @@ const NEOSCALE_CSS = `
 .ns-nav-item.active .ns-nav-label { color: rgba(255,255,255,0.85); font-weight: 500; }
 .ns-nav-item:hover .ns-nav-label { color: rgba(255,255,255,0.65); }
 .ns-nav-spacer { flex: 1; }
-.ns-nav-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 8px 4px; }
+.ns-nav-divider { height: 1px; background: rgba(255, 255, 255, 0.14); margin: 8px 4px; }
 .ns-nav-badge {
   display: flex; align-items: center; justify-content: center;
   min-width: 18px; height: 18px; padding: 0 5px;
   border-radius: 9px; font-size: 10px; font-weight: 700;
   background: #8B4513; color: #fff;
 }
-.ns-nav-badge.muted { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.45); }
+.ns-nav-badge.muted { background: rgba(255, 255, 255, 0.14); color: rgba(255,255,255,0.45); }
 
 /* pulse connector */
 .ns-left-panel::after {
@@ -176,7 +176,7 @@ const NEOSCALE_CSS = `
 /* ── User section at bottom of left panel ── */
 .ns-user-section {
   padding: 12px 8px 4px;
-  border-top: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
   margin-top: 8px;
 }
 .ns-user-btn {
@@ -185,7 +185,7 @@ const NEOSCALE_CSS = `
   cursor: pointer; transition: background 0.2s;
   border: none; background: none; text-align: left;
 }
-.ns-user-btn:hover { background: rgba(255,255,255,0.04); }
+.ns-user-btn:hover { background: rgba(255, 255, 255, 0.12); }
 .ns-user-avatar {
   width: 28px; height: 28px; border-radius: 50%;
   background: #8B4513; color: #fff;
@@ -219,7 +219,7 @@ const NEOSCALE_CSS = `
   cursor: pointer; transition: all 0.2s; border: none;
 }
 .ns-auth-btn.signin {
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255,255,255,0.10);
   color: rgba(255,255,255,0.6);
 }
 .ns-auth-btn.signin:hover { background: rgba(255,255,255,0.08); }
@@ -263,7 +263,7 @@ const NEOSCALE_CSS = `
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.14), transparent);
 }
 .ns-middle-back.rtl {
   transform: rotateY(-180deg);
@@ -288,7 +288,7 @@ const NEOSCALE_CSS = `
 }
 .ns-feed-skeleton {
   height: 80px; border-radius: 12px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.12);
   animation: nsPulse 1.5s ease-in-out infinite;
 }
 @keyframes nsPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }
@@ -301,7 +301,7 @@ const NEOSCALE_CSS = `
 }
 .ns-page-header {
   padding: 20px 24px 16px 24px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 .ns-page-title {
   font-family: 'Playfair Display', serif;
@@ -332,7 +332,7 @@ const NEOSCALE_CSS = `
   font-size: 13px;
   color: rgba(255,255,255,0.40);
   background: none; border: none;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: color 0.15s;
@@ -384,8 +384,8 @@ const NEOSCALE_CSS = `
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
   border: 1px solid rgba(255,255,255,0.08);
-  border-top: 1px solid rgba(255,255,255,0.06);
-  border-left: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 16px;
   padding: 20px;
   transition: border-color 0.2s;
@@ -411,7 +411,7 @@ const NEOSCALE_CSS = `
 
 /* ── Ghost button ── */
 .ns-btn-ghost {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.12);
   color: rgba(255,255,255,0.65);
   padding: 8px 20px;
   border-radius: 9999px;
@@ -485,7 +485,7 @@ const NEOSCALE_CSS = `
 .ns-right-search {
   width: 100%; height: 34px;
   border-radius: 17px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255,255,255,0.08);
   display: flex; align-items: center;
   padding: 0 12px; gap: 8px;
@@ -513,9 +513,9 @@ const NEOSCALE_CSS = `
   padding: 6px 8px; border-radius: 8px; cursor: pointer;
   transition: background 0.15s;
 }
-.ns-search-result:hover { background: rgba(255,255,255,0.04); }
+.ns-search-result:hover { background: rgba(255, 255, 255, 0.12); }
 .ns-search-result-title { font-size: 11px; color: rgba(255,255,255,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.ns-search-result-badge { font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.45); flex-shrink: 0; }
+.ns-search-result-badge { font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(255, 255, 255, 0.14); color: rgba(255,255,255,0.45); flex-shrink: 0; }
 
 /* ── Right panel tile grid ── */
 .ns-tile-grid {
@@ -670,7 +670,7 @@ const NEOSCALE_CSS = `
   opacity: 1;
   animation: ns-border-fill 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
-.ns-right-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 0 14px; }
+.ns-right-divider { height: 1px; background: rgba(255, 255, 255, 0.14); margin: 4px 0 14px; }
 .ns-trending-title {
   font-size: 10px; font-weight: 600;
   color: rgba(255,255,255,0.40);
@@ -685,7 +685,7 @@ const NEOSCALE_CSS = `
   padding: 8px 8px; border-radius: 8px;
   cursor: pointer; transition: background 0.2s;
 }
-.ns-trending-item:hover { background: rgba(255,255,255,0.04); }
+.ns-trending-item:hover { background: rgba(255, 255, 255, 0.12); }
 .ns-trending-rank { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.20); width: 16px; text-align: center; }
 .ns-trending-info { flex: 1; min-width: 0; }
 .ns-trending-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.55); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -710,10 +710,10 @@ const NEOSCALE_CSS = `
   padding: 6px 8px; border-radius: 8px;
   cursor: pointer; transition: background 0.15s;
 }
-.ns-curator-item:hover { background: rgba(255,255,255,0.04); }
+.ns-curator-item:hover { background: rgba(255, 255, 255, 0.12); }
 .ns-curator-avatar {
   width: 22px; height: 22px; border-radius: 50%;
-  background: rgba(255,255,255,0.06); flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.14); flex-shrink: 0;
   overflow: hidden;
 }
 .ns-curator-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -722,14 +722,14 @@ const NEOSCALE_CSS = `
   padding: 8px; border-radius: 8px;
   cursor: pointer; transition: background 0.15s;
 }
-.ns-collection-item:hover { background: rgba(255,255,255,0.04); }
+.ns-collection-item:hover { background: rgba(255, 255, 255, 0.12); }
 .ns-follow-item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 4px;
 }
 .ns-follow-avatar {
   width: 28px; height: 28px; border-radius: 50%;
-  background: rgba(255,255,255,0.06); flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.14); flex-shrink: 0;
   overflow: hidden;
 }
 .ns-follow-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -738,7 +738,7 @@ const NEOSCALE_CSS = `
 .ns-follow-handle { font-size: 10px; color: rgba(255,255,255,0.30); }
 .ns-footer-links {
   margin-top: 16px; padding: 12px 4px 4px;
-  border-top: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
   display: flex; flex-direction: column; gap: 4px;
 }
 .ns-footer-link {

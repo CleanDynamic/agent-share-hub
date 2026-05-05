@@ -413,7 +413,7 @@ export function PublishMetadataForm({
       {/* Header */}
       <header
         className="h-[60px] flex items-center justify-between px-4 sm:px-6"
-        style={{ borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}
+        style={{ borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)" }}
       >
         <button
           onClick={onBack}
@@ -459,7 +459,7 @@ export function PublishMetadataForm({
       {/* Progress Bar */}
       <div
         className="h-1 w-full relative group cursor-help"
-        style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+        style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }}
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={validation.total}
@@ -830,7 +830,7 @@ export function PublishMetadataForm({
       <footer
         className="fixed bottom-0 left-0 right-0 h-[80px] flex items-center justify-between px-4 sm:px-6 z-40 gap-3"
         style={{
-          borderTop: "0.5px solid rgba(255,255,255,0.06)",
+          borderTop: "0.5px solid rgba(255, 255, 255, 0.14)",
           backgroundColor: "rgba(8,8,12,0.85)",
           backdropFilter: "blur(20px)",
         }}
@@ -965,7 +965,7 @@ function BlogAutoDetectedCard({
       className="w-full"
       style={{
         background: "rgba(22,22,30,0.40)",
-        border: "0.5px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255, 255, 255, 0.14)",
         borderRadius: "10px",
         padding: "18px",
       }}
@@ -1069,7 +1069,7 @@ function ReferenceChip({ item }: { item: ReferencedItem }) {
       className="inline-flex items-center gap-1.5"
       style={{
         background: "rgba(255,255,255,0.03)",
-        border: "0.5px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255, 255, 255, 0.14)",
         borderRadius: "4px",
         padding: "3px 8px",
         maxWidth: "260px",
@@ -1224,7 +1224,7 @@ function Section({
           onClick={() => onBadgeClick?.(number)}
           className="publish-focus w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
           style={{
-            backgroundColor: "rgba(255,255,255,0.04)",
+            backgroundColor: "rgba(255, 255, 255, 0.12)",
             color: "rgba(255,255,255,0.55)",
             fontSize: "11px",
             fontWeight: 600,

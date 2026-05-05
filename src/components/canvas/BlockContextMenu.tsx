@@ -85,7 +85,7 @@ export function BlockContextMenu({
         <button
           type="button"
           style={menuItemStyle}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         >
           <span>Move to Stage</span>
@@ -118,7 +118,7 @@ export function BlockContextMenu({
                   onMoveToStage(stage.id);
                   onClose();
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                 style={menuItemStyle}
               >
@@ -157,7 +157,7 @@ export function BlockContextMenu({
           onRemoveFromStage();
           onClose();
         }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         style={menuItemStyle}
       >

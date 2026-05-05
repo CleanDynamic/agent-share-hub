@@ -175,7 +175,7 @@ export function ActiveCompetitionsSection() {
               style={{
                 height: 88,
                 background: "rgba(22,22,30,0.30)",
-                border: "1px solid rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255, 255, 255, 0.14)",
                 borderRadius: 12,
               }}
             />

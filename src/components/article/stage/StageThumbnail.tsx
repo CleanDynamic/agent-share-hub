@@ -280,7 +280,7 @@ export function StageThumbnail({
           style={{
             flexShrink: 0,
             padding: '2px 8px',
-            background: 'rgba(255,255,255,0.04)',
+            background: 'rgba(255, 255, 255, 0.12)',
             borderRadius: 100,
             fontFamily: 'Inter, sans-serif',
             fontSize: 11,
@@ -318,7 +318,7 @@ export function StageThumbnail({
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
-            e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.color = 'rgba(255,255,255,0.40)';
@@ -358,7 +358,7 @@ export function StageThumbnail({
               position: 'relative',
               height: 28,
               padding: '4px 12px',
-              borderTop: '0.5px solid rgba(255,255,255,0.06)',
+              borderTop: '0.5px solid rgba(255, 255, 255, 0.14)',
               display: 'flex',
               alignItems: 'center',
             }}
@@ -431,7 +431,7 @@ export function StageThumbnail({
             <div
               style={{
                 padding: '8px 12px',
-                borderTop: '0.5px solid rgba(255,255,255,0.06)',
+                borderTop: '0.5px solid rgba(255, 255, 255, 0.14)',
                 display: 'flex',
                 flexWrap: 'wrap',
                 gap: '4px 6px',
@@ -469,7 +469,7 @@ function BlockLabelPill({ dotColor, label }: BlockLabelPillProps) {
         gap: 6,
         padding: '2px 8px',
         background: hover ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.025)',
-        border: '0.5px solid rgba(255,255,255,0.06)',
+        border: '0.5px solid rgba(255, 255, 255, 0.14)',
         borderRadius: 4,
         fontFamily: 'Inter, sans-serif',
         fontSize: 11,
@@ -562,7 +562,7 @@ function SpatialPreviewImpl({ blocks, connections }: SpatialPreviewProps) {
         background: 'rgba(255,255,255,0.015)',
         borderRadius: 6,
         overflow: 'hidden',
-        borderTop: '0.5px solid rgba(255,255,255,0.06)',
+        borderTop: '0.5px solid rgba(255, 255, 255, 0.14)',
       }}
     >
       <svg

@@ -205,7 +205,7 @@ export function TagInput({
                   "w-full flex items-center justify-between px-2.5 py-1.5 text-left transition-colors",
                   highlightedIndex === index
                     ? "bg-[rgba(232,87,26,0.06)] border-l-2 border-l-[#E8571A]"
-                    : "hover:bg-[rgba(255,255,255,0.06)] border-l-2 border-l-transparent",
+                    : "hover:bg-[rgba(255, 255, 255, 0.14)] border-l-2 border-l-transparent",
                 )}
                 style={{ fontFamily: "Inter, sans-serif" }}
               >
@@ -230,7 +230,7 @@ export function TagInput({
               className={cn(
                 "w-full px-2.5 py-1.5 text-left transition-colors",
                 "bg-[rgba(232,87,26,0.06)] border-l-2 border-l-[#E8571A]",
-                "hover:bg-[rgba(255,255,255,0.06)]",
+                "hover:bg-[rgba(255, 255, 255, 0.14)]",
               )}
               style={{ fontFamily: "Inter, sans-serif" }}
             >

@@ -288,7 +288,7 @@ export function BlockViewerInCanvas({
             borderRadius: 5,
             background: copied
               ? 'rgba(34,197,94,0.15)'
-              : 'rgba(255,255,255,0.06)',
+              : 'rgba(255, 255, 255, 0.14)',
             border: `1px solid ${copied
               ? 'rgba(34,197,94,0.35)'
               : 'rgba(255,255,255,0.10)'}`,

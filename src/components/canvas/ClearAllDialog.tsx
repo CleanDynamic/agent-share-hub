@@ -61,7 +61,7 @@ export function ClearAllDialog({ open, onClose, onConfirm }: ClearAllDialogProps
               padding: '8px 16px',
               fontSize: 12,
               fontWeight: 500,
-              background: 'rgba(255,255,255,0.06)',
+              background: 'rgba(255, 255, 255, 0.14)',
               border: 'none',
               borderRadius: 8,
               color: 'rgba(255,255,255,0.60)',

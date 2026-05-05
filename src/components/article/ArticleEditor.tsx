@@ -1032,7 +1032,7 @@ export function ArticleEditor({
             alignItems: 'center',
             gap: 8,
             padding: '0 4px',
-            borderBottom: '0.5px solid rgba(255,255,255,0.06)',
+            borderBottom: '0.5px solid rgba(255, 255, 255, 0.14)',
             marginBottom: 8,
           }}
         >
@@ -1146,7 +1146,7 @@ export function ArticleEditor({
                 padding: '0 24px',
               }}
             >
-              Bounties usually start with 1–3 stages where you outline what you have, then mark the gaps. Try inserting a stage with <code style={{ fontFamily: 'inherit', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, color: 'rgba(255,255,255,0.65)' }}>/</code>.
+              Bounties usually start with 1–3 stages where you outline what you have, then mark the gaps. Try inserting a stage with <code style={{ fontFamily: 'inherit', background: 'rgba(255, 255, 255, 0.14)', padding: '1px 6px', borderRadius: 4, color: 'rgba(255,255,255,0.65)' }}>/</code>.
             </div>
           ) : null}
         </div>
@@ -1376,7 +1376,7 @@ export function ArticleEditor({
                 width: '100%',
                 padding: '10px 12px',
                 borderRadius: 8,
-                background: 'rgba(255,255,255,0.04)',
+                background: 'rgba(255, 255, 255, 0.12)',
                 border: '1px solid rgba(255,255,255,0.12)',
                 color: 'rgba(255,255,255,0.92)',
                 fontFamily: 'Inter, sans-serif',
@@ -1392,7 +1392,7 @@ export function ArticleEditor({
                 style={{
                   padding: '8px 14px', fontSize: 12, fontWeight: 600,
                   borderRadius: 8,
-                  background: 'rgba(255,255,255,0.06)',
+                  background: 'rgba(255, 255, 255, 0.14)',
                   border: '1px solid rgba(255,255,255,0.12)',
                   color: 'rgba(255,255,255,0.65)',
                   cursor: 'pointer',

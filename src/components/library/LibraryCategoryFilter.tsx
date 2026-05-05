@@ -125,7 +125,7 @@ export function LibraryCategoryFilter({
               background: isActive ? cat.bg : "rgba(255,255,255,0.025)",
               border: isActive
                 ? `1px solid ${cat.border}`
-                : "1px solid rgba(255,255,255,0.06)",
+                : "1px solid rgba(255, 255, 255, 0.14)",
               borderRadius: 10,
               padding: "6px 14px",
               fontSize: 12,

@@ -281,7 +281,7 @@ export function AuthorStatsPanel({ stats }: AuthorStatsPanelProps) {
       className="w-full"
       style={{
         backgroundColor: "rgba(22,22,30,0.40)",
-        border: "0.5px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255, 255, 255, 0.14)",
         borderRadius: "10px",
         padding: "18px",
         marginTop: "24px",
@@ -342,7 +342,7 @@ export function AuthorStatsPanel({ stats }: AuthorStatsPanelProps) {
           <div
             style={{
               height: "0.5px",
-              backgroundColor: "rgba(255,255,255,0.04)",
+              backgroundColor: "rgba(255, 255, 255, 0.12)",
               margin: "16px 0",
             }}
           />
@@ -359,7 +359,7 @@ export function AuthorStatsPanelSkeleton() {
       className="w-full animate-pulse"
       style={{
         backgroundColor: "rgba(22,22,30,0.40)",
-        border: "0.5px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255, 255, 255, 0.14)",
         borderRadius: "10px",
         padding: "18px",
         marginTop: "24px",

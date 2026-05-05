@@ -559,12 +559,12 @@ const NotificationsPage = () => {
                       width: '100%',
                       textAlign: 'left',
                       padding: '14px 0',
-                      borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
                       background: !n.is_read ? 'rgba(255,255,255,0.01)' : 'transparent',
                       border: 'none',
                       borderBottomWidth: 1,
                       borderBottomStyle: 'solid',
-                      borderBottomColor: 'rgba(255,255,255,0.04)',
+                      borderBottomColor: 'rgba(255, 255, 255, 0.12)',
                       cursor: isSplitContest ? 'default' : 'pointer',
                       transition: 'background 0.15s ease',
                     }}
@@ -575,7 +575,7 @@ const NotificationsPage = () => {
                       {!n.is_read && <span style={{ display: 'block', width: 6, height: 6, borderRadius: '50%', background: '#1F7A6D' }} />}
                     </div>
                     <Avatar className="shrink-0" style={{ width: 28, height: 28, marginTop: 2 }}>
-                      <AvatarFallback style={{ fontSize: 10, fontWeight: 700, background: isSystem ? 'rgba(139,69,19,0.15)' : 'rgba(255,255,255,0.06)', color: isSystem ? '#8B4513' : 'rgba(255,255,255,0.45)' }}>
+                      <AvatarFallback style={{ fontSize: 10, fontWeight: 700, background: isSystem ? 'rgba(139,69,19,0.15)' : 'rgba(255, 255, 255, 0.14)', color: isSystem ? '#8B4513' : 'rgba(255,255,255,0.45)' }}>
                         {isSystem ? "NS" : initials}
                       </AvatarFallback>
                     </Avatar>

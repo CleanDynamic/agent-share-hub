@@ -19,7 +19,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
         {blocks.map(block => (
           <div key={block.id} style={{
             background: 'rgba(14,14,20,0.60)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.14)',
             borderRadius: 10,
             padding: 16,
           }}>
@@ -122,7 +122,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
               {stageBlocks.map(block => (
                 <div key={block.id} style={{
                   background: 'rgba(14,14,20,0.60)',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.14)',
                   borderRadius: 10,
                   padding: 16,
                   position: 'relative',
@@ -175,7 +175,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
             {ungrouped.map(block => (
               <div key={block.id} style={{
                 background: 'rgba(14,14,20,0.60)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
                 borderRadius: 10,
                 padding: 16,
               }}>

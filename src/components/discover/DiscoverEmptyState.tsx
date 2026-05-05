@@ -42,7 +42,7 @@ export function DiscoverEmptyState({ onSuggestionClick }: DiscoverEmptyStateProp
               background: "transparent",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = "transparent";

@@ -88,7 +88,7 @@ export function VersionHistory({
         <div style={{
           padding: '20px 20px 14px 20px',
           borderBottom:
-            '1px solid rgba(255,255,255,0.06)',
+            '1px solid rgba(255, 255, 255, 0.14)',
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between',
         }}>
@@ -111,7 +111,7 @@ export function VersionHistory({
         <div style={{
           padding: '12px 16px',
           borderBottom:
-            '1px solid rgba(255,255,255,0.06)',
+            '1px solid rgba(255, 255, 255, 0.14)',
         }}>
           <div style={{
             display: 'flex', gap: 6,
@@ -176,7 +176,7 @@ export function VersionHistory({
                 style={{
                   padding: '12px 16px',
                   borderBottom:
-                    '1px solid rgba(255,255,255,0.04)',
+                    '1px solid rgba(255, 255, 255, 0.12)',
                   cursor: 'pointer',
                   background:
                     selected?.id === v.id

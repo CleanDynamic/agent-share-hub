@@ -64,7 +64,7 @@ export function StageFullscreen({ stageId, onClose }: StageFullscreenProps) {
             display: 'flex',
             alignItems: 'center',
             background: 'transparent',
-            borderBottom: '0.5px solid rgba(255,255,255,0.06)',
+            borderBottom: '0.5px solid rgba(255, 255, 255, 0.14)',
           }}
         >
           <BackButton onClick={onClose} />
@@ -99,8 +99,8 @@ function BackButton({ onClick }: { onClick: () => void }) {
         alignItems: 'center',
         gap: 6,
         padding: '6px 10px',
-        background: hover ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
-        border: '0.5px solid rgba(255,255,255,0.06)',
+        background: hover ? 'rgba(255,255,255,0.08)' : 'rgba(255, 255, 255, 0.12)',
+        border: '0.5px solid rgba(255, 255, 255, 0.14)',
         borderRadius: 6,
         color: 'rgba(255,255,255,0.75)',
         fontFamily: 'Inter, sans-serif',
@@ -154,7 +154,7 @@ function BottomBar({ showMiniMap, onToggleMiniMap }: BottomBarProps) {
         justifyContent: 'flex-end',
         alignItems: 'center',
         background: 'transparent',
-        borderTop: '0.5px solid rgba(255,255,255,0.06)',
+        borderTop: '0.5px solid rgba(255, 255, 255, 0.14)',
       }}
     >
       {/* Zoom group */}
@@ -224,7 +224,7 @@ function Divider() {
         display: 'inline-block',
         width: 1,
         height: 16,
-        background: 'rgba(255,255,255,0.06)',
+        background: 'rgba(255, 255, 255, 0.14)',
         margin: '0 8px',
       }}
     />
@@ -242,7 +242,7 @@ function IconBtn({ onClick, title, active = false, children }: IconBtnProps) {
   const [hover, setHover] = useState(false);
   const baseColor = active ? '#E8571A' : 'rgba(255,255,255,0.70)';
   const activeBg = 'rgba(232,87,26,0.10)';
-  const hoverBg = 'rgba(255,255,255,0.06)';
+  const hoverBg = 'rgba(255, 255, 255, 0.14)';
   const bg = active ? activeBg : hover ? hoverBg : 'transparent';
   return (
     <button

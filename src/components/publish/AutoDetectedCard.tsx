@@ -69,7 +69,7 @@ function BlockTypeChip({ type }: { type: string }) {
       className="inline-flex items-center gap-1.5"
       style={{
         background: "rgba(255,255,255,0.03)",
-        border: "0.5px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255, 255, 255, 0.14)",
         borderRadius: "4px",
         padding: "3px 8px",
       }}
@@ -91,7 +91,7 @@ function ModelChip({ name }: { name: string }) {
       className="inline-flex items-center gap-1.5"
       style={{
         background: "rgba(255,255,255,0.03)",
-        border: "0.5px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255, 255, 255, 0.14)",
         borderRadius: "4px",
         padding: "3px 8px",
       }}
@@ -113,7 +113,7 @@ function ToolChip({ name }: { name: string }) {
       className="inline-flex items-center gap-1.5"
       style={{
         background: "rgba(255,255,255,0.03)",
-        border: "0.5px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255, 255, 255, 0.14)",
         borderRadius: "4px",
         padding: "3px 8px",
       }}
@@ -210,7 +210,7 @@ export function AutoDetectedCard({
       className="w-full"
       style={{
         background: "rgba(22,22,30,0.40)",
-        border: "0.5px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255, 255, 255, 0.14)",
         borderRadius: "10px",
         padding: "18px",
       }}

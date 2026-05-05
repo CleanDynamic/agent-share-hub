@@ -440,7 +440,7 @@ export function ArrowOverlay({
                         cursor: 'pointer',
                         background: isActive
                           ? `${m.color}20`
-                          : 'rgba(255,255,255,0.04)',
+                          : 'rgba(255, 255, 255, 0.12)',
                         border: `1px solid ${isActive
                           ? m.color
                           : 'rgba(255,255,255,0.08)'}`,

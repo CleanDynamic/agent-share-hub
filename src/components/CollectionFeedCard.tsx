@@ -99,7 +99,7 @@ export function CollectionFeedCard({ item }: CollectionFeedCardProps) {
       )}
 
       {/* Stats row */}
-      <div className="flex items-center" style={{ gap: 16, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.04)', fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>
+      <div className="flex items-center" style={{ gap: 16, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.12)', fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>
         <span className="inline-flex items-center gap-1 shrink-0">{item.item_count} blueprint{item.item_count !== 1 ? "s" : ""}</span>
         <span className="inline-flex items-center gap-1 shrink-0"><Users style={{ width: 15, height: 15 }} />{formatNum(item.follower_count)} followers</span>
       </div>
