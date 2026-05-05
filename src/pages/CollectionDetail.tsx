@@ -410,7 +410,7 @@ export default function CollectionDetailRoute() {
             disabled={bulkSaving}
             style={{
               background: "#2EC4B6",
-              color: "#07070D",
+              color: "#25252F",
               border: "none",
             }}
           >

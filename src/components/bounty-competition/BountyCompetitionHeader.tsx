@@ -223,7 +223,7 @@ export function BountyCompetitionHeader({
     borderRadius: 10,
     border: "1px solid rgba(245,158,11,0.4)",
     background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
-    color: "#07070D",
+    color: "#25252F",
     fontFamily: "Inter, sans-serif",
     fontSize: 14,
     fontWeight: 600,

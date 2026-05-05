@@ -127,7 +127,7 @@ function LiveDot() {
         height: 9,
         borderRadius: "50%",
         background: "#2EC4B6",
-        border: "2px solid #07070D",
+        border: "2px solid #25252F",
         boxShadow: "0 0 6px rgba(46,196,182,0.7)",
       }}
     />
