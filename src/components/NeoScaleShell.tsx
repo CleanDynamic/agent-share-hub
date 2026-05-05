@@ -12,7 +12,27 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useDraftCount } from "@/hooks/useDraftCount";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { MobileNav } from "@/components/layout/MobileNav";
+
+/* ────────────────────────────────────────────────
+   Shell structure (Step 14.1 — responsive chrome)
+   ────────────────────────────────────────────────
+   Current desktop chrome (≥768px):
+     .ns-root
+       └─ .ns-scale-wrapper            (centres + scales the app)
+            └─ .ns-app-container       (transform: scale(N), N computed from viewport)
+                 ├─ LEFT  PANEL  (200px, LiquidGlassPanel + .ns-left-panel)
+                 ├─ MIDDLE WRAPPER (600px, 3D flipper: front feed / back outlet)
+                 └─ RIGHT PANEL (220px, LiquidGlassPanel + .ns-right-panel)
+
+   Responsive tiers (via useBreakpoint):
+     xl     ≥1280px  three-column, scale formula uses native 1068×775
+     lg     1024–1279 right rail hidden (drawer in 14.2), native 824×775
+     md     768–1023  left rail collapsed (icon-only 72px), right hidden, native 696×775
+     mobile <768px    desktop chrome replaced by <MobileNav/> top+bottom bars,
+                      centre column flows naturally (NO transform scaling).
+*/
 import { FollowButton } from "@/components/FollowButton";
 import LiquidGlassPanel from "./LiquidGlassPanel";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
