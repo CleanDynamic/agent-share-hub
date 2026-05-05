@@ -187,7 +187,7 @@ export function BlogView({ item }: BlogViewProps) {
               style={{
                 width: 28,
                 height: 28,
-                background: "rgba(255,255,255,0.06)",
+                background: "rgba(255, 255, 255, 0.14)",
                 border: "0.5px solid rgba(255,255,255,0.08)",
               }}
             >
@@ -304,7 +304,7 @@ export function BlogView({ item }: BlogViewProps) {
           className="mt-10 flex items-center gap-3"
           style={{
             paddingTop: 16,
-            borderTop: "0.5px solid rgba(255,255,255,0.06)",
+            borderTop: "0.5px solid rgba(255, 255, 255, 0.14)",
           }}
         >
           <EngagementButton
@@ -334,7 +334,7 @@ export function BlogView({ item }: BlogViewProps) {
             className="mt-10 p-5 rounded-xl flex items-start gap-4"
             style={{
               background: "rgba(22,22,30,0.40)",
-              border: "0.5px solid rgba(255,255,255,0.06)",
+              border: "0.5px solid rgba(255, 255, 255, 0.14)",
             }}
           >
             <div
@@ -342,7 +342,7 @@ export function BlogView({ item }: BlogViewProps) {
               style={{
                 width: 48,
                 height: 48,
-                background: "rgba(255,255,255,0.06)",
+                background: "rgba(255, 255, 255, 0.14)",
                 border: "0.5px solid rgba(255,255,255,0.08)",
               }}
             >
@@ -457,13 +457,13 @@ export function BlogView({ item }: BlogViewProps) {
         .blog-view-prose .ProseMirror code {
           font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
           font-size: 13px;
-          background: rgba(255,255,255,0.06);
+          background: rgba(255, 255, 255, 0.14);
           padding: 1px 5px;
           border-radius: 4px;
         }
         .blog-view-prose .ProseMirror pre {
           background: rgba(15,15,22,0.7);
-          border: 0.5px solid rgba(255,255,255,0.06);
+          border: 0.5px solid rgba(255, 255, 255, 0.14);
           border-radius: 8px;
           padding: 14px 16px;
           overflow-x: auto;

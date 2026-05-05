@@ -185,7 +185,7 @@ function ContextMenuItem({
         color: danger ? "#ef4444" : "rgba(255,255,255,0.85)",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+        e.currentTarget.style.background = "rgba(255, 255, 255, 0.14)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.background = "transparent";

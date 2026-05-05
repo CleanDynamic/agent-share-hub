@@ -215,7 +215,7 @@ export function CollectionBookmarkButton({
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        background: variant === "subtle" ? "rgba(255,255,255,0.04)" : "transparent",
+        background: variant === "subtle" ? "rgba(255, 255, 255, 0.12)" : "transparent",
         border: "none",
         borderRadius: 6,
         padding: variant === "subtle" ? 4 : 2,

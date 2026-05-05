@@ -48,7 +48,7 @@ function CopyButton({
         borderRadius: 5, cursor: 'pointer',
         background: copied
           ? 'rgba(34,197,94,0.15)'
-          : 'rgba(255,255,255,0.06)',
+          : 'rgba(255, 255, 255, 0.14)',
         border: `1px solid ${copied
           ? 'rgba(34,197,94,0.35)'
           : 'rgba(255,255,255,0.10)'}`,
@@ -643,7 +643,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
         {block.prompt_model && (
           <span style={{
             padding: '2px 10px', borderRadius: 9999, fontSize: 11,
-            background: 'rgba(255,255,255,0.06)',
+            background: 'rgba(255, 255, 255, 0.14)',
             border: '1px solid rgba(255,255,255,0.12)',
             color: 'rgba(255,255,255,0.60)',
           }}>
@@ -679,7 +679,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
                   onChange={e => setFilled(f => ({ ...f, [v.name]: e.target.value }))}
                   placeholder={v.description || `Enter ${v.name}`}
                   style={{
-                    flex: 1, background: 'rgba(255,255,255,0.04)',
+                    flex: 1, background: 'rgba(255, 255, 255, 0.12)',
                     border: '1px solid rgba(31,122,109,0.25)',
                     borderRadius: 6, padding: '4px 8px', fontSize: 12,
                     color: '#fff', outline: 'none',
@@ -725,7 +725,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
           </div>
           <div style={{
             background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.14)',
             borderRadius: 8, padding: '10px 12px',
             fontSize: 13, color: 'rgba(255,255,255,0.55)',
             lineHeight: 1.65, whiteSpace: 'pre-wrap',
@@ -818,7 +818,7 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
                       <span style={{
                         fontSize: 11, padding: '1px 8px',
                         borderRadius: 9999,
-                        background: 'rgba(255,255,255,0.06)',
+                        background: 'rgba(255, 255, 255, 0.14)',
                         color: 'rgba(255,255,255,0.40)',
                       }}>
                         {step.tool}
@@ -914,7 +914,7 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
         <div style={{
           padding: '8px 10px', marginBottom: 10,
           background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
           borderRadius: 6, fontSize: 12,
           color: 'rgba(255,255,255,0.50)',
           fontFamily: 'Courier New, monospace',
@@ -976,7 +976,7 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
         <pre style={{
           marginTop: 10,
           background: 'rgba(0,0,0,0.25)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
           borderRadius: 6, padding: '8px 12px',
           fontSize: 11, color: 'rgba(255,255,255,0.45)',
           fontFamily: 'Courier New, monospace',
@@ -1044,7 +1044,7 @@ const ResultViewer = ({ block }: { block: BlockRow }) => (
       <div style={{
         padding: '10px 12px',
         background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        border: '1px solid rgba(255, 255, 255, 0.14)',
         borderRadius: 8, fontSize: 13, fontStyle: 'italic',
         color: 'rgba(255,255,255,0.55)', lineHeight: 1.6,
       }}>
@@ -1578,7 +1578,7 @@ export function ContentBlockViewer({
                         color: 'rgba(255,255,255,0.35)',
                         padding: '2px 8px',
                         borderRadius: 4,
-                        background: 'rgba(255,255,255,0.04)',
+                        background: 'rgba(255, 255, 255, 0.12)',
                         border: '1px solid rgba(255,255,255,0.07)',
                       }}>
                         {typeEmoji} {typeLabel}
@@ -1756,7 +1756,7 @@ export function ContentBlockViewer({
                   <div style={{
                     padding: '12px 16px',
                     background: 'rgba(255,255,255,0.02)',
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                   }}>
                     <div style={{
                       fontSize: 10, fontWeight: 700,
@@ -1798,7 +1798,7 @@ export function ContentBlockViewer({
                         }}>
                           <div style={{
                             width: 18, height: 18, borderRadius: '50%',
-                            background: 'rgba(255,255,255,0.06)',
+                            background: 'rgba(255, 255, 255, 0.14)',
                             border: '1px solid rgba(255,255,255,0.12)',
                             display: 'flex', alignItems: 'center',
                             justifyContent: 'center',

@@ -185,7 +185,7 @@ function RelatedPostCard({ post }: { post: RelatedPostCardData }) {
       style={{
         display: "block",
         background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255, 255, 255, 0.14)",
         borderRadius: 12,
         overflow: "hidden",
         textDecoration: "none",
@@ -195,7 +195,7 @@ function RelatedPostCard({ post }: { post: RelatedPostCardData }) {
         e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.14)";
       }}
     >
       {post.coverUrl && (
@@ -397,7 +397,7 @@ export function ContentDetailShell({
               width: 80,
               height: 3,
               borderRadius: 2,
-              background: "rgba(255,255,255,0.06)",
+              background: "rgba(255, 255, 255, 0.14)",
               overflow: "hidden",
             }}
             aria-label="Reading progress"
@@ -443,7 +443,7 @@ export function ContentDetailShell({
               borderRadius: 12,
               overflow: "hidden",
               marginBottom: 24,
-              border: "1px solid rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255, 255, 255, 0.14)",
             }}
           >
             <img
@@ -555,7 +555,7 @@ export function ContentDetailShell({
                 fontSize: 12,
                 fontWeight: 500,
                 color: isFollowing ? "rgba(255,255,255,0.60)" : "#E8571A",
-                backgroundColor: isFollowing ? "rgba(255,255,255,0.06)" : "rgba(232,87,26,0.14)",
+                backgroundColor: isFollowing ? "rgba(255, 255, 255, 0.14)" : "rgba(232,87,26,0.14)",
                 border: "none",
                 borderRadius: 100,
                 padding: "6px 14px",
@@ -656,7 +656,7 @@ export function ContentDetailShell({
           onClick={() => setAuthorCardExpanded(!authorCardExpanded)}
           style={{
             background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255, 255, 255, 0.14)",
             borderRadius: 12,
             padding: 16,
             cursor: "pointer",
@@ -705,7 +705,7 @@ export function ContentDetailShell({
                   fontSize: 12,
                   fontWeight: 500,
                   color: isFollowing ? "rgba(255,255,255,0.60)" : "#E8571A",
-                  backgroundColor: isFollowing ? "rgba(255,255,255,0.06)" : "rgba(232,87,26,0.14)",
+                  backgroundColor: isFollowing ? "rgba(255, 255, 255, 0.14)" : "rgba(232,87,26,0.14)",
                   border: "none",
                   borderRadius: 100,
                   padding: "6px 14px",

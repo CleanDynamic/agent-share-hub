@@ -67,7 +67,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
           placeholder="YouTube, Vimeo, or direct video URL"
           style={{
             width: '100%',
-            background: 'rgba(255,255,255,0.04)',
+            background: 'rgba(255, 255, 255, 0.12)',
             border: '1px solid rgba(255,255,255,0.10)',
             borderRadius: 6, outline: 'none',
             fontSize: 13,
@@ -159,7 +159,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
           placeholder="Short description…"
           style={{
             width: '100%',
-            background: 'rgba(255,255,255,0.04)',
+            background: 'rgba(255, 255, 255, 0.12)',
             border: '1px solid rgba(255,255,255,0.10)',
             borderRadius: 6, outline: 'none',
             fontSize: 13,

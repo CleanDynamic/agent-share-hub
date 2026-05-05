@@ -168,7 +168,7 @@ export function MetaBountyCreationFlow({
             justifyContent: "space-between",
             alignItems: "center",
             padding: "16px 24px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.14)",
           }}
         >
           <div style={{ display: "flex", gap: 8 }}>
@@ -256,7 +256,7 @@ export function MetaBountyCreationFlow({
                   style={{
                     width: "100%",
                     padding: "12px 14px",
-                    background: "rgba(255,255,255,0.04)",
+                    background: "rgba(255, 255, 255, 0.12)",
                     border: "1px solid rgba(255,255,255,0.1)",
                     borderRadius: 8,
                     fontFamily: "Inter, sans-serif",
@@ -290,7 +290,7 @@ export function MetaBountyCreationFlow({
                   style={{
                     width: "100%",
                     padding: "12px 14px",
-                    background: "rgba(255,255,255,0.04)",
+                    background: "rgba(255, 255, 255, 0.12)",
                     border: "1px solid rgba(255,255,255,0.1)",
                     borderRadius: 8,
                     fontFamily: "Inter, sans-serif",
@@ -327,7 +327,7 @@ export function MetaBountyCreationFlow({
                           padding: "6px 12px",
                           background: isSelected
                             ? "rgba(249,115,22,0.2)"
-                            : "rgba(255,255,255,0.04)",
+                            : "rgba(255, 255, 255, 0.12)",
                           border: `1px solid ${
                             isSelected
                               ? "rgba(249,115,22,0.4)"
@@ -443,7 +443,7 @@ export function MetaBountyCreationFlow({
                       style={{
                         width: "100%",
                         padding: "10px 12px",
-                        background: "rgba(255,255,255,0.04)",
+                        background: "rgba(255, 255, 255, 0.12)",
                         border: "1px solid rgba(255,255,255,0.1)",
                         borderRadius: 6,
                         fontFamily: "Inter, sans-serif",
@@ -466,7 +466,7 @@ export function MetaBountyCreationFlow({
                       style={{
                         width: "100%",
                         padding: "10px 12px",
-                        background: "rgba(255,255,255,0.04)",
+                        background: "rgba(255, 255, 255, 0.12)",
                         border: "1px solid rgba(255,255,255,0.1)",
                         borderRadius: 6,
                         fontFamily: "Inter, sans-serif",
@@ -503,7 +503,7 @@ export function MetaBountyCreationFlow({
                           style={{
                             width: "100%",
                             padding: "10px 12px",
-                            background: "rgba(255,255,255,0.04)",
+                            background: "rgba(255, 255, 255, 0.12)",
                             border: "1px solid rgba(255,255,255,0.1)",
                             borderRadius: 6,
                             fontFamily: "Inter, sans-serif",
@@ -523,7 +523,7 @@ export function MetaBountyCreationFlow({
                         style={{
                           width: 90,
                           padding: "10px 12px",
-                          background: "rgba(255,255,255,0.04)",
+                          background: "rgba(255, 255, 255, 0.12)",
                           border: "1px solid rgba(255,255,255,0.1)",
                           borderRadius: 6,
                           fontFamily: "Inter, sans-serif",
@@ -617,7 +617,7 @@ export function MetaBountyCreationFlow({
                     style={{
                       width: "100%",
                       padding: "12px 14px",
-                      background: "rgba(255,255,255,0.04)",
+                      background: "rgba(255, 255, 255, 0.12)",
                       border: "1px solid rgba(255,255,255,0.1)",
                       borderRadius: 8,
                       fontFamily: "Inter, sans-serif",
@@ -658,7 +658,7 @@ export function MetaBountyCreationFlow({
                     style={{
                       width: "100%",
                       padding: "12px 14px",
-                      background: "rgba(255,255,255,0.04)",
+                      background: "rgba(255, 255, 255, 0.12)",
                       border: "1px solid rgba(255,255,255,0.1)",
                       borderRadius: 8,
                       fontFamily: "Inter, sans-serif",
@@ -696,7 +696,7 @@ export function MetaBountyCreationFlow({
                     style={{
                       width: "100%",
                       padding: "12px 14px",
-                      background: "rgba(255,255,255,0.04)",
+                      background: "rgba(255, 255, 255, 0.12)",
                       border: "1px solid rgba(255,255,255,0.1)",
                       borderRadius: 8,
                       fontFamily: "Inter, sans-serif",
@@ -782,7 +782,7 @@ export function MetaBountyCreationFlow({
                     style={{
                       width: "100%",
                       padding: "12px 14px",
-                      background: "rgba(255,255,255,0.04)",
+                      background: "rgba(255, 255, 255, 0.12)",
                       border: "1px solid rgba(255,255,255,0.1)",
                       borderRadius: 8,
                       fontFamily: "Inter, sans-serif",
@@ -1102,7 +1102,7 @@ export function MetaBountyCreationFlow({
             justifyContent: "space-between",
             alignItems: "center",
             padding: "16px 24px",
-            borderTop: "1px solid rgba(255,255,255,0.06)",
+            borderTop: "1px solid rgba(255, 255, 255, 0.14)",
           }}
         >
           <button

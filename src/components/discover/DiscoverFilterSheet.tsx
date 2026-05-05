@@ -103,7 +103,7 @@ function Chip({
         borderRadius: 100,
         background: selected ? 'rgba(232,87,26,0.10)' : 'rgba(255,255,255,0.03)',
         color: selected ? '#E8571A' : 'rgba(255,255,255,0.65)',
-        border: selected ? '0.5px solid rgba(232,87,26,0.40)' : '0.5px solid rgba(255,255,255,0.06)',
+        border: selected ? '0.5px solid rgba(232,87,26,0.40)' : '0.5px solid rgba(255, 255, 255, 0.14)',
         cursor: 'pointer',
         gap: 5,
         transition: 'all 0.15s',

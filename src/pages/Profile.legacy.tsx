@@ -418,7 +418,7 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
       </div>
 
       {/* TAB BAR */}
-      <div className="flex items-center gap-1 mt-4 sticky top-0 z-10 overflow-x-auto" style={{ background: 'rgba(8,8,12,0.80)', backdropFilter: 'blur(12px)', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 20 }}>
+      <div className="flex items-center gap-1 mt-4 sticky top-0 z-10 overflow-x-auto" style={{ background: 'rgba(8,8,12,0.80)', backdropFilter: 'blur(12px)', paddingBottom: 12, borderBottom: '1px solid rgba(255, 255, 255, 0.14)', marginBottom: 20 }}>
         {allTabs.map((tab) => (
           <button
             key={tab.key}

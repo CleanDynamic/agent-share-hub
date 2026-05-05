@@ -217,7 +217,7 @@ function MenuItemRow({
         margin: "0 4px",
         width: "calc(100% - 8px)",
         borderRadius: 6,
-        background: isHovered && !disabled ? "rgba(255, 255, 255, 0.04)" : "transparent",
+        background: isHovered && !disabled ? "rgba(255, 255, 255, 0.12)" : "transparent",
         border: item.isEmphasized ? "0.5px solid rgba(46, 196, 182, 0.20)" : "0.5px solid transparent",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled && !busy ? 0.5 : 1,

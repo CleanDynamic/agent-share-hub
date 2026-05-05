@@ -119,9 +119,9 @@ export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardP
               key={tool}
               className="rounded px-2 py-0.5 text-[10px] font-medium"
               style={{
-                background: "rgba(255,255,255,0.04)",
+                background: "rgba(255, 255, 255, 0.12)",
                 color: "rgba(255,255,255,0.65)",
-                border: "0.5px solid rgba(255,255,255,0.06)",
+                border: "0.5px solid rgba(255, 255, 255, 0.14)",
               }}
             >
               {tool}

@@ -135,7 +135,7 @@ export function LibrarySidebar({
                   onChange={(e) => onEditNameChange(e.target.value.slice(0, 50))}
                   className="flex-1 h-7 rounded px-2 outline-none"
                   style={{
-                    background: "rgba(255,255,255,0.06)",
+                    background: "rgba(255, 255, 255, 0.14)",
                     border: "1px solid rgba(255,255,255,0.1)",
                     fontSize: 12,
                     color: "rgba(255,255,255,0.90)",
@@ -253,7 +253,7 @@ export function LibrarySidebar({
                 </button>
                 <div
                   className="my-1"
-                  style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+                  style={{ borderTop: "1px solid rgba(255, 255, 255, 0.14)" }}
                 />
                 <button
                   onClick={() => {
@@ -313,13 +313,13 @@ export function LibrarySidebar({
             fontWeight: !activeFolder ? 600 : 400,
             background: !activeFolder
               ? "rgba(31,122,109,0.15)"
-              : "rgba(255,255,255,0.04)",
+              : "rgba(255, 255, 255, 0.12)",
             color: !activeFolder
               ? "#1F7A6D"
               : "rgba(255,255,255,0.45)",
             border: !activeFolder
               ? "1px solid rgba(31,122,109,0.3)"
-              : "1px solid rgba(255,255,255,0.06)",
+              : "1px solid rgba(255, 255, 255, 0.14)",
           }}
         >
           All
@@ -333,7 +333,7 @@ export function LibrarySidebar({
             background:
               activeFolder === "root"
                 ? "rgba(31,122,109,0.15)"
-                : "rgba(255,255,255,0.04)",
+                : "rgba(255, 255, 255, 0.12)",
             color:
               activeFolder === "root"
                 ? "#1F7A6D"
@@ -341,7 +341,7 @@ export function LibrarySidebar({
             border:
               activeFolder === "root"
                 ? "1px solid rgba(31,122,109,0.3)"
-                : "1px solid rgba(255,255,255,0.06)",
+                : "1px solid rgba(255, 255, 255, 0.14)",
           }}
         >
           Unsorted
@@ -357,7 +357,7 @@ export function LibrarySidebar({
               background:
                 activeFolder === folder.id
                   ? "rgba(31,122,109,0.15)"
-                  : "rgba(255,255,255,0.04)",
+                  : "rgba(255, 255, 255, 0.12)",
               color:
                 activeFolder === folder.id
                   ? "#1F7A6D"
@@ -365,7 +365,7 @@ export function LibrarySidebar({
               border:
                 activeFolder === folder.id
                   ? "1px solid rgba(31,122,109,0.3)"
-                  : "1px solid rgba(255,255,255,0.06)",
+                  : "1px solid rgba(255, 255, 255, 0.14)",
             }}
           >
             {folder.emoji ? `${folder.emoji} ` : ""}

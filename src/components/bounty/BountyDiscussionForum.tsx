@@ -126,7 +126,7 @@ function Dropdown<T extends string>({
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1 px-3 py-1.5 rounded-md text-xs text-foreground/75 hover:bg-white/5"
         style={{
-          background: "rgba(255,255,255,0.04)",
+          background: "rgba(255, 255, 255, 0.12)",
           border: "0.5px solid rgba(255,255,255,0.08)",
           fontFamily: "Inter, sans-serif",
         }}
@@ -294,7 +294,7 @@ function ReactionPill({
       onClick={onClick}
       className="flex items-center gap-1 px-2 py-1 rounded transition-colors"
       style={{
-        background: hasReacted ? "rgba(46,196,182,0.12)" : "rgba(255,255,255,0.04)",
+        background: hasReacted ? "rgba(46,196,182,0.12)" : "rgba(255, 255, 255, 0.12)",
         border: hasReacted
           ? "0.5px solid rgba(46,196,182,0.3)"
           : "0.5px solid transparent",
@@ -412,7 +412,7 @@ function CommentCard({
         className="relative"
         style={{
           padding: "12px 0",
-          borderBottom: isRoot ? "0.5px solid rgba(255,255,255,0.04)" : "none",
+          borderBottom: isRoot ? "0.5px solid rgba(255, 255, 255, 0.12)" : "none",
           background: flash ? "rgba(46,196,182,0.08)" : "transparent",
           transition: "background 600ms ease-out",
         }}
@@ -559,7 +559,7 @@ function CommentCard({
               placeholder="Write a reply..."
               className="flex-1 px-3 py-2 rounded-md outline-none text-[12px] text-foreground/90"
               style={{
-                background: "rgba(255,255,255,0.04)",
+                background: "rgba(255, 255, 255, 0.12)",
                 border: "0.5px solid rgba(255,255,255,0.08)",
                 fontFamily: "Inter, sans-serif",
               }}

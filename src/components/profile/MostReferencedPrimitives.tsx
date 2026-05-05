@@ -163,7 +163,7 @@ function PrimitiveCard({
         width: "280px",
         height: "130px",
         background: "rgba(22,22,30,0.40)",
-        border: "0.5px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255, 255, 255, 0.14)",
         borderRadius: "8px",
         padding: "12px",
         cursor: "pointer",
@@ -176,7 +176,7 @@ function PrimitiveCard({
         e.currentTarget.style.borderColor = "rgba(245,158,11,0.30)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.14)";
       }}
     >
       <div

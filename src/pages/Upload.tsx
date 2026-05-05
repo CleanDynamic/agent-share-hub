@@ -1804,14 +1804,14 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       fontWeight: 500,
                       background: 'transparent',
                       border: 'none',
-                      borderBottom: '1px solid rgba(255,255,255,0.06)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                       borderRadius: 0,
                       padding: '12px 0',
                       color: 'rgba(255,255,255,0.90)',
                       outline: 'none',
                     }}
                     onFocus={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.16)'}
-                    onBlur={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.06)'}
+                    onBlur={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255, 255, 255, 0.14)'}
                   />
                 </FormControl>
                 <FormDescription style={{ fontSize: 11, color: 'rgba(255,255,255,0.20)', textAlign: 'right' }}>{field.value.length}/100</FormDescription>
@@ -1936,14 +1936,14 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       fontWeight: 500,
                       background: 'transparent',
                       border: 'none',
-                      borderBottom: '1px solid rgba(255,255,255,0.06)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                       borderRadius: 0,
                       padding: '12px 0',
                       color: 'rgba(255,255,255,0.90)',
                       outline: 'none',
                     }}
                     onFocus={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.16)'}
-                    onBlur={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.06)'}
+                    onBlur={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255, 255, 255, 0.14)'}
                   />
                 </FormControl>
                 <FormMessage />
@@ -2199,7 +2199,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   padding: '4px 12px', borderRadius: 9999, fontSize: 11,
                   fontWeight: 600, cursor: 'pointer',
                   background: isProjectMode
-                    ? 'rgba(139,69,19,0.15)' : 'rgba(255,255,255,0.04)',
+                    ? 'rgba(139,69,19,0.15)' : 'rgba(255, 255, 255, 0.12)',
                   border: `1px solid ${isProjectMode
                     ? 'rgba(139,69,19,0.35)' : 'rgba(255,255,255,0.09)'}`,
                   color: isProjectMode
@@ -2310,7 +2310,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                           textTransform: 'uppercase',
                           letterSpacing: '0.08em',
                           cursor: 'pointer',
-                          background: diff ? `${diffColors[diff] ?? '#9CA3AF'}22` : 'rgba(255,255,255,0.04)',
+                          background: diff ? `${diffColors[diff] ?? '#9CA3AF'}22` : 'rgba(255, 255, 255, 0.12)',
                           border: `1px solid ${diff ? (diffColors[diff] ?? '#9CA3AF') : 'rgba(255,255,255,0.10)'}40`,
                           color: diff ? (diffColors[diff] ?? '#9CA3AF') : 'rgba(255,255,255,0.45)',
                         }}
@@ -2363,7 +2363,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       <div style={{
                         display: 'inline-flex', alignItems: 'center', gap: 6,
                         padding: '2px 4px 2px 8px', borderRadius: 9999,
-                        background: 'rgba(255,255,255,0.04)',
+                        background: 'rgba(255, 255, 255, 0.12)',
                         border: '1px solid rgba(255,255,255,0.08)',
                       }}>
                         <img
@@ -2409,7 +2409,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       color: 'rgba(255,255,255,0.95)',
                       background: 'transparent',
                       border: 'none',
-                      borderBottom: '1px solid rgba(255,255,255,0.06)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                       outline: 'none',
                       padding: '4px 0 10px 0',
                       marginBottom: 16, lineHeight: 1.25,
@@ -2417,7 +2417,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       boxSizing: 'border-box' as const,
                     }}
                     onFocus={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)')}
-                    onBlur={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.06)')}
+                    onBlur={e => (e.target.style.borderBottomColor = 'rgba(255, 255, 255, 0.14)')}
                   />
                   {form.formState.errors.title && (
                     <div style={{ fontSize: 12, color: '#EF4444', marginTop: -12, marginBottom: 12 }}>
@@ -2459,7 +2459,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     }}>
                       <div style={{
                         height: 1, flex: 1,
-                        background: 'rgba(255,255,255,0.06)',
+                        background: 'rgba(255, 255, 255, 0.14)',
                       }} />
                       <div style={{
                         fontSize: 10, fontWeight: 700,
@@ -2472,7 +2472,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       </div>
                       <div style={{
                         height: 1, flex: 1,
-                        background: 'rgba(255,255,255,0.06)',
+                        background: 'rgba(255, 255, 255, 0.14)',
                       }} />
                     </div>
                   )}
@@ -2534,7 +2534,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   }}>
                     <div style={{
                       height: 1, flex: 1,
-                      background: 'rgba(255,255,255,0.06)',
+                      background: 'rgba(255, 255, 255, 0.14)',
                     }} />
                     <div style={{
                       fontSize: 10, fontWeight: 700,
@@ -2548,7 +2548,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     </div>
                     <div style={{
                       height: 1, flex: 1,
-                      background: 'rgba(255,255,255,0.06)',
+                      background: 'rgba(255, 255, 255, 0.14)',
                     }} />
                   </div>
 
@@ -2859,7 +2859,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   </button>
                 ) : (
                   <div style={{
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255, 255, 255, 0.14)',
                     borderRadius: 12,
                     padding: 16,
                     background: 'rgba(255,255,255,0.02)',
@@ -2912,7 +2912,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               bottom: 0,
               background: 'rgba(8,8,12,0.95)',
               backdropFilter: 'blur(20px)',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
+              borderTop: '1px solid rgba(255, 255, 255, 0.14)',
               padding: '12px 0 16px 0',
               marginTop: 24,
               zIndex: 10,
@@ -3010,7 +3010,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               </button>
               <button onClick={handleExitCancel} style={{
                 padding: '8px 16px', fontSize: 12, fontWeight: 600, borderRadius: 8,
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                background: 'rgba(255, 255, 255, 0.14)', border: '1px solid rgba(255,255,255,0.12)',
                 color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
               }}>
                 Cancel

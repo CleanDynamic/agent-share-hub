@@ -194,7 +194,7 @@ const styles = {
     borderLeft: "2px solid transparent",
     marginLeft: -2,
   },
-  resultItemHover: { backgroundColor: "rgba(255,255,255,0.04)" },
+  resultItemHover: { backgroundColor: "rgba(255, 255, 255, 0.12)" },
   resultItemActive: {
     borderLeftColor: "#E8571A",
     backgroundColor: "rgba(232,87,26,0.06)",

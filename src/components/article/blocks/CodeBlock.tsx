@@ -461,7 +461,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
               className="rounded-md overflow-hidden"
               style={{
                 background: 'rgba(0,0,0,0.35)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
               }}
             >
               <Editor
@@ -517,7 +517,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
                 className="text-[11px] leading-snug whitespace-pre-wrap break-words rounded-md p-3 max-h-48 overflow-auto"
                 style={{
                   background: 'rgba(0,0,0,0.35)',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.14)',
                   color: lastRun?.error ? '#fca5a5' : 'rgba(255,255,255,0.8)',
                   minHeight: 48,
                   fontFamily:

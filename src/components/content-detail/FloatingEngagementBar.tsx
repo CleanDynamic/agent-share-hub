@@ -110,7 +110,7 @@ function ActionButton({
         background: customBackground
           ? customBackground
           : isHovered
-          ? "rgba(255,255,255,0.04)"
+          ? "rgba(255, 255, 255, 0.12)"
           : "transparent",
         color: textColor,
         transition: "background 150ms ease",

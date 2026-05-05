@@ -176,7 +176,7 @@ export function WorkspaceShell() {
           padding: '0 12px',
           fontSize: 11,
           color: 'rgba(255,255,255,0.60)',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
         }}
       >
         {selectionLabel && (
@@ -207,7 +207,7 @@ export function WorkspaceShell() {
           alignItems: 'center',
           gap: 4,
           padding: '0 8px',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
           flexShrink: 0,
         }}
       >
@@ -274,7 +274,7 @@ function WorkspaceTabButton({ tool, active, iconVisible, onClick }: WorkspaceTab
           }}
           onMouseEnter={(e) => {
             if (active) return;
-            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
             const svg = e.currentTarget.querySelector('svg');
             if (svg) svg.style.color = 'rgba(255,255,255,0.85)';
           }}

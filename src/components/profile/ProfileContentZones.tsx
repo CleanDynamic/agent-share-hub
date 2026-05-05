@@ -392,7 +392,7 @@ function ActivityRow({ item, onClick }: { item: ZoneItem; onClick: () => void })
         display: "flex",
         gap: "12px",
         padding: "10px 0",
-        borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+        borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
         cursor: "pointer",
       }}
     >
@@ -520,7 +520,7 @@ function LoadingSkeleton({ zone }: { zone: Zone }) {
             style={{
               height: "44px",
               marginBottom: "8px",
-              background: "rgba(255,255,255,0.04)",
+              background: "rgba(255, 255, 255, 0.12)",
               borderRadius: "6px",
             }}
             className="animate-pulse"
@@ -543,7 +543,7 @@ function LoadingSkeleton({ zone }: { zone: Zone }) {
           key={i}
           style={{
             height: "110px",
-            background: "rgba(255,255,255,0.04)",
+            background: "rgba(255, 255, 255, 0.12)",
             borderRadius: "8px",
           }}
           className="animate-pulse"

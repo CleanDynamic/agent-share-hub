@@ -213,7 +213,7 @@ export function useVariableAutocomplete({
             className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11.5px] transition-colors"
             style={{
               background:
-                i === state.highlight ? 'rgba(255,255,255,0.06)' : 'transparent',
+                i === state.highlight ? 'rgba(255, 255, 255, 0.14)' : 'transparent',
               color: 'rgba(255,255,255,0.85)',
             }}
           >

@@ -59,14 +59,14 @@ const styles = {
     borderBottom: '1px solid hsl(var(--foreground) / 0.06)',
   },
   divider: {
-    background: 'rgba(255,255,255,0.06)',
+    background: 'rgba(255, 255, 255, 0.14)',
   },
   iconButton: {
     color: 'rgba(255,255,255,0.65)',
   },
   iconButtonHover: {
     color: 'rgba(255,255,255,0.85)',
-    background: 'rgba(255,255,255,0.04)',
+    background: 'rgba(255, 255, 255, 0.12)',
   },
   iconButtonActive: {
     color: '#2EC4B6',
@@ -341,7 +341,7 @@ function ColorSwatch({ color, label, shortcut, onClick }: ColorSwatchProps) {
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            background: isHovered ? 'rgba(255,255,255,0.04)' : 'transparent',
+            background: isHovered ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
             transition: 'all 120ms ease-out',
           }}
           onMouseEnter={() => setIsHovered(true)}
@@ -454,7 +454,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            background: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
+            background: hovered ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
             transition: 'all 120ms ease-out',
           }}
         >

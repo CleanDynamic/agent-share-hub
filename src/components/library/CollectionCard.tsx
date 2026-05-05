@@ -137,7 +137,7 @@ function CoverTile({ item }: { item: CoverItem }) {
   const tileStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
-    background: "rgba(255,255,255,0.04)",
+    background: "rgba(255, 255, 255, 0.12)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -203,7 +203,7 @@ function CoverTile({ item }: { item: CoverItem }) {
         <div
           style={{
             ...tileStyle,
-            background: `linear-gradient(135deg, ${blockColor}33, rgba(255,255,255,0.04))`,
+            background: `linear-gradient(135deg, ${blockColor}33, rgba(255, 255, 255, 0.12))`,
           }}
         >
           <BlockIcon size={22} color={blockColor} />

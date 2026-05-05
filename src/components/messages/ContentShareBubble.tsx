@@ -228,7 +228,7 @@ export function ContentShareBubble({
 
   const bubbleBg = isFromCurrentUser
     ? "rgba(46,196,182,0.12)"
-    : "rgba(255,255,255,0.04)";
+    : "rgba(255, 255, 255, 0.12)";
   const hoverBg = isFromCurrentUser
     ? "rgba(46,196,182,0.16)"
     : "rgba(255,255,255,0.08)";
@@ -475,7 +475,7 @@ export function ContentShareBubble({
         style={{
           backgroundColor: hovered ? hoverBg : bubbleBg,
           borderRadius,
-          border: "1px solid rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255, 255, 255, 0.14)",
         }}
       >
         {senderNote && (

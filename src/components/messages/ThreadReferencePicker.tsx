@@ -231,7 +231,7 @@ export function ThreadReferencePicker({
                 ) : (
                   <div
                     className="h-6 w-6 rounded flex items-center justify-center shrink-0 text-white/70"
-                    style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
+                    style={{ backgroundColor: "rgba(255, 255, 255, 0.14)" }}
                   >
                     {item.icon || typeConfig[item.type].icon}
                   </div>

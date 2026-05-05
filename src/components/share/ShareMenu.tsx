@@ -89,7 +89,7 @@ const hintStyle: React.CSSProperties = {
 const searchInputStyle: React.CSSProperties = {
   height: 28,
   width: "100%",
-  background: "rgba(255,255,255,0.04)",
+  background: "rgba(255, 255, 255, 0.12)",
   border: "0.5px solid rgba(255,255,255,0.10)",
   borderRadius: 6,
   padding: "0 10px 0 32px",
@@ -100,7 +100,7 @@ const searchInputStyle: React.CSSProperties = {
 };
 
 function rowBg(active: boolean) {
-  return active ? "rgba(255,255,255,0.06)" : "transparent";
+  return active ? "rgba(255, 255, 255, 0.14)" : "transparent";
 }
 
 const ShareMenu: React.FC<ShareMenuProps> = ({

@@ -125,7 +125,7 @@ function SwipeableThreadRow({
       <div className="relative shrink-0">
         <Avatar className="shrink-0" style={{ width: 36, height: 36 }}>
           {thread.other_avatar_url && <AvatarImage src={thread.other_avatar_url} />}
-          <AvatarFallback style={{ fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.60)' }}>
+          <AvatarFallback style={{ fontSize: 11, fontWeight: 600, background: 'rgba(255, 255, 255, 0.14)', color: 'rgba(255,255,255,0.60)' }}>
             {initials(thread.other_display_name)}
           </AvatarFallback>
         </Avatar>
@@ -737,7 +737,7 @@ const MessagesPage = () => {
         <button
           onClick={() => setComposeOpen(true)}
           style={{ padding: 8, color: 'rgba(255,255,255,0.45)', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: 8 }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.80)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.80)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.background = 'transparent'; }}
         >
           <Pencil className="h-5 w-5" />
@@ -768,7 +768,7 @@ const MessagesPage = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 px-4 shrink-0" style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 4 }}>
+      <div className="flex items-center gap-1 px-4 shrink-0" style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255, 255, 255, 0.14)', marginBottom: 4 }}>
         <button
           onClick={() => setActiveTab("primary")}
           style={{ fontSize: 13, fontWeight: 500, padding: '5px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: activeTab === "primary" ? 'rgba(31,122,109,0.08)' : 'transparent', color: activeTab === "primary" ? '#1F7A6D' : 'rgba(255,255,255,0.45)' }}

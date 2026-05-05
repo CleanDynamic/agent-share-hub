@@ -580,7 +580,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
               className="rounded-md p-3 max-h-[400px] overflow-auto"
               style={{
                 background: 'rgba(0,0,0,0.35)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
                 minHeight: 200,
               }}
             >

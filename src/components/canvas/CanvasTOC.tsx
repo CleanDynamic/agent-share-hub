@@ -394,7 +394,7 @@ export function CanvasTOC({
             transition: 'background 0.1s',
           }}
           onMouseEnter={e =>
-            ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)')
+            ((e.currentTarget as HTMLElement).style.background = 'rgba(255, 255, 255, 0.12)')
           }
           onMouseLeave={e =>
             ((e.currentTarget as HTMLElement).style.background = 'transparent')
@@ -567,7 +567,7 @@ export function CanvasTOC({
             position: 'relative',
           }}
           onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
+            (e.currentTarget as HTMLElement).style.background = 'rgba(255, 255, 255, 0.12)';
             const controls = (e.currentTarget as HTMLElement).querySelector('.depth-controls') as HTMLElement;
             if (controls) controls.style.opacity = '1';
           }}

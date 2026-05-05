@@ -412,7 +412,7 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
           variant={BackgroundVariant.Dots}
           gap={20}
           size={1}
-          color="rgba(255,255,255,0.06)"
+          color="rgba(255, 255, 255, 0.14)"
         />
         {showMiniMap ? (
           <MiniMap

@@ -140,7 +140,7 @@ export function TemplateLibrary({
         <div style={{
           padding: '20px 20px 14px 20px',
           borderBottom:
-            '1px solid rgba(255,255,255,0.06)',
+            '1px solid rgba(255, 255, 255, 0.14)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -173,7 +173,7 @@ export function TemplateLibrary({
         <div style={{
           display: 'flex', gap: 0,
           borderBottom:
-            '1px solid rgba(255,255,255,0.06)',
+            '1px solid rgba(255, 255, 255, 0.14)',
           overflowX: 'auto',
           padding: '0 20px',
         }}>
@@ -309,7 +309,7 @@ export function TemplateLibrary({
                         fontSize: 9, padding: '2px 7px',
                         borderRadius: 4,
                         background:
-                          'rgba(255,255,255,0.04)',
+                          'rgba(255, 255, 255, 0.12)',
                         border:
                           '1px solid rgba(255,255,255,0.08)',
                         color: 'rgba(255,255,255,0.40)',
@@ -325,7 +325,7 @@ export function TemplateLibrary({
                     <span style={{
                       fontSize: 9, padding: '2px 7px',
                       borderRadius: 4,
-                      background: 'rgba(255,255,255,0.04)',
+                      background: 'rgba(255, 255, 255, 0.12)',
                       border:
                         '1px solid rgba(255,255,255,0.08)',
                       color: 'rgba(255,255,255,0.40)',

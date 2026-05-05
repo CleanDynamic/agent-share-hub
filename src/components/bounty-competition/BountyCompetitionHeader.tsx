@@ -120,7 +120,7 @@ function CounterPill({ icon, text }: { icon: React.ReactNode; text: string }) {
         gap: 6,
         padding: "4px 10px",
         borderRadius: 999,
-        background: "rgba(255,255,255,0.04)",
+        background: "rgba(255, 255, 255, 0.12)",
         border: "1px solid rgba(255,255,255,0.08)",
         fontFamily: "Inter, sans-serif",
         fontSize: 12,
@@ -308,7 +308,7 @@ export function BountyCompetitionHeader({
         </div>
 
         {/* REWARD + DEADLINE */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 20, padding: "16px 0", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 20, padding: "16px 0", borderTop: "1px solid rgba(255, 255, 255, 0.14)", borderBottom: "1px solid rgba(255, 255, 255, 0.14)" }}>
           <div>
             <div style={labelStyle}>Reward</div>
             <RewardDisplay type={bounty.rewardType} amount={bounty.rewardAmount} currency={bounty.rewardCurrency} />
@@ -322,7 +322,7 @@ export function BountyCompetitionHeader({
               </span>
             </div>
             {bounty.deadline && deadlineState.type !== "past" && deadlineState.type !== "open_ended" && (
-              <div style={{ marginTop: 8, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ marginTop: 8, height: 4, background: "rgba(255, 255, 255, 0.14)", borderRadius: 2, overflow: "hidden" }}>
                 <div style={{ width: `${timeProgress}%`, height: "100%", background: deadlineState.color as string, transition: "width 1s ease-out" }} />
               </div>
             )}
@@ -384,7 +384,7 @@ export function BountyCompetitionHeader({
         <div>
           {(bounty.status === "open" || bounty.status === "partially_solved") && (
             <>
-              <div style={{ height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden", marginBottom: 6 }}>
+              <div style={{ height: 6, background: "rgba(255, 255, 255, 0.14)", borderRadius: 3, overflow: "hidden", marginBottom: 6 }}>
                 <div style={{ width: `${slotProgress}%`, height: "100%", background: "linear-gradient(90deg, #2EC4B6, #06B6D4)", transition: "width 0.6s ease-out" }} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>

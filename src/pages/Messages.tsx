@@ -438,7 +438,7 @@ export default function MessagesPage() {
           width: "100%",
           position: "relative",
           overflow: "hidden",
-          background: "#08080C",
+          background: "#25252F",
         }}
       >
         <MessagesThreadList
@@ -469,7 +469,7 @@ export default function MessagesPage() {
                   className="flex items-center gap-2 flex-shrink-0"
                   style={{
                     padding: "8px 14px",
-                    borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+                    borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
                     background: "rgba(255,255,255,0.02)",
                   }}
                 >
@@ -513,7 +513,7 @@ export default function MessagesPage() {
             <div className="flex h-full flex-col items-center justify-center gap-3 text-center px-6">
               <div
                 className="flex items-center justify-center rounded-full"
-                style={{ width: 72, height: 72, background: "rgba(255,255,255,0.04)" }}
+                style={{ width: 72, height: 72, background: "rgba(255, 255, 255, 0.12)" }}
               >
                 <MessageSquare size={28} style={{ color: "rgba(255,255,255,0.40)" }} />
               </div>

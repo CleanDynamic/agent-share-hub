@@ -185,7 +185,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
         {/* Header */}
         <div
           className="flex items-center justify-between px-5 h-14 shrink-0"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+          style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.14)" }}
         >
           <div className="flex items-center gap-2">
             <Settings size={14} style={{ color: "rgba(255,255,255,0.6)" }} />
@@ -273,7 +273,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
             {/* Tab strip */}
             <div
               className="flex h-11 items-center gap-5 px-5 shrink-0"
-              style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+              style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.14)" }}
             >
               {tabs.map((tab) => {
                 const Icon = tab.icon;
@@ -383,7 +383,7 @@ function StatCell({
   return (
     <div
       className="rounded-lg p-3 flex flex-col gap-1"
-      style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+      style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }}
     >
       <span
         style={{
@@ -500,7 +500,7 @@ function OverviewTab({
               <div
                 key={sub.id}
                 className="flex items-center justify-between gap-3 rounded-lg p-2.5"
-                style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+                style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <Avatar src={sub.solverAvatar} alt={sub.solverHandle} />
@@ -546,7 +546,7 @@ function OverviewTab({
               <div
                 key={u.userId}
                 className="flex items-center justify-between gap-3 rounded-lg p-2.5"
-                style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+                style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <Avatar src={u.avatar} alt={u.handle} />
@@ -788,7 +788,7 @@ function SubmissionRow({
   return (
     <div
       className="flex items-center justify-between gap-3 rounded-lg p-2.5"
-      style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+      style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }}
     >
       <div className="flex items-center gap-2.5 min-w-0">
         <Avatar src={submission.solverAvatar} alt={submission.solverHandle} />
@@ -980,7 +980,7 @@ function SettingsTab({
       <SettingsField label="Reward">
         <div
           className="flex items-center justify-between rounded-lg px-3 py-2"
-          style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+          style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }}
         >
           <span
             style={{
@@ -1009,7 +1009,7 @@ function SettingsTab({
           <button
             onClick={() => setExtendDropdownOpen(!extendDropdownOpen)}
             className="flex w-full items-center justify-between rounded-lg px-3 py-2 transition-colors hover:bg-white/10"
-            style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
+            style={{ backgroundColor: "rgba(255, 255, 255, 0.14)" }}
           >
             <span
               style={{
@@ -1059,7 +1059,7 @@ function SettingsTab({
           rows={4}
           className="w-full resize-none rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-white/20"
           style={{
-            backgroundColor: "rgba(255,255,255,0.06)",
+            backgroundColor: "rgba(255, 255, 255, 0.14)",
             fontFamily: "Inter, sans-serif",
             fontSize: "12px",
             color: "rgba(255,255,255,0.85)",
@@ -1189,7 +1189,7 @@ function SettingsTab({
               onClick={() => setShowCloseConfirm(false)}
               className="flex-1 rounded-lg py-2 transition-colors hover:bg-white/10"
               style={{
-                backgroundColor: "rgba(255,255,255,0.06)",
+                backgroundColor: "rgba(255, 255, 255, 0.14)",
                 fontFamily: "Inter, sans-serif",
                 fontSize: "11px",
                 fontWeight: 500,

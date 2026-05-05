@@ -847,7 +847,7 @@ const Browse = () => {
         {/* Tab bar — teal active for Browse context */}
         <div
           className="flex items-center gap-1 flex-wrap"
-          style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 20 }}
+          style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255, 255, 255, 0.14)', marginBottom: 20 }}
         >
           {([
             { value: "blueprints" as BrowseTab, label: "Blueprints" },
@@ -917,7 +917,7 @@ const Browse = () => {
                 fontWeight: 500,
                 padding: '4px 10px',
                 borderRadius: 100,
-                border: '1px solid ' + (sortMode === opt.value ? 'rgba(31,122,109,0.3)' : 'rgba(255,255,255,0.06)'),
+                border: '1px solid ' + (sortMode === opt.value ? 'rgba(31,122,109,0.3)' : 'rgba(255, 255, 255, 0.14)'),
                 background: sortMode === opt.value ? 'rgba(31,122,109,0.10)' : 'transparent',
                 color: sortMode === opt.value ? '#1F7A6D' : 'rgba(255,255,255,0.45)',
                 cursor: 'pointer',
@@ -940,7 +940,7 @@ const Browse = () => {
                 fontWeight: 500,
                 padding: '4px 12px',
                 borderRadius: 100,
-                border: '1px solid ' + (timePeriod === opt.value ? 'rgba(31,122,109,0.3)' : 'rgba(255,255,255,0.06)'),
+                border: '1px solid ' + (timePeriod === opt.value ? 'rgba(31,122,109,0.3)' : 'rgba(255, 255, 255, 0.14)'),
                 background: timePeriod === opt.value ? 'rgba(31,122,109,0.10)' : 'transparent',
                 color: timePeriod === opt.value ? '#1F7A6D' : 'rgba(255,255,255,0.45)',
                 cursor: 'pointer',
@@ -976,7 +976,7 @@ const Browse = () => {
             {activeFilterCount > 0 && (
               <span
                 className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full flex items-center justify-center font-medium"
-                style={{ background: '#1F7A6D', color: '#08080C', fontSize: 10 }}
+                style={{ background: '#1F7A6D', color: '#25252F', fontSize: 10 }}
               >
                 {activeFilterCount}
               </span>

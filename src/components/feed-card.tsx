@@ -23,7 +23,7 @@ const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: s
   technique: { bg: "rgba(31, 122, 109, 0.15)", color: "#1F7A6D", border: "rgba(31, 122, 109, 0.3)" },
   discovery: { bg: "rgba(139, 92, 246, 0.15)", color: "#8B5CF6", border: "rgba(139, 92, 246, 0.3)" },
   discussion: { bg: "rgba(59, 130, 246, 0.15)", color: "#3B82F6", border: "rgba(59, 130, 246, 0.3)" },
-  default: { bg: "rgba(255, 255, 255, 0.06)", color: "rgba(255, 255, 255, 0.55)", border: "rgba(255, 255, 255, 0.1)" },
+  default: { bg: "rgba(255, 255, 255, 0.14)", color: "rgba(255, 255, 255, 0.55)", border: "rgba(255, 255, 255, 0.1)" },
 }
 
 export interface FeedPost {
@@ -243,8 +243,8 @@ export function FeedCard({ post }: { post: FeedPost }) {
         backdropFilter: "blur(60px)",
         WebkitBackdropFilter: "blur(60px)",
         border: "1px solid rgba(255, 255, 255, 0.08)",
-        borderTopColor: "rgba(255, 255, 255, 0.06)",
-        borderLeftColor: "rgba(255, 255, 255, 0.06)",
+        borderTopColor: "rgba(255, 255, 255, 0.14)",
+        borderLeftColor: "rgba(255, 255, 255, 0.14)",
         boxShadow: "0 2px 12px rgba(0, 0, 0, 0.20)",
       }}
       onClick={() => navigate(`/content/${post.id}`)}
@@ -425,7 +425,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
                     flex: 1,
                     height: 4,
                     borderRadius: 2,
-                    background: "rgba(255,255,255,0.06)",
+                    background: "rgba(255, 255, 255, 0.14)",
                     overflow: "hidden",
                   }}
                 >
@@ -595,7 +595,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
             transition: "max-height 0.65s cubic-bezier(0.4,0,0.2,1), opacity 0.50s ease",
           }}
         >
-          <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.06)", margin: "12px 0" }} />
+          <hr style={{ border: "none", borderTop: "1px solid rgba(255, 255, 255, 0.14)", margin: "12px 0" }} />
           <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.30)", marginBottom: 8 }}>
             What to expect
           </div>
@@ -616,7 +616,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
       {/* Show more/less */}
       {canExpand && (
         <>
-          <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.06)", margin: "10px 0 4px 0" }} />
+          <hr style={{ border: "none", borderTop: "1px solid rgba(255, 255, 255, 0.14)", margin: "10px 0 4px 0" }} />
           <button
             style={{ fontSize: 12, color: "rgba(255,255,255,0.40)", background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}
             onClick={handleStageClick}
@@ -634,7 +634,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
       <div style={{
         display: "flex", alignItems: "center",
         marginTop: 14, paddingTop: 10,
-        borderTop: "1px solid rgba(255,255,255,0.06)",
+        borderTop: "1px solid rgba(255, 255, 255, 0.14)",
       }}>
         {/* Like */}
         <button
@@ -840,7 +840,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
                     transition: 'background 0.1s',
                   }}
                   onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(255, 255, 255, 0.14)';
                   }}
                   onMouseLeave={e => {
                     (e.currentTarget as HTMLElement).style.background = 'transparent';

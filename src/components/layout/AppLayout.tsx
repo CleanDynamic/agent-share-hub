@@ -16,7 +16,7 @@ export function AppLayout() {
 
   if (isMobile) {
     return (
-      <div className="min-h-screen" style={{ background: "#08080C" }}>
+      <div className="min-h-screen" style={{ background: "#25252F" }}>
         <MobileNav />
         <main
           className="overflow-y-auto"

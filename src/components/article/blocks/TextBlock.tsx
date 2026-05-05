@@ -222,7 +222,7 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
           className="nodrag rounded-md px-2 py-1.5"
           style={{
             background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
           }}
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
@@ -265,7 +265,7 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
               className="rounded-md p-3"
               style={{
                 background: 'rgba(0,0,0,0.25)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
                 minHeight: 240,
               }}
             >

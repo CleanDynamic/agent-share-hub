@@ -164,7 +164,7 @@ export default function Search() {
       {/* Search input */}
       <div style={{
         padding: '12px 16px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
         position: 'sticky', top: 0,
         background: 'rgba(8,8,12,0.95)',
         backdropFilter: 'blur(20px)',
@@ -215,7 +215,7 @@ export default function Search() {
       {q && (
         <div style={{
           display: 'flex',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
           position: 'sticky', top: 57,
           background: 'rgba(8,8,12,0.95)',
           backdropFilter: 'blur(20px)',

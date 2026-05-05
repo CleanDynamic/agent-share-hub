@@ -161,7 +161,7 @@ export function SolutionSubmissionShell({
         </div>
 
         {/* SOLVER NOTE */}
-        <div style={{ background: "rgba(22,22,30,0.40)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
+        <div style={{ background: "rgba(22,22,30,0.40)", border: "0.5px solid rgba(255, 255, 255, 0.14)", borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
           <textarea
             value={solverNote}
             onChange={(e) => {
@@ -214,7 +214,7 @@ export function SolutionSubmissionShell({
           height: 60,
           background: "rgba(8,8,12,0.92)",
           backdropFilter: "blur(24px)",
-          borderTop: "0.5px solid rgba(255,255,255,0.06)",
+          borderTop: "0.5px solid rgba(255, 255, 255, 0.14)",
           padding: "12px 24px",
         }}
       >

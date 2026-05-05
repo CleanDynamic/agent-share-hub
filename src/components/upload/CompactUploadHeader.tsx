@@ -78,7 +78,7 @@ export function CompactUploadHeader({
         className="w-full max-w-[880px]"
         style={{
           background: "rgba(22,22,30,0.40)",
-          border: "0.5px solid rgba(255,255,255,0.06)",
+          border: "0.5px solid rgba(255, 255, 255, 0.14)",
           borderRadius: "12px",
           padding: "16px 24px",
         }}
@@ -106,7 +106,7 @@ export function CompactUploadHeader({
             border: isHoveringCover
               ? "0.5px solid rgba(255,255,255,0.10)"
               : "0.5px dashed rgba(255,255,255,0.10)",
-            background: isHoveringCover ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)",
+            background: isHoveringCover ? "rgba(255, 255, 255, 0.12)" : "rgba(255,255,255,0.02)",
             borderRadius: "6px", marginTop: "8px",
           }}
           onMouseEnter={() => setIsHoveringCover(true)}
@@ -153,7 +153,7 @@ export function CompactUploadHeader({
           style={{
             height: "40px", padding: "8px 12px", marginTop: "8px",
             background: "transparent", border: "none",
-            borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+            borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
             fontFamily: "Inter, sans-serif", fontSize: "22px",
             fontWeight: 700, color: "rgba(255,255,255,0.95)",
           }}
@@ -215,7 +215,7 @@ export function CompactUploadHeader({
             background: "rgba(8,8,12,0.92)",
             backdropFilter: "blur(24px)",
             WebkitBackdropFilter: "blur(24px)",
-            borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+            borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
           }}
         >
           <div className="flex items-center gap-2 cursor-pointer" onClick={scrollToTop}>

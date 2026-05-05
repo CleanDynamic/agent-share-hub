@@ -181,7 +181,7 @@ export default function LibraryPage() {
             className="mb-5 space-y-2"
             style={{
               background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255, 255, 255, 0.14)",
               borderRadius: 12,
               padding: "14px 16px",
             }}
@@ -192,7 +192,7 @@ export default function LibraryPage() {
                 className="h-9 w-9 rounded-md flex items-center justify-center text-sm shrink-0 transition-colors"
                 style={{
                   border: "1px solid rgba(255,255,255,0.08)",
-                  background: "rgba(255,255,255,0.04)",
+                  background: "rgba(255, 255, 255, 0.12)",
                   color: "rgba(255,255,255,0.45)",
                 }}
               >
@@ -224,7 +224,7 @@ export default function LibraryPage() {
                     key={em}
                     onClick={() => { setNewEmoji(em); setShowEmojiGrid(false); }}
                     className="h-8 w-8 rounded flex items-center justify-center text-sm transition-colors"
-                    style={{ background: "rgba(255,255,255,0.04)" }}
+                    style={{ background: "rgba(255, 255, 255, 0.12)" }}
                   >
                     {em}
                   </button>

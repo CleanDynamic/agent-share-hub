@@ -143,8 +143,8 @@ export function BlockResultCard({
         backdropFilter: "blur(60px)",
         WebkitBackdropFilter: "blur(60px)",
         border: "1px solid rgba(255, 255, 255, 0.08)",
-        borderTopColor: "rgba(255, 255, 255, 0.06)",
-        borderLeftColor: "rgba(255, 255, 255, 0.06)",
+        borderTopColor: "rgba(255, 255, 255, 0.14)",
+        borderLeftColor: "rgba(255, 255, 255, 0.14)",
         boxShadow: "0 2px 12px rgba(0, 0, 0, 0.20)",
       }}
     >
@@ -237,7 +237,7 @@ export function BlockResultCard({
           borderRadius: 10,
           overflow: "hidden",
           background: "rgba(0,0,0,0.25)",
-          border: "1px solid rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
           padding: 12,
         }}
       >

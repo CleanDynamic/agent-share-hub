@@ -13,7 +13,7 @@ function SkeletonCard() {
     <div
       style={{
         background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255, 255, 255, 0.14)",
         borderRadius: 12,
         padding: 20,
       }}
@@ -24,7 +24,7 @@ function SkeletonCard() {
           style={{
             height: 14,
             width: 80,
-            background: "rgba(255,255,255,0.06)",
+            background: "rgba(255, 255, 255, 0.14)",
           }}
         />
         <div
@@ -32,7 +32,7 @@ function SkeletonCard() {
           style={{
             height: 12,
             width: "75%",
-            background: "rgba(255,255,255,0.04)",
+            background: "rgba(255, 255, 255, 0.12)",
           }}
         />
         <div
@@ -43,7 +43,7 @@ function SkeletonCard() {
             background: "rgba(255,255,255,0.03)",
           }}
         />
-        <div className="flex items-center gap-2 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <div className="flex items-center gap-2 pt-3" style={{ borderTop: "1px solid rgba(255, 255, 255, 0.12)" }}>
           <div
             className="rounded-full"
             style={{
@@ -57,7 +57,7 @@ function SkeletonCard() {
             style={{
               height: 10,
               width: 36,
-              background: "rgba(255,255,255,0.04)",
+              background: "rgba(255, 255, 255, 0.12)",
             }}
           />
         </div>

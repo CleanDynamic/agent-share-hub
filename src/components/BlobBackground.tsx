@@ -8,7 +8,7 @@ export function BlobBackground() {
         position: 'fixed', inset: 0, zIndex: 0,
         pointerEvents: 'none',
         background: `
-          radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px),
+          radial-gradient(circle, rgba(255, 255, 255, 0.14) 1px, transparent 1px),
           radial-gradient(ellipse 60% 50% at 20% 40%, rgba(46,196,182,0.07) 0%, transparent 70%),
           radial-gradient(ellipse 50% 40% at 80% 30%, rgba(232,87,26,0.05) 0%, transparent 70%),
           radial-gradient(ellipse 70% 60% at 50% 80%, rgba(46,196,182,0.04) 0%, transparent 70%),

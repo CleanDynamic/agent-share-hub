@@ -347,7 +347,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
         return (
           <div
             className="flex items-center justify-between"
-            style={{ marginTop: 0, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.04)' }}
+            style={{ marginTop: 0, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.12)' }}
           >
             <div
               className="flex items-center flex-nowrap overflow-x-auto"

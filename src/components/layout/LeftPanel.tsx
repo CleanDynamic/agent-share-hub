@@ -107,7 +107,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                   ? { color: 'var(--orange)', borderLeft: '2px solid var(--orange)', background: 'rgba(139,69,19,0.08)' }
                   : { color: 'var(--text-muted)' }
                 }
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'; }}
                 onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
               >
                 <item.icon className="h-[22px] w-[22px] shrink-0 transition-colors" />

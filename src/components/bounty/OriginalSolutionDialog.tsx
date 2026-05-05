@@ -117,7 +117,7 @@ function Pane({ title, json }: { title: string; json: string }) {
           color: "rgba(46,196,182,0.85)",
           letterSpacing: "0.04em",
           textTransform: "uppercase",
-          borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+          borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
         }}
       >
         {title}

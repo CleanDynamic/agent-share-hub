@@ -37,7 +37,7 @@ export function DiscoverNoResultsState({
             className="rounded-lg px-4 py-2 text-xs font-medium transition-colors"
             style={{ color: "rgba(255,255,255,0.75)", background: "transparent" }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = "transparent";
