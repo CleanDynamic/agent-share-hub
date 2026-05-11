@@ -1543,6 +1543,7 @@ export function NeoScaleShell() {
         <div className="ns-app-container" ref={containerRef}>
 
           {/* ═══ LEFT PANEL ═══ */}
+          {showLeftPanel && (
           <LiquidGlassPanel cornerRadius={20} elasticity={0.15} style={{ width: leftCollapsed ? 72 : 200, height: 775, flexShrink: 0 }}>
           <div
             className={`ns-left-panel${pulsing ? " pulse" : ""}${leftCollapsed ? " collapsed" : ""}`}
