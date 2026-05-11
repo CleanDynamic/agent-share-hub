@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 export type WorkspaceToolId =
+  | 'nav'
   | 'inspector'
   | 'library'
   | 'outline'
