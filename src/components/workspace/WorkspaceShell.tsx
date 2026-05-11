@@ -338,3 +338,106 @@ function BlockLibraryHost() {
 
   return <BlockLibraryTool onBlockClick={handleClick} />;
 }
+
+/**
+ * NavTool — surfaces the same primary navigation as the LeftPanel so that
+ * upload-editor users on lg/md screens (where the left rail is hidden) can
+ * still reach core app routes from inside the right panel.
+ */
+interface NavRow {
+  key: string;
+  label: string;
+  route: string;
+  icon: LucideIcon;
+  authOnly?: boolean;
+  creatorOnly?: boolean;
+  badge?: string | null;
+  divider?: boolean;
+}
+
+function NavTool() {
+  const navigate = useNavigate();
+  const { isLoggedIn, isCreator } = useAuth();
+  const { display: msgBadge } = useUnreadMessages();
+  const { display: notifBadge } = useUnreadNotifications();
+  const { display: draftBadge } = useDraftCount();
+
+  const rows: NavRow[] = [
+    { key: 'home',          label: 'Home',          route: '/',              icon: Home },
+    { key: 'discover',      label: 'Discover',      route: '/browse',        icon: Compass },
+    { key: 'library',       label: 'Library',       route: '/library',       icon: BookMarked,   authOnly: true },
+    { key: 'upload',        label: 'Upload',        route: '/upload',        icon: UploadIcon,   divider: true },
+    { key: 'drafts',        label: 'Drafts',        route: '/drafts',        icon: FileText,     authOnly: true, badge: draftBadge },
+    { key: 'messages',      label: 'Messages',      route: '/messages',      icon: Mail,         authOnly: true, badge: msgBadge, divider: true },
+    { key: 'notifications', label: 'Notifications', route: '/notifications', icon: Bell,         authOnly: true, badge: notifBadge },
+    { key: 'profile',       label: 'My Profile',    route: '/profile',       icon: User,         authOnly: true, divider: true },
+    { key: 'analytics',     label: 'Analytics',     route: '/analytics',     icon: BarChart3,    authOnly: true, creatorOnly: true },
+  ];
+
+  const visible = rows.filter((r) => {
+    if (r.authOnly && !isLoggedIn) return false;
+    if (r.creatorOnly && !isCreator) return false;
+    return true;
+  });
+
+  return (
+    <div style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {visible.map((r, idx) => {
+        const Icon = r.icon;
+        return (
+          <div key={r.key}>
+            {r.divider && idx > 0 && (
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '6px 4px' }} />
+            )}
+            <button
+              type="button"
+              onClick={() => navigate(r.route)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                width: '100%',
+                padding: '8px 10px',
+                borderRadius: 8,
+                border: 'none',
+                background: 'transparent',
+                color: 'rgba(255,255,255,0.75)',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 13,
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'background 120ms ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <Icon size={15} style={{ color: 'rgba(255,255,255,0.55)', flexShrink: 0 }} />
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {r.label}
+              </span>
+              {r.badge && (
+                <span
+                  style={{
+                    minWidth: 18,
+                    height: 18,
+                    padding: '0 5px',
+                    borderRadius: 9,
+                    background: r.key === 'drafts' ? 'rgba(255,255,255,0.14)' : '#8B4513',
+                    color: r.key === 'drafts' ? 'rgba(255,255,255,0.65)' : '#fff',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {r.badge}
+                </span>
+              )}
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
