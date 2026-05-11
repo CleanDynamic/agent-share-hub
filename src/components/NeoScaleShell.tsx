@@ -2022,6 +2022,44 @@ export function NeoScaleShell() {
           </LiquidGlassPanel>
           )}
 
+          {/* Upload-page side-panel toggle (lg/md only) */}
+          {showUploadToggle && (
+            <button
+              type="button"
+              onClick={() => setUploadSidePanel(p => p === 'tools' ? 'nav' : 'tools')}
+              title={uploadSidePanel === 'tools' ? 'Show navigation' : 'Show tools'}
+              aria-label={uploadSidePanel === 'tools' ? 'Show navigation' : 'Show tools'}
+              style={{
+                position: 'absolute',
+                top: 12,
+                left: uploadSidePanel === 'tools' ? 12 : 'auto',
+                right: uploadSidePanel === 'tools' ? 'auto' : 12,
+                zIndex: 30,
+                width: 34,
+                height: 34,
+                borderRadius: 17,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(20,20,26,0.85)',
+                border: '1px solid rgba(255,255,255,0.14)',
+                color: 'rgba(255,255,255,0.75)',
+                cursor: 'pointer',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.30)',
+              }}
+            >
+              {uploadSidePanel === 'tools' ? (
+                /* Menu icon → swap to nav */
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              ) : (
+                /* Panel-right icon → swap back to tools */
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+              )}
+            </button>
+          )}
+
         </div>
       </div>
     </div>
