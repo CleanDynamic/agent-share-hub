@@ -1223,6 +1223,8 @@ export function NeoScaleShell() {
     const nativeH = 775, pad = 48;
     const nativeW =
       breakpoint === "xl" ? 1068 :
+      (isUploadEditor && isSmallDesktop && uploadSidePanel === 'tools')
+        ? 844 /* middle(600) + gap(24) + right(220) */ :
       breakpoint === "lg" ? 824 :
       /* md */              696;
     function rescale() {
