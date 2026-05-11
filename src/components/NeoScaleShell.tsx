@@ -1242,7 +1242,7 @@ export function NeoScaleShell() {
     window.addEventListener("resize", rescale);
     rescale();
     return () => window.removeEventListener("resize", rescale);
-  }, [isMobile, breakpoint]);
+  }, [isMobile, breakpoint, isUploadEditor, isSmallDesktop, uploadSidePanel]);
 
   /* ── Supabase: recent feed ── */
   const { data: feedItems, isLoading: feedItemsLoading } = useQuery({
