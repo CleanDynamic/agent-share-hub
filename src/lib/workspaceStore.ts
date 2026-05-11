@@ -27,6 +27,7 @@ export interface WorkspaceState {
 }
 
 const initialToolState: Record<WorkspaceToolId, unknown> = {
+  nav: undefined,
   inspector: undefined,
   library: undefined,
   outline: undefined,
