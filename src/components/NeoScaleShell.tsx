@@ -1740,7 +1740,7 @@ export function NeoScaleShell() {
             {...initTilt(rightRef)}
           >
             {location.pathname.startsWith('/upload/blueprint') ? (
-              <WorkspaceShell />
+              <WorkspaceShell showNavTab={uploadEditorSmall} />
             ) : (
             <>
             <div className="ns-right-title">Explore</div>
