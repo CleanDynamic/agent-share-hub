@@ -1039,21 +1039,13 @@ export function NeoScaleShell() {
     location.pathname.startsWith('/upload/blueprint') ||
     location.pathname.startsWith('/upload/blog');
   const isSmallDesktop = breakpoint === "lg" || breakpoint === "md";
-  // On upload editor at lg/md the user can swap which side panel is shown.
-  const [uploadSidePanel, setUploadSidePanel] = useState<'tools' | 'nav'>('tools');
-  useEffect(() => { setUploadSidePanel('tools'); }, [location.pathname]);
+  const uploadEditorSmall = isUploadEditor && isSmallDesktop;
 
-  const showRightPanel =
-    breakpoint === "xl" ||
-    (isUploadEditor && isSmallDesktop && uploadSidePanel === 'tools');
+  const showRightPanel = breakpoint === "xl" || uploadEditorSmall;
   const showLeftPanel =
-    breakpoint === "xl" ||
-    breakpoint === "lg" ||
-    breakpoint === "md"
-      ? !(isUploadEditor && isSmallDesktop && uploadSidePanel === 'tools')
-      : false;
+    (breakpoint === "xl" || breakpoint === "lg" || breakpoint === "md") &&
+    !uploadEditorSmall;
   const leftCollapsed = breakpoint === "md";
-  const showUploadToggle = isUploadEditor && isSmallDesktop;
   const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
   const { display: msgBadge } = useUnreadMessages();
   const { display: notifBadge } = useUnreadNotifications();
