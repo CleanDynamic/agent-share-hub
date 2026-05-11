@@ -1615,6 +1615,7 @@ export function NeoScaleShell() {
             </div>
           </div>
           </LiquidGlassPanel>
+          )}
 
           {/* ═══ MIDDLE PANEL ═══ */}
           <div className="ns-middle-wrapper">
