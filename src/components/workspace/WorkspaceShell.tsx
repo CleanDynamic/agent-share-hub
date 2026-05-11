@@ -110,7 +110,7 @@ function useSelectionLabel(): { label: string | null; kind: string | null } {
   return { label: null, kind: null };
 }
 
-export function WorkspaceShell() {
+export function WorkspaceShell({ showNavTab = false }: { showNavTab?: boolean } = {}) {
   const activeTool = useWorkspaceStore((s) => s.activeTool);
   const setActiveTool = useWorkspaceStore((s) => s.setActiveTool);
   const stageOpen = useWorkspaceStore((s) => s.stageOpen);
