@@ -1039,21 +1039,13 @@ export function NeoScaleShell() {
     location.pathname.startsWith('/upload/blueprint') ||
     location.pathname.startsWith('/upload/blog');
   const isSmallDesktop = breakpoint === "lg" || breakpoint === "md";
-  // On upload editor at lg/md the user can swap which side panel is shown.
-  const [uploadSidePanel, setUploadSidePanel] = useState<'tools' | 'nav'>('tools');
-  useEffect(() => { setUploadSidePanel('tools'); }, [location.pathname]);
+  const uploadEditorSmall = isUploadEditor && isSmallDesktop;
 
-  const showRightPanel =
-    breakpoint === "xl" ||
-    (isUploadEditor && isSmallDesktop && uploadSidePanel === 'tools');
+  const showRightPanel = breakpoint === "xl" || uploadEditorSmall;
   const showLeftPanel =
-    breakpoint === "xl" ||
-    breakpoint === "lg" ||
-    breakpoint === "md"
-      ? !(isUploadEditor && isSmallDesktop && uploadSidePanel === 'tools')
-      : false;
+    (breakpoint === "xl" || breakpoint === "lg" || breakpoint === "md") &&
+    !uploadEditorSmall;
   const leftCollapsed = breakpoint === "md";
-  const showUploadToggle = isUploadEditor && isSmallDesktop;
   const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
   const { display: msgBadge } = useUnreadMessages();
   const { display: notifBadge } = useUnreadNotifications();
@@ -1223,7 +1215,7 @@ export function NeoScaleShell() {
     const nativeH = 775, pad = 48;
     const nativeW =
       breakpoint === "xl" ? 1068 :
-      (isUploadEditor && isSmallDesktop && uploadSidePanel === 'tools')
+      uploadEditorSmall
         ? 844 /* middle(600) + gap(24) + right(220) */ :
       breakpoint === "lg" ? 824 :
       /* md */              696;
@@ -1242,7 +1234,7 @@ export function NeoScaleShell() {
     window.addEventListener("resize", rescale);
     rescale();
     return () => window.removeEventListener("resize", rescale);
-  }, [isMobile, breakpoint, isUploadEditor, isSmallDesktop, uploadSidePanel]);
+  }, [isMobile, breakpoint, isUploadEditor, isSmallDesktop, uploadEditorSmall]);
 
   /* ── Supabase: recent feed ── */
   const { data: feedItems, isLoading: feedItemsLoading } = useQuery({
@@ -1748,7 +1740,7 @@ export function NeoScaleShell() {
             {...initTilt(rightRef)}
           >
             {location.pathname.startsWith('/upload/blueprint') ? (
-              <WorkspaceShell />
+              <WorkspaceShell showNavTab={uploadEditorSmall} />
             ) : (
             <>
             <div className="ns-right-title">Explore</div>
@@ -2022,43 +2014,6 @@ export function NeoScaleShell() {
           </LiquidGlassPanel>
           )}
 
-          {/* Upload-page side-panel toggle (lg/md only) */}
-          {showUploadToggle && (
-            <button
-              type="button"
-              onClick={() => setUploadSidePanel(p => p === 'tools' ? 'nav' : 'tools')}
-              title={uploadSidePanel === 'tools' ? 'Show navigation' : 'Show tools'}
-              aria-label={uploadSidePanel === 'tools' ? 'Show navigation' : 'Show tools'}
-              style={{
-                position: 'absolute',
-                top: 12,
-                left: uploadSidePanel === 'tools' ? 12 : 'auto',
-                right: uploadSidePanel === 'tools' ? 'auto' : 12,
-                zIndex: 30,
-                width: 34,
-                height: 34,
-                borderRadius: 17,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(20,20,26,0.85)',
-                border: '1px solid rgba(255,255,255,0.14)',
-                color: 'rgba(255,255,255,0.75)',
-                cursor: 'pointer',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.30)',
-              }}
-            >
-              {uploadSidePanel === 'tools' ? (
-                /* Menu icon → swap to nav */
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-              ) : (
-                /* Panel-right icon → swap back to tools */
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
-              )}
-            </button>
-          )}
 
         </div>
       </div>

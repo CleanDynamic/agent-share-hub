@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 export type WorkspaceToolId =
+  | 'nav'
   | 'inspector'
   | 'library'
   | 'outline'
@@ -26,6 +27,7 @@ export interface WorkspaceState {
 }
 
 const initialToolState: Record<WorkspaceToolId, unknown> = {
+  nav: undefined,
   inspector: undefined,
   library: undefined,
   outline: undefined,
