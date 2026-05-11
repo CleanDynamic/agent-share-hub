@@ -1,12 +1,27 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Sliders,
   Shapes,
   List,
   MessageSquare,
   Clock,
+  Home,
+  Compass,
+  BookMarked,
+  Upload as UploadIcon,
+  FileText,
+  Mail,
+  Bell,
+  User,
+  BarChart3,
   type LucideIcon,
 } from 'lucide-react';
+
+import { useAuth } from '@/contexts/AuthContext';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
+import { useDraftCount } from '@/hooks/useDraftCount';
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSelection } from '@/hooks/useSelection';
