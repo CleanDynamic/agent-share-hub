@@ -140,8 +140,10 @@ export function WorkspaceShell({ showNavTab = false }: { showNavTab?: boolean } 
 
   // ── Selection-driven auto-switch (Step 1.7) ──────────────────────
   // Skipped while a stage is open so the user stays parked on Library.
+  // Skipped when the user is parked on the Navigation tab.
   useEffect(() => {
     if (stageOpenRef.current) return;
+    if (useWorkspaceStore.getState().activeTool === 'nav') return;
     if (
       selection.kind === 'block' ||
       selection.kind === 'stage' ||
@@ -157,12 +159,13 @@ export function WorkspaceShell({ showNavTab = false }: { showNavTab?: boolean } 
     setIconsVisible(false);
     const t = window.setTimeout(() => setIconsVisible(true), 30);
     return () => window.clearTimeout(t);
-  }, [stageOpen]);
+  }, [stageOpen, showNavTab]);
 
   const visibleTools = useMemo(() => {
-    const order = stageOpen ? STAGE_MODE_ORDER : ARTICLE_MODE_ORDER;
+    const baseOrder = stageOpen ? STAGE_MODE_ORDER : ARTICLE_MODE_ORDER;
+    const order: WorkspaceToolId[] = showNavTab ? ['nav', ...baseOrder] : [...baseOrder];
     return order.map((id) => TOOL_BY_ID[id]);
-  }, [stageOpen]);
+  }, [stageOpen, showNavTab]);
 
   // Defensive: if activeTool ever points at a hidden tab, fall back to
   // the first visible tab (covers any external setActiveTool callers).
