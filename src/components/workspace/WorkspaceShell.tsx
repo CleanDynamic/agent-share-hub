@@ -49,6 +49,7 @@ interface ToolDefinition {
 // Master registry of every tool. The visible tab rail is derived from this
 // list per render based on whether a stage is in full mode.
 const TOOLS: readonly ToolDefinition[] = [
+  { id: 'nav', label: 'Navigation', icon: Home, render: () => <NavTool /> },
   { id: 'inspector', label: 'Inspector', icon: Sliders, render: () => <InspectorTool /> },
   { id: 'library', label: 'Block Library', icon: Shapes, render: () => <BlockLibraryHost /> },
   { id: 'outline', label: 'Outline', icon: List, render: () => <OutlineTool /> },
