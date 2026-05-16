@@ -832,12 +832,16 @@ export function PrimitiveCommentDrawer({
   anchorType,
   anchorPreview,
   threads,
+  viewerId,
   postAuthorId,
   onPost,
   onReply,
   onReact,
   onMore,
   onLike,
+  onEdit,
+  onDelete,
+  onReport,
   isLoading,
   deepLinkCommentId,
   postSlug,
@@ -847,6 +851,10 @@ export function PrimitiveCommentDrawer({
   const [sortBy, setSortBy] = React.useState<SortOption>("newest");
   const [openComposerId, setOpenComposerId] = React.useState<string | null>(null);
   const [highlightId, setHighlightId] = React.useState<string | null>(null);
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [menu, setMenu] = React.useState<
+    { commentId: string; x: number; y: number } | null
+  >(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   // Sort top-level. Replies are kept in their incoming (chronological) order
