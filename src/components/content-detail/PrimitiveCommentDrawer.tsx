@@ -107,7 +107,14 @@ export interface PrimitiveCommentDrawerProps {
   onReply: (parentId: string, text: string) => void;
   onReact: (commentId: string, reaction: ReactionType) => void;
   onMore: (commentId: string) => void;
+  onLike?: (commentId: string) => void;
   isLoading: boolean;
+  /** Comment id to scroll to + flash highlight when the drawer opens. */
+  deepLinkCommentId?: string | null;
+  /** Post slug for "Continued thread" navigation. */
+  postSlug?: string | null;
+  /** Newly inserted comment ids that should briefly pulse. */
+  newReplyIds?: Set<string>;
 }
 
 type SortOption = "newest" | "oldest" | "most-reacted";
