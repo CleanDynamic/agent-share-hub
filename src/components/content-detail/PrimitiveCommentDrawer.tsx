@@ -915,6 +915,61 @@ export function PrimitiveCommentDrawer({
     /* Local expand handled inside ThreadedComment's RepliesList. */
   }, []);
 
+  // Open the More menu next to the clicked button.
+  const handleMoreClick = React.useCallback(
+    (commentId: string, anchor: HTMLElement) => {
+      const r = anchor.getBoundingClientRect();
+      setMenu({ commentId, x: r.right - 160, y: r.bottom + 4 });
+      onMore(commentId);
+    },
+    [onMore],
+  );
+
+  // Resolve the current menu target + capabilities.
+  const menuTarget = React.useMemo(() => {
+    if (!menu) return null;
+    const c = findCommentById(threads, menu.commentId);
+    if (!c) return null;
+    const isAuthor = !!viewerId && c.author.id === viewerId;
+    const isWithinEditWindow =
+      c.timestamp.getTime() > Date.now() - 5 * 60 * 1000;
+    return {
+      comment: c,
+      canEdit: isAuthor && isWithinEditWindow && !c.isDeleted,
+      canDelete:
+        (isAuthor || viewerId === postAuthorId) && !c.isDeleted,
+      canReport: !isAuthor,
+    };
+  }, [menu, threads, viewerId, postAuthorId]);
+
+  // Close menu on outside click / scroll / escape.
+  React.useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    window.addEventListener("click", close);
+    window.addEventListener("scroll", close, true);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menu]);
+
+  const handleEditSubmit = React.useCallback(
+    async (commentId: string, text: string) => {
+      try {
+        await onEdit?.(commentId, text);
+        setEditingId(null);
+      } catch (e) {
+        console.warn("[drawer] edit failed", e);
+      }
+    },
+    [onEdit],
+  );
+  const handleEditCancel = React.useCallback(() => setEditingId(null), []);
+
   if (!isOpen) return null;
 
   return (
