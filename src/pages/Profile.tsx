@@ -20,6 +20,7 @@ import {
   ProfileContentZones,
   type Zone,
 } from "@/components/profile/ProfileContentZones";
+import { ProfileAuthoredReblogs } from "@/components/profile/ProfileAuthoredReblogs";
 import { MatchBanner } from "@/components/profile/MatchBanner";
 import { ProfileWelcomeCoachmark } from "@/components/profile/ProfileWelcomeCoachmark";
 import { MakeCollectionDialog } from "@/components/profile/MakeCollectionDialog";
