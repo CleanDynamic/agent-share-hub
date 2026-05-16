@@ -124,6 +124,10 @@ export function notifyEngagement(args: {
   actorId: string;
   /** Optional: if you've already loaded the comment text. */
   commentExcerpt?: string;
+  /** For reposts: "reblog" (default) or "quote" (excerpt reblog). */
+  variant?: "reblog" | "quote";
+  /** Optional extra metadata to merge into the notification. */
+  metadata?: Record<string, unknown>;
 }) {
   return silent(
     (async () => {
@@ -158,7 +162,9 @@ export function notifyEngagement(args: {
         args.kind === "like"
           ? "liked"
           : args.kind === "repost"
-          ? "reposted"
+          ? args.variant === "quote"
+            ? "quoted"
+            : "reposted"
           : "commented on";
 
       let body = `${actorName ?? "Someone"} ${verb} your ${targetType} '${post.title}'`;
@@ -177,9 +183,11 @@ export function notifyEngagement(args: {
           actor_name: actorName,
           content_title: post.title,
           post_type: post.post_type,
+          ...(args.variant ? { variant: args.variant } : {}),
           ...(args.commentExcerpt
             ? { comment_excerpt: args.commentExcerpt.slice(0, 80) }
             : {}),
+          ...(args.metadata ?? {}),
         },
       });
     })()
