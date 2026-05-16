@@ -214,13 +214,16 @@ function RepliesList(props: {
   parentId: string;
   onReplyClick: (commentId: string) => void;
   onLikeClick: (commentId: string) => void;
-  onMore: (commentId: string) => void;
+  onMore: (commentId: string, anchor: HTMLElement) => void;
   onReplyComposerSubmit: (parentId: string, text: string) => void;
   onReplyComposerCancel: (commentId: string) => void;
   onExpandRepliesClick: (commentId: string) => void;
   onContinuedThreadClick?: (commentId: string) => void;
   openComposerId: string | null;
   highlightedCommentId?: string | null;
+  editingCommentId?: string | null;
+  onEditSubmit?: (commentId: string, text: string) => void;
+  onEditCancel?: () => void;
 }) {
   const {
     replies,
