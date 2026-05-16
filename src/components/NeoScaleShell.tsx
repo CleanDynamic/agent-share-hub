@@ -1075,6 +1075,82 @@ export function NeoScaleShell() {
   const navPage = routeToNav(location.pathname);
   const isMessages = location.pathname === "/messages" || location.pathname.startsWith("/messages/");
 
+  /* ── Mobile chrome state (step 14.2) ── */
+  const [isProfileDrawerOpen, setProfileDrawerOpen] = useState(false);
+  const [isRightRailDrawerOpen, setRightRailDrawerOpen] = useState(false);
+
+  const initialsSafe =
+    profile?.display_name?.slice(0, 2).toUpperCase() ||
+    profile?.username?.slice(0, 2).toUpperCase() ||
+    (user?.email ? user.email.slice(0, 2).toUpperCase() : "?");
+
+  const mobileRoute: MobileRoute = (() => {
+    const p = location.pathname;
+    if (p === "/" || p === "") return "home";
+    if (p.startsWith("/discover") || p.startsWith("/browse") || p.startsWith("/search")) return "discover";
+    if (p.startsWith("/upload")) return "upload";
+    if (p.startsWith("/messages")) return "messages";
+    if (p.startsWith("/profile") || p.startsWith("/notifications") || p.startsWith("/library") || p.startsWith("/drafts") || p.startsWith("/analytics")) return "profile";
+    return "home";
+  })();
+
+  const pageContextType: PageContextType = (() => {
+    const p = location.pathname;
+    if (p === "/" || p === "") return "home";
+    if (p.startsWith("/discover") || p.startsWith("/browse") || p.startsWith("/search")) return "discover";
+    if (p.startsWith("/messages")) return "messages";
+    if (p.startsWith("/notifications")) return "notifications";
+    if (p.startsWith("/upload")) return "upload";
+    if (p.startsWith("/profile")) return "profile";
+    if (p.startsWith("/content/") || p.startsWith("/blueprint/") || p.startsWith("/blog/")) return "content-detail";
+    return "home";
+  })();
+
+  const drawerRoute: DrawerRoute | null = (() => {
+    const p = location.pathname;
+    if (p === "/") return "home";
+    if (p.startsWith("/discover") || p.startsWith("/browse") || p.startsWith("/search")) return "discover";
+    if (p.startsWith("/library")) return "library";
+    if (p.startsWith("/upload")) return "upload";
+    if (p.startsWith("/drafts")) return "drafts";
+    if (p.startsWith("/messages")) return "messages";
+    if (p.startsWith("/notifications")) return "notifications";
+    if (p.startsWith("/analytics")) return "analytics";
+    if (p.startsWith("/about")) return "about";
+    return null;
+  })();
+
+  const drawerUser = isLoggedIn
+    ? {
+        name: profile?.display_name || profile?.username || "User",
+        handle: profile?.username || "",
+        avatarUrl: profile?.avatar_url || undefined,
+        initials: initialsSafe,
+        followersCount: (profile as any)?.follower_count ?? 0,
+        followingCount: (profile as any)?.following_count ?? 0,
+      }
+    : null;
+
+  const drawerNavigate = (r: DrawerRoute) => {
+    const map: Record<DrawerRoute, string> = {
+      home: "/", discover: "/discover", library: "/library", upload: "/upload",
+      drafts: "/drafts", messages: "/messages", notifications: "/notifications",
+      analytics: "/analytics", about: "/about",
+    };
+    navigate(map[r]);
+  };
+
+  const mobileBottomNavigate = (r: MobileRoute) => {
+    if (r === "profile") {
+      setProfileDrawerOpen(true);
+      return;
+    }
+    const map: Record<Exclude<MobileRoute, "profile">, string> = {
+      home: "/", discover: "/discover", upload: "/upload", messages: "/messages",
+    };
+    navigate(map[r]);
+  };
+
   /* ── CSS injection ── */
   useEffect(() => {
     if (isMobile) return;
