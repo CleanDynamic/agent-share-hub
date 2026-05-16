@@ -40,6 +40,26 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
   const [thread, setThread] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (!row?.id) return;
+    setExporting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-ai-pdf", {
+        body: { kind: "reblog", reblogId: row.id },
+      });
+      if (error) throw error;
+      const url = (data as any)?.url;
+      if (!url) throw new Error("No URL returned");
+      window.open(url, "_blank");
+      toast.success("AI-PDF ready");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't export PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     if (!slug) return;
