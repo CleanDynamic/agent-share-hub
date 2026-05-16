@@ -26,7 +26,7 @@ export interface ThreadedCommentProps {
   isReplyComposerOpen: boolean;
   onReplyClick: (commentId: string) => void;
   onLikeClick: (commentId: string) => void;
-  onMore: (commentId: string) => void;
+  onMore: (commentId: string, anchor: HTMLElement) => void;
   onReplyComposerSubmit: (parentId: string, text: string) => void;
   onReplyComposerCancel: (commentId: string) => void;
   onExpandRepliesClick: (commentId: string) => void;
@@ -34,4 +34,8 @@ export interface ThreadedCommentProps {
   openComposerId: string | null;
   isNewReply?: boolean;
   highlightedCommentId?: string | null;
+  /** When this matches comment.id, the body becomes an inline edit textarea. */
+  editingCommentId?: string | null;
+  onEditSubmit?: (commentId: string, text: string) => void;
+  onEditCancel?: () => void;
 }
