@@ -197,27 +197,28 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
     queryKey: ["reblog_count", item.id],
     queryFn: async () => {
       const { count } = await (supabase
-        .from("content_items")
+        .from("reblogs")
         .select("id", { count: "exact", head: true }) as any)
-        .eq("reblog_of_id", item.id)
-        .eq("is_reblog", true)
-        .eq("status", "approved");
+        .eq("original_post_id", item.id)
+        .is("deleted_at", null);
       return count ?? 0;
     },
     staleTime: 60_000,
     enabled: !!item.id,
   });
 
-  // Whether current user has reblogged this item
+  // Whether current user has reblogged this item in the last 24h
   const { data: userHasReblogged } = useQuery({
     queryKey: ["user_has_reblogged", item.id, user?.id],
     queryFn: async () => {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data } = await (supabase
-        .from("content_items")
+        .from("reblogs")
         .select("id") as any)
-        .eq("reblog_of_id", item.id)
-        .eq("creator_id", user!.id)
-        .eq("is_reblog", true)
+        .eq("original_post_id", item.id)
+        .eq("reblogger_id", user!.id)
+        .is("deleted_at", null)
+        .gte("created_at", since)
         .maybeSingle();
       return !!data;
     },
@@ -225,16 +226,21 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
     enabled: !!item.id && !!user?.id,
   });
 
-  const original: ReblogComposerOriginal = {
+  const openReblogForThis = () => openReblog({
     id: item.id,
     title: item.title,
-    creatorId: item.creator_id ?? (item.profiles as any)?.id ?? "",
-    creatorUsername: (item.profiles as any)?.username ?? "unknown",
-    creatorDisplayName: (item.profiles as any)?.display_name,
-    contentType: item.content_type,
-    viewCount: item.view_count ?? 0,
-    downloadCount: item.download_count ?? 0,
-  };
+    description: (item as any).description ?? null,
+    post_type: (item as any).post_type ?? item.content_type,
+    cover_image_url: (item as any).cover_image_url ?? null,
+    created_at: (item as any).created_at,
+    creator_id: item.creator_id ?? (item.profiles as any)?.id ?? null,
+    author: {
+      display_name: (item.profiles as any)?.display_name,
+      username: (item.profiles as any)?.username,
+      avatar_url: (item.profiles as any)?.avatar_url,
+      id: item.creator_id ?? (item.profiles as any)?.id,
+    },
+  });
 
   // WTE teaser
   const wteTeaser = extractWteTeaser(item);
