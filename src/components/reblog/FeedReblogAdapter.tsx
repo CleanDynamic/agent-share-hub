@@ -306,6 +306,65 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
           isLoading={false}
         />
       )}
+
+      <Drawer open={actionsOpen} onOpenChange={setActionsOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Reblog actions</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-6 space-y-1">
+            <button
+              onClick={handleShareDM}
+              className="flex items-center gap-3 w-full px-3 py-3 rounded-lg hover:bg-accent/40 transition-colors text-left text-sm"
+            >
+              <Send className="h-4 w-4 text-muted-foreground" />
+              Share to DM
+            </button>
+            <button
+              onClick={handleCopyLink}
+              className="flex items-center gap-3 w-full px-3 py-3 rounded-lg hover:bg-accent/40 transition-colors text-left text-sm"
+            >
+              <LinkIcon className="h-4 w-4 text-muted-foreground" />
+              Copy link
+            </button>
+            {!isOwner && (
+              <button
+                onClick={handleReport}
+                className="flex items-center gap-3 w-full px-3 py-3 rounded-lg hover:bg-accent/40 transition-colors text-left text-sm"
+              >
+                <Flag className="h-4 w-4 text-muted-foreground" />
+                Report
+              </button>
+            )}
+            {isOwner && (
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-3 w-full px-3 py-3 rounded-lg hover:bg-accent/40 transition-colors text-left text-sm text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete reblog
+              </button>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <ShareToDMModal
+        open={shareDMOpen}
+        onClose={() => setShareDMOpen(false)}
+        contentId={row.id}
+        contentTitle={`Reblog by @${reblog.rebloggerHandle}`}
+        kind="reblog"
+        reblogId={row.id}
+        reblogSlug={row.slug}
+        reblogMeta={{
+          rebloggerHandle: reblog.rebloggerHandle,
+          rebloggerDisplayName: reblog.rebloggerDisplayName,
+          originalTitle: row.embedded_original?.title ?? null,
+          originalSlug: row.embedded_original?.slug ?? null,
+          text: reblog.text ?? null,
+        }}
+      />
     </>
   );
 }
