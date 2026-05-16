@@ -9,3 +9,5 @@ export { bookmarkReblog } from "./bookmarkReblog";
 export { deleteReblog } from "./deleteReblog";
 export { updateReblog } from "./updateReblog";
 export { useReblogUpdates, useReblogsOfPost } from "./realtime";
+export { validateExcerpt, hashExcerpt } from "./validateExcerpt";
+export { checkExcerptStillValid } from "./checkExcerptStillValid";
