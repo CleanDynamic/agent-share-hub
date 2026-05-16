@@ -5,7 +5,7 @@ import { AccountHoverCard } from "@/components/account-hover-card"
 import { useAuth } from "@/contexts/AuthContext"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { ReblogComposer, type ReblogComposerOriginal } from "@/components/ReblogComposer"
+import { useReblogCompose } from "@/contexts/ReblogComposeContext"
 import { useToast } from "@/hooks/use-toast"
 import { getPrimaryTypeLabel } from "@/lib/content-types"
 
@@ -126,27 +126,26 @@ function getAvatarStyle(name: string) {
 
 export function FeedCard({ post }: { post: FeedPost }) {
   const navigate = useNavigate()
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, profile } = useAuth()
   const { toast } = useToast()
   const [expandStage, setExpandStage] = useState(0)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.view_count ?? 0)
-  const [reblogOpen, setReblogOpen] = useState(false)
+  const { openReblog } = useReblogCompose()
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Reblog count
+  // Reblog count (new reblogs table)
   const { data: reblogCount } = useQuery({
     queryKey: ["reblog_count", post.id],
     queryFn: async () => {
       const { count } = await (supabase
-        .from("content_items")
+        .from("reblogs")
         .select("id", { count: "exact", head: true }) as any)
-        .eq("reblog_of_id", post.id)
-        .eq("is_reblog", true)
-        .eq("status", "approved");
+        .eq("original_post_id", post.id)
+        .is("deleted_at", null);
       return count ?? 0;
     },
     staleTime: 60_000,
@@ -156,29 +155,20 @@ export function FeedCard({ post }: { post: FeedPost }) {
   const { data: userHasReblogged } = useQuery({
     queryKey: ["user_has_reblogged", post.id, user?.id],
     queryFn: async () => {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data } = await (supabase
-        .from("content_items")
+        .from("reblogs")
         .select("id") as any)
-        .eq("reblog_of_id", post.id)
-        .eq("creator_id", user!.id)
-        .eq("is_reblog", true)
+        .eq("original_post_id", post.id)
+        .eq("reblogger_id", user!.id)
+        .is("deleted_at", null)
+        .gte("created_at", since)
         .maybeSingle();
       return !!data;
     },
     staleTime: 60_000,
     enabled: !!post.id && !!user?.id,
   });
-
-  const original: ReblogComposerOriginal = {
-    id: post.id,
-    title: post.title,
-    creatorId: "",
-    creatorUsername: post.author.username,
-    creatorDisplayName: post.author.display_name,
-    contentType: post.content_type,
-    viewCount: post.view_count ?? 0,
-    downloadCount: post.download_count ?? 0,
-  };
 
   const typeInfo = getPrimaryTypeLabel(post.post_type ?? null)
   const badgeKey = typeInfo.label === 'Blog' ? 'blog' : 'build'
@@ -680,26 +670,37 @@ export function FeedCard({ post }: { post: FeedPost }) {
         <button
           style={{
             display: "flex", alignItems: "center", gap: 6,
+            minHeight: 44,
             fontSize: 13,
-            color: userHasReblogged ? "#1F7A6D" : "rgba(255,255,255,0.40)",
+            color: userHasReblogged ? "#16A34A" : "rgba(255,255,255,0.40)",
             background: "none", border: "none", cursor: "pointer",
-            transition: "color 0.15s",
-            padding: '4px 6px', borderRadius: 5,
+            transition: "color 0.15s, background 0.15s",
+            padding: '4px 8px', borderRadius: 5,
             marginLeft: 14,
           }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(22, 163, 74, 0.08)" }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none" }}
           onClick={(e) => {
             e.stopPropagation()
-            if (!isLoggedIn) return
-            if (userHasReblogged) {
-              toast({ title: "You've already reblogged this" })
-            } else {
-              setReblogOpen(true)
-            }
+            if (!isLoggedIn) { navigate('/login'); return }
+            openReblog({
+              id: post.id,
+              title: post.title,
+              description: post.description,
+              post_type: post.post_type ?? post.content_type,
+              cover_image_url: post.cover_image_url,
+              created_at: post.created_at,
+              author: {
+                display_name: post.author.display_name,
+                username: post.author.username,
+                avatar_url: post.author.avatar_url,
+              },
+            })
           }}
-          title={userHasReblogged ? "You reblogged this" : "Reblog"}
+          title={post.author.username && profile?.username === post.author.username ? "Reblog your own post" : (userHasReblogged ? "You reblogged this" : "Reblog")}
         >
-          <Repeat2 size={15} />
-          {(reblogCount ?? 0) > 0 && <span>{reblogCount}</span>}
+          <Repeat2 size={15} style={{ color: userHasReblogged ? "#16A34A" : "currentColor" }} />
+          {(reblogCount ?? 0) > 0 && <span style={{ color: userHasReblogged ? "#16A34A" : undefined }}>{reblogCount}</span>}
         </button>
 
         {/* Save */}
@@ -854,15 +855,6 @@ export function FeedCard({ post }: { post: FeedPost }) {
         </div>
       </div>
 
-      {reblogOpen && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <ReblogComposer
-            original={original}
-            open={reblogOpen}
-            onOpenChange={setReblogOpen}
-          />
-        </div>
-      )}
     </article>
   )
 }
