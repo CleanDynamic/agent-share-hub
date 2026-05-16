@@ -20,7 +20,7 @@ export function ReblogsListModal({ isOpen, onClose, postId }: ReblogsListModalPr
     if (!isOpen) return;
     setLoading(true);
     getReblogsOfPost({ postId, limit: 50 })
-      .then((r) => setItems(r ?? []))
+      .then((r: any) => setItems(Array.isArray(r) ? r : (r?.reblogs ?? [])))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, [isOpen, postId]);

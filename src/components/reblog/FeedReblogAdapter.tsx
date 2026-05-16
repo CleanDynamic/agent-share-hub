@@ -153,7 +153,7 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
       likeCount: s.likeCount + (wasLiked ? -1 : 1),
     }));
     try {
-      await likeReblog({ reblogId: row.id, userId: user!.id });
+      await likeReblog({ reblogId: row.id, likerId: user!.id });
     } catch (e) {
       setEngagement((s) => ({
         ...s,
@@ -173,7 +173,7 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
       bookmarkCount: s.bookmarkCount + (was ? -1 : 1),
     }));
     try {
-      await bookmarkReblog({ reblogId: row.id, userId: user!.id });
+      await bookmarkReblog({ reblogId: row.id, bookmarkerId: user!.id });
     } catch (e) {
       setEngagement((s) => ({
         ...s,
@@ -214,7 +214,7 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
     const isOwner = user?.id === row.reblogger_id;
     if (isOwner && window.confirm("Delete this reblog?")) {
       try {
-        await deleteReblog({ reblogId: row.id, userId: user!.id });
+        await deleteReblog({ reblogId: row.id, rebloggerId: user!.id } as any);
         toast.success("Reblog deleted");
       } catch {
         toast.error("Couldn't delete");
@@ -252,24 +252,16 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
         <PrimitiveCommentDrawer
           isOpen={commentsOpen}
           onClose={() => setCommentsOpen(false)}
-          anchorType={"reblog" as AnchorType}
-          anchorId={row.id}
+          anchorType={"post" as AnchorType /* TODO: widen to 'reblog' */}
           anchorPreview={{
             type: "post",
             title: reblog.text?.slice(0, 80) || "Reblog",
           } as any}
-          comments={[]}
-          currentUser={
-            user
-              ? {
-                  id: user.id,
-                  displayName: user.email ?? "You",
-                  handle: "@you",
-                }
-              : null
-          }
-          onPostComment={() => {}}
+          threads={[]}
+          onPost={() => {}}
+          onReply={() => {}}
           onReact={() => {}}
+          onMore={() => {}}
         />
       )}
     </>
