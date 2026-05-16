@@ -8,6 +8,7 @@ import {
   uploadReblogMedia,
   validateMedia,
 } from "./media";
+import { validateExcerpt, hashExcerpt } from "./validateExcerpt";
 
 export interface CreateReblogInput {
   rebloggerId: string;
@@ -15,6 +16,9 @@ export interface CreateReblogInput {
   parentReblogId?: string | null;
   text?: string | null;
   mediaFile?: File | null;
+  excerptText?: string | null;
+  excerptSourceBlockId?: string | null;
+  excerptSourceBlockTypeLabel?: string | null;
 }
 
 /**
