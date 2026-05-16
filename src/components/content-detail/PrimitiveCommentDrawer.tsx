@@ -578,6 +578,7 @@ function EmptyState({ anchorType }: { anchorType: AnchorType }) {
     block: "block",
     slide: "slide",
     solution: "solution",
+    reblog: "reblog",
   };
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 24px", textAlign: "center" }}>

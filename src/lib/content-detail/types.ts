@@ -1,7 +1,7 @@
 // Shared types for the content-detail data layer.
 import type { ContentItemResult } from "@/lib/results/types";
 
-export type AnchorType = "post" | "stage" | "block" | "slide" | "solution";
+export type AnchorType = "post" | "stage" | "block" | "slide" | "solution" | "reblog";
 
 export interface AuthorInfo {
   id: string;
