@@ -280,6 +280,9 @@ function RepliesList(props: {
           onContinuedThreadClick={props.onContinuedThreadClick}
           openComposerId={openComposerId}
           highlightedCommentId={props.highlightedCommentId}
+          editingCommentId={props.editingCommentId}
+          onEditSubmit={props.onEditSubmit}
+          onEditCancel={props.onEditCancel}
         />
       ))}
     </div>
