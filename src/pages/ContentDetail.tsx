@@ -2218,6 +2218,9 @@ export default function ContentDetail() {
           onReply={handleDrawerReply}
           onReact={handleDrawerReact}
           onMore={handleDrawerMore}
+          onEdit={handleDrawerEdit}
+          onDelete={handleDrawerDelete}
+          onReport={handleDrawerReport}
           isLoading={drawerLoading}
           postSlug={shellPost?.slug ?? null}
           deepLinkCommentId={
