@@ -680,6 +680,10 @@ export default function ContentDetail() {
       reactions: reactionsToCounts(c.reactions),
       timestamp: new Date(c.createdAt),
       replies: (c.replies || []).map(toDrawerComment),
+      isDeleted: !!(c as any).isDeleted,
+      likeCount: (c.reactions || []).find((r) => r.reaction === "heart")?.count ?? 0,
+      hasLiked: !!(c.reactions || []).find((r) => r.reaction === "heart" && r.reactedByViewer),
+      replyCount: (c.replies || []).length,
     }),
     [post]
   );
