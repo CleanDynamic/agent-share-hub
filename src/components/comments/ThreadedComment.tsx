@@ -581,7 +581,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
             </button>
 
             <button
-              onClick={() => onMore(comment.id)}
+              onClick={(e) => onMore(comment.id, e.currentTarget as HTMLElement)}
               className="flex items-center justify-center"
               style={{
                 background: "none",
