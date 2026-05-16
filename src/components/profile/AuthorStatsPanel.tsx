@@ -18,6 +18,7 @@ interface AuthorStats {
   // Phase 6 (optional, additional fields read via `sp` cast for backwards-compat).
   bountiesSubmittedToCount?: number;
   metaBountyPledgesCount?: number;
+  reblogCount?: number;
 }
 
 interface AuthorStatsPanelProps {
@@ -334,6 +335,12 @@ export function AuthorStatsPanel({ stats }: AuthorStatsPanelProps) {
           label="Avg. Depth"
           value={`${avgReadingMinutes} min`}
           subtitle="average reading time"
+        />
+
+        <StatCell
+          label="Reblogs"
+          value={formatNumber(Number(sp.reblogCount ?? 0))}
+          subtitle={Number(sp.reblogCount ?? 0) === 0 ? "No reblogs yet" : "shared by this author"}
         />
       </div>
 
