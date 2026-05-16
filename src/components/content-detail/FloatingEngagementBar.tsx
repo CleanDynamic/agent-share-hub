@@ -160,6 +160,7 @@ export function FloatingEngagementBar({
   onExport,
   onSubmitSolution,
   onEdit,
+  onShowReblogsList,
 }: FloatingEngagementBarProps) {
   const bookmarkRef = React.useRef<HTMLButtonElement>(null);
   const shareRef = React.useRef<HTMLButtonElement>(null);
