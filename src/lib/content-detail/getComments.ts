@@ -101,6 +101,8 @@ export async function getComments({
       body: r.body,
       bodyText: r.body_text ?? "",
       createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      replyCount: r.reply_count ?? 0,
       isEdited: !!r.is_edited,
       isDeleted: !!r.deleted_at,
       reactions: reactionMap.get(r.id) ?? [],

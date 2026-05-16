@@ -681,9 +681,10 @@ export default function ContentDetail() {
       timestamp: new Date(c.createdAt),
       replies: (c.replies || []).map(toDrawerComment),
       isDeleted: !!(c as any).isDeleted,
+      updatedAt: (c as any).updatedAt ? new Date((c as any).updatedAt) : undefined,
       likeCount: (c.reactions || []).find((r) => r.reaction === "heart")?.count ?? 0,
       hasLiked: !!(c.reactions || []).find((r) => r.reaction === "heart" && r.reactedByViewer),
-      replyCount: (c.replies || []).length,
+      replyCount: (c as any).replyCount ?? (c.replies || []).length,
     }),
     [post]
   );
@@ -814,8 +815,51 @@ export default function ContentDetail() {
   );
 
   const handleDrawerMore = useCallback((_commentId: string) => {
-    // Edit / Delete / Report menu — wired in a follow-up step.
+    // Menu UI is owned by the drawer; nothing to do here.
   }, []);
+
+  const handleDrawerEdit = useCallback(
+    async (commentId: string, text: string) => {
+      try {
+        const { updateComment } = await import("@/lib/content-detail");
+        await updateComment({
+          commentId,
+          body: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text }] }] },
+        });
+        await refetchDrawerThreads();
+      } catch (e: any) {
+        toast({ title: "Could not edit", description: e?.message, variant: "destructive" });
+        throw e;
+      }
+    },
+    [refetchDrawerThreads, toast],
+  );
+
+  const handleDrawerDelete = useCallback(
+    async (commentId: string) => {
+      try {
+        const { softDeleteComment } = await import("@/lib/content-detail");
+        await softDeleteComment({ commentId });
+        await refetchDrawerThreads();
+      } catch (e: any) {
+        toast({ title: "Could not delete", description: e?.message, variant: "destructive" });
+      }
+    },
+    [refetchDrawerThreads, toast],
+  );
+
+  const handleDrawerReport = useCallback(
+    async (commentId: string) => {
+      try {
+        const { reportComment } = await import("@/lib/content-detail");
+        await reportComment({ commentId });
+        toast({ title: "Thanks", description: "We'll review this comment." });
+      } catch (e: any) {
+        toast({ title: "Could not report", description: e?.message, variant: "destructive" });
+      }
+    },
+    [toast],
+  );
 
   const handleSubmitSolution = useCallback(() => {
     const el = document.querySelector("[data-bounty-solutions-anchor]") as HTMLElement | null;
@@ -2174,6 +2218,9 @@ export default function ContentDetail() {
           onReply={handleDrawerReply}
           onReact={handleDrawerReact}
           onMore={handleDrawerMore}
+          onEdit={handleDrawerEdit}
+          onDelete={handleDrawerDelete}
+          onReport={handleDrawerReport}
           isLoading={drawerLoading}
           postSlug={shellPost?.slug ?? null}
           deepLinkCommentId={

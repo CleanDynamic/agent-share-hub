@@ -214,13 +214,16 @@ function RepliesList(props: {
   parentId: string;
   onReplyClick: (commentId: string) => void;
   onLikeClick: (commentId: string) => void;
-  onMore: (commentId: string) => void;
+  onMore: (commentId: string, anchor: HTMLElement) => void;
   onReplyComposerSubmit: (parentId: string, text: string) => void;
   onReplyComposerCancel: (commentId: string) => void;
   onExpandRepliesClick: (commentId: string) => void;
   onContinuedThreadClick?: (commentId: string) => void;
   openComposerId: string | null;
   highlightedCommentId?: string | null;
+  editingCommentId?: string | null;
+  onEditSubmit?: (commentId: string, text: string) => void;
+  onEditCancel?: () => void;
 }) {
   const {
     replies,
@@ -277,6 +280,9 @@ function RepliesList(props: {
           onContinuedThreadClick={props.onContinuedThreadClick}
           openComposerId={openComposerId}
           highlightedCommentId={props.highlightedCommentId}
+          editingCommentId={props.editingCommentId}
+          onEditSubmit={props.onEditSubmit}
+          onEditCancel={props.onEditCancel}
         />
       ))}
     </div>
@@ -300,7 +306,15 @@ export function ThreadedComment(props: ThreadedCommentProps) {
     openComposerId,
     isNewReply,
     highlightedCommentId,
+    editingCommentId,
+    onEditSubmit,
+    onEditCancel,
   } = props;
+  const isEditing = editingCommentId === comment.id;
+  const [editText, setEditText] = React.useState(comment.text);
+  React.useEffect(() => {
+    if (isEditing) setEditText(comment.text);
+  }, [isEditing, comment.text]);
 
   const [textClamped, setTextClamped] = React.useState(true);
   const textRef = React.useRef<HTMLDivElement>(null);
@@ -368,6 +382,9 @@ export function ThreadedComment(props: ThreadedCommentProps) {
             onContinuedThreadClick={onContinuedThreadClick}
             openComposerId={openComposerId}
             highlightedCommentId={highlightedCommentId}
+            editingCommentId={editingCommentId}
+            onEditSubmit={onEditSubmit}
+            onEditCancel={onEditCancel}
           />
         )}
       </div>
@@ -499,39 +516,118 @@ export function ThreadedComment(props: ThreadedCommentProps) {
 
           {/* Body */}
           <div style={{ marginTop: 6 }}>
-            <div
-              ref={textRef}
-              style={{
-                fontFamily: "Inter, sans-serif",
-                fontSize: 13,
-                lineHeight: 1.55,
-                color: "rgba(255,255,255,0.85)",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                display: textClamped ? "-webkit-box" : "block",
-                WebkitLineClamp: textClamped ? 6 : "unset",
-                WebkitBoxOrient: "vertical",
-                overflow: textClamped ? "hidden" : "visible",
-              }}
-            >
-              {renderRichText(comment.text)}
-            </div>
-            {isOverflowing && textClamped && (
-              <button
-                onClick={() => setTextClamped(false)}
-                style={{
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: "rgba(255,255,255,0.55)",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "2px 0 0 0",
-                }}
-              >
-                Read more
-              </button>
+            {isEditing ? (
+              <div>
+                <textarea
+                  autoFocus
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                      if (editText.trim()) onEditSubmit?.(comment.id, editText.trim());
+                    } else if (e.key === "Escape") {
+                      onEditCancel?.();
+                    }
+                  }}
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    background: "rgba(82,82,100,0.60)",
+                    border: "0.5px solid rgba(255,255,255,0.08)",
+                    borderRadius: 8,
+                    padding: "8px 10px",
+                    color: "rgba(255,255,255,0.92)",
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 13,
+                    lineHeight: 1.55,
+                    resize: "vertical",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+                <div className="flex justify-end" style={{ gap: 8, marginTop: 6 }}>
+                  <button
+                    onClick={() => onEditCancel?.()}
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      fontWeight: 500,
+                      color: "rgba(255,255,255,0.55)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "4px 10px",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (editText.trim()) onEditSubmit?.(comment.id, editText.trim());
+                    }}
+                    disabled={!editText.trim() || editText.trim() === comment.text}
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "4px 14px",
+                      borderRadius: 6,
+                      border: "none",
+                      cursor:
+                        editText.trim() && editText.trim() !== comment.text
+                          ? "pointer"
+                          : "default",
+                      background:
+                        editText.trim() && editText.trim() !== comment.text
+                          ? "#E8571A"
+                          : "rgba(232,87,26,0.3)",
+                      color:
+                        editText.trim() && editText.trim() !== comment.text
+                          ? "#fff"
+                          : "rgba(255,255,255,0.4)",
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div
+                  ref={textRef}
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 13,
+                    lineHeight: 1.55,
+                    color: "rgba(255,255,255,0.85)",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    display: textClamped ? "-webkit-box" : "block",
+                    WebkitLineClamp: textClamped ? 6 : "unset",
+                    WebkitBoxOrient: "vertical",
+                    overflow: textClamped ? "hidden" : "visible",
+                  }}
+                >
+                  {renderRichText(comment.text)}
+                </div>
+                {isOverflowing && textClamped && (
+                  <button
+                    onClick={() => setTextClamped(false)}
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: "rgba(255,255,255,0.55)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "2px 0 0 0",
+                    }}
+                  >
+                    Read more
+                  </button>
+                )}
+              </>
             )}
           </div>
 
@@ -581,7 +677,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
             </button>
 
             <button
-              onClick={() => onMore(comment.id)}
+              onClick={(e) => onMore(comment.id, e.currentTarget as HTMLElement)}
               className="flex items-center justify-center"
               style={{
                 background: "none",
@@ -625,6 +721,9 @@ export function ThreadedComment(props: ThreadedCommentProps) {
           onContinuedThreadClick={onContinuedThreadClick}
           openComposerId={openComposerId}
           highlightedCommentId={highlightedCommentId}
+          editingCommentId={editingCommentId}
+          onEditSubmit={onEditSubmit}
+          onEditCancel={onEditCancel}
         />
       )}
     </div>

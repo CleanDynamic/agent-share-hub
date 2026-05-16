@@ -108,6 +108,12 @@ export interface PrimitiveCommentDrawerProps {
   onReact: (commentId: string, reaction: ReactionType) => void;
   onMore: (commentId: string) => void;
   onLike?: (commentId: string) => void;
+  /** Edit a comment body (5-min window enforced server-side). */
+  onEdit?: (commentId: string, text: string) => Promise<void> | void;
+  /** Soft-delete a comment. */
+  onDelete?: (commentId: string) => Promise<void> | void;
+  /** Report a comment. */
+  onReport?: (commentId: string) => Promise<void> | void;
   isLoading: boolean;
   /** Comment id to scroll to + flash highlight when the drawer opens. */
   deepLinkCommentId?: string | null;
@@ -780,6 +786,20 @@ function SortDropdown({
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 import { ThreadedComment as ThreadedCommentView } from "@/components/comments/ThreadedComment";
+
+const menuItemStyle: React.CSSProperties = {
+  display: "block",
+  width: "100%",
+  textAlign: "left",
+  fontFamily: "Inter, sans-serif",
+  fontSize: 12,
+  color: "rgba(255,255,255,0.85)",
+  background: "transparent",
+  border: "none",
+  cursor: "pointer",
+  padding: "8px 10px",
+  borderRadius: 4,
+};
 import type { Comment as TCComment, CommentNode as TCNode } from "@/components/comments/types";
 
 function toThreadedNode(c: Comment, postAuthorId: string): TCNode {
@@ -804,7 +824,20 @@ function toThreadedNode(c: Comment, postAuthorId: string): TCNode {
   return {
     comment: tc,
     replies: (c.replies ?? []).map((r) => toThreadedNode(r, postAuthorId)),
-  };
+    authorId: c.author.id,
+  } as any;
+}
+
+/** Walk all comments and find one by id. */
+function findCommentById(threads: Comment[], id: string): Comment | null {
+  for (const c of threads) {
+    if (c.id === id) return c;
+    if (c.replies?.length) {
+      const r = findCommentById(c.replies, id);
+      if (r) return r;
+    }
+  }
+  return null;
 }
 
 export function PrimitiveCommentDrawer({
@@ -813,12 +846,16 @@ export function PrimitiveCommentDrawer({
   anchorType,
   anchorPreview,
   threads,
+  viewerId,
   postAuthorId,
   onPost,
   onReply,
   onReact,
   onMore,
   onLike,
+  onEdit,
+  onDelete,
+  onReport,
   isLoading,
   deepLinkCommentId,
   postSlug,
@@ -828,6 +865,10 @@ export function PrimitiveCommentDrawer({
   const [sortBy, setSortBy] = React.useState<SortOption>("newest");
   const [openComposerId, setOpenComposerId] = React.useState<string | null>(null);
   const [highlightId, setHighlightId] = React.useState<string | null>(null);
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [menu, setMenu] = React.useState<
+    { commentId: string; x: number; y: number } | null
+  >(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   // Sort top-level. Replies are kept in their incoming (chronological) order
@@ -887,6 +928,61 @@ export function PrimitiveCommentDrawer({
   const handleExpandReplies = React.useCallback((_: string) => {
     /* Local expand handled inside ThreadedComment's RepliesList. */
   }, []);
+
+  // Open the More menu next to the clicked button.
+  const handleMoreClick = React.useCallback(
+    (commentId: string, anchor: HTMLElement) => {
+      const r = anchor.getBoundingClientRect();
+      setMenu({ commentId, x: r.right - 160, y: r.bottom + 4 });
+      onMore(commentId);
+    },
+    [onMore],
+  );
+
+  // Resolve the current menu target + capabilities.
+  const menuTarget = React.useMemo(() => {
+    if (!menu) return null;
+    const c = findCommentById(threads, menu.commentId);
+    if (!c) return null;
+    const isAuthor = !!viewerId && c.author.id === viewerId;
+    const isWithinEditWindow =
+      c.timestamp.getTime() > Date.now() - 5 * 60 * 1000;
+    return {
+      comment: c,
+      canEdit: isAuthor && isWithinEditWindow && !c.isDeleted,
+      canDelete:
+        (isAuthor || viewerId === postAuthorId) && !c.isDeleted,
+      canReport: !isAuthor,
+    };
+  }, [menu, threads, viewerId, postAuthorId]);
+
+  // Close menu on outside click / scroll / escape.
+  React.useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    window.addEventListener("click", close);
+    window.addEventListener("scroll", close, true);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menu]);
+
+  const handleEditSubmit = React.useCallback(
+    async (commentId: string, text: string) => {
+      try {
+        await onEdit?.(commentId, text);
+        setEditingId(null);
+      } catch (e) {
+        console.warn("[drawer] edit failed", e);
+      }
+    },
+    [onEdit],
+  );
+  const handleEditCancel = React.useCallback(() => setEditingId(null), []);
 
   if (!isOpen) return null;
 
@@ -981,7 +1077,7 @@ export function PrimitiveCommentDrawer({
                   isReplyComposerOpen={openComposerId === node.comment.id}
                   onReplyClick={handleReplyClick}
                   onLikeClick={handleLikeClick}
-                  onMore={onMore}
+                  onMore={handleMoreClick}
                   onReplyComposerSubmit={handleReplyComposerSubmit}
                   onReplyComposerCancel={handleReplyComposerCancel}
                   onExpandRepliesClick={handleExpandReplies}
@@ -989,11 +1085,63 @@ export function PrimitiveCommentDrawer({
                   openComposerId={openComposerId}
                   isNewReply={newReplyIds?.has(node.comment.id)}
                   highlightedCommentId={highlightId}
+                  editingCommentId={editingId}
+                  onEditSubmit={handleEditSubmit}
+                  onEditCancel={handleEditCancel}
                 />
               );
             })}
         </div>
         <Composer onPost={onPost} autoFocus={threads.length === 0} />
+        {menu && menuTarget && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "fixed",
+              top: menu.y,
+              left: Math.max(8, menu.x),
+              zIndex: 1000,
+              minWidth: 160,
+              background: "rgba(24,24,32,0.98)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 8,
+              padding: 4,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+            }}
+          >
+            {menuTarget.canEdit && (
+              <button
+                onClick={() => { setEditingId(menu.commentId); setMenu(null); }}
+                style={menuItemStyle}
+              >Edit</button>
+            )}
+            {menuTarget.canDelete && (
+              <button
+                onClick={async () => {
+                  setMenu(null);
+                  if (window.confirm("Delete this comment?")) {
+                    try { await onDelete?.(menu.commentId); }
+                    catch (e) { console.warn("[drawer] delete failed", e); }
+                  }
+                }}
+                style={{ ...menuItemStyle, color: "rgba(239,68,68,0.9)" }}
+              >Delete</button>
+            )}
+            {menuTarget.canReport && (
+              <button
+                onClick={async () => {
+                  setMenu(null);
+                  try { await onReport?.(menu.commentId); }
+                  catch (e) { console.warn("[drawer] report failed", e); }
+                }}
+                style={menuItemStyle}
+              >Report</button>
+            )}
+            {!menuTarget.canEdit && !menuTarget.canDelete && !menuTarget.canReport && (
+              <div style={{ ...menuItemStyle, cursor: "default", opacity: 0.5 }}>No actions</div>
+            )}
+          </div>
+        )}
       </div>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
