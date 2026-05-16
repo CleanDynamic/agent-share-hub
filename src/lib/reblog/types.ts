@@ -39,6 +39,10 @@ export interface ReblogRow {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  excerpt_text?: string | null;
+  excerpt_source_block_id?: string | null;
+  excerpt_source_block_type_label?: string | null;
+  excerpt_text_hash?: string | null;
 }
 
 export interface Reblog extends ReblogRow {
@@ -53,4 +57,5 @@ export interface ReblogFull extends Reblog {
     hasBookmarked: boolean;
     hasReblogged: boolean;
   };
+  isExcerptStillValid?: boolean;
 }

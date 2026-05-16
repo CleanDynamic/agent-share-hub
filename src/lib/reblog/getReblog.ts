@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { EmbeddedOriginal, Reblog, ReblogFull, RebloggerProfile } from "./types";
+import { checkExcerptStillValid } from "./checkExcerptStillValid";
 
 const PROFILE_COLS = "id, username, display_name, avatar_url";
 
@@ -100,11 +101,14 @@ export async function getReblog(input: GetReblogInput): Promise<ReblogFull | nul
   if (!data) return null;
 
   const row = data as Reblog;
-  const [reblogger, embeddedOriginal, parentReblog, viewer] = await Promise.all([
+  const [reblogger, embeddedOriginal, parentReblog, viewer, excerptCheck] = await Promise.all([
     loadReblogger(row.reblogger_id),
     loadEmbeddedOriginal(row.original_post_id),
     row.parent_reblog_id ? loadParentReblog(row.parent_reblog_id) : Promise.resolve(null),
     viewerState(row.id, input.viewerId),
+    row.excerpt_text
+      ? checkExcerptStillValid(row.id, row.original_post_id, row.excerpt_text)
+      : Promise.resolve({ isStillValid: true }),
   ]);
 
   return {
@@ -113,5 +117,6 @@ export async function getReblog(input: GetReblogInput): Promise<ReblogFull | nul
     embeddedOriginal,
     parentReblog,
     viewer,
+    isExcerptStillValid: excerptCheck.isStillValid,
   };
 }
