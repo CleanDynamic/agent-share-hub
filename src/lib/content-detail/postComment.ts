@@ -61,11 +61,35 @@ export async function postComment({
   const references: FoundReference[] = [];
   walkDoc(body, mentions, references);
 
+  // Validate parent comment (if replying): must exist, not be deleted, and
+  // anchor must match. We copy the parent's anchor_type/anchor_id onto the
+  // reply to guarantee they stay in sync even if the caller passed wrong ones.
+  let effectiveAnchorType: AnchorType = anchorType;
+  let effectiveAnchorId: string = anchorId;
+  if (parentCommentId) {
+    const { data: parentRow, error: parentErr } = await (supabase as any)
+      .from("primitive_comments")
+      .select("id, anchor_type, anchor_id, deleted_at")
+      .eq("id", parentCommentId)
+      .maybeSingle();
+    if (parentErr) throw parentErr;
+    if (!parentRow) throw new Error("Parent comment not found");
+    if (parentRow.deleted_at) throw new Error("Cannot reply to a deleted comment");
+    if (
+      parentRow.anchor_type !== anchorType ||
+      parentRow.anchor_id !== anchorId
+    ) {
+      // Trust the parent's anchor over the caller's args.
+      effectiveAnchorType = parentRow.anchor_type as AnchorType;
+      effectiveAnchorId = parentRow.anchor_id as string;
+    }
+  }
+
   const { data, error } = await (supabase as any)
     .from("primitive_comments")
     .insert({
-      anchor_type: anchorType,
-      anchor_id: anchorId,
+      anchor_type: effectiveAnchorType,
+      anchor_id: effectiveAnchorId,
       parent_comment_id: parentCommentId ?? null,
       author_id: authorId,
       body,
