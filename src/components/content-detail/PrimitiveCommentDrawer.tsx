@@ -1063,7 +1063,7 @@ export function PrimitiveCommentDrawer({
                   isReplyComposerOpen={openComposerId === node.comment.id}
                   onReplyClick={handleReplyClick}
                   onLikeClick={handleLikeClick}
-                  onMore={onMore}
+                  onMore={handleMoreClick}
                   onReplyComposerSubmit={handleReplyComposerSubmit}
                   onReplyComposerCancel={handleReplyComposerCancel}
                   onExpandRepliesClick={handleExpandReplies}
@@ -1071,11 +1071,63 @@ export function PrimitiveCommentDrawer({
                   openComposerId={openComposerId}
                   isNewReply={newReplyIds?.has(node.comment.id)}
                   highlightedCommentId={highlightId}
+                  editingCommentId={editingId}
+                  onEditSubmit={handleEditSubmit}
+                  onEditCancel={handleEditCancel}
                 />
               );
             })}
         </div>
         <Composer onPost={onPost} autoFocus={threads.length === 0} />
+        {menu && menuTarget && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "fixed",
+              top: menu.y,
+              left: Math.max(8, menu.x),
+              zIndex: 1000,
+              minWidth: 160,
+              background: "rgba(24,24,32,0.98)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 8,
+              padding: 4,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+            }}
+          >
+            {menuTarget.canEdit && (
+              <button
+                onClick={() => { setEditingId(menu.commentId); setMenu(null); }}
+                style={menuItemStyle}
+              >Edit</button>
+            )}
+            {menuTarget.canDelete && (
+              <button
+                onClick={async () => {
+                  setMenu(null);
+                  if (window.confirm("Delete this comment?")) {
+                    try { await onDelete?.(menu.commentId); }
+                    catch (e) { console.warn("[drawer] delete failed", e); }
+                  }
+                }}
+                style={{ ...menuItemStyle, color: "rgba(239,68,68,0.9)" }}
+              >Delete</button>
+            )}
+            {menuTarget.canReport && (
+              <button
+                onClick={async () => {
+                  setMenu(null);
+                  try { await onReport?.(menu.commentId); }
+                  catch (e) { console.warn("[drawer] report failed", e); }
+                }}
+                style={menuItemStyle}
+              >Report</button>
+            )}
+            {!menuTarget.canEdit && !menuTarget.canDelete && !menuTarget.canReport && (
+              <div style={{ ...menuItemStyle, cursor: "default", opacity: 0.5 }}>No actions</div>
+            )}
+          </div>
+        )}
       </div>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
