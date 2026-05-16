@@ -3411,6 +3411,10 @@ export type Database = {
           comment_count: number
           created_at: string
           deleted_at: string | null
+          excerpt_source_block_id: string | null
+          excerpt_source_block_type_label: string | null
+          excerpt_text: string | null
+          excerpt_text_hash: string | null
           hidden_at: string | null
           id: string
           is_self_reblog: boolean
@@ -3433,6 +3437,10 @@ export type Database = {
           comment_count?: number
           created_at?: string
           deleted_at?: string | null
+          excerpt_source_block_id?: string | null
+          excerpt_source_block_type_label?: string | null
+          excerpt_text?: string | null
+          excerpt_text_hash?: string | null
           hidden_at?: string | null
           id?: string
           is_self_reblog?: boolean
@@ -3455,6 +3463,10 @@ export type Database = {
           comment_count?: number
           created_at?: string
           deleted_at?: string | null
+          excerpt_source_block_id?: string | null
+          excerpt_source_block_type_label?: string | null
+          excerpt_text?: string | null
+          excerpt_text_hash?: string | null
           hidden_at?: string | null
           id?: string
           is_self_reblog?: boolean
@@ -3473,6 +3485,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "reblogs_excerpt_source_block_id_fkey"
+            columns: ["excerpt_source_block_id"]
+            isOneToOne: false
+            referencedRelation: "content_blocks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reblogs_original_post_id_fkey"
             columns: ["original_post_id"]
