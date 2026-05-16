@@ -47,6 +47,12 @@ export interface Comment {
   timestamp: Date;
   replies?: Comment[];
   isNew?: boolean;
+  isDeleted?: boolean;
+  isEdited?: boolean;
+  updatedAt?: Date;
+  likeCount?: number;
+  hasLiked?: boolean;
+  replyCount?: number;
 }
 
 export interface BlockAnchorPreview {
