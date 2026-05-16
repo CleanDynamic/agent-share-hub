@@ -102,6 +102,20 @@ export default function Profile() {
     queryFn: () => getAuthorStats(summary!.id),
   });
 
+  const { data: reblogCount } = useQuery({
+    queryKey: ["profile-reblog-count", summary?.id ?? null],
+    enabled: !!summary?.id,
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from("reblogs")
+        .select("id", { count: "exact", head: true })
+        .eq("reblogger_id", summary!.id)
+        .is("deleted_at", null)
+        .is("hidden_at", null);
+      return count ?? 0;
+    },
+  });
+
   // Most-referenced primitives strip.
   const { data: mostReferenced } = useQuery({
     queryKey: ["most-referenced", summary?.id ?? null],
@@ -568,7 +582,7 @@ export default function Profile() {
         {statsLoading || !authorStats ? (
           <AuthorStatsPanelSkeleton />
         ) : (
-          <AuthorStatsPanel stats={authorStats} />
+          <AuthorStatsPanel stats={{ ...authorStats, reblogCount: reblogCount ?? 0 } as any} />
         )}
 
         <MostReferencedPrimitives

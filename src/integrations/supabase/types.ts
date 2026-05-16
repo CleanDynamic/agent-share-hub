@@ -1900,6 +1900,7 @@ export type Database = {
           shared_content_id: string | null
           shared_content_meta: Json | null
           shared_content_type: string | null
+          shared_reblog_id: string | null
           text_content: string | null
           thread_id: string
           voice_duration_seconds: number | null
@@ -1922,6 +1923,7 @@ export type Database = {
           shared_content_id?: string | null
           shared_content_meta?: Json | null
           shared_content_type?: string | null
+          shared_reblog_id?: string | null
           text_content?: string | null
           thread_id: string
           voice_duration_seconds?: number | null
@@ -1944,6 +1946,7 @@ export type Database = {
           shared_content_id?: string | null
           shared_content_meta?: Json | null
           shared_content_type?: string | null
+          shared_reblog_id?: string | null
           text_content?: string | null
           thread_id?: string
           voice_duration_seconds?: number | null
@@ -1976,6 +1979,13 @@ export type Database = {
             columns: ["shared_content_id"]
             isOneToOne: false
             referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_messages_shared_reblog_id_fkey"
+            columns: ["shared_reblog_id"]
+            isOneToOne: false
+            referencedRelation: "reblogs"
             referencedColumns: ["id"]
           },
           {

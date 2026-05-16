@@ -2128,6 +2128,7 @@ export default function ContentDetail() {
         onExport={handleExport}
         onSubmitSolution={shellPost.postType === "bounty" ? handleSubmitSolution : undefined}
         onEdit={isOwnPost ? handleEdit : undefined}
+        onShowReblogsList={() => setReblogsModalOpen(true)}
       />
       <AIExportMenu
         isOpen={!!exportAnchor}
