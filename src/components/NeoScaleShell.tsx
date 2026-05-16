@@ -2125,6 +2125,53 @@ export function NeoScaleShell() {
 
         </div>
       </div>
+
+      {/* ═══ MOBILE CHROME (siblings of .ns-scale-wrapper so the scale ═══
+           transform does not shrink them) ═══════════════════════════ */}
+      {breakpoint === "mobile" && (
+        <MobileTopBar
+          pageContext={{ type: pageContextType, title: profile?.display_name || profile?.username }}
+          currentUserAvatarUrl={profile?.avatar_url || undefined}
+          currentUserInitials={initialsSafe}
+          unreadCounts={{
+            notifications: Number(notifBadge || 0),
+            messages: Number(msgBadge || 0),
+          }}
+          onProfileDrawerOpen={() => setProfileDrawerOpen(true)}
+          onRightRailDrawerOpen={() => setRightRailDrawerOpen(true)}
+          onNotificationsOpen={() => navigate("/notifications")}
+          onBack={() => navigate(-1)}
+        />
+      )}
+      {breakpoint === "mobile" && (
+        <MobileBottomNav
+          currentRoute={mobileRoute}
+          currentUserAvatarUrl={profile?.avatar_url || undefined}
+          currentUserInitials={initialsSafe}
+          unreadMessageCount={Number(msgBadge || 0)}
+          unreadNotificationCount={Number(notifBadge || 0)}
+          onNavigate={mobileBottomNavigate}
+        />
+      )}
+
+      {/* ProfileDrawer — available at all breakpoints */}
+      <ProfileDrawer
+        isOpen={isProfileDrawerOpen}
+        onClose={() => setProfileDrawerOpen(false)}
+        currentUser={drawerUser}
+        currentRoute={drawerRoute}
+        onNavigate={drawerNavigate}
+        onSignOut={async () => { await signOut(); navigate("/"); }}
+      />
+
+      {/* RightRailDrawer — at lg, md, mobile (xl has the rail inline) */}
+      {breakpoint !== "xl" && (
+        <RightRailDrawer
+          isOpen={isRightRailDrawerOpen}
+          onClose={() => setRightRailDrawerOpen(false)}
+          onNavigate={(path) => navigate(path)}
+        />
+      )}
     </div>
   );
 }
