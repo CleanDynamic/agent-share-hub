@@ -306,7 +306,15 @@ export function ThreadedComment(props: ThreadedCommentProps) {
     openComposerId,
     isNewReply,
     highlightedCommentId,
+    editingCommentId,
+    onEditSubmit,
+    onEditCancel,
   } = props;
+  const isEditing = editingCommentId === comment.id;
+  const [editText, setEditText] = React.useState(comment.text);
+  React.useEffect(() => {
+    if (isEditing) setEditText(comment.text);
+  }, [isEditing, comment.text]);
 
   const [textClamped, setTextClamped] = React.useState(true);
   const textRef = React.useRef<HTMLDivElement>(null);
