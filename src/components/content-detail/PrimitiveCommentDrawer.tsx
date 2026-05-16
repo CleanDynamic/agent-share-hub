@@ -810,7 +810,20 @@ function toThreadedNode(c: Comment, postAuthorId: string): TCNode {
   return {
     comment: tc,
     replies: (c.replies ?? []).map((r) => toThreadedNode(r, postAuthorId)),
-  };
+    authorId: c.author.id,
+  } as any;
+}
+
+/** Walk all comments and find one by id. */
+function findCommentById(threads: Comment[], id: string): Comment | null {
+  for (const c of threads) {
+    if (c.id === id) return c;
+    if (c.replies?.length) {
+      const r = findCommentById(c.replies, id);
+      if (r) return r;
+    }
+  }
+  return null;
 }
 
 export function PrimitiveCommentDrawer({
