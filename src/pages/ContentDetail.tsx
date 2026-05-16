@@ -2162,6 +2162,10 @@ export default function ContentDetail() {
           onReact={handleDrawerReact}
           onMore={handleDrawerMore}
           isLoading={drawerLoading}
+          postSlug={shellPost?.slug ?? null}
+          deepLinkCommentId={
+            searchParams.get("comment") || searchParams.get("thread") || null
+          }
         />
       )}
       {reblogsModalOpen && (
