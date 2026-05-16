@@ -64,6 +64,7 @@ const ZONE_FILTERS: Record<Zone, { label: string; value: string }[]> = {
     { label: "Blueprints", value: "blueprint" },
     { label: "Blogs", value: "blog" },
     { label: "Bounties", value: "bounty" },
+    { label: "Reblogs", value: "reblog" },
     { label: "Solutions accepted", value: "solution" },
   ],
   curated: [

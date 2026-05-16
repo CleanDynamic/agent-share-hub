@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-export type AnchorType = "post" | "stage" | "block" | "slide" | "solution";
+export type AnchorType = "post" | "stage" | "block" | "slide" | "solution" | "reblog";
 export type ReactionType = "thumbsup" | "lightbulb" | "heart" | "eyes";
 
 export interface CommentReactions {

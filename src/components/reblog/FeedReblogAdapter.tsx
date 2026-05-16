@@ -252,7 +252,7 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
         <PrimitiveCommentDrawer
           isOpen={commentsOpen}
           onClose={() => setCommentsOpen(false)}
-          anchorType={"post" as AnchorType /* TODO: widen to 'reblog' */}
+          anchorType={"reblog" as AnchorType}
           anchorId={row.id}
           anchorPreview={{
             type: "post",
