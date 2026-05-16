@@ -255,6 +255,15 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
             <span className="text-xs text-white/40">{timeAgo(row.created_at)}</span>
           </div>
         </div>
+        <button
+          onClick={handleExportPdf}
+          disabled={exporting}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-xs text-white/80 transition-colors disabled:opacity-60"
+          title="Export this reblog as an AI-friendly PDF"
+        >
+          {exporting ? <Loader2 size={12} className="animate-spin" /> : <FileDown size={12} />}
+          AI-PDF
+        </button>
       </header>
 
       {row.parent_reblog_id && (
