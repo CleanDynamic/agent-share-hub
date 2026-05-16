@@ -13,7 +13,8 @@ import { useDraftCount } from "@/hooks/useDraftCount";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
-import { MobileNav } from "@/components/layout/MobileNav";
+// MobileNav is integrated in step 14.2; mobile currently uses the scaled shell.
+// import { MobileNav } from "@/components/layout/MobileNav";
 
 /* ────────────────────────────────────────────────
    Shell structure (Step 14.1 — responsive chrome)
