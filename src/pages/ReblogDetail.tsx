@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Repeat2, Play } from "lucide-react";
+import { ArrowLeft, Repeat2, Play, FileDown, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SeoHead } from "@/components/SeoHead";
 import {
@@ -39,6 +40,26 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
   const [thread, setThread] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (!row?.id) return;
+    setExporting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-ai-pdf", {
+        body: { kind: "reblog", reblogId: row.id },
+      });
+      if (error) throw error;
+      const url = (data as any)?.url;
+      if (!url) throw new Error("No URL returned");
+      window.open(url, "_blank");
+      toast.success("AI-PDF ready");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't export PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     if (!slug) return;
@@ -234,6 +255,15 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
             <span className="text-xs text-white/40">{timeAgo(row.created_at)}</span>
           </div>
         </div>
+        <button
+          onClick={handleExportPdf}
+          disabled={exporting}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-xs text-white/80 transition-colors disabled:opacity-60"
+          title="Export this reblog as an AI-friendly PDF"
+        >
+          {exporting ? <Loader2 size={12} className="animate-spin" /> : <FileDown size={12} />}
+          AI-PDF
+        </button>
       </header>
 
       {row.parent_reblog_id && (

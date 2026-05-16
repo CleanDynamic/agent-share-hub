@@ -19,9 +19,29 @@ interface ShareToDMModalProps {
   onClose: () => void;
   contentId: string;
   contentTitle: string;
+  /** When provided, share a reblog instead of a post. */
+  kind?: "post" | "reblog";
+  reblogId?: string;
+  reblogSlug?: string;
+  reblogMeta?: {
+    rebloggerHandle?: string | null;
+    rebloggerDisplayName?: string | null;
+    originalTitle?: string | null;
+    originalSlug?: string | null;
+    text?: string | null;
+  };
 }
 
-export function ShareToDMModal({ open, onClose, contentId, contentTitle }: ShareToDMModalProps) {
+export function ShareToDMModal({
+  open,
+  onClose,
+  contentId,
+  contentTitle,
+  kind = "post",
+  reblogId,
+  reblogSlug,
+  reblogMeta,
+}: ShareToDMModalProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
@@ -102,8 +122,22 @@ export function ShareToDMModal({ open, onClose, contentId, contentTitle }: Share
       thread_id: threadId,
       sender_id: user.id,
       message_type: "post_share",
-      shared_content_id: contentId,
-    });
+      shared_content_id: kind === "reblog" ? null : contentId,
+      ...(kind === "reblog"
+        ? {
+            shared_content_type: "reblog",
+            shared_reblog_id: reblogId,
+            shared_content_meta: {
+              slug: reblogSlug,
+              reblogger_handle: reblogMeta?.rebloggerHandle ?? null,
+              reblogger_display_name: reblogMeta?.rebloggerDisplayName ?? null,
+              original_title: reblogMeta?.originalTitle ?? null,
+              original_slug: reblogMeta?.originalSlug ?? null,
+              preview: (reblogMeta?.text ?? "").slice(0, 160),
+            },
+          }
+        : {}),
+    } as any);
 
     setSentTo((prev) => new Set(prev).add(recipientId));
     queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
@@ -120,7 +154,9 @@ export function ShareToDMModal({ open, onClose, contentId, contentTitle }: Share
         style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
       >
         <DialogHeader>
-          <DialogTitle className="text-base font-bold text-foreground">Share post</DialogTitle>
+          <DialogTitle className="text-base font-bold text-foreground">
+            {kind === "reblog" ? "Share reblog" : "Share post"}
+          </DialogTitle>
         </DialogHeader>
         <div className="relative mt-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, ArrowLeft, Info, X, ChevronDown } from "lucide-react";
+import { Loader2, ArrowLeft, Info, X, ChevronDown, Repeat2 } from "lucide-react";
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
 } from "@/components/ui/context-menu";
@@ -177,6 +177,48 @@ function PostShareCard({ contentId }: { contentId: string }) {
           <p className="text-[11px] text-muted-foreground mt-0.5">@{(content as any).profiles.username}</p>
         )}
         <p className="text-xs text-secondary mt-1.5">View post →</p>
+      </div>
+    </div>
+  );
+}
+
+function ReblogShareCard({ reblogId, meta }: { reblogId: string | null; meta: any }) {
+  const navigate = useNavigate();
+  const slug = meta?.slug ?? null;
+  const rebloggerHandle = meta?.reblogger_handle ?? null;
+  const rebloggerName = meta?.reblogger_display_name ?? rebloggerHandle ?? "Someone";
+  const originalTitle = meta?.original_title ?? "Original post";
+  const preview = (meta?.preview ?? "") as string;
+
+  return (
+    <div
+      className="rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden cursor-pointer"
+      style={{ maxWidth: 260 }}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (slug) navigate(`/b/${slug}`);
+        else if (reblogId) navigate(`/b/${reblogId}`);
+      }}
+    >
+      <div className="p-2.5">
+        <span
+          className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider rounded-full"
+          style={{ padding: "2px 8px", color: "#34d399", background: "rgba(52,211,153,0.12)" }}
+        >
+          <Repeat2 size={10} /> Reblog
+        </span>
+        <p className="text-[13px] font-bold text-foreground mt-1.5 line-clamp-2">
+          {rebloggerName} reblogged
+        </p>
+        {originalTitle && (
+          <p className="text-[12px] text-muted-foreground mt-0.5 line-clamp-1">
+            “{originalTitle}”
+          </p>
+        )}
+        {preview && (
+          <p className="text-[12px] text-foreground/80 mt-1.5 line-clamp-2 italic">{preview}</p>
+        )}
+        <p className="text-xs text-secondary mt-1.5">View reblog →</p>
       </div>
     </div>
   );
@@ -826,6 +868,14 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
         case "voice":
           return <VoiceMessage url={msg.voice_url} duration={msg.voice_duration_seconds || 0} />;
         case "post_share":
+          if ((msg as any).shared_content_type === "reblog") {
+            return (
+              <ReblogShareCard
+                reblogId={(msg as any).shared_reblog_id ?? null}
+                meta={(msg as any).shared_content_meta ?? {}}
+              />
+            );
+          }
           return <PostShareCard contentId={msg.shared_content_id} />;
         case "like":
           return <span className="text-[32px] leading-none">❤️</span>;

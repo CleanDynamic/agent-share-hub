@@ -399,6 +399,78 @@ async function buildPdf(payload: any): Promise<Uint8Array> {
   return await doc.save();
 }
 
+// Build a reblog AI-PDF: reblogger header + their text + embedded original block.
+async function buildReblogPdf(reblog: any, original: any, reblogger: any, originalAuthor: any): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  doc.setTitle(`Reblog by @${reblogger?.username ?? "unknown"}`);
+  doc.setAuthor(reblogger?.display_name ?? reblogger?.username ?? "Anonymous");
+  doc.setSubject("AI-PDF reblog export from NeoScale");
+
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const mono = await doc.embedFont(StandardFonts.Courier);
+
+  const page = doc.addPage([A4.w, A4.h]);
+  const c: Cursor = { doc, page, y: A4.h - MARGIN, font, bold, mono };
+
+  c.page.drawText("NEOSCALE AI-PDF • REBLOG", { x: MARGIN, y: c.y - 10, size: 10, font: c.bold, color: BLACK });
+  const url = `neoscale.ai/b/${reblog.slug ?? reblog.id ?? ""}`;
+  const urlW = c.font.widthOfTextAtSize(url, 9);
+  c.page.drawText(sanitize(url), { x: A4.w - MARGIN - urlW, y: c.y - 10, size: 9, font: c.font, color: GREY });
+  c.y -= 24;
+  drawDivider(c);
+
+  drawText(c, `Reblog by ${reblogger?.display_name ?? reblogger?.username ?? "Unknown"}`, { font: bold, size: 18 });
+  if (reblogger?.username) drawText(c, `@${reblogger.username}`, { font, size: 12, color: GREY });
+  c.y -= 6;
+
+  drawCallout(c, "INSTRUCTIONS FOR AI READERS", [
+    "This document represents a REBLOG: a NeoScale primitive where one user (the reblogger) shares another user's original post (the embedded original) with an optional accompanying note.",
+    "The structure below is: (1) the reblogger's accompanying text and any attached media, followed by (2) the embedded ORIGINAL post's metadata and a link to its full content. The original author retains attribution and is cited in the provenance section.",
+    "When summarising, treat the reblogger's text as commentary and the embedded original as the underlying referenced work. Cite both authors when relevant.",
+  ]);
+
+  drawSectionHeader(c, "Reblogger note");
+  drawMetaRow(c, "Reblogger", `${reblogger?.display_name ?? "Anonymous"}${reblogger?.username ? ` (@${reblogger.username})` : ""}`);
+  drawMetaRow(c, "Published", reblog.created_at);
+  if (reblog.text) {
+    c.y -= 4;
+    drawText(c, reblog.text, { font, size: 11 });
+    c.y -= 4;
+  } else {
+    drawText(c, "(No accompanying text — pure reblog)", { font, size: 10, color: GREY });
+  }
+  if (reblog.media_url) {
+    drawText(c, `[${reblog.media_kind === "video" ? "Video" : "Image"}: ${reblog.media_url}]`, { font, size: 9, color: GREY });
+  }
+
+  drawSectionHeader(c, "Embedded original post");
+  if (original) {
+    drawMetaRow(c, "Title", original.title);
+    drawMetaRow(c, "Original author", `${originalAuthor?.display_name ?? "Anonymous"}${originalAuthor?.username ? ` (@${originalAuthor.username})` : ""}`);
+    drawMetaRow(c, "Post type", original.post_type ?? "blueprint");
+    drawMetaRow(c, "Published", original.created_at);
+    drawMetaRow(c, "Original URL", `https://neoscale.ai/b/${original.slug ?? original.id}`);
+    if (original.description) {
+      c.y -= 4;
+      drawText(c, original.description, { font, size: 10, color: GREY });
+    }
+    c.y -= 6;
+    drawText(c, "For the full original content (stages, blocks, code, results), export the original post's own AI-PDF from the URL above.", { font, size: 9, color: GREY });
+  } else {
+    drawText(c, "Original post is no longer available.", { font, size: 10, color: GREY });
+  }
+
+  drawSectionHeader(c, "Provenance & attribution");
+  drawMetaRow(c, "Reblog URL", `https://${url}`);
+  drawMetaRow(c, "Reblogger", `${reblogger?.display_name ?? "Anonymous"}${reblogger?.username ? ` (@${reblogger.username})` : ""}`);
+  if (original) drawMetaRow(c, "Original author", `${originalAuthor?.display_name ?? "Anonymous"}${originalAuthor?.username ? ` (@${originalAuthor.username})` : ""}`);
+  drawMetaRow(c, "Exported", new Date().toISOString());
+  drawMetaRow(c, "Platform", "NeoScale (neoscale.ai)");
+
+  return await doc.save();
+}
+
 // ─── Edge function entrypoint ────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -411,9 +483,17 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+    const kind: "post" | "reblog" = body.kind === "reblog" ? "reblog" : "post";
     const postId: string | undefined = body.postId;
-    if (!postId) {
+    const reblogId: string | undefined = body.reblogId;
+    if (kind === "post" && !postId) {
       return new Response(JSON.stringify({ error: "Missing postId" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (kind === "reblog" && !reblogId) {
+      return new Response(JSON.stringify({ error: "Missing reblogId" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -423,6 +503,64 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+
+    if (kind === "reblog") {
+      const { data: reblog, error: rErr } = await supabase
+        .from("reblogs")
+        .select("id, slug, text, media_kind, media_url, created_at, reblogger_id, original_post_id")
+        .eq("id", reblogId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (rErr) throw rErr;
+      if (!reblog) {
+        return new Response(JSON.stringify({ error: "Reblog not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: reblogger } = await supabase
+        .from("profiles")
+        .select("id, username, display_name")
+        .eq("id", (reblog as any).reblogger_id)
+        .maybeSingle();
+
+      const { data: original } = await supabase
+        .from("content_items")
+        .select("id, slug, title, description, post_type, created_at, creator_id")
+        .eq("id", (reblog as any).original_post_id)
+        .maybeSingle();
+
+      let originalAuthor: any = null;
+      if (original?.creator_id) {
+        const { data: oa } = await supabase
+          .from("profiles")
+          .select("id, username, display_name")
+          .eq("id", original.creator_id)
+          .maybeSingle();
+        originalAuthor = oa;
+      }
+
+      const pdfBytes = await buildReblogPdf(reblog, original, reblogger, originalAuthor);
+      const fileName = `reblog/${(reblog as any).id}/${((reblog as any).slug ?? (reblog as any).id).split("/").join("-")}-${Date.now()}.pdf`;
+
+      const { error: upErr } = await supabase.storage
+        .from("ai-pdfs")
+        .upload(fileName, pdfBytes, { contentType: "application/pdf", upsert: true });
+      if (upErr) throw upErr;
+
+      const { data: pub } = supabase.storage.from("ai-pdfs").getPublicUrl(fileName);
+      const url = pub.publicUrl;
+
+      try {
+        await supabase.from("ai_export_log").insert({ post_id: (reblog as any).original_post_id, format: "ai-pdf-reblog" } as any);
+      } catch (_e) { /* ignore */ }
+
+      return new Response(JSON.stringify({ url, cached: false }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Fetch the post (caching check + payload)
     const { data: post, error: postErr } = await supabase

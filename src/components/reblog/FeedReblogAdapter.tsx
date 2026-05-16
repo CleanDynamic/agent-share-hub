@@ -20,6 +20,14 @@ import {
   PrimitiveCommentDrawer,
   type AnchorType,
 } from "@/components/content-detail/PrimitiveCommentDrawer";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { ShareToDMModal } from "@/components/dm/ShareToDMModal";
+import { Send, Link as LinkIcon, Flag, Trash2 } from "lucide-react";
 
 /**
  * Raw reblog row shape returned by feed queries.
@@ -96,6 +104,8 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
     hasBookmarked: !!row.viewer_has_bookmarked,
   });
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [shareDMOpen, setShareDMOpen] = useState(false);
 
   const reblogger = row.reblogger ?? {};
   const reblog: Reblog = {
@@ -211,40 +221,45 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
     } as any);
   };
 
-  const handleMore = async () => {
-    const isOwner = user?.id === row.reblogger_id;
-    if (isOwner) {
-      if (window.confirm("Delete this reblog?")) {
-        try {
-          await deleteReblog({ reblogId: row.id, rebloggerId: user!.id } as any);
-          toast.success("Reblog deleted");
-        } catch {
-          toast.error("Couldn't delete");
-        }
-      }
-      return;
+  const isOwner = user?.id === row.reblogger_id;
+
+  const handleMore = () => setActionsOpen(true);
+
+  const handleCopyLink = () => {
+    navigator.clipboard?.writeText(`${window.location.origin}/b/${reblog.slug}`);
+    toast.success("Link copied");
+    setActionsOpen(false);
+  };
+
+  const handleShareDM = () => {
+    if (!requireAuth()) return;
+    setActionsOpen(false);
+    setShareDMOpen(true);
+  };
+
+  const handleReport = async () => {
+    if (!requireAuth()) return;
+    setActionsOpen(false);
+    const reason = window.prompt("Reason (optional):", "") ?? null;
+    try {
+      const { error } = await (supabase as any)
+        .from("reblog_reports")
+        .insert({ reblog_id: row.id, reporter_id: user!.id, reason });
+      if (error && !String(error.message).includes("duplicate")) throw error;
+      toast.success("Report received. Thank you.");
+    } catch {
+      toast.error("Couldn't submit report");
     }
-    // Non-owner overflow: Report / Copy link
-    const action = window.prompt(
-      'Type "report" to flag this reblog, or "copy" to copy link:',
-      "copy",
-    );
-    const choice = (action || "").trim().toLowerCase();
-    if (choice === "report") {
-      if (!requireAuth()) return;
-      try {
-        const reason = window.prompt("Reason (optional):", "") ?? null;
-        const { error } = await (supabase as any)
-          .from("reblog_reports")
-          .insert({ reblog_id: row.id, reporter_id: user!.id, reason });
-        if (error && !String(error.message).includes("duplicate")) throw error;
-        toast.success("Report received. Thank you.");
-      } catch {
-        toast.error("Couldn't submit report");
-      }
-    } else {
-      navigator.clipboard?.writeText(`${window.location.origin}/b/${reblog.slug}`);
-      toast.success("Link copied");
+  };
+
+  const handleDelete = async () => {
+    setActionsOpen(false);
+    if (!window.confirm("Delete this reblog?")) return;
+    try {
+      await deleteReblog({ reblogId: row.id, rebloggerId: user!.id } as any);
+      toast.success("Reblog deleted");
+    } catch {
+      toast.error("Couldn't delete");
     }
   };
 
@@ -291,6 +306,65 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
           isLoading={false}
         />
       )}
+
+      <Drawer open={actionsOpen} onOpenChange={setActionsOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Reblog actions</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-6 space-y-1">
+            <button
+              onClick={handleShareDM}
+              className="flex items-center gap-3 w-full px-3 py-3 rounded-lg hover:bg-accent/40 transition-colors text-left text-sm"
+            >
+              <Send className="h-4 w-4 text-muted-foreground" />
+              Share to DM
+            </button>
+            <button
+              onClick={handleCopyLink}
+              className="flex items-center gap-3 w-full px-3 py-3 rounded-lg hover:bg-accent/40 transition-colors text-left text-sm"
+            >
+              <LinkIcon className="h-4 w-4 text-muted-foreground" />
+              Copy link
+            </button>
+            {!isOwner && (
+              <button
+                onClick={handleReport}
+                className="flex items-center gap-3 w-full px-3 py-3 rounded-lg hover:bg-accent/40 transition-colors text-left text-sm"
+              >
+                <Flag className="h-4 w-4 text-muted-foreground" />
+                Report
+              </button>
+            )}
+            {isOwner && (
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-3 w-full px-3 py-3 rounded-lg hover:bg-accent/40 transition-colors text-left text-sm text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete reblog
+              </button>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <ShareToDMModal
+        open={shareDMOpen}
+        onClose={() => setShareDMOpen(false)}
+        contentId={row.id}
+        contentTitle={`Reblog by @${reblog.rebloggerHandle}`}
+        kind="reblog"
+        reblogId={row.id}
+        reblogSlug={row.slug}
+        reblogMeta={{
+          rebloggerHandle: reblog.rebloggerHandle,
+          rebloggerDisplayName: reblog.rebloggerDisplayName,
+          originalTitle: row.embedded_original?.title ?? null,
+          originalSlug: row.embedded_original?.slug ?? null,
+          text: reblog.text ?? null,
+        }}
+      />
     </>
   );
 }
