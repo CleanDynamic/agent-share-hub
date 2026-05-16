@@ -197,6 +197,7 @@ export function FloatingEngagementBar({
 
   return (
     <div
+      className="ns-engagement-bar"
       onMouseEnter={() => setIsHoveringBar(true)}
       onMouseLeave={() => setIsHoveringBar(false)}
       style={{

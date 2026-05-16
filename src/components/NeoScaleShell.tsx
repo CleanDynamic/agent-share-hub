@@ -117,6 +117,29 @@ const NEOSCALE_CSS = `
     padding-left: 16px;
     padding-right: 16px;
     box-sizing: border-box;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Floating engagement bar: clear the 80px MobileBottomNav. */
+  .ns-engagement-bar {
+    bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+    max-width: calc(100vw - 32px);
+  }
+
+  /* Comment drawer: slide up from bottom (matching RightRailDrawer pattern). */
+  .ns-comment-drawer {
+    top: auto !important;
+    right: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    height: 85vh !important;
+    max-width: 100% !important;
+    border-left: none !important;
+    border-top: 0.5px solid rgba(255,255,255,0.10) !important;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    transform: translateY(0) !important;
   }
 }
 
