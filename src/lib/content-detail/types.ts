@@ -56,6 +56,7 @@ export interface ThreadedComment {
   bodyText: string;
   createdAt: string;
   isEdited: boolean;
+  isDeleted?: boolean;
   reactions: CommentReactionSummary[];
   replies: ThreadedComment[];
   isUnread: boolean;
