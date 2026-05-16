@@ -513,39 +513,118 @@ export function ThreadedComment(props: ThreadedCommentProps) {
 
           {/* Body */}
           <div style={{ marginTop: 6 }}>
-            <div
-              ref={textRef}
-              style={{
-                fontFamily: "Inter, sans-serif",
-                fontSize: 13,
-                lineHeight: 1.55,
-                color: "rgba(255,255,255,0.85)",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                display: textClamped ? "-webkit-box" : "block",
-                WebkitLineClamp: textClamped ? 6 : "unset",
-                WebkitBoxOrient: "vertical",
-                overflow: textClamped ? "hidden" : "visible",
-              }}
-            >
-              {renderRichText(comment.text)}
-            </div>
-            {isOverflowing && textClamped && (
-              <button
-                onClick={() => setTextClamped(false)}
-                style={{
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: "rgba(255,255,255,0.55)",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "2px 0 0 0",
-                }}
-              >
-                Read more
-              </button>
+            {isEditing ? (
+              <div>
+                <textarea
+                  autoFocus
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                      if (editText.trim()) onEditSubmit?.(comment.id, editText.trim());
+                    } else if (e.key === "Escape") {
+                      onEditCancel?.();
+                    }
+                  }}
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    background: "rgba(82,82,100,0.60)",
+                    border: "0.5px solid rgba(255,255,255,0.08)",
+                    borderRadius: 8,
+                    padding: "8px 10px",
+                    color: "rgba(255,255,255,0.92)",
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 13,
+                    lineHeight: 1.55,
+                    resize: "vertical",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+                <div className="flex justify-end" style={{ gap: 8, marginTop: 6 }}>
+                  <button
+                    onClick={() => onEditCancel?.()}
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      fontWeight: 500,
+                      color: "rgba(255,255,255,0.55)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "4px 10px",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (editText.trim()) onEditSubmit?.(comment.id, editText.trim());
+                    }}
+                    disabled={!editText.trim() || editText.trim() === comment.text}
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "4px 14px",
+                      borderRadius: 6,
+                      border: "none",
+                      cursor:
+                        editText.trim() && editText.trim() !== comment.text
+                          ? "pointer"
+                          : "default",
+                      background:
+                        editText.trim() && editText.trim() !== comment.text
+                          ? "#E8571A"
+                          : "rgba(232,87,26,0.3)",
+                      color:
+                        editText.trim() && editText.trim() !== comment.text
+                          ? "#fff"
+                          : "rgba(255,255,255,0.4)",
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div
+                  ref={textRef}
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 13,
+                    lineHeight: 1.55,
+                    color: "rgba(255,255,255,0.85)",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    display: textClamped ? "-webkit-box" : "block",
+                    WebkitLineClamp: textClamped ? 6 : "unset",
+                    WebkitBoxOrient: "vertical",
+                    overflow: textClamped ? "hidden" : "visible",
+                  }}
+                >
+                  {renderRichText(comment.text)}
+                </div>
+                {isOverflowing && textClamped && (
+                  <button
+                    onClick={() => setTextClamped(false)}
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: "rgba(255,255,255,0.55)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "2px 0 0 0",
+                    }}
+                  >
+                    Read more
+                  </button>
+                )}
+              </>
             )}
           </div>
 
