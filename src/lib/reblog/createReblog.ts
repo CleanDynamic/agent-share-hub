@@ -148,10 +148,11 @@ export async function createReblog(input: CreateReblogInput): Promise<Reblog> {
     kind: "repost",
     postId: input.originalPostId,
     actorId: input.rebloggerId,
+    variant: hasExcerpt ? "quote" : "reblog",
     metadata: hasExcerpt
-      ? { reblog_id: data.id, variant: "quote", excerpt_preview: rawExcerpt.slice(0, 140) }
-      : { reblog_id: data.id, variant: "reblog" },
-  } as any).catch(() => {});
+      ? { reblog_id: data.id, excerpt_preview: rawExcerpt.slice(0, 140) }
+      : { reblog_id: data.id },
+  }).catch(() => {});
 
   // Reblog-of-reblog: notify the parent reblog's author.
   if (input.parentReblogId) {
