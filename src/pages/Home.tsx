@@ -47,6 +47,8 @@ function SignInPrompt() {
 
 /* ---- Tab: Recent ---- */
 function RecentTab() {
+  const [mostReblogged, setMostReblogged] = useState(false);
+
   const { data: blueprints, isLoading: bpLoading } = useQuery({
     queryKey: ["home_recent_blueprints"],
     queryFn: async () => {
@@ -95,9 +97,10 @@ function RecentTab() {
   });
 
   const { data: reblogs, isLoading: rbLoading } = useQuery({
-    queryKey: ["home_recent_reblogs"],
+    queryKey: ["home_recent_reblogs", mostReblogged],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+      let q = (supabase as any)
         .from("reblogs")
         .select(`
           id, slug, text, media_kind, media_url, thumbnail_url, created_at,
@@ -110,21 +113,29 @@ function RecentTab() {
           )
         `)
         .is("deleted_at", null)
-        .is("hidden_at", null)
-        .order("created_at", { ascending: false })
-        .limit(20);
+        .is("hidden_at", null);
+      if (mostReblogged) {
+        q = q.gte("created_at", since).order("reblog_count", { ascending: false }).limit(30);
+      } else {
+        q = q.order("created_at", { ascending: false }).limit(20);
+      }
+      const { data, error } = await q;
       if (error) throw error;
       return (data ?? []).map((d: any) => ({
         ...d,
         _feedType: "reblog" as const,
-        _sortDate: new Date(d.created_at).getTime(),
+        _sortDate: mostReblogged
+          ? (d.reblog_count ?? 0) * 1e12 + new Date(d.created_at).getTime()
+          : new Date(d.created_at).getTime(),
       }));
     },
   });
 
   const isLoading = bpLoading || colLoading || projLoading || rbLoading;
-  const merged = [...(blueprints ?? []), ...(collections ?? []), ...(projects ?? []), ...(reblogs ?? [])]
-    .sort((a, b) => b._sortDate - a._sortDate);
+  const merged = mostReblogged
+    ? (reblogs ?? [])
+    : [...(blueprints ?? []), ...(collections ?? []), ...(projects ?? []), ...(reblogs ?? [])]
+        .sort((a, b) => b._sortDate - a._sortDate);
 
   return (
     <div>
@@ -134,6 +145,16 @@ function RecentTab() {
           <span className="relative inline-flex h-[6px] w-[6px] rounded-full bg-primary" />
         </span>
         <span className="text-xs text-muted-foreground">Updated live</span>
+        <button
+          onClick={() => setMostReblogged((v) => !v)}
+          className={`ml-auto text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+            mostReblogged
+              ? "bg-secondary/15 border-secondary/40 text-secondary"
+              : "bg-card/40 border-border text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Most reblogged today
+        </button>
       </div>
 
       {isLoading ? (
