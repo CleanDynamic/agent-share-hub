@@ -411,9 +411,17 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+    const kind: "post" | "reblog" = body.kind === "reblog" ? "reblog" : "post";
     const postId: string | undefined = body.postId;
-    if (!postId) {
+    const reblogId: string | undefined = body.reblogId;
+    if (kind === "post" && !postId) {
       return new Response(JSON.stringify({ error: "Missing postId" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (kind === "reblog" && !reblogId) {
+      return new Response(JSON.stringify({ error: "Missing reblogId" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
