@@ -24,6 +24,7 @@ import BlogUpload from "./pages/BlogUpload";
 import BountyUploadShell from "./pages/BountyUploadShell";
 import About from "./pages/About";
 import ContentDetail from "./pages/ContentDetail";
+import ContentOrReblogRoute from "@/components/routing/ContentOrReblogRoute";
 import BountyLeaderboard from "./pages/BountyLeaderboard";
 import ProjectDetail from "./pages/ProjectDetail";
 import CreatorProfile from "./pages/CreatorProfile";
