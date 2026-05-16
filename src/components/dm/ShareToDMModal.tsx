@@ -122,8 +122,22 @@ export function ShareToDMModal({
       thread_id: threadId,
       sender_id: user.id,
       message_type: "post_share",
-      shared_content_id: contentId,
-    });
+      shared_content_id: kind === "reblog" ? null : contentId,
+      ...(kind === "reblog"
+        ? {
+            shared_content_type: "reblog",
+            shared_reblog_id: reblogId,
+            shared_content_meta: {
+              slug: reblogSlug,
+              reblogger_handle: reblogMeta?.rebloggerHandle ?? null,
+              reblogger_display_name: reblogMeta?.rebloggerDisplayName ?? null,
+              original_title: reblogMeta?.originalTitle ?? null,
+              original_slug: reblogMeta?.originalSlug ?? null,
+              preview: (reblogMeta?.text ?? "").slice(0, 160),
+            },
+          }
+        : {}),
+    } as any);
 
     setSentTo((prev) => new Set(prev).add(recipientId));
     queryClient.invalidateQueries({ queryKey: ["dm_threads"] });
