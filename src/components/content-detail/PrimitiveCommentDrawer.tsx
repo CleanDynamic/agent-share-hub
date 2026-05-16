@@ -108,6 +108,12 @@ export interface PrimitiveCommentDrawerProps {
   onReact: (commentId: string, reaction: ReactionType) => void;
   onMore: (commentId: string) => void;
   onLike?: (commentId: string) => void;
+  /** Edit a comment body (5-min window enforced server-side). */
+  onEdit?: (commentId: string, text: string) => Promise<void> | void;
+  /** Soft-delete a comment. */
+  onDelete?: (commentId: string) => Promise<void> | void;
+  /** Report a comment. */
+  onReport?: (commentId: string) => Promise<void> | void;
   isLoading: boolean;
   /** Comment id to scroll to + flash highlight when the drawer opens. */
   deepLinkCommentId?: string | null;
