@@ -5,7 +5,7 @@ import { AccountHoverCard } from "@/components/account-hover-card"
 import { useAuth } from "@/contexts/AuthContext"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { ReblogComposer, type ReblogComposerOriginal } from "@/components/ReblogComposer"
+import { useReblogCompose } from "@/contexts/ReblogComposeContext"
 import { useToast } from "@/hooks/use-toast"
 import { getPrimaryTypeLabel } from "@/lib/content-types"
 
