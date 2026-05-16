@@ -102,9 +102,11 @@ export async function getComments({
       bodyText: r.body_text ?? "",
       createdAt: r.created_at,
       isEdited: !!r.is_edited,
+      isDeleted: !!r.deleted_at,
       reactions: reactionMap.get(r.id) ?? [],
       replies: [],
       isUnread:
+        !r.deleted_at &&
         !!viewerId &&
         r.author_id !== viewerId &&
         new Date(r.created_at).getTime() > lastReadAt,
@@ -119,8 +121,22 @@ export async function getComments({
     }
   }
 
-  // 4. Sort.
-  const sorter = (a: ThreadedComment, b: ThreadedComment) => {
+  // 4. Prune deleted leaves (deleted comments with no surviving children).
+  //    Walk bottom-up so chains of deletes collapse correctly.
+  const prune = (list: ThreadedComment[]): ThreadedComment[] => {
+    const out: ThreadedComment[] = [];
+    for (const node of list) {
+      node.replies = prune(node.replies);
+      if (node.isDeleted && node.replies.length === 0) continue;
+      out.push(node);
+    }
+    return out;
+  };
+  const prunedRoots = prune(roots);
+
+  // 5. Sort. Top-level uses `sort` (default newest first); replies always
+  //    chronological (oldest first) to match conversation flow.
+  const rootSorter = (a: ThreadedComment, b: ThreadedComment) => {
     if (sort === "oldest") return a.createdAt.localeCompare(b.createdAt);
     if (sort === "top") {
       const sa = a.reactions.reduce((s, r) => s + r.count, 0);
@@ -130,11 +146,14 @@ export async function getComments({
     }
     return b.createdAt.localeCompare(a.createdAt);
   };
-  const sortDeep = (list: ThreadedComment[]) => {
-    list.sort(sorter);
-    list.forEach((n) => sortDeep(n.replies));
+  const replySorter = (a: ThreadedComment, b: ThreadedComment) =>
+    a.createdAt.localeCompare(b.createdAt);
+  const sortReplies = (list: ThreadedComment[]) => {
+    list.sort(replySorter);
+    list.forEach((n) => sortReplies(n.replies));
   };
-  sortDeep(roots);
+  prunedRoots.sort(rootSorter);
+  prunedRoots.forEach((n) => sortReplies(n.replies));
 
-  return { threads: roots, total: flat.length };
+  return { threads: prunedRoots, total: flat.filter((r) => !r.deleted_at).length };
 }
