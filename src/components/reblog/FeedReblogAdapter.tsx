@@ -104,6 +104,8 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
     hasBookmarked: !!row.viewer_has_bookmarked,
   });
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [shareDMOpen, setShareDMOpen] = useState(false);
 
   const reblogger = row.reblogger ?? {};
   const reblog: Reblog = {
