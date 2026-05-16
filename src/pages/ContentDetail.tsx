@@ -712,6 +712,19 @@ export default function ContentDetail() {
     if (drawerOpen && drawerAnchor) refetchDrawerThreads();
   }, [drawerOpen, drawerAnchor, refetchDrawerThreads]);
 
+  // Deep-link: when ?comment= or ?thread= is present, auto-open the post-level
+  // drawer so the target comment can be scrolled into view.
+  const deepLinkParam = searchParams.get("comment") || searchParams.get("thread");
+  useEffect(() => {
+    if (!deepLinkParam || !post || !shellPost || drawerOpen) return;
+    setDrawerAnchor({
+      anchorType: "post",
+      anchorId: (post as any).id,
+      preview: { type: "post", title: shellPost.title },
+    });
+    setDrawerOpen(true);
+  }, [deepLinkParam, post, shellPost, drawerOpen]);
+
   // Realtime: live updates for the currently-open anchor.
   useCommentsRealtime(
     drawerAnchor?.anchorType ?? "post",
