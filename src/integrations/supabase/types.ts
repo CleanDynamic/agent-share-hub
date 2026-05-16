@@ -2940,9 +2940,11 @@ export type Database = {
           body: Json
           body_text: string
           created_at: string
+          deleted_at: string | null
           id: string
           is_edited: boolean
           parent_comment_id: string | null
+          reply_count: number
           updated_at: string
         }
         Insert: {
@@ -2952,9 +2954,11 @@ export type Database = {
           body?: Json
           body_text?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_edited?: boolean
           parent_comment_id?: string | null
+          reply_count?: number
           updated_at?: string
         }
         Update: {
@@ -2964,9 +2968,11 @@ export type Database = {
           body?: Json
           body_text?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_edited?: boolean
           parent_comment_id?: string | null
+          reply_count?: number
           updated_at?: string
         }
         Relationships: [
