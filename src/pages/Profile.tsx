@@ -582,7 +582,7 @@ export default function Profile() {
         {statsLoading || !authorStats ? (
           <AuthorStatsPanelSkeleton />
         ) : (
-          <AuthorStatsPanel stats={authorStats} />
+          <AuthorStatsPanel stats={{ ...authorStats, reblogCount: reblogCount ?? 0 } as any} />
         )}
 
         <MostReferencedPrimitives
