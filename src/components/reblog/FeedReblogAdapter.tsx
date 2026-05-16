@@ -20,6 +20,14 @@ import {
   PrimitiveCommentDrawer,
   type AnchorType,
 } from "@/components/content-detail/PrimitiveCommentDrawer";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { ShareToDMModal } from "@/components/dm/ShareToDMModal";
+import { Send, Link as LinkIcon, Flag, Trash2 } from "lucide-react";
 
 /**
  * Raw reblog row shape returned by feed queries.
