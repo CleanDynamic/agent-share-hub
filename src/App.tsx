@@ -24,6 +24,7 @@ import BlogUpload from "./pages/BlogUpload";
 import BountyUploadShell from "./pages/BountyUploadShell";
 import About from "./pages/About";
 import ContentDetail from "./pages/ContentDetail";
+import ContentOrReblogRoute from "@/components/routing/ContentOrReblogRoute";
 import BountyLeaderboard from "./pages/BountyLeaderboard";
 import ProjectDetail from "./pages/ProjectDetail";
 import CreatorProfile from "./pages/CreatorProfile";
@@ -89,7 +90,8 @@ const App = () => (
                 <Route path="/about" element={<About />} />
                 <Route path="/api-docs" element={<ApiDocs />} />
                 <Route path="/content/:id" element={<ContentDetail />} />
-                <Route path="/b/:id" element={<ContentDetail />} />
+                <Route path="/b/:id" element={<ContentOrReblogRoute />} />
+                <Route path="/b/:id/thread" element={<ContentOrReblogRoute mode="thread" />} />
                 <Route path="/b/:id/leaderboard" element={<BountyLeaderboard />} />
                 <Route path="/content/:id/edit" element={<ProtectedRoute requireCreator><ContentEditPage /></ProtectedRoute>} />
                 <Route path="/project/:id" element={<ProjectDetail />} />

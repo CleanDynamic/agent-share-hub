@@ -8,6 +8,7 @@ import { FeedItem, timeAgo } from "@/components/FeedItem";
 import { CollectionFeedCard } from "@/components/CollectionFeedCard";
 import { ProjectFeedCard } from "@/components/ProjectFeedCard";
 import { ReblogCard } from "@/components/ReblogCard";
+import { FeedReblogAdapter, type FeedReblogRow } from "@/components/reblog/FeedReblogAdapter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Download, Loader2, Upload, Search as SearchIcon } from "lucide-react";
@@ -20,6 +21,7 @@ const PAGE_SIZE = 20;
 function renderFeedEntry(entry: any) {
   if (entry._feedType === "collection") return <CollectionFeedCard key={`col-${entry.id}`} item={entry} />;
   if (entry._feedType === "project") return <ProjectFeedCard key={`proj-${entry.id}`} item={entry} />;
+  if (entry._feedType === "reblog") return <FeedReblogAdapter key={`rb-${entry.id}`} row={entry as FeedReblogRow} />;
   if (entry.is_reblog) return <ReblogCard key={entry.id} item={entry} />;
   return <FeedItem key={entry.id} item={entry} />;
 }
@@ -92,8 +94,35 @@ function RecentTab() {
     },
   });
 
-  const isLoading = bpLoading || colLoading || projLoading;
-  const merged = [...(blueprints ?? []), ...(collections ?? []), ...(projects ?? [])]
+  const { data: reblogs, isLoading: rbLoading } = useQuery({
+    queryKey: ["home_recent_reblogs"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("reblogs")
+        .select(`
+          id, slug, text, media_kind, media_url, thumbnail_url, created_at,
+          like_count, comment_count, reblog_count, bookmark_count,
+          parent_reblog_id, root_original_post_id, original_post_id, reblogger_id,
+          reblogger:profiles!reblogs_reblogger_id_fkey(id, username, display_name, avatar_url),
+          embedded_original:content_items!reblogs_original_post_id_fkey(
+            id, slug, title, description, post_type, cover_image_url, created_at, creator_id,
+            author:profiles!content_items_creator_id_fkey(username, display_name, avatar_url)
+          )
+        `)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return (data ?? []).map((d: any) => ({
+        ...d,
+        _feedType: "reblog" as const,
+        _sortDate: new Date(d.created_at).getTime(),
+      }));
+    },
+  });
+
+  const isLoading = bpLoading || colLoading || projLoading || rbLoading;
+  const merged = [...(blueprints ?? []), ...(collections ?? []), ...(projects ?? []), ...(reblogs ?? [])]
     .sort((a, b) => b._sortDate - a._sortDate);
 
   return (
