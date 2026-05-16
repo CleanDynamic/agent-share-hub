@@ -3340,12 +3340,62 @@ export type Database = {
           },
         ]
       }
+      reblog_reports: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string | null
+          reblog_id: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reblog_id: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reblog_id?: string
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reblog_reports_reblog_id_fkey"
+            columns: ["reblog_id"]
+            isOneToOne: false
+            referencedRelation: "reblogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reblog_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "reblog_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reblogs: {
         Row: {
           bookmark_count: number
           comment_count: number
           created_at: string
           deleted_at: string | null
+          hidden_at: string | null
           id: string
           is_self_reblog: boolean
           like_count: number
@@ -3356,6 +3406,7 @@ export type Database = {
           parent_reblog_id: string | null
           reblog_count: number
           reblogger_id: string
+          report_count: number
           root_original_post_id: string
           slug: string
           text: string | null
@@ -3366,6 +3417,7 @@ export type Database = {
           comment_count?: number
           created_at?: string
           deleted_at?: string | null
+          hidden_at?: string | null
           id?: string
           is_self_reblog?: boolean
           like_count?: number
@@ -3376,6 +3428,7 @@ export type Database = {
           parent_reblog_id?: string | null
           reblog_count?: number
           reblogger_id: string
+          report_count?: number
           root_original_post_id: string
           slug: string
           text?: string | null
@@ -3386,6 +3439,7 @@ export type Database = {
           comment_count?: number
           created_at?: string
           deleted_at?: string | null
+          hidden_at?: string | null
           id?: string
           is_self_reblog?: boolean
           like_count?: number
@@ -3396,6 +3450,7 @@ export type Database = {
           parent_reblog_id?: string | null
           reblog_count?: number
           reblogger_id?: string
+          report_count?: number
           root_original_post_id?: string
           slug?: string
           text?: string | null
