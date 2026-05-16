@@ -100,6 +100,20 @@ const NEOSCALE_CSS = `
   position: relative;
   z-index: 1;
 }
+/* Mobile: scaled centre column may exceed viewport at the floor — allow scroll. */
+@media (max-width: 767px) {
+  .ns-scale-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding-top: calc(56px + env(safe-area-inset-top));
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    padding-left: 16px;
+    padding-right: 16px;
+    box-sizing: border-box;
+  }
+}
 
 .ns-app-container {
   display: flex;
