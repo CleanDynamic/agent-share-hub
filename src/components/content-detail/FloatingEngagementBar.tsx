@@ -8,6 +8,7 @@ import {
   Download,
   Target,
   PenSquare,
+  Users,
 } from "lucide-react";
 
 interface Post {
@@ -38,6 +39,7 @@ interface FloatingEngagementBarProps {
   onExport: (anchorEl: HTMLButtonElement) => void;
   onSubmitSolution?: () => void;
   onEdit?: () => void;
+  onShowReblogsList?: () => void;
 }
 
 function formatCount(count: number): string {
@@ -257,7 +259,15 @@ export function FloatingEngagementBar({
         isActive={post.hasReposted}
         activeColor="#E8571A"
         onClick={onRepost}
+        tooltip="Reblog"
       />
+      {counts.reposts > 0 && onShowReblogsList && (
+        <ActionButton
+          icon={<Users size={14} />}
+          onClick={onShowReblogsList}
+          tooltip={`View ${counts.reposts} reblog${counts.reposts === 1 ? "" : "s"}`}
+        />
+      )}
       <Separator />
       <ActionButton
         buttonRef={bookmarkRef}
