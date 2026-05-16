@@ -948,7 +948,7 @@ export function PrimitiveCommentDrawer({
           isCollapsed={previewCollapsed}
           onToggle={() => setPreviewCollapsed(!previewCollapsed)}
         />
-        <div style={{ flex: 1, overflowY: "auto", padding: "12px 18px" }}>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "12px 18px" }}>
           {threads.length > 0 && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
               <SortDropdown value={sortBy} onChange={setSortBy} />
@@ -970,9 +970,28 @@ export function PrimitiveCommentDrawer({
           )}
           {!isLoading && threads.length === 0 && <EmptyState anchorType={anchorType} />}
           {!isLoading &&
-            sortedThreads.map((c) => (
-              <CommentCard key={c.id} comment={c} onReply={onReply} onReact={onReact} onMore={onMore} />
-            ))}
+            sortedThreads.map((c) => {
+              const node = toThreadedNode(c, postAuthorId);
+              return (
+                <ThreadedCommentView
+                  key={node.comment.id}
+                  comment={node.comment}
+                  replies={node.replies}
+                  level={0}
+                  isReplyComposerOpen={openComposerId === node.comment.id}
+                  onReplyClick={handleReplyClick}
+                  onLikeClick={handleLikeClick}
+                  onMore={onMore}
+                  onReplyComposerSubmit={handleReplyComposerSubmit}
+                  onReplyComposerCancel={handleReplyComposerCancel}
+                  onExpandRepliesClick={handleExpandReplies}
+                  onContinuedThreadClick={postSlug ? handleContinuedThread : undefined}
+                  openComposerId={openComposerId}
+                  isNewReply={newReplyIds?.has(node.comment.id)}
+                  highlightedCommentId={highlightId}
+                />
+              );
+            })}
         </div>
         <Composer onPost={onPost} autoFocus={threads.length === 0} />
       </div>
@@ -981,6 +1000,13 @@ export function PrimitiveCommentDrawer({
         @keyframes tealFlash {
           0% { background: rgba(46,196,182,0.15); }
           100% { background: transparent; }
+        }
+        @keyframes ns-deep-link-pulse {
+          0% { box-shadow: 0 0 0 0 rgba(232,87,26,0.55); }
+          100% { box-shadow: 0 0 0 8px rgba(232,87,26,0); }
+        }
+        .ns-comment-new-reply {
+          animation: ns-deep-link-pulse 600ms ease-out;
         }
       `}</style>
     </>
