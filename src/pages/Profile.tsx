@@ -20,6 +20,7 @@ import {
   ProfileContentZones,
   type Zone,
 } from "@/components/profile/ProfileContentZones";
+import { ProfileAuthoredReblogs } from "@/components/profile/ProfileAuthoredReblogs";
 import { MatchBanner } from "@/components/profile/MatchBanner";
 import { ProfileWelcomeCoachmark } from "@/components/profile/ProfileWelcomeCoachmark";
 import { MakeCollectionDialog } from "@/components/profile/MakeCollectionDialog";
@@ -578,30 +579,38 @@ export default function Profile() {
 
         {/* Profile zones (authored / curated / activity / network). */}
         <div id="profile-zones">
-          <ProfileContentZones
-            activeZone={activeZone}
-            onZoneChange={handleZoneChange}
-            activeFilter={activeFilter}
-            onFilterChange={handleFilterChange}
-            sort={sort}
-            onSortChange={handleSortChange}
-            counts={zoneCounts}
-            items={visibleZoneItems}
-            isLoading={zoneQuery.isLoading}
-            isLoadingMore={zoneQuery.isFetchingNextPage}
-            hasMore={!!zoneQuery.hasNextPage}
-            onLoadMore={() => zoneQuery.fetchNextPage()}
-            onItemClick={handleZoneItemClick}
-            isOwnProfile={summary.isOwnProfile}
-            onMakeCollection={() => setMakeCollectionOpen(true)}
-            onCreateBlueprint={handleCreateBlueprint}
-            onEditItem={summary.isOwnProfile ? handleEditItem : undefined}
-            onUnpublishItem={summary.isOwnProfile ? handleUnpublishItem : undefined}
-            onDeleteItem={summary.isOwnProfile ? handleDeleteItem : undefined}
-            onBookmarkItem={!summary.isOwnProfile ? handleBookmarkItem : undefined}
-            onRepostItem={!summary.isOwnProfile ? handleRepostItem : undefined}
-            onShareItem={handleShareItem}
-          />
+          {activeZone === "authored" && activeFilter === "reblog" ? (
+            <ProfileAuthoredReblogs
+              userId={summary.id}
+              activeFilter={activeFilter}
+              onFilterChange={handleFilterChange}
+            />
+          ) : (
+            <ProfileContentZones
+              activeZone={activeZone}
+              onZoneChange={handleZoneChange}
+              activeFilter={activeFilter}
+              onFilterChange={handleFilterChange}
+              sort={sort}
+              onSortChange={handleSortChange}
+              counts={zoneCounts}
+              items={visibleZoneItems}
+              isLoading={zoneQuery.isLoading}
+              isLoadingMore={zoneQuery.isFetchingNextPage}
+              hasMore={!!zoneQuery.hasNextPage}
+              onLoadMore={() => zoneQuery.fetchNextPage()}
+              onItemClick={handleZoneItemClick}
+              isOwnProfile={summary.isOwnProfile}
+              onMakeCollection={() => setMakeCollectionOpen(true)}
+              onCreateBlueprint={handleCreateBlueprint}
+              onEditItem={summary.isOwnProfile ? handleEditItem : undefined}
+              onUnpublishItem={summary.isOwnProfile ? handleUnpublishItem : undefined}
+              onDeleteItem={summary.isOwnProfile ? handleDeleteItem : undefined}
+              onBookmarkItem={!summary.isOwnProfile ? handleBookmarkItem : undefined}
+              onRepostItem={!summary.isOwnProfile ? handleRepostItem : undefined}
+              onShareItem={handleShareItem}
+            />
+          )}
         </div>
       </div>
 

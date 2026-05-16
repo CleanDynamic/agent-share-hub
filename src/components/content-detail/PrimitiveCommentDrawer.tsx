@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-export type AnchorType = "post" | "stage" | "block" | "slide" | "solution";
+export type AnchorType = "post" | "stage" | "block" | "slide" | "solution" | "reblog";
 export type ReactionType = "thumbsup" | "lightbulb" | "heart" | "eyes";
 
 export interface CommentReactions {
@@ -578,6 +578,7 @@ function EmptyState({ anchorType }: { anchorType: AnchorType }) {
     block: "block",
     slide: "slide",
     solution: "solution",
+    reblog: "reblog",
   };
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 24px", textAlign: "center" }}>

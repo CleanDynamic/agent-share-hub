@@ -66,6 +66,11 @@ function resolveDeepLink(n: NotificationCardData, raw: DataNotification): string
       return targetId && (targetType === "thread" || targetType === "message")
         ? `/messages/${targetId}`
         : "/messages";
+    case "post_reblogged":
+    case "reblog_reblogged": {
+      const slug = (n.metadata as any)?.reblog_slug;
+      return slug ? `/b/${slug}` : targetId ? `/b/${targetId}` : "/";
+    }
     case "mention":
     case "engagement":
     case "reference_received":
