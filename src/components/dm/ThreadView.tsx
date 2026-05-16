@@ -182,6 +182,48 @@ function PostShareCard({ contentId }: { contentId: string }) {
   );
 }
 
+function ReblogShareCard({ reblogId, meta }: { reblogId: string | null; meta: any }) {
+  const navigate = useNavigate();
+  const slug = meta?.slug ?? null;
+  const rebloggerHandle = meta?.reblogger_handle ?? null;
+  const rebloggerName = meta?.reblogger_display_name ?? rebloggerHandle ?? "Someone";
+  const originalTitle = meta?.original_title ?? "Original post";
+  const preview = (meta?.preview ?? "") as string;
+
+  return (
+    <div
+      className="rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden cursor-pointer"
+      style={{ maxWidth: 260 }}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (slug) navigate(`/b/${slug}`);
+        else if (reblogId) navigate(`/b/${reblogId}`);
+      }}
+    >
+      <div className="p-2.5">
+        <span
+          className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider rounded-full"
+          style={{ padding: "2px 8px", color: "#34d399", background: "rgba(52,211,153,0.12)" }}
+        >
+          <Repeat2 size={10} /> Reblog
+        </span>
+        <p className="text-[13px] font-bold text-foreground mt-1.5 line-clamp-2">
+          {rebloggerName} reblogged
+        </p>
+        {originalTitle && (
+          <p className="text-[12px] text-muted-foreground mt-0.5 line-clamp-1">
+            “{originalTitle}”
+          </p>
+        )}
+        {preview && (
+          <p className="text-[12px] text-foreground/80 mt-1.5 line-clamp-2 italic">{preview}</p>
+        )}
+        <p className="text-xs text-secondary mt-1.5">View reblog →</p>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════ Reaction Display ═══════ */
 function ReactionPills({
   messageId,
