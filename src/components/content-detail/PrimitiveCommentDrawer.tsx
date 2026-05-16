@@ -786,6 +786,20 @@ function SortDropdown({
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 import { ThreadedComment as ThreadedCommentView } from "@/components/comments/ThreadedComment";
+
+const menuItemStyle: React.CSSProperties = {
+  display: "block",
+  width: "100%",
+  textAlign: "left",
+  fontFamily: "Inter, sans-serif",
+  fontSize: 12,
+  color: "rgba(255,255,255,0.85)",
+  background: "transparent",
+  border: "none",
+  cursor: "pointer",
+  padding: "8px 10px",
+  borderRadius: 4,
+};
 import type { Comment as TCComment, CommentNode as TCNode } from "@/components/comments/types";
 
 function toThreadedNode(c: Comment, postAuthorId: string): TCNode {
