@@ -442,14 +442,6 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
         />
       )}
 
-      {/* Reblog composer */}
-      {reblogOpen && (
-        <ReblogComposer
-          open={reblogOpen}
-          onOpenChange={setReblogOpen}
-          original={original}
-        />
-      )}
     </div>
   );
 }
