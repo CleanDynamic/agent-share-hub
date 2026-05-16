@@ -1146,6 +1146,7 @@ export type Database = {
           pwyw_purchase_count: number | null
           rating_count: number
           reading_completion_count: number
+          reblog_count: number
           slug: string | null
           stage_count: number
           stage_grids: Json | null
@@ -1251,6 +1252,7 @@ export type Database = {
           pwyw_purchase_count?: number | null
           rating_count?: number
           reading_completion_count?: number
+          reblog_count?: number
           slug?: string | null
           stage_count?: number
           stage_grids?: Json | null
@@ -1356,6 +1358,7 @@ export type Database = {
           pwyw_purchase_count?: number | null
           rating_count?: number
           reading_completion_count?: number
+          reblog_count?: number
           slug?: string | null
           stage_count?: number
           stage_grids?: Json | null
@@ -3279,6 +3282,143 @@ export type Database = {
           {
             foreignKeyName: "reading_progress_post_id_fkey"
             columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reblog_bookmarks: {
+        Row: {
+          bookmarker_id: string
+          created_at: string
+          reblog_id: string
+        }
+        Insert: {
+          bookmarker_id: string
+          created_at?: string
+          reblog_id: string
+        }
+        Update: {
+          bookmarker_id?: string
+          created_at?: string
+          reblog_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reblog_bookmarks_reblog_id_fkey"
+            columns: ["reblog_id"]
+            isOneToOne: false
+            referencedRelation: "reblogs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reblog_likes: {
+        Row: {
+          created_at: string
+          liker_id: string
+          reblog_id: string
+        }
+        Insert: {
+          created_at?: string
+          liker_id: string
+          reblog_id: string
+        }
+        Update: {
+          created_at?: string
+          liker_id?: string
+          reblog_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reblog_likes_reblog_id_fkey"
+            columns: ["reblog_id"]
+            isOneToOne: false
+            referencedRelation: "reblogs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reblogs: {
+        Row: {
+          bookmark_count: number
+          comment_count: number
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_self_reblog: boolean
+          like_count: number
+          media_kind: string
+          media_thumbnail_url: string | null
+          media_url: string | null
+          original_post_id: string
+          parent_reblog_id: string | null
+          reblog_count: number
+          reblogger_id: string
+          root_original_post_id: string
+          slug: string
+          text: string | null
+          updated_at: string
+        }
+        Insert: {
+          bookmark_count?: number
+          comment_count?: number
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_self_reblog?: boolean
+          like_count?: number
+          media_kind?: string
+          media_thumbnail_url?: string | null
+          media_url?: string | null
+          original_post_id: string
+          parent_reblog_id?: string | null
+          reblog_count?: number
+          reblogger_id: string
+          root_original_post_id: string
+          slug: string
+          text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bookmark_count?: number
+          comment_count?: number
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_self_reblog?: boolean
+          like_count?: number
+          media_kind?: string
+          media_thumbnail_url?: string | null
+          media_url?: string | null
+          original_post_id?: string
+          parent_reblog_id?: string | null
+          reblog_count?: number
+          reblogger_id?: string
+          root_original_post_id?: string
+          slug?: string
+          text?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reblogs_original_post_id_fkey"
+            columns: ["original_post_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reblogs_parent_reblog_id_fkey"
+            columns: ["parent_reblog_id"]
+            isOneToOne: false
+            referencedRelation: "reblogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reblogs_root_original_post_id_fkey"
+            columns: ["root_original_post_id"]
             isOneToOne: false
             referencedRelation: "content_items"
             referencedColumns: ["id"]
