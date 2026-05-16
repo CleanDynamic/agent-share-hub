@@ -19,9 +19,29 @@ interface ShareToDMModalProps {
   onClose: () => void;
   contentId: string;
   contentTitle: string;
+  /** When provided, share a reblog instead of a post. */
+  kind?: "post" | "reblog";
+  reblogId?: string;
+  reblogSlug?: string;
+  reblogMeta?: {
+    rebloggerHandle?: string | null;
+    rebloggerDisplayName?: string | null;
+    originalTitle?: string | null;
+    originalSlug?: string | null;
+    text?: string | null;
+  };
 }
 
-export function ShareToDMModal({ open, onClose, contentId, contentTitle }: ShareToDMModalProps) {
+export function ShareToDMModal({
+  open,
+  onClose,
+  contentId,
+  contentTitle,
+  kind = "post",
+  reblogId,
+  reblogSlug,
+  reblogMeta,
+}: ShareToDMModalProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
