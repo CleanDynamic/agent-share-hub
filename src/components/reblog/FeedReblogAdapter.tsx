@@ -253,15 +253,19 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
           isOpen={commentsOpen}
           onClose={() => setCommentsOpen(false)}
           anchorType={"post" as AnchorType /* TODO: widen to 'reblog' */}
+          anchorId={row.id}
           anchorPreview={{
             type: "post",
             title: reblog.text?.slice(0, 80) || "Reblog",
           } as any}
           threads={[]}
+          viewerId={user?.id ?? ""}
+          postAuthorId={row.reblogger_id}
           onPost={() => {}}
           onReply={() => {}}
           onReact={() => {}}
           onMore={() => {}}
+          isLoading={false}
         />
       )}
     </>
