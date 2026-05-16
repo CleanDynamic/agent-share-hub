@@ -504,6 +504,64 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    if (kind === "reblog") {
+      const { data: reblog, error: rErr } = await supabase
+        .from("reblogs")
+        .select("id, slug, text, media_kind, media_url, created_at, reblogger_id, original_post_id")
+        .eq("id", reblogId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (rErr) throw rErr;
+      if (!reblog) {
+        return new Response(JSON.stringify({ error: "Reblog not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: reblogger } = await supabase
+        .from("profiles")
+        .select("id, username, display_name")
+        .eq("id", (reblog as any).reblogger_id)
+        .maybeSingle();
+
+      const { data: original } = await supabase
+        .from("content_items")
+        .select("id, slug, title, description, post_type, created_at, creator_id")
+        .eq("id", (reblog as any).original_post_id)
+        .maybeSingle();
+
+      let originalAuthor: any = null;
+      if (original?.creator_id) {
+        const { data: oa } = await supabase
+          .from("profiles")
+          .select("id, username, display_name")
+          .eq("id", original.creator_id)
+          .maybeSingle();
+        originalAuthor = oa;
+      }
+
+      const pdfBytes = await buildReblogPdf(reblog, original, reblogger, originalAuthor);
+      const fileName = `reblog/${(reblog as any).id}/${((reblog as any).slug ?? (reblog as any).id).split("/").join("-")}-${Date.now()}.pdf`;
+
+      const { error: upErr } = await supabase.storage
+        .from("ai-pdfs")
+        .upload(fileName, pdfBytes, { contentType: "application/pdf", upsert: true });
+      if (upErr) throw upErr;
+
+      const { data: pub } = supabase.storage.from("ai-pdfs").getPublicUrl(fileName);
+      const url = pub.publicUrl;
+
+      try {
+        await supabase.from("ai_export_log").insert({ post_id: (reblog as any).original_post_id, format: "ai-pdf-reblog" } as any);
+      } catch (_e) { /* ignore */ }
+
+      return new Response(JSON.stringify({ url, cached: false }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Fetch the post (caching check + payload)
     const { data: post, error: postErr } = await supabase
       .from("content_items")
