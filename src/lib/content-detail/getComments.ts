@@ -19,11 +19,14 @@ export async function getComments({
   sort?: CommentSort;
   viewerId?: string | null;
 }): Promise<{ threads: ThreadedComment[]; total: number }> {
-  // 1. Fetch all comments for the anchor (flat).
+  // 1. Fetch all comments for the anchor (flat). We pull deleted rows too so
+  //    we can render "[Comment deleted]" placeholders for deleted parents that
+  //    still have visible children; standalone deleted leaves are filtered out
+  //    after the tree is built.
   const { data: rows, error } = await (supabase as any)
     .from("primitive_comments")
     .select(
-      "id, anchor_type, anchor_id, parent_comment_id, author_id, body, body_text, is_edited, created_at, updated_at",
+      "id, anchor_type, anchor_id, parent_comment_id, author_id, body, body_text, is_edited, created_at, updated_at, deleted_at, reply_count",
     )
     .eq("anchor_type", anchorType)
     .eq("anchor_id", anchorId)
