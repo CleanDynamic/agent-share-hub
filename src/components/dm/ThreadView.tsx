@@ -868,6 +868,14 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
         case "voice":
           return <VoiceMessage url={msg.voice_url} duration={msg.voice_duration_seconds || 0} />;
         case "post_share":
+          if ((msg as any).shared_content_type === "reblog") {
+            return (
+              <ReblogShareCard
+                reblogId={(msg as any).shared_reblog_id ?? null}
+                meta={(msg as any).shared_content_meta ?? {}}
+              />
+            );
+          }
           return <PostShareCard contentId={msg.shared_content_id} />;
         case "like":
           return <span className="text-[32px] leading-none">❤️</span>;
