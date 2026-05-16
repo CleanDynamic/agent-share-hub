@@ -382,6 +382,9 @@ export function ThreadedComment(props: ThreadedCommentProps) {
             onContinuedThreadClick={onContinuedThreadClick}
             openComposerId={openComposerId}
             highlightedCommentId={highlightedCommentId}
+            editingCommentId={editingCommentId}
+            onEditSubmit={onEditSubmit}
+            onEditCancel={onEditCancel}
           />
         )}
       </div>
@@ -718,6 +721,9 @@ export function ThreadedComment(props: ThreadedCommentProps) {
           onContinuedThreadClick={onContinuedThreadClick}
           openComposerId={openComposerId}
           highlightedCommentId={highlightedCommentId}
+          editingCommentId={editingCommentId}
+          onEditSubmit={onEditSubmit}
+          onEditCancel={onEditCancel}
         />
       )}
     </div>
