@@ -419,6 +419,7 @@ export default function ContentDetail() {
   const [likeCount, setLikeCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
   const [repostCount, setRepostCount] = useState(0);
+  const [reblogsModalOpen, setReblogsModalOpen] = useState(false);
 
   useEffect(() => {
     if (!data?.viewer || !post) return;
@@ -2155,6 +2156,13 @@ export default function ContentDetail() {
           onReact={handleDrawerReact}
           onMore={handleDrawerMore}
           isLoading={drawerLoading}
+        />
+      )}
+      {reblogsModalOpen && (
+        <ReblogsListModal
+          isOpen={reblogsModalOpen}
+          onClose={() => setReblogsModalOpen(false)}
+          postId={(post as any)?.id}
         />
       )}
       {originalDialog && (
