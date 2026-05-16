@@ -670,26 +670,37 @@ export function FeedCard({ post }: { post: FeedPost }) {
         <button
           style={{
             display: "flex", alignItems: "center", gap: 6,
+            minHeight: 44,
             fontSize: 13,
-            color: userHasReblogged ? "#1F7A6D" : "rgba(255,255,255,0.40)",
+            color: userHasReblogged ? "#16A34A" : "rgba(255,255,255,0.40)",
             background: "none", border: "none", cursor: "pointer",
-            transition: "color 0.15s",
-            padding: '4px 6px', borderRadius: 5,
+            transition: "color 0.15s, background 0.15s",
+            padding: '4px 8px', borderRadius: 5,
             marginLeft: 14,
           }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(22, 163, 74, 0.08)" }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none" }}
           onClick={(e) => {
             e.stopPropagation()
-            if (!isLoggedIn) return
-            if (userHasReblogged) {
-              toast({ title: "You've already reblogged this" })
-            } else {
-              setReblogOpen(true)
-            }
+            if (!isLoggedIn) { navigate('/login'); return }
+            openReblog({
+              id: post.id,
+              title: post.title,
+              description: post.description,
+              post_type: post.post_type ?? post.content_type,
+              cover_image_url: post.cover_image_url,
+              created_at: post.created_at,
+              author: {
+                display_name: post.author.display_name,
+                username: post.author.username,
+                avatar_url: post.author.avatar_url,
+              },
+            })
           }}
-          title={userHasReblogged ? "You reblogged this" : "Reblog"}
+          title={post.author.username && profile?.username === post.author.username ? "Reblog your own post" : (userHasReblogged ? "You reblogged this" : "Reblog")}
         >
-          <Repeat2 size={15} />
-          {(reblogCount ?? 0) > 0 && <span>{reblogCount}</span>}
+          <Repeat2 size={15} style={{ color: userHasReblogged ? "#16A34A" : "currentColor" }} />
+          {(reblogCount ?? 0) > 0 && <span style={{ color: userHasReblogged ? "#16A34A" : undefined }}>{reblogCount}</span>}
         </button>
 
         {/* Save */}
