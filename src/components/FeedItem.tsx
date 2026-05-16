@@ -9,7 +9,7 @@ import { FeedItemExpanded } from "@/components/FeedItemExpanded";
 import { ShareToDMModal } from "@/components/dm/ShareToDMModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { BountyCard } from "@/components/BountyCard";
-import { ReblogComposer, type ReblogComposerOriginal } from "@/components/ReblogComposer";
+import { useReblogCompose } from "@/contexts/ReblogComposeContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
