@@ -47,6 +47,12 @@ export interface Comment {
   timestamp: Date;
   replies?: Comment[];
   isNew?: boolean;
+  isDeleted?: boolean;
+  isEdited?: boolean;
+  updatedAt?: Date;
+  likeCount?: number;
+  hasLiked?: boolean;
+  replyCount?: number;
 }
 
 export interface BlockAnchorPreview {
@@ -101,7 +107,14 @@ export interface PrimitiveCommentDrawerProps {
   onReply: (parentId: string, text: string) => void;
   onReact: (commentId: string, reaction: ReactionType) => void;
   onMore: (commentId: string) => void;
+  onLike?: (commentId: string) => void;
   isLoading: boolean;
+  /** Comment id to scroll to + flash highlight when the drawer opens. */
+  deepLinkCommentId?: string | null;
+  /** Post slug for "Continued thread" navigation. */
+  postSlug?: string | null;
+  /** Newly inserted comment ids that should briefly pulse. */
+  newReplyIds?: Set<string>;
 }
 
 type SortOption = "newest" | "oldest" | "most-reacted";
@@ -766,21 +779,59 @@ function SortDropdown({
 }
 
 // ─── Main Component ─────────────────────────────────────────────────────────
+import { ThreadedComment as ThreadedCommentView } from "@/components/comments/ThreadedComment";
+import type { Comment as TCComment, CommentNode as TCNode } from "@/components/comments/types";
+
+function toThreadedNode(c: Comment, postAuthorId: string): TCNode {
+  const tc: TCComment = {
+    id: c.id,
+    text: c.body,
+    authorDisplayName: c.author.displayName,
+    authorHandle: c.author.handle,
+    authorAvatarUrl: c.author.avatarUrl,
+    isPostAuthor: c.author.id === postAuthorId,
+    createdAt: c.timestamp.toISOString(),
+    updatedAt: c.updatedAt ? c.updatedAt.toISOString() : undefined,
+    likeCount:
+      typeof c.likeCount === "number"
+        ? c.likeCount
+        : Object.values(c.reactions).reduce((s, n) => s + n, 0),
+    hasLiked: !!c.hasLiked,
+    replyCount:
+      typeof c.replyCount === "number" ? c.replyCount : (c.replies?.length ?? 0),
+    isDeleted: !!c.isDeleted,
+  };
+  return {
+    comment: tc,
+    replies: (c.replies ?? []).map((r) => toThreadedNode(r, postAuthorId)),
+  };
+}
+
 export function PrimitiveCommentDrawer({
   isOpen,
   onClose,
   anchorType,
   anchorPreview,
   threads,
+  postAuthorId,
   onPost,
   onReply,
   onReact,
   onMore,
+  onLike,
   isLoading,
+  deepLinkCommentId,
+  postSlug,
+  newReplyIds,
 }: PrimitiveCommentDrawerProps) {
   const [previewCollapsed, setPreviewCollapsed] = React.useState(false);
   const [sortBy, setSortBy] = React.useState<SortOption>("newest");
+  const [openComposerId, setOpenComposerId] = React.useState<string | null>(null);
+  const [highlightId, setHighlightId] = React.useState<string | null>(null);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
 
+  // Sort top-level. Replies are kept in their incoming (chronological) order
+  // because ThreadedComment expects oldest-first reply lists.
   const sortedThreads = React.useMemo(() => {
     const arr = [...threads];
     if (sortBy === "newest") arr.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
@@ -793,6 +844,49 @@ export function PrimitiveCommentDrawer({
       });
     return arr;
   }, [threads, sortBy]);
+
+  // Scroll to top on open; if deep-linked, highlight target briefly.
+  React.useEffect(() => {
+    if (!isOpen) return;
+    if (deepLinkCommentId) {
+      setHighlightId(deepLinkCommentId);
+      const t = window.setTimeout(() => setHighlightId(null), 1400);
+      return () => window.clearTimeout(t);
+    }
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [isOpen, deepLinkCommentId]);
+
+  const handleReplyClick = React.useCallback((commentId: string) => {
+    setOpenComposerId((prev) => (prev === commentId ? null : commentId));
+  }, []);
+  const handleReplyComposerCancel = React.useCallback(() => {
+    setOpenComposerId(null);
+  }, []);
+  const handleReplyComposerSubmit = React.useCallback(
+    (parentId: string, text: string) => {
+      onReply(parentId, text);
+      setOpenComposerId(null);
+    },
+    [onReply]
+  );
+  const handleLikeClick = React.useCallback(
+    (commentId: string) => {
+      if (onLike) onLike(commentId);
+      else onReact(commentId, "heart");
+    },
+    [onLike, onReact]
+  );
+  const handleContinuedThread = React.useCallback(
+    (commentId: string) => {
+      if (postSlug) {
+        window.location.assign(`/b/${postSlug}?thread=${commentId}`);
+      }
+    },
+    [postSlug]
+  );
+  const handleExpandReplies = React.useCallback((_: string) => {
+    /* Local expand handled inside ThreadedComment's RepliesList. */
+  }, []);
 
   if (!isOpen) return null;
 
@@ -854,7 +948,7 @@ export function PrimitiveCommentDrawer({
           isCollapsed={previewCollapsed}
           onToggle={() => setPreviewCollapsed(!previewCollapsed)}
         />
-        <div style={{ flex: 1, overflowY: "auto", padding: "12px 18px" }}>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "12px 18px" }}>
           {threads.length > 0 && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
               <SortDropdown value={sortBy} onChange={setSortBy} />
@@ -876,9 +970,28 @@ export function PrimitiveCommentDrawer({
           )}
           {!isLoading && threads.length === 0 && <EmptyState anchorType={anchorType} />}
           {!isLoading &&
-            sortedThreads.map((c) => (
-              <CommentCard key={c.id} comment={c} onReply={onReply} onReact={onReact} onMore={onMore} />
-            ))}
+            sortedThreads.map((c) => {
+              const node = toThreadedNode(c, postAuthorId);
+              return (
+                <ThreadedCommentView
+                  key={node.comment.id}
+                  comment={node.comment}
+                  replies={node.replies}
+                  level={0}
+                  isReplyComposerOpen={openComposerId === node.comment.id}
+                  onReplyClick={handleReplyClick}
+                  onLikeClick={handleLikeClick}
+                  onMore={onMore}
+                  onReplyComposerSubmit={handleReplyComposerSubmit}
+                  onReplyComposerCancel={handleReplyComposerCancel}
+                  onExpandRepliesClick={handleExpandReplies}
+                  onContinuedThreadClick={postSlug ? handleContinuedThread : undefined}
+                  openComposerId={openComposerId}
+                  isNewReply={newReplyIds?.has(node.comment.id)}
+                  highlightedCommentId={highlightId}
+                />
+              );
+            })}
         </div>
         <Composer onPost={onPost} autoFocus={threads.length === 0} />
       </div>
@@ -887,6 +1000,13 @@ export function PrimitiveCommentDrawer({
         @keyframes tealFlash {
           0% { background: rgba(46,196,182,0.15); }
           100% { background: transparent; }
+        }
+        @keyframes ns-deep-link-pulse {
+          0% { box-shadow: 0 0 0 0 rgba(232,87,26,0.55); }
+          100% { box-shadow: 0 0 0 8px rgba(232,87,26,0); }
+        }
+        .ns-comment-new-reply {
+          animation: ns-deep-link-pulse 600ms ease-out;
         }
       `}</style>
     </>

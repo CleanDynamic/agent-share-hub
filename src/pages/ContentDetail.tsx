@@ -680,6 +680,10 @@ export default function ContentDetail() {
       reactions: reactionsToCounts(c.reactions),
       timestamp: new Date(c.createdAt),
       replies: (c.replies || []).map(toDrawerComment),
+      isDeleted: !!(c as any).isDeleted,
+      likeCount: (c.reactions || []).find((r) => r.reaction === "heart")?.count ?? 0,
+      hasLiked: !!(c.reactions || []).find((r) => r.reaction === "heart" && r.reactedByViewer),
+      replyCount: (c.replies || []).length,
     }),
     [post]
   );
@@ -707,6 +711,19 @@ export default function ContentDetail() {
   useEffect(() => {
     if (drawerOpen && drawerAnchor) refetchDrawerThreads();
   }, [drawerOpen, drawerAnchor, refetchDrawerThreads]);
+
+  // Deep-link: when ?comment= or ?thread= is present, auto-open the post-level
+  // drawer so the target comment can be scrolled into view.
+  const deepLinkParam = searchParams.get("comment") || searchParams.get("thread");
+  useEffect(() => {
+    if (!deepLinkParam || !post || !shellPost || drawerOpen) return;
+    setDrawerAnchor({
+      anchorType: "post",
+      anchorId: (post as any).id,
+      preview: { type: "post", title: shellPost.title },
+    });
+    setDrawerOpen(true);
+  }, [deepLinkParam, post, shellPost, drawerOpen]);
 
   // Realtime: live updates for the currently-open anchor.
   useCommentsRealtime(
@@ -2158,6 +2175,10 @@ export default function ContentDetail() {
           onReact={handleDrawerReact}
           onMore={handleDrawerMore}
           isLoading={drawerLoading}
+          postSlug={shellPost?.slug ?? null}
+          deepLinkCommentId={
+            searchParams.get("comment") || searchParams.get("thread") || null
+          }
         />
       )}
       {reblogsModalOpen && (
