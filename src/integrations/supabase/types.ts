@@ -4262,6 +4262,10 @@ export type Database = {
           title: string
         }[]
       }
+      soft_delete_primitive_comment: {
+        Args: { _comment_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
