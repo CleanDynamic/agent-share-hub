@@ -154,7 +154,9 @@ export function ShareToDMModal({
         style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
       >
         <DialogHeader>
-          <DialogTitle className="text-base font-bold text-foreground">Share post</DialogTitle>
+          <DialogTitle className="text-base font-bold text-foreground">
+            {kind === "reblog" ? "Share reblog" : "Share post"}
+          </DialogTitle>
         </DialogHeader>
         <div className="relative mt-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
