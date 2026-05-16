@@ -126,7 +126,7 @@ function getAvatarStyle(name: string) {
 
 export function FeedCard({ post }: { post: FeedPost }) {
   const navigate = useNavigate()
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, profile } = useAuth()
   const { toast } = useToast()
   const [expandStage, setExpandStage] = useState(0)
   const [liked, setLiked] = useState(false)
