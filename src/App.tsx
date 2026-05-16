@@ -123,6 +123,7 @@ const App = () => (
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </ReblogComposeProvider>
             </ShareMenuProvider>
           </AuthProvider>
         </BrowserRouter>
