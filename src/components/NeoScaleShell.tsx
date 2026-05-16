@@ -35,8 +35,8 @@ import { RightRailDrawer } from "@/components/shell/RightRailDrawer";
      xl     ≥1280px  three-column, scale formula uses native 1068×775
      lg     1024–1279 right rail hidden (drawer in 14.2), native 824×775
      md     768–1023  left rail collapsed (icon-only 72px), right hidden, native 696×775
-     mobile <768px    desktop chrome replaced by <MobileNav/> top+bottom bars,
-                      centre column flows naturally (NO transform scaling).
+     mobile <768px    chrome from step 14.2 (MobileTopBar + MobileBottomNav) overlays
+                      the scaled centre column; legacy MobileNav fallback removed.
 */
 import { FollowButton } from "@/components/FollowButton";
 import LiquidGlassPanel from "./LiquidGlassPanel";
