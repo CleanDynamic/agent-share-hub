@@ -82,6 +82,7 @@ import { extendBountyDeadline } from "@/lib/bounty-competition/extendBountyDeadl
 import { promoteBountyToBlueprint } from "@/lib/bounty-competition/promoteBountyToBlueprint";
 import { createBountyThread, createDirectThread } from "@/lib/messaging";
 import { useShareMenu } from "@/components/share/ShareMenuProvider";
+import { ReblogsListModal } from "@/components/reblog/ReblogsListModal";
 import { useQueryClient } from "@tanstack/react-query";
 
 const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" | "bounty" => {
