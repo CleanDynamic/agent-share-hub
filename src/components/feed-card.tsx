@@ -131,22 +131,21 @@ export function FeedCard({ post }: { post: FeedPost }) {
   const [expandStage, setExpandStage] = useState(0)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.view_count ?? 0)
-  const [reblogOpen, setReblogOpen] = useState(false)
+  const { openReblog } = useReblogCompose()
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Reblog count
+  // Reblog count (new reblogs table)
   const { data: reblogCount } = useQuery({
     queryKey: ["reblog_count", post.id],
     queryFn: async () => {
       const { count } = await (supabase
-        .from("content_items")
+        .from("reblogs")
         .select("id", { count: "exact", head: true }) as any)
-        .eq("reblog_of_id", post.id)
-        .eq("is_reblog", true)
-        .eq("status", "approved");
+        .eq("original_post_id", post.id)
+        .is("deleted_at", null);
       return count ?? 0;
     },
     staleTime: 60_000,
@@ -156,29 +155,20 @@ export function FeedCard({ post }: { post: FeedPost }) {
   const { data: userHasReblogged } = useQuery({
     queryKey: ["user_has_reblogged", post.id, user?.id],
     queryFn: async () => {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data } = await (supabase
-        .from("content_items")
+        .from("reblogs")
         .select("id") as any)
-        .eq("reblog_of_id", post.id)
-        .eq("creator_id", user!.id)
-        .eq("is_reblog", true)
+        .eq("original_post_id", post.id)
+        .eq("reblogger_id", user!.id)
+        .is("deleted_at", null)
+        .gte("created_at", since)
         .maybeSingle();
       return !!data;
     },
     staleTime: 60_000,
     enabled: !!post.id && !!user?.id,
   });
-
-  const original: ReblogComposerOriginal = {
-    id: post.id,
-    title: post.title,
-    creatorId: "",
-    creatorUsername: post.author.username,
-    creatorDisplayName: post.author.display_name,
-    contentType: post.content_type,
-    viewCount: post.view_count ?? 0,
-    downloadCount: post.download_count ?? 0,
-  };
 
   const typeInfo = getPrimaryTypeLabel(post.post_type ?? null)
   const badgeKey = typeInfo.label === 'Blog' ? 'blog' : 'build'
