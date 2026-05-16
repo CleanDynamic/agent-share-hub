@@ -13,8 +13,12 @@ import { useDraftCount } from "@/hooks/useDraftCount";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
-// MobileNav is integrated in step 14.2; mobile currently uses the scaled shell.
-// import { MobileNav } from "@/components/layout/MobileNav";
+// Mobile chrome (step 14.2) — overlays rendered as siblings of .ns-scale-wrapper
+// so the scale transform on .ns-app-container does not shrink them.
+import { MobileTopBar, type PageContextType } from "@/components/shell/MobileTopBar";
+import { MobileBottomNav, type MobileRoute } from "@/components/shell/MobileBottomNav";
+import { ProfileDrawer, type DrawerRoute } from "@/components/shell/ProfileDrawer";
+import { RightRailDrawer } from "@/components/shell/RightRailDrawer";
 
 /* ────────────────────────────────────────────────
    Shell structure (Step 14.1 — responsive chrome)
@@ -1071,6 +1075,82 @@ export function NeoScaleShell() {
   const navPage = routeToNav(location.pathname);
   const isMessages = location.pathname === "/messages" || location.pathname.startsWith("/messages/");
 
+  /* ── Mobile chrome state (step 14.2) ── */
+  const [isProfileDrawerOpen, setProfileDrawerOpen] = useState(false);
+  const [isRightRailDrawerOpen, setRightRailDrawerOpen] = useState(false);
+
+  const initialsSafe =
+    profile?.display_name?.slice(0, 2).toUpperCase() ||
+    profile?.username?.slice(0, 2).toUpperCase() ||
+    (user?.email ? user.email.slice(0, 2).toUpperCase() : "?");
+
+  const mobileRoute: MobileRoute = (() => {
+    const p = location.pathname;
+    if (p === "/" || p === "") return "home";
+    if (p.startsWith("/discover") || p.startsWith("/browse") || p.startsWith("/search")) return "discover";
+    if (p.startsWith("/upload")) return "upload";
+    if (p.startsWith("/messages")) return "messages";
+    if (p.startsWith("/profile") || p.startsWith("/notifications") || p.startsWith("/library") || p.startsWith("/drafts") || p.startsWith("/analytics")) return "profile";
+    return "home";
+  })();
+
+  const pageContextType: PageContextType = (() => {
+    const p = location.pathname;
+    if (p === "/" || p === "") return "home";
+    if (p.startsWith("/discover") || p.startsWith("/browse") || p.startsWith("/search")) return "discover";
+    if (p.startsWith("/messages")) return "messages";
+    if (p.startsWith("/notifications")) return "notifications";
+    if (p.startsWith("/upload")) return "upload";
+    if (p.startsWith("/profile")) return "profile";
+    if (p.startsWith("/content/") || p.startsWith("/blueprint/") || p.startsWith("/blog/")) return "content-detail";
+    return "home";
+  })();
+
+  const drawerRoute: DrawerRoute | null = (() => {
+    const p = location.pathname;
+    if (p === "/") return "home";
+    if (p.startsWith("/discover") || p.startsWith("/browse") || p.startsWith("/search")) return "discover";
+    if (p.startsWith("/library")) return "library";
+    if (p.startsWith("/upload")) return "upload";
+    if (p.startsWith("/drafts")) return "drafts";
+    if (p.startsWith("/messages")) return "messages";
+    if (p.startsWith("/notifications")) return "notifications";
+    if (p.startsWith("/analytics")) return "analytics";
+    if (p.startsWith("/about")) return "about";
+    return null;
+  })();
+
+  const drawerUser = isLoggedIn
+    ? {
+        name: profile?.display_name || profile?.username || "User",
+        handle: profile?.username || "",
+        avatarUrl: profile?.avatar_url || undefined,
+        initials: initialsSafe,
+        followersCount: (profile as any)?.follower_count ?? 0,
+        followingCount: (profile as any)?.following_count ?? 0,
+      }
+    : null;
+
+  const drawerNavigate = (r: DrawerRoute) => {
+    const map: Record<DrawerRoute, string> = {
+      home: "/", discover: "/discover", library: "/library", upload: "/upload",
+      drafts: "/drafts", messages: "/messages", notifications: "/notifications",
+      analytics: "/analytics", about: "/about",
+    };
+    navigate(map[r]);
+  };
+
+  const mobileBottomNavigate = (r: MobileRoute) => {
+    if (r === "profile") {
+      setProfileDrawerOpen(true);
+      return;
+    }
+    const map: Record<Exclude<MobileRoute, "profile">, string> = {
+      home: "/", discover: "/discover", upload: "/upload", messages: "/messages",
+    };
+    navigate(map[r]);
+  };
+
   /* ── CSS injection ── */
   useEffect(() => {
     if (isMobile) return;
@@ -2045,6 +2125,53 @@ export function NeoScaleShell() {
 
         </div>
       </div>
+
+      {/* ═══ MOBILE CHROME (siblings of .ns-scale-wrapper so the scale ═══
+           transform does not shrink them) ═══════════════════════════ */}
+      {breakpoint === "mobile" && (
+        <MobileTopBar
+          pageContext={{ type: pageContextType, title: profile?.display_name || profile?.username }}
+          currentUserAvatarUrl={profile?.avatar_url || undefined}
+          currentUserInitials={initialsSafe}
+          unreadCounts={{
+            notifications: Number(notifBadge || 0),
+            messages: Number(msgBadge || 0),
+          }}
+          onProfileDrawerOpen={() => setProfileDrawerOpen(true)}
+          onRightRailDrawerOpen={() => setRightRailDrawerOpen(true)}
+          onNotificationsOpen={() => navigate("/notifications")}
+          onBack={() => navigate(-1)}
+        />
+      )}
+      {breakpoint === "mobile" && (
+        <MobileBottomNav
+          currentRoute={mobileRoute}
+          currentUserAvatarUrl={profile?.avatar_url || undefined}
+          currentUserInitials={initialsSafe}
+          unreadMessageCount={Number(msgBadge || 0)}
+          unreadNotificationCount={Number(notifBadge || 0)}
+          onNavigate={mobileBottomNavigate}
+        />
+      )}
+
+      {/* ProfileDrawer — available at all breakpoints */}
+      <ProfileDrawer
+        isOpen={isProfileDrawerOpen}
+        onClose={() => setProfileDrawerOpen(false)}
+        currentUser={drawerUser}
+        currentRoute={drawerRoute}
+        onNavigate={drawerNavigate}
+        onSignOut={async () => { await signOut(); navigate("/"); }}
+      />
+
+      {/* RightRailDrawer — at lg, md, mobile (xl has the rail inline) */}
+      {breakpoint !== "xl" && (
+        <RightRailDrawer
+          isOpen={isRightRailDrawerOpen}
+          onClose={() => setRightRailDrawerOpen(false)}
+          onNavigate={(path) => navigate(path)}
+        />
+      )}
     </div>
   );
 }
