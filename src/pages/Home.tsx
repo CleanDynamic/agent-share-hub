@@ -110,6 +110,7 @@ function RecentTab() {
           )
         `)
         .is("deleted_at", null)
+        .is("hidden_at", null)
         .order("created_at", { ascending: false })
         .limit(20);
       if (error) throw error;
