@@ -386,20 +386,17 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
                   <button
                     onClick={(e) => {
                       stop(e);
-                      if (userHasReblogged) {
-                        toast({ title: "You've already reblogged this" });
-                      } else {
-                        setReblogOpen(true);
-                      }
+                      if (!isLoggedIn) { navigate('/login'); return; }
+                      openReblogForThis();
                     }}
                     className="inline-flex items-center gap-1 shrink-0 transition-colors"
-                    style={{ color: userHasReblogged ? "#1F7A6D" : 'rgba(255,255,255,0.35)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                    onMouseEnter={e => { if (!userHasReblogged) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.70)'; }}
-                    onMouseLeave={e => { if (!userHasReblogged) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.35)'; }}
-                    title={userHasReblogged ? "You reblogged this" : "Reblog"}
+                    style={{ minHeight: 44, color: userHasReblogged ? "#16A34A" : 'rgba(255,255,255,0.35)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 5 }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(22, 163, 74, 0.08)"; if (!userHasReblogged) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.70)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; if (!userHasReblogged) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.35)'; }}
+                    title={user && item.creator_id === user.id ? "Reblog your own post" : (userHasReblogged ? "You reblogged this" : "Reblog")}
                   >
-                    <Repeat2 style={{ width: 15, height: 15, color: userHasReblogged ? "#1F7A6D" : "currentColor" }} />
-                    {(reblogCount ?? 0) > 0 && <span>{formatNum(reblogCount ?? 0)}</span>}
+                    <Repeat2 style={{ width: 15, height: 15, color: userHasReblogged ? "#16A34A" : "currentColor" }} />
+                    {(reblogCount ?? 0) > 0 && <span style={{ color: userHasReblogged ? "#16A34A" : undefined }}>{formatNum(reblogCount ?? 0)}</span>}
                   </button>
                 </>
               )}
