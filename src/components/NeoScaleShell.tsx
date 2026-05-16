@@ -13,7 +13,8 @@ import { useDraftCount } from "@/hooks/useDraftCount";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
-import { MobileNav } from "@/components/layout/MobileNav";
+// MobileNav is integrated in step 14.2; mobile currently uses the scaled shell.
+// import { MobileNav } from "@/components/layout/MobileNav";
 
 /* ────────────────────────────────────────────────
    Shell structure (Step 14.1 — responsive chrome)
@@ -99,6 +100,20 @@ const NEOSCALE_CSS = `
   height: 100vh;
   position: relative;
   z-index: 1;
+}
+/* Mobile: scaled centre column may exceed viewport at the floor — allow scroll. */
+@media (max-width: 767px) {
+  .ns-scale-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding-top: calc(56px + env(safe-area-inset-top));
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    padding-left: 16px;
+    padding-right: 16px;
+    box-sizing: border-box;
+  }
 }
 
 .ns-app-container {
@@ -1201,15 +1216,17 @@ export function NeoScaleShell() {
 
 
   /* ── Responsive scale ──
-     The .ns-app-container is transform-scaled to fit smaller-but-still-desktop
-     viewports. Native width changes per breakpoint as panels drop out:
+     The .ns-app-container is transform-scaled (desktop) or `zoom`-scaled
+     (mobile, so the scaled box affects layout/scroll) to fit the viewport.
+     Native width changes per breakpoint as panels drop out:
        xl:  left(200) + gap(24) + middle(600) + gap(24) + right(220)  = 1068
        lg:  left(200) + gap(24) + middle(600)                          = 824
        md:  left(72)  + gap(24) + middle(600)                          = 696
-       mobile: scale forced to 1 (chrome is replaced by MobileNav, the
-               centre column reflows naturally — never scaled). */
+       mobile: only centre column (600). Scale formula:
+               scale = max(0.55, min(1, (vw - 32) / 600))
+               Floor 0.55 keeps text legible; below it horizontal scroll
+               engages on .ns-scale-wrapper. */
   useEffect(() => {
-    if (isMobile) return;
     const el = containerRef.current;
     if (!el) return;
     const nativeH = 775, pad = 48;
@@ -1218,12 +1235,28 @@ export function NeoScaleShell() {
       uploadEditorSmall
         ? 844 /* middle(600) + gap(24) + right(220) */ :
       breakpoint === "lg" ? 824 :
-      /* md */              696;
+      breakpoint === "md" ? 696 :
+      /* mobile */          600;
+
+    let didCenter = false;
     function rescale() {
       if (breakpoint === "mobile") {
-        el!.style.transform = "scale(1)";
+        const s = Math.max(0.55, Math.min(1, (window.innerWidth - 32) / 600));
+        el!.style.transform = "none";
+        (el!.style as any).zoom = String(s);
+        // First-mount centring when at the floor (scaled width > viewport).
+        if (!didCenter) {
+          didCenter = true;
+          requestAnimationFrame(() => {
+            const wrapper = el!.parentElement;
+            if (!wrapper) return;
+            const overflow = wrapper.scrollWidth - wrapper.clientWidth;
+            if (overflow > 0) wrapper.scrollLeft = overflow / 2;
+          });
+        }
         return;
       }
+      (el!.style as any).zoom = "";
       const scale = Math.min(
         (window.innerWidth  - pad * 2) / nativeW,
         (window.innerHeight - pad * 2) / nativeH,
@@ -1239,7 +1272,7 @@ export function NeoScaleShell() {
   /* ── Supabase: recent feed ── */
   const { data: feedItems, isLoading: feedItemsLoading } = useQuery({
     queryKey: ["ns_home_recent"],
-    enabled: !isMobile,
+    // Home centre column also renders at mobile (scaled) — do not gate on isMobile.
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
@@ -1359,17 +1392,12 @@ export function NeoScaleShell() {
     staleTime: 120_000,
   });
 
-  /* ── Mobile fallback (after all hooks) ── */
-  if (isMobile) {
-    return (
-      <>
-        <MobileNav />
-        <main style={{ paddingTop: 56, paddingBottom: 56, minHeight: "100vh" }}>
-          <Outlet />
-        </main>
-      </>
-    );
-  }
+  /* ── Mobile chrome (top bar + bottom nav) is integrated in step 14.2.
+     For 14.1 the mobile branch shares the desktop shell: left/right panels
+     hide via showLeftPanel/showRightPanel, .ns-app-container is `zoom`-scaled
+     so the centre column fits the viewport (see the rescale effect above).
+     Padding for the future MobileTopBar/BottomNav is reserved in
+     .ns-scale-wrapper @media (max-width: 767px). */
 
   /* ── Tilt effect for side panels ── */
   function initTilt(ref: React.RefObject<HTMLDivElement>) {
