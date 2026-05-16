@@ -1391,17 +1391,12 @@ export function NeoScaleShell() {
     staleTime: 120_000,
   });
 
-  /* ── Mobile fallback (after all hooks) ── */
-  if (isMobile) {
-    return (
-      <>
-        <MobileNav />
-        <main style={{ paddingTop: 56, paddingBottom: 56, minHeight: "100vh" }}>
-          <Outlet />
-        </main>
-      </>
-    );
-  }
+  /* ── Mobile chrome (top bar + bottom nav) is integrated in step 14.2.
+     For 14.1 the mobile branch shares the desktop shell: left/right panels
+     hide via showLeftPanel/showRightPanel, .ns-app-container is `zoom`-scaled
+     so the centre column fits the viewport (see the rescale effect above).
+     Padding for the future MobileTopBar/BottomNav is reserved in
+     .ns-scale-wrapper @media (max-width: 767px). */
 
   /* ── Tilt effect for side panels ── */
   function initTilt(ref: React.RefObject<HTMLDivElement>) {
