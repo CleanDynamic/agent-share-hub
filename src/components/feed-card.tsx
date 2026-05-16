@@ -855,15 +855,6 @@ export function FeedCard({ post }: { post: FeedPost }) {
         </div>
       </div>
 
-      {reblogOpen && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <ReblogComposer
-            original={original}
-            open={reblogOpen}
-            onOpenChange={setReblogOpen}
-          />
-        </div>
-      )}
     </article>
   )
 }
