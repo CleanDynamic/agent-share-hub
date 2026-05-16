@@ -221,40 +221,45 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
     } as any);
   };
 
-  const handleMore = async () => {
-    const isOwner = user?.id === row.reblogger_id;
-    if (isOwner) {
-      if (window.confirm("Delete this reblog?")) {
-        try {
-          await deleteReblog({ reblogId: row.id, rebloggerId: user!.id } as any);
-          toast.success("Reblog deleted");
-        } catch {
-          toast.error("Couldn't delete");
-        }
-      }
-      return;
+  const isOwner = user?.id === row.reblogger_id;
+
+  const handleMore = () => setActionsOpen(true);
+
+  const handleCopyLink = () => {
+    navigator.clipboard?.writeText(`${window.location.origin}/b/${reblog.slug}`);
+    toast.success("Link copied");
+    setActionsOpen(false);
+  };
+
+  const handleShareDM = () => {
+    if (!requireAuth()) return;
+    setActionsOpen(false);
+    setShareDMOpen(true);
+  };
+
+  const handleReport = async () => {
+    if (!requireAuth()) return;
+    setActionsOpen(false);
+    const reason = window.prompt("Reason (optional):", "") ?? null;
+    try {
+      const { error } = await (supabase as any)
+        .from("reblog_reports")
+        .insert({ reblog_id: row.id, reporter_id: user!.id, reason });
+      if (error && !String(error.message).includes("duplicate")) throw error;
+      toast.success("Report received. Thank you.");
+    } catch {
+      toast.error("Couldn't submit report");
     }
-    // Non-owner overflow: Report / Copy link
-    const action = window.prompt(
-      'Type "report" to flag this reblog, or "copy" to copy link:',
-      "copy",
-    );
-    const choice = (action || "").trim().toLowerCase();
-    if (choice === "report") {
-      if (!requireAuth()) return;
-      try {
-        const reason = window.prompt("Reason (optional):", "") ?? null;
-        const { error } = await (supabase as any)
-          .from("reblog_reports")
-          .insert({ reblog_id: row.id, reporter_id: user!.id, reason });
-        if (error && !String(error.message).includes("duplicate")) throw error;
-        toast.success("Report received. Thank you.");
-      } catch {
-        toast.error("Couldn't submit report");
-      }
-    } else {
-      navigator.clipboard?.writeText(`${window.location.origin}/b/${reblog.slug}`);
-      toast.success("Link copied");
+  };
+
+  const handleDelete = async () => {
+    setActionsOpen(false);
+    if (!window.confirm("Delete this reblog?")) return;
+    try {
+      await deleteReblog({ reblogId: row.id, rebloggerId: user!.id } as any);
+      toast.success("Reblog deleted");
+    } catch {
+      toast.error("Couldn't delete");
     }
   };
 
