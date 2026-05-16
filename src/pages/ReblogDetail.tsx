@@ -102,7 +102,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
   if (mode === "thread") {
     return (
       <div className="max-w-2xl mx-auto p-4">
-        <SeoHead title={`Reblog thread`} description="" />
+        <SeoHead title="Reblog thread" description="" path={`/b/${row.slug}/thread`} />
         <button
           onClick={() => navigate(`/b/${row.slug}`)}
           className="flex items-center gap-1 text-sm text-white/60 hover:text-white mb-4"
@@ -203,7 +203,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
     <div className="max-w-2xl mx-auto p-4">
       <SeoHead
         title={`Reblog by @${reblogger.username ?? "unknown"}`}
-        description={(row.text ?? "").slice(0, 160)}
+        description={(row.text ?? "").slice(0, 160)} path={`/b/${row.slug}`}
       />
 
       <header className="flex items-center gap-3 mb-4">
