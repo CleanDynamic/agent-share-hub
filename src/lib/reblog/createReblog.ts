@@ -142,11 +142,16 @@ export async function createReblog(input: CreateReblogInput): Promise<Reblog> {
   }
 
   // Best-effort notification (skips self-reblog automatically).
+  // For quoted-excerpt reblogs we pass a `variant: "quote"` flag in metadata
+  // so the notification renderer can switch the body to "quoted your …".
   notifyEngagement({
     kind: "repost",
     postId: input.originalPostId,
     actorId: input.rebloggerId,
-  }).catch(() => {});
+    metadata: hasExcerpt
+      ? { reblog_id: data.id, variant: "quote", excerpt_preview: rawExcerpt.slice(0, 140) }
+      : { reblog_id: data.id, variant: "reblog" },
+  } as any).catch(() => {});
 
   // Reblog-of-reblog: notify the parent reblog's author.
   if (input.parentReblogId) {
