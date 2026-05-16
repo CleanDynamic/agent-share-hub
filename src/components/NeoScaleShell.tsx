@@ -1271,7 +1271,7 @@ export function NeoScaleShell() {
   /* ── Supabase: recent feed ── */
   const { data: feedItems, isLoading: feedItemsLoading } = useQuery({
     queryKey: ["ns_home_recent"],
-    enabled: !isMobile,
+    // Home centre column also renders at mobile (scaled) — do not gate on isMobile.
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
