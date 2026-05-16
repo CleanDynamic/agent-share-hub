@@ -8,6 +8,7 @@ import { FeedItem, timeAgo } from "@/components/FeedItem";
 import { CollectionFeedCard } from "@/components/CollectionFeedCard";
 import { ProjectFeedCard } from "@/components/ProjectFeedCard";
 import { ReblogCard } from "@/components/ReblogCard";
+import { FeedReblogAdapter, type FeedReblogRow } from "@/components/reblog/FeedReblogAdapter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Download, Loader2, Upload, Search as SearchIcon } from "lucide-react";
@@ -20,6 +21,7 @@ const PAGE_SIZE = 20;
 function renderFeedEntry(entry: any) {
   if (entry._feedType === "collection") return <CollectionFeedCard key={`col-${entry.id}`} item={entry} />;
   if (entry._feedType === "project") return <ProjectFeedCard key={`proj-${entry.id}`} item={entry} />;
+  if (entry._feedType === "reblog") return <FeedReblogAdapter key={`rb-${entry.id}`} row={entry as FeedReblogRow} />;
   if (entry.is_reblog) return <ReblogCard key={entry.id} item={entry} />;
   return <FeedItem key={entry.id} item={entry} />;
 }
