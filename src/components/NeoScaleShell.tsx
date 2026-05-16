@@ -13,8 +13,12 @@ import { useDraftCount } from "@/hooks/useDraftCount";
 import { useNavBadges } from "@/hooks/useNavBadges";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
-// MobileNav is integrated in step 14.2; mobile currently uses the scaled shell.
-// import { MobileNav } from "@/components/layout/MobileNav";
+// Mobile chrome (step 14.2) — overlays rendered as siblings of .ns-scale-wrapper
+// so the scale transform on .ns-app-container does not shrink them.
+import { MobileTopBar, type PageContextType } from "@/components/shell/MobileTopBar";
+import { MobileBottomNav, type MobileRoute } from "@/components/shell/MobileBottomNav";
+import { ProfileDrawer, type DrawerRoute } from "@/components/shell/ProfileDrawer";
+import { RightRailDrawer } from "@/components/shell/RightRailDrawer";
 
 /* ────────────────────────────────────────────────
    Shell structure (Step 14.1 — responsive chrome)
