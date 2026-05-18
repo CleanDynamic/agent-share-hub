@@ -268,12 +268,54 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
     }
   };
 
+  const hasExcerpt = !!row.excerpt_text;
+  const excerpt = hasExcerpt
+    ? {
+        text: row.excerpt_text as string,
+        sourceBlockId: row.excerpt_source_block_id ?? undefined,
+        sourceBlockTypeLabel: row.excerpt_source_block_type_label ?? undefined,
+      }
+    : null;
+  const excerptSourcePost = hasExcerpt && row.embedded_original
+    ? {
+        id: row.embedded_original.id,
+        slug: row.embedded_original.slug,
+        postType: mapPostType(row.embedded_original.post_type),
+        title: row.embedded_original.title,
+        authorDisplayName:
+          row.embedded_original.author?.display_name ||
+          row.embedded_original.author?.username ||
+          "Unknown",
+        authorHandle: row.embedded_original.author?.username || "unknown",
+        authorAvatarUrl: row.embedded_original.author?.avatar_url || undefined,
+        publishedAt: row.embedded_original.created_at || row.created_at,
+        coverUrl: row.embedded_original.cover_image_url ?? undefined,
+      }
+    : null;
+
+  const handleOriginalClick = () => {
+    if (!row.embedded_original?.slug) return;
+    if (hasExcerpt) {
+      const params = new URLSearchParams();
+      if (row.excerpt_source_block_id) params.set("excerpt-anchor", row.excerpt_source_block_id);
+      if (row.excerpt_text_hash) params.set("excerpt-text-hash", row.excerpt_text_hash);
+      const qs = params.toString();
+      navigate(`/b/${row.embedded_original.slug}${qs ? `?${qs}` : ""}`);
+    } else {
+      navigate(`/b/${row.embedded_original.slug}`);
+    }
+  };
+
   return (
     <>
       <ReblogFeedCard
         reblog={reblog}
         engagement={engagement}
         embeddedOriginal={embedded}
+        excerpt={excerpt}
+        excerptSourcePost={excerptSourcePost}
+        isExcerptStillValid={row.is_excerpt_still_valid !== false}
+        isExcerptSourceAvailable={!!row.embedded_original}
         variant={variant}
         onReblogClick={handleReblogChain}
         onLikeClick={handleLike}
@@ -283,11 +325,7 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
         onRebloggerClick={() =>
           navigate(`/profile/${reblogger.username ?? row.reblogger_id}`)
         }
-        onOriginalClick={() => {
-          if (row.embedded_original?.slug) {
-            navigate(`/b/${row.embedded_original.slug}`);
-          }
-        }}
+        onOriginalClick={handleOriginalClick}
         onMore={handleMore}
       />
 
