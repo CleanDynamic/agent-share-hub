@@ -10,6 +10,7 @@ import {
   EmbeddedOriginalCard,
   type EmbeddedOriginalCardPost,
 } from "@/components/reblog/EmbeddedOriginalCard";
+import { EmbeddedExcerptCard } from "@/components/reblog/EmbeddedExcerptCard";
 import { FeedReblogAdapter, type FeedReblogRow } from "@/components/reblog/FeedReblogAdapter";
 
 function mapPostType(t?: string | null): EmbeddedOriginalCardPost["postType"] {
