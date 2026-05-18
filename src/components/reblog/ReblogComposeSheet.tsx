@@ -629,6 +629,7 @@ function ComposeBody({
   onAttachVideo,
   onRemoveMedia,
   originalPost,
+  excerptContext,
 }: {
   currentUser: ReblogUser
   text: string
@@ -641,6 +642,7 @@ function ComposeBody({
   onAttachVideo: () => void
   onRemoveMedia: () => void
   originalPost: OriginalPost
+  excerptContext: ExcerptComposeContext | null
 }) {
   return (
     <>
@@ -681,7 +683,7 @@ function ComposeBody({
               onTextChange(e.target.value)
             }
           }}
-          placeholder="Add your take…"
+          placeholder={excerptContext ? "Add your take on this quote…" : "Add your take…"}
           rows={3}
           style={{
             fontFamily: "Inter, sans-serif",
