@@ -305,7 +305,7 @@ export function ReblogFeedCard({
           }}
         >
           <Repeat2 size={10} />
-          Reblog
+          {excerpt ? "Quote" : "Reblog"}
         </span>
 
         <div className="flex-1" />
