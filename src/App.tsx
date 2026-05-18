@@ -129,6 +129,7 @@ const App = () => (
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </UploadPickerProvider>
             </ReblogComposeProvider>
             </ShareMenuProvider>
           </AuthProvider>
