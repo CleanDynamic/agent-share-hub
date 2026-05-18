@@ -7,6 +7,7 @@ import { CollectionFeedCard } from "@/components/CollectionFeedCard";
 import { ProjectFeedCard } from "@/components/ProjectFeedCard";
 import { ReblogCard } from "@/components/ReblogCard";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useDraftCount } from "@/hooks/useDraftCount";
