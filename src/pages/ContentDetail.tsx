@@ -1528,6 +1528,20 @@ export default function ContentDetail() {
     );
   }
 
+  // Wrap body in a quotable surface so the QuotableSelectionOverlay can
+  // resolve excerpt source post + block ids from text selections.
+  if (post && bodyNode) {
+    bodyNode = (
+      <div
+        data-quotable="true"
+        data-source-post-id={(post as any).id}
+        data-source-post-slug={(post as any).slug ?? ""}
+      >
+        {bodyNode}
+      </div>
+    );
+  }
+
 
   // Build SolverInfo[] for byline + provenance overview
   const solversInfo: SolverInfo[] = useMemo(() => {
