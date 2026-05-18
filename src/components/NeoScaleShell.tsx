@@ -1694,7 +1694,9 @@ export function NeoScaleShell() {
                   <div
                     className={`ns-nav-item${navPage === item.key ? " active" : ""}`}
                     onClick={() => {
-                      if (item.key === 'home') {
+                      if (item.key === 'upload') {
+                        openUploadTypePicker();
+                      } else if (item.key === 'home') {
                         doFlip('front', 'left');
                         navigate("/");
                       } else if (item.key === 'messages') {
