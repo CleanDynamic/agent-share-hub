@@ -13,6 +13,13 @@ import {
   Repeat2,
   Play,
 } from "lucide-react"
+import { EmbeddedExcerptCard } from "./EmbeddedExcerptCard"
+
+export interface ExcerptComposeContext {
+  text: string
+  sourceBlockId?: string | null
+  sourceBlockTypeLabel?: string | null
+}
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
