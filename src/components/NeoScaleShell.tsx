@@ -1052,6 +1052,7 @@ const ICONS = {
 export function NeoScaleShell() {
   const location   = useLocation();
   const navigate   = useNavigate();
+  const { openUploadTypePicker } = useUploadPicker();
   
   const flipperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
