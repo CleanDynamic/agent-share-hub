@@ -14,6 +14,11 @@ import {
   EmbeddedOriginalCard,
   type EmbeddedOriginalCardPost,
 } from "@/components/reblog/EmbeddedOriginalCard";
+import {
+  EmbeddedExcerptCard,
+  type Excerpt,
+  type SourcePost,
+} from "@/components/reblog/EmbeddedExcerptCard";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
