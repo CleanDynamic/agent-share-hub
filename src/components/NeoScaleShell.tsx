@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import Home from "@/pages/Home";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -1775,90 +1776,10 @@ export function NeoScaleShell() {
             <LiquidGlassPanel cornerRadius={20} elasticity={0.15} contentStyle={{ overflow: 'hidden', perspective: 1400, transformStyle: 'preserve-3d' as any }}>
             <div className="ns-middle-flipper" ref={flipperRef}>
 
-              {/* FRONT FACE — home feed */}
+              {/* FRONT FACE — home feed (FeedShell via Home page) */}
               <div className="ns-middle-face ns-middle-front">
-
-                {/* Tabs + filter banner — padded header strip */}
-                <div style={{ padding: '16px 16px 0' }}>
-                  {filterPostType && (() => {
-                    const filterBannerLabel =
-                      filterPostType === 'blueprint' ? 'Blueprints'
-                      : filterPostType === 'discussion' ? 'Blogs'
-                      : filterPostType === 'bounty' ? 'Bounties'
-                      : '';
-                    return (
-                    <div style={{
-                      display: 'flex', alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 16px',
-                      background: `${filterColor}10`,
-                      borderBottom: `1px solid ${filterColor}25`,
-                    }}>
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                      }}>
-                        <span style={{
-                          fontSize: 13, fontWeight: 700,
-                          color: filterColor,
-                          fontFamily: "'Playfair Display', Georgia, serif",
-                        }}>
-                          {filterBannerLabel}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setFilterPostType(null);
-                          setFilterLabel('');
-                          setFilterEmoji('');
-                          setFilterColor('');
-                        }}
-                        style={{
-                          fontSize: 11, color: 'rgba(0,0,0,0.40)',
-                          background: 'none', border: 'none',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        ✕ Clear
-                      </button>
-                    </div>
-                    );
-                  })()}
-                  <FeedTabs activeTab={activeTab} onTabChange={setActiveTab} filteredTabs={!!filterPostType} />
-                </div>
-
-                {/* Feed */}
                 <div className="ns-feed-scroll">
-                  {feedLoading && (
-                    <div className="ns-feed-loading">
-                      {[1,2,3,4,5].map(n => <div key={n} className="ns-feed-skeleton" />)}
-                    </div>
-                  )}
-                  {!feedLoading && (posts as any[]).map(entry => renderFeedEntry(entry))}
-
-                  {!feedLoading && posts.length === 0 && (
-                    <div style={{
-                      textAlign: 'center',
-                      padding: '48px 16px',
-                      color: 'rgba(0,0,0,0.30)',
-                      fontFamily: "'Playfair Display', Georgia, serif",
-                      fontSize: 16,
-                    }}>
-                      Nothing dispatched yet.
-                    </div>
-                  )}
-
-                  {/* Infinite scroll sentinel */}
-                  <div ref={sentinelRef} style={{ height: 1 }} />
-                  {isFetchingNextPage && (
-                    <div style={{
-                      textAlign: 'center',
-                      padding: '16px',
-                      color: 'rgba(0,0,0,0.35)',
-                      fontSize: 11,
-                    }}>
-                      Loading more…
-                    </div>
-                  )}
+                  <Home />
                 </div>
               </div>
 
