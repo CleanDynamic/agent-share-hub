@@ -1157,6 +1157,10 @@ export function NeoScaleShell() {
     : null;
 
   const drawerNavigate = (r: DrawerRoute) => {
+    if (r === "upload") {
+      openUploadTypePicker();
+      return;
+    }
     const map: Record<DrawerRoute, string> = {
       home: "/", discover: "/discover", library: "/library", upload: "/upload",
       drafts: "/drafts", messages: "/messages", notifications: "/notifications",
@@ -1168,6 +1172,10 @@ export function NeoScaleShell() {
   const mobileBottomNavigate = (r: MobileRoute) => {
     if (r === "profile") {
       setProfileDrawerOpen(true);
+      return;
+    }
+    if (r === "upload") {
+      openUploadTypePicker();
       return;
     }
     const map: Record<Exclude<MobileRoute, "profile">, string> = {
