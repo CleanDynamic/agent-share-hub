@@ -3,6 +3,7 @@ import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom"
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { SeoHead } from "@/components/SeoHead";
 import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { BookmarkButton } from "@/components/BookmarkButton";
