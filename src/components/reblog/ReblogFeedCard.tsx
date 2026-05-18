@@ -56,6 +56,11 @@ export interface ReblogFeedCardProps {
   reblog: Reblog;
   engagement: Engagement;
   embeddedOriginal: EmbeddedOriginalCardPost | null;
+  /** When set, this reblog is a quote-reblog and renders the excerpt card. */
+  excerpt?: Excerpt | null;
+  excerptSourcePost?: SourcePost | null;
+  isExcerptStillValid?: boolean;
+  isExcerptSourceAvailable?: boolean;
   variant: "feed" | "profile-zone";
   onReblogClick: () => void;
   onLikeClick: () => void;
