@@ -66,6 +66,7 @@ export interface ReblogComposeSheetProps {
   onPost: () => void
   isPosting: boolean
   charCount: number
+  excerptContext?: ExcerptComposeContext | null
 }
 
 const POST_TYPE_COLOURS: Record<string, string> = {
