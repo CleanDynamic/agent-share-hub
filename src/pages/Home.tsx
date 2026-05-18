@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUploadPicker } from "@/contexts/UploadPickerContext";
@@ -10,14 +10,10 @@ import { CollectionFeedCard } from "@/components/CollectionFeedCard";
 import { ProjectFeedCard } from "@/components/ProjectFeedCard";
 import { ReblogCard } from "@/components/ReblogCard";
 import { FeedReblogAdapter, type FeedReblogRow } from "@/components/reblog/FeedReblogAdapter";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Download, Loader2, Upload, Search as SearchIcon } from "lucide-react";
-import { ActiveCompetitionsSection } from "@/components/home/ActiveCompetitionsSection";
+import { FeedShell, type FeedTabKey, type BountyPreview } from "@/components/feed/FeedShell";
 
-const PAGE_SIZE = 20;
-
-
+const VALID_TABS: FeedTabKey[] = ["foryou", "following", "trending", "recent", "bounties"];
 
 function renderFeedEntry(entry: any) {
   if (entry._feedType === "collection") return <CollectionFeedCard key={`col-${entry.id}`} item={entry} />;
@@ -27,31 +23,11 @@ function renderFeedEntry(entry: any) {
   return <FeedItem key={entry.id} item={entry} />;
 }
 
-/* ---- Sign-in prompt ---- */
-function SignInPrompt() {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 gap-4">
-      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-        <span className="text-muted-foreground text-lg">?</span>
-      </div>
-      <p className="text-sm text-muted-foreground text-center">Sign in to see your personalised feed</p>
-      <div className="flex items-center gap-3">
-        <Button size="sm" asChild><Link to="/login">Sign in</Link></Button>
-        <span className="text-xs text-muted-foreground">or</span>
-        <Button size="sm" className="ns-btn-primary border-secondary text-secondary" asChild>
-          <Link to="/signup">Join free</Link>
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/* ---- Tab: Recent ---- */
-function RecentTab() {
-  const [mostReblogged, setMostReblogged] = useState(false);
-
-  const { data: blueprints, isLoading: bpLoading } = useQuery({
+/* ---- Recent tab data ---- */
+function useRecentTab(enabled: boolean) {
+  const bp = useQuery({
     queryKey: ["home_recent_blueprints"],
+    enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("content_items")
@@ -63,9 +39,9 @@ function RecentTab() {
       return (data ?? []).map((d: any) => ({ ...d, _feedType: "blueprint" as const, _sortDate: new Date(d.created_at).getTime() }));
     },
   });
-
-  const { data: collections, isLoading: colLoading } = useQuery({
+  const col = useQuery({
     queryKey: ["home_recent_collections"],
+    enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collections")
@@ -77,9 +53,9 @@ function RecentTab() {
       return (data ?? []).map((d: any) => ({ ...d, _feedType: "collection" as const, _sortDate: new Date(d.created_at).getTime() }));
     },
   });
-
-  const { data: projects, isLoading: projLoading } = useQuery({
+  const proj = useQuery({
     queryKey: ["home_recent_projects"],
+    enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
@@ -96,12 +72,11 @@ function RecentTab() {
       }));
     },
   });
-
-  const { data: reblogs, isLoading: rbLoading } = useQuery({
-    queryKey: ["home_recent_reblogs", mostReblogged],
+  const rb = useQuery({
+    queryKey: ["home_recent_reblogs"],
+    enabled,
     queryFn: async () => {
-      const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-      let q = (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("reblogs")
         .select(`
           id, slug, text, media_kind, media_url, thumbnail_url, created_at,
@@ -114,77 +89,41 @@ function RecentTab() {
           )
         `)
         .is("deleted_at", null)
-        .is("hidden_at", null);
-      if (mostReblogged) {
-        q = q.gte("created_at", since).order("reblog_count", { ascending: false }).limit(30);
-      } else {
-        q = q.order("created_at", { ascending: false }).limit(20);
-      }
-      const { data, error } = await q;
+        .is("hidden_at", null)
+        .order("created_at", { ascending: false })
+        .limit(20);
       if (error) throw error;
       return (data ?? []).map((d: any) => ({
         ...d,
         _feedType: "reblog" as const,
-        _sortDate: mostReblogged
-          ? (d.reblog_count ?? 0) * 1e12 + new Date(d.created_at).getTime()
-          : new Date(d.created_at).getTime(),
+        _sortDate: new Date(d.created_at).getTime(),
       }));
     },
   });
 
-  const isLoading = bpLoading || colLoading || projLoading || rbLoading;
-  const merged = mostReblogged
-    ? (reblogs ?? [])
-    : [...(blueprints ?? []), ...(collections ?? []), ...(projects ?? []), ...(reblogs ?? [])]
-        .sort((a, b) => b._sortDate - a._sortDate);
-
-  return (
-    <div>
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
-        <span className="relative flex h-[6px] w-[6px]">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-          <span className="relative inline-flex h-[6px] w-[6px] rounded-full bg-primary" />
-        </span>
-        <span className="text-xs text-muted-foreground">Updated live</span>
-        <button
-          onClick={() => setMostReblogged((v) => !v)}
-          className={`ml-auto text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
-            mostReblogged
-              ? "bg-secondary/15 border-secondary/40 text-secondary"
-              : "bg-card/40 border-border text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Most reblogged today
-        </button>
-      </div>
-
-      {isLoading ? (
-        <div className="space-y-0">{[1,2,3,4,5].map(n => <div key={n} className="h-24 animate-pulse bg-card/30 border-b border-border" />)}</div>
-      ) : merged.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-16 text-center">No content yet.</p>
-      ) : (
-        merged.map((entry: any) => renderFeedEntry(entry))
-      )}
-    </div>
-  );
+  const isLoading = bp.isLoading || col.isLoading || proj.isLoading || rb.isLoading;
+  const merged = [...(bp.data ?? []), ...(col.data ?? []), ...(proj.data ?? []), ...(rb.data ?? [])]
+    .sort((a, b) => b._sortDate - a._sortDate);
+  return { cards: merged.map(renderFeedEntry), isLoading, isEmpty: !isLoading && merged.length === 0 };
 }
 
-/* ---- Tab: For You ---- */
-function ForYouTab() {
-  const { isLoggedIn, user } = useAuth();
-  if (!isLoggedIn) return <SignInPrompt />;
-
-  const { data: followIds } = useQuery({
+/* ---- For You tab data ---- */
+function useForYouTab(enabled: boolean) {
+  const { user } = useAuth();
+  const followIdsQ = useQuery({
     queryKey: ["fyp_follow_ids_home", user?.id],
+    enabled: enabled && !!user,
     queryFn: async () => {
       const { data } = await supabase.from("follows").select("following_id").eq("follower_id", user!.id);
       return (data ?? []).map(r => r.following_id);
     },
-    enabled: !!user,
   });
+  const followIds = followIdsQ.data;
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
+  const interactionsQ = useInfiniteQuery({
     queryKey: ["fyp_interactions_home", followIds],
+    enabled: enabled && !!followIds && followIds.length > 0,
+    initialPageParam: 0,
     queryFn: async ({ pageParam = 0 }) => {
       if (!followIds || followIds.length === 0) return [];
       const { data, error } = await supabase
@@ -198,145 +137,113 @@ function ForYouTab() {
       return data ?? [];
     },
     getNextPageParam: (last, all) => last.length < 50 ? undefined : all.flat().length,
-    initialPageParam: 0,
-    enabled: !!followIds && followIds.length > 0,
   });
 
-  const rawItems = data?.pages.flat() ?? [];
+  const rawItems = interactionsQ.data?.pages.flat() ?? [];
   const seen = new Map<string, any>();
   for (const item of rawItems) {
     const key = `${item.user_id}-${item.content_id}`;
     if (!seen.has(key)) seen.set(key, item);
   }
-  const dedupedInteractions = Array.from(seen.values());
+  const deduped = Array.from(seen.values());
+  const contentIds = [...new Set(deduped.map(i => i.content_id))];
 
-  const contentIds = [...new Set(dedupedInteractions.map(i => i.content_id))];
-  const { data: contentItems } = useQuery({
+  const contentQ = useQuery({
     queryKey: ["fyp_content_home", contentIds.join(",")],
+    enabled: enabled && contentIds.length > 0,
     queryFn: async () => {
-      if (contentIds.length === 0) return [];
       const { data } = await supabase
         .from("content_items")
         .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, what_to_expect_blocks, what_to_expect, other_tool_name, custom_tags, profiles!content_items_creator_id_fkey(display_name, username)")
         .in("id", contentIds);
       return data ?? [];
     },
-    enabled: contentIds.length > 0,
   });
 
-  if (followIds && followIds.length === 0) {
+  const contentMap = new Map((contentQ.data ?? []).map(c => [c.id, c]));
+  const isLoading = followIdsQ.isLoading || interactionsQ.isLoading || contentQ.isLoading;
+
+  const cards = deduped.map((interaction: any) => {
+    const content = contentMap.get(interaction.content_id);
+    if (!content) return null;
+    const actor = interaction.profiles as any;
+    const initials = (actor?.display_name || actor?.username || "??").slice(0, 2).toUpperCase();
+    const label = interaction.interaction_type === "downloaded" ? "downloaded"
+      : interaction.interaction_type === "rated" ? `rated ★${(interaction.interaction_meta as any)?.rating ?? "?"}`
+      : interaction.interaction_type === "commented" ? "commented on"
+      : "saved";
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-4 gap-3">
-        <p className="text-sm text-muted-foreground text-center">You are not following anyone yet.<br/>Follow some creators to see what they're up to.</p>
-        <Button size="sm" variant="outline" asChild><Link to="/browse">Discover creators</Link></Button>
+      <div key={interaction.id}>
+        <div className="px-6 pt-3 pb-1 flex items-center gap-2 text-xs text-muted-foreground">
+          <Link to={`/creator/${actor?.username}`}>
+            <Avatar className="h-5 w-5">
+              <AvatarFallback className="bg-accent text-[8px]">{initials}</AvatarFallback>
+            </Avatar>
+          </Link>
+          <Link to={`/creator/${actor?.username}`} className="font-medium text-foreground hover:underline">
+            {actor?.display_name || actor?.username}
+          </Link>
+          <span>{label}</span>
+          <span className="ml-auto">{timeAgo(interaction.created_at)}</span>
+        </div>
+        <FeedItem item={content} />
       </div>
     );
-  }
+  }).filter(Boolean) as React.ReactNode[];
 
-  const contentMap = new Map((contentItems ?? []).map(c => [c.id, c]));
-
-  return (
-    <div>
-      {isLoading ? (
-        <div className="space-y-0">{[1,2,3,4,5].map(n => <div key={n} className="h-24 animate-pulse bg-card/30 border-b border-border" />)}</div>
-      ) : dedupedInteractions.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-16 text-center">No recent activity from people you follow.</p>
-      ) : (
-        dedupedInteractions.map((interaction: any) => {
-          const content = contentMap.get(interaction.content_id);
-          if (!content) return null;
-          const actorProfile = interaction.profiles as any;
-          const actorInitials = (actorProfile?.display_name || actorProfile?.username || "?").slice(0, 2).toUpperCase();
-          const actionLabel = interaction.interaction_type === "downloaded" ? "downloaded"
-            : interaction.interaction_type === "rated" ? `rated ★${(interaction.interaction_meta as any)?.rating ?? "?"}`
-            : interaction.interaction_type === "commented" ? "commented on"
-            : "saved";
-
-          return (
-            <div key={interaction.id}>
-              <div className="px-4 pt-3 pb-1 flex items-center gap-2 text-xs text-muted-foreground">
-                <Link to={`/creator/${actorProfile?.username}`}>
-                  <Avatar className="h-5 w-5">
-                    <AvatarFallback className="bg-accent text-[8px]">{actorInitials}</AvatarFallback>
-                  </Avatar>
-                </Link>
-                <Link to={`/creator/${actorProfile?.username}`} className="font-medium text-foreground hover:underline">
-                  {actorProfile?.display_name || actorProfile?.username}
-                </Link>
-                <span>{actionLabel}</span>
-                <span className="ml-auto">{timeAgo(interaction.created_at)}</span>
-              </div>
-              <FeedItem item={content} />
-            </div>
-          );
-        })
-      )}
-
-      {hasNextPage && (
-        <div className="flex justify-center py-6">
-          <Button variant="outline" size="sm" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
-            {isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Load more
-          </Button>
-        </div>
-      )}
-    </div>
-  );
+  return { cards, isLoading, isEmpty: !isLoading && cards.length === 0 };
 }
 
-/* ---- Tab: Following ---- */
-function FollowingTab() {
-  const { isLoggedIn, user } = useAuth();
-  if (!isLoggedIn) return <SignInPrompt />;
-
-  const { data: followIds } = useQuery({
+/* ---- Following tab data ---- */
+function useFollowingTab(enabled: boolean) {
+  const { user } = useAuth();
+  const followIdsQ = useQuery({
     queryKey: ["home_follow_ids", user?.id],
+    enabled: enabled && !!user,
     queryFn: async () => {
       const { data } = await supabase.from("follows").select("following_id").eq("follower_id", user!.id);
       return (data ?? []).map(r => r.following_id);
     },
-    enabled: !!user,
   });
+  const followIds = followIdsQ.data;
+  const on = enabled && !!followIds && followIds.length > 0;
 
-  const { data: bpData, isLoading: bpLoading } = useQuery({
+  const bp = useQuery({
     queryKey: ["home_following_bp", followIds],
+    enabled: on,
     queryFn: async () => {
-      if (!followIds || followIds.length === 0) return [];
       const { data } = await supabase
         .from("content_items")
         .select("id, title, description, content_type, creator_id, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, what_to_expect_blocks, what_to_expect, other_tool_name, tool_subtype, model_parameters, custom_tags, profiles!content_items_creator_id_fkey(display_name, username)")
-        .in("creator_id", followIds)
+        .in("creator_id", followIds!)
         .eq("status", "approved")
         .order("created_at", { ascending: false })
         .limit(40);
       return (data ?? []).map((d: any) => ({ ...d, _feedType: "blueprint" as const, _sortDate: new Date(d.created_at).getTime() }));
     },
-    enabled: !!followIds && followIds.length > 0,
   });
-
-  const { data: colData, isLoading: colLoading } = useQuery({
+  const col = useQuery({
     queryKey: ["home_following_col", followIds],
+    enabled: on,
     queryFn: async () => {
-      if (!followIds || followIds.length === 0) return [];
       const { data } = await supabase
         .from("collections")
         .select("id, title, description, slug, item_count, follower_count, created_at, profiles:owner_id(display_name, username)")
-        .in("owner_id", followIds)
+        .in("owner_id", followIds!)
         .eq("visibility", "public")
         .order("created_at", { ascending: false })
         .limit(20);
       return (data ?? []).map((d: any) => ({ ...d, _feedType: "collection" as const, _sortDate: new Date(d.created_at).getTime() }));
     },
-    enabled: !!followIds && followIds.length > 0,
   });
-
-  const { data: projData, isLoading: projLoading } = useQuery({
+  const proj = useQuery({
     queryKey: ["home_following_proj", followIds],
+    enabled: on,
     queryFn: async () => {
-      if (!followIds || followIds.length === 0) return [];
       const { data } = await supabase
         .from("projects")
         .select("id, title, description, cover_image_url, view_count, created_at, approved_at, package_price_enabled, package_price_gbp, profiles:creator_id(display_name, username), project_components(id)")
-        .in("creator_id", followIds)
+        .in("creator_id", followIds!)
         .eq("status", "approved")
         .order("created_at", { ascending: false })
         .limit(20);
@@ -347,52 +254,30 @@ function FollowingTab() {
         _component_count: (d.project_components ?? []).length,
       }));
     },
-    enabled: !!followIds && followIds.length > 0,
   });
 
-  if (followIds && followIds.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 px-4 gap-3">
-        <p className="text-sm text-muted-foreground text-center">You are not following anyone.<br/>Follow creators to see their posts here.</p>
-        <Button size="sm" variant="outline" asChild><Link to="/browse">Discover creators</Link></Button>
-      </div>
-    );
-  }
-
-  const isLoading = bpLoading || colLoading || projLoading;
-  const merged = [...(bpData ?? []), ...(colData ?? []), ...(projData ?? [])]
+  const isLoading = followIdsQ.isLoading || bp.isLoading || col.isLoading || proj.isLoading;
+  const merged = [...(bp.data ?? []), ...(col.data ?? []), ...(proj.data ?? [])]
     .sort((a, b) => b._sortDate - a._sortDate);
-
-  return (
-    <div>
-      {isLoading ? (
-        <div className="space-y-0">{[1,2,3,4,5].map(n => <div key={n} className="h-24 animate-pulse bg-card/30 border-b border-border" />)}</div>
-      ) : merged.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-16 text-center">No posts from people you follow yet.</p>
-      ) : (
-        merged.map((entry: any) => renderFeedEntry(entry))
-      )}
-    </div>
-  );
+  return { cards: merged.map(renderFeedEntry), isLoading, isEmpty: !isLoading && merged.length === 0 };
 }
 
-/* ---- Tab: Trending ---- */
-function TrendingTab() {
-  const { data: items, isLoading } = useQuery({
+/* ---- Trending tab data ---- */
+function useTrendingTab(enabled: boolean) {
+  const { data, isLoading } = useQuery({
     queryKey: ["home_trending"],
+    enabled,
+    staleTime: 60_000,
     queryFn: async () => {
       const d7 = new Date(Date.now() - 7 * 86400000).toISOString();
       const d30 = new Date(Date.now() - 30 * 86400000).toISOString();
-
       const { data: week } = await supabase
         .from("content_items")
         .select("id, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, approved_at, what_to_expect_blocks, what_to_expect, other_tool_name, custom_tags, profiles!content_items_creator_id_fkey(display_name, username)")
         .eq("status", "approved")
         .gte("created_at", d7)
         .limit(50);
-
       let pool = week ?? [];
-
       if (pool.length < 5) {
         const ids = pool.map(p => p.id);
         const { data: month } = await supabase
@@ -401,12 +286,10 @@ function TrendingTab() {
           .eq("status", "approved")
           .gte("created_at", d30)
           .limit(50);
-        const extras = (month ?? []).filter(m => !ids.includes(m.id));
-        pool = [...pool, ...extras];
+        pool = [...pool, ...((month ?? []).filter(m => !ids.includes(m.id)))];
       }
-
       return pool
-        .map((item) => {
+        .map((item: any) => {
           const hoursOld = (Date.now() - new Date(item.approved_at || item.created_at).getTime()) / 3600000;
           const score = (item.download_count * 1.5 + item.view_count + item.rating_count * 2 + item.comment_count * 1.2)
             / Math.pow(hoursOld + 2, 1.5);
@@ -415,140 +298,195 @@ function TrendingTab() {
         .sort((a, b) => b._score - a._score)
         .slice(0, 20);
     },
-    staleTime: 60_000,
   });
 
-  return (
-    <div>
-      {isLoading ? (
-        <div className="space-y-0">{[1,2,3,4,5].map(n => <div key={n} className="h-24 animate-pulse bg-card/30 border-b border-border" />)}</div>
-      ) : !items || items.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-16 text-center">No trending content yet.</p>
-      ) : (
-        items.map((item: any, i: number) => <FeedItem key={item.id} item={item} rank={i + 1} />)
-      )}
-    </div>
-  );
+  const cards = (data ?? []).map((item: any, i: number) => <FeedItem key={item.id} item={item} rank={i + 1} />);
+  return { cards, isLoading, isEmpty: !isLoading && cards.length === 0 };
 }
 
-/* ---- How It Works (guests only) ---- */
-function HowItWorks() {
-  const steps = [
-    { icon: <SearchIcon className="h-8 w-8 text-primary" />, label: "STEP 1", title: "Find what you need", sub: "Search or filter by what you want your AI to do." },
-    { icon: <Download className="h-8 w-8 text-primary" />, label: "STEP 2", title: "Download or read it", sub: "Get the prompt, blueprint, or workflow instantly." },
-    { icon: <Upload className="h-8 w-8 text-primary" />, label: "STEP 3", title: "Use it in your AI tool", sub: "Paste it into ChatGPT, Claude, Gemini, or any AI." },
-  ];
-  return (
-    <div className="px-4 py-6 border-b border-border">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        {steps.map((s) => (
-          <div key={s.label} className="flex flex-col items-center text-center gap-2">
-            {s.icon}
-            <span className="text-[11px] font-semibold text-primary tracking-[0.1em]">{s.label}</span>
-            <p className="text-base font-bold text-foreground">{s.title}</p>
-            <p className="text-[13px] text-muted-foreground">{s.sub}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+/* ---- Bounties tab data + active bounties strip ---- */
+function useBountiesData(enabled: boolean) {
+  return useQuery({
+    queryKey: ["home_active_bounties"],
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("content_items")
+        .select("id, slug, title, description, content_type, difficulty, ai_tools, use_cases, custom_use_case_description, avg_rating, rating_count, download_count, view_count, comment_count, cover_image_url, created_at, what_to_expect_blocks, what_to_expect, other_tool_name, custom_tags, bounty_status, bounty_reward_amount, bounty_reward_currency, bounty_deadline, profiles!content_items_creator_id_fkey(display_name, username)")
+        .eq("status", "approved")
+        .eq("bounty_status", "open")
+        .order("bounty_deadline", { ascending: true })
+        .limit(30);
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 60_000,
+  });
 }
 
-/* ---- Main Home Page ---- */
-const TABS = ["For You", "Following", "Trending", "Recent"] as const;
-type Tab = typeof TABS[number];
+function formatDeadline(deadline: string | null): string {
+  if (!deadline) return "soon";
+  const ms = new Date(deadline).getTime() - Date.now();
+  if (ms <= 0) return "ending";
+  const d = Math.floor(ms / 86400000);
+  if (d >= 1) return `${d}d`;
+  const h = Math.floor(ms / 3600000);
+  if (h >= 1) return `${h}h`;
+  return `${Math.max(1, Math.floor(ms / 60000))}m`;
+}
 
+/* ---- Main Home ---- */
 const Home = () => {
-  const [activeTab, setActiveTab] = useState<Tab>("For You");
-  const { isLoggedIn, profile } = useAuth();
+  const { isLoggedIn, profile, user } = useAuth();
   const navigate = useNavigate();
   const { openUploadTypePicker } = useUploadPicker();
+  const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const initials = profile?.display_name
-    ? profile.display_name.slice(0, 2).toUpperCase()
-    : profile?.username?.slice(0, 2).toUpperCase() ?? "?";
+  const urlTab = searchParams.get("tab") as FeedTabKey | null;
+  const activeTab: FeedTabKey = urlTab && VALID_TABS.includes(urlTab) ? urlTab : "foryou";
+
+  const setActiveTab = (t: FeedTabKey) => {
+    const sp = new URLSearchParams(searchParams);
+    sp.set("tab", t);
+    setSearchParams(sp, { replace: true });
+  };
+
+  const recent = useRecentTab(activeTab === "recent");
+  const foryou = useForYouTab(activeTab === "foryou");
+  const following = useFollowingTab(activeTab === "following");
+  const trending = useTrendingTab(activeTab === "trending");
+  const bountiesQ = useBountiesData(true); // also used by the strip
+
+  const tabData =
+    activeTab === "recent" ? recent
+    : activeTab === "following" ? following
+    : activeTab === "trending" ? trending
+    : activeTab === "bounties" ? {
+        cards: (bountiesQ.data ?? []).map((item: any) => <FeedItem key={item.id} item={item} />),
+        isLoading: bountiesQ.isLoading,
+        isEmpty: !bountiesQ.isLoading && (bountiesQ.data ?? []).length === 0,
+      }
+    : foryou;
+
+  const activeBounties: BountyPreview[] = (bountiesQ.data ?? []).slice(0, 8).map((b: any) => {
+    const amt = b.bounty_reward_amount ? Number(b.bounty_reward_amount) : null;
+    const cur = b.bounty_reward_currency ?? "GBP";
+    const reward = amt
+      ? new Intl.NumberFormat("en-GB", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(amt)
+      : "Reward";
+    return {
+      id: b.id,
+      slug: b.slug,
+      title: b.title,
+      reward,
+      endsIn: formatDeadline(b.bounty_deadline),
+    };
+  });
+
+  /* ---- Realtime new-posts pill ---- */
+  const [hasNewPosts, setHasNewPosts] = useState(false);
+  const [newPostCount, setNewPostCount] = useState(0);
+  const [liveActive, setLiveActive] = useState(navigator.onLine);
+  const channelRef = useRef<any>(null);
+
+  useEffect(() => {
+    const onOnline = () => setLiveActive(true);
+    const onOffline = () => setLiveActive(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    const channelName = `home_feed_${crypto.randomUUID()}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "content_items", filter: "status=eq.approved" },
+        () => {
+          if (window.scrollY < 200) {
+            // at top: refetch silently
+            queryClient.invalidateQueries({ queryKey: ["home_recent_blueprints"] });
+            queryClient.invalidateQueries({ queryKey: ["home_trending"] });
+          } else {
+            setHasNewPosts(true);
+            setNewPostCount((n) => n + 1);
+          }
+        }
+      )
+      .subscribe((status) => {
+        setLiveActive(navigator.onLine && status === "SUBSCRIBED");
+      });
+    channelRef.current = channel;
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  const onLoadNewPosts = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setHasNewPosts(false);
+    setNewPostCount(0);
+    queryClient.invalidateQueries({ queryKey: ["home_recent_blueprints"] });
+    queryClient.invalidateQueries({ queryKey: ["home_recent_collections"] });
+    queryClient.invalidateQueries({ queryKey: ["home_recent_projects"] });
+    queryClient.invalidateQueries({ queryKey: ["home_recent_reblogs"] });
+    queryClient.invalidateQueries({ queryKey: ["home_trending"] });
+    queryClient.invalidateQueries({ queryKey: ["fyp_interactions_home"] });
+  };
+
+  const currentUser = useMemo(() => {
+    if (!isLoggedIn) return null;
+    const displayName = profile?.display_name || profile?.username || "Friend";
+    const initials = (profile?.display_name || profile?.username || "NS").slice(0, 2).toUpperCase();
+    return {
+      displayName,
+      handle: profile?.username || "",
+      avatarUrl: profile?.avatar_url || undefined,
+      initials,
+    };
+  }, [isLoggedIn, profile]);
+
+  const onEmptyCTAClick = () => {
+    if (activeTab === "foryou" || activeTab === "following") navigate("/discover");
+    else if (activeTab === "bounties") openUploadTypePicker();
+  };
+
+  // Sign-in nudge when guest hits a logged-in-only tab
+  if (!isLoggedIn && (activeTab === "foryou" || activeTab === "following")) {
+    // still render shell; show empty-like sign-in CTA via the empty state
+  }
 
   return (
-    <div style={{ paddingTop: 28 }}>
+    <>
       <SeoHead
         title="NeoScale AI — The AI Agent Tactics Forum"
         description="Download AI assistants, blueprints and workflows. Works with ChatGPT, Claude, Gemini and any AI tool."
         path="/"
       />
-
-      {isLoggedIn && (
-        <div
-          className="flex items-center gap-3 mx-6 mt-7 mb-5"
-          style={{
-            background: 'rgba(255,255,255,0.025)',
-            border: '1px solid rgba(255, 255, 255, 0.14)',
-            borderRadius: 14,
-            padding: '12px 16px',
-          }}
-        >
-          <Avatar className="shrink-0" style={{ width: 34, height: 34 }}>
-            {profile?.avatar_url && <img src={profile.avatar_url} className="h-full w-full rounded-full object-cover" />}
-            <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
-          </Avatar>
-          <button
-            onClick={() => openUploadTypePicker()}
-            className="flex-1 text-left transition-colors"
-            style={{ fontSize: 14, fontWeight: 300, color: 'rgba(255,255,255,0.28)', background: 'none', border: 'none', padding: 0 }}
-          >
-            Share something...
-          </button>
-          <button
-            onClick={() => openUploadTypePicker()}
-            className="shrink-0 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
-            style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: 'rgba(139,69,19,0.9)', color: '#fff', border: 'none',
-            }}
-          >
-            <Upload className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
-      {!isLoggedIn && <HowItWorks />}
-
-      <ActiveCompetitionsSection />
-
-      <div
-        className="sticky top-0 z-10"
-        style={{ background: "rgba(8,8,12,0.80)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
-      >
-        <div
-          className="flex items-center gap-1 px-6"
-          style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255, 255, 255, 0.14)', marginBottom: 20 }}
-        >
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className="transition-colors"
-              style={{
-                fontSize: 13,
-                fontWeight: 500,
-                padding: '6px 16px',
-                borderRadius: 100,
-                border: 'none',
-                background: activeTab === tab ? 'rgba(139,69,19,0.08)' : 'transparent',
-                color: activeTab === tab ? '#8B4513' : 'rgba(255,255,255,0.45)',
-                cursor: 'pointer',
-              }}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {activeTab === "Recent" && <RecentTab />}
-      {activeTab === "For You" && <ForYouTab />}
-      {activeTab === "Following" && <FollowingTab />}
-      {activeTab === "Trending" && <TrendingTab />}
-    </div>
+      <FeedShell
+        currentUser={currentUser}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        activeBounties={activeBounties}
+        onBountySeeAll={() => navigate("/discover?type=bounty")}
+        onBountyClick={(b) => navigate(b.slug ? `/post/${b.slug}` : `/content/${b.id}`)}
+        feedCards={tabData.cards}
+        isLoading={tabData.isLoading}
+        hasNewPosts={hasNewPosts}
+        newPostCount={newPostCount}
+        onLoadNewPosts={onLoadNewPosts}
+        onComposeClick={() => openUploadTypePicker()}
+        isEmpty={tabData.isEmpty}
+        onEmptyCTAClick={onEmptyCTAClick}
+        liveActive={liveActive}
+      />
+    </>
   );
 };
 
