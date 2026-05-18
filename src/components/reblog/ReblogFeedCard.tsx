@@ -422,9 +422,17 @@ export function ReblogFeedCard({
         </div>
       )}
 
-      {/* EMBEDDED ORIGINAL CARD */}
+      {/* EMBEDDED CARD (excerpt or original) */}
       <div style={{ marginTop: 12 }}>
-        {embeddedOriginal ? (
+        {excerpt ? (
+          <EmbeddedExcerptCard
+            excerpt={excerpt}
+            sourcePost={excerptSourcePost ?? null}
+            isExcerptStillValid={isExcerptStillValid}
+            isSourceAvailable={isExcerptSourceAvailable && !!excerptSourcePost}
+            onClick={onOriginalClick}
+          />
+        ) : embeddedOriginal ? (
           <EmbeddedOriginalCard
             variant="feed"
             post={embeddedOriginal}
