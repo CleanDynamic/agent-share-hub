@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from 'react-router-dom'
+import { useUploadPicker } from "@/contexts/UploadPickerContext"
 
 interface User {
   display_name: string
@@ -7,8 +7,8 @@ interface User {
 }
 
 export function ComposerBar({ user }: { user?: User }) {
-  const navigate = useNavigate()
-  const [isFocused, setIsFocused] = useState(false)
+  const { openUploadTypePicker } = useUploadPicker()
+  const [isFocused] = useState(false)
 
   const userInitials = user?.display_name
     ? user.display_name
@@ -30,7 +30,6 @@ export function ComposerBar({ user }: { user?: User }) {
         border: `1px solid ${isFocused ? "rgba(139, 69, 19, 0.3)" : "rgba(255, 255, 255, 0.05)"}`,
       }}
     >
-      {/* Avatar */}
       <div
         className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0"
         style={{
@@ -42,9 +41,8 @@ export function ComposerBar({ user }: { user?: User }) {
         {userInitials}
       </div>
 
-      {/* Input replaced with clickable div */}
       <div
-        onClick={() => navigate('/upload')}
+        onClick={() => openUploadTypePicker()}
         style={{ flex: 1, color: "rgba(255,255,255,0.30)", fontSize: 14, cursor: "pointer" }}
       >
         Share something...

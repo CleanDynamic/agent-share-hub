@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { SeoHead } from "@/components/SeoHead";
 import { FeedItem, timeAgo } from "@/components/FeedItem";
 import { CollectionFeedCard } from "@/components/CollectionFeedCard";
@@ -461,6 +462,7 @@ const Home = () => {
   const [activeTab, setActiveTab] = useState<Tab>("For You");
   const { isLoggedIn, profile } = useAuth();
   const navigate = useNavigate();
+  const { openUploadTypePicker } = useUploadPicker();
 
   const initials = profile?.display_name
     ? profile.display_name.slice(0, 2).toUpperCase()
@@ -489,14 +491,14 @@ const Home = () => {
             <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
           </Avatar>
           <button
-            onClick={() => navigate("/upload")}
+            onClick={() => openUploadTypePicker()}
             className="flex-1 text-left transition-colors"
             style={{ fontSize: 14, fontWeight: 300, color: 'rgba(255,255,255,0.28)', background: 'none', border: 'none', padding: 0 }}
           >
             Share something...
           </button>
           <button
-            onClick={() => navigate("/upload")}
+            onClick={() => openUploadTypePicker()}
             className="shrink-0 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
             style={{
               width: 36, height: 36, borderRadius: '50%',

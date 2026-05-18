@@ -4,6 +4,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SeoHead } from "@/components/SeoHead";
 import { FeedItem } from "@/components/FeedItem";
+import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { ProjectCard } from "@/components/ProjectCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -186,6 +187,7 @@ function ProjectsFeed({ activeTab }: { activeTab: Tab }) {
 export default function Category() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { openUploadTypePicker } = useUploadPicker();
   const [activeTab, setActiveTab] = useState<Tab>("Popular");
 
   const cat = CATEGORIES.find((c) => c.slug === slug);
@@ -282,7 +284,7 @@ export default function Category() {
             <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
               <p className="text-sm text-muted-foreground">No {cat.name.toLowerCase()} posts yet.</p>
               <p className="text-xs text-muted-foreground">Be the first to share one.</p>
-              <Button size="sm" onClick={() => navigate("/upload")}>
+              <Button size="sm" onClick={() => openUploadTypePicker()}>
                 <Upload className="h-4 w-4 mr-1.5" />Upload
               </Button>
             </div>

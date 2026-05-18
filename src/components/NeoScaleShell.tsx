@@ -7,6 +7,7 @@ import { CollectionFeedCard } from "@/components/CollectionFeedCard";
 import { ProjectFeedCard } from "@/components/ProjectFeedCard";
 import { ReblogCard } from "@/components/ReblogCard";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useDraftCount } from "@/hooks/useDraftCount";
@@ -1051,6 +1052,7 @@ const ICONS = {
 export function NeoScaleShell() {
   const location   = useLocation();
   const navigate   = useNavigate();
+  const { openUploadTypePicker } = useUploadPicker();
   
   const flipperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1155,6 +1157,10 @@ export function NeoScaleShell() {
     : null;
 
   const drawerNavigate = (r: DrawerRoute) => {
+    if (r === "upload") {
+      openUploadTypePicker();
+      return;
+    }
     const map: Record<DrawerRoute, string> = {
       home: "/", discover: "/discover", library: "/library", upload: "/upload",
       drafts: "/drafts", messages: "/messages", notifications: "/notifications",
@@ -1166,6 +1172,10 @@ export function NeoScaleShell() {
   const mobileBottomNavigate = (r: MobileRoute) => {
     if (r === "profile") {
       setProfileDrawerOpen(true);
+      return;
+    }
+    if (r === "upload") {
+      openUploadTypePicker();
       return;
     }
     const map: Record<Exclude<MobileRoute, "profile">, string> = {
@@ -1684,7 +1694,9 @@ export function NeoScaleShell() {
                   <div
                     className={`ns-nav-item${navPage === item.key ? " active" : ""}`}
                     onClick={() => {
-                      if (item.key === 'home') {
+                      if (item.key === 'upload') {
+                        openUploadTypePicker();
+                      } else if (item.key === 'home') {
                         doFlip('front', 'left');
                         navigate("/");
                       } else if (item.key === 'messages') {
