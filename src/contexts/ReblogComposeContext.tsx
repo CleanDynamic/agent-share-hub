@@ -168,12 +168,16 @@ export function ReblogComposeProvider({ children }: { children: ReactNode }) {
         ? (target.root_original_post_id ?? target.id)
         : target.id;
 
+      const excerpt = target.excerptContext;
       await createReblog({
         rebloggerId: user.id,
         originalPostId,
         parentReblogId,
         text: text.trim() || null,
         mediaFile: media?.file ?? null,
+        excerptText: excerpt?.text ?? null,
+        excerptSourceBlockId: excerpt?.sourceBlockId ?? null,
+        excerptSourceBlockTypeLabel: excerpt?.sourceBlockTypeLabel ?? null,
       });
 
       toast.success("Reblogged");
