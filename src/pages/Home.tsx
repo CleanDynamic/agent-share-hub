@@ -395,7 +395,7 @@ const Home = () => {
     : activeTab === "following" ? following
     : activeTab === "trending" ? trending
     : activeTab === "bounties" ? {
-        cards: (bountiesQ.data ?? []).map((item: any) => <FeedItem key={item.id} item={item} />),
+        cards: (bountiesQ.data ?? []).map((item: any) => <FeedCard key={item.id} post={adaptToFeedPost(item)} />),
         isLoading: bountiesQ.isLoading,
         isEmpty: !bountiesQ.isLoading && (bountiesQ.data ?? []).length === 0,
       }
