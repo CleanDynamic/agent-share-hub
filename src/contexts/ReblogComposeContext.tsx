@@ -38,6 +38,12 @@ export interface ReblogTargetInput {
   parent_reblog_id?: string | null;
   /** When reblogging an existing reblog, pass its root original post id here. */
   root_original_post_id?: string | null;
+  /** When quote-reblogging an excerpt from the source post. */
+  excerptContext?: {
+    text: string;
+    sourceBlockId?: string | null;
+    sourceBlockTypeLabel?: string | null;
+  } | null;
 }
 
 interface ReblogComposeContextValue {
