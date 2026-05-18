@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { useToast } from "@/hooks/use-toast";
 import { SeoHead } from "@/components/SeoHead";
 import { Skeleton } from "@/components/ui/skeleton";
