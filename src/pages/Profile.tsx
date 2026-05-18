@@ -345,8 +345,8 @@ export default function Profile() {
   );
 
   const handleCreateBlueprint = useCallback(() => {
-    navigate("/upload");
-  }, [navigate]);
+    openUploadTypePicker();
+  }, [openUploadTypePicker]);
 
   // ── Follow / Unfollow ──────────────────────────────────────────────────
   const handleFollow = useCallback(async () => {
