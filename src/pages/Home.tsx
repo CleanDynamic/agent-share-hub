@@ -489,14 +489,14 @@ const Home = () => {
             <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
           </Avatar>
           <button
-            onClick={() => navigate("/upload")}
+            onClick={() => openUploadTypePicker()}
             className="flex-1 text-left transition-colors"
             style={{ fontSize: 14, fontWeight: 300, color: 'rgba(255,255,255,0.28)', background: 'none', border: 'none', padding: 0 }}
           >
             Share something...
           </button>
           <button
-            onClick={() => navigate("/upload")}
+            onClick={() => openUploadTypePicker()}
             className="shrink-0 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
             style={{
               width: 36, height: 36, borderRadius: '50%',
