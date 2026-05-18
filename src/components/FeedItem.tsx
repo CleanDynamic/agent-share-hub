@@ -294,9 +294,11 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
         <Badge variant="outline" className={`text-[9px] font-bold uppercase tracking-widest ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
           {displayContentType(item.content_type)}
         </Badge>
-        <Badge variant="outline" className={`text-[9px] font-bold uppercase tracking-wider ${difficultyColor(item.difficulty)}`}>
-          {item.difficulty}
-        </Badge>
+        {item.difficulty && item.difficulty.toLowerCase() !== "any" && (
+          <Badge variant="outline" className={`text-[9px] font-bold uppercase tracking-wider ${difficultyColor(item.difficulty)}`}>
+            {item.difficulty}
+          </Badge>
+        )}
         {/* AI Tools subtype indicator */}
         {item.content_type === "AI Tools (LLMs)" && (item as any).tool_subtype === "local" && (
           <>
