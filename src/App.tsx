@@ -75,6 +75,7 @@ const App = () => (
             <ConnectionBanner />
             <ShareMenuProvider>
             <ReblogComposeProvider>
+            <UploadPickerProvider>
             <QuotableSelectionProvider />
             <Routes>
               <Route element={<Layout />}>
