@@ -251,7 +251,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
                 background: "rgba(52, 211, 153, 0.12)",
               }}
             >
-              <Repeat2 size={10} /> Reblog
+              <Repeat2 size={10} /> {row.excerpt_text ? "Quote" : "Reblog"}
             </span>
             <span className="text-xs text-white/40">{timeAgo(row.created_at)}</span>
           </div>
