@@ -6,21 +6,53 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { SeoHead } from "@/components/SeoHead";
 import { FeedItem, timeAgo } from "@/components/FeedItem";
+import { FeedCard, type FeedPost } from "@/components/feed-card";
 import { CollectionFeedCard } from "@/components/CollectionFeedCard";
 import { ProjectFeedCard } from "@/components/ProjectFeedCard";
 import { ReblogCard } from "@/components/ReblogCard";
 import { FeedReblogAdapter, type FeedReblogRow } from "@/components/reblog/FeedReblogAdapter";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { FeedShell, type FeedTabKey, type BountyPreview } from "@/components/feed/FeedShell";
+import { resolvePostType } from "@/lib/content-types";
 
 const VALID_TABS: FeedTabKey[] = ["foryou", "following", "trending", "recent", "bounties"];
+
+function adaptToFeedPost(item: any): FeedPost {
+  const p = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description ?? undefined,
+    content_type: item.content_type ?? "build",
+    post_type: resolvePostType(item.post_type ?? null, item.content_type ?? null),
+    cover_image_url: item.cover_image_url ?? undefined,
+    created_at: item.created_at,
+    view_count: item.view_count ?? 0,
+    comment_count: item.comment_count ?? 0,
+    download_count: item.download_count ?? 0,
+    what_to_expect: item.what_to_expect ?? undefined,
+    what_to_expect_blocks: item.what_to_expect_blocks ?? undefined,
+    ai_tools: (item.ai_tools ?? []) as string[],
+    use_cases: (item.use_cases ?? []) as string[],
+    custom_tags: item.custom_tags ?? [],
+    author: {
+      display_name: p?.display_name ?? "Unknown",
+      username: p?.username ?? "user",
+      avatar_url: p?.avatar_url ?? undefined,
+      bio: p?.bio ?? undefined,
+      follower_count: p?.follower_count ?? 0,
+      following_count: p?.following_count ?? 0,
+      joined_date: p?.joined_at ?? undefined,
+    },
+  };
+}
 
 function renderFeedEntry(entry: any) {
   if (entry._feedType === "collection") return <CollectionFeedCard key={`col-${entry.id}`} item={entry} />;
   if (entry._feedType === "project") return <ProjectFeedCard key={`proj-${entry.id}`} item={entry} />;
   if (entry._feedType === "reblog") return <FeedReblogAdapter key={`rb-${entry.id}`} row={entry as FeedReblogRow} />;
   if (entry.is_reblog) return <ReblogCard key={entry.id} item={entry} />;
-  return <FeedItem key={entry.id} item={entry} />;
+  return <FeedCard key={entry.id} post={adaptToFeedPost(entry)} />;
 }
 
 /* ---- Recent tab data ---- */
@@ -186,7 +218,7 @@ function useForYouTab(enabled: boolean) {
           <span>{label}</span>
           <span className="ml-auto">{timeAgo(interaction.created_at)}</span>
         </div>
-        <FeedItem item={content} />
+        <FeedCard post={adaptToFeedPost(content)} />
       </div>
     );
   }).filter(Boolean) as React.ReactNode[];
@@ -300,7 +332,7 @@ function useTrendingTab(enabled: boolean) {
     },
   });
 
-  const cards = (data ?? []).map((item: any, i: number) => <FeedItem key={item.id} item={item} rank={i + 1} />);
+  const cards = (data ?? []).map((item: any) => <FeedCard key={item.id} post={adaptToFeedPost(item)} />);
   return { cards, isLoading, isEmpty: !isLoading && cards.length === 0 };
 }
 
@@ -363,7 +395,7 @@ const Home = () => {
     : activeTab === "following" ? following
     : activeTab === "trending" ? trending
     : activeTab === "bounties" ? {
-        cards: (bountiesQ.data ?? []).map((item: any) => <FeedItem key={item.id} item={item} />),
+        cards: (bountiesQ.data ?? []).map((item: any) => <FeedCard key={item.id} post={adaptToFeedPost(item)} />),
         isLoading: bountiesQ.isLoading,
         isEmpty: !bountiesQ.isLoading && (bountiesQ.data ?? []).length === 0,
       }
