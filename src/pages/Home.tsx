@@ -332,7 +332,7 @@ function useTrendingTab(enabled: boolean) {
     },
   });
 
-  const cards = (data ?? []).map((item: any, i: number) => <FeedItem key={item.id} item={item} rank={i + 1} />);
+  const cards = (data ?? []).map((item: any) => <FeedCard key={item.id} post={adaptToFeedPost(item)} />);
   return { cards, isLoading, isEmpty: !isLoading && cards.length === 0 };
 }
 
