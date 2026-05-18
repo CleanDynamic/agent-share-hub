@@ -432,6 +432,45 @@ export default function ContentDetail() {
     setRepostCount(((post as any).reblog_count as number) ?? ((post as any).repost_count as number) ?? 0);
   }, [data?.viewer, post]);
 
+  // Phase 15.2 — Excerpt anchor highlight: when arriving with
+  // ?excerpt-anchor=<blockId> or ?excerpt-text-hash=<hash>, scroll the
+  // matching block into view and briefly pulse it.
+  useEffect(() => {
+    if (!post) return;
+    const anchor = searchParams.get("excerpt-anchor");
+    const hash = searchParams.get("excerpt-text-hash");
+    if (!anchor && !hash) return;
+    let cancelled = false;
+    const run = () => {
+      if (cancelled) return;
+      let target: HTMLElement | null = null;
+      if (anchor) {
+        target =
+          (document.querySelector(`[data-source-block-id="${anchor}"]`) as HTMLElement | null) ||
+          (document.querySelector(`[data-block-id="${anchor}"]`) as HTMLElement | null);
+      }
+      if (!target) {
+        // Fallback: scroll to top of article body
+        target = document.querySelector('[data-quotable="true"]') as HTMLElement | null;
+      }
+      if (!target) {
+        // Retry shortly while body renders
+        window.setTimeout(run, 200);
+        return;
+      }
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (anchor || hash) {
+        target.classList.add("excerpt-pulse");
+        window.setTimeout(() => target?.classList.remove("excerpt-pulse"), 1100);
+      }
+    };
+    const t = window.setTimeout(run, 300);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [post, searchParams]);
+
   const handleLike = useCallback(async () => {
     if (!user?.id || !post?.id) {
       toast({ title: "Sign in to like", variant: "destructive" });
@@ -1525,6 +1564,20 @@ export default function ContentDetail() {
         <BlueprintAttributionBanner bountyId={promotedFromBountyId} />
         {bodyNode}
       </>
+    );
+  }
+
+  // Wrap body in a quotable surface so the QuotableSelectionOverlay can
+  // resolve excerpt source post + block ids from text selections.
+  if (post && bodyNode) {
+    bodyNode = (
+      <div
+        data-quotable="true"
+        data-source-post-id={(post as any).id}
+        data-source-post-slug={(post as any).slug ?? ""}
+      >
+        {bodyNode}
+      </div>
     );
   }
 

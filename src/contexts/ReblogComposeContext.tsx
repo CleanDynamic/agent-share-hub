@@ -38,6 +38,12 @@ export interface ReblogTargetInput {
   parent_reblog_id?: string | null;
   /** When reblogging an existing reblog, pass its root original post id here. */
   root_original_post_id?: string | null;
+  /** When quote-reblogging an excerpt from the source post. */
+  excerptContext?: {
+    text: string;
+    sourceBlockId?: string | null;
+    sourceBlockTypeLabel?: string | null;
+  } | null;
 }
 
 interface ReblogComposeContextValue {
@@ -162,12 +168,16 @@ export function ReblogComposeProvider({ children }: { children: ReactNode }) {
         ? (target.root_original_post_id ?? target.id)
         : target.id;
 
+      const excerpt = target.excerptContext;
       await createReblog({
         rebloggerId: user.id,
         originalPostId,
         parentReblogId,
         text: text.trim() || null,
         mediaFile: media?.file ?? null,
+        excerptText: excerpt?.text ?? null,
+        excerptSourceBlockId: excerpt?.sourceBlockId ?? null,
+        excerptSourceBlockTypeLabel: excerpt?.sourceBlockTypeLabel ?? null,
       });
 
       toast.success("Reblogged");
@@ -229,6 +239,7 @@ export function ReblogComposeProvider({ children }: { children: ReactNode }) {
           onClose={handleClose}
           currentUser={currentUser}
           originalPost={toOriginalPost(target)}
+          excerptContext={target.excerptContext ?? null}
           text={text}
           onTextChange={setText}
           mediaAttachment={media}

@@ -13,6 +13,13 @@ import {
   Repeat2,
   Play,
 } from "lucide-react"
+import { EmbeddedExcerptCard } from "./EmbeddedExcerptCard"
+
+export interface ExcerptComposeContext {
+  text: string
+  sourceBlockId?: string | null
+  sourceBlockTypeLabel?: string | null
+}
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -59,6 +66,7 @@ export interface ReblogComposeSheetProps {
   onPost: () => void
   isPosting: boolean
   charCount: number
+  excerptContext?: ExcerptComposeContext | null
 }
 
 const POST_TYPE_COLOURS: Record<string, string> = {
@@ -327,6 +335,7 @@ export default function ReblogComposeSheet({
   onPost,
   isPosting,
   charCount,
+  excerptContext,
 }: ReblogComposeSheetProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
@@ -450,6 +459,7 @@ export default function ReblogComposeSheet({
               onAttachVideo={onAttachVideo}
               onRemoveMedia={onRemoveMedia}
               originalPost={originalPost}
+              excerptContext={excerptContext ?? null}
             />
           </div>
 
@@ -530,6 +540,7 @@ export default function ReblogComposeSheet({
             onAttachVideo={onAttachVideo}
             onRemoveMedia={onRemoveMedia}
             originalPost={originalPost}
+            excerptContext={excerptContext ?? null}
           />
         </div>
 
@@ -618,6 +629,7 @@ function ComposeBody({
   onAttachVideo,
   onRemoveMedia,
   originalPost,
+  excerptContext,
 }: {
   currentUser: ReblogUser
   text: string
@@ -630,6 +642,7 @@ function ComposeBody({
   onAttachVideo: () => void
   onRemoveMedia: () => void
   originalPost: OriginalPost
+  excerptContext: ExcerptComposeContext | null
 }) {
   return (
     <>
@@ -670,7 +683,7 @@ function ComposeBody({
               onTextChange(e.target.value)
             }
           }}
-          placeholder="Add your take…"
+          placeholder={excerptContext ? "Add your take on this quote…" : "Add your take…"}
           rows={3}
           style={{
             fontFamily: "Inter, sans-serif",
@@ -835,7 +848,30 @@ function ComposeBody({
         </div>
       )}
 
-      <EmbeddedOriginalCard post={originalPost} />
+      {excerptContext ? (
+        <EmbeddedExcerptCard
+          excerpt={{
+            text: excerptContext.text,
+            sourceBlockId: excerptContext.sourceBlockId ?? undefined,
+            sourceBlockTypeLabel: excerptContext.sourceBlockTypeLabel ?? undefined,
+          }}
+          sourcePost={{
+            id: originalPost.id,
+            slug: originalPost.slug,
+            postType: (originalPost.postType.toLowerCase() as "blueprint" | "blog" | "bounty"),
+            title: originalPost.title,
+            authorDisplayName: originalPost.authorDisplayName,
+            authorHandle: originalPost.authorHandle.replace(/^@/, ""),
+            authorAvatarUrl: originalPost.authorAvatarUrl,
+            publishedAt: originalPost.publishedAt,
+            coverUrl: originalPost.coverUrl,
+          }}
+          isExcerptStillValid={true}
+          isSourceAvailable={true}
+        />
+      ) : (
+        <EmbeddedOriginalCard post={originalPost} />
+      )}
     </>
   )
 }

@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { PresenceProvider } from "@/components/PresenceProvider";
 import { ShareMenuProvider } from "@/components/share/ShareMenuProvider";
 import { ReblogComposeProvider } from "@/contexts/ReblogComposeContext";
+import { QuotableSelectionProvider } from "@/components/quoting/QuotableSelectionProvider";
 import { Layout } from "@/components/Layout";
 import { AdminRoute } from "@/components/AdminRoute";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -73,6 +74,7 @@ const App = () => (
             <ConnectionBanner />
             <ShareMenuProvider>
             <ReblogComposeProvider>
+            <QuotableSelectionProvider />
             <Routes>
               <Route element={<Layout />}>
                 <Route path="/" element={<Home />} />

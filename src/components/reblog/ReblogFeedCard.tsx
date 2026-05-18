@@ -14,6 +14,11 @@ import {
   EmbeddedOriginalCard,
   type EmbeddedOriginalCardPost,
 } from "@/components/reblog/EmbeddedOriginalCard";
+import {
+  EmbeddedExcerptCard,
+  type Excerpt,
+  type SourcePost,
+} from "@/components/reblog/EmbeddedExcerptCard";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -51,6 +56,11 @@ export interface ReblogFeedCardProps {
   reblog: Reblog;
   engagement: Engagement;
   embeddedOriginal: EmbeddedOriginalCardPost | null;
+  /** When set, this reblog is a quote-reblog and renders the excerpt card. */
+  excerpt?: Excerpt | null;
+  excerptSourcePost?: SourcePost | null;
+  isExcerptStillValid?: boolean;
+  isExcerptSourceAvailable?: boolean;
   variant: "feed" | "profile-zone";
   onReblogClick: () => void;
   onLikeClick: () => void;
@@ -200,6 +210,10 @@ export function ReblogFeedCard({
   reblog,
   engagement,
   embeddedOriginal,
+  excerpt,
+  excerptSourcePost,
+  isExcerptStillValid = true,
+  isExcerptSourceAvailable = true,
   variant,
   onReblogClick,
   onLikeClick,
@@ -291,7 +305,7 @@ export function ReblogFeedCard({
           }}
         >
           <Repeat2 size={10} />
-          Reblog
+          {excerpt ? "Quote" : "Reblog"}
         </span>
 
         <div className="flex-1" />
@@ -408,9 +422,17 @@ export function ReblogFeedCard({
         </div>
       )}
 
-      {/* EMBEDDED ORIGINAL CARD */}
+      {/* EMBEDDED CARD (excerpt or original) */}
       <div style={{ marginTop: 12 }}>
-        {embeddedOriginal ? (
+        {excerpt ? (
+          <EmbeddedExcerptCard
+            excerpt={excerpt}
+            sourcePost={excerptSourcePost ?? null}
+            isExcerptStillValid={isExcerptStillValid}
+            isSourceAvailable={isExcerptSourceAvailable && !!excerptSourcePost}
+            onClick={onOriginalClick}
+          />
+        ) : embeddedOriginal ? (
           <EmbeddedOriginalCard
             variant="feed"
             post={embeddedOriginal}
