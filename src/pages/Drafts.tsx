@@ -84,7 +84,7 @@ export default function DraftsPage() {
       <SeoHead title="Drafts — NeoScale AI" description="Manage your draft posts." path="/drafts" noIndex />
       <div className="mx-auto max-w-3xl">
         <div className="flex justify-end mb-6">
-          <Button size="sm" className="min-h-[44px]" onClick={() => navigate("/upload")}>
+          <Button size="sm" className="min-h-[44px]" onClick={() => openUploadTypePicker()}>
             <Plus className="h-4 w-4 mr-1.5" /> New draft
           </Button>
         </div>
@@ -196,7 +196,7 @@ export default function DraftsPage() {
               Start a new post and save it as a draft to see it here.
             </p>
             <button
-              onClick={() => navigate("/upload")}
+              onClick={() => openUploadTypePicker()}
               style={{ fontSize: 13, fontWeight: 500, padding: '8px 20px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.70)', background: 'transparent', cursor: 'pointer' }}
             >
               Start writing
