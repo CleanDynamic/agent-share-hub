@@ -60,6 +60,7 @@ export default function Profile() {
   const { user, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { openUploadTypePicker } = useUploadPicker();
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [makeCollectionOpen, setMakeCollectionOpen] = useState(false);
