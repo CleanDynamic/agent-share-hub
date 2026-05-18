@@ -218,7 +218,7 @@ function useForYouTab(enabled: boolean) {
           <span>{label}</span>
           <span className="ml-auto">{timeAgo(interaction.created_at)}</span>
         </div>
-        <FeedItem item={content} />
+        <FeedCard post={adaptToFeedPost(content)} />
       </div>
     );
   }).filter(Boolean) as React.ReactNode[];
