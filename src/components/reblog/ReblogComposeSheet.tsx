@@ -335,6 +335,7 @@ export default function ReblogComposeSheet({
   onPost,
   isPosting,
   charCount,
+  excerptContext,
 }: ReblogComposeSheetProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
