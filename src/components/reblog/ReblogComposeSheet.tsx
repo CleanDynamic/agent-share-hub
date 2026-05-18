@@ -459,6 +459,7 @@ export default function ReblogComposeSheet({
               onAttachVideo={onAttachVideo}
               onRemoveMedia={onRemoveMedia}
               originalPost={originalPost}
+              excerptContext={excerptContext ?? null}
             />
           </div>
 
@@ -539,6 +540,7 @@ export default function ReblogComposeSheet({
             onAttachVideo={onAttachVideo}
             onRemoveMedia={onRemoveMedia}
             originalPost={originalPost}
+            excerptContext={excerptContext ?? null}
           />
         </div>
 
