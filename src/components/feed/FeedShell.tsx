@@ -536,17 +536,7 @@ export function FeedShell({
   liveActive,
 }: FeedShellProps) {
   return (
-    <div
-      className="feed-shell-root"
-      style={{
-        maxWidth: 600,
-        margin: "0 auto",
-        padding: "16px 0",
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-      }}
-    >
+    <div className="w-full max-w-[600px] mx-auto flex flex-col gap-3">
       <NewPostsPill
         hasNewPosts={hasNewPosts}
         newPostCount={newPostCount}
