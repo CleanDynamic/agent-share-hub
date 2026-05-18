@@ -10,6 +10,7 @@ import { PresenceProvider } from "@/components/PresenceProvider";
 import { ShareMenuProvider } from "@/components/share/ShareMenuProvider";
 import { ReblogComposeProvider } from "@/contexts/ReblogComposeContext";
 import { QuotableSelectionProvider } from "@/components/quoting/QuotableSelectionProvider";
+import { UploadPickerProvider } from "@/contexts/UploadPickerContext";
 import { Layout } from "@/components/Layout";
 import { AdminRoute } from "@/components/AdminRoute";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
