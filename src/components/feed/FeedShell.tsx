@@ -119,10 +119,12 @@ function ComposeStrip({
 }) {
   return (
     <div
-      className="flex items-center gap-3 mt-7 mb-3"
+      className="flex items-center gap-3"
       style={{
-        background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.14)",
+        background: "rgba(52, 52, 66, 0.55)",
+        backdropFilter: "blur(28px) saturate(160%)",
+        WebkitBackdropFilter: "blur(28px) saturate(160%)",
+        border: "0.5px solid rgba(255, 255, 255, 0.12)",
         borderRadius: 14,
         padding: "12px 16px",
       }}
