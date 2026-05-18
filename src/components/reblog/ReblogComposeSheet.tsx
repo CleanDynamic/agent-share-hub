@@ -848,7 +848,30 @@ function ComposeBody({
         </div>
       )}
 
-      <EmbeddedOriginalCard post={originalPost} />
+      {excerptContext ? (
+        <EmbeddedExcerptCard
+          excerpt={{
+            text: excerptContext.text,
+            sourceBlockId: excerptContext.sourceBlockId ?? undefined,
+            sourceBlockTypeLabel: excerptContext.sourceBlockTypeLabel ?? undefined,
+          }}
+          sourcePost={{
+            id: originalPost.id,
+            slug: originalPost.slug,
+            postType: (originalPost.postType.toLowerCase() as "blueprint" | "blog" | "bounty"),
+            title: originalPost.title,
+            authorDisplayName: originalPost.authorDisplayName,
+            authorHandle: originalPost.authorHandle.replace(/^@/, ""),
+            authorAvatarUrl: originalPost.authorAvatarUrl,
+            publishedAt: originalPost.publishedAt,
+            coverUrl: originalPost.coverUrl,
+          }}
+          isExcerptStillValid={true}
+          isSourceAvailable={true}
+        />
+      ) : (
+        <EmbeddedOriginalCard post={originalPost} />
+      )}
     </>
   )
 }
