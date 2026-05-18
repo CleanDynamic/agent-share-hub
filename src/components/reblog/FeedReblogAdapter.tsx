@@ -49,6 +49,11 @@ export interface FeedReblogRow {
   root_original_post_id?: string | null;
   original_post_id: string;
   reblogger_id: string;
+  excerpt_text?: string | null;
+  excerpt_source_block_id?: string | null;
+  excerpt_source_block_type_label?: string | null;
+  excerpt_text_hash?: string | null;
+  is_excerpt_still_valid?: boolean | null;
   viewer_has_liked?: boolean;
   viewer_has_bookmarked?: boolean;
   viewer_has_reblogged?: boolean;
