@@ -239,6 +239,7 @@ export function ReblogComposeProvider({ children }: { children: ReactNode }) {
           onClose={handleClose}
           currentUser={currentUser}
           originalPost={toOriginalPost(target)}
+          excerptContext={target.excerptContext ?? null}
           text={text}
           onTextChange={setText}
           mediaAttachment={media}
