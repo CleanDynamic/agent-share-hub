@@ -159,6 +159,7 @@ function PackageBanner({ project, paidCount, totalPrice, hasPackage, onUnlock, u
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { openUploadTypePicker } = useUploadPicker();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { isLoggedIn, profile } = useAuth();
