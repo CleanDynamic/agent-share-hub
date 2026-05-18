@@ -30,6 +30,7 @@ function completionCount(item: any): { filled: number; total: number } {
 export default function DraftsPage() {
   const { isLoggedIn, profile, loading } = useAuth();
   const navigate = useNavigate();
+  const { openUploadTypePicker } = useUploadPicker();
   const queryClient = useQueryClient();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
