@@ -293,8 +293,9 @@ function FeedTabBar({
 
   return (
     <div
-      className="sticky top-2 z-10 flex items-center mb-5"
+      className="sticky top-2 z-10 flex items-center w-full"
       style={{
+        minWidth: 0,
         height: 44,
         background: "rgba(52, 52, 66, 0.55)",
         backdropFilter: "blur(20px) saturate(160%)",
@@ -303,7 +304,15 @@ function FeedTabBar({
         borderRadius: 14,
       }}
     >
-      <div className="relative flex flex-1 px-2 h-full">
+      <div
+        className="relative flex h-full"
+        style={{
+          flex: "1 1 0",
+          minWidth: 0,
+          justifyContent: "space-between",
+          padding: "0 12px",
+        }}
+      >
         {TABS.map((tab, i) => (
           <button
             key={tab.key}
@@ -311,9 +320,13 @@ function FeedTabBar({
               tabRefs.current[i] = el;
             }}
             onClick={() => onTabChange(tab.key)}
-            className="flex-1 cursor-pointer transition-colors relative"
+            className="cursor-pointer transition-colors relative"
             style={{
-              padding: "10px 0",
+              flex: "1 1 0",
+              minWidth: 0,
+              textAlign: "center",
+              whiteSpace: "nowrap",
+              padding: "10px 4px",
               fontFamily: "Inter, sans-serif",
               fontSize: 13,
               fontWeight: 500,
@@ -338,7 +351,10 @@ function FeedTabBar({
         />
       </div>
       {liveActive && (
-        <div className="flex items-center gap-1.5" style={{ paddingRight: 12 }}>
+        <div
+          className="flex items-center gap-1.5"
+          style={{ flex: "0 0 auto", paddingRight: 12, paddingLeft: 8 }}
+        >
           <span className="relative flex h-[6px] w-[6px]">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
             <span className="relative inline-flex h-[6px] w-[6px] rounded-full bg-primary" />
@@ -350,6 +366,7 @@ function FeedTabBar({
               letterSpacing: "0.1em",
               color: "rgba(232,87,26,0.85)",
               fontFamily: "Inter, sans-serif",
+              whiteSpace: "nowrap",
             }}
           >
             LIVE
@@ -536,17 +553,7 @@ export function FeedShell({
   liveActive,
 }: FeedShellProps) {
   return (
-    <div
-      className="feed-shell-root"
-      style={{
-        maxWidth: 600,
-        margin: "0 auto",
-        padding: "16px 0",
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-      }}
-    >
+    <div className="w-full max-w-[600px] mx-auto flex flex-col gap-3">
       <NewPostsPill
         hasNewPosts={hasNewPosts}
         newPostCount={newPostCount}
