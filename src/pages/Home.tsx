@@ -461,6 +461,7 @@ const Home = () => {
   const [activeTab, setActiveTab] = useState<Tab>("For You");
   const { isLoggedIn, profile } = useAuth();
   const navigate = useNavigate();
+  const { openUploadTypePicker } = useUploadPicker();
 
   const initials = profile?.display_name
     ? profile.display_name.slice(0, 2).toUpperCase()
