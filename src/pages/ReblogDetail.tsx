@@ -303,7 +303,43 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
       )}
 
       <div className="mb-6">
-        {original ? (
+        {row.excerpt_text ? (
+          <EmbeddedExcerptCard
+            excerpt={{
+              text: row.excerpt_text,
+              sourceBlockId: row.excerpt_source_block_id ?? undefined,
+              sourceBlockTypeLabel: row.excerpt_source_block_type_label ?? undefined,
+            }}
+            sourcePost={
+              original
+                ? {
+                    id: original.id,
+                    slug: original.slug,
+                    postType: mapPostType(original.post_type),
+                    title: original.title,
+                    authorDisplayName:
+                      original.author?.display_name || original.author?.username || "Unknown",
+                    authorHandle: original.author?.username || "unknown",
+                    authorAvatarUrl: original.author?.avatar_url || undefined,
+                    publishedAt: original.created_at,
+                    coverUrl: original.cover_image_url ?? undefined,
+                  }
+                : null
+            }
+            isExcerptStillValid={row.is_excerpt_still_valid !== false}
+            isSourceAvailable={!!original}
+            onClick={() => {
+              if (!original?.slug) return;
+              const params = new URLSearchParams();
+              if (row.excerpt_source_block_id)
+                params.set("excerpt-anchor", row.excerpt_source_block_id);
+              if (row.excerpt_text_hash)
+                params.set("excerpt-text-hash", row.excerpt_text_hash);
+              const qs = params.toString();
+              navigate(`/b/${original.slug}${qs ? `?${qs}` : ""}`);
+            }}
+          />
+        ) : original ? (
           <EmbeddedOriginalCard
             variant="feed"
             post={{
