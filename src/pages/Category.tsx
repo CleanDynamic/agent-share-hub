@@ -187,6 +187,7 @@ function ProjectsFeed({ activeTab }: { activeTab: Tab }) {
 export default function Category() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { openUploadTypePicker } = useUploadPicker();
   const [activeTab, setActiveTab] = useState<Tab>("Popular");
 
   const cat = CATEGORIES.find((c) => c.slug === slug);
