@@ -119,7 +119,7 @@ function ComposeStrip({
 }) {
   return (
     <div
-      className="flex items-center gap-3 mx-6 mt-7 mb-5"
+      className="flex items-center gap-3 mt-7 mb-3"
       style={{
         background: "rgba(255,255,255,0.025)",
         border: "1px solid rgba(255,255,255,0.14)",
@@ -177,7 +177,7 @@ function ActiveCompetitionsStrip({
 }) {
   if (bounties.length === 0) return null;
   return (
-    <div className="mx-6 mb-5">
+    <div className="mb-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Trophy className="h-4 w-4" style={{ color: "#E8571A" }} />
@@ -291,16 +291,17 @@ function FeedTabBar({
 
   return (
     <div
-      className="sticky top-0 z-10 flex items-center"
+      className="sticky top-2 z-10 flex items-center mb-5"
       style={{
-        background: "rgba(8,8,12,0.80)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        borderBottom: "1px solid rgba(255,255,255,0.14)",
-        marginBottom: 20,
+        height: 44,
+        background: "rgba(52, 52, 66, 0.55)",
+        backdropFilter: "blur(20px) saturate(160%)",
+        WebkitBackdropFilter: "blur(20px) saturate(160%)",
+        border: "0.5px solid rgba(255, 255, 255, 0.10)",
+        borderRadius: 14,
       }}
     >
-      <div className="relative flex flex-1 px-2">
+      <div className="relative flex flex-1 px-2 h-full">
         {TABS.map((tab, i) => (
           <button
             key={tab.key}
@@ -308,9 +309,9 @@ function FeedTabBar({
               tabRefs.current[i] = el;
             }}
             onClick={() => onTabChange(tab.key)}
-            className="flex-1 cursor-pointer transition-colors"
+            className="flex-1 cursor-pointer transition-colors relative"
             style={{
-              padding: "12px 0",
+              padding: "10px 0",
               fontFamily: "Inter, sans-serif",
               fontSize: 13,
               fontWeight: 500,
@@ -335,7 +336,7 @@ function FeedTabBar({
         />
       </div>
       {liveActive && (
-        <div className="flex items-center gap-1.5 px-4">
+        <div className="flex items-center gap-1.5" style={{ paddingRight: 12 }}>
           <span className="relative flex h-[6px] w-[6px]">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
             <span className="relative inline-flex h-[6px] w-[6px] rounded-full bg-primary" />
@@ -412,7 +413,7 @@ function FeedContentArea({
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-32 mx-6 mb-3 rounded-xl overflow-hidden relative"
+            className="h-32 mb-3 rounded-xl overflow-hidden relative"
             style={{ background: "rgba(255,255,255,0.04)" }}
           >
             <div
@@ -434,23 +435,24 @@ function FeedContentArea({
     const e = EMPTY_STATES[activeTab];
     const Icon = e.icon;
     return (
-      <div className="flex flex-col items-center text-center px-6 py-16">
+      <div className="flex flex-col items-center text-center" style={{ marginTop: 48 }}>
         <div
-          className="flex items-center justify-center mb-5"
+          className="flex items-center justify-center"
           style={{
-            width: 56,
-            height: 56,
+            width: 72,
+            height: 72,
             borderRadius: "50%",
-            background: "rgba(232,87,26,0.12)",
-            border: "1px solid rgba(232,87,26,0.3)",
+            background: "rgba(232, 87, 26, 0.08)",
+            border: "0.5px solid rgba(232, 87, 26, 0.20)",
+            marginBottom: 16,
           }}
         >
-          <Icon className="h-6 w-6" style={{ color: "#E8571A" }} />
+          <Icon style={{ width: 32, height: 32, color: "#E8571A" }} />
         </div>
         <div
           style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 20,
+            fontFamily: "'Inter', sans-serif",
+            fontSize: 18,
             fontWeight: 600,
             color: "rgba(255,255,255,0.92)",
             marginBottom: 8,
@@ -460,12 +462,13 @@ function FeedContentArea({
         </div>
         <p
           style={{
+            fontFamily: "'Inter', sans-serif",
             fontSize: 13,
+            fontWeight: 400,
+            lineHeight: 1.55,
             color: "rgba(255,255,255,0.55)",
             maxWidth: 380,
-            lineHeight: 1.5,
             marginBottom: e.cta ? 20 : 0,
-            fontFamily: "Inter, sans-serif",
           }}
         >
           {e.body}
@@ -473,22 +476,23 @@ function FeedContentArea({
         {e.cta && (
           <button
             onClick={onEmptyCTAClick}
-            className="transition-transform hover:scale-105 active:scale-95"
+            className="feed-empty-cta transition-colors"
             style={{
-              padding: "9px 18px",
+              padding: "10px 24px",
               borderRadius: 100,
-              background: "rgba(232,87,26,0.15)",
-              border: "1px solid rgba(232,87,26,0.45)",
+              background: "rgba(232, 87, 26, 0.10)",
+              border: "0.5px solid rgba(232, 87, 26, 0.40)",
               color: "#E8571A",
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: 600,
               cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "'Inter', sans-serif",
             }}
           >
             {e.cta}
           </button>
         )}
+        <style>{`.feed-empty-cta:hover { background: rgba(232,87,26,0.16) !important; border-color: rgba(232,87,26,0.60) !important; }`}</style>
       </div>
     );
   }
@@ -500,7 +504,7 @@ function FeedContentArea({
           {card}
           {(i + 1) % 5 === 0 && i < feedCards.length - 1 && (
             <div
-              className="mx-6 my-4"
+              className="my-4"
               style={{
                 borderTop: "1px dotted rgba(255,255,255,0.14)",
               }}
@@ -530,7 +534,7 @@ export function FeedShell({
   liveActive,
 }: FeedShellProps) {
   return (
-    <div style={{ paddingTop: 28 }}>
+    <div style={{ maxWidth: 600, margin: "0 auto", padding: "28px 24px 0" }}>
       <NewPostsPill
         hasNewPosts={hasNewPosts}
         newPostCount={newPostCount}
