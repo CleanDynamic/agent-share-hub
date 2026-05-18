@@ -1,58 +1,60 @@
-# Finish Phase 10 Threaded Comments — Edit/Delete/Report
+# Phase 15.2: Quote-Reblog UI Wiring
 
-The v0 ThreadedComment UI, drawer integration, deep-link wiring, post/reply/react handlers, and parent/post-author notifications are already in place. The remaining gap from the spec (excluding realtime, optimistic insertion, and the full-screen `/b/{slug}/thread/{id}` route, per your direction) is the **More menu**: edit-within-5-minutes, soft-delete, and report. This pass closes that gap and tightens a few small loose ends.
+Wire the v0 selection overlay into the app, support excerpts in the reblog compose flow, and render excerpt cards in feed + detail surfaces.
 
-## Scope
+## Files to create
 
-1. **Backend lib functions** (`src/lib/content-detail/`)
-   - `updateComment.ts` — `updateComment({ commentId, authorId, body })`
-     - Verifies caller is `author_id`.
-     - Enforces 5-minute edit window (`now() - created_at <= 5 min`); throws otherwise.
-     - Rejects if `deleted_at` is set.
-     - Updates `body`, `body_text` (re-extract plain text), `updated_at = now()`.
-   - `softDeleteComment.ts` — `softDeleteComment({ commentId, authorId })`
-     - Verifies caller is `author_id`.
-     - Sets `deleted_at = now()`; trigger already decrements parent `reply_count`.
-   - `reportComment.ts` — minimal stub that inserts into existing `content_reports` table if present, otherwise toasts "Thanks, we'll review."
-   - Export from `src/lib/content-detail/index.ts`.
+1. **`src/components/quoting/QuotableSelectionOverlay.tsx`** — paste v0 session A verbatim. Floating pill toolbar (Reblog / Annotate / Copy) anchored to text selection rect; dismisses on Escape, scroll, outside click.
 
-2. **Drawer More menu** (`src/components/content-detail/PrimitiveCommentDrawer.tsx`)
-   - Replace stub `handleDrawerMore` consumer with a small popover (anchored to MoreHorizontal button) offering:
-     - **Edit** (only if viewer is author AND within 5 min) → opens inline edit textarea in place of body; Save calls `updateComment`, refetches; shows `(edited)` marker automatically since `updated_at !== created_at`.
-     - **Delete** (only if viewer is author) → confirm → `softDeleteComment` → refetch; UI renders `[Comment deleted]` placeholder with children intact (already supported).
-     - **Report** (any viewer except author) → `reportComment`; toast confirmation.
-   - Menu state lives in the drawer (single open menu id at a time), mirroring `openComposerId`.
-   - Pass `viewerId` down to `ThreadedComment` via a new optional prop so the menu can decide which items to show. Alternative: keep all logic in drawer and pass `onMore(commentId, anchorRect)` — chosen approach: drawer renders the menu using a portal positioned next to the More button.
+2. **`src/components/reblog/EmbeddedExcerptCard.tsx`** — paste v0 session C (re-typed cleanly since the pasted JSX is truncated/garbled — reconstruct from prop shape and styling cues). Renders quoted excerpt with author chip, post-type pill, expand/collapse for >360 chars, "may have been edited" warning when `!isExcerptStillValid`, unavailable placeholder when `!isSourceAvailable`.
 
-3. **ContentDetail wiring** (`src/pages/ContentDetail.tsx`)
-   - Replace stub `handleDrawerMore` with implementations that call the new lib functions and `refetchDrawerThreads()` on success.
-   - Pass `viewerId` (already passed) and add `viewerIsAuthor` derivation in the drawer using `viewerId === comment.author.id`.
+3. **`src/components/quoting/QuotableSelectionProvider.tsx`** — singleton mount. Owns selection state, listens to `selectionchange`, validates min length ≥4 and that anchor+focus both live inside a `data-quotable="true"` ancestor, computes overlay placement (above when room, else below), exposes selection's source post + block IDs via `data-source-post-id` / `data-source-block-id` on the quotable wrapper. Actions:
+   - `onQuoteReblog` → calls `useReblogCompose().openReblog(...)` with new `excerptContext`.
+   - `onAnnotate` → toast placeholder (Phase 16C).
+   - `onCopy` → `navigator.clipboard.writeText` + toast.
 
-4. **Small fixes**
-   - Drawer currently uses `window.location.assign` for Continued thread navigation, which forces a full reload. Switch to React Router `navigate()` (drawer already lives inside a Router; pass a `navigate` callback from ContentDetail) — minor UX improvement aligned with the spec's "deep-link without losing state".
-   - Ensure `toDrawerComment` propagates `updatedAt` (currently dropped) so `(edited)` renders.
+## Files to edit
 
-## Out of scope (per your message)
-- Realtime subscription updates to the open drawer.
-- Optimistic insertion on post/reply.
-- Dedicated full-screen `/b/{slug}/thread/{commentId}` route.
+4. **`src/contexts/ReblogComposeContext.tsx`**
+   - `ReblogTargetInput` gains `excerptContext?: { text, sourceBlockId?, sourceBlockTypeLabel? }`.
+   - Plumb into local state; pass to sheet; on post, forward to `createReblog` as `excerptText` / `excerptSourceBlockId` / `excerptSourceBlockTypeLabel`.
 
-## Verification
+5. **`src/components/reblog/ReblogComposeSheet.tsx`** (existing)
+   - Accept `excerptContext` prop + `sourcePost` for `EmbeddedExcerptCard`.
+   - When excerpt present: swap `EmbeddedOriginalCard` for `EmbeddedExcerptCard`; placeholder = "Add your take on this quote…".
 
-- Post a comment → reply → reply-to-reply: parent `reply_count` increments at each level (trigger).
-- Edit own reply within 5 min: textarea swaps in, Save persists, `(edited)` appears.
-- Try editing after 5 min: button hidden; direct call throws.
-- Delete a reply with children: placeholder renders, children remain visible; `reply_count` of its parent decrements.
-- Report flow: viewer who is not author sees Report; submits without error.
-- Notifications: replier's parent author gets `comment_reply`; post author gets `new_comment` for top-level only (already in `postComment`).
+6. **`src/components/reblog/ReblogFeedCard.tsx`**
+   - Accept optional `excerpt` + `isExcerptStillValid` props.
+   - When `excerpt` set: render `EmbeddedExcerptCard` instead of `EmbeddedOriginalCard`; pill label = "QUOTE".
 
-## Files touched
+7. **`src/pages/ReblogDetail.tsx`** — same swap; click on excerpt card → `navigate('/b/{slug}?excerpt-anchor={blockId}&excerpt-text-hash={hash}')`.
 
-- new: `src/lib/content-detail/updateComment.ts`
-- new: `src/lib/content-detail/softDeleteComment.ts`
-- new: `src/lib/content-detail/reportComment.ts`
-- edit: `src/lib/content-detail/index.ts`
-- edit: `src/components/content-detail/PrimitiveCommentDrawer.tsx` (add More-menu popover, pass viewerId/onEdit/onDelete/onReport to ThreadedComment, propagate updatedAt)
-- edit: `src/components/comments/ThreadedComment.tsx` (inline edit textarea state; render `(edited)` already supported)
-- edit: `src/components/comments/types.ts` (add `viewerId`, `onEdit`, `onDelete`, `onReport` props)
-- edit: `src/pages/ContentDetail.tsx` (`handleDrawerMore` → real edit/delete/report, propagate `updatedAt` in `toDrawerComment`, pass `navigate` for Continued thread)
+8. **`src/pages/ContentDetail.tsx`**
+   - Read `excerpt-anchor` / `excerpt-text-hash` from URL on mount.
+   - After render, find matching block element (by `data-block-id`) or text node, scroll into view, apply `.excerpt-pulse` class for 1s.
+   - Add `data-quotable="true"` + `data-source-post-id={post.id}` on article body wrapper and on each block wrapper (with `data-source-block-id`).
+
+9. **`src/components/AppLayout.tsx`** (or wherever Phase 14 shell lives) — mount `<QuotableSelectionProvider />` once.
+
+10. **`src/index.css`** — add `.excerpt-pulse` keyframes (1s outline pulse in `hsl(var(--brand-orange))` ≈ Sienna `#E8571A`) and `@keyframes overlay-in` for the toolbar fade-in.
+
+## Quotable surface decoration
+
+Add `data-quotable="true"` (and `data-source-block-id={id}` where applicable) to:
+- Article body renderer wrapper (TipTap output)
+- Each Block component
+- Each Stage component
+- Each Slide content area
+- Solution content (bounty-solver)
+
+## Technical notes
+
+- Selection containment check: walk both `range.startContainer` and `range.endContainer` parents, both must reach the same `[data-quotable="true"]` ancestor; sourceBlockId = nearest `[data-source-block-id]`; sourcePostId = nearest `[data-source-post-id]`.
+- Position math: `rect = range.getBoundingClientRect()`; default `placement="above"` with `y = rect.top - 8`; if `rect.top < 60` flip to below (`y = rect.bottom + 12`). `x = rect.left + rect.width/2`.
+- Touch: `selectionchange` already fires on mobile after `touchend`; debounce with `requestAnimationFrame` to wait for selection finalization.
+- Hash for excerpt anchor: reuse SHA-256 from `validateExcerpt` if exported, otherwise pass plain text via query string.
+
+## Out of scope
+- Annotation persistence (Phase 16C).
+- Realtime/optimistic reblog insertion.
+- Editing already-posted excerpt reblogs.
