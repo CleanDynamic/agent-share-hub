@@ -116,30 +116,8 @@ export function LibraryShell({
           marginBottom: 20,
         }}
       >
-        <div>
-          <h1
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 32,
-              fontWeight: 600,
-              color: "rgba(255,255,255,0.95)",
-              margin: 0,
-              lineHeight: 1.1,
-            }}
-          >
-            {pageTitle}
-          </h1>
-          <p
-            style={{
-              fontFamily: "Inter, sans-serif",
-              fontSize: 13,
-              color: "rgba(255,255,255,0.55)",
-              margin: "6px 0 0",
-            }}
-          >
-            {pageSubtitle}
-          </p>
-        </div>
+        <div />
+
         {isOwnLibrary && (
           <button
             onClick={onCreateCollection}
