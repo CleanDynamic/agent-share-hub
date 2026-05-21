@@ -421,7 +421,7 @@ const NEOSCALE_CSS = `
 }
 
 /* ── Back button ── */
-.ns-shell-back-btn {
+.ns-back-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -436,7 +436,7 @@ const NEOSCALE_CSS = `
   width: 100%;
   text-align: left;
 }
-.ns-shell-back-btn:hover { color: rgba(255,255,255,0.85); }
+.ns-back-btn:hover { color: rgba(255,255,255,0.85); }
 
 /* ── Back face — outlet ── */
 .ns-outlet-wrap {
