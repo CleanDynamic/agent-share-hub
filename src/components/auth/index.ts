@@ -17,3 +17,7 @@ export { AuthEmailVerificationCard } from "./AuthEmailVerificationCard";
 export type { ResendState } from "./AuthEmailVerificationCard";
 export { AuthEmailSuccessCard } from "./AuthEmailSuccessCard";
 export { AuthEmailErrorCard } from "./AuthEmailErrorCard";
+export { ResetPasswordRequestCard } from "./ResetPasswordRequestCard";
+export type { ResetPasswordRequestCardProps } from "./ResetPasswordRequestCard";
+export { ResetPasswordConfirmCard } from "./ResetPasswordConfirmCard";
+export type { ResetPasswordConfirmCardProps } from "./ResetPasswordConfirmCard";
