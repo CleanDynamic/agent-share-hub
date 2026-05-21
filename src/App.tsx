@@ -34,7 +34,10 @@ import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
+import AuthCallback from "./pages/AuthCallback";
+import VerifyEmail from "./pages/VerifyEmail";
 import Onboarding from "./pages/Onboarding";
+import OnboardingProfile from "./pages/OnboardingProfile";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import LibraryPage from "./pages/Library";
@@ -106,8 +109,12 @@ const App = () => (
                 <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/verify-email/:token" element={<VerifyEmail />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+                <Route path="/onboarding/profile" element={<ProtectedRoute><OnboardingProfile /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/profile/:handle" element={<Profile />} />
                 <Route path="/saved" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
