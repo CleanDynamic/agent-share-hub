@@ -1767,6 +1767,17 @@ export function NeoScaleShell() {
 
           {/* ═══ MIDDLE PANEL ═══ */}
           <div className="ns-middle-wrapper">
+            {location.pathname !== "/" && breakpoint !== "mobile" && (
+              <button
+                type="button"
+                className="ns-back-btn"
+                onClick={() => navigate(-1)}
+                aria-label="Go back"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+                Back
+              </button>
+            )}
             {isMessages ? (
               <LiquidGlassPanel cornerRadius={20} elasticity={0.15} contentStyle={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <Outlet />
