@@ -1657,7 +1657,7 @@ export function NeoScaleShell() {
     if (meta) {
       return (
         <div className="ns-page-shell">
-          <button className="ns-shell-back-btn" onClick={handleBackBtn}>← Back</button>
+          <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
           <div className="ns-page-body">
             <Outlet />
           </div>
