@@ -4,7 +4,13 @@ import { NeoScaleShell } from "@/components/NeoScaleShell";
 // Auth routes are a dedicated full-screen entry point: no left rail, no right
 // rail, no mobile bottom nav or top bar. Each auth page renders its own
 // AuthShell, so we just hand the route straight through.
-const AUTH_ROUTE_PREFIXES = ["/signup", "/login", "/auth/", "/verify-email"];
+const AUTH_ROUTE_PREFIXES = [
+  "/signup",
+  "/login",
+  "/auth/",
+  "/verify-email",
+  "/reset-password",
+];
 
 export function Layout() {
   const { pathname } = useLocation();
