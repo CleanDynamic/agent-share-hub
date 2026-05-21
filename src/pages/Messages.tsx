@@ -438,7 +438,7 @@ export default function MessagesPage() {
           width: "100%",
           position: "relative",
           overflow: "hidden",
-          background: "#25252F",
+          background: "transparent",
         }}
       >
         <MessagesThreadList
