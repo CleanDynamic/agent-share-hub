@@ -315,7 +315,7 @@ const NEOSCALE_CSS = `
 
 /* ── Middle panel ── */
 .ns-middle-wrapper { width: 600px; height: 775px; perspective: 1400px; flex-shrink: 0; position: relative; }
-.ns-back-btn {
+.ns-shell-back-btn {
   position: absolute; top: 12px; left: 12px; z-index: 50;
   display: inline-flex; align-items: center; gap: 6px;
   height: 32px; padding: 0 12px 0 10px; border-radius: 999px;
@@ -326,7 +326,7 @@ const NEOSCALE_CSS = `
   font-size: 12px; font-weight: 600; cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.ns-back-btn:hover { background: rgba(232,87,26,0.18); color: #fff; border-color: rgba(232,87,26,0.45); }
+.ns-shell-back-btn:hover { background: rgba(232,87,26,0.18); color: #fff; border-color: rgba(232,87,26,0.45); }
 .ns-middle-flipper {
   width: 100%; height: 100%;
   position: relative;
@@ -421,7 +421,7 @@ const NEOSCALE_CSS = `
 }
 
 /* ── Back button ── */
-.ns-back-btn {
+.ns-shell-back-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -436,7 +436,7 @@ const NEOSCALE_CSS = `
   width: 100%;
   text-align: left;
 }
-.ns-back-btn:hover { color: rgba(255,255,255,0.85); }
+.ns-shell-back-btn:hover { color: rgba(255,255,255,0.85); }
 
 /* ── Back face — outlet ── */
 .ns-outlet-wrap {
@@ -1657,7 +1657,7 @@ export function NeoScaleShell() {
     if (meta) {
       return (
         <div className="ns-page-shell">
-          <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
+          <button className="ns-shell-back-btn" onClick={handleBackBtn}>← Back</button>
           <div className="ns-page-body">
             <Outlet />
           </div>
@@ -1667,12 +1667,12 @@ export function NeoScaleShell() {
 
     /* Fallback — all other routes.
        Content detail pages and upload render their own inline back button,
-       so suppress the sticky ns-back-btn there to reclaim header height. */
+       so suppress the sticky ns-shell-back-btn there to reclaim header height. */
     return (
       <div className="ns-page-shell">
         {!path.startsWith('/upload') &&
          !path.startsWith('/content/') && (
-          <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
+          <button className="ns-shell-back-btn" onClick={handleBackBtn}>← Back</button>
         )}
         <div className="ns-page-body">
           <Outlet />
@@ -1770,7 +1770,7 @@ export function NeoScaleShell() {
             {location.pathname !== "/" && breakpoint !== "mobile" && (
               <button
                 type="button"
-                className="ns-back-btn"
+                className="ns-shell-back-btn"
                 onClick={() => navigate(-1)}
                 aria-label="Go back"
               >
