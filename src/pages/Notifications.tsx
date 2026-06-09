@@ -367,59 +367,23 @@ export default function NotificationsPage() {
     <div style={{ padding: "0 0 32px" }}>
       <SeoHead title="Notifications" description="Your latest activity and mentions." path="/notifications" />
 
-      {/* Toolbar: tabs (left) + Mark all as read (right) */}
-      <div
-        role="tablist"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          borderBottom: "0.5px solid rgba(255,255,255,0.10)",
-          marginBottom: 14,
+      <ShellHeader
+        onBack={() => navigate(-1)}
+        tabs={[
+          { id: "all", label: "All", count: allCount },
+          { id: "unread", label: "Unread", count: unreadCount },
+        ]}
+        activeTab={filter}
+        onTabChange={(id) => setFilter(id as FilterKind)}
+        secondaryAction={{
+          label: "Mark all as read",
+          onClick: handleMarkAll,
+          disabled: unreadCount === 0,
         }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={filter === "all"}
-            onClick={() => setFilter("all")}
-            style={{ ...tabBase, ...(filter === "all" ? tabActive : {}) }}
-          >
-            All
-            <span style={countPill}>{allCount}</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={filter === "unread"}
-            onClick={() => setFilter("unread")}
-            style={{ ...tabBase, ...(filter === "unread" ? tabActive : {}) }}
-          >
-            Unread
-            <span style={countPill}>{unreadCount}</span>
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={handleMarkAll}
-          disabled={unreadCount === 0}
-          style={{
-            background: "transparent",
-            border: "none",
-            color:
-              unreadCount === 0 ? "rgba(255,255,255,0.30)" : "rgba(255,255,255,0.65)",
-            fontFamily: "Inter, sans-serif",
-            fontSize: 12,
-            fontWeight: 500,
-            cursor: unreadCount === 0 ? "default" : "pointer",
-            padding: "4px 6px",
-          }}
-        >
-          Mark all as read
-        </button>
-      </div>
+      />
+
+      <div style={{ padding: "0 20px" }}>
+
 
       {/* List */}
       {loading ? (
