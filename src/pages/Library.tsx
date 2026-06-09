@@ -401,7 +401,7 @@ export default function LibraryPage() {
           isOwnLibrary
             ? "Your saved blueprints, blogs, stages, and blocks"
             : `Public collections by ${ownerLabel}`
-        }
+        hideHeader
       />
 
       <CollectionFormModal
