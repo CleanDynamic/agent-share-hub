@@ -364,6 +364,20 @@ export default function LibraryPage() {
         path={visitorHandle ? `/library/${visitorHandle}` : "/library"}
         noIndex
       />
+      <ShellHeader
+        onBack={() => navigate(-1)}
+        primaryAction={
+          isOwnLibrary
+            ? { label: "New collection", icon: Plus, onClick: () => setModal({ mode: "create" }) }
+            : undefined
+        }
+        tabs={[
+          { id: "collections", label: "Collections", count: counts.collections },
+          { id: "all", label: "All saved items", count: counts.allItems },
+        ]}
+        activeTab={view}
+        onTabChange={(id) => updateParam("view", id === "all" ? "all" : null)}
+      />
       <LibraryShell
         activeView={view}
         onViewChange={(v) => updateParam("view", v === "all" ? "all" : null)}
