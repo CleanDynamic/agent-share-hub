@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { displayContentType } from "@/lib/content-types";
+import { ShellHeader } from "@/components/shell/ShellHeader";
 
 function completionCount(item: any): { filled: number; total: number } {
   const total = 5;
