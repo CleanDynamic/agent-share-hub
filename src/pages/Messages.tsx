@@ -548,7 +548,9 @@ export default function MessagesPage() {
             <div className="absolute inset-0 pointer-events-none" />
           )}
         </div>
+        </div>
       </div>
+
 
       {/* Settings drawer */}
       <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
