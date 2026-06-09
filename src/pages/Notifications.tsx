@@ -16,6 +16,7 @@ import {
   groupNotificationsByTime,
   type NotificationCardData,
 } from "@/components/notifications/NotificationCard";
+import { ShellHeader } from "@/components/shell/ShellHeader";
 
 const PAGE_SIZE = 50;
 
