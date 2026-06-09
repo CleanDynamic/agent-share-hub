@@ -44,6 +44,7 @@ import { useDocumentStore } from '@/lib/documentStore';
 import { StageFullscreen } from '@/components/article/stage/StageFullscreen';
 import { scheduleRecompute, flushRecompute } from '@/lib/metadata/scheduleRecompute';
 import { validateReferences } from '@/lib/blog/validateReferences';
+import { ShellHeader } from "@/components/shell/ShellHeader";
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
