@@ -530,7 +530,12 @@ const Discover = () => {
         description="Search and discover Blueprints, Stages, and Blocks."
         path="/discover"
       />
-      <div className="mx-auto w-full px-4 py-6" style={{ maxWidth: 920 }}>
+      <ShellHeader
+        onBack={() => navigate(-1)}
+        primaryAction={{ label: "Submit a blueprint", onClick: () => navigate("/upload") }}
+      />
+      <div className="mx-auto w-full px-4" style={{ maxWidth: 920, paddingBottom: 24 }}>
+
         <DiscoverSearchHeader
           activeMode={mode}
           onModeChange={(m) => updateParams({ mode: m })}
