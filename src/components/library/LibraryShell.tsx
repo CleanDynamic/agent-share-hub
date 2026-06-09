@@ -45,6 +45,7 @@ interface LibraryShellProps {
   isOwnLibrary: boolean;
   pageTitle?: string;
   pageSubtitle?: string;
+  hideHeader?: boolean;
 }
 
 const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
