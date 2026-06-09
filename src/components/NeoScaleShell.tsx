@@ -315,18 +315,6 @@ const NEOSCALE_CSS = `
 
 /* ── Middle panel ── */
 .ns-middle-wrapper { width: 600px; height: 775px; perspective: 1400px; flex-shrink: 0; position: relative; }
-.ns-shell-back-btn {
-  position: absolute; top: 12px; left: 12px; z-index: 50;
-  display: inline-flex; align-items: center; gap: 6px;
-  height: 32px; padding: 0 12px 0 10px; border-radius: 999px;
-  background: rgba(15,15,20,0.72); backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.85); font-family: Inter, sans-serif;
-  font-size: 12px; font-weight: 600; cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-.ns-shell-back-btn:hover { background: rgba(232,87,26,0.18); color: #fff; border-color: rgba(232,87,26,0.45); }
 .ns-middle-flipper {
   width: 100%; height: 100%;
   position: relative;
