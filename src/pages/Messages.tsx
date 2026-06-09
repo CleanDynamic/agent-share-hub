@@ -432,16 +432,23 @@ export default function MessagesPage() {
   return (
     <>
       <SeoHead title="Messages" description="Your conversations on NeoScale AI." path="/messages" />
-      <div
-        className="flex"
-        style={{
-          height: "100%",
-          width: "100%",
-          position: "relative",
-          overflow: "hidden",
-          background: "transparent",
-        }}
-      >
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%" }}>
+        <ShellHeader
+          onBack={() => navigate(-1)}
+          title={activeThreadInfo?.headerThread.title || "Messages"}
+        />
+        <div
+          className="flex"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            width: "100%",
+            position: "relative",
+            overflow: "hidden",
+            background: "transparent",
+          }}
+        >
+
         <MessagesThreadList
           threads={threadItems}
           activeTab={activeTab}
