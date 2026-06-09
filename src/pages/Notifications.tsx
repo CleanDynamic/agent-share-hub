@@ -333,35 +333,8 @@ export default function NotificationsPage() {
     setSearchParams(params, { replace: true });
   };
 
-  const tabBase: React.CSSProperties = {
-    height: 40,
-    padding: "0 14px",
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    fontFamily: "Inter, sans-serif",
-    fontSize: 13,
-    fontWeight: 500,
-    background: "transparent",
-    border: "none",
-    cursor: "pointer",
-    color: "rgba(255,255,255,0.55)",
-    borderBottom: "2px solid transparent",
-  };
-  const tabActive: React.CSSProperties = {
-    color: "rgba(255,255,255,0.95)",
-    borderBottom: "2px solid #2EC4B6",
-  };
-  const countPill: React.CSSProperties = {
-    fontSize: 10,
-    fontWeight: 600,
-    padding: "1px 6px",
-    borderRadius: 999,
-    background: "rgba(255,255,255,0.08)",
-    color: "rgba(255,255,255,0.75)",
-  };
-
   const showEmpty = !loading && items.length === 0;
+
 
   return (
     <div style={{ padding: "0 0 32px" }}>
