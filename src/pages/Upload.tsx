@@ -1592,6 +1592,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, height: '100%', overflowY: 'auto' as const, paddingTop: 0, paddingBottom: 80, paddingLeft: 0, paddingRight: 0 }}>
       <SeoHead title="Upload — NeoScale AI" description="Share your AI assistants, blueprints and workflows with the community." path="/upload" />
+      <ShellHeader onBack={() => navigate(-1)} />
       <div>
         {/* Draft banner */}
         {draftMeta && (
