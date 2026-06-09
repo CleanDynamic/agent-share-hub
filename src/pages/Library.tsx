@@ -1,9 +1,11 @@
 import * as React from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { SeoHead } from "@/components/SeoHead";
+import { ShellHeader } from "@/components/shell/ShellHeader";
 import {
   AlertDialog,
   AlertDialogAction,
