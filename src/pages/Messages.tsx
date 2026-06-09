@@ -5,6 +5,7 @@ import { MessageSquare, Loader2, Search, X, Pin, BellOff, LogOut, ExternalLink }
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
+import { ShellHeader } from "@/components/shell/ShellHeader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -431,16 +432,23 @@ export default function MessagesPage() {
   return (
     <>
       <SeoHead title="Messages" description="Your conversations on NeoScale AI." path="/messages" />
-      <div
-        className="flex"
-        style={{
-          height: "100%",
-          width: "100%",
-          position: "relative",
-          overflow: "hidden",
-          background: "transparent",
-        }}
-      >
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%" }}>
+        <ShellHeader
+          onBack={() => navigate(-1)}
+          title={activeThreadInfo?.headerThread.title || "Messages"}
+        />
+        <div
+          className="flex"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            width: "100%",
+            position: "relative",
+            overflow: "hidden",
+            background: "transparent",
+          }}
+        >
+
         <MessagesThreadList
           threads={threadItems}
           activeTab={activeTab}
@@ -540,7 +548,9 @@ export default function MessagesPage() {
             <div className="absolute inset-0 pointer-events-none" />
           )}
         </div>
+        </div>
       </div>
+
 
       {/* Settings drawer */}
       <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>

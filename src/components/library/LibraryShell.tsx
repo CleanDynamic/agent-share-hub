@@ -45,6 +45,7 @@ interface LibraryShellProps {
   isOwnLibrary: boolean;
   pageTitle?: string;
   pageSubtitle?: string;
+  hideHeader?: boolean;
 }
 
 const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
@@ -96,6 +97,7 @@ export function LibraryShell({
   isOwnLibrary,
   pageTitle = "Library",
   pageSubtitle = "Your saved blueprints, blogs, stages, and blocks",
+  hideHeader = false,
 }: LibraryShellProps) {
   const hasCollections =
     collections.length > 1 ||
@@ -105,64 +107,69 @@ export function LibraryShell({
   const sortOptions = activeView === "collections" ? SORT_COLLECTIONS : SORT_ALL;
 
   return (
-    <div style={{ padding: "28px 24px 40px", maxWidth: 1100, margin: "0 auto" }}>
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 16,
-          marginBottom: 20,
-        }}
-      >
-        <div />
-
-        {isOwnLibrary && (
-          <button
-            onClick={onCreateCollection}
+    <div style={{ padding: "0 24px 40px", maxWidth: 1100, margin: "0 auto" }}>
+      {/* Header (suppressed when the page renders a ShellHeader above) */}
+      {!hideHeader && (
+        <>
+          <div
             style={{
-              background: "rgba(232, 87, 26, 0.15)",
-              border: "1px solid rgba(232, 87, 26, 0.4)",
-              color: "#E8571A",
-              borderRadius: 8,
-              padding: "8px 14px",
-              fontFamily: "Inter, sans-serif",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: 16,
+              marginBottom: 20,
+              paddingTop: 28,
             }}
           >
-            + New collection
-          </button>
-        )}
-      </div>
+            <div />
+            {isOwnLibrary && (
+              <button
+                onClick={onCreateCollection}
+                style={{
+                  background: "rgba(232, 87, 26, 0.15)",
+                  border: "1px solid rgba(232, 87, 26, 0.4)",
+                  color: "#E8571A",
+                  borderRadius: 8,
+                  padding: "8px 14px",
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                + New collection
+              </button>
+            )}
+          </div>
 
-      {/* Tabs */}
-      <div
-        style={{
-          display: "flex",
-          gap: 4,
-          marginBottom: 16,
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
-        }}
-      >
-        <TabButton
-          icon={<FolderOpen size={14} />}
-          label="Collections"
-          count={counts.collections}
-          isActive={activeView === "collections"}
-          onClick={() => onViewChange("collections")}
-        />
-        <TabButton
-          icon={<Bookmark size={14} />}
-          label="All saved items"
-          count={counts.allItems}
-          isActive={activeView === "all"}
-          onClick={() => onViewChange("all")}
-        />
-      </div>
+          {/* Tabs */}
+          <div
+            style={{
+              display: "flex",
+              gap: 4,
+              marginBottom: 16,
+              borderBottom: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <TabButton
+              icon={<FolderOpen size={14} />}
+              label="Collections"
+              count={counts.collections}
+              isActive={activeView === "collections"}
+              onClick={() => onViewChange("collections")}
+            />
+            <TabButton
+              icon={<Bookmark size={14} />}
+              label="All saved items"
+              count={counts.allItems}
+              isActive={activeView === "all"}
+              onClick={() => onViewChange("all")}
+            />
+          </div>
+        </>
+      )}
+
 
       {/* Filter strip — collections */}
       {activeView === "collections" && hasCollections && (

@@ -44,6 +44,7 @@ import { useDocumentStore } from '@/lib/documentStore';
 import { StageFullscreen } from '@/components/article/stage/StageFullscreen';
 import { scheduleRecompute, flushRecompute } from '@/lib/metadata/scheduleRecompute';
 import { validateReferences } from '@/lib/blog/validateReferences';
+import { ShellHeader } from "@/components/shell/ShellHeader";
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -1591,6 +1592,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, height: '100%', overflowY: 'auto' as const, paddingTop: 0, paddingBottom: 80, paddingLeft: 0, paddingRight: 0 }}>
       <SeoHead title="Upload — NeoScale AI" description="Share your AI assistants, blueprints and workflows with the community." path="/upload" />
+      <ShellHeader onBack={() => navigate(-1)} />
       <div>
         {/* Draft banner */}
         {draftMeta && (

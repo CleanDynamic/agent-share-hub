@@ -1,9 +1,11 @@
 import * as React from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { SeoHead } from "@/components/SeoHead";
+import { ShellHeader } from "@/components/shell/ShellHeader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -362,6 +364,20 @@ export default function LibraryPage() {
         path={visitorHandle ? `/library/${visitorHandle}` : "/library"}
         noIndex
       />
+      <ShellHeader
+        onBack={() => navigate(-1)}
+        primaryAction={
+          isOwnLibrary
+            ? { label: "New collection", icon: Plus, onClick: () => setModal({ mode: "create" }) }
+            : undefined
+        }
+        tabs={[
+          { id: "collections", label: "Collections", count: counts.collections },
+          { id: "all", label: "All saved items", count: counts.allItems },
+        ]}
+        activeTab={view}
+        onTabChange={(id) => updateParam("view", id === "all" ? "all" : null)}
+      />
       <LibraryShell
         activeView={view}
         onViewChange={(v) => updateParam("view", v === "all" ? "all" : null)}
@@ -386,6 +402,7 @@ export default function LibraryPage() {
             ? "Your saved blueprints, blogs, stages, and blocks"
             : `Public collections by ${ownerLabel}`
         }
+        hideHeader
       />
 
       <CollectionFormModal

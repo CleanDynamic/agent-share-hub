@@ -74,24 +74,7 @@ export function DiscoverSearchHeader({
 
   return (
     <div className="w-full flex flex-col gap-0">
-      {/* ROW 1 — Submit blueprint action (title banner removed) */}
-      <div className="flex items-center justify-end" style={{ height: 40 }}>
-        <button
-          style={{
-            fontFamily: 'Inter, sans-serif',
-            fontSize: 12,
-            fontWeight: 500,
-            padding: '6px 12px',
-            border: '0.5px solid rgba(255,255,255,0.10)',
-            borderRadius: 6,
-            background: 'transparent',
-            color: 'rgba(255,255,255,0.75)',
-            cursor: 'pointer',
-          }}
-        >
-          Submit a blueprint
-        </button>
-      </div>
+
 
       {/* ROW 2 — Search mode tabs */}
       <div className="flex items-end gap-0" style={{ height: 40 }}>

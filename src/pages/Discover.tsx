@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { stageDeepLink, blockDeepLink } from "@/lib/deepLink";
 import { SeoHead } from "@/components/SeoHead";
+import { ShellHeader } from "@/components/shell/ShellHeader";
 import { DiscoverSearchHeader, type SearchMode, type ActiveFilter } from "@/components/discover/DiscoverSearchHeader";
 import { DiscoverFilterSheet, type FilterValue } from "@/components/discover/DiscoverFilterSheet";
 import {
@@ -529,7 +530,12 @@ const Discover = () => {
         description="Search and discover Blueprints, Stages, and Blocks."
         path="/discover"
       />
-      <div className="mx-auto w-full px-4 py-6" style={{ maxWidth: 920 }}>
+      <ShellHeader
+        onBack={() => navigate(-1)}
+        primaryAction={{ label: "Submit a blueprint", onClick: () => navigate("/upload") }}
+      />
+      <div className="mx-auto w-full px-4" style={{ maxWidth: 920, paddingBottom: 24 }}>
+
         <DiscoverSearchHeader
           activeMode={mode}
           onModeChange={(m) => updateParams({ mode: m })}

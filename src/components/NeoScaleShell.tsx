@@ -315,18 +315,6 @@ const NEOSCALE_CSS = `
 
 /* ── Middle panel ── */
 .ns-middle-wrapper { width: 600px; height: 775px; perspective: 1400px; flex-shrink: 0; position: relative; }
-.ns-shell-back-btn {
-  position: absolute; top: 12px; left: 12px; z-index: 50;
-  display: inline-flex; align-items: center; gap: 6px;
-  height: 32px; padding: 0 12px 0 10px; border-radius: 999px;
-  background: rgba(15,15,20,0.72); backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.85); font-family: Inter, sans-serif;
-  font-size: 12px; font-weight: 600; cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-.ns-shell-back-btn:hover { background: rgba(232,87,26,0.18); color: #fff; border-color: rgba(232,87,26,0.45); }
 .ns-middle-flipper {
   width: 100%; height: 100%;
   position: relative;
@@ -1657,7 +1645,6 @@ export function NeoScaleShell() {
     if (meta) {
       return (
         <div className="ns-page-shell">
-          <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
           <div className="ns-page-body">
             <Outlet />
           </div>
@@ -1665,15 +1652,9 @@ export function NeoScaleShell() {
       );
     }
 
-    /* Fallback — all other routes.
-       Content detail pages and upload render their own inline back button,
-       so suppress the sticky ns-back-btn there to reclaim header height. */
+    /* Fallback — all other routes. Pages render their own ShellHeader. */
     return (
       <div className="ns-page-shell">
-        {!path.startsWith('/upload') &&
-         !path.startsWith('/content/') && (
-          <button className="ns-back-btn" onClick={handleBackBtn}>← Back</button>
-        )}
         <div className="ns-page-body">
           <Outlet />
         </div>
@@ -1767,17 +1748,7 @@ export function NeoScaleShell() {
 
           {/* ═══ MIDDLE PANEL ═══ */}
           <div className="ns-middle-wrapper">
-            {location.pathname !== "/" && breakpoint !== "mobile" && (
-              <button
-                type="button"
-                className="ns-shell-back-btn"
-                onClick={() => navigate(-1)}
-                aria-label="Go back"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-                Back
-              </button>
-            )}
+
             {isMessages ? (
               <LiquidGlassPanel cornerRadius={20} elasticity={0.15} contentStyle={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <Outlet />

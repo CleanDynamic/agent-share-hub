@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { displayContentType } from "@/lib/content-types";
+import { ShellHeader } from "@/components/shell/ShellHeader";
 
 function completionCount(item: any): { filled: number; total: number } {
   const total = 5;
@@ -80,14 +81,14 @@ export default function DraftsPage() {
   if (loading) return null;
 
   return (
-    <div style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24 }}>
+    <div style={{ paddingBottom: 40 }}>
       <SeoHead title="Drafts — NeoScale AI" description="Manage your draft posts." path="/drafts" noIndex />
-      <div className="mx-auto max-w-3xl">
-        <div className="flex justify-end mb-6">
-          <Button size="sm" className="min-h-[44px]" onClick={() => openUploadTypePicker()}>
-            <Plus className="h-4 w-4 mr-1.5" /> New draft
-          </Button>
-        </div>
+      <ShellHeader
+        onBack={() => navigate(-1)}
+        primaryAction={{ label: "New draft", icon: Plus, onClick: () => openUploadTypePicker() }}
+      />
+      <div className="mx-auto max-w-3xl" style={{ paddingLeft: 24, paddingRight: 24 }}>
+
 
         {/* List */}
         {isLoading ? (
