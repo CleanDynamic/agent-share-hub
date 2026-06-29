@@ -48,7 +48,7 @@ const BUCKET = "profile-assets";
 
 function ProfileSkeleton() {
   return (
-    <div className="w-full max-w-[880px] mx-auto px-4 py-6 space-y-4">
+    <div className="w-full max-w-[600px] mx-auto px-4 py-6 space-y-4">
       <Skeleton className="h-52 w-full rounded-xl" />
       <div className="px-2 -mt-12 flex items-end gap-4">
         <Skeleton className="h-24 w-24 rounded-full" />
