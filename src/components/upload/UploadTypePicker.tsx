@@ -310,7 +310,7 @@ export function UploadTypePicker({
         </div>
 
         <div className={isDesktop ? "grid grid-cols-2 gap-3" : "flex flex-col gap-2.5"}>
-          {contentOptions.map((option, index) => (
+          {visibleOptions.map((option, index) => (
             <OptionCard
               key={option.type}
               option={option}
