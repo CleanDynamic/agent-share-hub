@@ -288,8 +288,6 @@ export default function Analytics() {
               <EngagementGrid counters={progress?.counters ?? {}} />
             )}
 
-            <SectionHeader title="Your content" subtitle="The classic analytics view, preserved." />
-            <ContentAnalyticsSection userId={user.id} />
           </>
         )}
 
