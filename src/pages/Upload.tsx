@@ -309,6 +309,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const [bountyDeadlineDays, setBountyDeadlineDays] = useState<number | null>(null);
   const [bountyGap, setBountyGap] = useState("");
   const [bountyBlueprintRequired, setBountyBlueprintRequired] = useState(true);
+  const [isRemixable, setIsRemixable] = useState(false);
   const [blueprintExpanded, setBlueprintExpanded] = useState(false);
   const [discussionThreads, setDiscussionThreads] = useState<string[]>(['']);
   // Evidence state
