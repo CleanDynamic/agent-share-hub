@@ -2389,6 +2389,60 @@ function SpawnedFromMetaBanner({ parentId }: { parentId: string }) {
   );
 }
 
+// ─── Remix lineage row (attribution chip + descendant badge + remix button) ───
+function RemixLineageRow({
+  postId,
+  isRemixable,
+  isOwnPost,
+  remixerId,
+  onRemixed,
+}: {
+  postId: string;
+  isRemixable: boolean;
+  isOwnPost: boolean;
+  remixerId: string | null;
+  onRemixed: (draftId: string, postType: "blueprint" | "blog" | "bounty") => void;
+}) {
+  const { data: parent } = useLineageParent(postId);
+  const { data: remixCount = 0 } = useRemixCount(postId);
+  const showRemixButton = isRemixable && !isOwnPost && !!remixerId;
+  if (!parent && remixCount === 0 && !showRemixButton) return null;
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 10,
+        alignItems: "center",
+        padding: "0 0 14px",
+      }}
+    >
+      {parent && (
+        <AttributionChip
+          authorHandle={parent.authorHandle}
+          title={parent.title}
+          deleted={parent.deleted}
+        />
+      )}
+      {remixCount > 0 && <DescendantBadge count={remixCount} interactive={false} />}
+      {showRemixButton && (
+        <div style={{ marginLeft: "auto" }}>
+          <RemixButton
+            onRemix={async () => {
+              try {
+                const res = await createRemix({ sourcePostId: postId, remixerId: remixerId! });
+                onRemixed(res.draftId, res.postType);
+              } catch (err) {
+                console.error("[Remix] createRemix failed", err);
+              }
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function relativeShort(iso: string): string {
   try {
