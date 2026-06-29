@@ -63,6 +63,7 @@ export function UploadPickerProvider({ children }: { children: ReactNode }) {
       const tag = t?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || t?.isContentEditable) return;
       e.preventDefault();
+      setMode("all");
       setIsOpen(true);
     };
     window.addEventListener("keydown", handler);
