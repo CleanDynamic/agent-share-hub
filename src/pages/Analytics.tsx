@@ -236,6 +236,19 @@ export default function Analytics() {
               }
             />
 
+            {surfaces?.depth_revealed && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <FreezeIndicator
+                  used={(progress as any)?.freezes_used_month ?? 0}
+                  total={2}
+                />
+                <StreakCalendar
+                  days={(streakDaysQ.data ?? []).map((d) => ({ date: d.date, state: d.kind === "frozen" ? "frozen" : "active" })) as any}
+                  currentStreak={progress?.streak_days ?? 0}
+                />
+              </div>
+            )}
+
             {overviewSurfaces.quest && (
               <QuestChecklist
                 steps={questSteps as any}
