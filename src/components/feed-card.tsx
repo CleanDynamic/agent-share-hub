@@ -9,6 +9,7 @@ import { useReblogCompose } from "@/contexts/ReblogComposeContext"
 import { useToast } from "@/hooks/use-toast"
 import { getPrimaryTypeLabel } from "@/lib/content-types"
 import ActionXpHint from "@/components/ambient/ActionXpHint"
+import { AvatarLevelRing } from "@/components/profile-game/AvatarLevelRing"
 
 
 const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
@@ -60,6 +61,7 @@ export interface FeedPost {
   use_cases?: string[]
   custom_tags?: string[]
   author: {
+    id?: string
     display_name: string
     username: string
     avatar_url?: string
@@ -250,26 +252,28 @@ export function FeedCard({ post }: { post: FeedPost }) {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
           <AccountHoverCard account={post.author}>
-            {post.author.avatar_url ? (
-              <img
-                src={post.author.avatar_url}
-                alt={post.author.display_name}
-                style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 12, fontWeight: 600, flexShrink: 0,
-                  background: avatarStyle?.bg,
-                  color: avatarStyle?.color,
-                  border: `1px solid ${avatarStyle?.border}`,
-                }}
-              >
-                {initials}
-              </div>
-            )}
+            <AvatarLevelRing userId={post.author.id} size={36}>
+              {post.author.avatar_url ? (
+                <img
+                  src={post.author.avatar_url}
+                  alt={post.author.display_name}
+                  style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "100%", height: "100%", borderRadius: "50%",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 12, fontWeight: 600,
+                    background: avatarStyle?.bg,
+                    color: avatarStyle?.color,
+                    border: `1px solid ${avatarStyle?.border}`,
+                  }}
+                >
+                  {initials}
+                </div>
+              )}
+            </AvatarLevelRing>
           </AccountHoverCard>
 
           <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>

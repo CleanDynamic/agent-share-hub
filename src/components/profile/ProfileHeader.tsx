@@ -16,6 +16,8 @@ interface ProfileHeaderProps {
   profile: ProfileSummary;
   isFollowing?: boolean;
   isTrustedSolver?: boolean;
+  /** When true, the avatar + name + handle + verified + level chip row is omitted. */
+  hideIdentity?: boolean;
   onEditProfile?: () => void;
   onShareProfile?: () => void;
   onFollow?: () => void;
@@ -67,6 +69,7 @@ export function ProfileHeader({
   profile,
   isFollowing = false,
   isTrustedSolver = false,
+  hideIdentity = false,
   onEditProfile,
   onShareProfile,
   onFollow,
@@ -124,71 +127,74 @@ export function ProfileHeader({
       <div className="relative px-4 sm:px-6">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4 -mt-12 sm:-mt-14">
           {/* Avatar + Name */}
-          <div className="flex items-end gap-4 min-w-0">
-            <div className="relative shrink-0">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-background bg-muted ring-1 ring-white/10">
-                {profile.avatarUrl ? (
-                  <img
-                    src={profile.avatarUrl}
-                    alt={profile.displayName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div
-                    className="w-full h-full flex items-center justify-center text-3xl font-semibold text-foreground/70 bg-gradient-to-br from-primary/30 to-accent/30"
+          {!hideIdentity && (
+            <div className="flex items-end gap-4 min-w-0">
+              <div className="relative shrink-0">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-background bg-muted ring-1 ring-white/10">
+                  {profile.avatarUrl ? (
+                    <img
+                      src={profile.avatarUrl}
+                      alt={profile.displayName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center text-3xl font-semibold text-foreground/70 bg-gradient-to-br from-primary/30 to-accent/30"
+                      style={{ fontFamily: "Playfair Display, serif" }}
+                    >
+                      {initials}
+                    </div>
+                  )}
+                </div>
+                {isOwnProfile && (
+                  <button
+                    type="button"
+                    onClick={onAvatarEdit}
+                    aria-label="Change avatar"
+                    className="absolute bottom-1 right-1 inline-flex items-center justify-center w-7 h-7 rounded-full bg-black/55 text-white/90 hover:bg-black/75 border border-white/10 backdrop-blur-sm"
+                  >
+                    <Camera size={12} />
+                  </button>
+                )}
+              </div>
+
+              <div className="min-w-0 pb-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1
+                    className="text-xl sm:text-2xl font-semibold text-foreground truncate"
                     style={{ fontFamily: "Playfair Display, serif" }}
                   >
-                    {initials}
-                  </div>
-                )}
-              </div>
-              {isOwnProfile && (
-                <button
-                  type="button"
-                  onClick={onAvatarEdit}
-                  aria-label="Change avatar"
-                  className="absolute bottom-1 right-1 inline-flex items-center justify-center w-7 h-7 rounded-full bg-black/55 text-white/90 hover:bg-black/75 border border-white/10 backdrop-blur-sm"
+                    {profile.displayName}
+                  </h1>
+                  {profile.isVerified && (
+                    <BadgeCheck size={18} className="text-primary shrink-0" aria-label="Verified" />
+                  )}
+                  <LevelBadge level={profile.level} />
+                  {isTrustedSolver && (
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        backgroundColor: "hsl(var(--accent) / 0.15)",
+                        color: "hsl(var(--accent-foreground))",
+                      }}
+                      title="Accepted ≥5 bounty solutions with ≥60% acceptance rate"
+                    >
+                      <BadgeCheck size={10} />
+                      TRUSTED SOLVER
+                    </span>
+                  )}
+                </div>
+                <p
+                  className="text-sm text-muted-foreground"
+                  style={{ fontFamily: "Inter, sans-serif" }}
                 >
-                  <Camera size={12} />
-                </button>
-              )}
-            </div>
-
-            <div className="min-w-0 pb-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1
-                  className="text-xl sm:text-2xl font-semibold text-foreground truncate"
-                  style={{ fontFamily: "Playfair Display, serif" }}
-                >
-                  {profile.displayName}
-                </h1>
-                {profile.isVerified && (
-                  <BadgeCheck size={18} className="text-primary shrink-0" aria-label="Verified" />
-                )}
-                <LevelBadge level={profile.level} />
-                {isTrustedSolver && (
-                  <span
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      backgroundColor: "hsl(var(--accent) / 0.15)",
-                      color: "hsl(var(--accent-foreground))",
-                    }}
-                    title="Accepted ≥5 bounty solutions with ≥60% acceptance rate"
-                  >
-                    <BadgeCheck size={10} />
-                    TRUSTED SOLVER
-                  </span>
-                )}
+                  @{profile.handle}
+                </p>
               </div>
-              <p
-                className="text-sm text-muted-foreground"
-                style={{ fontFamily: "Inter, sans-serif" }}
-              >
-                @{profile.handle}
-              </p>
             </div>
-          </div>
+          )}
+          {hideIdentity && <div className="min-w-0" />}
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2 pb-1 shrink-0 flex-wrap">

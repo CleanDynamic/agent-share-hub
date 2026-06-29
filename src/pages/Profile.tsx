@@ -32,6 +32,14 @@ import { getZoneContent } from "@/lib/profile/getZoneContent";
 import type { Primitive, ZoneItem } from "@/lib/profile/types";
 import { createDirectThread, sendTextMessage } from "@/lib/messaging";
 import { MessageComposeModal } from "@/components/messages/MessageComposeModal";
+import ProfileLevelHeader from "@/components/profile-game/ProfileLevelHeader";
+import ProfileStatsBar from "@/components/profile-game/ProfileStatsBar";
+import ShowcaseSection from "@/components/profile-game/ShowcaseSection";
+import FounderMark from "@/components/profile-game/FounderMark";
+import { useProfileGameData } from "@/hooks/useProfileGameData";
+import { Sparkles, Trophy, Flame, Zap, Award } from "lucide-react";
+import type { CreatorMark } from "@/components/profile-game/CreatorMarkChip";
+import type { ShowcaseItem } from "@/components/profile-game/ShowcaseStrip";
 
 const PAGE_SIZE = 20;
 const VALID_ZONES: Zone[] = ["authored", "curated", "activity", "network"];
@@ -506,7 +514,59 @@ export default function Profile() {
     [updateParams]
   );
 
-  // ── Render ─────────────────────────────────────────────────────────────
+  // Profile-game (level / xp / streak / marks / founder badge)
+  const { data: gameData } = useProfileGameData(summary?.id ?? null);
+  const creatorMarks: CreatorMark[] = useMemo(() => {
+    return (gameData?.marks ?? []).slice(0, 3).map((m) => ({
+      id: m.id,
+      label:
+        typeof m.metadata?.label === "string"
+          ? m.metadata.label
+          : m.mark_key.replace(/_/g, " "),
+      icon: Sparkles,
+    }));
+  }, [gameData]);
+
+  const profileStats = useMemo(() => {
+    return [
+      {
+        id: "level",
+        label: "Level",
+        value: gameData?.level ?? 1,
+        icon: Zap,
+      },
+      {
+        id: "xp",
+        label: "XP",
+        value: (gameData?.xpTotal ?? 0).toLocaleString(),
+        icon: Trophy,
+      },
+      {
+        id: "streak",
+        label: "Streak",
+        value: `${gameData?.streakDays ?? 0}d`,
+        icon: Flame,
+      },
+      {
+        id: "marks",
+        label: "Marks",
+        value: gameData?.marksCount ?? 0,
+        icon: Award,
+      },
+    ];
+  }, [gameData]);
+
+  const showcaseItems: ShowcaseItem[] = useMemo(() => {
+    return zoneItems.slice(0, 6).map((item: any) => ({
+      id: item.id,
+      title: item.title ?? "Untitled",
+      imageUrl: item.coverUrl ?? item.thumbnailUrl ?? undefined,
+      likes: Number(item.likeCount ?? item.likes ?? 0),
+      views: Number(item.viewCount ?? item.views ?? 0),
+    }));
+  }, [zoneItems]);
+
+
   if (authLoading || isLoading || !lookup) return <ProfileSkeleton />;
   if (error || !summary) {
     return (
@@ -526,10 +586,32 @@ export default function Profile() {
         path={handle ? `/profile/${handle}` : "/profile"}
       />
       <div className="w-full max-w-[880px] mx-auto px-4 py-6">
+        <div className="space-y-3">
+          <ProfileLevelHeader
+            user={{
+              name: summary.displayName ?? `@${summary.handle}`,
+              handle: `@${summary.handle}`,
+              verified: !!summary.isVerified,
+            }}
+            level={gameData?.level ?? 1}
+            progressPct={gameData?.progressPct ?? 0}
+            creatorMarks={creatorMarks}
+            handleAccessory={
+              gameData?.founderBadge ? (
+                <FounderMark
+                  memberNumber={gameData.founderBadge.memberNumber ?? undefined}
+                />
+              ) : undefined
+            }
+          />
+          <ProfileStatsBar stats={profileStats} />
+        </div>
+
         <ProfileHeader
           profile={summary}
           isFollowing={!!summary.isFollowing}
           isTrustedSolver={!!authorStats?.isTrustedSolver}
+          hideIdentity
           onEditProfile={() => setEditOpen(true)}
           onShareProfile={handleShare}
           onFollow={handleFollow}
@@ -592,6 +674,15 @@ export default function Profile() {
           onPrimitiveClick={handlePrimitiveClick}
           onViewAllClick={handleViewAllReferenced}
         />
+
+        {showcaseItems.length > 0 && (
+          <ShowcaseSection
+            items={showcaseItems}
+            autoPinned
+            onViewAll={() => navigate("/analytics?tab=trophies")}
+          />
+        )}
+
 
         {/* Profile zones (authored / curated / activity / network). */}
         <div id="profile-zones">
