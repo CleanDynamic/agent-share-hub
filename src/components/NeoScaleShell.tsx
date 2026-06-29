@@ -21,6 +21,8 @@ import { MobileTopBar, type PageContextType } from "@/components/shell/MobileTop
 import { MobileBottomNav, type MobileRoute } from "@/components/shell/MobileBottomNav";
 import { ProfileDrawer, type DrawerRoute } from "@/components/shell/ProfileDrawer";
 import { RightRailDrawer } from "@/components/shell/RightRailDrawer";
+import NavProgressChip from "@/components/ambient/NavProgressChip";
+import { useProgress } from "@/hooks/useProgress";
 
 /* ────────────────────────────────────────────────
    Shell structure (Step 14.1 — responsive chrome)
@@ -1716,8 +1718,17 @@ export function NeoScaleShell() {
               <div className="ns-nav-spacer" />
             </ul>
 
+            {/* Ambient progress chip — directly above the user/avatar block */}
+            {isLoggedIn && (
+              <div style={{ padding: "0 12px 10px" }}>
+                <NavProgressChipMount onClick={() => { doFlip('back', 'left'); navigate('/analytics'); }} />
+              </div>
+            )}
+
             {/* User section at bottom */}
             <div className="ns-user-section" style={{ position: "relative" }}>
+
+
               {isLoggedIn ? (
                 <>
                   <button className="ns-user-btn" onClick={() => setUserMenuOpen(!userMenuOpen)}>
@@ -2112,3 +2123,22 @@ export function NeoScaleShell() {
     </div>
   );
 }
+
+/**
+ * Wraps NavProgressChip with live progress data from useProgress.
+ * Defined here so the shell can reference it inline without circular imports.
+ */
+function NavProgressChipMount({ onClick }: { onClick?: () => void }) {
+  const { level, xpInLevel, xpForNext, progress } = useProgress();
+  return (
+    <div onClick={onClick} style={{ cursor: onClick ? "pointer" : "default" }}>
+      <NavProgressChip
+        level={level}
+        xpIntoLevel={xpInLevel}
+        xpForLevel={xpForNext}
+        totalXp={progress?.xp_total}
+      />
+    </div>
+  );
+}
+

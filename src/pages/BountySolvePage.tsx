@@ -208,6 +208,9 @@ export default function BountySolvePage() {
       await updateSolutionDraft(draft.id, { contentPayload: payload, solverNote });
       await submitSolution(draft.id);
       toast({ title: "Solution submitted" });
+      window.dispatchEvent(
+        new CustomEvent("gamification:post-xp", { detail: { xp: 30, label: "Solution submitted" } }),
+      );
       navigate(`/b/${slug}`);
     } catch (e: any) {
       toast({ title: "Submit failed", description: e?.message, variant: "destructive" });

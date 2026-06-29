@@ -11,6 +11,7 @@ import { CollabInvitePicker, type CollabInvitee } from "@/components/CollabInvit
 import { useToast } from "@/hooks/use-toast";
 import { useApprovedToolNames, useGroupedApprovedTools } from "@/hooks/useApprovedTools";
 import { SeoHead } from "@/components/SeoHead";
+import PostXpFootnote from "@/components/ambient/PostXpFootnote";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MentionInput } from "@/components/MentionInput";
@@ -1366,6 +1367,9 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         <p className="text-sm text-muted-foreground max-w-md">
           Your blueprint has been published and is now visible in the feed.
         </p>
+        <div className="mt-2">
+          <PostXpFootnote xp={50} label="Blueprint published" autoHideMs={0} />
+        </div>
         <div className="flex gap-3 mt-4">
           {insertedContentId && (
             <Button onClick={() => navigate(`/content/${insertedContentId}`)}>View Post</Button>
@@ -1375,6 +1379,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
       </div>
     );
   }
+
 
   if (draftLoading) {
     return (

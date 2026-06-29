@@ -10,6 +10,8 @@ import {
   PenSquare,
   Users,
 } from "lucide-react";
+import ActionXpHint from "@/components/ambient/ActionXpHint";
+
 
 interface Post {
   id: string;
@@ -229,6 +231,7 @@ export function FloatingEngagementBar({
         zIndex: 40,
       }}
     >
+      <ActionXpHintLike active={post.hasLiked}>
       <ActionButton
         icon={
           <Heart
@@ -243,6 +246,8 @@ export function FloatingEngagementBar({
         onClick={onLike}
         tooltip="Like (L)"
       />
+      </ActionXpHintLike>
+
       <ActionButton
         icon={<MessageCircle size={16} />}
         count={counts.comments}
@@ -270,6 +275,7 @@ export function FloatingEngagementBar({
         />
       )}
       <Separator />
+      <ActionXpHintBookmark active={post.hasBookmarked}>
       <ActionButton
         buttonRef={bookmarkRef}
         icon={
@@ -284,18 +290,22 @@ export function FloatingEngagementBar({
         onClick={(e) => onBookmark(e.currentTarget)}
         tooltip="Save to Library (B)"
       />
+      </ActionXpHintBookmark>
       <ActionButton
         buttonRef={shareRef}
         icon={<Share2 size={16} />}
         onClick={(e) => onShare(e.currentTarget)}
         tooltip="Share"
       />
+      <ActionXpHintDownload>
       <ActionButton
         buttonRef={exportRef}
         icon={<Download size={16} />}
         onClick={(e) => onExport(e.currentTarget)}
         tooltip="Download or copy as data (E)"
       />
+      </ActionXpHintDownload>
+
       {isBountyPost && onSubmitSolution && (
         <>
           <Separator />
@@ -322,4 +332,36 @@ export function FloatingEngagementBar({
   );
 }
 
+/** Wrappers fire ActionXpHint only when activation transitions false→true. */
+function useEdgeTrigger(active: boolean) {
+  const [trigger, setTrigger] = React.useState(0);
+  const prev = React.useRef(active);
+  React.useEffect(() => {
+    if (!prev.current && active) setTrigger((n) => n + 1);
+    prev.current = active;
+  }, [active]);
+  return trigger;
+}
+
+function ActionXpHintLike({ active, children }: { active: boolean; children: React.ReactNode }) {
+  const trigger = useEdgeTrigger(active);
+  return <ActionXpHint amount={1} trigger={trigger}>{children}</ActionXpHint>;
+}
+
+function ActionXpHintBookmark({ active, children }: { active: boolean; children: React.ReactNode }) {
+  const trigger = useEdgeTrigger(active);
+  return <ActionXpHint amount={1} trigger={trigger}>{children}</ActionXpHint>;
+}
+
+function ActionXpHintDownload({ children }: { children: React.ReactNode }) {
+  // Download fires every successful click — child onClick wraps stay intact.
+  const [trigger, setTrigger] = React.useState(0);
+  return (
+    <span onClick={() => setTrigger((n) => n + 1)} style={{ display: "inline-flex" }}>
+      <ActionXpHint amount={2} trigger={trigger}>{children}</ActionXpHint>
+    </span>
+  );
+}
+
 export default FloatingEngagementBar;
+
