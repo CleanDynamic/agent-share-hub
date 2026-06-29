@@ -47,6 +47,13 @@ import { creatorMarks as creatorMarksCatalog, cabinetBadges } from "@/components
 // Streaks
 import StreakFlame from "@/components/streaks/streak-flame";
 import StreakInlineNote from "@/components/streaks/streak-inline-note";
+import StreakCalendar from "@/components/streaks/streak-calendar";
+import FreezeIndicator from "@/components/streaks/freeze-indicator";
+
+// L2 tabs
+import SkillTreeTab from "@/components/progress/SkillTreeTab";
+import ChallengesTab from "@/components/progress/ChallengesTab";
+import { useStreakDays } from "@/hooks/useProgress";
 
 type Range = "7" | "30" | "90";
 const RANGE_OPTIONS: { value: Range; label: string }[] = [
@@ -57,7 +64,9 @@ const RANGE_OPTIONS: { value: Range; label: string }[] = [
 
 const TAB_LABELS: Record<string, string> = {
   overview: "Overview",
+  skill_tree: "Skill tree",
   trophies: "Trophies",
+  challenges: "Challenges",
   history: "History",
 };
 
