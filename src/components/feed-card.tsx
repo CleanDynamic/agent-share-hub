@@ -134,11 +134,11 @@ export function FeedCard({ post }: { post: FeedPost }) {
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.view_count ?? 0)
   const [likeXpTrigger, setLikeXpTrigger] = useState(0)
-  const [saved, setSaved] = useState(false);
   const [saveXpTrigger, setSaveXpTrigger] = useState(0);
 
   const { openReblog } = useReblogCompose()
-  const [copied2_unused] = useState(false); // (saved already declared above)
+  const [saved, setSaved] = useState(false)
+
 
   const [copied, setCopied] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
