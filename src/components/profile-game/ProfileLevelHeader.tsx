@@ -21,6 +21,8 @@ export interface ProfileLevelHeaderProps {
   track?: TrackName
   /** Tier number paired with the track ribbon. */
   tier?: number
+  /** Optional slot rendered beside the handle (e.g. FounderMark crown chip). */
+  handleAccessory?: ReactNode
 }
 
 /**
