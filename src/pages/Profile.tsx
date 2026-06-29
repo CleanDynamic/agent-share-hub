@@ -570,7 +570,7 @@ export default function Profile() {
   if (authLoading || isLoading || !lookup) return <ProfileSkeleton />;
   if (error || !summary) {
     return (
-      <div className="max-w-[880px] mx-auto px-4 py-12 text-center text-muted-foreground">
+      <div className="max-w-[600px] mx-auto px-4 py-12 text-center text-muted-foreground">
         <p>Profile not found.</p>
       </div>
     );
