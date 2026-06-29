@@ -78,6 +78,7 @@ export function UploadPickerProvider({ children }: { children: ReactNode }) {
         onClose={handleClose}
         variant={isMobile ? "mobile" : "desktop"}
         onSelect={handleSelect}
+        mode={mode}
       />
     </UploadPickerContext.Provider>
   );
