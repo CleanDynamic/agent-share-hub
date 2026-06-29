@@ -8,6 +8,7 @@ interface UploadTypePickerProps {
   onClose: () => void
   variant: "desktop" | "mobile"
   onSelect: (type: UploadContentType) => void
+  mode?: "all" | "bounty"
 }
 
 const contentOptions: Array<{
