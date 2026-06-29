@@ -634,6 +634,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
         borderTop: "1px solid rgba(255, 255, 255, 0.14)",
       }}>
         {/* Like */}
+        <ActionXpHint amount={1} trigger={likeXpTrigger}>
         <button
           style={{
             display: "flex", alignItems: "center", gap: 6,
@@ -644,13 +645,17 @@ export function FeedCard({ post }: { post: FeedPost }) {
           }}
           onClick={e => {
             e.stopPropagation();
+            const willLike = !liked;
             setLiked(p => !p);
             setLikeCount(p => liked ? p - 1 : p + 1);
+            if (willLike) setLikeXpTrigger(n => n + 1);
           }}
         >
           <Heart size={15} fill={liked ? "currentColor" : "none"} />
           <span>{likeCount}</span>
         </button>
+        </ActionXpHint>
+
 
         {/* Comment */}
         <button
@@ -711,6 +716,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
         </button>
 
         {/* Save */}
+        <ActionXpHint amount={1} trigger={saveXpTrigger}>
         <button
           onClick={async e => {
             e.stopPropagation();
@@ -733,6 +739,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
                   content_id: post.id,
                 } as any);
               setSaved(true);
+              setSaveXpTrigger(n => n + 1);
             }
           }}
           style={{
@@ -748,6 +755,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
         >
           <svg width="13" height="13" viewBox="0 0 24 24"
             fill={saved ? 'currentColor' : 'none'}
+
             stroke="currentColor" strokeWidth="2"
             strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
