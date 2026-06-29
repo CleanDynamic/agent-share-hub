@@ -1481,8 +1481,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               display: 'flex',
               justifyContent: 'center',
             }}>
-              <div style={{ width: '100%', maxWidth: 720 }}>
-                <ArticleEditor
+              <ArticleEditor
                   canvasDoc={canvasDoc}
                   initialContent={
                     (canvasDoc as any)._articleBody
@@ -1533,7 +1532,6 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   editable
                   mode={mode}
                 />
-              </div>
             </div>
           </div>
         )}

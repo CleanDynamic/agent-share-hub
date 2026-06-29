@@ -747,29 +747,29 @@ export function ArticleEditor({
   return (
     <div
       ref={editorContainerRef}
-      style={{ position: 'relative', flex: 1, width: '100%', maxWidth: isBlog ? 760 : 720, margin: '0 auto' }}
+      style={{ position: 'relative', flex: 1, width: '100%', maxWidth: isBlog ? 760 : 720, margin: '0 auto', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}
     >
       {/* Editor styles */}
       <style>{`
         .tiptap-article {
           width: 100%;
-          max-width: ${isBlog ? 760 : 720}px;
-          margin: 0 auto;
           min-height: 300px;
           background: ${focusMode === 'focus' ? 'hsl(var(--foreground) / 0.015)' : 'transparent'};
           border: ${focusMode === 'focus' ? `0.5px solid ${editorFocused ? 'hsl(var(--foreground) / 0.08)' : 'hsl(var(--foreground) / 0.05)'}` : '0.5px solid transparent'};
           border-radius: 8px;
           transition: border-color 200ms ease, background 200ms ease;
+          box-sizing: border-box;
         }
         .tiptap-article .ProseMirror {
           font-family: 'Inter', sans-serif;
           font-size: ${isBlog ? 16 : 15}px;
-          line-height: ${isBlog ? 1.85 : 1.0};
+          line-height: ${isBlog ? 1.85 : 1.5};
           color: hsl(var(--foreground) / 0.92);
-          padding: 48px 24px 32px;
+          padding: 32px 2px 28px;
           min-height: 300px;
           outline: none;
           caret-color: hsl(18 79% 54%);
+          box-sizing: border-box;
         }
         .tiptap-article .ProseMirror-focused {
           caret-color: hsl(18 79% 54%);
@@ -1086,15 +1086,11 @@ export function ArticleEditor({
       />
 
       <TableContextMenu editor={editor}>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', width: '100%' }}>
           <EditorContent
             editor={editor}
             className="tiptap-article"
-            style={{
-              width: '100%',
-              maxWidth: isBlog ? 760 : 720,
-              margin: '0 auto',
-            }}
+            style={{ width: '100%' }}
           />
           {isBounty &&
           editor?.isEmpty &&
