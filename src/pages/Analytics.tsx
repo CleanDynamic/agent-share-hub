@@ -1,28 +1,15 @@
 import { useState, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
 import { ShellHeader } from "@/components/shell/ShellHeader";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from "recharts";
-import { Eye, Download, Star, TrendingUp, TrendingDown, FileText, Image, Paperclip, Sparkles, Zap } from "lucide-react";
-import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
-import { format, subDays, eachDayOfInterval } from "date-fns";
+import { Sparkles, Zap } from "lucide-react";
 import { useProgress, useXpEvents, useClaimChallenge } from "@/hooks/useProgress";
 import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { toast } from "@/hooks/use-toast";
+
 
 // Progress UI
 import ProgressTabBar from "@/components/progress/ProgressTabBar";
