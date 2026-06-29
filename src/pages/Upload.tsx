@@ -431,6 +431,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         if ((item as any).cover_image_url) setCoverImagePreview((item as any).cover_image_url);
         if ((item as any).topics?.length > 0) setSelectedTopics((item as any).topics);
         if ((item as any).pwyw_floor_gbp) setPwywFloor(Number((item as any).pwyw_floor_gbp));
+        if (typeof (item as any).is_remixable === "boolean") setIsRemixable((item as any).is_remixable);
 
         // WTE blocks
         if ((item as any).what_to_expect_blocks) {
