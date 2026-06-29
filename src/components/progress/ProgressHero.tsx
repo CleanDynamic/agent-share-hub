@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
+import { Sparkles, type LucideIcon } from "lucide-react";
 import LevelRing from "./xp-kit/level-ring";
 import XpBar from "./xp-kit/xp-bar";
 import CreatorMarkChip from "./xp-kit/creator-mark-chip";
+
 
 export interface ProgressHeroMark {
   id: string;
