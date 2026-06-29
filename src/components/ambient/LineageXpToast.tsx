@@ -1,5 +1,6 @@
 import { GitFork, X } from 'lucide-react'
-import { tokens, fontMono, xpColor } from './tokens'
+import { tokens, xpColor } from './tokens'
+const fontMono = tokens.fontMono
 
 export interface LineageXpToastProps {
   xp: number
