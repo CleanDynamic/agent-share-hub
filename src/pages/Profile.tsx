@@ -525,34 +525,8 @@ export default function Profile() {
     }));
   }, [gameData]);
 
-  const profileStats = useMemo(() => {
-    return [
-      {
-        id: "level",
-        label: "Level",
-        value: gameData?.level ?? 1,
-        icon: Zap,
-      },
-      {
-        id: "xp",
-        label: "XP",
-        value: (gameData?.xpTotal ?? 0).toLocaleString(),
-        icon: Trophy,
-      },
-      {
-        id: "streak",
-        label: "Streak",
-        value: `${gameData?.streakDays ?? 0}d`,
-        icon: Flame,
-      },
-      {
-        id: "marks",
-        label: "Marks",
-        value: gameData?.marksCount ?? 0,
-        icon: Award,
-      },
-    ];
-  }, [gameData]);
+
+
 
   const showcaseItems: ShowcaseItem[] = useMemo(() => {
     return zoneItems.slice(0, 6).map((item: any) => ({
