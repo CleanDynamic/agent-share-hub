@@ -320,6 +320,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const autosaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastAutosaveRef = useRef<Date | null>(null);
   const canvasDoc = useCanvasDocument(currentDraftId);
+  const { data: remixParent } = useLineageParent(currentDraftId);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
