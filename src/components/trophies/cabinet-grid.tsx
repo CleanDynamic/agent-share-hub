@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react"
 import type { Badge, BadgeCategory } from "./badge-data"
-import { BadgeTile } from "@/components/badge-tile"
-import { HiddenBadgeSlot } from "@/components/hidden-badge-slot"
-import { BadgeDetailModal } from "@/components/badge-detail-modal"
+import { BadgeTile } from "./badge-tile"
+import { HiddenBadgeSlot } from "./hidden-badge-slot"
+import { BadgeDetailModal } from "./badge-detail-modal"
 import { cn } from "@/lib/utils"
 
 interface CabinetGridProps {
