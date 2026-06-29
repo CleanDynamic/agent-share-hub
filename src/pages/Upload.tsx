@@ -292,6 +292,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const [tagInput, setTagInput] = useState("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  const [resultsCount, setResultsCount] = useState(0);
   const [toolUrl, setToolUrl] = useState("");
   const [toolSubtype, setToolSubtype] = useState<"api" | "local" | "">("");
   const [modelParameters, setModelParameters] = useState("");
