@@ -4149,6 +4149,48 @@ export type Database = {
           },
         ]
       }
+      user_badges: {
+        Row: {
+          badge_key: string
+          created_at: string
+          description: string | null
+          earned_at: string
+          id: string
+          metadata: Json
+          revealed_at: string | null
+          state: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_key: string
+          created_at?: string
+          description?: string | null
+          earned_at?: string
+          id?: string
+          metadata?: Json
+          revealed_at?: string | null
+          state?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_key?: string
+          created_at?: string
+          description?: string | null
+          earned_at?: string
+          id?: string
+          metadata?: Json
+          revealed_at?: string | null
+          state?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_interactions: {
         Row: {
           content_id: string
@@ -4288,6 +4330,7 @@ export type Database = {
           streak_days: number
           updated_at: string
           user_id: string
+          welcome_xp_shown_at: string | null
           xp_total: number
         }
         Insert: {
@@ -4300,6 +4343,7 @@ export type Database = {
           streak_days?: number
           updated_at?: string
           user_id: string
+          welcome_xp_shown_at?: string | null
           xp_total?: number
         }
         Update: {
@@ -4312,6 +4356,7 @@ export type Database = {
           streak_days?: number
           updated_at?: string
           user_id?: string
+          welcome_xp_shown_at?: string | null
           xp_total?: number
         }
         Relationships: []
@@ -4459,6 +4504,7 @@ export type Database = {
         Args: { _thread_id: string; _user_id: string }
         Returns: boolean
       }
+      mark_welcome_xp_shown: { Args: never; Returns: string }
       semantic_search: {
         Args: { match_count: number; query_embedding: string }
         Returns: {
