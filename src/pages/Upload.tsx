@@ -660,6 +660,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         article_body: validatedArticleBody ?? articleBody ?? null,
         blog_referenced_post_ids: mode === 'blog' ? referencedPostIds : null,
         stage_grids: stageGridsSnapshot,
+        is_remixable: isRemixable,
       };
 
       let draftIdToUse = currentDraftId;
