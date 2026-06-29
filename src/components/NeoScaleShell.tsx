@@ -21,6 +21,8 @@ import { MobileTopBar, type PageContextType } from "@/components/shell/MobileTop
 import { MobileBottomNav, type MobileRoute } from "@/components/shell/MobileBottomNav";
 import { ProfileDrawer, type DrawerRoute } from "@/components/shell/ProfileDrawer";
 import { RightRailDrawer } from "@/components/shell/RightRailDrawer";
+import NavProgressChip from "@/components/ambient/NavProgressChip";
+import { useProgress } from "@/hooks/useProgress";
 
 /* ────────────────────────────────────────────────
    Shell structure (Step 14.1 — responsive chrome)
@@ -1716,8 +1718,12 @@ export function NeoScaleShell() {
               <div className="ns-nav-spacer" />
             </ul>
 
+            {/* Ambient progress chip — directly above the user/avatar block */}
+            {isLoggedIn && <NavProgressChipMount />}
+
             {/* User section at bottom */}
             <div className="ns-user-section" style={{ position: "relative" }}>
+
               {isLoggedIn ? (
                 <>
                   <button className="ns-user-btn" onClick={() => setUserMenuOpen(!userMenuOpen)}>
