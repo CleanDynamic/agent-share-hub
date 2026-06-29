@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-export type ProgressTab = { id: string; label: string };
+export type ProgressTab = { id: string; label: string; isNew?: boolean };
 
 export interface ProgressTabBarProps {
   tabs: ProgressTab[];
@@ -16,6 +16,7 @@ export function ProgressTabBar({ tabs, active, onChange }: ProgressTabBarProps) 
     gap: 24,
     borderBottom: "0.5px solid rgba(255,255,255,0.10)",
     padding: "0 4px",
+    overflowX: "auto",
   };
   return (
     <div style={wrap}>
@@ -26,6 +27,7 @@ export function ProgressTabBar({ tabs, active, onChange }: ProgressTabBarProps) 
             key={t.id}
             onClick={() => onChange(t.id)}
             style={{
+              position: "relative",
               background: "transparent",
               border: 0,
               padding: "12px 0",
@@ -37,9 +39,26 @@ export function ProgressTabBar({ tabs, active, onChange }: ProgressTabBarProps) 
               cursor: "pointer",
               marginBottom: -0.5,
               textTransform: "capitalize",
+              whiteSpace: "nowrap",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
             }}
           >
             {t.label}
+            {t.isNew && (
+              <span
+                aria-label="New"
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: ORANGE,
+                  boxShadow: `0 0 8px ${ORANGE}`,
+                  display: "inline-block",
+                }}
+              />
+            )}
           </button>
         );
       })}
@@ -48,3 +67,4 @@ export function ProgressTabBar({ tabs, active, onChange }: ProgressTabBarProps) 
 }
 
 export default ProgressTabBar;
+
