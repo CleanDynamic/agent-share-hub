@@ -1719,10 +1719,15 @@ export function NeoScaleShell() {
             </ul>
 
             {/* Ambient progress chip — directly above the user/avatar block */}
-            {isLoggedIn && <NavProgressChipMount />}
+            {isLoggedIn && (
+              <div style={{ padding: "0 12px 10px" }}>
+                <NavProgressChipMount onClick={() => { doFlip('back', 'left'); navigate('/analytics'); }} />
+              </div>
+            )}
 
             {/* User section at bottom */}
             <div className="ns-user-section" style={{ position: "relative" }}>
+
 
               {isLoggedIn ? (
                 <>
