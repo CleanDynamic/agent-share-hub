@@ -1,38 +1,81 @@
-## Ambient Gamification Layer — Mount Plan (ready to build)
+## Goal
+Mount Session J's profile gamification surfaces on `/profile/:handle` (own + others) and swap feed-card avatars to wrap a 32px `LevelRing`. No business logic changes.
 
-Migration already approved & applied: `user_badges` table, `welcome_xp_shown_at` on `user_progress`, `mark_welcome_xp_shown()` RPC, realtime on both `user_badges` and `xp_events`.
+## 1. Add Session J components
+Place under `src/components/profile-game/` (renamed from `profile/` to avoid collision with existing `src/components/profile/`):
+- `tokens.ts`, `LevelRing.tsx`, `CreatorMarkChip.tsx`, `FounderMark.tsx`
+- `ProfileLevelHeader.tsx`, `ProfileStatsBar.tsx`, `ShowcaseStrip.tsx`, `ShowcaseSection.tsx`
+- `MasteryRibbons.tsx`, `VisitorCompareFooter.tsx` (placed, **not** mounted)
 
-### Files to create — `src/components/ambient/`
-Ported from Session L (xp/) and Session H (remix/LineageXpToast):
-- `tokens.ts`, `NavProgressChip.tsx`, `PostXpFootnote.tsx`, `ActionXpHintInner.tsx` (raw v0), `WelcomeXpModal.tsx`, `LineageXpToast.tsx`
-- Placed but unmounted: `DailyDigestCard.tsx`, `PerkGateTooltip.tsx`, `ChallengeNudgePill.tsx`
-- New thin shells:
-  - `XpToast.tsx` — small bottom-right toast for "+N XP · {reason}" (matches PostXpFootnote visual language but compact)
-  - `BadgeEarnedToast.tsx` — sienna-bordered badge card with title/description
-  - `ActionXpHint.tsx` — **wrapper** component: `<ActionXpHint amount n trigger>{children}</ActionXpHint>`. Renders child inside a `position:relative` span and overlays the v0 `ActionXpHintInner`. Zero changes to child markup, handlers, or layout.
-  - `GamificationToasts.tsx` — singleton toast bus
-  - `useWelcomeXp.ts` hook
+Port pass per project conventions:
+- Strip `"use client"` directives, swap `next/*` (none used).
+- Keep inline `style={{}}` token usage as-is (matches Phase 13 glass spec).
+- Default-export name preserved.
 
-### GamificationToasts behaviour
-- Mounted once in `Layout.tsx` (auth-gated tree).
-- Two Supabase realtime channels (random UUIDs):
-  - `xp_events` INSERT WHERE user_id=auth.uid() → coalesce within 2 s by `reason` prefix; `metadata.action_type in ('remix_received','lineage_cut')` routes to `LineageXpToast`; everything else to `XpToast`.
-  - `user_badges` INSERT WHERE user_id=auth.uid() → `state='earned'` shows `BadgeEarnedToast`; `state='pending_reveal'` is silently ignored.
-- Also listens for a `window` custom event `gamification:post-xp` so the bounty-solution submit (which has no success screen) can dispatch a PostXpFootnote without an extra success route.
-- Drives `WelcomeXpModal` via `useWelcomeXp`: on first authenticated session whose `user_progress.welcome_xp_shown_at IS NULL`, opens the modal once; CTA navigates `/analytics`; dismiss calls `mark_welcome_xp_shown` RPC. Covers both verify-email and OAuth-first-time paths because the modal triggers off Supabase session, not the auth callback page.
+## 2. Profile-scoped data fetch
+`useProgress()` is viewer-only. Add `src/lib/profile-game/getProfileGameData.ts` that takes a `userId` and returns:
+```
+{ level, xpTotal, xpInLevel, xpForNext, progressPct,
+  streakDays, marksCount, marks: CreatorMarkRow[],
+  founderBadge: { earned_at, metadata } | null }
+```
+Reads:
+- `user_progress` row → `xp_total`, `level`, `streak_days`
+- `creator_marks` (already used by `getCreatorMarks`)
+- `user_badges` where `badge_key='founder'` and `state in ('earned','revealed')` → founder presence. Member number = `metadata.member_number` if stored; else fall back to a `rank()` query over `user_badges` ordered by `earned_at` for that key.
 
-### Surface integrations
-- **NavProgressChip** — inserted in `NeoScaleShell.tsx` directly above the `.ns-user-section` (logged-in only); inserted in `ProfileDrawer.tsx` header below avatar/name. Both pull from `useProgress`. Click → `/analytics`.
-- **PostXpFootnote** — added to the Upload success screen (`src/pages/Upload.tsx` line ~1362) using XP from the `award_xp` RPC response wired into the existing publish mutation; `BountySolvePage.handleSubmit` dispatches the `gamification:post-xp` event after `submitSolution`.
-- **ActionXpHint wrapper** — wraps Like, Save, Download buttons in `src/components/feed-card.tsx` and the matching three actions in `src/components/content-detail/FloatingEngagementBar.tsx`. Fires on successful optimistic mutation only (skipped on rollback). No edits to existing button markup or handlers.
+Add a `useProfileGameData(userId)` React Query hook. Used for **both** own and visited profiles (own profile no longer needs `useProgress` here).
 
-### Explicitly NOT mounted / NOT touched
-- `DailyDigestCard`, `PerkGateTooltip`, `ChallengeNudgePill` — files placed, no imports elsewhere.
-- `FeedShell`, tab bar, compose strip — untouched.
+## 3. Profile page mount (`src/pages/Profile.tsx`)
+Replace ONLY the avatar + name block inside `ProfileHeader`. To avoid surgery inside that component, do this instead:
+- Keep `ProfileHeader` rendering as-is for cover, bio, follow button, stats stripe, tabs, zones, etc.
+- Add a new `headerOverride` slot prop OR (simpler, no API change) render `ProfileLevelHeader` **above** `ProfileHeader` and hide the avatar+name region of `ProfileHeader` via a new `hideIdentity` boolean prop. Implementation choice: add `hideIdentity?: boolean` to `ProfileHeader` — when true, render the cover strip, bio, meta, stats strip exactly as today but omit the avatar/initials block, display name, handle, verified badge, and level chip row. All other markup byte-identical.
 
-### Notes
-- Award-XP integration: the publish mutation already calls `award_xp` via the data layer hook; if the response shape isn't yet bubbled to the UI, I'll thread it through (returning `{ contentId, awardedXp, badgesEarned }` from the publish helper). The badge toast is fired automatically from the realtime channel, so no UI threading needed for that.
-- Toasts render in a bottom-right portal stack (z-index 1200) with FIFO eviction after 5.
-- Channel cleanup on Layout unmount; channels keyed by `auth.uid()` so they re-subscribe on user change.
+Order on the page (own + others, same for all):
+```
+ProfileLevelHeader  (LevelRing 80, name, handle, verified, FounderMark beside handle if founder, CreatorMarks row — pass marks.slice(0,3); track only if set, currently never)
+ProfileStatsBar     (4 L1 stats: Level, XP, Streak, Marks)
+ShowcaseSection     (autoPinned, "View cabinet →" → /analytics?tab=trophies)
+ProfileHeader hideIdentity   (cover, bio, follow, stats, etc.)
+MatchBanner / Welcome / inputs / AuthorStatsPanel / MostReferenced / Zones (unchanged)
+```
 
-Approve to switch to build mode and apply the file changes.
+Showcase items: derive from top creator_marks or featured authored content (use existing `referencedCards.slice(0, 6)` mapped to `ShowcaseItem` shape: `{ id, title, imageUrl, likes: 0, views: 0 }`). Stats bar values:
+- Level = `level`
+- XP = `xpTotal.toLocaleString()`
+- Streak = `streakDays`
+- Marks = `marksCount`
+
+Wire `"View cabinet →"` via a `useNavigate("/analytics?tab=trophies")` callback added to `ShowcaseSection` (pass as new optional `onViewAll` prop in the port).
+
+Visitor profiles use the same mounts — `VisitorCompareFooter` is **not** mounted.
+
+## 4. Feed-card avatar swap (`src/components/feed-card.tsx` lines 252–273)
+Wrap the existing `<img>` / initials `<div>` (unchanged markup) in `<LevelRing size={32} level={…} progressPct={…} color={tokens.xp} style={{}}>` via a tiny `<AvatarLevelRing>` adapter under `src/components/profile-game/AvatarLevelRing.tsx` that:
+- Accepts `userId`, renders `LevelRing size={32}` whose inner ring slot is the existing avatar markup (use a `children` slot variant — add a new `children?: ReactNode` prop to the ported `LevelRing` that, when present, replaces the centre level number with the children at full ring inset).
+- Reads `level`/`progressPct` from a lightweight cached query keyed by `userId` (reuse `useProfileGameData`, but with `staleTime: 60_000` and `gcTime: 300_000` to keep feeds cheap).
+- Falls back to `level=1, progressPct=0` while loading — ring still renders.
+
+Footprint: 36 → 32 per spec. AccountHoverCard wrapper untouched.
+
+## 5. Comments + DMs avatar swap
+Search for shared `Avatar` component usage in comment rows and message threads:
+- `src/components/comments/ThreadedComment.tsx`
+- `src/components/messages/*Thread*.tsx`
+
+If the avatar is rendered via the shared shadcn `Avatar` component (one-line swap), wrap with `AvatarLevelRing`. Any surface that hand-rolls its avatar markup is skipped (per spec).
+
+## 6. Founder mark
+Inside `ProfileLevelHeader` mount, when `founderBadge` is non-null, render `<FounderMark memberNumber={n} />` beside the handle. The ported `FounderMark` accepts `label`; extend it to accept `memberNumber?: number` and render `Founder · #${memberNumber}` (or default label when number absent). Single prop addition — visuals unchanged.
+
+## 7. Out of scope (do not touch)
+- `useProgress` hook, `/analytics` page, ambient gamification toasts.
+- `ProfileHeader` internals beyond adding the `hideIdentity` boolean.
+- `MasteryRibbons`, `VisitorCompareFooter` (placed, not mounted).
+- `DailyDigestCard`, `PerkGateTooltip`, `ChallengeNudgePill` (unrelated).
+
+## Test plan
+1. Own profile (`/profile`): see 80px ring with current level, name, marks chips (or none), founder crown if eligible, stats bar showing Level/XP/Streak/Marks, Showcase strip with auto-pinned chip; rest of profile byte-identical.
+2. Visit another user's profile (`/profile/:handle`): same surfaces render with that user's data; no errors; `VisitorCompareFooter` not present.
+3. Home feed cards: avatar is now wrapped by a 32px ring; layout unchanged otherwise; click → hover card still works.
+4. Founder test account (badge present): crown chip appears next to handle on own and visited profile.
