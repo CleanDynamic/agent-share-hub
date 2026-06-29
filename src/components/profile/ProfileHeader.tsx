@@ -16,6 +16,8 @@ interface ProfileHeaderProps {
   profile: ProfileSummary;
   isFollowing?: boolean;
   isTrustedSolver?: boolean;
+  /** When true, the avatar + name + handle + verified + level chip row is omitted. */
+  hideIdentity?: boolean;
   onEditProfile?: () => void;
   onShareProfile?: () => void;
   onFollow?: () => void;
@@ -67,6 +69,7 @@ export function ProfileHeader({
   profile,
   isFollowing = false,
   isTrustedSolver = false,
+  hideIdentity = false,
   onEditProfile,
   onShareProfile,
   onFollow,
