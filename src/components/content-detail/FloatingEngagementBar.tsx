@@ -10,6 +10,8 @@ import {
   PenSquare,
   Users,
 } from "lucide-react";
+import ActionXpHint from "@/components/ambient/ActionXpHint";
+
 
 interface Post {
   id: string;
@@ -229,6 +231,7 @@ export function FloatingEngagementBar({
         zIndex: 40,
       }}
     >
+      <ActionXpHintLike active={post.hasLiked}>
       <ActionButton
         icon={
           <Heart
@@ -243,6 +246,8 @@ export function FloatingEngagementBar({
         onClick={onLike}
         tooltip="Like (L)"
       />
+      </ActionXpHintLike>
+
       <ActionButton
         icon={<MessageCircle size={16} />}
         count={counts.comments}
@@ -270,6 +275,7 @@ export function FloatingEngagementBar({
         />
       )}
       <Separator />
+      <ActionXpHintBookmark active={post.hasBookmarked}>
       <ActionButton
         buttonRef={bookmarkRef}
         icon={
@@ -284,18 +290,22 @@ export function FloatingEngagementBar({
         onClick={(e) => onBookmark(e.currentTarget)}
         tooltip="Save to Library (B)"
       />
+      </ActionXpHintBookmark>
       <ActionButton
         buttonRef={shareRef}
         icon={<Share2 size={16} />}
         onClick={(e) => onShare(e.currentTarget)}
         tooltip="Share"
       />
+      <ActionXpHintDownload>
       <ActionButton
         buttonRef={exportRef}
         icon={<Download size={16} />}
         onClick={(e) => onExport(e.currentTarget)}
         tooltip="Download or copy as data (E)"
       />
+      </ActionXpHintDownload>
+
       {isBountyPost && onSubmitSolution && (
         <>
           <Separator />
