@@ -32,12 +32,10 @@ import { getZoneContent } from "@/lib/profile/getZoneContent";
 import type { Primitive, ZoneItem } from "@/lib/profile/types";
 import { createDirectThread, sendTextMessage } from "@/lib/messaging";
 import { MessageComposeModal } from "@/components/messages/MessageComposeModal";
-import ProfileLevelHeader from "@/components/profile-game/ProfileLevelHeader";
-import ProfileStatsBar from "@/components/profile-game/ProfileStatsBar";
 import ShowcaseSection from "@/components/profile-game/ShowcaseSection";
 import FounderMark from "@/components/profile-game/FounderMark";
 import { useProfileGameData } from "@/hooks/useProfileGameData";
-import { Sparkles, Trophy, Flame, Zap, Award } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import type { CreatorMark } from "@/components/profile-game/CreatorMarkChip";
 import type { ShowcaseItem } from "@/components/profile-game/ShowcaseStrip";
 
