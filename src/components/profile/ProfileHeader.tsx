@@ -420,3 +420,30 @@ export function ProfileHeader({
     </header>
   );
 }
+
+function AvatarInner({
+  profile,
+  initials,
+}: {
+  profile: ProfileSummary;
+  initials: string;
+}) {
+  if (profile.avatarUrl) {
+    return (
+      <img
+        src={profile.avatarUrl}
+        alt={profile.displayName}
+        className="w-full h-full object-cover"
+      />
+    );
+  }
+  return (
+    <div
+      className="w-full h-full flex items-center justify-center text-3xl font-semibold text-foreground/70 bg-gradient-to-br from-primary/30 to-accent/30"
+      style={{ fontFamily: "Playfair Display, serif" }}
+    >
+      {initials}
+    </div>
+  );
+}
+
