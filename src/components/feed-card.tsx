@@ -9,6 +9,7 @@ import { useReblogCompose } from "@/contexts/ReblogComposeContext"
 import { useToast } from "@/hooks/use-toast"
 import { getPrimaryTypeLabel } from "@/lib/content-types"
 import ActionXpHint from "@/components/ambient/ActionXpHint"
+import { AvatarLevelRing } from "@/components/profile-game/AvatarLevelRing"
 
 
 const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
