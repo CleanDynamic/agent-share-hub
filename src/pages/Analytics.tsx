@@ -218,7 +218,7 @@ export default function Analytics() {
               rightSlot={
                 <>
                   <StreakFlame streak={progress?.streak_days ?? 0} state={(progress?.streak_days ?? 0) > 0 ? "active" : "zero"} />
-                  <StreakInlineNote message={(progress?.streak_days ?? 0) > 0 ? `${progress?.streak_days}-day streak` : "Start your streak today"} />
+                  <StreakInlineNote />
                 </>
               }
             />
