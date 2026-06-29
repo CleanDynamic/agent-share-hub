@@ -27,11 +27,15 @@ const ROUTE_FOR_TYPE: Record<UploadContentType, string> = {
 
 export function UploadPickerProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState<PickerMode>("all");
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
 
-  const openUploadTypePicker = useCallback(() => setIsOpen(true), []);
+  const openUploadTypePicker = useCallback((m: PickerMode = "all") => {
+    setMode(m);
+    setIsOpen(true);
+  }, []);
   const closeUploadTypePicker = useCallback(() => setIsOpen(false), []);
 
   const handleSelect = useCallback(
