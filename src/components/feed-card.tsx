@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client"
 import { useReblogCompose } from "@/contexts/ReblogComposeContext"
 import { useToast } from "@/hooks/use-toast"
 import { getPrimaryTypeLabel } from "@/lib/content-types"
+import ActionXpHint from "@/components/ambient/ActionXpHint"
+
 
 const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
   prompt: { bg: "rgba(139, 69, 19, 0.15)", color: "#8B4513", border: "rgba(139, 69, 19, 0.3)" },
@@ -131,6 +133,10 @@ export function FeedCard({ post }: { post: FeedPost }) {
   const [expandStage, setExpandStage] = useState(0)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.view_count ?? 0)
+  const [likeXpTrigger, setLikeXpTrigger] = useState(0)
+  const [saved, setSaved] = useState(false);
+  const [saveXpTrigger, setSaveXpTrigger] = useState(0);
+
   const { openReblog } = useReblogCompose()
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
