@@ -587,6 +587,15 @@ export function FeedCard({ post }: { post: FeedPost }) {
               ))}
             </div>
           )}
+          {lineageParent && (
+            <div style={{ marginTop: tags.length > 0 ? 8 : 10 }}>
+              <AttributionChip
+                authorHandle={lineageParent.authorHandle}
+                title={lineageParent.title}
+                deleted={lineageParent.deleted}
+              />
+            </div>
+          )}
         </div>
       )}
 
