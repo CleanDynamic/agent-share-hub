@@ -5,6 +5,8 @@ import { tokens } from "./tokens"
 export interface FounderMarkProps {
   /** Optional override label. */
   label?: string
+  /** When provided, renders compact "Founder · #N". */
+  memberNumber?: number
   style?: CSSProperties
 }
 
@@ -13,9 +15,15 @@ export interface FounderMarkProps {
  * "first 100" founding-member status as part of identity formation.
  */
 export default function FounderMark({
-  label = "Founding member — first 100",
+  label,
+  memberNumber,
   style,
 }: FounderMarkProps) {
+  const text =
+    label ??
+    (typeof memberNumber === "number"
+      ? `Founder · #${memberNumber}`
+      : "Founding member — first 100")
   return (
     <span
       className="inline-flex items-center gap-2 self-start"
@@ -35,7 +43,7 @@ export default function FounderMark({
       }}
     >
       <Crown size={15} color="#FFFFFF" strokeWidth={2.25} aria-hidden />
-      {label}
+      {text}
     </span>
   )
 }
