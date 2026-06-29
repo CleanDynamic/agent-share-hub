@@ -87,6 +87,9 @@ export default function Analytics() {
   const tabs = (surfaces?.tabs ?? ["overview", "trophies", "history"]).map((id) => ({
     id,
     label: TAB_LABELS[id] ?? id,
+    isNew:
+      (id === "skill_tree" && !!surfaces?.skill_tree_isnew) ||
+      (id === "challenges" && !!surfaces?.challenges_isnew),
   }));
 
   const initials = (profile?.display_name || profile?.username || user.email || "?").slice(0, 2).toUpperCase();
