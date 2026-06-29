@@ -36,6 +36,7 @@ function adaptToFeedPost(item: any): FeedPost {
     use_cases: (item.use_cases ?? []) as string[],
     custom_tags: item.custom_tags ?? [],
     author: {
+      id: (p as any)?.id ?? item.user_id ?? undefined,
       display_name: p?.display_name ?? "Unknown",
       username: p?.username ?? "user",
       avatar_url: p?.avatar_url ?? undefined,
