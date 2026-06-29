@@ -2840,6 +2840,23 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 </div>
               )}
 
+              {/* Remix settings — light-touch creator credit */}
+              <div>
+                <div style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: 'rgba(255,255,255,0.30)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  marginBottom: 12,
+                }}>
+                  Remixing — optional
+                </div>
+                <RemixSettingsRow
+                  isRemixable={isRemixable}
+                  onChange={(next) => setIsRemixable(next.isRemixable)}
+                />
+              </div>
+
               {/* Dependencies */}
               <div>
                 <div style={{
