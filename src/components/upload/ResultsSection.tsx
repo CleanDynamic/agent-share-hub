@@ -29,7 +29,7 @@ function rowToSlide(r: ContentItemResult): Slide {
   };
 }
 
-export function ResultsSection({ contentItemId }: ResultsSectionProps) {
+export function ResultsSection({ contentItemId, onCountChange }: ResultsSectionProps) {
   const { toast } = useToast();
   const [slides, setSlides] = useState<Slide[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
