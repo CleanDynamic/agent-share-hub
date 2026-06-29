@@ -1581,6 +1581,16 @@ export default function ContentDetail() {
         data-source-post-id={(post as any).id}
         data-source-post-slug={(post as any).slug ?? ""}
       >
+        <RemixLineageRow
+          postId={(post as any).id as string}
+          isRemixable={!!(post as any).is_remixable}
+          isOwnPost={isOwnPost}
+          remixerId={user?.id ?? null}
+          onRemixed={(draftId, postType) => {
+            const path = postType === "blog" ? "/upload/blog" : "/upload/blueprint";
+            navigate(`${path}?draft=${draftId}`);
+          }}
+        />
         {bodyNode}
       </div>
     );
