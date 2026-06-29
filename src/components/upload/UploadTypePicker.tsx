@@ -129,8 +129,8 @@ export function UploadTypePicker({
       }
       if (variant === "desktop" && e.key >= "1" && e.key <= "4") {
         const index = parseInt(e.key) - 1
-        if (contentOptions[index]) {
-          onSelect(contentOptions[index].type)
+        if (visibleOptions[index]) {
+          onSelect(visibleOptions[index].type)
           onClose()
         }
       }
