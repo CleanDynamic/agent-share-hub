@@ -765,7 +765,7 @@ export function ArticleEditor({
           font-size: ${isBlog ? 16 : 15}px;
           line-height: ${isBlog ? 1.85 : 1.5};
           color: hsl(var(--foreground) / 0.92);
-          padding: 32px 2px 28px;
+          padding: 12px 12px 28px 12px;
           min-height: 300px;
           outline: none;
           caret-color: hsl(18 79% 54%);
