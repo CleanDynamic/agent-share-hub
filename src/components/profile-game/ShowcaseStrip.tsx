@@ -20,7 +20,11 @@ export interface ShowcaseStripProps {
  */
 export default function ShowcaseStrip({ items }: ShowcaseStripProps) {
   return (
-    <div className="flex gap-3 overflow-x-auto pb-1">
+    <div
+      className="flex gap-3 overflow-x-auto pb-1 showcase-strip-scroll"
+      style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+    >
+      <style>{`.showcase-strip-scroll::-webkit-scrollbar{display:none}`}</style>
       {items.map((item) => {
         const accent = item.accent ?? tokens.brand.orange
         return (

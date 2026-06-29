@@ -32,12 +32,10 @@ import { getZoneContent } from "@/lib/profile/getZoneContent";
 import type { Primitive, ZoneItem } from "@/lib/profile/types";
 import { createDirectThread, sendTextMessage } from "@/lib/messaging";
 import { MessageComposeModal } from "@/components/messages/MessageComposeModal";
-import ProfileLevelHeader from "@/components/profile-game/ProfileLevelHeader";
-import ProfileStatsBar from "@/components/profile-game/ProfileStatsBar";
 import ShowcaseSection from "@/components/profile-game/ShowcaseSection";
 import FounderMark from "@/components/profile-game/FounderMark";
 import { useProfileGameData } from "@/hooks/useProfileGameData";
-import { Sparkles, Trophy, Flame, Zap, Award } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import type { CreatorMark } from "@/components/profile-game/CreatorMarkChip";
 import type { ShowcaseItem } from "@/components/profile-game/ShowcaseStrip";
 
@@ -48,7 +46,7 @@ const BUCKET = "profile-assets";
 
 function ProfileSkeleton() {
   return (
-    <div className="w-full max-w-[880px] mx-auto px-4 py-6 space-y-4">
+    <div className="w-full max-w-[600px] mx-auto px-4 py-6 space-y-4">
       <Skeleton className="h-52 w-full rounded-xl" />
       <div className="px-2 -mt-12 flex items-end gap-4">
         <Skeleton className="h-24 w-24 rounded-full" />
@@ -527,34 +525,8 @@ export default function Profile() {
     }));
   }, [gameData]);
 
-  const profileStats = useMemo(() => {
-    return [
-      {
-        id: "level",
-        label: "Level",
-        value: gameData?.level ?? 1,
-        icon: Zap,
-      },
-      {
-        id: "xp",
-        label: "XP",
-        value: (gameData?.xpTotal ?? 0).toLocaleString(),
-        icon: Trophy,
-      },
-      {
-        id: "streak",
-        label: "Streak",
-        value: `${gameData?.streakDays ?? 0}d`,
-        icon: Flame,
-      },
-      {
-        id: "marks",
-        label: "Marks",
-        value: gameData?.marksCount ?? 0,
-        icon: Award,
-      },
-    ];
-  }, [gameData]);
+
+
 
   const showcaseItems: ShowcaseItem[] = useMemo(() => {
     return zoneItems.slice(0, 6).map((item: any) => ({
@@ -570,7 +542,7 @@ export default function Profile() {
   if (authLoading || isLoading || !lookup) return <ProfileSkeleton />;
   if (error || !summary) {
     return (
-      <div className="max-w-[880px] mx-auto px-4 py-12 text-center text-muted-foreground">
+      <div className="max-w-[600px] mx-auto px-4 py-12 text-center text-muted-foreground">
         <p>Profile not found.</p>
       </div>
     );
@@ -585,33 +557,21 @@ export default function Profile() {
         }
         path={handle ? `/profile/${handle}` : "/profile"}
       />
-      <div className="w-full max-w-[880px] mx-auto px-4 py-6">
-        <div className="space-y-3">
-          <ProfileLevelHeader
-            user={{
-              name: summary.displayName ?? `@${summary.handle}`,
-              handle: `@${summary.handle}`,
-              verified: !!summary.isVerified,
-            }}
-            level={gameData?.level ?? 1}
-            progressPct={gameData?.progressPct ?? 0}
-            creatorMarks={creatorMarks}
-            handleAccessory={
-              gameData?.founderBadge ? (
-                <FounderMark
-                  memberNumber={gameData.founderBadge.memberNumber ?? undefined}
-                />
-              ) : undefined
-            }
-          />
-          <ProfileStatsBar stats={profileStats} />
-        </div>
-
+      <div className="w-full max-w-[600px] mx-auto px-4 py-6 space-y-6">
         <ProfileHeader
           profile={summary}
           isFollowing={!!summary.isFollowing}
           isTrustedSolver={!!authorStats?.isTrustedSolver}
-          hideIdentity
+          level={gameData?.level ?? 1}
+          progressPct={gameData?.progressPct ?? 0}
+          creatorMarks={creatorMarks}
+          founderAccessory={
+            gameData?.founderBadge ? (
+              <FounderMark
+                memberNumber={gameData.founderBadge.memberNumber ?? undefined}
+              />
+            ) : undefined
+          }
           onEditProfile={() => setEditOpen(true)}
           onShareProfile={handleShare}
           onFollow={handleFollow}
@@ -683,7 +643,6 @@ export default function Profile() {
           />
         )}
 
-
         {/* Profile zones (authored / curated / activity / network). */}
         <div id="profile-zones">
           {activeZone === "authored" && activeFilter === "reblog" ? (
@@ -720,6 +679,7 @@ export default function Profile() {
           )}
         </div>
       </div>
+
 
       {summary.isOwnProfile && user?.id && (
         <EditProfileSheet

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   BadgeCheck,
   Calendar,
@@ -11,6 +11,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { ProfileLevel, ProfileSummary } from "@/lib/profile/types";
+import LevelRing from "@/components/profile-game/LevelRing";
+import CreatorMarkChip, { type CreatorMark } from "@/components/profile-game/CreatorMarkChip";
 
 interface ProfileHeaderProps {
   profile: ProfileSummary;
@@ -18,6 +20,13 @@ interface ProfileHeaderProps {
   isTrustedSolver?: boolean;
   /** When true, the avatar + name + handle + verified + level chip row is omitted. */
   hideIdentity?: boolean;
+  /** Optional gamification — wraps avatar in an XP progress ring. */
+  level?: number;
+  progressPct?: number;
+  /** Optional creator-mark chips rendered under the handle row. */
+  creatorMarks?: CreatorMark[];
+  /** Optional accessory (e.g. FounderMark) rendered inline with the marks row. */
+  founderAccessory?: ReactNode;
   onEditProfile?: () => void;
   onShareProfile?: () => void;
   onFollow?: () => void;
@@ -70,6 +79,10 @@ export function ProfileHeader({
   isFollowing = false,
   isTrustedSolver = false,
   hideIdentity = false,
+  level,
+  progressPct,
+  creatorMarks,
+  founderAccessory,
   onEditProfile,
   onShareProfile,
   onFollow,
@@ -83,6 +96,8 @@ export function ProfileHeader({
 }: ProfileHeaderProps) {
   const [followHover, setFollowHover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const showRing = typeof level === "number";
+  const hasMarksRow = (creatorMarks && creatorMarks.length > 0) || !!founderAccessory;
 
   const isOwnProfile = profile.isOwnProfile;
   const initials = (profile.displayName || "?").charAt(0).toUpperCase();
@@ -130,22 +145,15 @@ export function ProfileHeader({
           {!hideIdentity && (
             <div className="flex items-end gap-4 min-w-0">
               <div className="relative shrink-0">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-background bg-muted ring-1 ring-white/10">
-                  {profile.avatarUrl ? (
-                    <img
-                      src={profile.avatarUrl}
-                      alt={profile.displayName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div
-                      className="w-full h-full flex items-center justify-center text-3xl font-semibold text-foreground/70 bg-gradient-to-br from-primary/30 to-accent/30"
-                      style={{ fontFamily: "Playfair Display, serif" }}
-                    >
-                      {initials}
-                    </div>
-                  )}
-                </div>
+                {showRing ? (
+                  <LevelRing level={level!} progressPct={progressPct ?? 0} size={104}>
+                    <AvatarInner profile={profile} initials={initials} />
+                  </LevelRing>
+                ) : (
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-background bg-muted ring-1 ring-white/10">
+                    <AvatarInner profile={profile} initials={initials} />
+                  </div>
+                )}
                 {isOwnProfile && (
                   <button
                     type="button"
@@ -191,7 +199,16 @@ export function ProfileHeader({
                 >
                   @{profile.handle}
                 </p>
+                {hasMarksRow && (
+                  <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                    {creatorMarks?.map((mark) => (
+                      <CreatorMarkChip key={mark.id} mark={mark} />
+                    ))}
+                    {founderAccessory}
+                  </div>
+                )}
               </div>
+
             </div>
           )}
           {hideIdentity && <div className="min-w-0" />}
@@ -403,3 +420,30 @@ export function ProfileHeader({
     </header>
   );
 }
+
+function AvatarInner({
+  profile,
+  initials,
+}: {
+  profile: ProfileSummary;
+  initials: string;
+}) {
+  if (profile.avatarUrl) {
+    return (
+      <img
+        src={profile.avatarUrl}
+        alt={profile.displayName}
+        className="w-full h-full object-cover"
+      />
+    );
+  }
+  return (
+    <div
+      className="w-full h-full flex items-center justify-center text-3xl font-semibold text-foreground/70 bg-gradient-to-br from-primary/30 to-accent/30"
+      style={{ fontFamily: "Playfair Display, serif" }}
+    >
+      {initials}
+    </div>
+  );
+}
+

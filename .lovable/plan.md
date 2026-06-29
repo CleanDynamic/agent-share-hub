@@ -1,160 +1,73 @@
-# Level-5 Depth Reveal + L2 Surface Mount
+## Problem
 
-All visibility flows from `getVisibleSurfaces()`; reveal only flips server state via `mark_depth_revealed()`.
+`src/pages/Profile.tsx` currently stacks two competing identity systems with no shared rhythm:
 
-## 1. Migration — engine + perks + notifications
+1. **`ProfileLevelHeader`** (level ring + name + handle) — own card
+2. **`ProfileStatsBar`** (Level / XP / Streak / Marks)
+3. **`ProfileHeader`** (cover banner with "Edit profile" / share buttons floating over it, then name/joined/follower counts *below* the banner — but the name is hidden via `hideIdentity`)
+4. `MatchBanner` → `WelcomeCoachmark` → `AuthorStatsPanel` → `MostReferenced` → `ShowcaseSection` → zones
 
-New migration adds the missing engine pieces (current schema has tables but no RPCs):
+Symptoms visible in the screenshots:
+- Page is **880px wide** while the rest of the app (FeedShell, Home) is locked to **600px** — profile sticks out wider than every other route.
+- The gamification card + stats bar sit *above* the cover banner, so the banner reads as a second, disconnected header. Name "NeoScaler" appears under the banner with no avatar next to it (avatar is up in the level ring), and follower counts float as a fourth identity row.
+- No consistent gap rhythm — sections butt up against each other (`space-y-3` only wraps the first two, everything after has no spacing wrapper).
+- `Showcase` strip overflows horizontally with a visible native scrollbar.
 
-- `mark_depth_revealed()` SECURITY DEFINER — sets `user_progress.depth_revealed_at = now()` if null, flips all `user_badges` rows where `user_id = auth.uid() AND state = 'pending_reveal'` → `'earned'`, returns the timestamp.
-- `set_user_track(_track text)` — first-time pick (no respec window check), records track; `respec_track(_track text)` — enforces 30-day cooldown from `last_respec_at`, refunds `track_xp` per spec (reset to 0).
-- `perks` catalogue table (`slug`, `track`, `tier`, `effect_key`, `description`) seeded with the four T1 perk-gated controls (`desc_length_1000`, `templates`, `custom_tags_advanced`, `advanced_filters`) plus `architect_t2_template`.
-- `user_perks(user_id, perk_slug, earned_at)` derived view or table populated when `level` crosses tier thresholds within the active track; `has_perk(_user_id uuid, _slug text)` SQL function used by RLS-friendly client reads.
-- Extend `get_visible_surfaces()` to return `depth_revealed` boolean, `tabs: ['overview','skill_tree','trophies','challenges','history']` once `depth_revealed_at IS NOT NULL`, and `skill_tree_isnew` / `challenges_isnew` flags (true for 7 days after reveal).
-- `get_quest_state` / weekly challenge instantiation function (`ensure_weekly_challenge`) that materialises one weekly row + tops up to 3 dailies.
-- Notification subkinds: emit `depth_unlocked` on first level-5 award inside `award_xp`, `tier_unlocked` when a perk crosses tier 2/3 within track, plus `streak_milestone` / `streak_lost` / `streak_saved` from a `record_daily_activity()` engine function (called from existing engagement hooks).
-- All new tables get `GRANT SELECT` to `authenticated` + RLS owner-only policies; RPCs `GRANT EXECUTE TO authenticated`.
+## Plan
 
-## 2. Library layer — `src/lib/progress/`
+Restructure the page into one cohesive identity block followed by clearly separated content sections, all on the same 600px column the rest of the app uses.
 
-- Extend `index.ts` with `markDepthRevealed()`, `setUserTrack()`, `respecTrack()`, `getUserPerks()`, `hasPerk(slug)`, `getMasteryTracks()`, `recordDailyActivity()`, `getStreakDays(range)`.
-- Update `VisibleSurfaces` type to include new flags + tabs.
-- New hooks in `useProgress.ts`: `useUserPerks()`, `useHasPerk(slug)`, `useStreakDays()`, `useWeeklyChallenge()`, `useMasteryTracks()`, `useSetTrack()`, `useRespec()`, `useMarkDepthRevealed()`.
+### 1. Match global width and rhythm
+- Change `max-w-[880px]` → `max-w-[600px]` (matches `FeedShell`, `Home`, `ShellHeader`).
+- Wrap the entire page body in a single `space-y-6` container so every section has identical 24px vertical rhythm.
+- Update `ProfileSkeleton` to the same 600px width.
 
-## 3. v0 component placement
-
-```text
-src/components/skilltree/   ← session-c
-  SkillTreeCanvas, SkillNode, TrackPicker, TrackUndecidedState,
-  PerkDetailPanel, TrackXpBar, RespecDialog, PerkPill, TierUnlockModal, tokens.ts
-src/components/streaks/     ← session-e additions
-  StreakCalendar, FreezeIndicator (already), StreakMilestoneModal,
-  StreakLostCard, StreakSavedToast (already)
-src/components/trophies/    ← additions
-  CabinetGrid (already), BadgeDetailModal (already), HiddenBadgeSlot (already),
-  MasteryTrackCard, FounderBadgeCallout
-src/components/depth/
-  DepthRevealModal.tsx (wraps existing PendingRevealStrip)
-src/components/profile-game/
-  MasteryRibbons.tsx, VisitorCompareFooter.tsx
-```
-
-Each component normalised: replace v0 design tokens with `src/styles/tokens` Sienna palette; rewrite hardcoded `text-white`/`bg-*` to semantic classes per project conventions; convert `next/link` → `react-router-dom`.
-
-## 4. Reveal sequence
-
-In `GamificationToasts.tsx` add a notification subscriber for `notification_type IN ('depth_unlocked')`:
-
-1. Fetch `user_badges` where `state = 'pending_reveal'` joined to `badges`.
-2. Mount `<DepthRevealModal pendingBadges={…} />` once per session (guard: `depth_revealed_at` null **and** modal not already opened in this session ref).
-3. On modal close: `await markDepthRevealed()` → invalidate `['progress']`, `['visibleSurfaces']`, `['userBadges']`. Modal becomes inert once RPC returns (re-open impossible because `depth_revealed_at` is set).
-
-## 5. `ProgressTabBar` driven by surfaces
-
-`Analytics.tsx`:
-
-- `tabs = surfaces.tabs` mapped through label table (adds `skill_tree`, `challenges`).
-- `isNew` dot rendered on Skill tree + Challenges when `Date.now() - depth_revealed_at < 7 days`.
-- Tab content switch extended with two new branches.
-
-## 6. Skill Tree tab
+### 2. Single unified identity block (replaces 3 stacked headers)
+New order inside one bordered glass card:
 
 ```text
-if (progress.track == null)
-  → <TrackPicker onPick={setTrack} onDefer={() => showUndecided=true}/>
-  → if showUndecided → <TrackUndecidedState onPick={…} />
-else
-  → <TrackXpBar track={progress.track} xp={progress.track_xp}/>
-    <SkillTreeCanvas track perks={userPerks} onSelect={setSelectedPerk}/>
-    <PerkDetailPanel perk={selectedPerk} unlocked={hasPerk(slug)} />
-    <button onClick={openRespec}>Switch path</button>
-    <RespecDialog cooldownUntil={progress.last_respec_at + 30d} onConfirm={respec}/>
+┌─────────────────────────────────────────┐
+│  [Cover banner — 160px, rounded top]    │
+│                                         │
+│  [Avatar w/ LevelRing, -40px overlap]   │
+│   Sun Tzu  @suntzu   [Edit] [Share]    │
+│   NeoScaler · Joined March 2026         │
+│   0 followers · 1 following             │
+│   [creator marks row, if any]           │
+└─────────────────────────────────────────┘
 ```
 
-`TierUnlockModal` driven by `tier_unlocked` notification subscription in `GamificationToasts`.
+- Keep `ProfileHeader` as the single identity surface; remove `hideIdentity`, remove the standalone `ProfileLevelHeader`.
+- Pass `level` + `progressPct` into `ProfileHeader` so the existing avatar is wrapped with `LevelRing` (using the existing `AvatarLevelRing` component already in `src/components/profile-game/`).
+- Pass `creatorMarks` and `founderBadge` into `ProfileHeader` as an optional row under the name.
+- Move "Edit profile" / Share into the name row (right-aligned), out of the floating overlay on the banner.
 
-## 7. Challenges tab
+### 3. Stats row, demoted and merged
+- Delete the standalone `ProfileStatsBar` (Level / XP / Streak / Marks) — Level is already shown on the avatar ring; XP/Streak/Marks belong on `/analytics`.
+- Replace the AuthorStatsPanel's "Total views / Referenced / Avg depth" with a tighter 3-column stats strip styled identically to the rest of the app's stat chips (same tokens as `stats-overview.tsx`), so there is exactly **one** stats row on the page.
 
-New `ChallengesPanel`:
+### 4. Showcase fix
+- `ShowcaseSection` currently overflows with a visible scrollbar. Constrain its inner strip to the 600px column, use `overflow-x-auto scrollbar-none snap-x`, and render cards at a size that fits 2 per row (≈ 280px) instead of 3.
+- Move "View cabinet →" into the section header instead of floating over the cards.
 
-- 3 dailies (existing `useChallenges`) + countdown to local midnight.
-- `WeeklyChallengeCard` from `useWeeklyChallenge()`.
-- Overview's existing `DailyNudgeCard` shrinks to a compact pointer linking to `?tab=challenges`.
+### 5. Final section order (top → bottom)
+```text
+1. Identity card        (banner + avatar+ring + name + marks + actions + counts)
+2. MatchBanner          (visitor-only)
+3. WelcomeCoachmark     (own zero-content state)
+4. AuthorStatsPanel     (3-stat strip — single source of stats)
+5. MostReferenced       (horizontal strip)
+6. ShowcaseSection      (constrained, 2-per-row)
+7. ProfileContentZones  (Authored / Curated / Activity / Network tabs)
+```
 
-## 8. Trophies tab upgrade
+All separated by the same `space-y-6` rhythm.
 
-- Replace simple grid with `CabinetGrid` (filter chips, sort dropdown).
-- `BadgeDetailModal` opens on tile click.
-- `HiddenBadgeSlot` shows count of unearned `kind='hidden'` badges.
-- `MasteryTrackCard` list from `useMasteryTracks()`.
-- `ShowcaseStrip` switched to `autoPinned={false}`; "Manage" button mounts `ShowcaseEditor` (drag-to-reorder persists via `user_badges.showcase_order`).
-- `FounderBadgeCallout` when viewer is founder-eligible (badge slug `founder` earned or pending) and cabinet has < 3 earned.
+### Technical details
 
-## 9. Streak surfaces
+Files touched:
+- `src/pages/Profile.tsx` — width swap, remove `ProfileLevelHeader` + `ProfileStatsBar` from JSX, wrap body in `space-y-6`, drop `hideIdentity`, forward `level`/`progressPct`/`creatorMarks`/`founderBadge` into `ProfileHeader`.
+- `src/components/profile/ProfileHeader.tsx` — accept new optional props (`level`, `progressPct`, `creatorMarks`, `founderAccessory`); wrap existing avatar in `AvatarLevelRing`; move action buttons into the name row; render marks row under name.
+- `src/components/profile-game/ShowcaseSection.tsx` (or its strip child) — clamp width, hide native scrollbar, switch card size for 2-up layout, move CTA into header.
 
-Below the `ProgressHero` on Overview: `<StreakCalendar days={streakDays}/>` + `<FreezeIndicator used={progress.freezes_used_month} cap={2}/>`.
-
-`GamificationToasts` subscribes to `streak_milestone` → `StreakMilestoneModal`, `streak_lost` → in-feed `StreakLostCard` (queue), `streak_saved` → toast.
-
-## 10. Remix depth
-
-- `DescendantBadge`: flip `interactive` default → true; clicks navigate to `/b/:slug/lineage`.
-- New route in `App.tsx`: `<Route path="/b/:slug/lineage" element={<Lineage/>}/>` rendering `LineageTreeView` fed by an RPC `get_post_lineage(_root_id)` returning post tree (post_id, parent_post_id, author, title, depth).
-- `RemixSettingsRow`: pass `advanced={depthRevealed}` plus `hasPerk={hasPerk('architect_t2_template')}` → unlocks the attribution-info row and template toggle.
-
-## 11. Ambient L2
-
-- `DailyDigestCard` mounted at top of `FeedShell` (Home), shown once per day (`localStorage` key `digest:<date>:<userId>`) and only when `surfaces.depth_revealed`.
-- `PerkGateTooltip` wraps four T1 controls in Upload editor:
-  - description length picker (`desc_length_1000`)
-  - templates picker (`templates`)
-  - custom tags advanced mode (`custom_tags_advanced`)
-  - advanced discover filters (`advanced_filters`)
-- `ChallengeNudgePill` mounted from `GamificationToasts`, throttled to 1/day via `localStorage`.
-
-## 12. Profile
-
-- `MasteryRibbons` under bio (above stats bar) reads `useMasteryTracks(profileUserId)`.
-- `VisitorCompareFooter` mounts at profile bottom when **both** viewer and owner have `depth_revealed_at` set (skip otherwise).
-
-## 13. Manual verification
-
-Bump admin's XP via insert tool to ~1500 (level 5+):
-
-1. Reload `/analytics` → `DepthRevealModal` fires once with pending badges → close → RPC sets `depth_revealed_at`; reload doesn't re-trigger.
-2. Tabs now include Skill tree + Challenges with isNew dots.
-3. Pick Architect track → upload editor description limit accepts 1000 chars (enforced via `hasPerk('desc_length_1000')`).
-4. Defer track pick → `TrackUndecidedState` persists.
-5. Trophy filters/sort work; drag showcase order; reload preserves order.
-6. Create a 2-level remix chain; `/b/:slug/lineage` renders tree.
-7. Sign in as a fresh L1 account: no skill tree / challenges tab, no depth modal, no DailyDigestCard, no perk tooltips.
-
-## Files
-
-**New migration**: `supabase/migrations/<ts>_depth_reveal_engine.sql`
-
-**New libs/hooks**:
-- `src/lib/progress/index.ts` (extend)
-- `src/hooks/useProgress.ts` (extend)
-- `src/lib/remix/getLineage.ts`
-
-**New components**:
-- `src/components/skilltree/*` (9 files)
-- `src/components/streaks/StreakCalendar.tsx`, `StreakMilestoneModal.tsx`, `StreakLostCard.tsx`
-- `src/components/trophies/MasteryTrackCard.tsx`, `FounderBadgeCallout.tsx`
-- `src/components/depth/DepthRevealModal.tsx`
-- `src/components/challenges/ChallengesPanel.tsx`, `WeeklyChallengeCard.tsx`
-- `src/components/profile-game/MasteryRibbons.tsx`, `VisitorCompareFooter.tsx`
-- `src/pages/Lineage.tsx`
-
-**Edited**:
-- `src/pages/Analytics.tsx` (tabs + new panels)
-- `src/components/ambient/GamificationToasts.tsx` (depth_unlocked, tier_unlocked, streak_*)
-- `src/components/ambient/DailyDigestCard.tsx` (gate by surfaces.depth_revealed + daily throttle)
-- `src/components/ambient/ChallengeNudgePill.tsx` (mount + throttle)
-- `src/components/remix/DescendantBadge.tsx` (default interactive)
-- `src/components/remix/RemixSettingsRow.tsx` (advanced prop)
-- `src/pages/Upload.tsx` (PerkGateTooltip wrappers)
-- `src/pages/Home.tsx` (DailyDigestCard at feed top)
-- `src/pages/Profile.tsx` (MasteryRibbons + VisitorCompareFooter)
-- `src/App.tsx` (lineage route)
+No data-layer or query changes. No removal of gamification — just consolidated into the existing header instead of stacked above it.
