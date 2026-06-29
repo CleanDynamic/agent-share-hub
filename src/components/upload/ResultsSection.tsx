@@ -16,6 +16,7 @@ const VIDEO_MAX = 100 * 1024 * 1024; // 100MB
 
 interface ResultsSectionProps {
   contentItemId: string | null;
+  onCountChange?: (count: number) => void;
 }
 
 function rowToSlide(r: ContentItemResult): Slide {
