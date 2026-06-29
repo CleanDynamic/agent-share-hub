@@ -1444,7 +1444,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 </div>
               </div>
             )}
-            {/* Document header — compact upload header. */}
+            {/* Document header — stacked dropdown toggles (cover / title+desc / results). */}
             <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'center' }}>
               <CompactUploadHeader
                 postType={(mode as 'blueprint' | 'blog' | 'bounty') ?? 'blueprint'}
@@ -1463,73 +1463,76 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   setCoverImagePreview(null);
                 }}
                 maxDescriptionLength={500}
+                hasResults={resultsCount > 0}
+                resultsSlot={
+                  <ResultsSection
+                    contentItemId={currentDraftId}
+                    onCountChange={setResultsCount}
+                  />
+                }
               />
             </div>
 
             {/* Article body — TipTap editor */}
             <div style={{
               flex: 1,
-              padding: '0 20px 40px',
+              padding: '24px 20px 40px',
+              display: 'flex',
+              justifyContent: 'center',
             }}>
-              <ArticleEditor
-                canvasDoc={canvasDoc}
-                initialContent={
-                  (canvasDoc as any)._articleBody
-                  ?? (canvasDoc as any).articleBody
-                  ?? (useDocumentStore.getState().articleBody as any)
-                  ?? undefined
-                }
-                documentTitle={form.watch('title') ?? ''}
-                onChange={(json) => {
-                  // Cache the latest article body in three places so that
-                  // remounting the editor (e.g. after closing the stage
-                  // fullscreen) restores the freshly inserted nodes.
-                  (canvasDoc as any)._articleBody = json;
-                  (canvasDoc as any).articleBody = json;
-                  try { useDocumentStore.getState().setArticleBody(json); } catch (_) { /* noop */ }
-                }}
-                onSelectedStageChange={setSelectedStageId}
-                onOpenTemplates={() => setTemplateLibOpen(true)}
-                onOpenHistory={() => {}}
-                onOpenNotes={() => {}}
-                onGrammarCheck={() => {}}
-                onClearAll={() => {}}
-                saving={savingDraft}
-                defaultDraftName={draftMeta?.name ?? form.getValues('title') ?? ''}
-                onSave={async (draftName) => { await saveDraft(false, draftName); }}
-                onPublish={async () => {
-                  const title = form.getValues('title');
-                  if (!title || !title.trim()) {
-                    toast({ title: 'Title required', description: 'Add a title before publishing.', variant: 'destructive' });
-                    return;
+              <div style={{ width: '100%', maxWidth: 720 }}>
+                <ArticleEditor
+                  canvasDoc={canvasDoc}
+                  initialContent={
+                    (canvasDoc as any)._articleBody
+                    ?? (canvasDoc as any).articleBody
+                    ?? (useDocumentStore.getState().articleBody as any)
+                    ?? undefined
                   }
-                  setSubmitting(true);
-                  try {
-                    const id = await saveDraft(true);
-                    if (!id) throw new Error('Could not save draft before publishing');
-                    try {
-                      await flushRecompute(id);
-                    } catch (err) {
-                      console.warn('[Upload] flushRecompute failed', err);
-                      toast({ title: 'Could not refresh metadata', description: 'Try again in a moment.', variant: 'destructive' });
+                  documentTitle={form.watch('title') ?? ''}
+                  onChange={(json) => {
+                    (canvasDoc as any)._articleBody = json;
+                    (canvasDoc as any).articleBody = json;
+                    try { useDocumentStore.getState().setArticleBody(json); } catch (_) { /* noop */ }
+                  }}
+                  onSelectedStageChange={setSelectedStageId}
+                  onOpenTemplates={() => setTemplateLibOpen(true)}
+                  onOpenHistory={() => {}}
+                  onOpenNotes={() => {}}
+                  onGrammarCheck={() => {}}
+                  onClearAll={() => {}}
+                  saving={savingDraft}
+                  defaultDraftName={draftMeta?.name ?? form.getValues('title') ?? ''}
+                  onSave={async (draftName) => { await saveDraft(false, draftName); }}
+                  onPublish={async () => {
+                    const title = form.getValues('title');
+                    if (!title || !title.trim()) {
+                      toast({ title: 'Title required', description: 'Add a title before publishing.', variant: 'destructive' });
                       return;
                     }
-                    navigate(`/publish/${id}`);
-                  } catch (err: any) {
-                    toast({ title: 'Could not prepare publish', description: err?.message ?? 'Unknown error', variant: 'destructive' });
-                  } finally {
-                    setSubmitting(false);
-                  }
-                }}
-                publishing={submitting}
-                editable
-                mode={mode}
-              />
-            </div>
-
-            {/* Results carousel — multi-slide media + written results */}
-            <div style={{ padding: '0 20px 40px', maxWidth: 720, width: '100%', alignSelf: 'center' }}>
-              <ResultsSection contentItemId={currentDraftId} />
+                    setSubmitting(true);
+                    try {
+                      const id = await saveDraft(true);
+                      if (!id) throw new Error('Could not save draft before publishing');
+                      try {
+                        await flushRecompute(id);
+                      } catch (err) {
+                        console.warn('[Upload] flushRecompute failed', err);
+                        toast({ title: 'Could not refresh metadata', description: 'Try again in a moment.', variant: 'destructive' });
+                        return;
+                      }
+                      navigate(`/publish/${id}`);
+                    } catch (err: any) {
+                      toast({ title: 'Could not prepare publish', description: err?.message ?? 'Unknown error', variant: 'destructive' });
+                    } finally {
+                      setSubmitting(false);
+                    }
+                  }}
+                  publishing={submitting}
+                  editable
+                  mode={mode}
+                />
+              </div>
             </div>
           </div>
         )}
