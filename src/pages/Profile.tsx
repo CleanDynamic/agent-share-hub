@@ -586,10 +586,32 @@ export default function Profile() {
         path={handle ? `/profile/${handle}` : "/profile"}
       />
       <div className="w-full max-w-[880px] mx-auto px-4 py-6">
+        <div className="space-y-3">
+          <ProfileLevelHeader
+            user={{
+              name: summary.displayName ?? `@${summary.handle}`,
+              handle: `@${summary.handle}`,
+              verified: !!summary.isVerified,
+            }}
+            level={gameData?.level ?? 1}
+            progressPct={gameData?.progressPct ?? 0}
+            creatorMarks={creatorMarks}
+            handleAccessory={
+              gameData?.founderBadge ? (
+                <FounderMark
+                  memberNumber={gameData.founderBadge.memberNumber ?? undefined}
+                />
+              ) : undefined
+            }
+          />
+          <ProfileStatsBar stats={profileStats} />
+        </div>
+
         <ProfileHeader
           profile={summary}
           isFollowing={!!summary.isFollowing}
           isTrustedSolver={!!authorStats?.isTrustedSolver}
+          hideIdentity
           onEditProfile={() => setEditOpen(true)}
           onShareProfile={handleShare}
           onFollow={handleFollow}
@@ -652,6 +674,15 @@ export default function Profile() {
           onPrimitiveClick={handlePrimitiveClick}
           onViewAllClick={handleViewAllReferenced}
         />
+
+        {showcaseItems.length > 0 && (
+          <ShowcaseSection
+            items={showcaseItems}
+            autoPinned
+            onViewAll={() => navigate("/analytics?tab=trophies")}
+          />
+        )}
+
 
         {/* Profile zones (authored / curated / activity / network). */}
         <div id="profile-zones">
