@@ -142,6 +142,8 @@ export function FeedCard({ post }: { post: FeedPost }) {
 
   const { openReblog } = useReblogCompose()
   const [saved, setSaved] = useState(false)
+  const { data: lineageParent } = useLineageParent(post.id)
+
 
 
   const [copied, setCopied] = useState(false)
