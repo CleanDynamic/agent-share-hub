@@ -37,6 +37,7 @@ export default function ProfileLevelHeader({
   creatorMarks,
   track,
   tier,
+  handleAccessory,
 }: ProfileLevelHeaderProps) {
   const trackColor = track ? trackColors[track] : tokens.xp
   const marks = creatorMarks.slice(0, 3)
@@ -76,6 +77,7 @@ export default function ProfileLevelHeader({
               {user.handle}
             </span>
           )}
+          {handleAccessory}
         </div>
 
         {track ? (
