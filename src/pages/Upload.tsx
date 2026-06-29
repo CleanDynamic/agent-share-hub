@@ -1532,7 +1532,6 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   editable
                   mode={mode}
                 />
-              </div>
             </div>
           </div>
         )}
