@@ -55,12 +55,6 @@ import SkillTreeTab from "@/components/progress/SkillTreeTab";
 import ChallengesTab from "@/components/progress/ChallengesTab";
 import { useStreakDays } from "@/hooks/useProgress";
 
-type Range = "7" | "30" | "90";
-const RANGE_OPTIONS: { value: Range; label: string }[] = [
-  { value: "7", label: "Last 7 days" },
-  { value: "30", label: "Last 30 days" },
-  { value: "90", label: "Last 90 days" },
-];
 
 const TAB_LABELS: Record<string, string> = {
   overview: "Overview",
