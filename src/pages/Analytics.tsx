@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
+import { ShellHeader } from "@/components/shell/ShellHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,64 +17,323 @@ import {
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { Eye, Download, Star, TrendingUp, TrendingDown, FileText, Image, Paperclip } from "lucide-react";
+import { Eye, Download, Star, TrendingUp, TrendingDown, FileText, Image, Paperclip, Sparkles, Zap } from "lucide-react";
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
-import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
+import { format, subDays, eachDayOfInterval } from "date-fns";
+import { useProgress, useXpEvents, useClaimChallenge } from "@/hooks/useProgress";
+import { useUploadPicker } from "@/contexts/UploadPickerContext";
+import { toast } from "@/hooks/use-toast";
+
+// Progress UI
+import ProgressTabBar from "@/components/progress/ProgressTabBar";
+import { ProgressHero } from "@/components/progress/ProgressHero";
+import { SectionHeader } from "@/components/progress/SectionHeader";
+import { EngagementGrid } from "@/components/progress/EngagementGrid";
+import { NextUnlockCard } from "@/components/progress/NextUnlockCard";
+import { EmptyProgressState } from "@/components/progress/EmptyProgressState";
+import EligibilityNotice from "@/components/progress/xp-kit/eligibility-notice";
+import XpLedger, { type XpLedgerEntry } from "@/components/progress/xp-kit/xp-ledger";
+
+// Quest + challenges
+import QuestChecklist from "@/components/challenges/quest/quest-checklist";
+import DailyNudgeCard from "@/components/challenges/quest/daily-nudge-card";
+import ChallengeHistoryRow from "@/components/challenges/quest/challenge-history-row";
+
+// Trophies
+import { CreatorMarksRow } from "@/components/trophies/creator-marks-row";
+import { ShowcaseStrip } from "@/components/trophies/showcase-strip";
+import { creatorMarks as creatorMarksCatalog, cabinetBadges } from "@/components/trophies/badge-data";
+
+// Streaks
+import StreakFlame from "@/components/streaks/streak-flame";
+import StreakInlineNote from "@/components/streaks/streak-inline-note";
 
 type Range = "7" | "30" | "90";
-
 const RANGE_OPTIONS: { value: Range; label: string }[] = [
   { value: "7", label: "Last 7 days" },
   { value: "30", label: "Last 30 days" },
   { value: "90", label: "Last 90 days" },
 ];
 
-export default function Analytics() {
-  const { user, profile, isCreator, loading: authLoading } = useAuth();
-  const [range, setRange] = useState<Range>("30");
+const TAB_LABELS: Record<string, string> = {
+  overview: "Overview",
+  trophies: "Trophies",
+  history: "History",
+};
 
+export default function Analytics() {
+  const { user, profile, loading: authLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState<string>("overview");
+  const { progress, surfaces, quest, challenges, marks, xpInLevel, xpForNext, level, isLoading } = useProgress();
+  const [xpEventsQ, historyQ] = useXpEvents(50);
+  const claim = useClaimChallenge();
+  const navigate = useNavigate();
+  const { openUploadTypePicker } = useUploadPicker();
+
+  if (authLoading) {
+    return <div className="flex items-center justify-center min-h-[60vh]"><Skeleton className="h-8 w-48" /></div>;
+  }
+  if (!user) return null;
+
+  const tabs = (surfaces?.tabs ?? ["overview", "trophies", "history"]).map((id) => ({
+    id,
+    label: TAB_LABELS[id] ?? id,
+  }));
+
+  const initials = (profile?.display_name || profile?.username || user.email || "?").slice(0, 2).toUpperCase();
+  const displayName = profile?.display_name || profile?.username || "You";
+
+  // Map server marks to creatorMarks catalog entries for the row
+  const enrichedMarks = useMemo(() => {
+    const earnedKeys = new Set((marks ?? []).map((m) => m.mark_key));
+    return creatorMarksCatalog.map((m) => ({
+      ...m,
+      earnedDate: earnedKeys.has(m.id) ? "Earned" : undefined,
+    }));
+  }, [marks]);
+
+  const heroMarks = useMemo(
+    () =>
+      (marks ?? []).slice(0, 3).map((m) => ({
+        id: m.id,
+        name: creatorMarksCatalog.find((c) => c.id === m.mark_key)?.name ?? m.mark_key,
+      })),
+    [marks]
+  );
+
+  // Build quest steps from server state
+  const QUEST_DEF: { id: string; label: string; xp: number }[] = [
+    { id: "verify-email", label: "Verify your email", xp: 10 },
+    { id: "complete-profile", label: "Complete your profile", xp: 15 },
+    { id: "save-posts", label: "Save your first blueprint", xp: 10 },
+    { id: "first-comment", label: "Leave a comment", xp: 10 },
+    { id: "publish-draft", label: "Publish your first post", xp: 30 },
+    { id: "todays-nudge", label: "Complete today's nudge", xp: 10 },
+    { id: "come-back", label: "Come back tomorrow", xp: 10 },
+  ];
+  // map server keys (first-save, first-publish, first-nudge, return-tomorrow) to UI ids
+  const serverKeyAlias: Record<string, string> = {
+    "save-posts": "first-save",
+    "publish-draft": "first-publish",
+    "todays-nudge": "first-nudge",
+    "come-back": "return-tomorrow",
+  };
+  const questSteps = QUEST_DEF.map((s) => {
+    const serverKey = serverKeyAlias[s.id] ?? s.id;
+    const done = !!quest?.steps?.[serverKey];
+    return { ...s, status: (done ? "completed" : "active") as "completed" | "active" | "future" };
+  });
+
+  const handleQuestGo = (step: { id: string }) => {
+    switch (step.id) {
+      case "verify-email":
+        supabase.auth.resend({ type: "signup", email: user.email! } as any).then(() => {
+          toast({ title: "Verification email sent" });
+        }).catch(() => toast({ title: "Could not resend", variant: "destructive" }));
+        break;
+      case "complete-profile":
+        navigate("/profile");
+        break;
+      case "save-posts":
+      case "first-comment":
+        navigate("/discover");
+        break;
+      case "publish-draft":
+        openUploadTypePicker();
+        break;
+      case "todays-nudge": {
+        const el = document.getElementById("daily-nudge-anchor");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        break;
+      }
+      case "come-back":
+      default:
+        break;
+    }
+  };
+
+  const todayChallenge = challenges[0];
+  const challengeState: "go" | "claimable" | "claimed" = todayChallenge
+    ? todayChallenge.claimed
+      ? "claimed"
+      : todayChallenge.progress >= todayChallenge.target
+      ? "claimable"
+      : "go"
+    : "go";
+
+  const xpEvents: XpLedgerEntry[] = (xpEventsQ.data ?? []).map((e: any) => ({
+    id: e.id,
+    icon: Zap,
+    action: humanizeReason(e.reason),
+    sourceLabel: e.metadata?.title,
+    xp: e.amount,
+    timestamp: new Date(e.created_at),
+  }));
+
+  const showcaseAuto = cabinetBadges.filter((b) => b.earned).slice(0, 5);
+
+  const overviewSurfaces = surfaces ?? {
+    eligibility_notice: true,
+    quest: true,
+    daily_nudge: true,
+    next_unlock: true,
+    engagement_grid: false,
+    empty_state: true,
+  };
+
+  return (
+    <>
+      <SeoHead title="Your Progress — NeoScale AI" description="Track your XP, quests, and creator marks." path="/analytics" />
+      <ShellHeader title="Your Progress" />
+      <div
+        className="mx-auto"
+        style={{
+          maxWidth: 760,
+          padding: "16px 20px 40px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 20,
+        }}
+      >
+        <ProgressTabBar tabs={tabs} active={activeTab} onChange={setActiveTab} />
+
+        {activeTab === "overview" && (
+          <>
+            {overviewSurfaces.eligibility_notice && (
+              <EligibilityNotice
+                isVerified={!!user.email_confirmed_at}
+                hoursRemaining={Math.max(0, 48 - Math.floor(((Date.now() - new Date(progress?.created_at ?? Date.now()).getTime()) / 3_600_000)))}
+                onVerifyClick={() => handleQuestGo({ id: "verify-email" })}
+              />
+            )}
+
+            <ProgressHero
+              name={displayName}
+              avatarUrl={profile?.avatar_url ?? undefined}
+              initials={initials}
+              level={level}
+              xpInLevel={xpInLevel}
+              xpForNext={xpForNext}
+              marks={heroMarks}
+              rightSlot={
+                <>
+                  <StreakFlame streak={progress?.streak_days ?? 0} state={(progress?.streak_days ?? 0) > 0 ? "active" : "zero"} />
+                  <StreakInlineNote />
+                </>
+              }
+            />
+
+            {overviewSurfaces.quest && (
+              <QuestChecklist
+                steps={questSteps as any}
+                onGo={handleQuestGo as any}
+              />
+            )}
+
+            <div id="daily-nudge-anchor">
+              {overviewSurfaces.daily_nudge && todayChallenge && (
+                <DailyNudgeCard
+                  challenge={{
+                    id: todayChallenge.id,
+                    title: todayChallenge.title,
+                    description: todayChallenge.description ?? undefined,
+                    xp: todayChallenge.xp_reward,
+                    state: challengeState,
+                  } as any}
+                  state={challengeState}
+                  onClaim={() => claim.mutate(todayChallenge.id)}
+                />
+              )}
+            </div>
+
+            {overviewSurfaces.next_unlock && (
+              <NextUnlockCard
+                milestoneLabel={quest?.next_milestone}
+                isMysterious={!!quest?.completed && level < 5}
+              />
+            )}
+
+            {overviewSurfaces.empty_state ? (
+              <EmptyProgressState />
+            ) : (
+              <EngagementGrid counters={progress?.counters ?? {}} />
+            )}
+
+            <SectionHeader title="Your content" subtitle="The classic analytics view, preserved." />
+            <ContentAnalyticsSection userId={user.id} />
+          </>
+        )}
+
+        {activeTab === "trophies" && (
+          <>
+            <CreatorMarksRow marks={enrichedMarks as any} />
+            <ShowcaseStrip badges={showcaseAuto} autoPinned isOwnProfile />
+          </>
+        )}
+
+        {activeTab === "history" && (
+          <>
+            <SectionHeader title="XP ledger" />
+            <XpLedger
+              entries={xpEvents}
+              onLoadMore={() => xpEventsQ.refetch()}
+            />
+            <SectionHeader title="Challenges completed" />
+            <div style={{ background: "rgba(52,52,66,0.45)", borderRadius: 12, border: "0.5px solid rgba(255,255,255,0.10)", overflow: "hidden" }}>
+              {(historyQ.data ?? []).length === 0 ? (
+                <div style={{ padding: 20, textAlign: "center", color: "rgba(255,255,255,0.45)", fontSize: 13 }}>
+                  No challenges claimed yet.
+                </div>
+              ) : (
+                (historyQ.data ?? []).map((h: any) => (
+                  <ChallengeHistoryRow
+                    key={h.id}
+                    entry={{
+                      id: h.id,
+                      title: h.title ?? h.challenge_key,
+                      xp: h.xp_awarded,
+                      completedAt: h.completed_at,
+                    }}
+                  />
+                ))
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+function humanizeReason(reason: string): string {
+  if (reason.startsWith("challenge:")) return "Challenge claimed";
+  return reason.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+}
+
+/* ─────────── Existing analytics, preserved ─────────── */
+function ContentAnalyticsSection({ userId }: { userId: string }) {
+  const [range, setRange] = useState<Range>("30");
   const days = parseInt(range, 10);
   const rangeStart = useMemo(() => subDays(new Date(), days).toISOString(), [days]);
   const prevRangeStart = useMemo(() => subDays(new Date(), days * 2).toISOString(), [days]);
 
-  // Gate
-  if (authLoading) return <div className="flex items-center justify-center min-h-[60vh]"><Skeleton className="h-8 w-48" /></div>;
-  if (!user) return null; // ProtectedRoute handles redirect
-  if (!isCreator) {
-    return (
-      <div className="max-w-xl mx-auto py-20 px-4 text-center">
-        <h1 className="text-2xl font-bold mb-4">Analytics</h1>
-        <p className="text-muted-foreground mb-4">
-          Analytics are available for creator accounts. Switch to a creator account in Settings.
-        </p>
-        <Link to="/profile" className="text-primary underline">Go to Settings</Link>
-      </div>
-    );
-  }
-
   return (
-    <>
-      <SeoHead title="Your Analytics — NeoScale AI" description="Track your content performance" path="/analytics" />
-      <div className="max-w-5xl mx-auto flex flex-col" style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24, gap: 20 }}>
-        {/* Header */}
-        <div className="flex items-center justify-between flex-wrap" style={{ gap: 16 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)' }}>Your Analytics</h1>
-          <Select value={range} onValueChange={(v) => setRange(v as Range)}>
-            <SelectTrigger className="w-40 h-8 text-sm bg-transparent border border-border text-foreground"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {RANGE_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <OverviewCards userId={user.id} rangeStart={rangeStart} prevRangeStart={prevRangeStart} days={days} />
-        <ViewsDownloadsChart userId={user.id} rangeStart={rangeStart} days={days} />
-        <ContentPerformanceTable userId={user.id} />
-        <BlockEngagementHeatmap userId={user.id} />
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div className="flex justify-end">
+        <Select value={range} onValueChange={(v) => setRange(v as Range)}>
+          <SelectTrigger className="w-40 h-8 text-sm bg-transparent border border-border text-foreground"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {RANGE_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-    </>
+      <OverviewCards userId={userId} rangeStart={rangeStart} prevRangeStart={prevRangeStart} days={days} />
+      <ViewsDownloadsChart userId={userId} rangeStart={rangeStart} days={days} />
+      <ContentPerformanceTable userId={userId} />
+      <BlockEngagementHeatmap userId={userId} />
+    </div>
   );
 }
 
@@ -82,7 +342,6 @@ function OverviewCards({ userId, rangeStart, prevRangeStart, days }: { userId: s
   const { data, isLoading } = useQuery({
     queryKey: ["analytics_overview", userId, rangeStart],
     queryFn: async () => {
-      // Fetch creator's approved content ids
       const { data: items } = await supabase
         .from("content_items")
         .select("id, view_count, download_count, avg_rating, status")
@@ -95,7 +354,6 @@ function OverviewCards({ userId, rangeStart, prevRangeStart, days }: { userId: s
       const ratings = (items || []).filter((i) => i.avg_rating > 0);
       const avgRating = ratings.length > 0 ? ratings.reduce((s, i) => s + i.avg_rating, 0) / ratings.length : 0;
 
-      // Current period views/downloads from tables
       const now = new Date().toISOString();
       const [curViews, prevViews, curDl, prevDl] = await Promise.all([
         supabase.from("content_views").select("id", { count: "exact", head: true })
@@ -112,7 +370,6 @@ function OverviewCards({ userId, rangeStart, prevRangeStart, days }: { userId: s
           .gte("downloaded_at", prevRangeStart).lt("downloaded_at", rangeStart),
       ]);
 
-      // Earnings
       const { data: purchases } = await supabase
         .from("project_package_purchases")
         .select("amount_gbp")
@@ -140,8 +397,8 @@ function OverviewCards({ userId, rangeStart, prevRangeStart, days }: { userId: s
   const cards = [
     { label: "Total Views", value: data?.totalViews ?? 0, icon: Eye, d: delta(data?.curViews ?? 0, data?.prevViews ?? 0) },
     { label: "Total Downloads", value: data?.totalDownloads ?? 0, icon: Download, d: delta(data?.curDownloads ?? 0, data?.prevDownloads ?? 0) },
-    { label: "Total Earnings", value: data?.totalEarnings !== undefined ? `£${data.totalEarnings.toFixed(2)}` : "—", icon: TrendingUp, d: null },
-    { label: "Avg Star Rating", value: data?.avgRating ?? 0, icon: Star, d: null, isStar: true },
+    { label: "Total Earnings", value: data?.totalEarnings !== undefined ? `£${data.totalEarnings.toFixed(2)}` : "—", icon: TrendingUp, d: null as number | null },
+    { label: "Avg Star Rating", value: data?.avgRating ?? 0, icon: Star, d: null as number | null, isStar: true },
   ];
 
   if (isLoading) {
@@ -161,12 +418,12 @@ function OverviewCards({ userId, rangeStart, prevRangeStart, days }: { userId: s
             {c.label}
           </div>
           <p style={{ fontSize: 24, fontWeight: 600, color: 'rgba(255,255,255,0.90)', lineHeight: 1.1 }}>
-            {c.isStar ? (
+            {(c as any).isStar ? (
               <span className="flex items-center" style={{ gap: 6 }}>
                 {c.value} <Star style={{ width: 18, height: 18, fill: '#8B4513', color: '#8B4513' }} />
               </span>
             ) : (
-              c.value.toLocaleString?.() ?? c.value
+              (c.value as any).toLocaleString?.() ?? c.value
             )}
           </p>
           {c.d !== null && c.d !== 0 && (
@@ -359,7 +616,6 @@ function BlockEngagementHeatmap({ userId }: { userId: string }) {
   const { data, isLoading } = useQuery({
     queryKey: ["analytics_block_heatmap", userId],
     queryFn: async () => {
-      // Get top 5 posts by view_count
       const { data: topPosts } = await supabase
         .from("content_items")
         .select("id, title")
@@ -371,7 +627,6 @@ function BlockEngagementHeatmap({ userId }: { userId: string }) {
 
       const results = await Promise.all(
         topPosts.map(async (post) => {
-          // Get blocks for this post
           const { data: blocks } = await supabase
             .from("content_blocks")
             .select("id, position, block_type")
@@ -380,19 +635,13 @@ function BlockEngagementHeatmap({ userId }: { userId: string }) {
 
           if (!blocks?.length) return { ...post, blocks: [] };
 
-          // Get ad_impressions counts per block (using content_id match)
-          // ad_impressions tracks per content_id; we'll use content_views per block as proxy
-          // Actually, ad_impressions has content_id — count impressions for this content
           const { count: totalImpressions } = await supabase
             .from("ad_impressions")
             .select("id", { count: "exact", head: true })
             .eq("content_id", post.id);
 
-          // Since ad_impressions doesn't have block-level data, simulate relative drop-off
-          // by distributing the total views with a natural decay per block position
           const total = totalImpressions ?? 0;
           const blockData = blocks.map((b, idx) => {
-            // Simple drop-off model: each block retains ~85% of previous
             const viewEstimate = Math.round(total * Math.pow(0.85, idx));
             return { ...b, views: viewEstimate };
           });

@@ -1,90 +1,148 @@
-# Shared ShellHeader for the centre column
 
 ## Goal
-Stop every page from inventing its own top region. A single `ShellHeader` component owns the Back button, page title, primary action, tabs, search/controls row, and a secondary right-of-tabs action. Every page renders this component at the top of the centre column with identical positioning and spacing.
+Transform `/analytics` into a gamified "Your Progress" page with three tabs (Overview / Trophies / History). Existing analytics (stat cards, chart, posts table, heatmap) are kept verbatim, nested under Overview > "Your content" section. Build the full progress backend (XP, level math, quests, daily challenges, creator marks, visible surfaces) and wire v0 components from five GitHub repos.
 
-## 1. New component: `src/components/shell/ShellHeader.tsx`
+## Phase 1 — Database (single migration)
 
-Fixed vertical rhythm (always the same, regardless of which optional rows are present):
+New tables (all with GRANTs + RLS):
+
+- `user_progress` — `user_id PK→auth.users`, `xp_total int`, `level int`, `eligible_at timestamptz NULL`, `counters jsonb` (saves, comments, publishes, returns, etc.), `quest_state jsonb` (per-step booleans + completed_at), `last_active_date date`, timestamps. Self-read/update only.
+- `xp_events` — `id`, `user_id`, `amount int`, `reason text`, `source_type text`, `source_id uuid NULL`, `metadata jsonb`, `created_at`. Self-read only; inserts via SECURITY DEFINER RPC.
+- `creator_marks` — `id`, `user_id`, `mark_key text` (e.g. `first_publish`, `streak_7`, `comment_10`), `earned_at`, `pinned bool default false`, `display_order int`. Public read, self-update for pin/order.
+- `daily_challenges` — `id`, `user_id`, `challenge_key text`, `target int`, `progress int`, `claimed bool`, `xp_reward int`, `expires_at`, `created_at`. Self-read/update.
+- `challenge_history` — `id`, `user_id`, `challenge_key text`, `xp_awarded int`, `completed_at`. Self-read; insert via RPC.
+
+RPCs (SECURITY DEFINER):
+- `award_xp(_reason text, _amount int, _source_type text, _source_id uuid, _metadata jsonb)` — inserts xp_event, bumps `user_progress.xp_total`, recomputes level via `floor((xp/75)^(1/1.7))`, recomputes `eligible_at` (first time xp ≥ threshold), returns new totals.
+- `claim_challenge(_challenge_id uuid)` — validates ownership + progress ≥ target + not claimed, awards XP via internal call, inserts history row, marks claimed.
+- `get_visible_surfaces(_user_id uuid)` returns jsonb — server-side computes which surfaces show (quest, daily_nudge, marks_row, showcase, ledger, empty_state, eligibility_notice) based on level, account age, quest state, counters. **Single source of truth for visibility.**
+- `get_quest_state(_user_id uuid)` returns jsonb with each step status + next milestone label.
+
+Trigger on `auth.users` insert seeds `user_progress` row (extend existing `handle_new_user`).
+
+## Phase 2 — v0 component pull
+
+Clone all five repos into `/tmp/v0/` then copy needed `.tsx` files:
+
+| Repo | Dest folder | Files to copy |
+|---|---|---|
+| v0-session-a | `src/components/progress/` | LevelRing, XpBar, XpToast, LevelUpModal, XpLedger, XpStatCard, EligibilityNotice, CreatorMarkChip |
+| v0-session-b | `src/components/progress/` | ProgressHero, PeriodToggle, SectionHeader, EngagementGrid, NextUnlockCard, EmptyProgressState, ProgressTabBar, DepthRevealModal |
+| v0-session-f | `src/components/challenges/` | QuestChecklist, DailyNudgeCard, ClaimButton, ChallengeCompleteToast, ChallengeHistoryRow (+ place but don't mount: ChallengesPanel, WeeklyChallengeCard) |
+| v0-session-d | `src/components/trophies/` | CreatorMarkTile, CreatorMarksRow, ShowcaseStrip (+ place rest, don't mount) |
+| v0-session-e | `src/components/streaks/` | StreakFlame, StreakInlineNote (only these two for now) |
+
+Normalize imports (`@/` paths, shadcn primitives, `cn` from `@/lib/utils`), strip Next.js artifacts, swap fonts to Playfair/Inter, swap colors to existing Sienna/Teal tokens.
+
+## Phase 3 — Data layer (`src/lib/progress/`)
+
+- `getUserProgress.ts` — selects user_progress row; computes derived `xp_in_level` / `xp_to_next` using the 75×L^1.7 curve.
+- `getVisibleSurfaces.ts` — calls RPC; returns typed object.
+- `getQuestState.ts` — calls RPC; maps to steps array with `done`, `goHref`, `label`.
+- `getChallenges.ts` — selects today's daily_challenges (creates a row via RPC if none exists for today).
+- `getXpEvents.ts` — paged select from xp_events ordered desc.
+- `getCreatorMarks.ts` — selects earned + pinned.
+- `claimChallenge.ts` — calls RPC, returns `{ xp_awarded, new_total, new_level, leveled_up }`.
+- `awardXp.ts` — thin wrapper around RPC (for client-driven nudge completion etc.).
+- `index.ts` — barrel.
+
+## Phase 4 — `src/hooks/useProgress.ts`
+
+Single hook using react-query. Fires four parallel queries: `getUserProgress`, `getVisibleSurfaces`, `getQuestState`, `getChallenges`. Exposes `{ progress, surfaces, quest, challenges, marks, isLoading, refetch }`. Mutations exposed via separate hooks `useClaimChallenge` and `useAwardXp` (invalidate progress + challenges + ledger on success; trigger `XpToast` + `LevelUpModal` if `leveled_up`).
+
+## Phase 5 — Page composition (`src/pages/Analytics.tsx`)
+
+Keep route path `/analytics`. Rename visible title to "Your Progress". Refactor file to:
 
 ```text
-+----------------------------------------------------------+
-| ROW 1  (h:56, pad:0)                                     |
-|  [Back]      ......[toggleSlot center]......  [Primary] |
-+----------------------------------------------------------+
-| ROW 2  (h:32, mt:8)   Page title (optional)              |
-+----------------------------------------------------------+
-| ROW 3  (h:44, mt:16)  [Tab • Tab • Tab]   [secondary →] |
-+----------------------------------------------------------+
-| ROW 4  (mt:12)        searchSlot / controls (optional)   |
-+----------------------------------------------------------+
-| CONTENT begins at mt:16 after the last rendered row      |
-+----------------------------------------------------------+
+<SeoHead title="Your Progress — NeoScale AI" />
+<ShellHeader title="Your Progress" backHref="-1" />
+<ProgressTabBar tabs={surfaces.tabs ?? ['overview','trophies','history']} />
+
+{tab === 'overview' && (
+  <>
+    {surfaces.eligibility_notice && <EligibilityNotice eligibleAt={progress.eligible_at} />}
+    <ProgressHero
+      level={progress.level}
+      xpInLevel={...} xpToNext={...}
+      avatarUrl={profile.avatar_url}
+      name={profile.display_name}
+      marks={marks.slice(0,3)}
+      rightSlot={<><StreakFlame days={progress.streak} /><StreakInlineNote /></>}
+    />
+    {surfaces.quest && <QuestChecklist steps={quest.steps} onGo={handleQuestGo} />}
+    {surfaces.daily_nudge && challenges.today && (
+      <DailyNudgeCard challenge={challenges.today} onClaim={claim} />
+    )}
+    <NextUnlockCard
+      milestoneLabel={quest.next_milestone}
+      isMysterious={quest.completed && progress.level < 5}
+    />
+    {surfaces.empty_state ? (
+      <EmptyProgressState />
+    ) : (
+      <EngagementGrid counters={progress.counters} />
+    )}
+    <SectionHeader title="Your content" />
+    <ExistingAnalyticsBlock />  {/* OverviewCards + ViewsDownloadsChart + ContentPerformanceTable + BlockEngagementHeatmap, unchanged */}
+  </>
+)}
+
+{tab === 'trophies' && (
+  <>
+    <CreatorMarksRow marks={marks} showInvitations />
+    <ShowcaseStrip marks={marks.filter(m=>m.pinned)} autoPinned />
+  </>
+)}
+
+{tab === 'history' && (
+  <>
+    <XpLedger events={events} onLoadMore={...} />
+    <SectionHeader title="Challenges completed" />
+    <ChallengeHistoryRow.List items={history} />
+  </>
+)}
 ```
 
-### Props
-```ts
-type ShellHeaderProps = {
-  onBack: () => void;                      // Back always present
-  primaryAction?: { label: string; icon?: LucideIcon; onClick: () => void };
-  secondaryAction?: { label: string; onClick: () => void; disabled?: boolean }; // ghost text link, right of tabs row
-  title?: string;
-  tabs?: { id: string; label: string; count?: number }[];
-  activeTab?: string;
-  onTabChange?: (id: string) => void;
-  searchSlot?: ReactNode;
-  toggleSlot?: ReactNode;                  // center of row 1
-};
-```
+Existing analytics functions (`OverviewCards`, `ViewsDownloadsChart`, `ContentPerformanceTable`, `BlockEngagementHeatmap`) are extracted unchanged into a single `ContentAnalyticsSection` wrapper component for clarity — no styling or query changes.
 
-### Style tokens (hard-coded inside the component so every page matches)
-- Back: ChevronLeft 16px + "Back" Inter 13/500, color `rgba(255,255,255,0.70)` → hover `0.95`, bg `rgba(255,255,255,0.04)`, radius 8, padding `8px 12px`.
-- Primary action: bg `linear-gradient(135deg,#E8571A 0%,#C44514 100%)`, Inter 13/600 white, padding `8px 16px`, radius 8, optional 14px icon left. ORANGE only — no green anywhere.
-- Title: Inter 18/600 `rgba(255,255,255,0.95)`, left aligned, single line.
-- Tabs: Inter 13/500, padding `10px 0`, gap 24; active `#E8571A` with 2px orange underline; inactive `rgba(255,255,255,0.55)`. Count pill: Inter 10/600, radius 999, bg `rgba(255,255,255,0.08)`.
-- Secondary action (in row 3 right): transparent, Inter 12/500, `rgba(255,255,255,0.65)` (disabled `0.30`).
-- Row math is implemented with fixed heights + `margin-top` on each optional row so absent rows do not shift content.
+## Phase 6 — Quest step deep-links
 
-### Responsiveness
-- Honours `useBreakpoint`; on `mobile` the Back button is suppressed (the existing `MobileTopBar` covers it) but the rest of the rows render identically. No other layout changes.
+`handleQuestGo(stepKey)`:
+- `verify-email` → trigger Supabase `resend({type:'signup'})` + toast
+- `complete-profile` → `navigate('/profile')` (edit modal)
+- `first-save` → `navigate('/discover')`
+- `first-comment` → `navigate('/discover')`
+- `first-publish` → `openUploadPicker()` via `UploadPickerContext`
+- `first-nudge` → `scrollIntoView` on DailyNudgeCard ref
+- `return-tomorrow` → no-op info row
 
-## 2. Remove existing ad-hoc back buttons
-- Delete the floating `.ns-back-btn` injected in `src/components/NeoScaleShell.tsx` (CSS rule + the conditional `<button>` in `ns-middle-wrapper`). The new header owns Back.
-- Leave the right rail, left rail, mobile chrome, and Home `FeedShell` untouched.
+## Phase 7 — Visibility rules (server, in `get_visible_surfaces`)
 
-## 3. Page rollouts (replace each page's current header region only)
+- `eligibility_notice`: `eligible_at IS NULL OR eligible_at > now()`
+- `quest`: `quest.completed = false OR age_days < 14`
+- `daily_nudge`: always true when authed
+- `marks_row` / `showcase` / `ledger`: always true on respective tabs
+- `empty_state`: counters all zero AND level = 1
+- `tabs`: always `['overview','trophies','history']` for now
 
-| Page | File | onBack | title | primaryAction | tabs | searchSlot | toggleSlot | secondaryAction |
-|---|---|---|---|---|---|---|---|---|
-| Messages | `src/pages/Messages.tsx` | ✓ | partner name or "Messages" | — | Primary / Requests | "Search conversations…" input | — | — |
-| Library | `src/pages/Library.tsx` | ✓ | — | "New collection" + Plus (orange) | Collections / All saved items | — | — | — |
-| Discover | `src/pages/Discover.tsx` | ✓ | — | "Submit a blueprint" | Blueprints / Stages / Blocks | "Search blueprints…" input + Filters button | — | — |
-| Upload | `src/pages/Upload.tsx` (and `UploadTypeSelector.tsx` if it is the entry) | ✓ | — | — (Publish stays in right rail) | — | — | existing BLUEPRINT / BUILD toggle | — |
-| Drafts | `src/pages/Drafts.tsx` | ✓ | — | "New draft" + Plus (orange) | — | — | — | — |
-| Notifications | `src/pages/Notifications.tsx` | ✓ | — | — | All / Unread (with counts) | — | — | "Mark all as read" (disabled when unread = 0) |
+## Phase 8 — Verification
 
-For each page:
-1. Import `ShellHeader`.
-2. Delete the existing top toolbar / tab strip / search row / "New …" button / "Mark all as read" button JSX.
-3. Render `<ShellHeader …/>` at the very top of the page's returned tree, then keep the existing content below it unchanged.
-4. Wire `onBack={() => navigate(-1)}`.
-5. For Library/Drafts: route the existing "create" handler into `primaryAction.onClick`, keep the modal/flow logic intact, just change where the trigger lives.
-6. For Notifications: pass `handleMarkAll` to `secondaryAction.onClick` and `disabled: unreadCount === 0`; remove the local "Mark all as read" button and the inline tabs (the header renders them).
-7. For Messages: pass the conversation partner name as `title` on a thread view, "Messages" on the list view; keep `MessagesThreadList`'s search input by lifting it into `searchSlot` (or pass a small controlled wrapper).
-8. For Upload: extract the existing BLUEPRINT/BUILD toggle into `toggleSlot`. Do not touch the right-rail Publish button.
+- Fresh test account: Overview shows EligibilityNotice + ProgressHero (L1) + QuestChecklist + DailyNudgeCard + NextUnlockCard + EmptyProgressState. Existing analytics still rendered below SectionHeader.
+- Established account with seeded xp_events + marks: hero shows correct level (verify 75×L^1.7), ledger paginates, marks row populated, analytics table intact.
+- Tab bar shows only Overview / Trophies / History.
+- ProtectedRoute still gates; non-creator gate removed (progress shows for all users).
 
-## 4. Verification
-- After build, screenshot each of the 7 routes at the current viewport via `browser--view_preview` + `browser--screenshot`.
-- Eyeball-check (and crop with `image_tools--zoom_image` where needed) that:
-  - Back button's top-left coordinates match across all 7 pages.
-  - Primary action's top-right coordinates match across Library / Discover / Drafts.
-  - Tabs baseline matches across Messages / Library / Discover / Notifications.
-  - First content element sits 16px below the last header row on every page.
+## Out of scope (explicit)
+ChallengesPanel, WeeklyChallengeCard, CabinetGrid, ShowcaseEditor, DepthRevealModal, skill-tree components — files placed but not imported. No changes to left rail, right rail, feed, or other routes.
 
-## Out of scope (explicitly not touched)
-- Left rail, right rail (Explore/Browse/Trending), Home `FeedShell`, mobile bottom nav, page content below the header, any business logic, any backend/RLS work.
-
-## Technical notes
-- Component is pure presentational; no data fetching. Tabs are controlled via `activeTab` + `onTabChange` so pages keep owning routing/query-param state (e.g. Notifications' `?filter=unread`).
-- All colours/sizes are inline styles inside `ShellHeader` to guarantee parity and avoid Tailwind drift; matches the existing inline-style convention used in `Notifications.tsx` and `AuthButton.tsx`.
-- No new dependencies.
+## Files touched
+- `supabase/migrations/<new>.sql` (new)
+- `src/components/progress/*` (8 new)
+- `src/components/challenges/*` (7 new, 5 mounted)
+- `src/components/trophies/*` (3+ new, 3 mounted)
+- `src/components/streaks/*` (2 new)
+- `src/lib/progress/*` (9 new)
+- `src/hooks/useProgress.ts` (new)
+- `src/hooks/useClaimChallenge.ts`, `useAwardXp.ts` (new)
+- `src/pages/Analytics.tsx` (restructured; analytics sub-components extracted intact)

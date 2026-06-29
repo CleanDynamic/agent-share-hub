@@ -407,6 +407,33 @@ export type Database = {
           },
         ]
       }
+      challenge_history: {
+        Row: {
+          challenge_key: string
+          completed_at: string
+          id: string
+          title: string | null
+          user_id: string
+          xp_awarded: number
+        }
+        Insert: {
+          challenge_key: string
+          completed_at?: string
+          id?: string
+          title?: string | null
+          user_id: string
+          xp_awarded?: number
+        }
+        Update: {
+          challenge_key?: string
+          completed_at?: string
+          id?: string
+          title?: string | null
+          user_id?: string
+          xp_awarded?: number
+        }
+        Relationships: []
+      }
       collab_invites: {
         Row: {
           content_id: string
@@ -1748,6 +1775,36 @@ export type Database = {
           },
         ]
       }
+      creator_marks: {
+        Row: {
+          display_order: number
+          earned_at: string
+          id: string
+          mark_key: string
+          metadata: Json
+          pinned: boolean
+          user_id: string
+        }
+        Insert: {
+          display_order?: number
+          earned_at?: string
+          id?: string
+          mark_key: string
+          metadata?: Json
+          pinned?: boolean
+          user_id: string
+        }
+        Update: {
+          display_order?: number
+          earned_at?: string
+          id?: string
+          mark_key?: string
+          metadata?: Json
+          pinned?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       curator_applications: {
         Row: {
           applied_at: string | null
@@ -1881,6 +1938,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      daily_challenges: {
+        Row: {
+          challenge_key: string
+          claimed: boolean
+          created_at: string
+          description: string | null
+          expires_at: string
+          id: string
+          progress: number
+          target: number
+          title: string
+          user_id: string
+          xp_reward: number
+        }
+        Insert: {
+          challenge_key: string
+          claimed?: boolean
+          created_at?: string
+          description?: string | null
+          expires_at?: string
+          id?: string
+          progress?: number
+          target?: number
+          title: string
+          user_id: string
+          xp_reward?: number
+        }
+        Update: {
+          challenge_key?: string
+          claimed?: boolean
+          created_at?: string
+          description?: string | null
+          expires_at?: string
+          id?: string
+          progress?: number
+          target?: number
+          title?: string
+          user_id?: string
+          xp_reward?: number
+        }
+        Relationships: []
       }
       dm_messages: {
         Row: {
@@ -4178,6 +4277,45 @@ export type Database = {
           },
         ]
       }
+      user_progress: {
+        Row: {
+          counters: Json
+          created_at: string
+          eligible_at: string | null
+          last_active_date: string | null
+          level: number
+          quest_state: Json
+          streak_days: number
+          updated_at: string
+          user_id: string
+          xp_total: number
+        }
+        Insert: {
+          counters?: Json
+          created_at?: string
+          eligible_at?: string | null
+          last_active_date?: string | null
+          level?: number
+          quest_state?: Json
+          streak_days?: number
+          updated_at?: string
+          user_id: string
+          xp_total?: number
+        }
+        Update: {
+          counters?: Json
+          created_at?: string
+          eligible_at?: string | null
+          last_active_date?: string | null
+          level?: number
+          quest_state?: Json
+          streak_days?: number
+          updated_at?: string
+          user_id?: string
+          xp_total?: number
+        }
+        Relationships: []
+      }
       user_saves: {
         Row: {
           content_id: string
@@ -4231,6 +4369,39 @@ export type Database = {
           },
         ]
       }
+      xp_events: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          metadata: Json
+          reason: string
+          source_id: string | null
+          source_type: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          reason: string
+          source_id?: string | null
+          source_type?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          reason?: string
+          source_id?: string | null
+          source_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       profile_stats: {
@@ -4247,11 +4418,26 @@ export type Database = {
       }
     }
     Functions: {
+      award_xp: {
+        Args: {
+          _amount: number
+          _metadata?: Json
+          _reason: string
+          _source_id?: string
+          _source_type?: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      calc_level_from_xp: { Args: { _xp: number }; Returns: number }
       can_delete_primitive_comment: {
         Args: { _comment_id: string; _user_id: string }
         Returns: boolean
       }
+      claim_challenge: { Args: { _challenge_id: string }; Returns: Json }
       get_email_by_username: { Args: { _username: string }; Returns: string }
+      get_quest_state: { Args: { _user_id?: string }; Returns: Json }
+      get_visible_surfaces: { Args: { _user_id?: string }; Returns: Json }
       increment_content_view_count: {
         Args: { _content_id: string }
         Returns: undefined
