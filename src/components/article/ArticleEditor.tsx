@@ -747,7 +747,7 @@ export function ArticleEditor({
   return (
     <div
       ref={editorContainerRef}
-      style={{ position: 'relative', flex: 1 }}
+      style={{ position: 'relative', flex: 1, width: '100%', maxWidth: isBlog ? 760 : 720, margin: '0 auto' }}
     >
       {/* Editor styles */}
       <style>{`
