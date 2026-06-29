@@ -293,6 +293,18 @@ export default function Analytics() {
           </>
         )}
 
+        {activeTab === "skill_tree" && (
+          <SkillTreeTab progress={progress} surfaces={surfaces} />
+        )}
+
+        {activeTab === "challenges" && (
+          <ChallengesTab
+            challenges={challenges}
+            history={historyQ.data ?? []}
+            hasNew={!!surfaces?.challenges_isnew}
+          />
+        )}
+
         {activeTab === "trophies" && (
           <>
             <CreatorMarksRow marks={enrichedMarks as any} />
