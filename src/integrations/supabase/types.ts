@@ -2964,6 +2964,82 @@ export type Database = {
           },
         ]
       }
+      perks: {
+        Row: {
+          description: string
+          effect_key: string
+          icon_name: string
+          is_active: boolean
+          name: string
+          slug: string
+          tier: number
+          track: string
+        }
+        Insert: {
+          description: string
+          effect_key: string
+          icon_name?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          tier: number
+          track: string
+        }
+        Update: {
+          description?: string
+          effect_key?: string
+          icon_name?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          tier?: number
+          track?: string
+        }
+        Relationships: []
+      }
+      post_lineage: {
+        Row: {
+          created_at: string
+          parent_post_id: string
+          post_id: string
+          root_post_id: string
+        }
+        Insert: {
+          created_at?: string
+          parent_post_id: string
+          post_id: string
+          root_post_id: string
+        }
+        Update: {
+          created_at?: string
+          parent_post_id?: string
+          post_id?: string
+          root_post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_lineage_parent_post_id_fkey"
+            columns: ["parent_post_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_lineage_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_lineage_root_post_id_fkey"
+            columns: ["root_post_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_view_log: {
         Row: {
           id: string
@@ -3995,6 +4071,39 @@ export type Database = {
           },
         ]
       }
+      streak_days: {
+        Row: {
+          date: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          date: string
+          kind?: string
+          user_id: string
+        }
+        Update: {
+          date?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "streak_days_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "streak_days_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -4319,15 +4428,62 @@ export type Database = {
           },
         ]
       }
+      user_perks: {
+        Row: {
+          earned_at: string
+          perk_slug: string
+          user_id: string
+        }
+        Insert: {
+          earned_at?: string
+          perk_slug: string
+          user_id: string
+        }
+        Update: {
+          earned_at?: string
+          perk_slug?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_perks_perk_slug_fkey"
+            columns: ["perk_slug"]
+            isOneToOne: false
+            referencedRelation: "perks"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "user_perks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_perks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_progress: {
         Row: {
           counters: Json
           created_at: string
+          depth_revealed_at: string | null
           eligible_at: string | null
+          freezes_used_month: number
           last_active_date: string | null
+          last_respec_at: string | null
           level: number
           quest_state: Json
+          streak_best: number
+          streak_current: number
           streak_days: number
+          track: string | null
+          track_xp: number
           updated_at: string
           user_id: string
           welcome_xp_shown_at: string | null
@@ -4336,11 +4492,18 @@ export type Database = {
         Insert: {
           counters?: Json
           created_at?: string
+          depth_revealed_at?: string | null
           eligible_at?: string | null
+          freezes_used_month?: number
           last_active_date?: string | null
+          last_respec_at?: string | null
           level?: number
           quest_state?: Json
+          streak_best?: number
+          streak_current?: number
           streak_days?: number
+          track?: string | null
+          track_xp?: number
           updated_at?: string
           user_id: string
           welcome_xp_shown_at?: string | null
@@ -4349,11 +4512,18 @@ export type Database = {
         Update: {
           counters?: Json
           created_at?: string
+          depth_revealed_at?: string | null
           eligible_at?: string | null
+          freezes_used_month?: number
           last_active_date?: string | null
+          last_respec_at?: string | null
           level?: number
           quest_state?: Json
+          streak_best?: number
+          streak_current?: number
           streak_days?: number
+          track?: string | null
+          track_xp?: number
           updated_at?: string
           user_id?: string
           welcome_xp_shown_at?: string | null
@@ -4481,8 +4651,21 @@ export type Database = {
       }
       claim_challenge: { Args: { _challenge_id: string }; Returns: Json }
       get_email_by_username: { Args: { _username: string }; Returns: string }
+      get_post_lineage: {
+        Args: { _root_id: string }
+        Returns: {
+          creator_id: string
+          depth: number
+          parent_post_id: string
+          post_id: string
+          root_post_id: string
+          slug: string
+          title: string
+        }[]
+      }
       get_quest_state: { Args: { _user_id?: string }; Returns: Json }
       get_visible_surfaces: { Args: { _user_id?: string }; Returns: Json }
+      has_perk: { Args: { _slug: string; _user_id: string }; Returns: boolean }
       increment_content_view_count: {
         Args: { _content_id: string }
         Returns: undefined
@@ -4504,7 +4687,10 @@ export type Database = {
         Args: { _thread_id: string; _user_id: string }
         Returns: boolean
       }
+      mark_depth_revealed: { Args: never; Returns: string }
       mark_welcome_xp_shown: { Args: never; Returns: string }
+      record_daily_activity: { Args: never; Returns: Json }
+      respec_track: { Args: { _track: string }; Returns: string }
       semantic_search: {
         Args: { match_count: number; query_embedding: string }
         Returns: {
@@ -4513,6 +4699,7 @@ export type Database = {
           title: string
         }[]
       }
+      set_user_track: { Args: { _track: string }; Returns: undefined }
       soft_delete_primitive_comment: {
         Args: { _comment_id: string }
         Returns: undefined
