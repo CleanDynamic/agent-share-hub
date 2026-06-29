@@ -1086,15 +1086,11 @@ export function ArticleEditor({
       />
 
       <TableContextMenu editor={editor}>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', width: '100%' }}>
           <EditorContent
             editor={editor}
             className="tiptap-article"
-            style={{
-              width: '100%',
-              maxWidth: isBlog ? 760 : 720,
-              margin: '0 auto',
-            }}
+            style={{ width: '100%' }}
           />
           {isBounty &&
           editor?.isEmpty &&
