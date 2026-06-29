@@ -1,7 +1,7 @@
 "use client"
 
-import type { Badge } from "@/lib/badge-data"
-import { tierColorVar } from "@/lib/badge-data"
+import type { Badge } from "./badge-data"
+import { tierColorVar } from "./badge-data"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { Plus, Settings2 } from "lucide-react"

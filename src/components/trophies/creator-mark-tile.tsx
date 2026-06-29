@@ -1,4 +1,4 @@
-import type { CreatorMark } from "@/lib/badge-data"
+import type { CreatorMark } from "./badge-data"
 import { cn } from "@/lib/utils"
 
 interface CreatorMarkTileProps {

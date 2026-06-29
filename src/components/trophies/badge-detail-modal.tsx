@@ -1,7 +1,7 @@
 "use client"
 
-import type { Badge } from "@/lib/badge-data"
-import { tierColorVar, tierLabel } from "@/lib/badge-data"
+import type { Badge } from "./badge-data"
+import { tierColorVar, tierLabel } from "./badge-data"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CalendarCheck, Sparkles } from "lucide-react"
 

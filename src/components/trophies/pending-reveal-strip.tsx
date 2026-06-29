@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import type { Badge } from "@/lib/badge-data"
-import { tierColorVar } from "@/lib/badge-data"
+import type { Badge } from "./badge-data"
+import { tierColorVar } from "./badge-data"
 
 interface PendingRevealStripProps {
   badges: Badge[]

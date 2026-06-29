@@ -1,5 +1,5 @@
-import type { CreatorMark } from "@/lib/badge-data"
-import { CreatorMarkTile } from "@/components/creator-mark-tile"
+import type { CreatorMark } from "./badge-data"
+import { CreatorMarkTile } from "./creator-mark-tile"
 
 interface CreatorMarksRowProps {
   marks: CreatorMark[]

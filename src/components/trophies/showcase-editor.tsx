@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import type { Badge } from "@/lib/badge-data"
-import { tierColorVar } from "@/lib/badge-data"
+import type { Badge } from "./badge-data"
+import { tierColorVar } from "./badge-data"
 import { cn } from "@/lib/utils"
 import { GripVertical, X } from "lucide-react"
 

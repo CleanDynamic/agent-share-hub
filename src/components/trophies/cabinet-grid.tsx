@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import type { Badge, BadgeCategory } from "@/lib/badge-data"
+import type { Badge, BadgeCategory } from "./badge-data"
 import { BadgeTile } from "@/components/badge-tile"
 import { HiddenBadgeSlot } from "@/components/hidden-badge-slot"
 import { BadgeDetailModal } from "@/components/badge-detail-modal"
