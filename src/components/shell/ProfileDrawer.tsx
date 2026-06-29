@@ -4,6 +4,9 @@ import {
   BarChart3, Info, LogOut, ChevronRight, X,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import NavProgressChip from "@/components/ambient/NavProgressChip";
+import { useProgress } from "@/hooks/useProgress";
+
 
 export interface DrawerUser {
   name: string;
@@ -167,7 +170,9 @@ export function ProfileDrawer({
               </span>
             </div>
           )}
+          {user && <DrawerProgressChip onClick={() => { onNavigate("analytics"); onClose(); }} />}
         </div>
+
 
         {/* Nav */}
         <nav style={{ flex: 1, overflowY: "auto" }}>
