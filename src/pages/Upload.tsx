@@ -1008,6 +1008,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
           ? new Date(Date.now() + bountyDeadlineDays * 86400000).toISOString()
           : null,
         bounty_gap: isBountyType && bountyGap.trim() ? bountyGap.trim() : null,
+        is_remixable: isRemixable,
       } as any).select("id").single();
 
       if (insertError || !insertedItem) {
