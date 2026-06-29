@@ -514,7 +514,59 @@ export default function Profile() {
     [updateParams]
   );
 
-  // ── Render ─────────────────────────────────────────────────────────────
+  // Profile-game (level / xp / streak / marks / founder badge)
+  const { data: gameData } = useProfileGameData(summary?.id ?? null);
+  const creatorMarks: CreatorMark[] = useMemo(() => {
+    return (gameData?.marks ?? []).slice(0, 3).map((m) => ({
+      id: m.id,
+      label:
+        typeof m.metadata?.label === "string"
+          ? m.metadata.label
+          : m.mark_key.replace(/_/g, " "),
+      icon: Sparkles,
+    }));
+  }, [gameData]);
+
+  const profileStats = useMemo(() => {
+    return [
+      {
+        id: "level",
+        label: "Level",
+        value: gameData?.level ?? 1,
+        icon: Zap,
+      },
+      {
+        id: "xp",
+        label: "XP",
+        value: (gameData?.xpTotal ?? 0).toLocaleString(),
+        icon: Trophy,
+      },
+      {
+        id: "streak",
+        label: "Streak",
+        value: `${gameData?.streakDays ?? 0}d`,
+        icon: Flame,
+      },
+      {
+        id: "marks",
+        label: "Marks",
+        value: gameData?.marksCount ?? 0,
+        icon: Award,
+      },
+    ];
+  }, [gameData]);
+
+  const showcaseItems: ShowcaseItem[] = useMemo(() => {
+    return zoneItems.slice(0, 6).map((item: any) => ({
+      id: item.id,
+      title: item.title ?? "Untitled",
+      imageUrl: item.coverUrl ?? item.thumbnailUrl ?? undefined,
+      likes: Number(item.likeCount ?? item.likes ?? 0),
+      views: Number(item.viewCount ?? item.views ?? 0),
+    }));
+  }, [zoneItems]);
+
+
   if (authLoading || isLoading || !lookup) return <ProfileSkeleton />;
   if (error || !summary) {
     return (
