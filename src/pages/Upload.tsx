@@ -1432,6 +1432,17 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
             flexDirection: 'column',
             minHeight: 0,
           }}>
+            {/* Remix composer banner — only when this draft has a lineage parent */}
+            {remixParent && (
+              <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'center' }}>
+                <div style={{ width: '100%', maxWidth: 720 }}>
+                  <RemixComposerBanner
+                    authorHandle={remixParent.authorHandle ?? 'unknown'}
+                    title={remixParent.title ?? 'removed original'}
+                  />
+                </div>
+              </div>
+            )}
             {/* Document header — compact upload header. */}
             <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'center' }}>
               <CompactUploadHeader
