@@ -2123,3 +2123,22 @@ export function NeoScaleShell() {
     </div>
   );
 }
+
+/**
+ * Wraps NavProgressChip with live progress data from useProgress.
+ * Defined here so the shell can reference it inline without circular imports.
+ */
+function NavProgressChipMount({ onClick }: { onClick?: () => void }) {
+  const { level, xpInLevel, xpForNext, progress } = useProgress();
+  return (
+    <div onClick={onClick} style={{ cursor: onClick ? "pointer" : "default" }}>
+      <NavProgressChip
+        level={level}
+        xpIntoLevel={xpInLevel}
+        xpForLevel={xpForNext}
+        totalXp={progress?.xp_total}
+      />
+    </div>
+  );
+}
+
