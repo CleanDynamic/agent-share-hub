@@ -487,7 +487,7 @@ const Home = () => {
 
   const onEmptyCTAClick = () => {
     if (activeTab === "foryou" || activeTab === "following") navigate("/discover");
-    else if (activeTab === "bounties") openUploadTypePicker();
+    else if (activeTab === "bounties") openUploadTypePicker("bounty");
   };
 
   // Sign-in nudge when guest hits a logged-in-only tab

@@ -3,8 +3,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { UploadTypePicker, type UploadContentType } from "@/components/upload/UploadTypePicker";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+type PickerMode = "all" | "bounty";
+
 interface UploadPickerContextValue {
-  openUploadTypePicker: () => void;
+  openUploadTypePicker: (mode?: PickerMode) => void;
   closeUploadTypePicker: () => void;
 }
 
@@ -25,11 +27,15 @@ const ROUTE_FOR_TYPE: Record<UploadContentType, string> = {
 
 export function UploadPickerProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState<PickerMode>("all");
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
 
-  const openUploadTypePicker = useCallback(() => setIsOpen(true), []);
+  const openUploadTypePicker = useCallback((m: PickerMode = "all") => {
+    setMode(m);
+    setIsOpen(true);
+  }, []);
   const closeUploadTypePicker = useCallback(() => setIsOpen(false), []);
 
   const handleSelect = useCallback(
@@ -57,6 +63,7 @@ export function UploadPickerProvider({ children }: { children: ReactNode }) {
       const tag = t?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || t?.isContentEditable) return;
       e.preventDefault();
+      setMode("all");
       setIsOpen(true);
     };
     window.addEventListener("keydown", handler);
@@ -71,6 +78,7 @@ export function UploadPickerProvider({ children }: { children: ReactNode }) {
         onClose={handleClose}
         variant={isMobile ? "mobile" : "desktop"}
         onSelect={handleSelect}
+        mode={mode}
       />
     </UploadPickerContext.Provider>
   );

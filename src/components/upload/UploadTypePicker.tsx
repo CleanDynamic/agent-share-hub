@@ -8,6 +8,7 @@ interface UploadTypePickerProps {
   onClose: () => void
   variant: "desktop" | "mobile"
   onSelect: (type: UploadContentType) => void
+  mode?: "all" | "bounty"
 }
 
 const contentOptions: Array<{
@@ -56,7 +57,15 @@ export function UploadTypePicker({
   onClose,
   variant,
   onSelect,
+  mode = "all",
 }: UploadTypePickerProps) {
+  const visibleOptions = React.useMemo(
+    () => (mode === "bounty"
+      ? contentOptions.filter((o) => o.type === "bounty" || o.type === "meta-bounty")
+      : contentOptions),
+    [mode],
+  )
+  const pickerTitle = mode === "bounty" ? "Start a bounty" : "What are you creating?"
   const modalRef = React.useRef<HTMLDivElement>(null)
   const triggerRef = React.useRef<HTMLElement | null>(null)
   const [isAnimating, setIsAnimating] = React.useState(false)
@@ -120,8 +129,8 @@ export function UploadTypePicker({
       }
       if (variant === "desktop" && e.key >= "1" && e.key <= "4") {
         const index = parseInt(e.key) - 1
-        if (contentOptions[index]) {
-          onSelect(contentOptions[index].type)
+        if (visibleOptions[index]) {
+          onSelect(visibleOptions[index].type)
           onClose()
         }
       }
@@ -279,7 +288,7 @@ export function UploadTypePicker({
               margin: 0,
             }}
           >
-            What are you creating?
+            {pickerTitle}
           </h2>
           {isDesktop && (
             <button
@@ -301,7 +310,7 @@ export function UploadTypePicker({
         </div>
 
         <div className={isDesktop ? "grid grid-cols-2 gap-3" : "flex flex-col gap-2.5"}>
-          {contentOptions.map((option, index) => (
+          {visibleOptions.map((option, index) => (
             <OptionCard
               key={option.type}
               option={option}
