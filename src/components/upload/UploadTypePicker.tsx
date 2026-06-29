@@ -57,7 +57,15 @@ export function UploadTypePicker({
   onClose,
   variant,
   onSelect,
+  mode = "all",
 }: UploadTypePickerProps) {
+  const visibleOptions = React.useMemo(
+    () => (mode === "bounty"
+      ? contentOptions.filter((o) => o.type === "bounty" || o.type === "meta-bounty")
+      : contentOptions),
+    [mode],
+  )
+  const pickerTitle = mode === "bounty" ? "Start a bounty" : "What are you creating?"
   const modalRef = React.useRef<HTMLDivElement>(null)
   const triggerRef = React.useRef<HTMLElement | null>(null)
   const [isAnimating, setIsAnimating] = React.useState(false)
