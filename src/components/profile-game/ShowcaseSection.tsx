@@ -9,6 +9,9 @@ export interface ShowcaseSectionProps {
   /** Surface layer hint; "shell" applies glass, "card" is flat. */
   layer?: "shell" | "card"
   title?: string
+  /** Optional "View cabinet →" handler rendered in the header. */
+  onViewAll?: () => void
+  viewAllLabel?: string
 }
 
 /**
@@ -19,6 +22,8 @@ export default function ShowcaseSection({
   autoPinned = true,
   layer = "shell",
   title = "Showcase",
+  onViewAll,
+  viewAllLabel = "View cabinet →",
 }: ShowcaseSectionProps) {
   const isShell = layer === "shell"
   return (
