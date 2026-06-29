@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import { BadgeCheck } from "lucide-react"
 import { tokens, trackColors, type TrackName } from "./tokens"
 import LevelRing from "./LevelRing"
