@@ -46,6 +46,9 @@ import { StageFullscreen } from '@/components/article/stage/StageFullscreen';
 import { scheduleRecompute, flushRecompute } from '@/lib/metadata/scheduleRecompute';
 import { validateReferences } from '@/lib/blog/validateReferences';
 import { ShellHeader } from "@/components/shell/ShellHeader";
+import RemixSettingsRow from "@/components/remix/RemixSettingsRow";
+import RemixComposerBanner from "@/components/remix/RemixComposerBanner";
+import { useLineageParent } from "@/lib/remix/hooks";
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
