@@ -54,6 +54,10 @@ export function ResultsSection({ contentItemId, onCountChange }: ResultsSectionP
     refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    onCountChange?.(slides.length);
+  }, [slides.length, onCountChange]);
+
   const uploadFile = async (file: File, kind: 'photo' | 'video'): Promise<string | null> => {
     const { data: userData } = await supabase.auth.getUser();
     const uid = userData.user?.id;
