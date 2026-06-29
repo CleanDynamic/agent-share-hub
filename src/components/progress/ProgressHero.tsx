@@ -68,9 +68,10 @@ export function ProgressHero({
         {marks.length > 0 && (
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {marks.slice(0, 3).map((m) => (
-              <CreatorMarkChip key={m.id} name={m.name} track={m.track} />
+              <CreatorMarkChip key={m.id} mark={{ name: m.name, icon: Sparkles }} />
             ))}
           </div>
+
         )}
         <XpBar level={level} xpInLevel={xpInLevel} xpForNext={xpForNext} />
       </div>
