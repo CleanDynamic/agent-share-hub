@@ -145,22 +145,15 @@ export function ProfileHeader({
           {!hideIdentity && (
             <div className="flex items-end gap-4 min-w-0">
               <div className="relative shrink-0">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-background bg-muted ring-1 ring-white/10">
-                  {profile.avatarUrl ? (
-                    <img
-                      src={profile.avatarUrl}
-                      alt={profile.displayName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div
-                      className="w-full h-full flex items-center justify-center text-3xl font-semibold text-foreground/70 bg-gradient-to-br from-primary/30 to-accent/30"
-                      style={{ fontFamily: "Playfair Display, serif" }}
-                    >
-                      {initials}
-                    </div>
-                  )}
-                </div>
+                {showRing ? (
+                  <LevelRing level={level!} progressPct={progressPct ?? 0} size={104}>
+                    <AvatarInner profile={profile} initials={initials} />
+                  </LevelRing>
+                ) : (
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-background bg-muted ring-1 ring-white/10">
+                    <AvatarInner profile={profile} initials={initials} />
+                  </div>
+                )}
                 {isOwnProfile && (
                   <button
                     type="button"
@@ -206,7 +199,16 @@ export function ProfileHeader({
                 >
                   @{profile.handle}
                 </p>
+                {hasMarksRow && (
+                  <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                    {creatorMarks?.map((mark) => (
+                      <CreatorMarkChip key={mark.id} mark={mark} />
+                    ))}
+                    {founderAccessory}
+                  </div>
+                )}
               </div>
+
             </div>
           )}
           {hideIdentity && <div className="min-w-0" />}
