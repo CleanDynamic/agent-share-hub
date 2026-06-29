@@ -332,4 +332,36 @@ export function FloatingEngagementBar({
   );
 }
 
+/** Wrappers fire ActionXpHint only when activation transitions false→true. */
+function useEdgeTrigger(active: boolean) {
+  const [trigger, setTrigger] = React.useState(0);
+  const prev = React.useRef(active);
+  React.useEffect(() => {
+    if (!prev.current && active) setTrigger((n) => n + 1);
+    prev.current = active;
+  }, [active]);
+  return trigger;
+}
+
+function ActionXpHintLike({ active, children }: { active: boolean; children: React.ReactNode }) {
+  const trigger = useEdgeTrigger(active);
+  return <ActionXpHint amount={1} trigger={trigger}>{children}</ActionXpHint>;
+}
+
+function ActionXpHintBookmark({ active, children }: { active: boolean; children: React.ReactNode }) {
+  const trigger = useEdgeTrigger(active);
+  return <ActionXpHint amount={1} trigger={trigger}>{children}</ActionXpHint>;
+}
+
+function ActionXpHintDownload({ children }: { children: React.ReactNode }) {
+  // Download fires every successful click — child onClick wraps stay intact.
+  const [trigger, setTrigger] = React.useState(0);
+  return (
+    <span onClick={() => setTrigger((n) => n + 1)} style={{ display: "inline-flex" }}>
+      <ActionXpHint amount={2} trigger={trigger}>{children}</ActionXpHint>
+    </span>
+  );
+}
+
 export default FloatingEngagementBar;
+
