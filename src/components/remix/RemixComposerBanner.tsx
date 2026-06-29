@@ -47,24 +47,26 @@ export default function RemixComposerBanner({
         </span>
       </div>
 
-      <button
-        type="button"
-        onClick={onClear}
-        aria-label="Clear remix source"
-        className="ml-auto inline-flex items-center justify-center"
-        style={{
-          width: 26,
-          height: 26,
-          borderRadius: 7,
-          background: tokens.input,
-          border: tokens.borderFaint,
-          color: tokens.textMuted,
-          cursor: 'pointer',
-          flexShrink: 0,
-        }}
-      >
-        <X size={15} strokeWidth={2.2} />
-      </button>
+      {onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          aria-label="Clear remix source"
+          className="ml-auto inline-flex items-center justify-center"
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: 7,
+            background: tokens.input,
+            border: tokens.borderFaint,
+            color: tokens.textMuted,
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          <X size={15} strokeWidth={2.2} />
+        </button>
+      )}
     </div>
   )
 }
