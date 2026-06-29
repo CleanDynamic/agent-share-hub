@@ -34,10 +34,11 @@ export default function StreakFlame({
   // Don't pulse for very short streaks — no pressure on day one.
   const shouldPulse = isAtRisk && streak >= minPressureStreak
 
-  let glyphColor = COLORS.streakAmber // active flame = amber
+  let glyphColor: string = COLORS.streakAmber // active flame = amber
   if (isFrozen) glyphColor = COLORS.reputationTeal
   else if (isZero) glyphColor = COLORS.locked
   else if (isAtRisk) glyphColor = COLORS.xpOrange
+
 
   const numberColor = isZero ? COLORS.textFaint : COLORS.text
 
