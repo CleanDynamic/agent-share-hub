@@ -747,7 +747,7 @@ export function ArticleEditor({
   return (
     <div
       ref={editorContainerRef}
-      style={{ position: 'relative', flex: 1 }}
+      style={{ position: 'relative', flex: 1, width: '100%', maxWidth: isBlog ? 760 : 720, margin: '0 auto' }}
     >
       {/* Editor styles */}
       <style>{`
@@ -994,34 +994,7 @@ export function ArticleEditor({
         }
       `}</style>
 
-      {/* Post-type pill */}
-      <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '4px 0 6px' }}>
-        {isBlog ? (
-          <span style={{
-            fontFamily: 'Inter, sans-serif',
-            fontSize: 11, fontWeight: 600,
-            textTransform: 'uppercase', letterSpacing: '0.06em',
-            background: 'rgba(46,196,182,0.14)', color: '#2EC4B6',
-            padding: '3px 10px', borderRadius: 100,
-          }}>BLOG</span>
-        ) : isBounty ? (
-          <span style={{
-            fontFamily: 'Inter, sans-serif',
-            fontSize: 11, fontWeight: 600,
-            textTransform: 'uppercase', letterSpacing: '0.06em',
-            background: 'rgba(245,158,11,0.14)', color: '#F59E0B',
-            padding: '3px 10px', borderRadius: 100,
-          }}>BOUNTY</span>
-        ) : (
-          <span style={{
-            fontFamily: 'Inter, sans-serif',
-            fontSize: 11, fontWeight: 600,
-            textTransform: 'uppercase', letterSpacing: '0.06em',
-            background: 'rgba(232,87,26,0.14)', color: '#E8571A',
-            padding: '3px 10px', borderRadius: 100,
-          }}>BLUEPRINT</span>
-        )}
-      </div>
+      {/* Post-type pill removed — CompactUploadHeader renders the chip. */}
 
       {/* Bounty hint banner (only in bounty mode) */}
       {isBounty ? (
