@@ -11,6 +11,7 @@ import { CollabInvitePicker, type CollabInvitee } from "@/components/CollabInvit
 import { useToast } from "@/hooks/use-toast";
 import { useApprovedToolNames, useGroupedApprovedTools } from "@/hooks/useApprovedTools";
 import { SeoHead } from "@/components/SeoHead";
+import PostXpFootnote from "@/components/ambient/PostXpFootnote";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MentionInput } from "@/components/MentionInput";
