@@ -52,6 +52,7 @@ import MessagesPage from "./pages/Messages";
 import CollectionDetail from "./pages/CollectionDetail";
 // LearningPathDetail removed from UI
 import Analytics from "./pages/Analytics";
+import Lineage from "./pages/Lineage";
 import Search from "@/pages/Search";
 import Category from "./pages/Category";
 import ApiDocs from "./pages/ApiDocs";
@@ -100,6 +101,7 @@ const App = () => (
                 <Route path="/b/:id" element={<ContentOrReblogRoute />} />
                 <Route path="/b/:id/thread" element={<ContentOrReblogRoute mode="thread" />} />
                 <Route path="/b/:id/leaderboard" element={<BountyLeaderboard />} />
+                <Route path="/b/:slug/lineage" element={<Lineage />} />
                 <Route path="/content/:id/edit" element={<ProtectedRoute requireCreator><ContentEditPage /></ProtectedRoute>} />
                 <Route path="/project/:id" element={<ProjectDetail />} />
                 <Route path="/creator/:username" element={<CreatorProfile />} />

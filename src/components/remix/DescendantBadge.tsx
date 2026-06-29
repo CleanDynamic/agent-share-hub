@@ -12,7 +12,7 @@ export interface DescendantBadgeProps {
 
 export default function DescendantBadge({
   count,
-  interactive = false,
+  interactive = true,
   onOpen,
 }: DescendantBadgeProps) {
   const [hover, setHover] = useState(false)

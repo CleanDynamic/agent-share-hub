@@ -47,6 +47,13 @@ import { creatorMarks as creatorMarksCatalog, cabinetBadges } from "@/components
 // Streaks
 import StreakFlame from "@/components/streaks/streak-flame";
 import StreakInlineNote from "@/components/streaks/streak-inline-note";
+import StreakCalendar from "@/components/streaks/streak-calendar";
+import FreezeIndicator from "@/components/streaks/freeze-indicator";
+
+// L2 tabs
+import SkillTreeTab from "@/components/progress/SkillTreeTab";
+import ChallengesTab from "@/components/progress/ChallengesTab";
+import { useStreakDays } from "@/hooks/useProgress";
 
 type Range = "7" | "30" | "90";
 const RANGE_OPTIONS: { value: Range; label: string }[] = [
@@ -57,7 +64,9 @@ const RANGE_OPTIONS: { value: Range; label: string }[] = [
 
 const TAB_LABELS: Record<string, string> = {
   overview: "Overview",
+  skill_tree: "Skill tree",
   trophies: "Trophies",
+  challenges: "Challenges",
   history: "History",
 };
 
@@ -65,6 +74,7 @@ export default function Analytics() {
   const { user, profile, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("overview");
   const { progress, surfaces, quest, challenges, marks, xpInLevel, xpForNext, level, isLoading } = useProgress();
+  const streakDaysQ = useStreakDays(60);
   const [xpEventsQ, historyQ] = useXpEvents(50);
   const claim = useClaimChallenge();
   const navigate = useNavigate();
@@ -78,6 +88,9 @@ export default function Analytics() {
   const tabs = (surfaces?.tabs ?? ["overview", "trophies", "history"]).map((id) => ({
     id,
     label: TAB_LABELS[id] ?? id,
+    isNew:
+      (id === "skill_tree" && !!surfaces?.skill_tree_isnew) ||
+      (id === "challenges" && !!surfaces?.challenges_isnew),
   }));
 
   const initials = (profile?.display_name || profile?.username || user.email || "?").slice(0, 2).toUpperCase();
@@ -223,6 +236,22 @@ export default function Analytics() {
               }
             />
 
+            {surfaces?.depth_revealed && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <FreezeIndicator
+                  available={Math.max(0, 2 - ((progress as any)?.freezes_used_month ?? 0))}
+                  total={2}
+                />
+                <StreakCalendar
+                  days={(streakDaysQ.data ?? []).map((d) => ({
+                    date: d.date,
+                    level: d.kind === "frozen" ? 0 : 3,
+                    frozen: d.kind === "frozen",
+                  }))}
+                />
+              </div>
+            )}
+
             {overviewSurfaces.quest && (
               <QuestChecklist
                 steps={questSteps as any}
@@ -262,6 +291,18 @@ export default function Analytics() {
             <SectionHeader title="Your content" subtitle="The classic analytics view, preserved." />
             <ContentAnalyticsSection userId={user.id} />
           </>
+        )}
+
+        {activeTab === "skill_tree" && (
+          <SkillTreeTab progress={progress} surfaces={surfaces} />
+        )}
+
+        {activeTab === "challenges" && (
+          <ChallengesTab
+            challenges={challenges}
+            history={historyQ.data ?? []}
+            hasNew={!!surfaces?.challenges_isnew}
+          />
         )}
 
         {activeTab === "trophies" && (
