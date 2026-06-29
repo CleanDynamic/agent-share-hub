@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   BadgeCheck,
   Calendar,
@@ -11,6 +11,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { ProfileLevel, ProfileSummary } from "@/lib/profile/types";
+import LevelRing from "@/components/profile-game/LevelRing";
+import CreatorMarkChip, { type CreatorMark } from "@/components/profile-game/CreatorMarkChip";
 
 interface ProfileHeaderProps {
   profile: ProfileSummary;
@@ -18,6 +20,13 @@ interface ProfileHeaderProps {
   isTrustedSolver?: boolean;
   /** When true, the avatar + name + handle + verified + level chip row is omitted. */
   hideIdentity?: boolean;
+  /** Optional gamification — wraps avatar in an XP progress ring. */
+  level?: number;
+  progressPct?: number;
+  /** Optional creator-mark chips rendered under the handle row. */
+  creatorMarks?: CreatorMark[];
+  /** Optional accessory (e.g. FounderMark) rendered inline with the marks row. */
+  founderAccessory?: ReactNode;
   onEditProfile?: () => void;
   onShareProfile?: () => void;
   onFollow?: () => void;
