@@ -238,8 +238,9 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const { toast } = useToast();
   const { data: AI_TOOLS } = useApprovedToolNames();
   const { groups: toolGroups } = useGroupedApprovedTools();
-  // Type-chooser only relevant for blueprint mode
-  const [showTypeChooser, setShowTypeChooser] = useState(mode === 'blueprint');
+  // Type-chooser deprecated — the global UploadTypePicker modal routes users
+  // directly to the correct editor, so this inline chooser never renders.
+  const [showTypeChooser, setShowTypeChooser] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [uploadType, setUploadType] = useState<"blog" | "single" | "bounty">("single");
   const [isProjectMode, setIsProjectMode] = useState(false);
