@@ -239,12 +239,15 @@ export default function Analytics() {
             {surfaces?.depth_revealed && (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <FreezeIndicator
-                  used={(progress as any)?.freezes_used_month ?? 0}
+                  available={Math.max(0, 2 - ((progress as any)?.freezes_used_month ?? 0))}
                   total={2}
                 />
                 <StreakCalendar
-                  days={(streakDaysQ.data ?? []).map((d) => ({ date: d.date, state: d.kind === "frozen" ? "frozen" : "active" })) as any}
-                  currentStreak={progress?.streak_days ?? 0}
+                  days={(streakDaysQ.data ?? []).map((d) => ({
+                    date: d.date,
+                    level: d.kind === "frozen" ? 0 : 3,
+                    frozen: d.kind === "frozen",
+                  }))}
                 />
               </div>
             )}
