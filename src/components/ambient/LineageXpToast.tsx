@@ -21,7 +21,7 @@ export default function LineageXpToast({
       className="inline-flex items-center gap-3"
       style={{
         padding: '12px 14px',
-        borderRadius: tokens.cardRadius,
+        borderRadius: tokens.radiusCard,
         background: tokens.card,
         border: tokens.borderSoft,
         backdropFilter: tokens.glass,
