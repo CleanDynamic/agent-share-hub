@@ -288,7 +288,7 @@ export function UploadTypePicker({
               margin: 0,
             }}
           >
-            What are you creating?
+            {pickerTitle}
           </h2>
           {isDesktop && (
             <button
