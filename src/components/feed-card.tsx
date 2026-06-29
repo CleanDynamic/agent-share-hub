@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast"
 import { getPrimaryTypeLabel } from "@/lib/content-types"
 import ActionXpHint from "@/components/ambient/ActionXpHint"
 import { AvatarLevelRing } from "@/components/profile-game/AvatarLevelRing"
+import AttributionChip from "@/components/remix/AttributionChip"
+import { useLineageParent } from "@/lib/remix/hooks"
 
 
 const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
