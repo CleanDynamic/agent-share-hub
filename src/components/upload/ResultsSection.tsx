@@ -16,6 +16,7 @@ const VIDEO_MAX = 100 * 1024 * 1024; // 100MB
 
 interface ResultsSectionProps {
   contentItemId: string | null;
+  onCountChange?: (count: number) => void;
 }
 
 function rowToSlide(r: ContentItemResult): Slide {
@@ -28,7 +29,7 @@ function rowToSlide(r: ContentItemResult): Slide {
   };
 }
 
-export function ResultsSection({ contentItemId }: ResultsSectionProps) {
+export function ResultsSection({ contentItemId, onCountChange }: ResultsSectionProps) {
   const { toast } = useToast();
   const [slides, setSlides] = useState<Slide[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -52,6 +53,10 @@ export function ResultsSection({ contentItemId }: ResultsSectionProps) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    onCountChange?.(slides.length);
+  }, [slides.length, onCountChange]);
 
   const uploadFile = async (file: File, kind: 'photo' | 'video'): Promise<string | null> => {
     const { data: userData } = await supabase.auth.getUser();

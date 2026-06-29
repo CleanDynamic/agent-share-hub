@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { ImagePlus, X } from "lucide-react";
+import { UploadSectionToggle } from "./UploadSectionToggle";
 
 interface CompactUploadHeaderProps {
   postType: "blueprint" | "blog" | "bounty";
@@ -12,6 +13,8 @@ interface CompactUploadHeaderProps {
   onCoverUpload: (file: File) => void;
   onCoverRemove: () => void;
   maxDescriptionLength?: number;
+  resultsSlot?: React.ReactNode;
+  hasResults?: boolean;
 }
 
 const POST_TYPE_STYLES: Record<
@@ -27,6 +30,8 @@ export function CompactUploadHeader({
   postType, mode, title, description, coverUrl,
   onTitleChange, onDescriptionChange, onCoverUpload, onCoverRemove,
   maxDescriptionLength = 500,
+  resultsSlot,
+  hasResults = false,
 }: CompactUploadHeaderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,23 +72,16 @@ export function CompactUploadHeader({
   }, []);
 
   const typeStyle = POST_TYPE_STYLES[postType];
+  const titleFilled = title.trim().length > 0;
 
   return (
     <>
       <input ref={fileInputRef} type="file" accept="image/*"
         className="hidden" onChange={handleFileSelect} />
 
-      <div
-        ref={containerRef}
-        className="w-full max-w-[880px]"
-        style={{
-          background: "rgba(22,22,30,0.40)",
-          border: "0.5px solid rgba(255, 255, 255, 0.14)",
-          borderRadius: "12px",
-          padding: "16px 24px",
-        }}
-      >
-        <div className="flex items-center gap-2" style={{ height: "24px", paddingBottom: "8px" }}>
+      <div ref={containerRef} className="w-full max-w-[720px] flex flex-col gap-2">
+        {/* Type chip row */}
+        <div className="flex items-center gap-2" style={{ height: "24px" }}>
           <span style={{
             fontFamily: "Inter, sans-serif", fontSize: "11px", fontWeight: 600,
             letterSpacing: "0.06em", color: typeStyle.color, background: typeStyle.bg,
@@ -99,106 +97,135 @@ export function CompactUploadHeader({
           )}
         </div>
 
-        <div
-          className="flex items-center justify-center cursor-pointer transition-colors relative overflow-hidden"
-          style={{
-            height: "24px", width: "100%",
-            border: isHoveringCover
-              ? "0.5px solid rgba(255,255,255,0.10)"
-              : "0.5px dashed rgba(255,255,255,0.10)",
-            background: isHoveringCover ? "rgba(255, 255, 255, 0.12)" : "rgba(255,255,255,0.02)",
-            borderRadius: "6px", marginTop: "8px",
-          }}
-          onMouseEnter={() => setIsHoveringCover(true)}
-          onMouseLeave={() => setIsHoveringCover(false)}
-          onClick={() => fileInputRef.current?.click()}
+        {/* Cover image toggle */}
+        <UploadSectionToggle
+          label="Cover image"
+          summary={coverUrl ? "1 image" : "Optional"}
+          defaultOpen={!!coverUrl}
+          filled={!!coverUrl}
         >
-          {coverUrl ? (
-            <>
-              <img src={coverUrl} alt="Cover" className="absolute inset-0 w-full h-full object-cover" />
-              {isHoveringCover && (
-                <div className="absolute inset-0 flex items-center justify-center"
-                  style={{ background: "rgba(0,0,0,0.50)" }}>
-                  <span style={{
-                    fontFamily: "Inter, sans-serif", fontSize: "11px",
-                    fontWeight: 500, color: "rgba(255,255,255,0.85)",
-                  }}>Replace cover</span>
-                </div>
-              )}
-              <button
-                className="absolute right-1 flex items-center justify-center z-10"
-                style={{ width: "16px", height: "16px", background: "rgba(0,0,0,0.60)", borderRadius: "4px" }}
-                onClick={(e) => { e.stopPropagation(); onCoverRemove(); }}
-              >
-                <X size={10} color="rgba(255,255,255,0.80)" />
-              </button>
-            </>
-          ) : (
-            <div className="flex items-center gap-1.5">
-              <ImagePlus size={12} color="rgba(255,255,255,0.45)" />
-              <span style={{
-                fontFamily: "Inter, sans-serif", fontSize: "11px",
-                fontWeight: 500, color: "rgba(255,255,255,0.45)",
-              }}>Add cover image</span>
-            </div>
-          )}
-        </div>
-
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => onTitleChange(e.target.value)}
-          placeholder="Title your blueprint…"
-          className="w-full outline-none compact-upload-title"
-          style={{
-            height: "40px", padding: "8px 12px", marginTop: "8px",
-            background: "transparent", border: "none",
-            borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
-            fontFamily: "Inter, sans-serif", fontSize: "22px",
-            fontWeight: 700, color: "rgba(255,255,255,0.95)",
-          }}
-        />
-        <style>{`
-          .compact-upload-title::placeholder {
-            font-family: Inter, sans-serif; font-size: 22px;
-            font-weight: 500; color: rgba(255,255,255,0.20);
-          }
-        `}</style>
-
-        <div className="relative" style={{ marginTop: "0px" }}>
-          <textarea
-            ref={descriptionRef}
-            value={description}
-            onChange={(e) => {
-              if (e.target.value.length <= maxDescriptionLength) {
-                onDescriptionChange(e.target.value);
-              }
-            }}
-            placeholder="Describe what this is and why it matters…"
-            className="w-full outline-none resize-none compact-upload-desc"
+          <div
+            className="flex items-center justify-center cursor-pointer transition-colors relative overflow-hidden"
             style={{
-              minHeight: "40px", maxHeight: "80px",
-              padding: "8px 12px", paddingBottom: "20px",
+              height: "120px", width: "100%",
+              border: isHoveringCover
+                ? "0.5px solid rgba(255,255,255,0.18)"
+                : "0.5px dashed rgba(255,255,255,0.14)",
+              background: isHoveringCover ? "rgba(255, 255, 255, 0.06)" : "rgba(255,255,255,0.02)",
+              borderRadius: "8px",
+            }}
+            onMouseEnter={() => setIsHoveringCover(true)}
+            onMouseLeave={() => setIsHoveringCover(false)}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {coverUrl ? (
+              <>
+                <img src={coverUrl} alt="Cover" className="absolute inset-0 w-full h-full object-cover" />
+                {isHoveringCover && (
+                  <div className="absolute inset-0 flex items-center justify-center"
+                    style={{ background: "rgba(0,0,0,0.50)" }}>
+                    <span style={{
+                      fontFamily: "Inter, sans-serif", fontSize: "12px",
+                      fontWeight: 500, color: "rgba(255,255,255,0.85)",
+                    }}>Replace cover</span>
+                  </div>
+                )}
+                <button
+                  className="absolute top-2 right-2 flex items-center justify-center z-10"
+                  style={{ width: "22px", height: "22px", background: "rgba(0,0,0,0.60)", borderRadius: "6px" }}
+                  onClick={(e) => { e.stopPropagation(); onCoverRemove(); }}
+                >
+                  <X size={12} color="rgba(255,255,255,0.80)" />
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <ImagePlus size={16} color="rgba(255,255,255,0.55)" />
+                <span style={{
+                  fontFamily: "Inter, sans-serif", fontSize: "13px",
+                  fontWeight: 500, color: "rgba(255,255,255,0.55)",
+                }}>Add cover image</span>
+              </div>
+            )}
+          </div>
+        </UploadSectionToggle>
+
+        {/* Title + description toggle */}
+        <UploadSectionToggle
+          label="Title & description"
+          summary={titleFilled ? title : "Untitled"}
+          defaultOpen={!titleFilled}
+          filled={titleFilled}
+        >
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => onTitleChange(e.target.value)}
+            placeholder={`Title your ${postType}…`}
+            className="w-full outline-none compact-upload-title"
+            style={{
+              height: "44px", padding: "8px 12px",
               background: "transparent", border: "none",
-              fontFamily: "Inter, sans-serif", fontSize: "13px",
-              fontWeight: 400, color: "rgba(255,255,255,0.85)",
+              borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
+              fontFamily: "Inter, sans-serif", fontSize: "22px",
+              fontWeight: 700, color: "rgba(255,255,255,0.95)",
             }}
           />
           <style>{`
-            .compact-upload-desc::placeholder {
-              font-family: Inter, sans-serif; font-size: 13px;
-              font-weight: 400; color: rgba(255,255,255,0.30);
+            .compact-upload-title::placeholder {
+              font-family: Inter, sans-serif; font-size: 22px;
+              font-weight: 500; color: rgba(255,255,255,0.20);
             }
           `}</style>
-          <span className="absolute bottom-1 right-3" style={{
-            fontFamily: "Inter, sans-serif", fontSize: "10px",
-            fontWeight: 400, color: "rgba(255,255,255,0.30)",
-          }}>
-            {description.length} / {maxDescriptionLength}
-          </span>
-        </div>
+
+          <div className="relative" style={{ marginTop: "8px" }}>
+            <textarea
+              ref={descriptionRef}
+              value={description}
+              onChange={(e) => {
+                if (e.target.value.length <= maxDescriptionLength) {
+                  onDescriptionChange(e.target.value);
+                }
+              }}
+              placeholder="Describe what this is and why it matters…"
+              className="w-full outline-none resize-none compact-upload-desc"
+              style={{
+                minHeight: "40px", maxHeight: "80px",
+                padding: "8px 12px", paddingBottom: "20px",
+                background: "transparent", border: "none",
+                fontFamily: "Inter, sans-serif", fontSize: "13px",
+                fontWeight: 400, color: "rgba(255,255,255,0.85)",
+              }}
+            />
+            <style>{`
+              .compact-upload-desc::placeholder {
+                font-family: Inter, sans-serif; font-size: 13px;
+                font-weight: 400; color: rgba(255,255,255,0.30);
+              }
+            `}</style>
+            <span className="absolute bottom-1 right-3" style={{
+              fontFamily: "Inter, sans-serif", fontSize: "10px",
+              fontWeight: 400, color: "rgba(255,255,255,0.30)",
+            }}>
+              {description.length} / {maxDescriptionLength}
+            </span>
+          </div>
+        </UploadSectionToggle>
+
+        {/* Your results toggle */}
+        {resultsSlot && (
+          <UploadSectionToggle
+            label="Your results"
+            summary={hasResults ? "Added" : "Optional"}
+            defaultOpen={hasResults}
+            filled={hasResults}
+          >
+            {resultsSlot}
+          </UploadSectionToggle>
+        )}
       </div>
 
+      {/* Sticky mini-bar when scrolled past header */}
       <div
         className="fixed left-0 right-0 flex items-center justify-center z-50"
         style={{
@@ -209,7 +236,7 @@ export function CompactUploadHeader({
         }}
       >
         <div
-          className="w-full max-w-[880px] flex items-center justify-between"
+          className="w-full max-w-[720px] flex items-center justify-between"
           style={{
             height: "36px", padding: "8px 24px",
             background: "rgba(8,8,12,0.92)",
