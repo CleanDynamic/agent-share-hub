@@ -46,6 +46,9 @@ import { StageFullscreen } from '@/components/article/stage/StageFullscreen';
 import { scheduleRecompute, flushRecompute } from '@/lib/metadata/scheduleRecompute';
 import { validateReferences } from '@/lib/blog/validateReferences';
 import { ShellHeader } from "@/components/shell/ShellHeader";
+import RemixSettingsRow from "@/components/remix/RemixSettingsRow";
+import RemixComposerBanner from "@/components/remix/RemixComposerBanner";
+import { useLineageParent } from "@/lib/remix/hooks";
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -306,6 +309,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const [bountyDeadlineDays, setBountyDeadlineDays] = useState<number | null>(null);
   const [bountyGap, setBountyGap] = useState("");
   const [bountyBlueprintRequired, setBountyBlueprintRequired] = useState(true);
+  const [isRemixable, setIsRemixable] = useState(false);
   const [blueprintExpanded, setBlueprintExpanded] = useState(false);
   const [discussionThreads, setDiscussionThreads] = useState<string[]>(['']);
   // Evidence state
@@ -316,6 +320,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const autosaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastAutosaveRef = useRef<Date | null>(null);
   const canvasDoc = useCanvasDocument(currentDraftId);
+  const { data: remixParent } = useLineageParent(currentDraftId);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -427,6 +432,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         if ((item as any).cover_image_url) setCoverImagePreview((item as any).cover_image_url);
         if ((item as any).topics?.length > 0) setSelectedTopics((item as any).topics);
         if ((item as any).pwyw_floor_gbp) setPwywFloor(Number((item as any).pwyw_floor_gbp));
+        if (typeof (item as any).is_remixable === "boolean") setIsRemixable((item as any).is_remixable);
 
         // WTE blocks
         if ((item as any).what_to_expect_blocks) {
@@ -655,6 +661,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         article_body: validatedArticleBody ?? articleBody ?? null,
         blog_referenced_post_ids: mode === 'blog' ? referencedPostIds : null,
         stage_grids: stageGridsSnapshot,
+        is_remixable: isRemixable,
       };
 
       let draftIdToUse = currentDraftId;
@@ -1002,6 +1009,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
           ? new Date(Date.now() + bountyDeadlineDays * 86400000).toISOString()
           : null,
         bounty_gap: isBountyType && bountyGap.trim() ? bountyGap.trim() : null,
+        is_remixable: isRemixable,
       } as any).select("id").single();
 
       if (insertError || !insertedItem) {
@@ -1424,6 +1432,17 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
             flexDirection: 'column',
             minHeight: 0,
           }}>
+            {/* Remix composer banner — only when this draft has a lineage parent */}
+            {remixParent && (
+              <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'center' }}>
+                <div style={{ width: '100%', maxWidth: 720 }}>
+                  <RemixComposerBanner
+                    authorHandle={remixParent.authorHandle ?? 'unknown'}
+                    title={remixParent.title ?? 'removed original'}
+                  />
+                </div>
+              </div>
+            )}
             {/* Document header — compact upload header. */}
             <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'center' }}>
               <CompactUploadHeader
@@ -2832,6 +2851,23 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   {splitError && <p className="text-xs text-destructive">You must keep at least 10% of your share.</p>}
                 </div>
               )}
+
+              {/* Remix settings — light-touch creator credit */}
+              <div>
+                <div style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: 'rgba(255,255,255,0.30)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.10em',
+                  marginBottom: 12,
+                }}>
+                  Remixing — optional
+                </div>
+                <RemixSettingsRow
+                  isRemixable={isRemixable}
+                  onChange={(next) => setIsRemixable(next.isRemixable)}
+                />
+              </div>
 
               {/* Dependencies */}
               <div>

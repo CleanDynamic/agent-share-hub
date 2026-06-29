@@ -84,6 +84,11 @@ import { createBountyThread, createDirectThread } from "@/lib/messaging";
 import { useShareMenu } from "@/components/share/ShareMenuProvider";
 import { ReblogsListModal } from "@/components/reblog/ReblogsListModal";
 import { useQueryClient } from "@tanstack/react-query";
+import AttributionChip from "@/components/remix/AttributionChip";
+import DescendantBadge from "@/components/remix/DescendantBadge";
+import RemixButton from "@/components/remix/RemixButton";
+import { useLineageParent, useRemixCount } from "@/lib/remix/hooks";
+import { createRemix } from "@/lib/remix/createRemix";
 
 const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" | "bounty" => {
   if (raw === "blog") return "blog";
@@ -1576,6 +1581,16 @@ export default function ContentDetail() {
         data-source-post-id={(post as any).id}
         data-source-post-slug={(post as any).slug ?? ""}
       >
+        <RemixLineageRow
+          postId={(post as any).id as string}
+          isRemixable={!!(post as any).is_remixable}
+          isOwnPost={isOwnPost}
+          remixerId={user?.id ?? null}
+          onRemixed={(draftId, postType) => {
+            const path = postType === "blog" ? "/upload/blog" : "/upload/blueprint";
+            navigate(`${path}?draft=${draftId}`);
+          }}
+        />
         {bodyNode}
       </div>
     );
@@ -2370,6 +2385,60 @@ function SpawnedFromMetaBanner({ parentId }: { parentId: string }) {
     >
       Spawned from meta-bounty:{" "}
       <span style={{ color: "#A78BFA", fontWeight: 600 }}>{data.title}</span>
+    </div>
+  );
+}
+
+// ─── Remix lineage row (attribution chip + descendant badge + remix button) ───
+function RemixLineageRow({
+  postId,
+  isRemixable,
+  isOwnPost,
+  remixerId,
+  onRemixed,
+}: {
+  postId: string;
+  isRemixable: boolean;
+  isOwnPost: boolean;
+  remixerId: string | null;
+  onRemixed: (draftId: string, postType: "blueprint" | "blog" | "bounty") => void;
+}) {
+  const { data: parent } = useLineageParent(postId);
+  const { data: remixCount = 0 } = useRemixCount(postId);
+  const showRemixButton = isRemixable && !isOwnPost && !!remixerId;
+  if (!parent && remixCount === 0 && !showRemixButton) return null;
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 10,
+        alignItems: "center",
+        padding: "0 0 14px",
+      }}
+    >
+      {parent && (
+        <AttributionChip
+          authorHandle={parent.authorHandle}
+          title={parent.title}
+          deleted={parent.deleted}
+        />
+      )}
+      {remixCount > 0 && <DescendantBadge count={remixCount} interactive={false} />}
+      {showRemixButton && (
+        <div style={{ marginLeft: "auto" }}>
+          <RemixButton
+            onRemix={async () => {
+              try {
+                const res = await createRemix({ sourcePostId: postId, remixerId: remixerId! });
+                onRemixed(res.draftId, res.postType);
+              } catch (err) {
+                console.error("[Remix] createRemix failed", err);
+              }
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

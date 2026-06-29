@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast"
 import { getPrimaryTypeLabel } from "@/lib/content-types"
 import ActionXpHint from "@/components/ambient/ActionXpHint"
 import { AvatarLevelRing } from "@/components/profile-game/AvatarLevelRing"
+import AttributionChip from "@/components/remix/AttributionChip"
+import { useLineageParent } from "@/lib/remix/hooks"
 
 
 const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
@@ -140,6 +142,8 @@ export function FeedCard({ post }: { post: FeedPost }) {
 
   const { openReblog } = useReblogCompose()
   const [saved, setSaved] = useState(false)
+  const { data: lineageParent } = useLineageParent(post.id)
+
 
 
   const [copied, setCopied] = useState(false)
@@ -581,6 +585,15 @@ export function FeedCard({ post }: { post: FeedPost }) {
               {tags.map((tag) => (
                 <span key={tag} style={{ fontSize: 12, color: "#1F7A6D" }}>#{tag}</span>
               ))}
+            </div>
+          )}
+          {lineageParent && (
+            <div style={{ marginTop: tags.length > 0 ? 8 : 10 }}>
+              <AttributionChip
+                authorHandle={lineageParent.authorHandle}
+                title={lineageParent.title}
+                deleted={lineageParent.deleted}
+              />
             </div>
           )}
         </div>
