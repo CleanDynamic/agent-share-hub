@@ -79,6 +79,10 @@ export function ProfileHeader({
   isFollowing = false,
   isTrustedSolver = false,
   hideIdentity = false,
+  level,
+  progressPct,
+  creatorMarks,
+  founderAccessory,
   onEditProfile,
   onShareProfile,
   onFollow,
@@ -92,6 +96,8 @@ export function ProfileHeader({
 }: ProfileHeaderProps) {
   const [followHover, setFollowHover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const showRing = typeof level === "number";
+  const hasMarksRow = (creatorMarks && creatorMarks.length > 0) || !!founderAccessory;
 
   const isOwnProfile = profile.isOwnProfile;
   const initials = (profile.displayName || "?").charAt(0).toUpperCase();
