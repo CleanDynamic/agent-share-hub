@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
 import { ShellHeader } from "@/components/shell/ShellHeader";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkles, Zap } from "lucide-react";
 import { useProgress, useXpEvents, useClaimChallenge } from "@/hooks/useProgress";
 import { useUploadPicker } from "@/contexts/UploadPickerContext";
