@@ -3,8 +3,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { UploadTypePicker, type UploadContentType } from "@/components/upload/UploadTypePicker";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+type PickerMode = "all" | "bounty";
+
 interface UploadPickerContextValue {
-  openUploadTypePicker: () => void;
+  openUploadTypePicker: (mode?: PickerMode) => void;
   closeUploadTypePicker: () => void;
 }
 
