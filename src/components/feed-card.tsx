@@ -138,7 +138,8 @@ export function FeedCard({ post }: { post: FeedPost }) {
   const [saveXpTrigger, setSaveXpTrigger] = useState(0);
 
   const { openReblog } = useReblogCompose()
-  const [saved, setSaved] = useState(false)
+  const [copied2_unused] = useState(false); // (saved already declared above)
+
   const [copied, setCopied] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
