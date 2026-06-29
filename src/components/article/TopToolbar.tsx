@@ -838,6 +838,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
         style={{
           ...styles.toolbar,
           width: '100%',
+          boxSizing: 'border-box',
           overflowX: 'auto',
           overflowY: 'hidden',
           padding: '8px 10px',
