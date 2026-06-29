@@ -74,6 +74,7 @@ export default function Analytics() {
   const { user, profile, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("overview");
   const { progress, surfaces, quest, challenges, marks, xpInLevel, xpForNext, level, isLoading } = useProgress();
+  const streakDaysQ = useStreakDays(60);
   const [xpEventsQ, historyQ] = useXpEvents(50);
   const claim = useClaimChallenge();
   const navigate = useNavigate();
