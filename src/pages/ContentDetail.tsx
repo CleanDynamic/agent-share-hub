@@ -84,6 +84,11 @@ import { createBountyThread, createDirectThread } from "@/lib/messaging";
 import { useShareMenu } from "@/components/share/ShareMenuProvider";
 import { ReblogsListModal } from "@/components/reblog/ReblogsListModal";
 import { useQueryClient } from "@tanstack/react-query";
+import AttributionChip from "@/components/remix/AttributionChip";
+import DescendantBadge from "@/components/remix/DescendantBadge";
+import RemixButton from "@/components/remix/RemixButton";
+import { useLineageParent, useRemixCount } from "@/lib/remix/hooks";
+import { createRemix } from "@/lib/remix/createRemix";
 
 const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" | "bounty" => {
   if (raw === "blog") return "blog";
