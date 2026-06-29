@@ -585,33 +585,21 @@ export default function Profile() {
         }
         path={handle ? `/profile/${handle}` : "/profile"}
       />
-      <div className="w-full max-w-[880px] mx-auto px-4 py-6">
-        <div className="space-y-3">
-          <ProfileLevelHeader
-            user={{
-              name: summary.displayName ?? `@${summary.handle}`,
-              handle: `@${summary.handle}`,
-              verified: !!summary.isVerified,
-            }}
-            level={gameData?.level ?? 1}
-            progressPct={gameData?.progressPct ?? 0}
-            creatorMarks={creatorMarks}
-            handleAccessory={
-              gameData?.founderBadge ? (
-                <FounderMark
-                  memberNumber={gameData.founderBadge.memberNumber ?? undefined}
-                />
-              ) : undefined
-            }
-          />
-          <ProfileStatsBar stats={profileStats} />
-        </div>
-
+      <div className="w-full max-w-[600px] mx-auto px-4 py-6 space-y-6">
         <ProfileHeader
           profile={summary}
           isFollowing={!!summary.isFollowing}
           isTrustedSolver={!!authorStats?.isTrustedSolver}
-          hideIdentity
+          level={gameData?.level ?? 1}
+          progressPct={gameData?.progressPct ?? 0}
+          creatorMarks={creatorMarks}
+          founderAccessory={
+            gameData?.founderBadge ? (
+              <FounderMark
+                memberNumber={gameData.founderBadge.memberNumber ?? undefined}
+              />
+            ) : undefined
+          }
           onEditProfile={() => setEditOpen(true)}
           onShareProfile={handleShare}
           onFollow={handleFollow}
@@ -683,7 +671,6 @@ export default function Profile() {
           />
         )}
 
-
         {/* Profile zones (authored / curated / activity / network). */}
         <div id="profile-zones">
           {activeZone === "authored" && activeFilter === "reblog" ? (
@@ -720,6 +707,7 @@ export default function Profile() {
           )}
         </div>
       </div>
+
 
       {summary.isOwnProfile && user?.id && (
         <EditProfileSheet
