@@ -229,3 +229,18 @@ export function ProfileDrawer({
     </>
   );
 }
+
+function DrawerProgressChip({ onClick }: { onClick: () => void }) {
+  const { level, xpInLevel, xpForNext, progress } = useProgress();
+  return (
+    <div onClick={onClick} style={{ cursor: "pointer", marginTop: 4 }}>
+      <NavProgressChip
+        level={level}
+        xpIntoLevel={xpInLevel}
+        xpForLevel={xpForNext}
+        totalXp={progress?.xp_total}
+      />
+    </div>
+  );
+}
+
