@@ -1472,17 +1472,15 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 mode={(form.watch('post_type') as string | undefined)?.toUpperCase()}
                 title={form.watch('title') ?? ''}
                 description={form.watch('description') ?? ''}
-                coverUrl={coverImagePreview}
+                coverImage={coverImage}
+                onCoverImageChange={(next) => {
+                  setCoverImage(next);
+                  // keep legacy preview/file in sync for the existing publish path
+                  setCoverImageFile(null);
+                  setCoverImagePreview(next?.url ?? null);
+                }}
                 onTitleChange={(v) => form.setValue('title', v)}
                 onDescriptionChange={(v) => form.setValue('description', v)}
-                onCoverUpload={(file) => {
-                  setCoverImageFile(file);
-                  setCoverImagePreview(URL.createObjectURL(file));
-                }}
-                onCoverRemove={() => {
-                  setCoverImageFile(null);
-                  setCoverImagePreview(null);
-                }}
                 maxDescriptionLength={500}
                 hasResults={resultsCount > 0}
                 resultsSlot={
