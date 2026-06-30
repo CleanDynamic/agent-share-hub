@@ -88,55 +88,17 @@ export function CompactUploadHeader({
         {/* Cover image toggle */}
         <UploadSectionToggle
           label="Cover image"
-          summary={coverUrl ? "1 image" : "Optional"}
-          defaultOpen={!!coverUrl}
-          filled={!!coverUrl}
+          summary={coverImage ? "1 image" : "Optional"}
+          defaultOpen={!!coverImage}
+          filled={!!coverImage}
         >
-          <div
-            className="flex items-center justify-center cursor-pointer transition-colors relative overflow-hidden"
-            style={{
-              height: "120px", width: "100%",
-              border: isHoveringCover
-                ? "0.5px solid rgba(255,255,255,0.18)"
-                : "0.5px dashed rgba(255,255,255,0.14)",
-              background: isHoveringCover ? "rgba(255, 255, 255, 0.06)" : "rgba(255,255,255,0.02)",
-              borderRadius: "8px",
-            }}
-            onMouseEnter={() => setIsHoveringCover(true)}
-            onMouseLeave={() => setIsHoveringCover(false)}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {coverUrl ? (
-              <>
-                <img src={coverUrl} alt="Cover" className="absolute inset-0 w-full h-full object-cover" />
-                {isHoveringCover && (
-                  <div className="absolute inset-0 flex items-center justify-center"
-                    style={{ background: "rgba(0,0,0,0.50)" }}>
-                    <span style={{
-                      fontFamily: "Inter, sans-serif", fontSize: "12px",
-                      fontWeight: 500, color: "rgba(255,255,255,0.85)",
-                    }}>Replace cover</span>
-                  </div>
-                )}
-                <button
-                  className="absolute top-2 right-2 flex items-center justify-center z-10"
-                  style={{ width: "22px", height: "22px", background: "rgba(0,0,0,0.60)", borderRadius: "6px" }}
-                  onClick={(e) => { e.stopPropagation(); onCoverRemove(); }}
-                >
-                  <X size={12} color="rgba(255,255,255,0.80)" />
-                </button>
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                <ImagePlus size={16} color="rgba(255,255,255,0.55)" />
-                <span style={{
-                  fontFamily: "Inter, sans-serif", fontSize: "13px",
-                  fontWeight: 500, color: "rgba(255,255,255,0.55)",
-                }}>Add cover image</span>
-              </div>
-            )}
-          </div>
+          <CoverImageField
+            value={coverImage}
+            onChange={onCoverImageChange}
+            altText={title || undefined}
+          />
         </UploadSectionToggle>
+
 
         {/* Title + description toggle */}
         <UploadSectionToggle
