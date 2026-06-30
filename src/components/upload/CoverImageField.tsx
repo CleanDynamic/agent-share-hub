@@ -33,17 +33,55 @@ export function CoverImageField({
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Reframe (focal-point adjust) mode
+  const [reframing, setReframing] = useState(false);
+  const [draftFocal, setDraftFocal] = useState<{ x: number; y: number }>({ x: 0.5, y: 0.5 });
+  const [reframeDragging, setReframeDragging] = useState(false);
+
   useEffect(() => {
     return () => {
       if (pendingPreview) URL.revokeObjectURL(pendingPreview);
     };
   }, [pendingPreview]);
 
-  const objectPosition = useMemo(() => {
-    const fx = value?.focalX ?? 0.5;
-    const fy = value?.focalY ?? 0.5;
-    return `${Math.round(fx * 100)}% ${Math.round(fy * 100)}%`;
-  }, [value]);
+  const savedFocal = useMemo(
+    () => ({ x: value?.focalX ?? 0.5, y: value?.focalY ?? 0.5 }),
+    [value],
+  );
+
+  const activeFocal = reframing ? draftFocal : savedFocal;
+
+  const objectPosition = useMemo(
+    () => `${(activeFocal.x * 100).toFixed(2)}% ${(activeFocal.y * 100).toFixed(2)}%`,
+    [activeFocal],
+  );
+
+  const enterReframe = useCallback(() => {
+    if (!value) return;
+    setDraftFocal({ x: savedFocal.x, y: savedFocal.y });
+    setReframing(true);
+    onRequestReframe?.();
+  }, [value, savedFocal, onRequestReframe]);
+
+  const cancelReframe = useCallback(() => {
+    setReframing(false);
+    setReframeDragging(false);
+  }, []);
+
+  const saveReframe = useCallback(() => {
+    if (!value) {
+      setReframing(false);
+      return;
+    }
+    onChange({
+      ...value,
+      focalX: Math.max(0, Math.min(1, draftFocal.x)),
+      focalY: Math.max(0, Math.min(1, draftFocal.y)),
+    });
+    setReframing(false);
+    setReframeDragging(false);
+  }, [value, draftFocal, onChange]);
+
 
   const openPicker = useCallback(() => {
     if (uploading) return;
