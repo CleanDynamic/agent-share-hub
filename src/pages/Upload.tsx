@@ -677,6 +677,13 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         blog_referenced_post_ids: mode === 'blog' ? referencedPostIds : null,
         stage_grids: stageGridsSnapshot,
         is_remixable: isRemixable,
+        // Cover image (new media data layer — UI not yet wired).
+        cover_image_url: coverImage?.url ?? null,
+        cover_image_path: coverImage?.path ?? null,
+        cover_image_focal_x: coverImage?.focalX ?? 0.5,
+        cover_image_focal_y: coverImage?.focalY ?? 0.5,
+        // Results blocks (jsonb array).
+        results: results,
       };
 
       let draftIdToUse = currentDraftId;
