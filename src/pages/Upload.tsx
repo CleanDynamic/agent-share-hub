@@ -49,6 +49,7 @@ import { ShellHeader } from "@/components/shell/ShellHeader";
 import RemixSettingsRow from "@/components/remix/RemixSettingsRow";
 import RemixComposerBanner from "@/components/remix/RemixComposerBanner";
 import { useLineageParent } from "@/lib/remix/hooks";
+import { coverImageFromRow, resultsFromJson, type CoverImage, type ResultBlock } from "@/types/blueprintMedia";
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -292,6 +293,12 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const [tagInput, setTagInput] = useState("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  // Draft-persisted cover-image metadata (path + focal point). Mirrors
+  // the cover_image_* columns on content_items so autosave can round-trip it.
+  const [coverImage, setCoverImage] = useState<CoverImage>(null);
+  // Draft-persisted media results blocks (images / videos / written notes).
+  // Backed by content_items.results (jsonb).
+  const [results, setResults] = useState<ResultBlock[]>([]);
   const [resultsCount, setResultsCount] = useState(0);
   const [toolUrl, setToolUrl] = useState("");
   const [toolSubtype, setToolSubtype] = useState<"api" | "local" | "">("");
@@ -432,6 +439,12 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         if ((item as any).tool_url) setToolUrl((item as any).tool_url);
         if ((item as any).tags?.length > 0) setCustomTags((item as any).tags);
         if ((item as any).cover_image_url) setCoverImagePreview((item as any).cover_image_url);
+        {
+          const ci = coverImageFromRow(item as any);
+          if (ci) setCoverImage(ci);
+          const rs = resultsFromJson((item as any).results);
+          if (rs.length) setResults(rs);
+        }
         if ((item as any).topics?.length > 0) setSelectedTopics((item as any).topics);
         if ((item as any).pwyw_floor_gbp) setPwywFloor(Number((item as any).pwyw_floor_gbp));
         if (typeof (item as any).is_remixable === "boolean") setIsRemixable((item as any).is_remixable);
@@ -664,6 +677,13 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         blog_referenced_post_ids: mode === 'blog' ? referencedPostIds : null,
         stage_grids: stageGridsSnapshot,
         is_remixable: isRemixable,
+        // Cover image (new media data layer — UI not yet wired).
+        cover_image_url: coverImage?.url ?? null,
+        cover_image_path: coverImage?.path ?? null,
+        cover_image_focal_x: coverImage?.focalX ?? 0.5,
+        cover_image_focal_y: coverImage?.focalY ?? 0.5,
+        // Results blocks (jsonb array).
+        results: results,
       };
 
       let draftIdToUse = currentDraftId;
@@ -760,7 +780,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
     } finally {
       if (!silent) setSavingDraft(false);
     }
-  }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast, draftMeta, canvasDoc, selectedTopics]);
+  }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast, draftMeta, canvasDoc, selectedTopics, coverImage, results]);
 
   // ── Autosave every 60 seconds (fallback) ──
   useEffect(() => {

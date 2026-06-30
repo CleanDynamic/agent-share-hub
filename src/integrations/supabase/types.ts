@@ -1122,6 +1122,9 @@ export type Database = {
           compatibility_status: string | null
           connection_count: number
           content_type: string
+          cover_image_focal_x: number | null
+          cover_image_focal_y: number | null
+          cover_image_path: string | null
           cover_image_url: string | null
           created_at: string
           creator_id: string
@@ -1174,6 +1177,7 @@ export type Database = {
           rating_count: number
           reading_completion_count: number
           reblog_count: number
+          results: Json | null
           slug: string | null
           stage_count: number
           stage_grids: Json | null
@@ -1228,6 +1232,9 @@ export type Database = {
           compatibility_status?: string | null
           connection_count?: number
           content_type: string
+          cover_image_focal_x?: number | null
+          cover_image_focal_y?: number | null
+          cover_image_path?: string | null
           cover_image_url?: string | null
           created_at?: string
           creator_id: string
@@ -1280,6 +1287,7 @@ export type Database = {
           rating_count?: number
           reading_completion_count?: number
           reblog_count?: number
+          results?: Json | null
           slug?: string | null
           stage_count?: number
           stage_grids?: Json | null
@@ -1334,6 +1342,9 @@ export type Database = {
           compatibility_status?: string | null
           connection_count?: number
           content_type?: string
+          cover_image_focal_x?: number | null
+          cover_image_focal_y?: number | null
+          cover_image_path?: string | null
           cover_image_url?: string | null
           created_at?: string
           creator_id?: string
@@ -1386,6 +1397,7 @@ export type Database = {
           rating_count?: number
           reading_completion_count?: number
           reblog_count?: number
+          results?: Json | null
           slug?: string | null
           stage_count?: number
           stage_grids?: Json | null
