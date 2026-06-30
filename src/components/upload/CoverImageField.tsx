@@ -243,28 +243,55 @@ export function CoverImageField({
       <div
         ref={dropRef}
         role={value ? undefined : "button"}
-        tabIndex={value || uploading ? -1 : 0}
+        tabIndex={value || uploading || reframing ? -1 : 0}
         aria-label={value ? "Cover image" : "Add cover image"}
         aria-busy={uploading || undefined}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
         onClick={() => {
-          if (value || uploading) return;
+          if (value || uploading || reframing) return;
           openPicker();
         }}
         onKeyDown={onKey}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
+        onDragOver={reframing ? undefined : onDragOver}
+        onDragLeave={reframing ? undefined : onDragLeave}
+        onDrop={reframing ? undefined : onDrop}
+        onPointerDown={(e) => {
+          if (!reframing) return;
+          e.preventDefault();
+          (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+          setReframeDragging(true);
+          const rect = e.currentTarget.getBoundingClientRect();
+          const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+          const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+          setDraftFocal({ x, y });
+        }}
+        onPointerMove={(e) => {
+          if (!reframing || !reframeDragging) return;
+          const rect = e.currentTarget.getBoundingClientRect();
+          const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+          const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+          setDraftFocal({ x, y });
+        }}
+        onPointerUp={(e) => {
+          if (!reframing) return;
+          try { (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId); } catch {}
+          setReframeDragging(false);
+        }}
+        onPointerCancel={() => setReframeDragging(false)}
         className="relative overflow-hidden outline-none focus-visible:ring-1 focus-visible:ring-white/30"
         style={{
           height: "180px",
           width: "100%",
-          border: borderStyle,
+          border: reframing ? "0.5px solid #E8571A" : borderStyle,
           background: bgStyle,
           borderRadius: "8px",
-          cursor: value || uploading ? "default" : "pointer",
+          cursor: reframing
+            ? (reframeDragging ? "grabbing" : "grab")
+            : value || uploading ? "default" : "pointer",
           transition: "background 120ms ease, border-color 120ms ease",
+          touchAction: reframing ? "none" : undefined,
+          userSelect: "none",
         }}
       >
         {/* Empty state */}
@@ -313,6 +340,7 @@ export function CoverImageField({
             style={{
               objectFit: "cover",
               objectPosition: uploading ? "center" : objectPosition,
+              pointerEvents: "none",
             }}
             draggable={false}
           />
@@ -328,8 +356,89 @@ export function CoverImageField({
           </div>
         )}
 
+        {/* Reframe overlay: grid of thirds + reticle + action bar */}
+        {reframing && (
+          <>
+            {/* Rule-of-thirds grid */}
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              preserveAspectRatio="none"
+              viewBox="0 0 3 3"
+            >
+              <line x1="1" y1="0" x2="1" y2="3" stroke="rgba(255,255,255,0.35)" strokeWidth="0.012" />
+              <line x1="2" y1="0" x2="2" y2="3" stroke="rgba(255,255,255,0.35)" strokeWidth="0.012" />
+              <line x1="0" y1="1" x2="3" y2="1" stroke="rgba(255,255,255,0.35)" strokeWidth="0.012" />
+              <line x1="0" y1="2" x2="3" y2="2" stroke="rgba(255,255,255,0.35)" strokeWidth="0.012" />
+            </svg>
+
+            {/* Focal reticle */}
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                left: `${activeFocal.x * 100}%`,
+                top: `${activeFocal.y * 100}%`,
+                width: "22px",
+                height: "22px",
+                marginLeft: "-11px",
+                marginTop: "-11px",
+                borderRadius: "100px",
+                border: "1.5px solid #E8571A",
+                background: "rgba(232,87,26,0.22)",
+                boxShadow: "0 0 0 1px rgba(0,0,0,0.45)",
+                transition: reframeDragging ? "none" : "left 120ms ease, top 120ms ease",
+              }}
+            />
+
+            {/* Action bar */}
+            <div
+              className="absolute left-0 right-0 bottom-0 flex items-center justify-end gap-2 z-20"
+              style={{
+                padding: "8px 10px",
+                background: "linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0))",
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={cancelReframe}
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "rgba(255,255,255,0.85)",
+                  background: "transparent",
+                  border: "0.5px solid rgba(255,255,255,0.18)",
+                  padding: "6px 14px",
+                  borderRadius: "100px",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveReframe}
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#FFFFFF",
+                  background: "#E8571A",
+                  border: "none",
+                  padding: "7px 14px",
+                  borderRadius: "100px",
+                  cursor: "pointer",
+                }}
+              >
+                Save framing
+              </button>
+            </div>
+          </>
+        )}
+
         {/* Loaded hover toolbar */}
-        {showLoaded && isHovering && (
+        {showLoaded && isHovering && !reframing && (
           <div
             className="absolute top-2 right-2 flex items-center gap-1 z-10"
             style={{
@@ -342,10 +451,7 @@ export function CoverImageField({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <ToolbarIconButton
-              label="Reframe"
-              onClick={() => onRequestReframe?.()}
-            >
+            <ToolbarIconButton label="Reframe" onClick={enterReframe}>
               <Move size={14} color="rgba(255,255,255,0.85)" />
             </ToolbarIconButton>
             <ToolbarIconButton label="Replace" onClick={onReplaceClick}>
@@ -361,6 +467,7 @@ export function CoverImageField({
           </div>
         )}
       </div>
+
 
       {error && (
         <div
