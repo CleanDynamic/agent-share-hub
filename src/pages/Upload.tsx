@@ -780,7 +780,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
     } finally {
       if (!silent) setSavingDraft(false);
     }
-  }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast, draftMeta, canvasDoc, selectedTopics]);
+  }, [form, contentBlocks, wteBlocks, currentDraftId, customTags, customUseCaseDesc, toolUrl, otherToolName, isOtherSelected, pwywFloor, toast, draftMeta, canvasDoc, selectedTopics, coverImage, results]);
 
   // ── Autosave every 60 seconds (fallback) ──
   useEffect(() => {
