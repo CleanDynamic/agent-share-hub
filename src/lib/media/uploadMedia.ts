@@ -128,7 +128,7 @@ export async function uploadMedia(args: UploadMediaArgs): Promise<UploadMediaRes
 
   const ext = MIME_EXT[file.type] ?? (kind === "image" ? "bin" : "bin");
   const cleanPrefix = pathPrefix.replace(/^\/+|\/+$/g, "");
-  const path = `${cleanPrefix}/${userId}/${crypto.randomUUID()}.${ext}`;
+  const path = `${userId}/${cleanPrefix}/${crypto.randomUUID()}.${ext}`;
 
   onProgress?.(0);
   let pct = 10;
