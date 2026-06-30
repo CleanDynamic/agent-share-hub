@@ -1,17 +1,17 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { ImagePlus, X } from "lucide-react";
 import { UploadSectionToggle } from "./UploadSectionToggle";
+import { CoverImageField } from "./CoverImageField";
+import type { CoverImage } from "@/types/blueprintMedia";
 
 interface CompactUploadHeaderProps {
   postType: "blueprint" | "blog" | "bounty";
   mode?: string;
   title: string;
   description: string;
-  coverUrl: string | null;
+  coverImage: CoverImage;
+  onCoverImageChange: (next: CoverImage) => void;
   onTitleChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
-  onCoverUpload: (file: File) => void;
-  onCoverRemove: () => void;
   maxDescriptionLength?: number;
   resultsSlot?: React.ReactNode;
   hasResults?: boolean;
@@ -27,17 +27,16 @@ const POST_TYPE_STYLES: Record<
 };
 
 export function CompactUploadHeader({
-  postType, mode, title, description, coverUrl,
-  onTitleChange, onDescriptionChange, onCoverUpload, onCoverRemove,
+  postType, mode, title, description, coverImage,
+  onCoverImageChange,
+  onTitleChange, onDescriptionChange,
   maxDescriptionLength = 500,
   resultsSlot,
   hasResults = false,
 }: CompactUploadHeaderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const [isSticky, setIsSticky] = useState(false);
-  const [isHoveringCover, setIsHoveringCover] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -58,15 +57,6 @@ export function CompactUploadHeader({
     textarea.style.height = `${Math.min(Math.max(scrollHeight, 40), 80)}px`;
   }, [description]);
 
-  const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) onCoverUpload(file);
-      e.target.value = "";
-    },
-    [onCoverUpload]
-  );
-
   const scrollToTop = useCallback(() => {
     containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
@@ -76,10 +66,8 @@ export function CompactUploadHeader({
 
   return (
     <>
-      <input ref={fileInputRef} type="file" accept="image/*"
-        className="hidden" onChange={handleFileSelect} />
-
       <div ref={containerRef} className="w-full max-w-[720px] flex flex-col gap-2">
+
         {/* Type chip row */}
         <div className="flex items-center gap-2" style={{ height: "24px" }}>
           <span style={{
@@ -100,55 +88,17 @@ export function CompactUploadHeader({
         {/* Cover image toggle */}
         <UploadSectionToggle
           label="Cover image"
-          summary={coverUrl ? "1 image" : "Optional"}
-          defaultOpen={!!coverUrl}
-          filled={!!coverUrl}
+          summary={coverImage ? "1 image" : "Optional"}
+          defaultOpen={!!coverImage}
+          filled={!!coverImage}
         >
-          <div
-            className="flex items-center justify-center cursor-pointer transition-colors relative overflow-hidden"
-            style={{
-              height: "120px", width: "100%",
-              border: isHoveringCover
-                ? "0.5px solid rgba(255,255,255,0.18)"
-                : "0.5px dashed rgba(255,255,255,0.14)",
-              background: isHoveringCover ? "rgba(255, 255, 255, 0.06)" : "rgba(255,255,255,0.02)",
-              borderRadius: "8px",
-            }}
-            onMouseEnter={() => setIsHoveringCover(true)}
-            onMouseLeave={() => setIsHoveringCover(false)}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {coverUrl ? (
-              <>
-                <img src={coverUrl} alt="Cover" className="absolute inset-0 w-full h-full object-cover" />
-                {isHoveringCover && (
-                  <div className="absolute inset-0 flex items-center justify-center"
-                    style={{ background: "rgba(0,0,0,0.50)" }}>
-                    <span style={{
-                      fontFamily: "Inter, sans-serif", fontSize: "12px",
-                      fontWeight: 500, color: "rgba(255,255,255,0.85)",
-                    }}>Replace cover</span>
-                  </div>
-                )}
-                <button
-                  className="absolute top-2 right-2 flex items-center justify-center z-10"
-                  style={{ width: "22px", height: "22px", background: "rgba(0,0,0,0.60)", borderRadius: "6px" }}
-                  onClick={(e) => { e.stopPropagation(); onCoverRemove(); }}
-                >
-                  <X size={12} color="rgba(255,255,255,0.80)" />
-                </button>
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                <ImagePlus size={16} color="rgba(255,255,255,0.55)" />
-                <span style={{
-                  fontFamily: "Inter, sans-serif", fontSize: "13px",
-                  fontWeight: 500, color: "rgba(255,255,255,0.55)",
-                }}>Add cover image</span>
-              </div>
-            )}
-          </div>
+          <CoverImageField
+            value={coverImage}
+            onChange={onCoverImageChange}
+            altText={title || undefined}
+          />
         </UploadSectionToggle>
+
 
         {/* Title + description toggle */}
         <UploadSectionToggle
