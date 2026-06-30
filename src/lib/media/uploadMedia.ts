@@ -166,7 +166,8 @@ export async function uploadMedia(args: UploadMediaArgs): Promise<UploadMediaRes
       kind,
       width: meta?.width,
       height: meta?.height,
-      durationSec: meta && "durationSec" in meta ? meta.durationSec : undefined,
+      durationSec:
+        meta && "durationSec" in meta ? (meta as { durationSec: number }).durationSec : undefined,
     };
   } finally {
     if (timer) clearInterval(timer);
