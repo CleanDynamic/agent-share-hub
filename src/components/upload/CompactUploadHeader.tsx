@@ -1,17 +1,17 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { ImagePlus, X } from "lucide-react";
 import { UploadSectionToggle } from "./UploadSectionToggle";
+import { CoverImageField } from "./CoverImageField";
+import type { CoverImage } from "@/types/blueprintMedia";
 
 interface CompactUploadHeaderProps {
   postType: "blueprint" | "blog" | "bounty";
   mode?: string;
   title: string;
   description: string;
-  coverUrl: string | null;
+  coverImage: CoverImage;
+  onCoverImageChange: (next: CoverImage) => void;
   onTitleChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
-  onCoverUpload: (file: File) => void;
-  onCoverRemove: () => void;
   maxDescriptionLength?: number;
   resultsSlot?: React.ReactNode;
   hasResults?: boolean;
