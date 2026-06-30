@@ -440,9 +440,9 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         if ((item as any).tags?.length > 0) setCustomTags((item as any).tags);
         if ((item as any).cover_image_url) setCoverImagePreview((item as any).cover_image_url);
         {
-          const ci = (await import("@/types/blueprintMedia")).coverImageFromRow(item as any);
+          const ci = coverImageFromRow(item as any);
           if (ci) setCoverImage(ci);
-          const rs = (await import("@/types/blueprintMedia")).resultsFromJson((item as any).results);
+          const rs = resultsFromJson((item as any).results);
           if (rs.length) setResults(rs);
         }
         if ((item as any).topics?.length > 0) setSelectedTopics((item as any).topics);
