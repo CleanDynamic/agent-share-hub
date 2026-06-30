@@ -49,6 +49,7 @@ import { ShellHeader } from "@/components/shell/ShellHeader";
 import RemixSettingsRow from "@/components/remix/RemixSettingsRow";
 import RemixComposerBanner from "@/components/remix/RemixComposerBanner";
 import { useLineageParent } from "@/lib/remix/hooks";
+import { coverImageFromRow, resultsFromJson, type CoverImage, type ResultBlock } from "@/types/blueprintMedia";
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
