@@ -292,6 +292,12 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const [tagInput, setTagInput] = useState("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  // Draft-persisted cover-image metadata (path + focal point). Mirrors
+  // the cover_image_* columns on content_items so autosave can round-trip it.
+  const [coverImage, setCoverImage] = useState<import("@/types/blueprintMedia").CoverImage>(null);
+  // Draft-persisted media results blocks (images / videos / written notes).
+  // Backed by content_items.results (jsonb).
+  const [results, setResults] = useState<import("@/types/blueprintMedia").ResultBlock[]>([]);
   const [resultsCount, setResultsCount] = useState(0);
   const [toolUrl, setToolUrl] = useState("");
   const [toolSubtype, setToolSubtype] = useState<"api" | "local" | "">("");
