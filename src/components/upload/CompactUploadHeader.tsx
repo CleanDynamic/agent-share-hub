@@ -27,17 +27,16 @@ const POST_TYPE_STYLES: Record<
 };
 
 export function CompactUploadHeader({
-  postType, mode, title, description, coverUrl,
-  onTitleChange, onDescriptionChange, onCoverUpload, onCoverRemove,
+  postType, mode, title, description, coverImage,
+  onCoverImageChange,
+  onTitleChange, onDescriptionChange,
   maxDescriptionLength = 500,
   resultsSlot,
   hasResults = false,
 }: CompactUploadHeaderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const [isSticky, setIsSticky] = useState(false);
-  const [isHoveringCover, setIsHoveringCover] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -58,15 +57,6 @@ export function CompactUploadHeader({
     textarea.style.height = `${Math.min(Math.max(scrollHeight, 40), 80)}px`;
   }, [description]);
 
-  const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) onCoverUpload(file);
-      e.target.value = "";
-    },
-    [onCoverUpload]
-  );
-
   const scrollToTop = useCallback(() => {
     containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
@@ -76,10 +66,8 @@ export function CompactUploadHeader({
 
   return (
     <>
-      <input ref={fileInputRef} type="file" accept="image/*"
-        className="hidden" onChange={handleFileSelect} />
-
       <div ref={containerRef} className="w-full max-w-[720px] flex flex-col gap-2">
+
         {/* Type chip row */}
         <div className="flex items-center gap-2" style={{ height: "24px" }}>
           <span style={{
