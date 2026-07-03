@@ -34,6 +34,7 @@ export function LoginCard({
   onRememberMeChange,
   onForgotPassword,
   onSubmit,
+  onBack,
   isSubmitting,
   error,
 }: LoginCardProps) {
