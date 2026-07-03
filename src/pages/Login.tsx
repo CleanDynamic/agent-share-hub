@@ -102,6 +102,7 @@ export default function Login() {
         onRememberMeChange={setRememberMe}
         onForgotPassword={() => navigate("/reset-password")}
         onSubmit={handleSubmit}
+        onBack={() => navigate(-1)}
         isSubmitting={isSubmitting}
         error={error}
       />
