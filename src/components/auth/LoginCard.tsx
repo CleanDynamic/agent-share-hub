@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { AuthShell } from "./AuthShell";
 import { OAuthButtons, type OAuthProvider } from "./OAuthButtons";
 import { AuthDivider } from "./AuthDivider";
@@ -18,6 +19,7 @@ export interface LoginCardProps {
   onRememberMeChange: (value: boolean) => void;
   onForgotPassword: () => void;
   onSubmit: (method: LoginMethod) => void;
+  onBack?: () => void;
   isSubmitting: boolean;
   /** Inline error shown below the form (e.g. wrong email or password). */
   error?: string;
@@ -32,6 +34,7 @@ export function LoginCard({
   onRememberMeChange,
   onForgotPassword,
   onSubmit,
+  onBack,
   isSubmitting,
   error,
 }: LoginCardProps) {
@@ -56,6 +59,29 @@ export function LoginCard({
 
   return (
     <AuthShell>
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            background: "none",
+            border: "none",
+            padding: 0,
+            marginBottom: "16px",
+            fontFamily: "Inter, sans-serif",
+            fontSize: "13px",
+            fontWeight: 500,
+            color: "rgba(255, 255, 255, 0.55)",
+            cursor: "pointer",
+          }}
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
+      )}
       <OAuthButtons onOAuthClick={handleOAuthClick} loadingProvider={loadingProvider} />
 
       <AuthDivider text="or sign in with email" />
