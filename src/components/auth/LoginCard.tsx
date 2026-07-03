@@ -19,6 +19,7 @@ export interface LoginCardProps {
   onRememberMeChange: (value: boolean) => void;
   onForgotPassword: () => void;
   onSubmit: (method: LoginMethod) => void;
+  onBack?: () => void;
   isSubmitting: boolean;
   /** Inline error shown below the form (e.g. wrong email or password). */
   error?: string;
