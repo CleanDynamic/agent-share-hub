@@ -59,6 +59,29 @@ export function LoginCard({
 
   return (
     <AuthShell>
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            background: "none",
+            border: "none",
+            padding: 0,
+            marginBottom: "16px",
+            fontFamily: "Inter, sans-serif",
+            fontSize: "13px",
+            fontWeight: 500,
+            color: "rgba(255, 255, 255, 0.55)",
+            cursor: "pointer",
+          }}
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
+      )}
       <OAuthButtons onOAuthClick={handleOAuthClick} loadingProvider={loadingProvider} />
 
       <AuthDivider text="or sign in with email" />
