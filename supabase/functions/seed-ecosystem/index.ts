@@ -231,7 +231,7 @@ Deno.serve(async (req: Request) => {
         stage_grids,
         view_count: spec.metrics.views,
         download_count: spec.metrics.downloads,
-        avg_rating: spec.metrics.rating || null,
+        avg_rating: spec.metrics.rating || 0,
         rating_count: spec.metrics.ratings,
         monetisation_type: spec.monetisation === "pwyw" ? "free" : spec.monetisation,
         price_gbp: spec.price ?? null,
