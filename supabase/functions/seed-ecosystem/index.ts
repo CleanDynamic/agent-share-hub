@@ -126,8 +126,14 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // ── 3. Posts ──
+    // ── 3. Posts ── (clear any content left over from reused demo accounts)
+    if (existing.size > 0) {
+      await db.from("content_items").delete().in("creator_id", ids);
+      await db.from("collections").delete().in("owner_id", ids);
+      await db.from("projects").delete().in("owner_id", ids);
+    }
     const postIds: Record<string, string> = {};
+
     for (const spec of POSTS) {
       const sections = scaffoldSections(spec);
       const stageId = spec.stageGrid ? crypto.randomUUID() : undefined;
