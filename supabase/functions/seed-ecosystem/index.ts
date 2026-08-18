@@ -30,14 +30,16 @@ Deno.serve(async (req: Request) => {
 
     // ── 1. Wipe previous ecosystem seed (cascades to all child rows) ──
     let removed = 0;
-    for (let page = 1; page <= 10; page++) {
+    const existing = new Map<string, string>(); // email -> id
+    for (let page = 1; page <= 20; page++) {
       const { data } = await db.auth.admin.listUsers({ page, perPage: 200 });
       const users = data?.users ?? [];
       if (!users.length) break;
       for (const u of users) {
         if (u.email?.endsWith(`@${DEMO_EMAIL_DOMAIN}`)) {
-          await db.auth.admin.deleteUser(u.id);
-          removed++;
+          const { error: delErr } = await db.auth.admin.deleteUser(u.id);
+          if (delErr) existing.set(u.email, u.id);
+          else removed++;
         }
       }
       if (users.length < 200) break;
@@ -46,15 +48,30 @@ Deno.serve(async (req: Request) => {
     // ── 2. Creators ──
     const ids: string[] = [];
     for (const c of CREATORS) {
-      const { data, error } = await db.auth.admin.createUser({
-        email: `${c.username}@${DEMO_EMAIL_DOMAIN}`,
-        password: crypto.randomUUID(),
-        email_confirm: true,
-        user_metadata: { username: c.username, display_name: c.display_name },
-      });
-      if (error || !data.user) throw new Error(`creator ${c.username}: ${error?.message}`);
-      const uid = data.user.id;
+      const email = `${c.username}@${DEMO_EMAIL_DOMAIN}`;
+      let uid = existing.get(email) ?? null;
+      if (!uid) {
+        const { data, error } = await db.auth.admin.createUser({
+          email,
+          password: crypto.randomUUID(),
+          email_confirm: true,
+          user_metadata: { username: c.username, display_name: c.display_name },
+        });
+        if (error || !data.user) {
+          // Fall back to an already-registered user with this email.
+          for (let page = 1; page <= 20 && !uid; page++) {
+            const { data: list } = await db.auth.admin.listUsers({ page, perPage: 200 });
+            const found = (list?.users ?? []).find((u) => u.email === email);
+            if (found) uid = found.id;
+            if ((list?.users ?? []).length < 200) break;
+          }
+          if (!uid) throw new Error(`creator ${c.username}: ${error?.message}`);
+        } else {
+          uid = data.user.id;
+        }
+      }
       ids.push(uid);
+
 
       await db.from("profiles").update({
         username: c.username,
