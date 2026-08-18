@@ -82,7 +82,6 @@
     "fuse.js": "^7.3.0",
     "immer": "^11.1.4",
     "input-otp": "^1.4.2",
-    "liquid-glass-react": "^1.1.1",
     "lowlight": "^3.3.0",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
