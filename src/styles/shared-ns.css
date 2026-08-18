@@ -1,0 +1,62 @@
+/* ────────────────────────────────────────────────
+   shared-ns.css — .ns-* rules used by components OUTSIDE the app shell.
+   Extracted verbatim from NeoScaleShell's injected CSS so these
+   consumers no longer depend on the shell being mounted:
+     .ns-back-btn        → src/pages/BountyUpload.tsx
+     .ns-section-label   → src/components/layout/RightPanelExplore.tsx
+     .ns-engagement-bar  → src/components/content-detail/FloatingEngagementBar.tsx
+     .ns-comment-drawer  → src/components/content-detail/PrimitiveCommentDrawer.tsx
+   Imported once in src/main.tsx. Do not add shell-internal rules here.
+──────────────────────────────────────────────── */
+
+/* ── Back button ── */
+.ns-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 24px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.40);
+  background: none; border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: color 0.15s;
+  width: 100%;
+  text-align: left;
+}
+.ns-back-btn:hover { color: rgba(255,255,255,0.85); }
+
+/* ── Section label (trending, categories etc) ── */
+.ns-section-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 16px;
+}
+
+@media (max-width: 767px) {
+  /* Floating engagement bar: clear the 80px MobileBottomNav. */
+  .ns-engagement-bar {
+    bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+    max-width: calc(100vw - 32px);
+  }
+
+  /* Comment drawer: slide up from bottom (matching RightRailDrawer pattern). */
+  .ns-comment-drawer {
+    top: auto !important;
+    right: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    height: 85vh !important;
+    max-width: 100% !important;
+    border-left: none !important;
+    border-top: 0.5px solid rgba(255,255,255,0.10) !important;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    transform: translateY(0) !important;
+  }
+}
