@@ -124,28 +124,9 @@ const NEOSCALE_CSS = `
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
   }
-
-  /* Floating engagement bar: clear the 80px MobileBottomNav. */
-  .ns-engagement-bar {
-    bottom: calc(96px + env(safe-area-inset-bottom)) !important;
-    max-width: calc(100vw - 32px);
-  }
-
-  /* Comment drawer: slide up from bottom (matching RightRailDrawer pattern). */
-  .ns-comment-drawer {
-    top: auto !important;
-    right: 0 !important;
-    left: 0 !important;
-    bottom: 0 !important;
-    height: 85vh !important;
-    max-width: 100% !important;
-    border-left: none !important;
-    border-top: 0.5px solid rgba(255,255,255,0.10) !important;
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-    transform: translateY(0) !important;
-  }
 }
+/* .ns-engagement-bar and .ns-comment-drawer mobile overrides moved to
+   src/styles/shared-ns.css (used by components outside the shell). */
 
 .ns-app-container {
   display: flex;
@@ -410,23 +391,7 @@ const NEOSCALE_CSS = `
   box-sizing: border-box;
 }
 
-/* ── Back button ── */
-.ns-back-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 12px 24px;
-  font-size: 13px;
-  color: rgba(255,255,255,0.40);
-  background: none; border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  transition: color 0.15s;
-  width: 100%;
-  text-align: left;
-}
-.ns-back-btn:hover { color: rgba(255,255,255,0.85); }
+/* ── Back button — moved to src/styles/shared-ns.css (used outside the shell) ── */
 
 /* ── Back face — outlet ── */
 .ns-outlet-wrap {
@@ -514,16 +479,7 @@ const NEOSCALE_CSS = `
   color: rgba(255,255,255,0.85);
 }
 
-/* ── Section label (trending, categories etc) ── */
-.ns-section-label {
-  font-family: 'Inter', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(255,255,255,0.35);
-  margin-bottom: 16px;
-}
+/* ── Section label — moved to src/styles/shared-ns.css (used outside the shell) ── */
 
 /* ── Override Lovable outlet styles ── */
 .ns-page-body .bg-background,
