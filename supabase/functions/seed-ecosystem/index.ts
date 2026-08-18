@@ -30,14 +30,16 @@ Deno.serve(async (req: Request) => {
 
     // ── 1. Wipe previous ecosystem seed (cascades to all child rows) ──
     let removed = 0;
-    for (let page = 1; page <= 10; page++) {
+    const existing = new Map<string, string>(); // email -> id
+    for (let page = 1; page <= 20; page++) {
       const { data } = await db.auth.admin.listUsers({ page, perPage: 200 });
       const users = data?.users ?? [];
       if (!users.length) break;
       for (const u of users) {
         if (u.email?.endsWith(`@${DEMO_EMAIL_DOMAIN}`)) {
-          await db.auth.admin.deleteUser(u.id);
-          removed++;
+          const { error: delErr } = await db.auth.admin.deleteUser(u.id);
+          if (delErr) existing.set(u.email, u.id);
+          else removed++;
         }
       }
       if (users.length < 200) break;
@@ -46,15 +48,30 @@ Deno.serve(async (req: Request) => {
     // ── 2. Creators ──
     const ids: string[] = [];
     for (const c of CREATORS) {
-      const { data, error } = await db.auth.admin.createUser({
-        email: `${c.username}@${DEMO_EMAIL_DOMAIN}`,
-        password: crypto.randomUUID(),
-        email_confirm: true,
-        user_metadata: { username: c.username, display_name: c.display_name },
-      });
-      if (error || !data.user) throw new Error(`creator ${c.username}: ${error?.message}`);
-      const uid = data.user.id;
+      const email = `${c.username}@${DEMO_EMAIL_DOMAIN}`;
+      let uid = existing.get(email) ?? null;
+      if (!uid) {
+        const { data, error } = await db.auth.admin.createUser({
+          email,
+          password: crypto.randomUUID(),
+          email_confirm: true,
+          user_metadata: { username: c.username, display_name: c.display_name },
+        });
+        if (error || !data.user) {
+          // Fall back to an already-registered user with this email.
+          for (let page = 1; page <= 20 && !uid; page++) {
+            const { data: list } = await db.auth.admin.listUsers({ page, perPage: 200 });
+            const found = (list?.users ?? []).find((u) => u.email === email);
+            if (found) uid = found.id;
+            if ((list?.users ?? []).length < 200) break;
+          }
+          if (!uid) throw new Error(`creator ${c.username}: ${error?.message}`);
+        } else {
+          uid = data.user.id;
+        }
+      }
       ids.push(uid);
+
 
       await db.from("profiles").update({
         username: c.username,
@@ -109,8 +126,14 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // ── 3. Posts ──
+    // ── 3. Posts ── (clear any content left over from reused demo accounts)
+    if (existing.size > 0) {
+      await db.from("content_items").delete().in("creator_id", ids);
+      await db.from("collections").delete().in("owner_id", ids);
+      await db.from("projects").delete().in("owner_id", ids);
+    }
     const postIds: Record<string, string> = {};
+
     for (const spec of POSTS) {
       const sections = scaffoldSections(spec);
       const stageId = spec.stageGrid ? crypto.randomUUID() : undefined;
@@ -158,6 +181,31 @@ Deno.serve(async (req: Request) => {
         };
       }
 
+      // Bounties must publish with at least one stage flagged as missing.
+      if (spec.bounty) {
+        const missingId = crypto.randomUUID();
+        const base = (stage_grids as any) ?? { stages: {}, blocks: {}, connections: {} };
+        base.stages = base.stages ?? {};
+        base.blocks = base.blocks ?? {};
+        base.connections = base.connections ?? {};
+        base.stages[missingId] = {
+          id: missingId,
+          height: 360,
+          created_at: created,
+          updated_at: created,
+          stage_name: "Missing piece — this is what the bounty is for",
+          width_mode: "wide",
+          grid_spacing: 20,
+          content_item_id: "",
+          background_style: "dot",
+          order_in_document: Object.keys(base.stages).length,
+          is_missing: true,
+        };
+        stage_grids = base;
+      }
+
+
+
       const row: Record<string, unknown> = {
         creator_id: creator,
         title: spec.title,
@@ -183,7 +231,7 @@ Deno.serve(async (req: Request) => {
         stage_grids,
         view_count: spec.metrics.views,
         download_count: spec.metrics.downloads,
-        avg_rating: spec.metrics.rating || null,
+        avg_rating: spec.metrics.rating || 0,
         rating_count: spec.metrics.ratings,
         monetisation_type: spec.monetisation === "pwyw" ? "free" : spec.monetisation,
         price_gbp: spec.price ?? null,
@@ -198,7 +246,13 @@ Deno.serve(async (req: Request) => {
         row.bounty_reward_currency = "GBP";
         row.bounty_deadline = daysAgoIso(-21);
         row.bounty_is_meta = spec.bounty.is_meta ?? false;
+        row.bounty_acceptance_criteria =
+          `A submission is accepted when it fully addresses "${spec.title}": working steps another builder can reproduce end to end, ` +
+          `a clear description of the approach and its limits, at least one worked example with real input and output, and notes on where it fails.`;
+        row.bounty_total_slots = row.bounty_total_slots ?? 1;
+        row.bounty_solved_count = 0;
       }
+
 
       const { data: ins, error: insErr } = await db
         .from("content_items")
