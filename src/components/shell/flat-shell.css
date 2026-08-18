@@ -118,8 +118,10 @@
 .fs-page-body [class*="border-border"] {
   border-color: rgba(255,255,255,0.08) !important;
 }
+/* No !important here: page components that style their own sticky elements
+   inline (e.g. the home feed tab bar) must keep their own background. */
 .fs-page-body .sticky {
-  background: rgba(7,7,13,0.90) !important;
+  background: rgba(7,7,13,0.90);
 }
 .fs-page-body .max-w-2xl,
 .fs-page-body .max-w-xl,
@@ -129,6 +131,13 @@
 .fs-page-body .mx-auto {
   margin-left: 0 !important;
   margin-right: 0 !important;
+}
+
+/* ── Home feed wrapper — reproduces the old front face's .ns-feed-scroll
+     16px inset so the feed renders exactly as before. Applied by AppShell
+     on the "/" route only; other routes had no inset. ── */
+.fs-home-pad {
+  padding: 16px;
 }
 
 /* ── Logo ── */

@@ -253,7 +253,15 @@ export function AppShell() {
           ) : null
         }
       >
-        <Outlet />
+        {/* Single outlet: every route, including "/", renders here. The home
+            route keeps the 16px inset its old front-face wrapper provided. */}
+        {pathname === "/" ? (
+          <div className="fs-home-pad">
+            <Outlet />
+          </div>
+        ) : (
+          <Outlet />
+        )}
       </FlatShell>
 
       {/* ═══ MOBILE CHROME — existing components, mounted as NeoScaleShell did ═══ */}
