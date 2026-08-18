@@ -221,7 +221,13 @@ Deno.serve(async (req: Request) => {
         row.bounty_reward_currency = "GBP";
         row.bounty_deadline = daysAgoIso(-21);
         row.bounty_is_meta = spec.bounty.is_meta ?? false;
+        row.bounty_acceptance_criteria =
+          `A submission is accepted when it fully addresses "${spec.title}": working steps another builder can reproduce end to end, ` +
+          `a clear description of the approach and its limits, at least one worked example with real input and output, and notes on where it fails.`;
+        row.bounty_total_slots = row.bounty_total_slots ?? 1;
+        row.bounty_solved_count = 0;
       }
+
 
       const { data: ins, error: insErr } = await db
         .from("content_items")
