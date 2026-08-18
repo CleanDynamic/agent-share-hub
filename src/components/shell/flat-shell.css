@@ -1,0 +1,358 @@
+/* ────────────────────────────────────────────────
+   flat-shell.css — styles for FlatShell, the flat 2D app frame.
+
+   Hard rules (performance):
+   - NO svg filters, NO filter: url(), NO css `filter`
+   - NO perspective / transform-style / rotateY / will-change / scale()
+   - backdrop-filter ONLY on .fs-rail (the two side rails)
+   - transitions only on color / background / opacity, max 0.15s
+   - No page background — BlobBackground paints it.
+──────────────────────────────────────────────── */
+
+.fs-root {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.fs-frame {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 1200px;
+  height: 100dvh;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* ── The two rails — the ONLY elements in the shell with backdrop-filter ── */
+.fs-rail {
+  background: rgba(52, 52, 66, 0.55);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 0.5px solid rgba(255, 255, 255, 0.10);
+  border-radius: 16px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  height: 100%;
+}
+
+.fs-left {
+  width: 240px;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+.fs-left::-webkit-scrollbar { display: none; }
+
+.fs-right {
+  width: 300px;
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  position: relative;
+}
+.fs-right::-webkit-scrollbar { display: none; }
+
+/* ── Centre column: transparent, no blur, its own scroll region ── */
+.fs-centre {
+  width: 600px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: transparent;
+}
+
+.fs-page-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.fs-page-body::-webkit-scrollbar { width: 3px; }
+.fs-page-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+/* Route content should fill the scroll region so pages that manage their own
+   height (e.g. Messages) get a full-height surface. */
+.fs-page-body > * { flex: 1 0 auto; min-height: 0; }
+
+/* Box-model safety net carried over from the old shell's centre column */
+.fs-centre *,
+.fs-centre ::before,
+.fs-centre ::after {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* ── Page-content overrides carried over from the old shell (.ns-page-body ...)
+     so routed pages render identically inside the dark frame.
+     NOTE: the old `.sticky` override also applied backdrop-filter: blur(20px);
+     that blur is intentionally removed (blur is rails-only) — the near-opaque
+     background keeps sticky headers legible. ── */
+.fs-page-body .bg-background,
+.fs-page-body [class*="bg-background"] {
+  background: transparent !important;
+}
+.fs-page-body .text-foreground,
+.fs-page-body [class*="text-foreground"] {
+  color: rgba(255,255,255,0.85) !important;
+  font-family: 'Inter', sans-serif !important;
+}
+.fs-page-body .text-muted-foreground,
+.fs-page-body [class*="text-muted-foreground"] {
+  color: rgba(255,255,255,0.45) !important;
+}
+.fs-page-body .border-border,
+.fs-page-body [class*="border-border"] {
+  border-color: rgba(255,255,255,0.08) !important;
+}
+.fs-page-body .sticky {
+  background: rgba(7,7,13,0.90) !important;
+}
+.fs-page-body .max-w-2xl,
+.fs-page-body .max-w-xl,
+.fs-page-body .max-w-lg {
+  max-width: 100% !important;
+}
+.fs-page-body .mx-auto {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* ── Logo ── */
+.fs-logo {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: #E8571A;
+  padding: 0 8px;
+  margin-bottom: 28px;
+  cursor: pointer;
+}
+
+/* ── Left nav ── */
+.fs-nav-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+}
+.fs-nav-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.14);
+  margin: 8px 4px;
+}
+.fs-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 100px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.70);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.fs-nav-item:hover { background: rgba(255, 255, 255, 0.08); }
+.fs-nav-item.active {
+  background: rgba(232, 87, 26, 0.12);
+  color: #E8571A;
+}
+.fs-nav-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.fs-nav-label {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fs-nav-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 700;
+  background: #E8571A;
+  color: #fff;
+  flex-shrink: 0;
+}
+.fs-nav-badge.muted {
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.45);
+}
+.fs-nav-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #E8571A;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ── User block at the bottom of the left rail ── */
+.fs-user-section {
+  padding: 12px 8px 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  margin-top: 8px;
+  position: relative;
+}
+.fs-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border: none;
+  background: none;
+  text-align: left;
+  color: inherit;
+  font-family: inherit;
+}
+.fs-user-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.fs-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #E8571A;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.fs-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.fs-user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.70);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.fs-user-dots { color: rgba(255, 255, 255, 0.35); font-size: 16px; }
+.fs-user-menu {
+  position: absolute;
+  bottom: 56px;
+  left: 8px;
+  right: 8px;
+  background: rgba(8, 8, 12, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 10px;
+  padding: 4px;
+  z-index: 10;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.40);
+}
+.fs-user-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #e74c3c;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.fs-user-menu button:hover { background: rgba(255, 255, 255, 0.05); }
+
+/* ── Signed-out: stacked auth buttons ── */
+.fs-auth-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+}
+.fs-auth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, opacity 0.15s;
+  border: none;
+}
+.fs-auth-btn.signin {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.70);
+}
+.fs-auth-btn.signin:hover { background: rgba(255, 255, 255, 0.12); }
+.fs-auth-btn.join {
+  background: linear-gradient(135deg, #E8571A, #C44514);
+  color: #fff;
+}
+.fs-auth-btn.join:hover { opacity: 0.9; }
+
+/* ── Tablet 768–1023px: hide right rail, centre may grow ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .fs-right { display: none; }
+  /* The blueprint-editor workspace rail must stay available on tablet,
+     exactly as the old shell showed it (uploadEditorSmall). */
+  .fs-right.fs-right--force { display: flex; }
+  .fs-centre {
+    width: auto;
+    flex: 1 1 auto;
+    max-width: 680px;
+  }
+}
+
+/* ── Mobile <768px: no rails, full-bleed content, existing mobile chrome ── */
+@media (max-width: 767px) {
+  .fs-left, .fs-right { display: none; }
+  .fs-frame {
+    padding: 0;
+    max-width: none;
+    gap: 0;
+  }
+  .fs-centre {
+    width: 100%;
+    max-width: none;
+    flex: 1 1 auto;
+  }
+  .fs-page-body {
+    padding-top: calc(56px + env(safe-area-inset-top));
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+}
