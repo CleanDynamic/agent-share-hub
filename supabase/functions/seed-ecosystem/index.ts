@@ -181,6 +181,31 @@ Deno.serve(async (req: Request) => {
         };
       }
 
+      // Bounties must publish with at least one stage flagged as missing.
+      if (spec.bounty) {
+        const missingId = crypto.randomUUID();
+        const base = (stage_grids as any) ?? { stages: {}, blocks: {}, connections: {} };
+        base.stages = base.stages ?? {};
+        base.blocks = base.blocks ?? {};
+        base.connections = base.connections ?? {};
+        base.stages[missingId] = {
+          id: missingId,
+          height: 360,
+          created_at: created,
+          updated_at: created,
+          stage_name: "Missing piece — this is what the bounty is for",
+          width_mode: "wide",
+          grid_spacing: 20,
+          content_item_id: "",
+          background_style: "dot",
+          order_in_document: Object.keys(base.stages).length,
+          is_missing: true,
+        };
+        stage_grids = base;
+      }
+
+
+
       const row: Record<string, unknown> = {
         creator_id: creator,
         title: spec.title,
