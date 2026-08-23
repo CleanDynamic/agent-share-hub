@@ -170,7 +170,9 @@ describe("Compose", () => {
       expect(screen.getByRole("button", { name: "Tray" })).toBeTruthy();
 
       fireEvent.click(screen.getByRole("button", { name: "Inspector" }));
-      expect(await screen.findByText(/typed fields/)).toBeTruthy();
+      // NS-P09 replaced the placeholder with the inspector itself. With nothing
+      // selected that is its empty state, which is what the sheet should show.
+      expect(await screen.findByText(/Select a node to edit its fields/)).toBeTruthy();
     } finally {
       window.matchMedia = wide;
     }
