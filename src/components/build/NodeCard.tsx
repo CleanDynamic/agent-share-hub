@@ -1,12 +1,18 @@
 // One node, as a card. The pill colour comes from the node's registry row, so
 // a type added or recoloured in node_types shows up here with no code change.
+//
+// The body is resolved the same way: by node_types.renderer, through the
+// registry in ./renderers. This component never switches on node.type, and it
+// never imports a typed renderer directly.
 
-import type { CSSProperties } from "react";
-import type { BuildNode, NodePayload, NodeType } from "@/lib/build";
-import { GenericPayload } from "./GenericPayload";
+import { useEffect, useState, type CSSProperties } from "react";
+import type { Build, BuildNode, NodeType } from "@/lib/build";
+import { resolveCopyText, resolveRenderer, type ResolveNode } from "./renderers";
 import {
   CATEGORY_COLOUR,
   GAP_RED,
+  HAIRLINE,
+  TEAL,
   TEXT_SECONDARY,
   bodyText,
   cardGlass,
@@ -18,9 +24,71 @@ import {
 interface NodeCardProps {
   node: BuildNode;
   nodeType?: NodeType;
+  build: Build;
+  resolveNode: ResolveNode;
 }
 
-export function NodeCard({ node, nodeType }: NodeCardProps) {
+/** How long the button admits it worked before going back to "Copy". */
+const COPIED_MS = 1600;
+
+/**
+ * The copy control.
+ *
+ * It lives here rather than in each renderer for two reasons: whether a type is
+ * copyable is a registry decision (node_types.copyable), and the clipboard
+ * should get the payload's raw text, never the markup a renderer wrapped it in.
+ * The string comes from the renderer module's getCopyText, or from the schema
+ * default — the first required text field.
+ */
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (!copied && !failed) return;
+    const timer = window.setTimeout(() => {
+      setCopied(false);
+      setFailed(false);
+    }, COPIED_MS);
+    return () => window.clearTimeout(timer);
+  }, [copied, failed]);
+
+  const onCopy = () => {
+    // No clipboard in an insecure context or an old browser. Say so rather
+    // than looking like it worked.
+    if (!navigator.clipboard?.writeText) {
+      setFailed(true);
+      return;
+    }
+    navigator.clipboard.writeText(text).then(
+      () => setCopied(true),
+      () => setFailed(true)
+    );
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onCopy}
+      aria-label="Copy to clipboard"
+      style={{
+        ...labelText,
+        marginLeft: "auto",
+        fontSize: 11,
+        padding: "3px 10px",
+        borderRadius: 6,
+        border: `1px solid ${HAIRLINE}`,
+        background: "rgba(255,255,255,0.04)",
+        color: copied ? TEAL : failed ? GAP_RED : TEXT_SECONDARY,
+        cursor: "pointer",
+      }}
+    >
+      {copied ? "Copied" : failed ? "Copy failed" : "Copy"}
+    </button>
+  );
+}
+
+export function NodeCard({ node, nodeType, build, resolveNode }: NodeCardProps) {
   const colour =
     nodeType?.colour ??
     CATEGORY_COLOUR[nodeType?.category ?? node.type] ??
@@ -37,6 +105,9 @@ export function NodeCard({ node, nodeType }: NodeCardProps) {
       ? { borderLeft: `3px solid ${GAP_RED}` }
       : {}),
   };
+
+  const Renderer = resolveRenderer(nodeType?.renderer);
+  const copyText = nodeType?.copyable ? resolveCopyText(node, nodeType) : null;
 
   return (
     <article
@@ -64,6 +135,7 @@ export function NodeCard({ node, nodeType }: NodeCardProps) {
             unsolved
           </span>
         ) : null}
+        {copyText ? <CopyButton text={copyText} /> : null}
       </div>
 
       <h3 style={{ ...titleText, margin: 0 }}>{node.title}</h3>
@@ -81,10 +153,14 @@ export function NodeCard({ node, nodeType }: NodeCardProps) {
         </p>
       ) : null}
 
-      {/* Renderer slot. NS-P05 swaps a typed renderer in here per node type and
-          keeps GenericPayload as the fallback. */}
+      {/* Renderer slot. The key is the registry's, not this component's. */}
       <div data-renderer-slot={nodeType?.renderer ?? "generic"}>
-        <GenericPayload payload={node.payload as NodePayload} fields={nodeType?.schema.fields ?? []} />
+        <Renderer
+          node={node}
+          nodeType={nodeType}
+          build={build}
+          resolveNode={resolveNode}
+        />
       </div>
     </article>
   );

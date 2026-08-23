@@ -6,6 +6,7 @@
 // is lazy because this page pulls in the whole build record renderer and no
 // other route needs it.
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { getBuildBySlug } from "@/lib/build";
@@ -13,6 +14,7 @@ import type { BuildRecord } from "@/lib/build";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import { BuildHeader } from "@/components/build/BuildHeader";
 import { BuildTabs } from "@/components/build/BuildTabs";
+import { makeResolveNode } from "@/components/build/renderers";
 import {
   FONT_STACK,
   HAIRLINE,
@@ -106,6 +108,11 @@ export default function BuildPage() {
     refetchOnWindowFocus: false,
   });
 
+  // The node index the typed renderers resolve node_id references through.
+  // Built here, once, from the record already in hand — a renderer never
+  // queries for a reference it is asked to display.
+  const resolveNode = useMemo(() => makeResolveNode(data?.tree ?? []), [data?.tree]);
+
   if (isLoading) {
     return (
       <Frame>
@@ -147,7 +154,12 @@ export default function BuildPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         <BuildHeader build={data.build} tree={data.tree} nodeTypes={data.nodeTypes} />
         <BuildTabs>
-          <AnatomyTree tree={data.tree} nodeTypes={data.nodeTypes} />
+          <AnatomyTree
+            tree={data.tree}
+            nodeTypes={data.nodeTypes}
+            build={data.build}
+            resolveNode={resolveNode}
+          />
         </BuildTabs>
       </div>
     </Frame>
