@@ -1,10 +1,11 @@
 // type: "string" — a single-line input.
 //
-// A field carrying a `format` hint (node_id, media_id, url, timestamp) arrives
-// here too, and is rendered as a plain input on purpose. The storage type is
-// `string` either way; the picker, the validator and the timestamp control are
-// NS-P10's job. That routing decision lives in resolveWidget, not here, so this
-// component never learns what a format is.
+// A field carrying a `format` hint (node_id, media_id, url, timestamp) never
+// reaches this component: resolveWidget sends it to the picker, the validator,
+// the timestamp control or the media placeholder instead. That routing lives in
+// the resolver, not here, so this component never learns what a format is — and
+// it is still the fallback for a hint this build does not recognise, because a
+// stored string is always editable as a string.
 
 import { FieldShell } from "../SchemaForm";
 import {

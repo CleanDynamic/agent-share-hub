@@ -8,6 +8,12 @@
 // the dialect, the migration and this map together, not a new component quietly
 // added to the side.
 //
+// A second, smaller map sits beside it: the four `format` hints a string field
+// may carry. A format never changes what is stored — a node reference, a url
+// and a timestamp are all strings on the row — so it is resolved here as a
+// choice of control, and the four widgets it names are the only widgets in this
+// directory that know anything beyond their own field.
+//
 // The shared widget contract lives here too, so the six widgets agree on their
 // props and their control styling without a seventh file to hold it. ListField
 // imports `resolveWidget` back out of this module to render its sub-fields:
@@ -16,7 +22,7 @@
 
 import type { ComponentType, CSSProperties } from "react";
 import type { Json } from "@/integrations/supabase/types";
-import type { FieldDef, FieldType } from "@/lib/build";
+import type { FieldDef, FieldFormat, FieldType } from "@/lib/build";
 import {
   FONT_STACK,
   HAIRLINE,
@@ -32,6 +38,10 @@ import { NumberField } from "./NumberField";
 import { BooleanField } from "./BooleanField";
 import { EnumField } from "./EnumField";
 import { ListField } from "./ListField";
+import { NodeRefField } from "./NodeRefField";
+import { MediaRefField } from "./MediaRefField";
+import { UrlField } from "./UrlField";
+import { TimestampField } from "./TimestampField";
 
 /**
  * What every widget receives.
@@ -135,20 +145,41 @@ export const FIELD_WIDGETS: Record<FieldType, FieldWidget> = {
 };
 
 /**
+ * format string -> widget. Four hints, and the dialect allows no others.
+ *
+ * Typed as a total map over FieldFormat for the same reason as FIELD_WIDGETS: a
+ * fifth hint added to the migration fails to compile here until the control it
+ * names exists.
+ */
+export const FORMAT_WIDGETS: Record<FieldFormat, FieldWidget> = {
+  node_id: NodeRefField,
+  media_id: MediaRefField,
+  url: UrlField,
+  timestamp: TimestampField,
+};
+
+/**
  * The widget for one field definition.
  *
- * A field carrying a `format` hint still resolves to StringField in NS-P09 —
- * storage is `string` either way, and the node_id picker, url validator and
- * timestamp control arrive in NS-P10. That decision belongs here, in the
- * resolver, rather than inside StringField: NS-P10 changes this function and
- * adds widgets, and touches none of the six that already exist.
+ * A `format` is only meaningful on a string field, so it is only consulted for
+ * one: a list or a number carrying a stray format hint is a schema mistake, and
+ * rendering it as a picker would hide that rather than showing the field as the
+ * type it declares.
  *
- * An unknown type is a schema this build of the app predates. It falls back to
- * StringField rather than rendering nothing, so the value stays visible and
- * editable instead of silently disappearing from the form.
+ * An unknown type — or an unknown format — is a schema this build of the app
+ * predates. Both fall back to StringField rather than rendering nothing, so the
+ * value stays visible and editable instead of silently disappearing from the
+ * form.
  */
 export function resolveWidget(field: FieldDef): FieldWidget {
+  if (field.type === "string" && field.format) {
+    return FORMAT_WIDGETS[field.format] ?? StringField;
+  }
   return FIELD_WIDGETS[field.type] ?? StringField;
 }
 
 export { StringField, TextField, NumberField, BooleanField, EnumField, ListField };
+export { NodeRefField, NodeRefProvider } from "./NodeRefField";
+export { MediaRefField } from "./MediaRefField";
+export { UrlField, isValidUrl } from "./UrlField";
+export { TimestampField, isoToLocalInput, localInputToIso } from "./TimestampField";
