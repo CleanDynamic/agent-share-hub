@@ -4,10 +4,10 @@
 // 600x775 panel inside a 3D card flip; a tray, a node tree and an inspector do
 // not fit in it and never will. This route takes the whole viewport instead.
 //
-// The left and centre panels are the tray and the node tree; the right is still
-// a labelled placeholder until NS-P09 fills it. The responsive decision was made
-// in NS-P07 — single column below 900px, inspector as a bottom sheet — and holds
-// unchanged here.
+// The left and centre panels are the tray and the node tree; the right is the
+// inspector, which renders the selected node's type schema. The responsive
+// decision was made in NS-P07 — single column below 900px, inspector as a
+// bottom sheet — and holds unchanged here.
 //
 // The one DndContext lives at this level because it is the only ancestor the
 // tray and the tree share, and a node has to be draggable from one to the other.
@@ -20,6 +20,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import type { Build } from "@/lib/build";
 import type { ComposeBuild } from "@/hooks/useComposeBuild";
 import { ComposeTopBar } from "@/components/compose/ComposeTopBar";
+import { Inspector } from "@/components/compose/Inspector";
 import { NodeTree } from "@/components/compose/NodeTree";
 import { TrayPanel } from "@/components/compose/TrayPanel";
 import { TypePill } from "@/components/compose/TreeNode";
@@ -28,11 +29,9 @@ import {
   FONT_STACK,
   GAP_RED,
   HAIRLINE,
-  TEXT_MUTED,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   VOID,
-  bodyText,
   cardGlass,
   labelText,
   panelGlass,
@@ -63,39 +62,6 @@ function useIsSingleColumn(): boolean {
   }, []);
 
   return isSingleColumn;
-}
-
-/**
- * What each panel shows until the prompt that fills it lands.
- *
- * The placeholder names the panel and the prompt that fills it, so a build of
- * this branch is legible rather than looking like three broken columns.
- */
-function PanelPlaceholder({
-  label,
-  detail,
-  arrives,
-}: {
-  label: string;
-  detail: string;
-  arrives: string;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        padding: 18,
-      }}
-    >
-      <span style={{ ...labelText, textTransform: "uppercase", color: TEXT_SECONDARY }}>
-        {label}
-      </span>
-      <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED }}>{detail}</p>
-      <span style={{ ...labelText, color: TEXT_MUTED }}>{arrives}</span>
-    </div>
-  );
 }
 
 interface PanelProps {
@@ -178,12 +144,14 @@ function DragGhost({ compose, drag }: PanelProps) {
   );
 }
 
-function RightPanelContent() {
+function RightPanelContent({ compose, drag, buildId }: PanelProps & { buildId: string }) {
   return (
-    <PanelPlaceholder
-      label="Inspector"
-      detail="The selected node's typed fields, rendered from its node_types schema."
-      arrives="arrives in NS-P09"
+    <Inspector
+      buildId={buildId}
+      compose={compose}
+      // The tree's delete, not a second one: it is the path that closes the
+      // position gap the removed node leaves behind.
+      onDelete={drag.removeNode}
     />
   );
 }
@@ -291,7 +259,7 @@ export function ComposeFrame({ build, compose }: ComposeFrameProps) {
                 ...railScroll,
               }}
             >
-              <RightPanelContent />
+              <RightPanelContent compose={compose} drag={drag} buildId={build.id} />
             </aside>
           )}
         </div>
@@ -322,7 +290,7 @@ export function ComposeFrame({ build, compose }: ComposeFrameProps) {
                 }}
               >
                 <SheetTitle style={{ ...labelText, color: TEXT_SECONDARY }}>Inspector</SheetTitle>
-                <RightPanelContent />
+                <RightPanelContent compose={compose} drag={drag} buildId={build.id} />
               </SheetContent>
             </Sheet>
           </>
