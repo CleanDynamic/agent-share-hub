@@ -464,6 +464,69 @@ export type Database = {
           },
         ]
       }
+      build_media: {
+        Row: {
+          build_id: string
+          bucket: string
+          bytes: number | null
+          created_at: string
+          duration: number | null
+          height: number | null
+          id: string
+          kind: string
+          mime: string | null
+          node_id: string | null
+          path: string
+          poster_path: string | null
+          width: number | null
+        }
+        Insert: {
+          build_id: string
+          bucket?: string
+          bytes?: number | null
+          created_at?: string
+          duration?: number | null
+          height?: number | null
+          id?: string
+          kind: string
+          mime?: string | null
+          node_id?: string | null
+          path: string
+          poster_path?: string | null
+          width?: number | null
+        }
+        Update: {
+          build_id?: string
+          bucket?: string
+          bytes?: number | null
+          created_at?: string
+          duration?: number | null
+          height?: number | null
+          id?: string
+          kind?: string
+          mime?: string | null
+          node_id?: string | null
+          path?: string
+          poster_path?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "build_media_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "build_media_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "build_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       build_nodes: {
         Row: {
           build_id: string
