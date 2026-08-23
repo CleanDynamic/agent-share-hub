@@ -40,6 +40,7 @@ import {
   mediaRejection,
   useComposeMedia,
 } from "@/hooks/useComposeMedia";
+import type { BuildMedia } from "@/lib/build";
 import { FieldShell } from "../SchemaForm";
 import { type FieldWidgetProps } from "./index";
 
@@ -70,7 +71,9 @@ export function MediaRefField({
 }: FieldWidgetProps) {
   const compose = useComposeMedia();
   const stored = value === null || value === undefined ? "" : String(value).trim();
-  const media = compose?.resolveMedia(stored);
+  // Outside the workspace there is no media to wait for, so a reference is
+  // unresolved rather than pending: null, not undefined.
+  const media = compose ? compose.resolveMedia(stored) : null;
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [fraction, setFraction] = useState<number | null>(null);
@@ -204,18 +207,7 @@ export function MediaRefField({
         {stored !== "" ? (
           <Preview
             src={src}
-            kind={media?.kind ?? null}
-            meta={
-              media
-                ? [
-                    media.kind,
-                    media.width && media.height ? `${media.width}×${media.height}` : null,
-                    media.bytes ? formatBytes(media.bytes) : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")
-                : null
-            }
+            media={media}
             reference={stored}
             alt={field.label}
             compact={compact}
@@ -329,24 +321,50 @@ function Progress({ fraction }: { fraction: number }) {
  * A resolved image is a thumbnail, a video or audio row is its own element,
  * and an id that resolves to nothing says so and prints the id — a reference
  * that has lost its row is worth showing rather than hiding, because the
- * creator is the only person who can put it right.
+ * creator is the only person who can put it right. `undefined` is not that
+ * case: it means the build's media is still loading, and a field that said
+ * "unavailable" for that moment would be wrong about half the panels a
+ * creator opens.
  */
 function Preview({
   src,
-  kind,
-  meta,
+  media,
   reference,
   alt,
   compact,
 }: {
   src: string | null;
-  kind: string | null;
-  meta: string | null;
+  media: BuildMedia | null | undefined;
   reference: string;
   alt: string;
   compact?: boolean;
 }) {
   const size = compact ? 44 : 64;
+  const kind = media?.kind ?? null;
+  const meta = media
+    ? [
+        media.kind,
+        media.width && media.height ? `${media.width}×${media.height}` : null,
+        media.bytes ? formatBytes(media.bytes) : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : null;
+
+  if (media === undefined) {
+    return (
+      <div
+        aria-hidden
+        style={{
+          width: size,
+          height: size,
+          borderRadius: 6,
+          background: "rgba(255,255,255,0.02)",
+          border: `1px solid ${HAIRLINE}`,
+        }}
+      />
+    );
+  }
 
   if (!kind) {
     return (

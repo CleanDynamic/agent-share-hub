@@ -72,7 +72,8 @@ function makeNode(partial: Partial<BuildNode> & { type: string }): BuildNode {
 }
 
 const noResolve = () => undefined;
-const noMedia = () => undefined;
+/** "The build's media is loaded and holds nothing." See ResolveMedia. */
+const noMedia = () => null;
 
 /** A build_media row, as getMediaForBuild would return it. */
 function makeMedia(partial: Partial<BuildMedia> & { id: string }): BuildMedia {
@@ -96,7 +97,7 @@ function makeMedia(partial: Partial<BuildMedia> & { id: string }): BuildMedia {
 function renderCard(
   node: BuildNode,
   nodeType?: NodeType,
-  resolveMedia: (id: string | null | undefined) => BuildMedia | undefined = noMedia
+  resolveMedia: (id: string | null | undefined) => BuildMedia | null | undefined = noMedia
 ) {
   return render(
     <NodeCard
@@ -790,7 +791,7 @@ describe("media resolved through resolveMedia", () => {
     renderCard(
       makeNode({ type: "screenshot", payload: { media_id: "media-1", caption: "The queue" } }),
       screenshotType,
-      (id) => (id === "media-1" ? media : undefined)
+      (id) => (id === "media-1" ? media : null)
     );
 
     const image = (await screen.findByRole("img")) as HTMLImageElement;
@@ -815,7 +816,7 @@ describe("media resolved through resolveMedia", () => {
     renderCard(
       makeNode({ type: "recording", payload: { media_id: "media-2" } }),
       recordingType,
-      (id) => (id === "media-2" ? media : undefined)
+      (id) => (id === "media-2" ? media : null)
     );
 
     await waitFor(() => expect(document.querySelector("video")).toBeTruthy());
@@ -838,7 +839,7 @@ describe("media resolved through resolveMedia", () => {
     renderCard(
       makeNode({ type: "recording", payload: { media_id: "media-3" } }),
       recordingType,
-      (id) => (id === "media-3" ? media : undefined)
+      (id) => (id === "media-3" ? media : null)
     );
 
     await waitFor(() => expect(document.querySelector("audio")).toBeTruthy());
@@ -849,10 +850,23 @@ describe("media resolved through resolveMedia", () => {
     renderCard(
       makeNode({ type: "screenshot", payload: { media_id: "5f8c2b1e-0000-4000-8000-000000000001" } }),
       screenshotType,
-      () => undefined
+      // Loaded, and this id is not in it.
+      () => null
     );
 
     expect(await screen.findByText(/media unavailable/i)).toBeInTheDocument();
+    expect(document.querySelector("img")).toBeNull();
+  });
+
+  it("holds the slot rather than crying unavailable while media is loading", () => {
+    renderCard(
+      makeNode({ type: "screenshot", payload: { media_id: "5f8c2b1e-0000-4000-8000-000000000001" } }),
+      screenshotType,
+      // Not loaded yet: nothing is known about this id.
+      () => undefined
+    );
+
+    expect(screen.queryByText(/media unavailable/i)).not.toBeInTheDocument();
     expect(document.querySelector("img")).toBeNull();
   });
 
@@ -867,7 +881,7 @@ describe("media resolved through resolveMedia", () => {
         },
       }),
       generatedMediaType,
-      (id) => (id === "media-4" ? media : undefined)
+      (id) => (id === "media-4" ? media : null)
     );
 
     const image = (await screen.findByRole("img")) as HTMLImageElement;

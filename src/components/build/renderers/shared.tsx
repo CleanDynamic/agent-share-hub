@@ -52,10 +52,20 @@ export type ResolveNode = (id: string) => BuildNode | undefined;
  *
  * Same contract as resolveNode and for the same reason: a renderer that
  * resolved its own media would issue one query per node, and a build is a
- * page full of nodes. Returns undefined for an id that no longer exists,
- * which MediaFigure renders as "media unavailable".
+ * page full of nodes.
+ *
+ * THREE ANSWERS, NOT TWO:
+ *   a row     — resolved
+ *   null      — the media is loaded and holds no such id: it is gone
+ *   undefined — the media has not loaded yet: nothing is known about this id
+ *
+ * The distinction is what stops every figure on the page announcing "media
+ * unavailable" for the moment between first paint and the media query
+ * returning. Only null says that; undefined holds the slot open.
  */
-export type ResolveMedia = (id: string | null | undefined) => BuildMedia | undefined;
+export type ResolveMedia = (
+  id: string | null | undefined
+) => BuildMedia | null | undefined;
 
 /** Every renderer in this directory receives exactly these props. */
 export interface NodeProps {

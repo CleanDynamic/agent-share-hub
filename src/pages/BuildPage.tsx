@@ -16,6 +16,7 @@ import {
   MEDIA_WIDTH,
   nodeMediaId,
   useMediaSrc,
+  type ResolveMedia,
 } from "@/components/build/MediaFigure";
 import { BuildHeader } from "@/components/build/BuildHeader";
 import { BuildTabs } from "@/components/build/BuildTabs";
@@ -206,7 +207,7 @@ export default function BuildPage() {
    * that a build with no media pays nothing for it, and so the media can be
    * refetched after an upload without reloading the whole record.
    */
-  const { data: media } = useQuery<BuildMedia[]>({
+  const { data: media, isPending: mediaPending } = useQuery<BuildMedia[]>({
     queryKey: ["build-media", buildId],
     queryFn: () => getMediaForBuild(buildId as string),
     enabled: Boolean(buildId),
@@ -222,9 +223,14 @@ export default function BuildPage() {
   );
 
   const mediaById = useMemo(() => indexMedia(media ?? []), [media]);
-  const resolveMedia = useMemo(
-    () => (id: string | null | undefined) => (id ? mediaById.get(id) : undefined),
-    [mediaById]
+  const resolveMedia = useMemo<ResolveMedia>(
+    () => (id) => {
+      if (!id) return null;
+      // undefined until the query settles, so a figure holds its slot instead
+      // of announcing that an image which is on its way is unavailable.
+      return mediaById.get(id) ?? (mediaPending ? undefined : null);
+    },
+    [mediaById, mediaPending]
   );
 
   // The hero: whatever hero_node_id points at, resolved through the same one

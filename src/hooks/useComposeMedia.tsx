@@ -33,6 +33,7 @@ import {
   type BuildRecord,
   type MediaKind,
 } from "@/lib/build";
+import type { ResolveMedia } from "@/components/build/renderers/shared";
 import { composeBuildQueryKey } from "./useComposeBuild";
 
 /** The same key BuildPage reads, so both surfaces share one cached list. */
@@ -103,7 +104,9 @@ export interface ComposeMedia {
   /** The node the inspector is showing. A field upload attaches to it. */
   nodeId: string | null;
   media: BuildMedia[];
-  resolveMedia: (id: string | null | undefined) => BuildMedia | undefined;
+  /** A row, null once the media is loaded and holds no such id, undefined
+   *  while it is still loading. See ResolveMedia in renderers/shared.tsx. */
+  resolveMedia: ResolveMedia;
   /** Uploads one file and records it. Throws with a readable message. */
   upload: (file: File, options?: UploadOptions) => Promise<BuildMedia>;
   /** Deletes the row and its object. Safe to call for an id already gone. */
@@ -136,7 +139,7 @@ export function MediaProvider({
   const recordKey = useMemo(() => composeBuildQueryKey(buildId), [buildId]);
   const [trayUploads, setTrayUploads] = useState(0);
 
-  const { data } = useQuery<BuildMedia[]>({
+  const { data, isPending } = useQuery<BuildMedia[]>({
     queryKey: mediaKey,
     queryFn: () => getMediaForBuild(buildId),
     // One query for the workspace. Uploads write their row into this list
@@ -151,9 +154,12 @@ export function MediaProvider({
     [media]
   );
 
-  const resolveMedia = useCallback(
-    (id: string | null | undefined) => (id ? mediaById.get(id) : undefined),
-    [mediaById]
+  const resolveMedia = useCallback<ResolveMedia>(
+    (id) => {
+      if (!id) return null;
+      return mediaById.get(id) ?? (isPending ? undefined : null);
+    },
+    [isPending, mediaById]
   );
 
   const upload = useCallback(

@@ -97,7 +97,7 @@ export function useMediaSrc(
 }
 
 /** The poster of a video, as a media reference of its own. */
-function posterRef(media: BuildMedia | undefined): MediaRef | null {
+function posterRef(media: BuildMedia | null | undefined): MediaRef | null {
   if (!media?.poster_path) return null;
   // Kind image rather than video: the poster is a still, and the transform is
   // only applied to images.
@@ -193,7 +193,7 @@ export function MediaFigure({
   style,
 }: MediaFigureProps) {
   const id = (reference ?? "").trim();
-  const media = id ? resolveMedia(id) : undefined;
+  const media = id ? resolveMedia(id) : null;
 
   // Hooks before any branch: an unresolved reference renders a placeholder,
   // it does not skip a hook.
@@ -225,7 +225,13 @@ export function MediaFigure({
         />
       );
     }
-    return <MediaUnavailable style={style} />;
+    // undefined is "the media has not loaded yet", and a slot that is about to
+    // hold an image must not spend that moment claiming the image is gone.
+    return media === undefined ? (
+      <MediaPending style={style} />
+    ) : (
+      <MediaUnavailable style={style} />
+    );
   }
 
   const frame: CSSProperties = {
@@ -284,10 +290,16 @@ export function MediaFigure({
   return <MediaFileChip media={media} src={src} style={style} />;
 }
 
-/** The slot a media row occupies before its signed URL comes back. */
-function MediaPending({ media, style }: { media: BuildMedia; style?: CSSProperties }) {
+/** The slot a media row occupies before it — or its signed URL — arrives. */
+function MediaPending({
+  media,
+  style,
+}: {
+  media?: BuildMedia | null;
+  style?: CSSProperties;
+}) {
   const ratio =
-    media.width && media.height ? `${media.width} / ${media.height}` : "16 / 9";
+    media?.width && media?.height ? `${media.width} / ${media.height}` : "16 / 9";
   return (
     <div
       aria-hidden
