@@ -8,7 +8,30 @@
 
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import type { Build, BuildNode, NodeType } from "@/lib/build";
+
+/**
+ * Only the URL signing is stubbed.
+ *
+ * build-media is a private bucket, so an <img src> needs a signed URL rather
+ * than a path — signedMediaUrl is the one thing on the read path that talks to
+ * storage, and jsdom cannot. Everything else in the lib layer is the real
+ * module, so the transform widths asserted below are the ones the renderers
+ * actually ask for.
+ */
+const signedMediaUrl = vi.fn(
+  async (media: { path: string }, options?: { width?: number | string }) =>
+    `https://project.supabase.co/storage/v1/render/image/sign/build-media/${media.path}?width=${options?.width}&quality=75&token=t`
+);
+vi.mock("@/lib/build", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/build")>();
+  return {
+    ...actual,
+    signedMediaUrl: (media: { path: string }, options?: { width?: number | string }) =>
+      signedMediaUrl(media, options),
+  };
+});
+
+import type { Build, BuildMedia, BuildNode, NodeType } from "@/lib/build";
 import { NodeCard } from "../NodeCard";
 import { GenericRenderer, RENDERERS, resolveRenderer, getNodeCopyText } from "./index";
 import { mediaSrc } from "./shared";
@@ -49,10 +72,40 @@ function makeNode(partial: Partial<BuildNode> & { type: string }): BuildNode {
 }
 
 const noResolve = () => undefined;
+const noMedia = () => undefined;
 
-function renderCard(node: BuildNode, nodeType?: NodeType) {
+/** A build_media row, as getMediaForBuild would return it. */
+function makeMedia(partial: Partial<BuildMedia> & { id: string }): BuildMedia {
+  return {
+    build_id: "b",
+    node_id: null,
+    bucket: "build-media",
+    path: `b/n/${partial.id}.png`,
+    kind: "image",
+    mime: "image/png",
+    bytes: 120_000,
+    width: 2400,
+    height: 1350,
+    duration: null,
+    poster_path: null,
+    created_at: "",
+    ...partial,
+  } as BuildMedia;
+}
+
+function renderCard(
+  node: BuildNode,
+  nodeType?: NodeType,
+  resolveMedia: (id: string | null | undefined) => BuildMedia | undefined = noMedia
+) {
   return render(
-    <NodeCard node={node} nodeType={nodeType} build={build} resolveNode={noResolve} />
+    <NodeCard
+      node={node}
+      nodeType={nodeType}
+      build={build}
+      resolveNode={noResolve}
+      resolveMedia={resolveMedia}
+    />
   );
 }
 
@@ -665,7 +718,163 @@ describe("the generated media variant grid", () => {
     const image = document.querySelector("img") as HTMLImageElement;
     expect(image).toBeTruthy();
     expect(image.getAttribute("src")).toContain("/render/image/public/");
-    expect(image.getAttribute("src")).toContain("width=480");
+    expect(image.getAttribute("src")).toContain("width=240");
     expect(image.getAttribute("loading")).toBe("lazy");
+  });
+});
+
+// --- media resolved from the page's one query (NS-P12) -----------------------
+//
+// A renderer never looks a media id up. The page loads build_media once and
+// passes resolveMedia down; these assert what the renderers then do with it —
+// the element each kind produces, the width each slot asks for, and what a
+// reference that has lost its row renders as.
+
+describe("media resolved through resolveMedia", () => {
+  const screenshotType = makeType({
+    key: "screenshot",
+    label: "Screenshot",
+    category: "evidence",
+    colour: "#2EC4B6",
+    renderer: "evidence",
+    schema: {
+      fields: [
+        { key: "media_id", label: "Media", type: "string", format: "media_id", required: true },
+        { key: "caption", label: "Caption", type: "string" },
+      ],
+    },
+  });
+
+  const recordingType = makeType({
+    key: "recording",
+    label: "Recording",
+    category: "evidence",
+    colour: "#2EC4B6",
+    renderer: "evidence",
+    schema: {
+      fields: [
+        { key: "media_id", label: "Media", type: "string", format: "media_id", required: true },
+        { key: "caption", label: "Caption", type: "string" },
+      ],
+    },
+  });
+
+  const generatedMediaType = makeType({
+    key: "generated_media",
+    label: "Generated media",
+    category: "artefact",
+    colour: "#F59E0B",
+    renderer: "generated_media",
+    schema: {
+      fields: [
+        { key: "prompt", label: "Prompt", type: "text", required: true },
+        {
+          key: "variants",
+          label: "Variants",
+          type: "list",
+          of: [
+            { key: "media_id", label: "Media", type: "string", format: "media_id" },
+            { key: "chosen", label: "Chosen", type: "boolean" },
+          ],
+        },
+      ],
+    },
+  });
+
+  beforeEach(() => {
+    signedMediaUrl.mockClear();
+  });
+
+  it("renders a screenshot at the in-tree width, never at original size", async () => {
+    const media = makeMedia({ id: "media-1", path: "b/n/shot.png" });
+    renderCard(
+      makeNode({ type: "screenshot", payload: { media_id: "media-1", caption: "The queue" } }),
+      screenshotType,
+      (id) => (id === "media-1" ? media : undefined)
+    );
+
+    const image = (await screen.findByRole("img")) as HTMLImageElement;
+    expect(image.getAttribute("src")).toContain("width=640");
+    expect(image.getAttribute("src")).toContain("/render/image/");
+    expect(image.getAttribute("src")).not.toContain("/object/");
+    expect(signedMediaUrl).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "b/n/shot.png" }),
+      { width: 640 }
+    );
+    expect(screen.getByText("The queue")).toBeInTheDocument();
+  });
+
+  it("renders a recording as a video with its poster, controls and no preload", async () => {
+    const media = makeMedia({
+      id: "media-2",
+      kind: "video",
+      mime: "video/mp4",
+      path: "b/n/demo.mp4",
+      poster_path: "b/n/demo.png",
+    });
+    renderCard(
+      makeNode({ type: "recording", payload: { media_id: "media-2" } }),
+      recordingType,
+      (id) => (id === "media-2" ? media : undefined)
+    );
+
+    await waitFor(() => expect(document.querySelector("video")).toBeTruthy());
+    const video = document.querySelector("video") as HTMLVideoElement;
+    expect(video.getAttribute("preload")).toBe("none");
+    expect(video.hasAttribute("controls")).toBe(true);
+    // The poster is signed as an image, so it carries the transform too.
+    await waitFor(() =>
+      expect(video.getAttribute("poster")).toContain("b/n/demo.png")
+    );
+  });
+
+  it("renders audio as a plain audio element", async () => {
+    const media = makeMedia({
+      id: "media-3",
+      kind: "audio",
+      mime: "audio/mpeg",
+      path: "b/n/voice.mp3",
+    });
+    renderCard(
+      makeNode({ type: "recording", payload: { media_id: "media-3" } }),
+      recordingType,
+      (id) => (id === "media-3" ? media : undefined)
+    );
+
+    await waitFor(() => expect(document.querySelector("audio")).toBeTruthy());
+    expect(document.querySelector("img")).toBeNull();
+  });
+
+  it("says media unavailable rather than leaving a broken image", async () => {
+    renderCard(
+      makeNode({ type: "screenshot", payload: { media_id: "5f8c2b1e-0000-4000-8000-000000000001" } }),
+      screenshotType,
+      () => undefined
+    );
+
+    expect(await screen.findByText(/media unavailable/i)).toBeInTheDocument();
+    expect(document.querySelector("img")).toBeNull();
+  });
+
+  it("requests a variant grid cell at the grid's width, not the card's", async () => {
+    const media = makeMedia({ id: "media-4", path: "b/n/v1.png" });
+    renderCard(
+      makeNode({
+        type: "generated_media",
+        payload: {
+          prompt: "A dark control room.",
+          variants: [{ media_id: "media-4", chosen: true }],
+        },
+      }),
+      generatedMediaType,
+      (id) => (id === "media-4" ? media : undefined)
+    );
+
+    const image = (await screen.findByRole("img")) as HTMLImageElement;
+    expect(image.getAttribute("src")).toContain("width=240");
+    expect(signedMediaUrl).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "b/n/v1.png" }),
+      { width: 240 }
+    );
   });
 });

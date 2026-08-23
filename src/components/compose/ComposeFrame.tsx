@@ -13,12 +13,19 @@
 // tray and the tree share, and a node has to be draggable from one to the other.
 // Below 900px the tray moves into a Sheet, which renders through a portal —
 // React context still reaches it, so the two panels stay in one drag layer.
+//
+// The media context is mounted here for the same reason: the upload control in
+// the inspector and the file-drop path on the frame itself are the same
+// upload, and this is the only ancestor both of them have. dnd-kit drags are
+// pointer events, not HTML5 drag-and-drop, so a node being dragged around the
+// tree and a file being dragged in from the desktop never meet.
 
 import { useEffect, useState } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import type { Build } from "@/lib/build";
 import type { ComposeBuild } from "@/hooks/useComposeBuild";
+import { MediaProvider, useComposeMedia } from "@/hooks/useComposeMedia";
 import { ComposeTopBar } from "@/components/compose/ComposeTopBar";
 import { Inspector } from "@/components/compose/Inspector";
 import { NodeTree } from "@/components/compose/NodeTree";
@@ -162,8 +169,16 @@ interface ComposeFrameProps {
   compose: ComposeBuild;
 }
 
-export function ComposeFrame({ build, compose }: ComposeFrameProps) {
+/**
+ * The workspace, inside the media context.
+ *
+ * Split from ComposeFrame only so the frame's own file-drop handlers can use
+ * the context the frame mounts — a provider cannot be consumed by the
+ * component that renders it.
+ */
+function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
   const isSingleColumn = useIsSingleColumn();
+  const media = useComposeMedia();
   const drag = useNodeDrag({
     buildId: build.id,
     tree: compose.tree,
@@ -303,5 +318,19 @@ export function ComposeFrame({ build, compose }: ComposeFrameProps) {
         <DragGhost compose={compose} drag={drag} />
       </DragOverlay>
     </DndContext>
+  );
+}
+
+/**
+ * The workspace frame.
+ *
+ * Everything below it — the panels, the inspector's upload control, the drop
+ * path on the frame itself — reads the build's media from one query held here.
+ */
+export function ComposeFrame({ build, compose }: ComposeFrameProps) {
+  return (
+    <MediaProvider buildId={build.id} nodeId={compose.selectedNodeId}>
+      <ComposeWorkspace build={build} compose={compose} />
+    </MediaProvider>
   );
 }

@@ -9,9 +9,14 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { getBuildBySlug } from "@/lib/build";
-import type { BuildNode, BuildRecord, NodeTree } from "@/lib/build";
+import { getBuildBySlug, getMediaForBuild } from "@/lib/build";
+import type { BuildMedia, BuildNode, BuildRecord, NodeTree } from "@/lib/build";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
+import {
+  MEDIA_WIDTH,
+  nodeMediaId,
+  useMediaSrc,
+} from "@/components/build/MediaFigure";
 import { BuildHeader } from "@/components/build/BuildHeader";
 import { BuildTabs } from "@/components/build/BuildTabs";
 import { PortableExport } from "@/components/build/PortableExport";
@@ -55,6 +60,65 @@ function indexTree(tree: NodeTree[]): Map<string, BuildNode> {
   };
   walk(tree);
   return index;
+}
+
+/**
+ * Every media row on the build, by id, from ONE query.
+ *
+ * This is the whole reason resolveMedia is a prop rather than a hook inside
+ * MediaFigure: a build page with twenty screenshots asks the database for its
+ * media once, not twenty times. Nothing below this component queries media.
+ */
+function indexMedia(media: BuildMedia[]): Map<string, BuildMedia> {
+  return new Map(media.map((row) => [row.id, row]));
+}
+
+/**
+ * The hero node's payload with a loadable media URL written into it.
+ *
+ * BuildHeader has read hero_node_id since NS-P04 and takes the src straight
+ * off the node's payload — it knows nothing about build_media and does not
+ * need to. So the page resolves the hero's media id, signs it at hero width,
+ * and hands the header a tree whose hero node carries the result as
+ * `media_url`. The header is unchanged by this prompt, and a build whose hero
+ * is a live_app still takes the live_url path inside it.
+ *
+ * Only the hero node is copied. Every other node in the tree comes back by
+ * reference, so the anatomy below does not re-render because the hero's
+ * signature arrived.
+ */
+function withHeroMedia(
+  tree: NodeTree[],
+  heroNodeId: string | null,
+  src: string | null
+): NodeTree[] {
+  if (!heroNodeId || !src) return tree;
+
+  let done = false;
+  const walk = (nodes: NodeTree[]): NodeTree[] => {
+    if (done) return nodes;
+    let touched = false;
+    const next = nodes.map((node) => {
+      if (node.id === heroNodeId) {
+        done = true;
+        touched = true;
+        const payload =
+          node.payload && typeof node.payload === "object" && !Array.isArray(node.payload)
+            ? (node.payload as Record<string, unknown>)
+            : {};
+        return { ...node, payload: { ...payload, media_url: src } as NodeTree["payload"] };
+      }
+      const children = walk(node.children);
+      if (children !== node.children) {
+        touched = true;
+        return { ...node, children };
+      }
+      return node;
+    });
+    return touched ? next : nodes;
+  };
+
+  return walk(tree);
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
@@ -133,11 +197,51 @@ export default function BuildPage() {
     refetchOnWindowFocus: false,
   });
 
+  const buildId = data?.build.id;
+
+  /**
+   * The build's media. ONE query for the page, whatever it holds.
+   *
+   * Separate from the record query rather than folded into getBuildBySlug so
+   * that a build with no media pays nothing for it, and so the media can be
+   * refetched after an upload without reloading the whole record.
+   */
+  const { data: media } = useQuery<BuildMedia[]>({
+    queryKey: ["build-media", buildId],
+    queryFn: () => getMediaForBuild(buildId as string),
+    enabled: Boolean(buildId),
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
   // Above the early returns: hooks cannot be conditional.
   const nodesById = useMemo(() => indexTree(data?.tree ?? []), [data?.tree]);
   const resolveNode = useMemo(
     () => (id: string) => nodesById.get(id),
     [nodesById]
+  );
+
+  const mediaById = useMemo(() => indexMedia(media ?? []), [media]);
+  const resolveMedia = useMemo(
+    () => (id: string | null | undefined) => (id ? mediaById.get(id) : undefined),
+    [mediaById]
+  );
+
+  // The hero: whatever hero_node_id points at, resolved through the same one
+  // query. A video hero renders from its poster, because the header's slot is
+  // an image; a video with no poster leaves the hero empty and the title leads.
+  const heroNodeId = data?.build.hero_node_id ?? null;
+  const heroMedia = resolveMedia(nodeMediaId(heroNodeId ? nodesById.get(heroNodeId) : undefined));
+  const heroImage =
+    heroMedia?.kind === "image"
+      ? heroMedia
+      : heroMedia?.poster_path
+        ? { bucket: heroMedia.bucket, path: heroMedia.poster_path, kind: "image" as const }
+        : null;
+  const heroSrc = useMediaSrc(heroImage, MEDIA_WIDTH.hero);
+  const treeWithHero = useMemo(
+    () => withHeroMedia(data?.tree ?? [], heroNodeId, heroSrc),
+    [data?.tree, heroNodeId, heroSrc]
   );
 
   if (isLoading) {
@@ -181,7 +285,7 @@ export default function BuildPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         <BuildHeader
           build={data.build}
-          tree={data.tree}
+          tree={treeWithHero}
           nodeTypes={data.nodeTypes}
           actions={<PortableExport record={data} />}
         />
@@ -193,6 +297,7 @@ export default function BuildPage() {
             nodeTypes={data.nodeTypes}
             build={data.build}
             resolveNode={resolveNode}
+            resolveMedia={resolveMedia}
           />
         </BuildTabs>
       </div>
