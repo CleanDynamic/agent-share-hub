@@ -14,6 +14,7 @@ import type { BuildNode, BuildRecord, NodeTree } from "@/lib/build";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import { BuildHeader } from "@/components/build/BuildHeader";
 import { BuildTabs } from "@/components/build/BuildTabs";
+import { RunView } from "@/components/build/RunView";
 import {
   FONT_STACK,
   HAIRLINE,
@@ -178,7 +179,9 @@ export default function BuildPage() {
     <Frame>
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         <BuildHeader build={data.build} tree={data.tree} nodeTypes={data.nodeTypes} />
-        <BuildTabs>
+        <BuildTabs
+          run={<RunView tree={data.tree} nodeTypes={data.nodeTypes} build={data.build} />}
+        >
           <AnatomyTree
             tree={data.tree}
             nodeTypes={data.nodeTypes}

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -94,6 +94,40 @@ describe("BuildPage", () => {
 
     const gap = container.querySelector('[data-node-id="n3"]') as HTMLElement;
     expect(gap.style.borderLeft).toBe("3px solid #EF4444");
+  });
+
+  it("switches to the run view, which shows only the copyable nodes", async () => {
+    getBuildBySlug.mockResolvedValue(record);
+    const { container } = renderAt("inbox-triage-agent-demo");
+
+    expect(await screen.findByText("Inbox triage agent")).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: /Run it yourself/ }));
+
+    const steps = container.querySelectorAll('[data-visual-slot="build-run-step"]');
+    expect([...steps].map((step) => step.getAttribute("data-node-type"))).toEqual([
+      "system_prompt",
+      "prompt",
+    ]);
+
+    // The prerequisite is a checklist item, and the anatomy is gone with its
+    // non-copyable nodes and its notes.
+    const checklist = container.querySelector('[data-visual-slot="build-run-prerequisites"]') as HTMLElement;
+    expect(within(checklist).getByText(/A Google account/)).toBeTruthy();
+    expect(container.querySelector('[data-visual-slot="build-anatomy-tree"]')).toBeNull();
+    expect(container.innerHTML).not.toContain("The running agent");
+
+    fireEvent.click(screen.getByRole("tab", { name: "Anatomy" }));
+    expect(container.querySelector('[data-visual-slot="build-anatomy-tree"]')).toBeTruthy();
+  });
+
+  it("leaves the three unbuilt tabs disabled", async () => {
+    getBuildBySlug.mockResolvedValue(record);
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    for (const label of [/Watch it get built/, /Where it broke/, /Forks/]) {
+      expect(screen.getByRole("tab", { name: label }).hasAttribute("disabled")).toBe(true);
+    }
   });
 
   it("renders a not-found state for an unknown slug", async () => {
