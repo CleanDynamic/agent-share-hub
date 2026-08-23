@@ -6,13 +6,13 @@
 // opinion, and the card should look like one.
 
 import { HAIRLINE, TEAL, TEXT_MUTED, TEXT_SECONDARY, bodyText, hexToRgba, labelText } from "../tokens";
+import { MEDIA_WIDTH, MediaFigure } from "../MediaFigure";
 import {
   Caption,
   Chip,
   ChipRow,
   Field,
   KeyValueGrid,
-  MediaImage,
   NodeRef,
   Prose,
   type GetCopyText,
@@ -37,9 +37,14 @@ import {
   str,
 } from "./shared";
 
-/** Screenshots are requested at this width, never at original size. */
-const FIGURE_WIDTH = 900;
-const FIGURE_QUALITY = 75;
+/**
+ * The width a figure inside a node card asks for, never original size.
+ *
+ * A screenshot and a recording are the same field on the same card, so the
+ * slot has one width and MediaFigure decides what element fills it from the
+ * media row's kind.
+ */
+const FIGURE_WIDTH = MEDIA_WIDTH.tree;
 
 // --- the generic evidence card -----------------------------------------------
 
@@ -114,11 +119,11 @@ export function EvidenceRenderer(props: NodeProps) {
 
         {mediaRef ? (
           <figure style={{ margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-            <MediaImage
+            <MediaFigure
               reference={mediaRef}
+              resolveMedia={props.resolveMedia}
               alt={caption ?? props.node.title ?? "Evidence"}
               width={FIGURE_WIDTH}
-              quality={FIGURE_QUALITY}
             />
             {caption ? (
               <figcaption>

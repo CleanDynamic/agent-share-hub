@@ -13,13 +13,13 @@
 
 import type { CSSProperties } from "react";
 import { HAIRLINE, TEAL, TEXT_MUTED, TEXT_SECONDARY, bodyText, hexToRgba, labelText } from "../tokens";
+import { MEDIA_WIDTH, MediaFigure } from "../MediaFigure";
 import {
   Caption,
   Chip,
   ChipRow,
   Field,
   KeyValueGrid,
-  MediaImage,
   MONO_STACK,
   MonoBlock,
   Prose,
@@ -41,9 +41,8 @@ const SOURCE_KEY = "source";
 const URL_KEY = "url";
 const VARIANTS_KEY = "variants";
 
-/** Thumbnails are requested at this width, never at original size. */
-const VARIANT_WIDTH = 480;
-const VARIANT_QUALITY = 70;
+/** A grid cell is small, so the transform is asked for a small image. */
+const VARIANT_WIDTH = MEDIA_WIDTH.variant;
 
 // --- the launch link ---------------------------------------------------------
 
@@ -239,11 +238,11 @@ export function GeneratedMediaRenderer(props: NodeProps) {
                     opacity: chosen || chosenIndex === -1 ? 1 : 0.6,
                   }}
                 >
-                  <MediaImage
+                  <MediaFigure
                     reference={reference}
+                    resolveMedia={props.resolveMedia}
                     alt={note ?? `Variant ${index + 1}`}
                     width={VARIANT_WIDTH}
-                    quality={VARIANT_QUALITY}
                     style={{ border: "none", borderRadius: 6 }}
                   />
                   <figcaption

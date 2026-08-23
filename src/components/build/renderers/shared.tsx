@@ -2,8 +2,9 @@
 //
 // Everything here is presentation only. No renderer — and nothing in this
 // file — calls Supabase, useQuery or useAuth: a renderer receives the node,
-// its registry row, the build and a resolveNode function, and that is the
-// whole of its world.
+// its registry row, the build, a resolveNode function and a resolveMedia
+// function, and that is the whole of its world. Both resolvers read collections
+// the page has already loaded, so a card never issues a query of its own.
 //
 // TWO RULES THIS FILE EXISTS TO ENFORCE
 //
@@ -21,7 +22,14 @@
 
 import { useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import type { Build, BuildNode, FieldDef, NodePayload, NodeType } from "@/lib/build";
+import type {
+  Build,
+  BuildMedia,
+  BuildNode,
+  FieldDef,
+  NodePayload,
+  NodeType,
+} from "@/lib/build";
 import { GenericPayload } from "../GenericPayload";
 import {
   HAIRLINE,
@@ -39,6 +47,26 @@ import {
 /** Looks a node up in the loaded tree. Supplied by BuildPage; never a query. */
 export type ResolveNode = (id: string) => BuildNode | undefined;
 
+/**
+ * Looks a media id up in the build's media, loaded once for the whole page.
+ *
+ * Same contract as resolveNode and for the same reason: a renderer that
+ * resolved its own media would issue one query per node, and a build is a
+ * page full of nodes.
+ *
+ * THREE ANSWERS, NOT TWO:
+ *   a row     — resolved
+ *   null      — the media is loaded and holds no such id: it is gone
+ *   undefined — the media has not loaded yet: nothing is known about this id
+ *
+ * The distinction is what stops every figure on the page announcing "media
+ * unavailable" for the moment between first paint and the media query
+ * returning. Only null says that; undefined holds the slot open.
+ */
+export type ResolveMedia = (
+  id: string | null | undefined
+) => BuildMedia | null | undefined;
+
 /** Every renderer in this directory receives exactly these props. */
 export interface NodeProps {
   node: BuildNode;
@@ -46,6 +74,7 @@ export interface NodeProps {
   nodeType?: NodeType;
   build: Build;
   resolveNode: ResolveNode;
+  resolveMedia: ResolveMedia;
 }
 
 /**
@@ -183,9 +212,10 @@ export interface MediaTransform {
  *   - a bare "bucket/path" ref   -> built against this project's storage
  *   - any other absolute URL     -> returned untouched (a third-party CDN
  *                                   cannot be asked to transform)
- *   - an opaque id with no path  -> null. Resolving it needs a lookup, and a
- *                                   renderer does not query. NS-P06 can add a
- *                                   media resolver and this returns a URL.
+ *   - an opaque id with no path  -> null. Resolving one needs the media rows,
+ *                                   which the page loads once and hands the
+ *                                   renderers as resolveMedia; MediaFigure
+ *                                   asks that first and only falls back here.
  */
 export function mediaSrc(ref: string | undefined, transform: MediaTransform): string | null {
   const value = (ref ?? "").trim();

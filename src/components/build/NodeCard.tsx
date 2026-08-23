@@ -9,7 +9,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { Build, BuildNode, NodeType } from "@/lib/build";
-import { getNodeCopyText, resolveRenderer, type ResolveNode } from "./renderers";
+import {
+  getNodeCopyText,
+  resolveRenderer,
+  type ResolveMedia,
+  type ResolveNode,
+} from "./renderers";
 import {
   CATEGORY_COLOUR,
   GAP_RED,
@@ -28,6 +33,8 @@ interface NodeCardProps {
   nodeType?: NodeType;
   build: Build;
   resolveNode: ResolveNode;
+  /** The build's media, loaded once by the page. See MediaFigure.tsx. */
+  resolveMedia: ResolveMedia;
 }
 
 /** How long the button stays in its confirmed state. */
@@ -74,7 +81,13 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-export function NodeCard({ node, nodeType, build, resolveNode }: NodeCardProps) {
+export function NodeCard({
+  node,
+  nodeType,
+  build,
+  resolveNode,
+  resolveMedia,
+}: NodeCardProps) {
   const colour =
     nodeType?.colour ??
     CATEGORY_COLOUR[nodeType?.category ?? node.type] ??
@@ -142,7 +155,13 @@ export function NodeCard({ node, nodeType, build, resolveNode }: NodeCardProps) 
       ) : null}
 
       <div data-renderer-slot={nodeType?.renderer ?? "generic"} style={{ minWidth: 0 }}>
-        <Renderer node={node} nodeType={nodeType} build={build} resolveNode={resolveNode} />
+        <Renderer
+          node={node}
+          nodeType={nodeType}
+          build={build}
+          resolveNode={resolveNode}
+          resolveMedia={resolveMedia}
+        />
       </div>
     </article>
   );

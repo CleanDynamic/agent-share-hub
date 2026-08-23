@@ -46,7 +46,7 @@ import {
 } from "./evidence";
 import { BreakageRenderer, GapRenderer, NarrativeRenderer } from "./narrative";
 
-export type { NodeProps, ResolveNode, GetCopyText } from "./shared";
+export type { NodeProps, ResolveMedia, ResolveNode, GetCopyText } from "./shared";
 export { GenericRenderer } from "./shared";
 
 /** renderer column value -> component. Keys are node_types.renderer, exactly. */

@@ -1,9 +1,10 @@
 // The compose workspace's top bar.
 //
-// Title, shape, save state, a way to see the build as a reader sees it, and a
-// Publish control that does not publish yet. Everything here is styled with
-// inline style objects: Tailwind's generated utilities win over hand-written
-// classes at build time, so a class would not survive the build.
+// Title, shape, save state, the hero control, a way to see the build as a
+// reader sees it, and a Publish control that does not publish yet. Everything
+// here is styled with inline style objects: Tailwind's generated utilities win
+// over hand-written classes at build time, so a class would not survive the
+// build.
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -67,6 +68,13 @@ interface ComposeTopBarProps {
   onOpenTray?: () => void;
   /** Supplied only below the single-column breakpoint. */
   onOpenInspector?: () => void;
+  /** The node the inspector is showing. The hero control acts on this one. */
+  selectedNodeId: string | null;
+  /**
+   * Whether that node can BE the hero: it resolves to uploaded media, or it is
+   * a live app. Computed by the frame, which is inside the media context.
+   */
+  heroEligible: boolean;
 }
 
 function SaveState({
@@ -117,6 +125,72 @@ function SaveState({
   );
 }
 
+/**
+ * "Set as hero" for the selected node.
+ *
+ * The hero is one column on the build — builds.hero_node_id — and the build
+ * page's header has read it since NS-P04. Nothing about that header changes
+ * here: this control writes the column, the page resolves whatever it points
+ * at, and a node with no media on it cannot be pointed at in the first place.
+ *
+ * Live app nodes qualify without media because the header renders those from
+ * the build's live_url rather than from an upload.
+ */
+function HeroControl({
+  heroNodeId,
+  selectedNodeId,
+  heroEligible,
+  onPatch,
+}: {
+  heroNodeId: string | null;
+  selectedNodeId: string | null;
+  heroEligible: boolean;
+  onPatch: (patch: BuildPatch) => void;
+}) {
+  const isHero = Boolean(selectedNodeId && heroNodeId === selectedNodeId);
+  // Already the hero: clearing it must stay possible even for a node whose
+  // media has since been removed.
+  const enabled = Boolean(selectedNodeId) && (heroEligible || isHero);
+
+  const explanation = !selectedNodeId
+    ? "Select a node to make it the hero."
+    : isHero
+      ? "This node is the hero. Click to clear it."
+      : heroEligible
+        ? "Lead the build page with this node's media."
+        : "A hero is a node carrying media, or a live app.";
+
+  return (
+    <Tooltip>
+      {/* A disabled button fires no pointer events, so the span carries them. */}
+      <TooltipTrigger asChild>
+        <span style={{ display: "inline-flex", flexShrink: 0 }}>
+          <button
+            type="button"
+            disabled={!enabled}
+            aria-pressed={isHero}
+            onClick={() =>
+              onPatch({ hero_node_id: isHero ? null : selectedNodeId })
+            }
+            style={{
+              ...controlBase,
+              whiteSpace: "nowrap",
+              color: isHero ? TEAL : enabled ? TEXT_SECONDARY : TEXT_MUTED,
+              borderColor: isHero ? "rgba(46,196,182,0.35)" : "rgba(255,255,255,0.06)",
+              background: isHero ? "rgba(46,196,182,0.10)" : "rgba(255,255,255,0.025)",
+              cursor: enabled ? "pointer" : "not-allowed",
+              pointerEvents: enabled ? "auto" : "none",
+            }}
+          >
+            {isHero ? "Hero" : "Set as hero"}
+          </button>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{explanation}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function ComposeTopBar({
   build,
   isSaving,
@@ -125,6 +199,8 @@ export function ComposeTopBar({
   onPatch,
   onOpenTray,
   onOpenInspector,
+  selectedNodeId,
+  heroEligible,
 }: ComposeTopBarProps) {
   // Inline styles cannot express :focus, so the focus treatment is state.
   const [titleFocused, setTitleFocused] = useState(false);
@@ -205,6 +281,13 @@ export function ComposeTopBar({
           Inspector
         </button>
       )}
+
+      <HeroControl
+        heroNodeId={build.hero_node_id}
+        selectedNodeId={selectedNodeId}
+        heroEligible={heroEligible}
+        onPatch={onPatch}
+      />
 
       <SaveState isSaving={isSaving} lastSavedAt={lastSavedAt} saveError={saveError} />
 

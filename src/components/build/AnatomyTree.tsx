@@ -8,7 +8,7 @@
 import { useState } from "react";
 import type { Build, NodeTree, NodeType } from "@/lib/build";
 import { NodeCard } from "./NodeCard";
-import type { ResolveNode } from "./renderers";
+import type { ResolveMedia, ResolveNode } from "./renderers";
 import { HAIRLINE, TEXT_MUTED, TEXT_SECONDARY, bodyText } from "./tokens";
 
 interface AnatomyTreeProps {
@@ -17,6 +17,8 @@ interface AnatomyTreeProps {
   build: Build;
   /** Supplied by BuildPage from the loaded tree, so renderers never query. */
   resolveNode: ResolveNode;
+  /** Supplied by BuildPage from one media query, for the same reason. */
+  resolveMedia: ResolveMedia;
 }
 
 /** Indentation per level. Three levels deep is the deepest the schema allows. */
@@ -45,12 +47,14 @@ function TreeNode({
   depth,
   build,
   resolveNode,
+  resolveMedia,
 }: {
   node: NodeTree;
   typesByKey: Map<string, NodeType>;
   depth: number;
   build: Build;
   resolveNode: ResolveNode;
+  resolveMedia: ResolveMedia;
 }) {
   // Expanded by default at every level: the anatomy is the point of the page.
   const [open, setOpen] = useState(true);
@@ -90,6 +94,7 @@ function TreeNode({
             nodeType={typesByKey.get(node.type)}
             build={build}
             resolveNode={resolveNode}
+            resolveMedia={resolveMedia}
           />
         </div>
       </div>
@@ -115,6 +120,7 @@ function TreeNode({
               depth={depth + 1}
               build={build}
               resolveNode={resolveNode}
+              resolveMedia={resolveMedia}
             />
           ))}
         </ul>
@@ -123,7 +129,13 @@ function TreeNode({
   );
 }
 
-export function AnatomyTree({ tree, nodeTypes, build, resolveNode }: AnatomyTreeProps) {
+export function AnatomyTree({
+  tree,
+  nodeTypes,
+  build,
+  resolveNode,
+  resolveMedia,
+}: AnatomyTreeProps) {
   const typesByKey = new Map(nodeTypes.map((type) => [type.key, type]));
 
   if (tree.length === 0) {
@@ -154,6 +166,7 @@ export function AnatomyTree({ tree, nodeTypes, build, resolveNode }: AnatomyTree
           depth={0}
           build={build}
           resolveNode={resolveNode}
+          resolveMedia={resolveMedia}
         />
       ))}
     </ul>

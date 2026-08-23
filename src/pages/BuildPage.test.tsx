@@ -1,10 +1,30 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getBuildBySlug = vi.fn();
-vi.mock("@/lib/build", () => ({ getBuildBySlug: (s: string) => getBuildBySlug(s) }));
+const getMediaForBuild = vi.fn().mockResolvedValue([]);
+
+/**
+ * The record and the media are stubbed; the rest of the lib layer is real.
+ *
+ * signedMediaUrl is the one thing on the read path that talks to storage —
+ * build-media is private, so what reaches an <img src> is signed — and jsdom
+ * cannot sign anything. The stub keeps the transform visible in the URL so the
+ * width each slot asks for can be asserted.
+ */
+vi.mock("@/lib/build", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/build")>();
+  return {
+    ...actual,
+    getBuildBySlug: (slug: string) => getBuildBySlug(slug),
+    getMediaForBuild: (buildId: string) => getMediaForBuild(buildId),
+    signedMediaUrl: async (media: { path: string }, options?: { width?: number }) =>
+      `https://project.supabase.co/storage/v1/render/image/sign/build-media/${media.path}` +
+      `?width=${options?.width}&quality=75&token=t`,
+  };
+});
 
 import BuildPage from "@/pages/BuildPage";
 
@@ -70,6 +90,11 @@ function renderAt(slug: string) {
     </QueryClientProvider>
   );
 }
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  getMediaForBuild.mockResolvedValue([]);
+});
 
 describe("BuildPage", () => {
   it("renders header, tabs and the node tree, and never the tray", async () => {
@@ -140,5 +165,121 @@ describe("BuildPage", () => {
     getBuildBySlug.mockRejectedValue(new Error("getBuildBySlug failed: boom"));
     renderAt("kaboom");
     expect(await screen.findByText("This build could not be loaded")).toBeTruthy();
+  });
+});
+
+// --- media (NS-P12) ----------------------------------------------------------
+//
+// Two properties of the PAGE rather than of any component: a build full of
+// media nodes issues exactly ONE media query, and hero_node_id alone is enough
+// to put a node's media in the header — with BuildHeader.tsx unchanged since
+// NS-P04.
+
+const MEDIA_BUILD_ID = "11111111-0000-4000-8000-000000000001";
+
+function mediaRow(id: string) {
+  return {
+    id,
+    build_id: MEDIA_BUILD_ID,
+    node_id: null,
+    bucket: "build-media",
+    path: `${MEDIA_BUILD_ID}/n/${id}.png`,
+    kind: "image",
+    mime: "image/png",
+    bytes: 200_000,
+    width: 2400,
+    height: 1350,
+    duration: null,
+    poster_path: null,
+    created_at: "2026-08-23T10:00:00Z",
+  };
+}
+
+/** A build whose whole tree is media: three screenshots, one media query. */
+function mediaRecord(heroNodeId: string | null) {
+  return {
+    build: {
+      id: MEDIA_BUILD_ID,
+      slug: "media-build",
+      title: "A build made of screenshots",
+      outcome: null,
+      // Not 'app', so the header's live_url path stays out of the way.
+      shape: "study",
+      status: "published",
+      made_for: [],
+      made_with: [],
+      live_url: null,
+      hero_node_id: heroNodeId,
+      cost_setup: null,
+      cost_monthly: null,
+      currency: "GBP",
+      time_to_first_result: null,
+      reproduction_count: 0,
+      last_confirmed_at: null,
+    },
+    tree: [
+      node("m1", "screenshot", "The queue", { payload: { media_id: "media-1" } }),
+      node("m2", "screenshot", "The triage view", { position: 1, payload: { media_id: "media-2" } }),
+      node("m3", "screenshot", "The digest", { position: 2, payload: { media_id: "media-3" } }),
+    ],
+    tray: [],
+    events: [],
+    nodeTypes,
+  };
+}
+
+describe("BuildPage media", () => {
+  beforeEach(() => {
+    getMediaForBuild.mockResolvedValue([mediaRow("media-1"), mediaRow("media-2"), mediaRow("media-3")]);
+  });
+
+  it("asks for the build's media once, however many media nodes it holds", async () => {
+    getBuildBySlug.mockResolvedValue(mediaRecord(null));
+    renderAt("media-build");
+
+    await screen.findByText("A build made of screenshots");
+    await waitFor(() => expect(document.querySelectorAll("img").length).toBe(3));
+
+    expect(getMediaForBuild).toHaveBeenCalledTimes(1);
+    expect(getMediaForBuild).toHaveBeenCalledWith(MEDIA_BUILD_ID);
+  });
+
+  it("serves every in-tree figure transformed, never at original size", async () => {
+    getBuildBySlug.mockResolvedValue(mediaRecord(null));
+    renderAt("media-build");
+
+    await waitFor(() => expect(document.querySelectorAll("img").length).toBe(3));
+    for (const image of Array.from(document.querySelectorAll("img"))) {
+      expect(image.getAttribute("src")).toContain("/render/image/");
+      expect(image.getAttribute("src")).toContain("width=640");
+    }
+  });
+
+  it("makes hero_node_id the header hero, with no edit to BuildHeader", async () => {
+    getBuildBySlug.mockResolvedValue(mediaRecord("m2"));
+    renderAt("media-build");
+
+    const hero = await waitFor(() => {
+      const element = document.querySelector('[data-visual-slot="build-hero"] img');
+      expect(element).toBeTruthy();
+      return element as HTMLImageElement;
+    });
+
+    // m2's media, at hero width rather than the tree's.
+    expect(hero.getAttribute("src")).toContain("media-2.png");
+    expect(hero.getAttribute("src")).toContain("width=1200");
+    expect(hero.getAttribute("alt")).toBe("The triage view");
+
+    // And still one query: the hero resolved through the same list.
+    expect(getMediaForBuild).toHaveBeenCalledTimes(1);
+  });
+
+  it("leads with the title when hero_node_id points at nothing renderable", async () => {
+    getBuildBySlug.mockResolvedValue(mediaRecord("m-missing"));
+    renderAt("media-build");
+
+    await screen.findByText("A build made of screenshots");
+    await waitFor(() => expect(document.querySelectorAll("img").length).toBe(3));
+    expect(document.querySelector('[data-visual-slot="build-hero"]')).toBeNull();
   });
 });

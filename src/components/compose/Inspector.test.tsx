@@ -17,10 +17,31 @@ import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-quer
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+/**
+ * The write path and the media path are stubbed; everything else in the lib
+ * layer is the real module.
+ *
+ * uploadMedia and getMediaForBuild are what the NS-P12 upload control reaches
+ * for, and neither can run in jsdom. The guards in front of them — the size
+ * limit, the accepted types — are NOT stubbed, so what the control refuses
+ * here is what it refuses in a browser.
+ */
 const upsertNode = vi.fn().mockResolvedValue({});
-vi.mock("@/lib/build", () => ({
-  upsertNode: (node: unknown) => upsertNode(node),
-}));
+const uploadMedia = vi.fn();
+const deleteMedia = vi.fn().mockResolvedValue(undefined);
+const getMediaForBuild = vi.fn().mockResolvedValue([]);
+vi.mock("@/lib/build", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/build")>();
+  return {
+    ...actual,
+    upsertNode: (node: unknown) => upsertNode(node),
+    uploadMedia: (input: unknown) => uploadMedia(input),
+    deleteMedia: (id: string) => deleteMedia(id),
+    getMediaForBuild: (id: string) => getMediaForBuild(id),
+    signedMediaUrl: async (media: { path: string }, options?: { width?: number }) =>
+      `https://project.supabase.co/storage/v1/render/image/sign/build-media/${media.path}?width=${options?.width}&token=t`,
+  };
+});
 
 vi.mock("sonner", () => ({
   toast: Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }),
@@ -71,6 +92,7 @@ import type { Json } from "@/integrations/supabase/types";
 import type { BuildNode, BuildRecord, NodeType } from "@/lib/build";
 import type { ComposeBuild } from "@/hooks/useComposeBuild";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
+import { MediaProvider } from "@/hooks/useComposeMedia";
 import { Inspector } from "./Inspector";
 import { PAYLOAD_DEBOUNCE_MS } from "./SchemaForm";
 import { acceptedSubFields, shouldStackRow } from "./fields/ListField";
@@ -205,11 +227,13 @@ function renderBuild({
   selectedNodeId,
   nodeTypes,
   tray = [],
+  withMedia = false,
 }: {
   nodes: BuildNode[];
   selectedNodeId: string;
   nodeTypes: NodeType[];
   tray?: BuildNode[];
+  withMedia?: boolean;
 }) {
   const record: BuildRecord = {
     build: { id: BUILD_ID } as BuildRecord["build"],
@@ -221,9 +245,18 @@ function renderBuild({
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: Infinity } },
   });
+  // withMedia mounts the context the workspace frame mounts, which is what
+  // turns the media field from a read-only view into an upload control.
+  const panel = <Harness record={record} selectedNodeId={selectedNodeId} />;
   const view = render(
     <QueryClientProvider client={client}>
-      <Harness record={record} selectedNodeId={selectedNodeId} />
+      {withMedia ? (
+        <MediaProvider buildId={BUILD_ID} nodeId={selectedNodeId}>
+          {panel}
+        </MediaProvider>
+      ) : (
+        panel
+      )}
     </QueryClientProvider>
   );
   return { ...view, client };
@@ -463,8 +496,7 @@ describe("Inspector", () => {
           nodeTypes: [type],
         });
 
-        // The NS-P09 gate copy is gone for every type, media's own NS-P12
-        // placeholder notwithstanding.
+        // The NS-P09 gate copy is gone for every type.
         expect(
           view.queryByText(/arrives in NS-P10|not yet wired|no form yet/i)
         ).not.toBeInTheDocument();
@@ -704,17 +736,128 @@ describe("Inspector", () => {
     });
   });
 
-  describe("the media placeholder", () => {
-    it("names NS-P12, shows the stored id and offers nothing to write with", () => {
+  describe("the media field", () => {
+    /** A file of a stated size, without allocating the bytes for it. */
+    function makeFile(name: string, type: string, bytes: number): File {
+      const file = new File(["x"], name, { type });
+      Object.defineProperty(file, "size", { value: bytes });
+      return file;
+    }
+
+    function mediaRow(id: string, over: Partial<Record<string, unknown>> = {}) {
+      return {
+        id,
+        build_id: BUILD_ID,
+        node_id: "n1",
+        bucket: "build-media",
+        path: `${BUILD_ID}/n1/${id}.png`,
+        kind: "image",
+        mime: "image/png",
+        bytes: 240_000,
+        width: 1600,
+        height: 900,
+        duration: null,
+        poster_path: null,
+        created_at: "2026-08-23T10:00:00Z",
+        ...over,
+      };
+    }
+
+    function renderMediaField(payload: Json = {}) {
+      return renderBuild({
+        nodes: [makeNode("n1", "screenshot", payload)],
+        selectedNodeId: "n1",
+        nodeTypes: [registryType("screenshot")],
+        withMedia: true,
+      });
+    }
+
+    it("shows what the field holds and no upload control outside the workspace", () => {
       renderBuild({
         nodes: [makeNode("n1", "screenshot", { media_id: "media-7" })],
         selectedNodeId: "n1",
         nodeTypes: [registryType("screenshot")],
       });
 
-      expect(screen.getByText(/media upload arrives in NS-P12/)).toBeInTheDocument();
       expect(screen.getByText("media-7")).toBeInTheDocument();
-      expect(screen.queryByRole("textbox", { name: "Media" })).not.toBeInTheDocument();
+      expect(screen.getByText(/Uploads happen in the workspace/i)).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Choose a file/i })).not.toBeInTheDocument();
+    });
+
+    it("uploads a chosen PNG and stores the returned media id in the payload", async () => {
+      uploadMedia.mockResolvedValueOnce(mediaRow("media-9"));
+      renderMediaField();
+
+      fireEvent.change(screen.getByLabelText("Media"), {
+        target: { files: [makeFile("shot.png", "image/png", 240_000)] },
+      });
+      await settle();
+
+      expect(uploadMedia).toHaveBeenCalledTimes(1);
+      expect(uploadMedia.mock.calls[0][0]).toMatchObject({
+        buildId: BUILD_ID,
+        nodeId: "n1",
+      });
+      // The payload holds the id, not a URL and not a path.
+      expect(lastPayload().media_id).toBe("media-9");
+
+      // And the row it uploaded is previewed, transformed for the rail. The
+      // second settle is the signed URL landing after the payload write.
+      await settle();
+      const preview = document.querySelector("img") as HTMLImageElement;
+      expect(preview).toBeTruthy();
+      expect(preview.getAttribute("src")).toContain("width=240");
+    });
+
+    it("refuses a 30MB file before any upload is attempted", async () => {
+      renderMediaField();
+
+      fireEvent.change(screen.getByLabelText("Media"), {
+        target: { files: [makeFile("huge.png", "image/png", 30 * 1024 * 1024)] },
+      });
+      await settle();
+
+      expect(uploadMedia).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert").textContent).toMatch(/30\.0MB/);
+      expect(screen.getByRole("alert").textContent).toMatch(/limit is 25\.0MB/);
+    });
+
+    it("refuses a type it does not take, naming what it does", async () => {
+      renderMediaField();
+
+      fireEvent.change(screen.getByLabelText("Media"), {
+        target: { files: [makeFile("rows.zip", "application/zip", 4000)] },
+      });
+      await settle();
+
+      expect(uploadMedia).not.toHaveBeenCalled();
+      const alert = screen.getByRole("alert").textContent ?? "";
+      expect(alert).toMatch(/images/i);
+      expect(alert).toMatch(/mp4/);
+      expect(alert).toMatch(/webm/);
+      expect(alert).toMatch(/audio/i);
+    });
+
+    it("removes the media it uploaded and clears the field with it", async () => {
+      getMediaForBuild.mockResolvedValueOnce([mediaRow("media-9")]);
+      renderMediaField({ media_id: "media-9" });
+      await settle();
+
+      fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+      await settle();
+
+      expect(deleteMedia).toHaveBeenCalledWith("media-9");
+      expect(lastPayload().media_id).toBeNull();
+    });
+
+    it("leaves a reference it cannot resolve visible rather than silently blank", async () => {
+      renderMediaField({ media_id: "media-gone" });
+      await settle();
+
+      expect(screen.getByText(/media unavailable/i)).toBeInTheDocument();
+      expect(screen.getByText("media-gone")).toBeInTheDocument();
+      // Still replaceable: an unresolvable id is a thing to fix, not a lock.
+      expect(screen.getByRole("button", { name: /Replace/i })).toBeInTheDocument();
     });
   });
 
