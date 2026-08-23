@@ -7,7 +7,7 @@
 //   3. nothing at all, and the title leads.
 
 import { useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { Build, BuildNode, NodeTree, NodeType } from "@/lib/build";
 import {
   HAIRLINE,
@@ -25,6 +25,8 @@ interface BuildHeaderProps {
   build: Build;
   tree: NodeTree[];
   nodeTypes: NodeType[];
+  /** Header controls. NS-P06 passes the portable export pair. */
+  actions?: ReactNode;
 }
 
 /** Depth-first, in render order. The tree is three levels at most. */
@@ -175,7 +177,7 @@ function LiveAppHero({
   );
 }
 
-export function BuildHeader({ build, tree, nodeTypes }: BuildHeaderProps) {
+export function BuildHeader({ build, tree, nodeTypes, actions }: BuildHeaderProps) {
   const placed = flatten(tree);
   const heroNode = build.hero_node_id
     ? placed.find((node) => node.id === build.hero_node_id)
@@ -215,6 +217,12 @@ export function BuildHeader({ build, tree, nodeTypes }: BuildHeaderProps) {
           </p>
         ) : null}
       </div>
+
+      {actions ? (
+        <div data-visual-slot="build-header-actions" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {actions}
+        </div>
+      ) : null}
 
       {(build.made_for?.length ?? 0) > 0 || (build.made_with?.length ?? 0) > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
