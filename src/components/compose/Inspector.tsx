@@ -31,7 +31,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { NodeTree, NodeType } from "@/lib/build";
+import type { Json } from "@/integrations/supabase/types";
+import type { FieldDef, NodePayload, NodeTree, NodeType } from "@/lib/build";
 import type { ComposeBuild } from "@/hooks/useComposeBuild";
 import {
   GAP_RED,
@@ -46,6 +47,7 @@ import {
 import { TypePill } from "@/components/compose/TreeNode";
 import {
   SchemaForm,
+  asPayload,
   findNodeInRecord,
   useNodeWrite,
 } from "@/components/compose/SchemaForm";
@@ -54,6 +56,7 @@ import {
   blurControl,
   controlStyle,
   focusControl,
+  helpStyle,
 } from "@/components/compose/fields";
 
 /** Enough of a UUID to recognise a node in a log or an export. */
@@ -94,6 +97,52 @@ function EmptyState() {
         Select a node to edit its fields. What appears here is whatever that
         node's type says it holds.
       </p>
+    </div>
+  );
+}
+
+/**
+ * Whether a field holds something a reader would see.
+ *
+ * A number of 0 and a boolean of false are answers, not blanks — the creator
+ * set them deliberately and a count that ignored them would be lying. An empty
+ * string, an empty list and an empty object are not.
+ */
+function isFilled(value: Json | undefined): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string") return value.trim() !== "";
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value).length > 0;
+  return true;
+}
+
+/**
+ * "3 of 5 suggested fields filled" for the selected node.
+ *
+ * SUGGESTED, and never a score. The count covers every field the type declares,
+ * because the schema is this type's suggestion of what such a node usually
+ * holds — not a checklist anyone has to complete. Nothing here turns red, fills
+ * a bar, or reports a percentage: a node with two of nine fields filled may be
+ * exactly the node its author meant to write. Build-level completeness is
+ * NS-P17's question and is deliberately not answered here.
+ */
+function SuggestedFields({ fields, payload }: { fields: FieldDef[]; payload: NodePayload }) {
+  const filled = useMemo(
+    () => fields.filter((field) => isFilled(payload[field.key])).length,
+    [fields, payload]
+  );
+  if (fields.length === 0) return null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <span style={{ ...labelText, color: TEXT_SECONDARY }}>
+        {filled === fields.length
+          ? `All ${fields.length} suggested fields filled`
+          : `${filled} of ${fields.length} suggested fields filled`}
+      </span>
+      <span style={{ ...helpStyle, color: TEXT_MUTED }}>
+        What this type suggests. Fill what you have.
+      </span>
     </div>
   );
 }
@@ -144,6 +193,8 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
         <TypePill nodeType={nodeType} typeKey={node.type} />
         <span style={{ ...titleText, color: TEXT_PRIMARY }}>{label}</span>
       </div>
+
+      <SuggestedFields fields={fields} payload={asPayload(node.payload)} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         <label htmlFor="inspector-title" style={{ ...labelText }}>
