@@ -6,10 +6,11 @@
 // is lazy because this page pulls in the whole build record renderer and no
 // other route needs it.
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { getBuildBySlug } from "@/lib/build";
-import type { BuildRecord } from "@/lib/build";
+import type { BuildNode, BuildRecord, NodeTree } from "@/lib/build";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import { BuildHeader } from "@/components/build/BuildHeader";
 import { BuildTabs } from "@/components/build/BuildTabs";
@@ -29,6 +30,30 @@ import {
 /** The app's QueryClient defaults to staleTime 0. A build record does not
  *  change while a reader is looking at it, so refetching on focus is waste. */
 const STALE_TIME = 60_000;
+
+/**
+ * Every placed node by id, flattened once.
+ *
+ * This is what backs resolveNode: a renderer that meets a node_id reference —
+ * an agent's tool, an eval's dataset, a prompt's output — turns it into the
+ * referenced node's title without a query. Renderers never call Supabase, so
+ * the page hands them the tree it has already loaded.
+ *
+ * Tray nodes are deliberately absent. They are unplaced by definition and
+ * nothing public renders them, so a reference into the tray resolves to
+ * nothing rather than leaking an unpublished title.
+ */
+function indexTree(tree: NodeTree[]): Map<string, BuildNode> {
+  const index = new Map<string, BuildNode>();
+  const walk = (nodes: NodeTree[]) => {
+    for (const node of nodes) {
+      index.set(node.id, node);
+      if (node.children.length > 0) walk(node.children);
+    }
+  };
+  walk(tree);
+  return index;
+}
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
@@ -106,6 +131,13 @@ export default function BuildPage() {
     refetchOnWindowFocus: false,
   });
 
+  // Above the early returns: hooks cannot be conditional.
+  const nodesById = useMemo(() => indexTree(data?.tree ?? []), [data?.tree]);
+  const resolveNode = useMemo(
+    () => (id: string) => nodesById.get(id),
+    [nodesById]
+  );
+
   if (isLoading) {
     return (
       <Frame>
@@ -147,7 +179,12 @@ export default function BuildPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         <BuildHeader build={data.build} tree={data.tree} nodeTypes={data.nodeTypes} />
         <BuildTabs>
-          <AnatomyTree tree={data.tree} nodeTypes={data.nodeTypes} />
+          <AnatomyTree
+            tree={data.tree}
+            nodeTypes={data.nodeTypes}
+            build={data.build}
+            resolveNode={resolveNode}
+          />
         </BuildTabs>
       </div>
     </Frame>
