@@ -208,3 +208,11 @@ input[type="search"] { border-radius: 24px; }
   outline: 2px solid rgba(232, 87, 26, 0.65);
   animation: excerpt-pulse 1000ms ease-out 1;
 }
+
+/* NS-P14 — transcript intake.
+   Keyframes are the one thing an inline style cannot express, so the sweep
+   lives here and is referenced by name from an inline `animation`. */
+@keyframes intakeSweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}

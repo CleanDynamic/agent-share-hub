@@ -64,8 +64,10 @@ export {
 export {
   MAX_RAW_TEXT_CHARS,
   NO_SELECTIONS,
+  keepEverything,
   materialiseProposal,
   requestProposal,
+  type IntakeSelectionState,
   type IntakeSelections,
   type MaterialiseCounts,
   type ParseWarning,
@@ -76,3 +78,4 @@ export {
   type TranscriptProposal,
   type TranscriptSourceRef,
 } from "./intake";
+export type { IntakeArrival } from "./intake";

@@ -111,7 +111,9 @@ vi.mock("@/integrations/supabase/client", () => {
   };
 });
 
-const { materialiseProposal, requestProposal } = await import("@/lib/build/intake");
+const { keepEverything, materialiseProposal, requestProposal } = await import(
+  "@/lib/build/intake"
+);
 import type { TranscriptProposal } from "@/lib/build/intake";
 
 const BUILD_ID = "11111111-1111-4111-8111-111111111111";
@@ -174,15 +176,6 @@ function codeNode(localId: string, turn: number): TranscriptProposal["nodes"][nu
     source_ref: { source: "transcript", session_id: SESSION, index: turn },
     inferred: false,
     inferred_reason: null,
-  };
-}
-
-function keepEverything(proposal: TranscriptProposal) {
-  return {
-    eventOrdinals: proposal.events.map((e) => e.ordinal),
-    nodeLocalIds: proposal.nodes.map((n) => n.local_id),
-    title: true,
-    outcome: true,
   };
 }
 
@@ -412,5 +405,26 @@ describe("requestProposal", () => {
   it("rejects a response it does not understand", async () => {
     state.invoke = { data: { nonsense: true }, error: null };
     await expect(requestProposal(BUILD_ID, "x")).rejects.toThrow(/does not understand/);
+  });
+});
+
+describe("keepEverything", () => {
+  it("starts a review with every item kept", () => {
+    // The creator has already done this work elsewhere; opting each piece back
+    // in would be asking them to do it twice.
+    const proposal = proposalOf(3, [codeNode("node-1", 2), codeNode("node-2", 4)]);
+    const selection = keepEverything(proposal);
+
+    expect([...selection.eventOrdinals]).toEqual([1, 2, 3]);
+    expect([...selection.nodeLocalIds]).toEqual(["node-1", "node-2"]);
+    expect(selection.title).toBe(true);
+    expect(selection.outcome).toBe(true);
+  });
+
+  it("keeps no title when the parser proposed none", () => {
+    const proposal = proposalOf(1);
+    proposal.summary.proposed_title = null;
+
+    expect(keepEverything(proposal).title).toBe(false);
   });
 });

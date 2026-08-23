@@ -187,6 +187,19 @@ export async function requestProposal(
 // Materialisation
 // -----------------------------------------------------------------------------
 
+/**
+ * The one-line message the workspace shows on arrival from intake.
+ *
+ * Carried in router state from /compose/new to /compose/:buildId. It lives here
+ * rather than on either page because both ends need the shape and neither
+ * should import the other: a tray full of material and no instruction is its
+ * own kind of blank surface, and a parse that failed has to say so somewhere.
+ */
+export interface IntakeArrival {
+  tone: "settled" | "failed";
+  message: string;
+}
+
 /** What the creator kept. Anything absent was discarded and is never written. */
 export interface IntakeSelections {
   /** Proposal-local event ordinals (1..N), not the ordinals rows end up with. */
@@ -215,6 +228,33 @@ export const NO_SELECTIONS: IntakeSelections = {
   title: false,
   outcome: false,
 };
+
+/**
+ * The reviewing form of a selection: sets, so a toggle is O(1) and React holds
+ * one object. A Set is an Iterable, so this satisfies IntakeSelections as it
+ * stands and needs no conversion on the way to materialiseProposal.
+ */
+export interface IntakeSelectionState extends IntakeSelections {
+  eventOrdinals: Set<number>;
+  nodeLocalIds: Set<string>;
+  title: boolean;
+  outcome: boolean;
+}
+
+/**
+ * Everything on, which is where a review starts.
+ *
+ * The creator has already done this work somewhere else; making them opt each
+ * piece back in would be asking them to do it twice.
+ */
+export function keepEverything(proposal: TranscriptProposal): IntakeSelectionState {
+  return {
+    eventOrdinals: new Set(proposal.events.map((event) => event.ordinal)),
+    nodeLocalIds: new Set(proposal.nodes.map((node) => node.local_id)),
+    title: Boolean(proposal.summary.proposed_title),
+    outcome: Boolean(proposal.summary.proposed_outcome),
+  };
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
