@@ -20,6 +20,7 @@ const state = vi.hoisted(() => ({
   eventInserts: [] as Record<string, unknown>[][],
   nodeInserts: [] as Record<string, unknown>[][],
   buildUpdates: [] as Record<string, unknown>[],
+  readLimits: [] as (number | null)[],
   eventInsertError: null as { message: string } | null,
   nodeInsertError: null as { message: string } | null,
   invoke: null as { data: unknown; error: unknown } | null,
@@ -82,6 +83,10 @@ vi.mock("@/integrations/supabase/client", () => {
       },
       eq: (column: string, value: unknown) => {
         filters.push([column, value]);
+        return builder;
+      },
+      limit: (count: number) => {
+        state.readLimits.push(count);
         return builder;
       },
       single: () => ({
@@ -186,6 +191,7 @@ beforeEach(() => {
   state.eventInserts = [];
   state.nodeInserts = [];
   state.buildUpdates = [];
+  state.readLimits = [];
   state.eventInsertError = null;
   state.nodeInsertError = null;
   state.invoke = null;
@@ -426,5 +432,18 @@ describe("keepEverything", () => {
     proposal.summary.proposed_title = null;
 
     expect(keepEverything(proposal).title).toBe(false);
+  });
+});
+
+describe("the idempotency reads", () => {
+  it("caps both reads rather than leaving it to the server", async () => {
+    // An unbounded select is capped at PostgREST's own max-rows. A read
+    // truncated there would fail to see rows that are already present, which
+    // is the one way the no-double-write guarantee could break — on exactly
+    // the large build where it matters most.
+    const proposal = proposalOf(2, [codeNode("node-1", 2)]);
+    await materialiseProposal(BUILD_ID, proposal, keepEverything(proposal));
+
+    expect(state.readLimits).toEqual([2000, 2000]);
   });
 });

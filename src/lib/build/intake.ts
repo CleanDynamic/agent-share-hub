@@ -112,6 +112,19 @@ export interface TranscriptProposal {
 /** Rejected over this by the function, with a 413 that says to split the paste. */
 export const MAX_RAW_TEXT_CHARS = 400_000;
 
+/**
+ * Caps on the idempotency reads, matching the ones nodes.ts and events.ts
+ * already apply.
+ *
+ * Explicit rather than left to the server: PostgREST caps an unbounded select
+ * at its own configured max-rows, and a read this one silently truncated would
+ * fail to see rows that are already there — which is the one way the "do not
+ * double the rows" guarantee could break, on exactly the large build where it
+ * matters most.
+ */
+const EVENT_READ_LIMIT = 2000;
+const NODE_READ_LIMIT = 2000;
+
 // -----------------------------------------------------------------------------
 // Calling the parser
 // -----------------------------------------------------------------------------
@@ -316,7 +329,8 @@ export async function materialiseProposal(
   const { data: eventRows, error: eventReadError } = await supabase
     .from("build_events")
     .select("id, ordinal, payload")
-    .eq("build_id", buildId);
+    .eq("build_id", buildId)
+    .limit(EVENT_READ_LIMIT);
   if (eventReadError) {
     throw buildLayerError("materialiseProposal (events read)", eventReadError);
   }
@@ -324,7 +338,8 @@ export async function materialiseProposal(
   const { data: nodeRows, error: nodeReadError } = await supabase
     .from("build_nodes")
     .select("id, source_ref")
-    .eq("build_id", buildId);
+    .eq("build_id", buildId)
+    .limit(NODE_READ_LIMIT);
   if (nodeReadError) {
     throw buildLayerError("materialiseProposal (nodes read)", nodeReadError);
   }
