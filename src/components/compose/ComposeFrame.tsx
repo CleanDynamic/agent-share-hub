@@ -20,7 +20,7 @@
 // pointer events, not HTML5 drag-and-drop, so a node being dragged around the
 // tree and a file being dragged in from the desktop never meet.
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import type { Build } from "@/lib/build";
@@ -38,10 +38,12 @@ import {
   FONT_STACK,
   GAP_RED,
   HAIRLINE,
+  TEAL,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   VOID,
   cardGlass,
+  hexToRgba,
   labelText,
   panelGlass,
 } from "@/components/build/tokens";
@@ -165,6 +167,53 @@ function RightPanelContent({ compose, drag, buildId }: PanelProps & { buildId: s
   );
 }
 
+/** True when what is being dragged came from outside the browser. */
+function carriesFiles(event: React.DragEvent): boolean {
+  return Array.from(event.dataTransfer?.types ?? []).includes("Files");
+}
+
+/**
+ * What a file dragged over the workspace is told will happen to it.
+ *
+ * Its own element rather than a treatment on the frame: nothing that already
+ * lays this page out is touched, and the overlay takes no pointer events, so
+ * the drop still lands on whatever is underneath it.
+ */
+function FileDropOverlay({ uploading }: { uploading: boolean }) {
+  return (
+    <div
+      data-visual-slot="compose-file-drop"
+      aria-hidden={!uploading}
+      role={uploading ? "status" : undefined}
+      style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        padding: 24,
+        border: uploading ? "none" : `2px dashed ${hexToRgba(TEAL, 0.5)}`,
+        background: uploading ? "transparent" : hexToRgba(TEAL, 0.04),
+        zIndex: 5,
+      }}
+    >
+      <span
+        style={{
+          ...labelText,
+          color: TEAL,
+          background: "rgba(8,8,12,0.9)",
+          border: `1px solid ${hexToRgba(TEAL, 0.3)}`,
+          borderRadius: 999,
+          padding: "7px 14px",
+        }}
+      >
+        {uploading ? "Uploading to the tray…" : "Drop to add to the tray"}
+      </span>
+    </div>
+  );
+}
+
 interface ComposeFrameProps {
   /** Narrowed by the route: the frame is only reached for a loaded, owned build. */
   build: Build;
@@ -203,6 +252,49 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
     return Boolean(media?.resolveMedia(nodeMediaId(node)));
   }, [compose.selectedNodeId, compose.tray, compose.tree, media]);
 
+  /**
+   * A file dragged in from outside, over the workspace but not over a field.
+   *
+   * The depth counter is what makes dragleave trustworthy: crossing from the
+   * frame onto a panel inside it fires leave then enter, and a boolean would
+   * flicker off on every internal boundary.
+   */
+  const [fileOver, setFileOver] = useState(false);
+  const fileDepth = useRef(0);
+
+  const onFileDragEnter = useCallback((event: React.DragEvent) => {
+    if (!carriesFiles(event)) return;
+    fileDepth.current += 1;
+    setFileOver(true);
+  }, []);
+
+  const onFileDragOver = useCallback((event: React.DragEvent) => {
+    if (!carriesFiles(event)) return;
+    // Without this the browser refuses the drop and opens the file instead.
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }, []);
+
+  const onFileDragLeave = useCallback((event: React.DragEvent) => {
+    if (!carriesFiles(event)) return;
+    fileDepth.current = Math.max(0, fileDepth.current - 1);
+    if (fileDepth.current === 0) setFileOver(false);
+  }, []);
+
+  const onFileDrop = useCallback(
+    (event: React.DragEvent) => {
+      if (!carriesFiles(event)) return;
+      // A drop on a media field stops propagating before it reaches here, so
+      // anything that arrives was dropped on empty space.
+      event.preventDefault();
+      fileDepth.current = 0;
+      setFileOver(false);
+      const files = Array.from(event.dataTransfer.files ?? []);
+      if (files.length > 0) void media?.uploadToTray(files);
+    },
+    [media]
+  );
+
   // Widening past the breakpoint puts both panels back on screen, so a sheet
   // left open would be a second copy of a panel already visible.
   useEffect(() => {
@@ -225,6 +317,10 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
     >
       <div
         data-visual-slot="compose-frame"
+        onDragEnter={onFileDragEnter}
+        onDragOver={onFileDragOver}
+        onDragLeave={onFileDragLeave}
+        onDrop={onFileDrop}
         style={{
           position: "fixed",
           inset: 0,
@@ -294,6 +390,10 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
             </aside>
           )}
         </div>
+
+        {(fileOver || media?.isUploadingToTray) && (
+          <FileDropOverlay uploading={Boolean(media?.isUploadingToTray)} />
+        )}
 
         {isSingleColumn && (
           <>
