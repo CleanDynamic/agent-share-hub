@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
@@ -62,6 +63,7 @@ import PostPreviewPage from "./pages/PostPreview";
 import PublishMetadata from "./pages/PublishMetadata";
 import ContentEditPage from "./pages/ContentEdit";
 import BountyUpload from "@/pages/BountyUpload";
+const BuildPage = lazy(() => import("./pages/BuildPage"));
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -137,6 +139,7 @@ const App = () => (
                 <Route path="/analytics" element={<ProtectedRoute requireCreator><Analytics /></ProtectedRoute>} />
                 <Route path="/bounty/new" element={<ProtectedRoute><BountyUpload /></ProtectedRoute>} />
               </Route>
+              <Route path="/b2/:slug" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><BuildPage /></Suspense>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </UploadPickerProvider>
