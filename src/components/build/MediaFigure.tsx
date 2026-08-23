@@ -199,6 +199,7 @@ export function MediaFigure({
   // it does not skip a hook.
   const src = useMediaSrc(media, width);
   const poster = useMediaSrc(posterRef(media), width);
+  const [failed, setFailed] = useState(false);
 
   if (!id) return null;
 
@@ -248,6 +249,10 @@ export function MediaFigure({
     // is about to be replaced. The box keeps its place using the row's own
     // dimensions, so the page does not jump when the image lands.
     if (!src) return <MediaPending media={media} style={style} />;
+    // A src that will not load — an expired signature, an object removed from
+    // under its row — is the same absence as a missing row, and reads better
+    // as the placeholder than as the browser's broken-image glyph.
+    if (failed) return <MediaUnavailable style={style} />;
     return (
       <img
         src={src}
@@ -256,6 +261,7 @@ export function MediaFigure({
         decoding="async"
         width={media.width ?? undefined}
         height={media.height ?? undefined}
+        onError={() => setFailed(true)}
         style={frame}
       />
     );
