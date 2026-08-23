@@ -20,14 +20,16 @@
 // pointer events, not HTML5 drag-and-drop, so a node being dragged around the
 // tree and a file being dragged in from the desktop never meet.
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import type { Build } from "@/lib/build";
 import type { ComposeBuild } from "@/hooks/useComposeBuild";
 import { MediaProvider, useComposeMedia } from "@/hooks/useComposeMedia";
+import { nodeMediaId } from "@/components/build/MediaFigure";
 import { ComposeTopBar } from "@/components/compose/ComposeTopBar";
 import { Inspector } from "@/components/compose/Inspector";
+import { findNodeInRecord } from "@/components/compose/SchemaForm";
 import { NodeTree } from "@/components/compose/NodeTree";
 import { TrayPanel } from "@/components/compose/TrayPanel";
 import { TypePill } from "@/components/compose/TreeNode";
@@ -189,6 +191,18 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
   const [trayOpen, setTrayOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
 
+  /** Whether the selected node could be the hero. See HeroControl. */
+  const heroEligible = useMemo(() => {
+    if (!compose.selectedNodeId) return false;
+    const node = findNodeInRecord(
+      { tree: compose.tree, tray: compose.tray },
+      compose.selectedNodeId
+    );
+    if (!node) return false;
+    if (node.type === "live_app") return true;
+    return Boolean(media?.resolveMedia(nodeMediaId(node)));
+  }, [compose.selectedNodeId, compose.tray, compose.tree, media]);
+
   // Widening past the breakpoint puts both panels back on screen, so a sheet
   // left open would be a second copy of a panel already visible.
   useEffect(() => {
@@ -227,6 +241,8 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
       >
         <ComposeTopBar
           build={build}
+          selectedNodeId={compose.selectedNodeId}
+          heroEligible={heroEligible}
           isSaving={compose.isSaving}
           lastSavedAt={compose.lastSavedAt}
           saveError={compose.saveError}
