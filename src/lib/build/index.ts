@@ -61,3 +61,18 @@ export {
   getNodeType,
   getNodeTypes,
 } from "./nodeTypes";
+export {
+  MAX_RAW_TEXT_CHARS,
+  NO_SELECTIONS,
+  materialiseProposal,
+  requestProposal,
+  type IntakeSelections,
+  type MaterialiseCounts,
+  type ParseWarning,
+  type ProposalSummary,
+  type ProposedEvent,
+  type ProposedField,
+  type ProposedNode,
+  type TranscriptProposal,
+  type TranscriptSourceRef,
+} from "./intake";
