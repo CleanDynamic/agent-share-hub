@@ -7,12 +7,17 @@
 // different rows behind them.
 //
 // Three columns are edited here. `title` and `note` are columns on every node
-// whatever its type, so they are rendered above the gate; `payload` is the
-// typed part and belongs to the schema, so it is rendered by SchemaForm below
-// it. Title and note are written by this file's own debounced writer, payload
-// by SchemaForm's. The two own disjoint column sets — see the note at the top
-// of SchemaForm.tsx for why that is what keeps them from overwriting each
-// other.
+// whatever its type, so they are rendered first; `payload` is the typed part
+// and belongs to the schema, so it is rendered by SchemaForm below them. Title
+// and note are written by this file's own debounced writer, payload by
+// SchemaForm's. The two own disjoint column sets — see the note at the top of
+// SchemaForm.tsx for why that is what keeps them from overwriting each other.
+//
+// NS-P09 shipped this panel with a three-type gate. NS-P10 removed it: every
+// active row in node_types is edited through the same SchemaForm, and there is
+// no list of type keys anywhere in this file to fall out of date with the
+// registry. A type whose form reads badly is a schema row to correct, not a
+// branch to add here.
 
 import { useCallback, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
@@ -26,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { BuildNode, NodeTree, NodeType } from "@/lib/build";
+import type { NodeTree, NodeType } from "@/lib/build";
 import type { ComposeBuild } from "@/hooks/useComposeBuild";
 import {
   GAP_RED,
@@ -41,26 +46,15 @@ import {
 import { TypePill } from "@/components/compose/TreeNode";
 import {
   SchemaForm,
-  asPayload,
   findNodeInRecord,
   useNodeWrite,
 } from "@/components/compose/SchemaForm";
 import {
+  NodeRefProvider,
   blurControl,
   controlStyle,
   focusControl,
-  helpStyle,
 } from "@/components/compose/fields";
-
-/**
- * THE GATE. NS-P10 deletes this line and the one that reads it.
- *
- * Payload editing is wired for these three types only. Every other type still
- * selects, still shows its title, note and identity, and shows what it holds
- * read-only — it simply has no form yet. The restriction lives here, once, and
- * not one widget below knows it exists.
- */
-const WIRED_TYPES = ["prompt", "model_params", "result"];
 
 /** Enough of a UUID to recognise a node in a log or an export. */
 const ID_PREFIX_LENGTH = 8;
@@ -104,49 +98,6 @@ function EmptyState() {
   );
 }
 
-/**
- * What an un-wired type shows instead of a form.
- *
- * The payload is rendered rather than hidden, because a node seeded with real
- * content should not look empty just because NS-P09 stopped at three types.
- */
-function ReadOnlyPayload({ node, label }: { node: BuildNode; label: string }) {
-  const payload = asPayload(node.payload);
-  const keys = Object.keys(payload);
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
-        Editing {label} nodes arrives in NS-P10
-      </p>
-      {keys.length === 0 ? (
-        <p style={{ ...helpStyle, margin: 0 }}>This node holds no fields yet.</p>
-      ) : (
-        <pre
-          style={{
-            ...bodyText,
-            margin: 0,
-            padding: 10,
-            fontFamily:
-              "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace",
-            fontSize: 12,
-            color: TEXT_SECONDARY,
-            background: "rgba(255,255,255,0.025)",
-            border: `1px solid ${HAIRLINE}`,
-            borderRadius: 8,
-            // The panel is 340px wide and a payload is not: let it scroll
-            // sideways rather than wrapping a value mid-token.
-            overflowX: "auto",
-            whiteSpace: "pre",
-          }}
-        >
-          {JSON.stringify(payload, null, 2)}
-        </pre>
-      )}
-    </div>
-  );
-}
-
 interface InspectorProps {
   buildId: string;
   compose: ComposeBuild;
@@ -185,7 +136,7 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
   if (!node) return <EmptyState />;
 
   const label = nodeType?.label ?? node.type;
-  const isWired = WIRED_TYPES.includes(node.type);
+  const fields = nodeType?.schema.fields ?? [];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: 18 }}>
@@ -233,15 +184,17 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
 
       <div style={{ height: 1, background: HAIRLINE }} />
 
-      {isWired ? (
-        <SchemaForm
-          buildId={buildId}
-          node={node}
-          fields={nodeType?.schema.fields ?? []}
-        />
-      ) : (
-        <ReadOnlyPayload node={node} label={label} />
-      )}
+      {/* Every node_id field below resolves its options from here, so the
+          picker sees the same tree and tray the panels do without SchemaForm
+          learning that references exist. */}
+      <NodeRefProvider
+        tree={tree}
+        tray={tray}
+        nodeTypes={nodeTypes}
+        currentNodeId={node.id}
+      >
+        <SchemaForm buildId={buildId} node={node} fields={fields} />
+      </NodeRefProvider>
 
       <div
         style={{
