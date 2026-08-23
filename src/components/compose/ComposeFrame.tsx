@@ -30,7 +30,7 @@ import { nodeMediaId } from "@/components/build/MediaFigure";
 import { ComposeTopBar } from "@/components/compose/ComposeTopBar";
 import { Inspector } from "@/components/compose/Inspector";
 import { findNodeInRecord } from "@/components/compose/SchemaForm";
-import { NodeTree } from "@/components/compose/NodeTree";
+import { CentrePanel } from "@/components/compose/CentrePanel";
 import { TrayPanel } from "@/components/compose/TrayPanel";
 import { TypePill } from "@/components/compose/TreeNode";
 import { useNodeDrag, type NodeDrag } from "@/components/compose/useNodeDrag";
@@ -84,18 +84,6 @@ function LeftPanelContent({ compose, drag }: PanelProps) {
   return (
     <TrayPanel
       tray={compose.tray}
-      nodeTypes={compose.nodeTypes}
-      selectedNodeId={compose.selectedNodeId}
-      onSelect={compose.setSelectedNodeId}
-      drag={drag}
-    />
-  );
-}
-
-function CentrePanelContent({ compose, drag }: PanelProps) {
-  return (
-    <NodeTree
-      tree={compose.tree}
       nodeTypes={compose.nodeTypes}
       selectedNodeId={compose.selectedNodeId}
       onSelect={compose.setSelectedNodeId}
@@ -367,10 +355,10 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
 
           <section
             data-visual-slot="compose-centre"
-            aria-label="Anatomy"
+            aria-label="Anatomy and sequence"
             style={{ flex: 1, minWidth: 0, ...railScroll }}
           >
-            <CentrePanelContent compose={compose} drag={drag} />
+            <CentrePanel buildId={build.id} compose={compose} drag={drag} />
           </section>
 
           {!isSingleColumn && (

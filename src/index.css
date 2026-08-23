@@ -216,3 +216,11 @@ input[type="search"] { border-radius: 24px; }
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(400%); }
 }
+
+/* NS-P15 — sequence view.
+   Same exception as the intake sweep above: a rotation is the one thing an
+   inline style cannot express, so it lives here and is referenced by name. */
+@keyframes sequenceSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
