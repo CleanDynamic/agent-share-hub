@@ -13,10 +13,13 @@ import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { createBuild } from "@/lib/build";
+import type { IntakeArrival } from "@/lib/build";
 import { useComposeBuild } from "@/hooks/useComposeBuild";
 import { ComposeFrame } from "@/components/compose/ComposeFrame";
 import {
   FONT_STACK,
+  GAP_RED,
+  HAIRLINE,
   TEAL,
   TEXT_MUTED,
   TEXT_PRIMARY,
@@ -24,7 +27,9 @@ import {
   VOID,
   bodyText,
   headingText,
+  hexToRgba,
   labelText,
+  panelGlass,
 } from "@/components/build/tokens";
 
 /** A build is never asked to name itself before it exists. */
@@ -66,6 +71,68 @@ function Message({
       <h1 style={{ ...headingText, margin: 0 }}>{heading}</h1>
       <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>{detail}</p>
       {children}
+    </div>
+  );
+}
+
+/**
+ * The one line that meets a creator arriving from intake.
+ *
+ * A tray with twenty things in it and no instruction is its own kind of blank
+ * surface, so this names the next act. It is also where a parse that failed
+ * says so: the draft was created before the parser was called, so the creator
+ * lands here either way and the reason has to travel with them.
+ *
+ * A new fixed element rather than a band inside the workspace — the three-panel
+ * layout is not asked to make room for it, and dismissing it leaves no gap.
+ */
+function ArrivalNotice({ arrival }: { arrival: IntakeArrival }) {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+
+  const failed = arrival.tone === "failed";
+  const accent = failed ? GAP_RED : TEAL;
+
+  return (
+    <div
+      data-visual-slot="intake-arrival"
+      role="status"
+      aria-live="polite"
+      style={{
+        ...panelGlass,
+        position: "fixed",
+        left: 18,
+        bottom: 18,
+        zIndex: 40,
+        maxWidth: 460,
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 12,
+        padding: "11px 13px",
+        borderRadius: 10,
+        borderLeft: `2px solid ${accent}`,
+        background: hexToRgba(accent, 0.07),
+      }}
+    >
+      <span style={{ ...bodyText, margin: 0, color: TEXT_PRIMARY }}>{arrival.message}</span>
+      <button
+        type="button"
+        onClick={() => setDismissed(true)}
+        aria-label="Dismiss"
+        style={{
+          ...labelText,
+          fontFamily: "inherit",
+          flexShrink: 0,
+          background: "transparent",
+          border: `1px solid ${HAIRLINE}`,
+          borderRadius: 6,
+          padding: "1px 7px",
+          cursor: "pointer",
+          color: TEXT_MUTED,
+        }}
+      >
+        ✕
+      </button>
     </div>
   );
 }
@@ -208,5 +275,13 @@ export default function Compose() {
     );
   }
 
-  return <ComposeFrame build={compose.build} compose={compose} />;
+  // Router state from /compose/new. Absent on every other way in.
+  const arrival = (location.state as { intake?: IntakeArrival } | null)?.intake ?? null;
+
+  return (
+    <>
+      <ComposeFrame build={compose.build} compose={compose} />
+      {arrival ? <ArrivalNotice arrival={arrival} /> : null}
+    </>
+  );
 }

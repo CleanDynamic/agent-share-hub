@@ -66,6 +66,9 @@ import BountyUpload from "@/pages/BountyUpload";
 const BuildPage = lazy(() => import("./pages/BuildPage"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
+// The intake step. Its own chunk, so arriving at /compose/new does not pay for
+// the workspace before the creator has decided to open one.
+const ComposeNew = lazy(() => import("./pages/ComposeNew"));
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -142,7 +145,7 @@ const App = () => (
                 <Route path="/bounty/new" element={<ProtectedRoute><BountyUpload /></ProtectedRoute>} />
               </Route>
               <Route path="/b2/:slug" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><BuildPage /></Suspense>} />
-              <Route path="/compose/new" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><Compose /></Suspense>} />
+              <Route path="/compose/new" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><ComposeNew /></Suspense>} />
               <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><Compose /></Suspense>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
