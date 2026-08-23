@@ -16,6 +16,7 @@ import type {
 export type Build = Tables<"builds">;
 export type BuildNode = Tables<"build_nodes">;
 export type BuildEvent = Tables<"build_events">;
+export type BuildMedia = Tables<"build_media">;
 
 /** The registry row exactly as stored — `schema` still untyped Json. */
 export type NodeTypeRow = Tables<"node_types">;
@@ -30,6 +31,7 @@ export interface NodeType extends Omit<NodeTypeRow, "schema"> {
 export type BuildInsert = TablesInsert<"builds">;
 export type BuildNodeInsert = TablesInsert<"build_nodes">;
 export type BuildEventInsert = TablesInsert<"build_events">;
+export type BuildMediaInsert = TablesInsert<"build_media">;
 
 /** A partial update. `id` and `creator_id` are fixed once a build exists. */
 export type BuildPatch = Omit<TablesUpdate<"builds">, "id" | "creator_id">;
@@ -55,6 +57,8 @@ export type BuildShape =
 export type EventKind = "prompt" | "milestone" | "breakage" | "deploy" | "note";
 
 export type EventVisibility = "kept" | "folded" | "hidden";
+
+export type MediaKind = "image" | "video" | "audio" | "file";
 
 export type NodeCategory =
   | "instruction"
