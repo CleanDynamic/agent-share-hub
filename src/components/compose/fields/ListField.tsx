@@ -2,18 +2,26 @@
 //
 // This is the only widget with real behaviour: add a row, remove a row, drag
 // rows into a different order. Everything inside a row is rendered by the same
-// registry that renders the top level, resolved through FIELD_WIDGETS, so a
+// registry that renders the top level, resolved through resolveWidget, so a
 // list of anything the dialect can express works without a line of code here
 // knowing what it holds. The dialect allows one level of nesting only — a field
-// inside `of` never itself carries `of` — so a row can never contain a list and
-// this component never recurses into itself.
+// inside `of` never itself carries `of` — and that is enforced rather than
+// assumed: a sub-field of type list is dropped from the row with a console
+// warning, so a bad schema row shows up in the console of whoever wrote it
+// instead of recursing this component into a shape the dialect cannot store.
+//
+// A row lays its sub-fields out side by side while each of them can still hold
+// SUBFIELD_MIN_WIDTH across at most two lines. Past that — five short
+// sub-fields in the 340px rail, or any row in a rail narrower still — it
+// stacks them one per line, because a control too narrow to read its own
+// placeholder is not a control anybody can fill in.
 //
 // The drag lives in its own DndContext nested inside the workspace's. The two
 // never see each other's drags: useSortable registers with the nearest context,
 // and the listeners are bound to the grip handle alone, so a pointer landing in
 // one of the row's inputs starts no drag in either context.
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -47,9 +55,60 @@ import { resolveWidget, type FieldWidgetProps } from "./index";
 /** A row is an object keyed by the sub-field keys. Anything else is repaired. */
 type Row = Record<string, Json | undefined>;
 
-/** Widest a sub-field gets before the row wraps. Keeps three strings on one
- *  line in the 340px rail and stacks them in the bottom sheet. */
+/** Narrowest a sub-field is allowed to get before the row wraps or stacks. */
 const SUBFIELD_MIN_WIDTH = 104;
+/** The gap between two sub-fields on the same line. */
+const SUBFIELD_GAP = 8;
+/** Grip, remove button, their gaps and the card's padding. */
+const ROW_CHROME_WIDTH = 60;
+/** A row of two lines still reads as one row. Three does not. */
+const MAX_ROW_LINES = 2;
+
+/**
+ * Whether a row must stack its sub-fields one per line.
+ *
+ * `contentWidth` is the space the sub-fields actually get, chrome already
+ * subtracted. A width of 0 means nothing has been measured yet — before the
+ * first layout, and in any environment without a ResizeObserver — and the
+ * side-by-side layout is the answer there, because it is the one that wraps on
+ * its own rather than committing to a shape from a measurement it does not have.
+ */
+export function shouldStackRow(contentWidth: number, subFieldCount: number): boolean {
+  if (contentWidth <= 0 || subFieldCount <= 1) return false;
+  const perLine = Math.floor(
+    (contentWidth + SUBFIELD_GAP) / (SUBFIELD_MIN_WIDTH + SUBFIELD_GAP)
+  );
+  if (perLine < 1) return true;
+  return Math.ceil(subFieldCount / perLine) > MAX_ROW_LINES;
+}
+
+/**
+ * The sub-fields of a list, with anything the dialect forbids removed.
+ *
+ * A list inside a list is not expressible in the six-field-type dialect and
+ * there is no storage shape for it, so it is dropped rather than rendered.
+ * The warning names the exact path so the schema row can be corrected; it is
+ * emitted once per path per session rather than once per render, since a form
+ * that repaints on every keystroke would otherwise bury the console.
+ */
+const warnedNestedPaths = new Set<string>();
+
+export function acceptedSubFields(field: FieldDef): FieldDef[] {
+  const of = field.of ?? [];
+  return of.filter((subField) => {
+    if (subField.type !== "list" && subField.of === undefined) return true;
+    const path = `${field.key}.${subField.key}`;
+    if (!warnedNestedPaths.has(path)) {
+      warnedNestedPaths.add(path);
+      console.warn(
+        `[NeoScale] node_types schema: "${path}" nests a list inside a list. ` +
+          "The schema dialect allows one level of nesting only, so this " +
+          "sub-field is not rendered. Fix the node_types row."
+      );
+    }
+    return false;
+  });
+}
 
 let keySeed = 0;
 const nextKey = () => `list-row-${(keySeed += 1)}`;
@@ -107,6 +166,8 @@ interface ListRowProps {
   row: Row;
   of: FieldDef[];
   fieldId: string;
+  /** One sub-field per line: the row is too narrow to sit them side by side. */
+  stacked: boolean;
   onSetSubField: (index: number, key: string, value: Json | null) => void;
   onRemove: (index: number) => void;
 }
@@ -117,6 +178,7 @@ function ListRow({
   row,
   of,
   fieldId,
+  stacked,
   onSetSubField,
   onRemove,
 }: ListRowProps) {
@@ -162,7 +224,7 @@ function ListRow({
           minWidth: 0,
           display: "flex",
           flexWrap: "wrap",
-          gap: 8,
+          gap: SUBFIELD_GAP,
         }}
       >
         {of.map((subField) => {
@@ -170,7 +232,11 @@ function ListRow({
           return (
             <div
               key={subField.key}
-              style={{ flex: `1 1 ${SUBFIELD_MIN_WIDTH}px`, minWidth: SUBFIELD_MIN_WIDTH }}
+              style={
+                stacked
+                  ? { flex: "1 1 100%", minWidth: 0 }
+                  : { flex: `1 1 ${SUBFIELD_MIN_WIDTH}px`, minWidth: SUBFIELD_MIN_WIDTH }
+              }
             >
               <Widget
                 field={subField}
@@ -198,7 +264,30 @@ function ListRow({
 
 export function ListField({ field, value, onChange, id, touched, compact }: FieldWidgetProps) {
   const rows = toRows(value);
-  const of = field.of ?? [];
+  const of = useMemo(() => acceptedSubFields(field), [field]);
+
+  /**
+   * The width the rows actually have, watched rather than assumed.
+   *
+   * The same list renders in a 340px rail and in a full-width bottom sheet, and
+   * a media query on the viewport would not tell the two apart — the rail is
+   * narrow at every viewport width. The element measures itself instead.
+   */
+  const widthRef = useRef<HTMLDivElement | null>(null);
+  const [contentWidth, setContentWidth] = useState(0);
+  useEffect(() => {
+    const element = widthRef.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const measure = (width: number) =>
+      setContentWidth(Math.max(0, width - ROW_CHROME_WIDTH));
+    measure(element.getBoundingClientRect().width);
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) measure(entry.contentRect.width);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  const stacked = shouldStackRow(contentWidth, of.length);
 
   /**
    * Stable identities for the rows, which the stored objects do not carry.
@@ -274,7 +363,7 @@ export function ListField({ field, value, onChange, id, touched, compact }: Fiel
       // nothing focusable.
       labelAsText
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div ref={widthRef} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {rows.length > 0 && (
           <DndContext
             sensors={sensors}
@@ -300,6 +389,7 @@ export function ListField({ field, value, onChange, id, touched, compact }: Fiel
                     row={row}
                     of={of}
                     fieldId={id}
+                    stacked={stacked}
                     onSetSubField={setSubField}
                     onRemove={removeRow}
                   />
