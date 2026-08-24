@@ -47,6 +47,12 @@ function renderBar({
           onPatch={onPatch}
           selectedNodeId={selectedNodeId}
           heroEligible={heroEligible}
+          tree={[]}
+          nodeTypes={[]}
+          completeness={null}
+          onPublish={() => Promise.reject(new Error("not under test"))}
+          isPublishing={false}
+          publishError={null}
         />
       </TooltipProvider>
     </MemoryRouter>

@@ -64,6 +64,10 @@ import PublishMetadata from "./pages/PublishMetadata";
 import ContentEditPage from "./pages/ContentEdit";
 import BountyUpload from "@/pages/BountyUpload";
 const BuildPage = lazy(() => import("./pages/BuildPage"));
+// The gallery. Its own chunk: a reader who never opens it never pays for the
+// card bodies, and it adds no navigation entry — reachable directly and from
+// the publish confirmation.
+const Gallery = lazy(() => import("./pages/Gallery"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
@@ -145,6 +149,7 @@ const App = () => (
                 <Route path="/bounty/new" element={<ProtectedRoute><BountyUpload /></ProtectedRoute>} />
               </Route>
               <Route path="/b2/:slug" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><BuildPage /></Suspense>} />
+              <Route path="/gallery" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><Gallery /></Suspense>} />
               <Route path="/compose/new" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><ComposeNew /></Suspense>} />
               <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><Compose /></Suspense>} />
               <Route path="*" element={<NotFound />} />
