@@ -298,6 +298,10 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
       // confirmation to read the link back does not cost a write.
       if (Object.keys(patch).length === 0) return current;
 
+      // Hold the same lock a debounced save takes, so a timer that fires
+      // mid-publish declines to overlap rather than issuing a second PATCH
+      // against the row this one is already writing.
+      inFlightRef.current = true;
       try {
         const row = await updateBuild(id, patch);
         if (mountedRef.current && buildIdRef.current === id) {
@@ -329,9 +333,16 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
       if (mountedRef.current && buildIdRef.current === id) setPublishError(error);
       throw error;
     } finally {
-      if (mountedRef.current && buildIdRef.current === id) setIsPublishing(false);
+      inFlightRef.current = false;
+      if (mountedRef.current && buildIdRef.current === id) {
+        setIsPublishing(false);
+        // Whatever was typed while the publish was open. flush() declined to
+        // overlap it, and only the holder of the lock can reschedule — the
+        // same contract flush's own finally keeps.
+        if (Object.keys(pendingRef.current).length > 0) schedule();
+      }
     }
-  }, [queryClient]);
+  }, [queryClient, schedule]);
 
   return {
     build,
