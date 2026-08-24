@@ -489,6 +489,45 @@ describe("forkBuild and what it refuses to take", () => {
   });
 });
 
+describe("forkBuild against a dense sequence", () => {
+  // The fixture above has gaps in its ordinals on purpose, to prove the fork
+  // preserves numbers rather than renumbering. The seeded build has none, and
+  // acceptance 4 is stated against that: fork at 6, get six events.
+  beforeEach(() => {
+    seed();
+    state.tables.build_events = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((ordinal) => ({
+      id: `d${ordinal}`,
+      build_id: SOURCE,
+      ordinal,
+      occurred_at: "2026-07-28T09:00:00Z",
+      kind: "note",
+      payload: { text: `event ${ordinal}` },
+      phase: 1,
+      phase_title: "Reading the inbox",
+      visibility: "kept",
+      produced_node_id: null,
+      created_at: "2026-07-28T00:00:00Z",
+    })) as Row[];
+    // n-prompt at 4, n-tool at 6, n-result at 9, on the dense numbering.
+    for (const node of state.tables.build_nodes) {
+      if (node.id === "n-prompt") node.event_id = "d4";
+      if (node.id === "n-tool") node.event_id = "d6";
+      if (node.id === "n-result") node.event_id = "d9";
+    }
+  });
+
+  it("forking at ordinal 6 gives six events, ordinals 1 to 6", async () => {
+    const fork = await forkBuild({ sourceBuildId: SOURCE, atEventOrdinal: 6 });
+
+    expect(forkedEvents()).toHaveLength(6);
+    expect(forkedEvents().map((event) => event.ordinal)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(fork.forked_from_event_id).toBe("d6");
+    expect(forkedNodes().map((node) => node.title).sort()).toEqual([
+      "n-agent", "n-prompt", "n-system", "n-tool",
+    ]);
+  });
+});
+
 describe("forkBuild and the root of a line", () => {
   it("points a fork of a fork at the original, not the intermediate", async () => {
     // The source is itself a fork of "build-original".
