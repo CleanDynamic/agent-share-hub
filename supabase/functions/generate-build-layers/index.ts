@@ -353,6 +353,10 @@ serve(async (req) => {
 
       const rowsToWrite: Array<Record<string, unknown>> = [];
       const generatedAt = new Date().toISOString();
+      // A rate limit and a timeout are worth telling apart from "generation
+      // failed" when there is nothing else to return, so the provider's own
+      // status is carried rather than flattened to 502.
+      const failureStatus = new Map<Layer, number>();
 
       generated.forEach((outcome, index) => {
         const layer = toGenerate[index];
@@ -377,6 +381,7 @@ serve(async (req) => {
           const message = error instanceof ModelError
             ? error.message
             : `Generating the ${layer} layer failed: ${(error as Error).message}`;
+          failureStatus.set(layer, error instanceof ModelError ? error.status : 502);
           results.set(layer, { layer, status: "failed", row: null, error: message });
           warnings.push({ code: "layer_failed", message });
         }
@@ -403,12 +408,10 @@ serve(async (req) => {
       // Every requested layer needed the model and every call failed.
       const anyRow = wanted.some((l) => results.get(l)?.row);
       if (!anyRow) {
-        const first = wanted
-          .map((l) => results.get(l))
-          .find((r) => r?.status === "failed");
+        const failed = wanted.find((l) => results.get(l)?.status === "failed");
         return fail(
-          first?.error ?? "No layer could be generated.",
-          first?.error?.includes("did not answer within") ? 504 : 502,
+          (failed && results.get(failed)?.error) ?? "No layer could be generated.",
+          (failed && failureStatus.get(failed)) ?? 502,
         );
       }
     }
