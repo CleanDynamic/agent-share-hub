@@ -88,6 +88,7 @@ export {
 } from "./intake";
 export type { IntakeArrival } from "./intake";
 export {
+  MINIMUM_PUBLISHABLE_KEYS,
   MINIMUM_PUBLISHABLE_SCORE,
   REPRODUCTION_COLUMNS,
   SHAPE_RULES,

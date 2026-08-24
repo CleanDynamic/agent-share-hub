@@ -337,17 +337,32 @@ const ANCHOR_WEIGHT = 10;
 /** Three core items out of any shape's rules land at or above this. */
 export const MINIMUM_PUBLISHABLE_SCORE = 60;
 
+/**
+ * The three items a record cannot be published without.
+ *
+ * PUBLICATION IS NOT GATED ON THE SCORE, and this list is why it does not have
+ * to be. MINIMUM_PUBLISHABLE_SCORE is what the weights above are calibrated
+ * against; these keys are what the publish control actually tests, one at a
+ * time, so it can name the missing piece instead of reporting a number a
+ * creator cannot act on. Every shape's rules open with exactly these three, so
+ * the two never disagree.
+ */
+export const MINIMUM_PUBLISHABLE_KEYS: readonly RequirementKey[] = [
+  "outcome",
+  "instruction_or_artefact",
+  "evidence",
+] as const;
+
 export interface ShapeRequirement {
   key: RequirementKey;
   weight: number;
 }
 
 /** What each shape asks for. Shared by every shape, in this order, first. */
-const CORE: ShapeRequirement[] = [
-  { key: "outcome", weight: CORE_WEIGHT },
-  { key: "instruction_or_artefact", weight: CORE_WEIGHT },
-  { key: "evidence", weight: CORE_WEIGHT },
-];
+const CORE: ShapeRequirement[] = MINIMUM_PUBLISHABLE_KEYS.map((key) => ({
+  key,
+  weight: CORE_WEIGHT,
+}));
 
 const AUDIENCE: ShapeRequirement[] = [
   { key: "made_for", weight: CONTEXT_WEIGHT },
