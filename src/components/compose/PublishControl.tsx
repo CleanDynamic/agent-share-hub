@@ -24,6 +24,7 @@ import {
   galleryShortfall,
   galleryThreshold,
   publishReadiness,
+  readinessFrom,
   type Build,
   type Completeness,
   type MissingItem,
@@ -84,7 +85,12 @@ export function PublishControl({
 }: PublishControlProps) {
   const [confirmation, setConfirmation] = useState<Build | null>(null);
 
-  const readiness = publishReadiness(build, tree, nodeTypes);
+  // The hook has already computed this record's completeness, memoised on the
+  // same inputs. Deriving readiness from it keeps the bar off the tree on every
+  // keystroke of the title; the second branch is for a caller without one.
+  const readiness = completeness
+    ? readinessFrom(completeness)
+    : publishReadiness(build, tree, nodeTypes);
   const isLive = build.status === "published" || build.status === "gallery";
   const enabled = (readiness.ready || isLive) && !isPublishing;
 

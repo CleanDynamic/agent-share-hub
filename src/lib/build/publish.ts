@@ -24,6 +24,7 @@
 import {
   MINIMUM_PUBLISHABLE_KEYS,
   computeCompleteness,
+  type Completeness,
   type CompletenessSource,
   type MissingItem,
 } from "./signals";
@@ -65,15 +66,30 @@ export interface PublishReadiness {
  * `tree` is the PLACED tree. Tray nodes do not count: unplaced material is not
  * part of the record, and publishing a build whose only evidence is sitting in
  * the tray would put a page in front of readers with nothing on it.
+ *
+ * A caller that already holds a Completeness — the compose workspace does,
+ * memoised — should use readinessFrom instead and skip the second tree walk.
  */
 export function publishReadiness(
   build: PublishSource,
   tree: NodeTree[],
   nodeTypes: NodeType[]
 ): PublishReadiness {
-  const { missing } = computeCompleteness(build, tree, nodeTypes);
+  return readinessFrom(computeCompleteness(build, tree, nodeTypes));
+}
+
+/**
+ * The same answer, from a Completeness already computed.
+ *
+ * The three minimum requirements are a SUBSET of every shape's rules, so the
+ * outstanding ones are already in `missing` and there is nothing to work out
+ * twice. This is what the compose top bar calls: it re-renders on every
+ * keystroke of the title, and walking a build's whole tree per keystroke to
+ * re-derive a list the hook is already holding is work nobody asked for.
+ */
+export function readinessFrom(completeness: Completeness): PublishReadiness {
   const minimum = new Set<string>(MINIMUM_PUBLISHABLE_KEYS);
-  const blocking = missing.filter((item) => minimum.has(item.key));
+  const blocking = completeness.missing.filter((item) => minimum.has(item.key));
 
   return {
     ready: blocking.length === 0,
