@@ -35,6 +35,21 @@ export const MAX_RESULT_CANDIDATES = 3;
 // -----------------------------------------------------------------------------
 // Types
 // -----------------------------------------------------------------------------
+// The envelope below is declared once, in _shared/intake/envelope.ts, and
+// narrowed here to this reader's own literals. The declarations were MOVED
+// there by NS-P20a, not copied: every name this module exported before is
+// exported from this path still, with the same meaning and the same fields.
+// `import type` is erased at compile time, so this adds no runtime import.
+import type {
+  ParseOptions as SharedParseOptions,
+  ParseResult as SharedParseResult,
+  ParseSummary as SharedParseSummary,
+  ParseWarning as SharedParseWarning,
+  ProposedEvent as SharedProposedEvent,
+  ProposedField as SharedProposedField,
+  ProposedNode as SharedProposedNode,
+  SourceRef as SharedSourceRef,
+} from "../_shared/intake/envelope.ts";
 
 export type TurnRole = "user" | "assistant";
 
@@ -45,13 +60,11 @@ export type DetectedFormat =
   | "blank_line_alternating"
   | "unstructured";
 
-/** {source, session_id, index} — the shape build_nodes.source_ref already holds. */
-export interface SourceRef {
-  source: "transcript";
-  session_id: string;
-  /** Turn ordinal, counted across both speakers from 1. */
-  index: number;
-}
+/**
+ * {source, session_id, index} — the shape build_nodes.source_ref already holds.
+ * `index` is the turn ordinal, counted across both speakers from 1.
+ */
+export type SourceRef = SharedSourceRef<"transcript">;
 
 export interface Turn {
   /** 1-based, across both speakers. */
@@ -65,72 +78,21 @@ export interface Turn {
   line: number;
 }
 
-export interface ProposedEvent {
-  /** 1..N over user turns. Maps to build_events.ordinal. */
-  ordinal: number;
-  kind: "prompt";
-  visibility: "folded";
-  occurred_at: string | null;
-  payload: { text: string; response_summary: string | null };
-  source_ref: SourceRef;
-  inferred: boolean;
-  inferred_reason: string | null;
-}
+/** 1..N over user turns. `ordinal` maps to build_events.ordinal. */
+export type ProposedEvent = SharedProposedEvent<"transcript", "prompt">;
 
-export interface ProposedNode {
-  /** Local handle only. The client maps it to a uuid on materialisation. */
-  local_id: string;
-  /** A node_types.key. Never a value absent from the registry. */
-  type: string;
-  title: string | null;
-  note: string | null;
-  payload: Record<string, unknown>;
-  source_ref: SourceRef;
-  inferred: boolean;
-  inferred_reason: string | null;
-}
+export type ProposedNode = SharedProposedNode<"transcript">;
 
 /** A proposed builds column value — title and outcome are not nodes. */
-export interface ProposedField {
-  value: string;
-  source_ref: SourceRef;
-  inferred: boolean;
-  inferred_reason: string | null;
-}
+export type ProposedField = SharedProposedField<"transcript">;
 
-export interface ParseWarning {
-  code: string;
-  message: string;
-}
+export type ParseWarning = SharedParseWarning;
 
-export interface ParseSummary {
-  session_id: string;
-  source_hint: string | null;
-  detected_format: DetectedFormat;
-  detected_labels: { user: string[]; assistant: string[] };
-  turn_count: number;
-  user_turn_count: number;
-  assistant_turn_count: number;
-  event_count: number;
-  node_count: number;
-  character_count: number;
-  line_count: number;
-  proposed_title: ProposedField | null;
-  proposed_outcome: ProposedField | null;
-}
+export type ParseSummary = SharedParseSummary<DetectedFormat, "transcript">;
 
-export interface ParseResult {
-  events: ProposedEvent[];
-  nodes: ProposedNode[];
-  summary: ParseSummary;
-  warnings: ParseWarning[];
-}
+export type ParseResult = SharedParseResult<DetectedFormat, "transcript", "prompt">;
 
-export interface ParseOptions {
-  /** Identifies this paste. Recorded in every source_ref. */
-  session_id: string;
-  source_hint?: string | null;
-}
+export type ParseOptions = SharedParseOptions;
 
 // -----------------------------------------------------------------------------
 // Speaker vocabulary
