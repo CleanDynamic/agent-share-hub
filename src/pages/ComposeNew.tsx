@@ -4,10 +4,16 @@
 // already done the work somewhere else, in a chat window, and the useful thing
 // to do with that is take it rather than ask them to retype it as a form.
 //
-// Three ways in, and they are peers: paste a transcript, drop a .txt or .md
-// file, or start empty. Starting empty is a plain link that is always on
-// screen — it is the honest option for someone who has nothing to paste, and
-// burying it would make this a toll gate rather than an offer.
+// Three ways in, and they are peers: paste a transcript, drop a file, or start
+// empty. Starting empty is a plain link that is always on screen — it is the
+// honest option for someone who has nothing to paste, and burying it would make
+// this a toll gate rather than an offer.
+//
+// TWO PARSERS, NO PICKER (NS-P20). The zone also takes a Lovable session export
+// — .json, or .zip — and works out which parser it belongs to by reading the
+// file's CONTENT, not its extension and not a control the creator has to set.
+// They drop what they have. Only genuinely undecidable input asks, once, with
+// two options, and nothing about the answer is remembered.
 //
 // ORDER. On paste or drop the draft build is created FIRST, then the parser is
 // called with its id. The parser needs a real build to check ownership against,
@@ -28,6 +34,12 @@ import {
   type IntakeSelectionState,
   type TranscriptProposal,
 } from "@/lib/build/intake";
+import {
+  detectExportSource,
+  readDroppedFile,
+  requestLovableProposal,
+  type ExportSource,
+} from "@/lib/build/lovable";
 import { IntakeProposal } from "@/components/compose/IntakeProposal";
 import { IntakeProgress } from "@/components/compose/IntakeProgress";
 import {
@@ -49,18 +61,26 @@ import {
 /** A build is never asked to name itself before it exists. */
 const DRAFT_TITLE = "Untitled build";
 
-/** What a creator can drop. Anything else is a paste, not a transcript file. */
-const ACCEPTED_EXTENSIONS = [".txt", ".md", ".markdown", ".text"];
+/**
+ * What a creator can drop: a transcript as text, or a Lovable session export as
+ * .json or .zip. The extension only decides whether the file is worth opening —
+ * what it IS, is decided by reading it.
+ */
+const ACCEPTED_EXTENSIONS = [".txt", ".md", ".markdown", ".text", ".json", ".zip"];
 
 type Stage =
   | { name: "idle" }
   | { name: "parsing"; buildId: string; sourceLabel: string; characterCount: number }
+  /** Undecidable input. Asked once, answered once, and never recorded. */
+  | { name: "asking"; rawText: string; sourceLabel: string }
   | { name: "review"; buildId: string; proposal: TranscriptProposal };
 
-function looksLikeText(file: File): boolean {
+function looksAcceptable(file: File): boolean {
   const name = file.name.toLowerCase();
   return (
     file.type.startsWith("text/") ||
+    file.type === "application/json" ||
+    file.type === "application/zip" ||
     ACCEPTED_EXTENSIONS.some((extension) => name.endsWith(extension))
   );
 }
@@ -160,7 +180,7 @@ export default function ComposeNew() {
    * a transcript they would have to paste again.
    */
   const takeTranscript = useCallback(
-    async (rawText: string, sourceLabel: string) => {
+    async (rawText: string, sourceLabel: string, source: Exclude<ExportSource, "ambiguous"> = "transcript") => {
       if (busyRef.current) return;
 
       const trimmed = rawText.trim();
@@ -168,6 +188,7 @@ export default function ComposeNew() {
         setError("There is nothing to read yet. Paste a transcript or drop a file.");
         return;
       }
+      // Both parsers share the limit, so the message is the same either way.
       if (rawText.length > MAX_RAW_TEXT_CHARS) {
         setError(
           `That is ${rawText.length.toLocaleString("en-GB")} characters, over the ` +
@@ -198,7 +219,10 @@ export default function ComposeNew() {
       });
 
       try {
-        const proposal = await requestProposal(buildId, rawText, sourceLabel);
+        const proposal =
+          source === "lovable"
+            ? await requestLovableProposal(buildId, rawText, sourceLabel)
+            : await requestProposal(buildId, rawText, sourceLabel);
         busyRef.current = false;
         setSelection(keepEverything(proposal));
         setStage({ name: "review", buildId, proposal });
@@ -207,26 +231,54 @@ export default function ComposeNew() {
         busyRef.current = false;
         goToWorkspace(buildId, {
           tone: "failed",
-          message: `The transcript could not be read: ${messageOf(cause)} Your draft is here and empty.`,
+          message:
+            `${source === "lovable" ? "The export" : "The transcript"} could not be read: ` +
+            `${messageOf(cause)} Your draft is here and empty.`,
         });
       }
     },
     [goToWorkspace]
   );
 
+  /**
+   * Take a dropped file.
+   *
+   * readDroppedFile unpacks an archive if the bytes say it is one, so what
+   * comes back is always text. detectExportSource then reads that text and
+   * decides which parser owns it — the creator is never asked to classify
+   * their own file, and is only asked anything at all when the content itself
+   * is undecidable.
+   */
   const takeFile = useCallback(
     async (file: File) => {
-      if (!looksLikeText(file)) {
-        setError(`${file.name} is not a text file. Drop a .txt or .md, or paste the text.`);
+      if (!looksAcceptable(file)) {
+        setError(
+          `${file.name} is not a file this reads. Drop a .txt or .md transcript, a Lovable ` +
+            `export as .json or .zip, or paste the text.`
+        );
         return;
       }
+
+      let contents: string;
       try {
-        const contents = await file.text();
-        setText(contents);
-        await takeTranscript(contents, file.name);
+        contents = await readDroppedFile(file);
       } catch (cause) {
         setError(`${file.name} could not be read: ${messageOf(cause)}`);
+        return;
       }
+
+      const source = detectExportSource(contents);
+      if (source === "ambiguous") {
+        // Asked once, and nothing about the answer is kept.
+        setError(null);
+        setStage({ name: "asking", rawText: contents, sourceLabel: file.name });
+        return;
+      }
+
+      // Only a transcript goes back into the textarea. A Lovable export is
+      // machine JSON, and filling the paste box with it would be noise.
+      if (source === "transcript") setText(contents);
+      await takeTranscript(contents, file.name, source);
     },
     [takeTranscript]
   );
@@ -284,6 +336,78 @@ export default function ComposeNew() {
           sourceLabel={stage.sourceLabel}
           characterCount={stage.characterCount}
         />
+      </Shell>
+    );
+  }
+
+  if (stage.name === "asking") {
+    return (
+      <Shell>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <h1 style={{ ...pageHeadingText, margin: 0 }}>Which is this?</h1>
+          <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+            {stage.sourceLabel} is valid JSON, but nothing in it looks like a
+            Lovable session export or like a chat transcript. Rather than guess
+            and read it wrongly, this asks once — the answer is used for this
+            file and not remembered.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+          <button
+            type="button"
+            onClick={() => void takeTranscript(stage.rawText, stage.sourceLabel, "lovable")}
+            style={{
+              ...bodyText,
+              padding: "10px 16px",
+              borderRadius: 10,
+              border: `1px solid ${hexToRgba(TEAL, 0.45)}`,
+              background: hexToRgba(TEAL, 0.12),
+              color: TEXT_PRIMARY,
+              cursor: "pointer",
+              fontFamily: FONT_STACK,
+            }}
+          >
+            A Lovable session export
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setText(stage.rawText);
+              void takeTranscript(stage.rawText, stage.sourceLabel, "transcript");
+            }}
+            style={{
+              ...bodyText,
+              padding: "10px 16px",
+              borderRadius: 10,
+              border: `1px solid ${HAIRLINE}`,
+              background: "transparent",
+              color: TEXT_PRIMARY,
+              cursor: "pointer",
+              fontFamily: FONT_STACK,
+            }}
+          >
+            A chat transcript
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setStage({ name: "idle" })}
+          style={{
+            ...labelText,
+            alignSelf: "flex-start",
+            padding: 0,
+            border: "none",
+            background: "none",
+            color: TEXT_MUTED,
+            cursor: "pointer",
+            textDecoration: "underline",
+            fontFamily: FONT_STACK,
+          }}
+        >
+          Neither — go back
+        </button>
       </Shell>
     );
   }
@@ -386,13 +510,13 @@ export default function ComposeNew() {
         <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED }}>
           {isDragging
             ? "Drop it to read it."
-            : "Or drop a .txt or .md file anywhere on this box."}
+            : "Or drop a transcript (.txt, .md) or a Lovable export (.json, .zip) anywhere on this box."}
         </span>
 
         <input
           ref={fileInputRef}
           type="file"
-          accept=".txt,.md,.markdown,.text,text/plain,text/markdown"
+          accept=".txt,.md,.markdown,.text,.json,.zip,text/plain,text/markdown,application/json,application/zip"
           onChange={(event) => {
             const file = event.target.files?.[0];
             // Cleared so choosing the same file twice fires change again.
@@ -426,7 +550,19 @@ export default function ComposeNew() {
         <span data-visual-slot="btn-primary" style={{ display: "inline-flex" }}>
           <button
             type="button"
-            onClick={() => void takeTranscript(text, "pasted transcript")}
+            onClick={() => {
+              const source = detectExportSource(text);
+              if (source === "ambiguous") {
+                setError(null);
+                setStage({ name: "asking", rawText: text, sourceLabel: "pasted text" });
+                return;
+              }
+              void takeTranscript(
+                text,
+                source === "lovable" ? "pasted Lovable export" : "pasted transcript",
+                source
+              );
+            }}
             disabled={busy}
             style={{
               fontFamily: "inherit",
