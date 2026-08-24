@@ -27,6 +27,12 @@ interface BuildHeaderProps {
   nodeTypes: NodeType[];
   /** Header controls. NS-P06 passes the portable export pair. */
   actions?: ReactNode;
+  /**
+   * The reproduction and freshness block. Supplied by the page rather than
+   * built here, because it writes: the header is a read-only surface and stays
+   * one. Omitted, the slot falls back to the state NS-P04 shipped.
+   */
+  reproduction?: ReactNode;
 }
 
 /** Depth-first, in render order. The tree is three levels at most. */
@@ -177,7 +183,13 @@ function LiveAppHero({
   );
 }
 
-export function BuildHeader({ build, tree, nodeTypes, actions }: BuildHeaderProps) {
+export function BuildHeader({
+  build,
+  tree,
+  nodeTypes,
+  actions,
+  reproduction,
+}: BuildHeaderProps) {
   const placed = flatten(tree);
   const heroNode = build.hero_node_id
     ? placed.find((node) => node.id === build.hero_node_id)
@@ -270,24 +282,26 @@ export function BuildHeader({ build, tree, nodeTypes, actions }: BuildHeaderProp
           </Fact>
         ) : null}
 
-        <div data-visual-slot="build-reproduction" style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase" }}>
-            Reproduction
-          </span>
-          {confirmed ? (
-            <span style={{ ...bodyText, fontWeight: 400 }}>
-              reproduced {build.reproduction_count}{" "}
-              {build.reproduction_count === 1 ? "time" : "times"}
-              {build.last_confirmed_at
-                ? ` · last confirmed ${new Date(build.last_confirmed_at).toLocaleDateString()}`
-                : null}
+        {reproduction ?? (
+          <div data-visual-slot="build-reproduction" style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase" }}>
+              Reproduction
             </span>
-          ) : (
-            <span style={{ ...bodyText, fontWeight: 400, color: TEXT_MUTED }}>
-              not yet confirmed by anyone
-            </span>
-          )}
-        </div>
+            {confirmed ? (
+              <span style={{ ...bodyText, fontWeight: 400 }}>
+                reproduced {build.reproduction_count}{" "}
+                {build.reproduction_count === 1 ? "time" : "times"}
+                {build.last_confirmed_at
+                  ? ` · last confirmed ${new Date(build.last_confirmed_at).toLocaleDateString()}`
+                  : null}
+              </span>
+            ) : (
+              <span style={{ ...bodyText, fontWeight: 400, color: TEXT_MUTED }}>
+                not yet confirmed by anyone
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {prerequisites.length > 0 ? (

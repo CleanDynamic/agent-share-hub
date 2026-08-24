@@ -7,7 +7,7 @@
 // other route needs it.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { getBuildBySlug, getMediaForBuild } from "@/lib/build";
 import type { BuildMedia, BuildNode, BuildRecord, NodeTree } from "@/lib/build";
@@ -24,6 +24,7 @@ import { BuildTabs } from "@/components/build/BuildTabs";
 import { ForkAttribution } from "@/components/build/ForkAttribution";
 import { ForkControl, useForkBuild } from "@/components/build/ForkControl";
 import { PortableExport } from "@/components/build/PortableExport";
+import { ReproductionAction } from "@/components/build/ReproductionAction";
 import { Replay } from "@/components/build/Replay";
 import { RunView } from "@/components/build/RunView";
 import {
@@ -193,6 +194,7 @@ function Message({ heading, detail }: { heading: string; detail: string }) {
 
 export default function BuildPage() {
   const { slug } = useParams<{ slug: string }>();
+  const queryClient = useQueryClient();
 
   // The tab strip is controlled from here so that a breakage can send the
   // reader into the replay at the step it broke.
@@ -215,6 +217,24 @@ export default function BuildPage() {
     setJumpTo(ordinal);
     setTab("watch");
   }, []);
+
+  /**
+   * A reproduction has landed, and the header the database now holds.
+   *
+   * Written straight into the record the page is already rendering, so the
+   * count moves the moment the sheet closes. Only the build half is replaced —
+   * the tree, the tray and the events are untouched by a reproduction, and
+   * refetching the whole record to move one integer would rebuild the page
+   * under the reader.
+   */
+  const onReproductionRecorded = useCallback(
+    (build: BuildRecord["build"]) => {
+      queryClient.setQueryData<BuildRecord | null>(["build", slug], (record) =>
+        record ? { ...record, build } : record
+      );
+    },
+    [queryClient, slug]
+  );
 
   const { data, isLoading, isError, error } = useQuery<BuildRecord | null>({
     queryKey: ["build", slug],
@@ -328,6 +348,12 @@ export default function BuildPage() {
               <PortableExport record={data} />
               <ForkControl state={forkState} />
             </>
+          }
+          reproduction={
+            <ReproductionAction
+              build={data.build}
+              onRecorded={onReproductionRecorded}
+            />
           }
         />
         <BuildTabs
