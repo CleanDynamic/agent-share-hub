@@ -302,6 +302,36 @@ describe("the review pass", () => {
     expect(decisionFor("understand")?.approve).toBe(false);
   });
 
+  it("says when the words on screen came from an earlier version of the record", async () => {
+    // What the generator answers with when it refuses to overwrite approved
+    // text: the stored row, intact, marked stale.
+    generateLayers.mockResolvedValue({
+      buildId: "b1",
+      hash: recordHash,
+      modelUsed: null,
+      stale: true,
+      warnings: [],
+      layers: [
+        {
+          layer: "run" as Layer,
+          status: "stale" as const,
+          stale: true,
+          protectedBy: "approved" as const,
+          row: { ...layerRow("run", [{ title: "Paste the prompt", body: "As it was." }]), approved: true },
+          error: null,
+        },
+      ],
+    });
+
+    renderCompose();
+    await pressPublish();
+    await screen.findByDisplayValue("Paste the prompt");
+
+    // Not "Approved": a creator must not approve words written from a record
+    // they have since changed without being told that is what they are doing.
+    expect(review()).toHaveTextContent(/Written from an earlier version of your record/i);
+  });
+
   it("publishes anyway when nothing could be generated", async () => {
     generateLayers.mockRejectedValue(new Error("No model is configured for this project."));
     renderCompose();

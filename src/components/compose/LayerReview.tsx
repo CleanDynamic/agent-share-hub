@@ -204,6 +204,8 @@ interface Panel {
   row: BuildLayer | null;
   steps: LayerStep[];
   edited: boolean;
+  /** The generator protected this row instead of rewriting it. */
+  stale: boolean;
   error: string | null;
 }
 
@@ -218,15 +220,21 @@ function LayerPanel({
 }) {
   const colour = LAYER_COLOUR[panel.layer];
 
+  // Ordered by what a creator most needs to know about this panel before they
+  // press anything. The stale case is third rather than last on purpose: text
+  // written from a record that has since moved is the one thing here a
+  // creator could approve without realising what they were approving.
   const chip = panel.edited
     ? { text: "Edited by you — kept and shown", colour: TEAL }
-    : panel.row?.approved
-      ? { text: "Approved", colour: TEAL }
-      : panel.error
-        ? { text: "Could not be written", colour: GAP_RED }
-        : working
-          ? { text: "Writing…", colour: TEXT_MUTED }
-          : { text: "Not shown unless you approve it", colour: TEXT_MUTED };
+    : panel.error
+      ? { text: "Could not be written", colour: GAP_RED }
+      : panel.stale
+        ? { text: "Written from an earlier version of your record", colour: ORANGE }
+        : panel.row?.approved
+          ? { text: "Approved", colour: TEAL }
+          : working
+            ? { text: "Writing…", colour: TEXT_MUTED }
+            : { text: "Not shown unless you approve it", colour: TEXT_MUTED };
 
   return (
     <section
@@ -312,6 +320,7 @@ export function LayerReview({
   const [steps, setSteps] = useState<Partial<Record<Layer, LayerStep[]>>>({});
   const [edited, setEdited] = useState<Partial<Record<Layer, boolean>>>({});
   const [errors, setErrors] = useState<Partial<Record<Layer, string>>>({});
+  const [protectedRows, setProtectedRows] = useState<Partial<Record<Layer, boolean>>>({});
   const [working, setWorking] = useState(true);
   const [callError, setCallError] = useState<string | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
@@ -346,6 +355,7 @@ export function LayerReview({
         const nextRows: Partial<Record<Layer, BuildLayer>> = {};
         const nextSteps: Partial<Record<Layer, LayerStep[]>> = {};
         const nextErrors: Partial<Record<Layer, string>> = {};
+        const nextProtected: Partial<Record<Layer, boolean>> = {};
 
         for (const outcome of result.layers) {
           if (outcome.row) {
@@ -353,11 +363,16 @@ export function LayerReview({
             nextSteps[outcome.layer] = outcome.row.content.steps.map((step) => ({ ...step }));
           }
           if (outcome.error) nextErrors[outcome.layer] = outcome.error;
+          // The generator refused to overwrite this one: it is a creator's
+          // approved or rewritten text, and the words on screen were written
+          // from a record that has since changed.
+          if (outcome.stale) nextProtected[outcome.layer] = true;
         }
 
         setRows(nextRows);
         setSteps(nextSteps);
         setErrors(nextErrors);
+        setProtectedRows(nextProtected);
         setWrittenHash(result.hash);
         setWorking(false);
       })
@@ -384,6 +399,7 @@ export function LayerReview({
     row: rows[layer] ?? null,
     steps: steps[layer] ?? [],
     edited: Boolean(edited[layer]),
+    stale: Boolean(protectedRows[layer]),
     error: errors[layer] ?? null,
   }));
 
