@@ -21,6 +21,7 @@ import {
 import { BuildHeader } from "@/components/build/BuildHeader";
 import { BreakageView } from "@/components/build/BreakageView";
 import { BuildTabs } from "@/components/build/BuildTabs";
+import { ForkControl, useForkBuild } from "@/components/build/ForkControl";
 import { PortableExport } from "@/components/build/PortableExport";
 import { Replay } from "@/components/build/Replay";
 import { RunView } from "@/components/build/RunView";
@@ -240,6 +241,7 @@ export default function BuildPage() {
   });
 
   // Above the early returns: hooks cannot be conditional.
+  const forkState = useForkBuild(data?.build);
   const nodesById = useMemo(() => indexTree(data?.tree ?? []), [data?.tree]);
   const resolveNode = useMemo(
     () => (id: string) => nodesById.get(id),
@@ -317,7 +319,12 @@ export default function BuildPage() {
           build={data.build}
           tree={treeWithHero}
           nodeTypes={data.nodeTypes}
-          actions={<PortableExport record={data} />}
+          actions={
+            <>
+              <PortableExport record={data} />
+              <ForkControl state={forkState} />
+            </>
+          }
         />
         <BuildTabs
           active={tab}
@@ -330,6 +337,8 @@ export default function BuildPage() {
               resolveNode={resolveNode}
               resolveMedia={resolveMedia}
               focusOrdinal={jumpTo}
+              onFork={forkState.fork}
+              forkPending={forkState.pending}
             />
           }
           run={<RunView tree={data.tree} nodeTypes={data.nodeTypes} build={data.build} />}
