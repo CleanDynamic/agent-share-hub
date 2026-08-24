@@ -192,7 +192,17 @@ export const GALLERY_NODE_TYPES: readonly string[] = [
 
 /** Per build, not per page: PostgREST applies an embedded limit per parent. */
 const NODES_PER_BUILD = 6;
-const MEDIA_PER_BUILD = 8;
+
+/**
+ * Files and audio are filtered out rather than counted against this: a card
+ * renders neither. A build carrying more than twelve images still gets a card
+ * — the bodies fall through to their non-media branch when the row they wanted
+ * falls outside this window, and every branch ends somewhere that renders.
+ */
+const MEDIA_PER_BUILD = 12;
+
+/** The only two kinds a card can put on screen. */
+const GALLERY_MEDIA_KINDS = ["image", "video"] as const;
 
 /**
  * The header columns a card reads. Explicit, because `*` on this table would
@@ -305,7 +315,11 @@ export async function listGallery(
     // Never drafts. The RLS policy would hand a creator their own back.
     .in("status", ["published", "gallery"])
     .or(galleryPredicate())
-    .in("build_nodes.type", [...GALLERY_NODE_TYPES]);
+    // Filters on an embedded column, without !inner, narrow the EMBEDDED rows
+    // and leave the parent alone — a build with no prompt node still gets a
+    // card, with an empty nodes array.
+    .in("build_nodes.type", [...GALLERY_NODE_TYPES])
+    .in("build_media.kind", [...GALLERY_MEDIA_KINDS]);
 
   const madeFor = cleanList(options.madeFor);
   if (madeFor.length > 0) query = query.overlaps("made_for", madeFor);
