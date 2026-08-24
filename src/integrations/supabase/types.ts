@@ -601,6 +601,51 @@ export type Database = {
           },
         ]
       }
+      build_reproductions: {
+        Row: {
+          build_id: string
+          confirmed_at: string
+          id: string
+          model_used: string | null
+          note: string | null
+          user_id: string
+          worked: boolean
+        }
+        Insert: {
+          build_id: string
+          confirmed_at?: string
+          id?: string
+          model_used?: string | null
+          note?: string | null
+          user_id: string
+          worked?: boolean
+        }
+        Update: {
+          build_id?: string
+          confirmed_at?: string
+          id?: string
+          model_used?: string | null
+          note?: string | null
+          user_id?: string
+          worked?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "build_reproductions_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "build_reproductions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       builds: {
         Row: {
           completeness: number | null

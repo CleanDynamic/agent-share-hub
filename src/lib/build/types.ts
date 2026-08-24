@@ -17,6 +17,7 @@ export type Build = Tables<"builds">;
 export type BuildNode = Tables<"build_nodes">;
 export type BuildEvent = Tables<"build_events">;
 export type BuildMedia = Tables<"build_media">;
+export type BuildReproduction = Tables<"build_reproductions">;
 
 /** The registry row exactly as stored — `schema` still untyped Json. */
 export type NodeTypeRow = Tables<"node_types">;
@@ -32,6 +33,7 @@ export type BuildInsert = TablesInsert<"builds">;
 export type BuildNodeInsert = TablesInsert<"build_nodes">;
 export type BuildEventInsert = TablesInsert<"build_events">;
 export type BuildMediaInsert = TablesInsert<"build_media">;
+export type BuildReproductionInsert = TablesInsert<"build_reproductions">;
 
 /** A partial update. `id` and `creator_id` are fixed once a build exists. */
 export type BuildPatch = Omit<TablesUpdate<"builds">, "id" | "creator_id">;
