@@ -1,13 +1,14 @@
-// The five tabs of a build page. Anatomy and Run it yourself are live.
+// The five tabs of a build page. Anatomy, Watch it get built and Run it
+// yourself are live.
 //
-// The other three are rendered and visibly disabled rather than omitted: the
-// strip is the map of what a build record is going to hold, and a reader
-// seeing "Watch it get built" greyed out learns more than a reader seeing
-// nothing at all.
+// The rest are rendered and visibly disabled rather than omitted: the strip is
+// the map of what a build record is going to hold, and a reader seeing "Forks"
+// greyed out learns more than a reader seeing nothing at all.
 //
 // A tab is live when a panel is handed in for it, never because this file
-// hardcodes which ones work. NS-P06 activated Run it yourself by passing one;
-// the three that are still dark go the same way when their panel exists.
+// hardcodes which ones work. NS-P06 activated Run it yourself by passing one
+// and NS-P16 activated Watch it get built the same way; the ones still dark go
+// the same way when their panel exists.
 
 import { useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
@@ -16,6 +17,8 @@ import { HAIRLINE, ORANGE, TEXT_MUTED, TEXT_SECONDARY, labelText } from "./token
 interface BuildTabsProps {
   /** The Anatomy panel. */
   children: ReactNode;
+  /** The Watch it get built panel. Absent leaves the tab disabled. */
+  watch?: ReactNode;
   /** The Run it yourself panel. Absent leaves the tab disabled. */
   run?: ReactNode;
 }
@@ -29,7 +32,7 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { id: "anatomy", label: "Anatomy" },
-  { id: "watch", label: "Watch it get built", placeholder: "Event sequence — soon" },
+  { id: "watch", label: "Watch it get built" },
   { id: "run", label: "Run it yourself" },
   { id: "broke", label: "Where it broke", placeholder: "Breakages — soon" },
   { id: "forks", label: "Forks", placeholder: "Derived builds — soon" },
@@ -49,10 +52,11 @@ const tabBase: CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-export function BuildTabs({ children, run }: BuildTabsProps) {
+export function BuildTabs({ children, watch, run }: BuildTabsProps) {
   const [active, setActive] = useState("anatomy");
 
   const panels: Record<string, ReactNode> = { anatomy: children };
+  if (watch !== undefined) panels.watch = watch;
   if (run !== undefined) panels.run = run;
 
   const live = TABS.filter((tab) => panels[tab.id] !== undefined);

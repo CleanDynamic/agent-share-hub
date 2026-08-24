@@ -21,6 +21,7 @@ import {
 import { BuildHeader } from "@/components/build/BuildHeader";
 import { BuildTabs } from "@/components/build/BuildTabs";
 import { PortableExport } from "@/components/build/PortableExport";
+import { Replay } from "@/components/build/Replay";
 import { RunView } from "@/components/build/RunView";
 import {
   FONT_STACK,
@@ -296,6 +297,15 @@ export default function BuildPage() {
           actions={<PortableExport record={data} />}
         />
         <BuildTabs
+          watch={
+            <Replay
+              build={data.build}
+              events={data.events}
+              nodeTypes={data.nodeTypes}
+              resolveNode={resolveNode}
+              resolveMedia={resolveMedia}
+            />
+          }
           run={<RunView tree={data.tree} nodeTypes={data.nodeTypes} build={data.build} />}
         >
           <AnatomyTree
