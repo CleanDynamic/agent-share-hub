@@ -28,6 +28,7 @@ import type { ComposeBuild } from "@/hooks/useComposeBuild";
 import { MediaProvider, useComposeMedia } from "@/hooks/useComposeMedia";
 import { nodeMediaId } from "@/components/build/MediaFigure";
 import { ComposeTopBar } from "@/components/compose/ComposeTopBar";
+import { CompletenessPanel } from "@/components/compose/CompletenessPanel";
 import { Inspector } from "@/components/compose/Inspector";
 import { findNodeInRecord } from "@/components/compose/SchemaForm";
 import { CentrePanel } from "@/components/compose/CentrePanel";
@@ -143,15 +144,42 @@ function DragGhost({ compose, drag }: PanelProps) {
   );
 }
 
-function RightPanelContent({ compose, drag, buildId }: PanelProps & { buildId: string }) {
+/**
+ * The inspector, and the checklist beneath it.
+ *
+ * One component so the pair travels together into the bottom sheet below the
+ * breakpoint: a creator on a narrow screen gets the same two panels in the same
+ * order, rather than a checklist that only exists on a wide one.
+ *
+ * The checklist adds a node through the tree's own add — the same call the
+ * "+ Add node" menu makes — so a node it creates lands at the selected level
+ * and is selected, exactly as one added by hand would be.
+ */
+function RightPanelContent({
+  compose,
+  drag,
+  buildId,
+  build,
+}: PanelProps & { buildId: string; build: Build }) {
   return (
-    <Inspector
-      buildId={buildId}
-      compose={compose}
-      // The tree's delete, not a second one: it is the path that closes the
-      // position gap the removed node leaves behind.
-      onDelete={drag.removeNode}
-    />
+    <>
+      <Inspector
+        buildId={buildId}
+        compose={compose}
+        // The tree's delete, not a second one: it is the path that closes the
+        // position gap the removed node leaves behind.
+        onDelete={drag.removeNode}
+      />
+      <CompletenessPanel
+        build={build}
+        completeness={compose.completeness}
+        tree={compose.tree}
+        nodeTypes={compose.nodeTypes}
+        onPatch={compose.patchBuild}
+        onSelectNode={compose.setSelectedNodeId}
+        onAddNode={drag.addNode}
+      />
+    </>
   );
 }
 
@@ -374,7 +402,12 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
                 ...railScroll,
               }}
             >
-              <RightPanelContent compose={compose} drag={drag} buildId={build.id} />
+              <RightPanelContent
+                compose={compose}
+                drag={drag}
+                buildId={build.id}
+                build={build}
+              />
             </aside>
           )}
         </div>
@@ -409,7 +442,12 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
                 }}
               >
                 <SheetTitle style={{ ...labelText, color: TEXT_SECONDARY }}>Inspector</SheetTitle>
-                <RightPanelContent compose={compose} drag={drag} buildId={build.id} />
+                <RightPanelContent
+                  compose={compose}
+                  drag={drag}
+                  buildId={build.id}
+                  build={build}
+                />
               </SheetContent>
             </Sheet>
           </>
