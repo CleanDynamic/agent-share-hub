@@ -9,6 +9,12 @@
 // result node publishes — and the app-shaped build in this file scores 60 out
 // of 100 while doing it, missing six of its nine rules. If a future change ever
 // makes the score the gate, this file fails.
+//
+// Every build here is past NS-P23's review pass — there is nothing unreviewed
+// to show — so pressing Publish goes straight to the write. That screen, and
+// the rule that decides when it appears, are covered in LayerReview.test.tsx;
+// this file is about the write, and about the fact that nothing was allowed to
+// gate it.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -19,6 +25,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 const getBuild = vi.fn();
 const updateBuild = vi.fn();
 const getMediaForBuild = vi.fn().mockResolvedValue([]);
+const getLayers = vi.fn().mockResolvedValue([]);
 
 vi.mock("@/lib/build", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/build")>();
@@ -27,6 +34,11 @@ vi.mock("@/lib/build", async (importOriginal) => {
     getBuild: (id: string) => getBuild(id),
     updateBuild: (id: string, patch: unknown) => updateBuild(id, patch),
     getMediaForBuild: (id: string) => getMediaForBuild(id),
+    getLayers: (id: string) => getLayers(id),
+    // Nothing to review, so Publish publishes. NS-P23's review pass decides
+    // this for real from the rows and the record's hash; here it is pinned so
+    // the write below is the only thing under test.
+    shouldOfferLayerReview: () => false,
   };
 });
 
@@ -123,6 +135,7 @@ describe("the publish action", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getMediaForBuild.mockResolvedValue([]);
+    getLayers.mockResolvedValue([]);
     updateBuild.mockImplementation(async (_id: string, patch: Record<string, unknown>) => ({
       ...draft(),
       ...patch,
