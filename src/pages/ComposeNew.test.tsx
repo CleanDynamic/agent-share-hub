@@ -27,6 +27,19 @@ vi.mock("@/lib/build/intake", async (importOriginal) => {
   };
 });
 
+const requestRepoProposal = vi.fn();
+const applyRepoHeader = vi.fn();
+vi.mock("@/lib/build/repo", async (importOriginal) => {
+  // parseRepoUrl, isRepoUrl and repoUrlComplaint stay real — recognising a
+  // repository URL and refusing one that is not IS the behaviour under test.
+  const actual = await importOriginal<typeof import("@/lib/build/repo")>();
+  return {
+    ...actual,
+    requestRepoProposal: (...args: unknown[]) => requestRepoProposal(...args),
+    applyRepoHeader: (...args: unknown[]) => applyRepoHeader(...args),
+  };
+});
+
 const requestLovableProposal = vi.fn();
 vi.mock("@/lib/build/lovable", async (importOriginal) => {
   // detectExportSource and readDroppedFile stay real — routing the right file
@@ -137,6 +150,9 @@ beforeEach(() => {
   createBuild.mockReset();
   requestProposal.mockReset();
   requestLovableProposal.mockReset();
+  requestRepoProposal.mockReset();
+  applyRepoHeader.mockReset();
+  applyRepoHeader.mockResolvedValue({ repoUrlSet: true, madeWithAdded: [] });
   materialiseProposal.mockReset();
   auth.user = { id: "me" };
   auth.isLoggedIn = true;
@@ -502,6 +518,279 @@ describe("the review", () => {
     await waitFor(() => expect(screen.getByTestId("path").textContent).toBe("/compose/b1"));
     expect(materialiseProposal).not.toHaveBeenCalled();
     // The build was already created before the parse, so nothing is orphaned.
+    expect(createBuild).toHaveBeenCalledTimes(1);
+  });
+});
+
+// -----------------------------------------------------------------------------
+// The repository URL (NS-P21)
+// -----------------------------------------------------------------------------
+
+/** A repo proposal: no events, and a made_with the shared writer never sees. */
+function repoProposalOf(): TranscriptProposal {
+  const ref = { source: "repo", session_id: SESSION, index: 1 };
+  return {
+    events: [],
+    nodes: [
+      {
+        local_id: "node-1",
+        type: "repo",
+        title: "acme/widget-factory",
+        note: null,
+        payload: { url: "https://github.com/acme/widget-factory", default_branch: "main", stars: 412 },
+        source_ref: { ...ref, repo: "acme/widget-factory", ref: "main", file: null },
+        inferred: false,
+        inferred_reason: null,
+      },
+      {
+        local_id: "node-2",
+        type: "stack",
+        title: "Stack",
+        note: "Read from package.json.",
+        payload: { layers: [{ layer: "framework", tool: "React", version: "18.3.1" }], notes: null },
+        source_ref: { ...ref, index: 2, repo: "acme/widget-factory", ref: "main", file: "package.json" },
+        inferred: true,
+        inferred_reason: "Assembled from package.json.",
+      },
+    ],
+    summary: {
+      session_id: SESSION,
+      source_hint: "acme/widget-factory",
+      detected_format: "github-repo",
+      detected_labels: { user: [], assistant: [] },
+      turn_count: 0,
+      user_turn_count: 0,
+      assistant_turn_count: 0,
+      event_count: 0,
+      node_count: 2,
+      character_count: 900,
+      line_count: 40,
+      proposed_title: null,
+      proposed_outcome: {
+        value: "Turns a folder of photographs into a printable contact sheet.",
+        source_ref: { ...ref, repo: "acme/widget-factory", ref: "main", file: "README.md" },
+        inferred: true,
+        inferred_reason: "The opening paragraph of README.md.",
+      },
+    },
+    warnings: [],
+  } as unknown as TranscriptProposal;
+}
+
+const typeUrl = (url: string) =>
+  fireEvent.change(screen.getByLabelText(/or paste a repository url/i), { target: { value: url } });
+
+describe("a repository URL (NS-P21)", () => {
+  it("offers the URL field as a peer of the paste zone, not inside it", async () => {
+    renderIntake();
+
+    // Both on screen at once, neither behind a disclosure.
+    expect(screen.getByLabelText(/paste the transcript/i)).toBeTruthy();
+    expect(screen.getByLabelText(/or paste a repository url/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /read the repo/i })).toBeTruthy();
+    // The promise the field makes, kept where a creator reads it.
+    expect(screen.getByText(/nothing is cloned/i)).toBeTruthy();
+  });
+
+  it("creates the draft before it calls the parser", async () => {
+    const order: string[] = [];
+    createBuild.mockImplementation(async () => {
+      order.push("createBuild");
+      return BUILD;
+    });
+    requestRepoProposal.mockImplementation(async () => {
+      order.push("parse");
+      return repoProposalOf();
+    });
+
+    renderIntake();
+    typeUrl("https://github.com/acme/widget-factory");
+    fireEvent.click(screen.getByRole("button", { name: /read the repo/i }));
+
+    await waitFor(() => expect(order).toEqual(["createBuild", "parse"]));
+    expect(requestRepoProposal).toHaveBeenCalledWith(
+      "b1",
+      "https://github.com/acme/widget-factory",
+      "acme/widget-factory",
+    );
+  });
+
+  it("routes a GitHub URL pasted into the transcript box to parse-repo", async () => {
+    createBuild.mockResolvedValue(BUILD);
+    requestRepoProposal.mockResolvedValue(repoProposalOf());
+
+    renderIntake();
+    paste("https://github.com/acme/widget-factory");
+    fireEvent.click(screen.getByRole("button", { name: /read it/i }));
+
+    // One line is not a session. parse-transcript would read it as one.
+    await waitFor(() => expect(requestRepoProposal).toHaveBeenCalled());
+    expect(requestProposal).not.toHaveBeenCalled();
+  });
+
+  it("leaves a transcript that merely mentions GitHub to parse-transcript", async () => {
+    createBuild.mockResolvedValue(BUILD);
+    requestProposal.mockResolvedValue(proposalOf(1));
+
+    renderIntake();
+    paste("You said:\nClone https://github.com/acme/widget-factory and run it\n\nChatGPT said:\nSure.");
+    fireEvent.click(screen.getByRole("button", { name: /read it/i }));
+
+    await waitFor(() => expect(requestProposal).toHaveBeenCalled());
+    expect(requestRepoProposal).not.toHaveBeenCalled();
+  });
+
+  it("refuses a URL that is not a GitHub repository before creating anything", async () => {
+    renderIntake();
+    typeUrl("https://gitlab.com/acme/widget");
+    fireEvent.click(screen.getByRole("button", { name: /read the repo/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/only github/i);
+    // No draft for a URL that was never going to be read.
+    expect(createBuild).not.toHaveBeenCalled();
+    expect(requestRepoProposal).not.toHaveBeenCalled();
+  });
+
+  it("says something specific for a github.com URL that is not a repository", async () => {
+    renderIntake();
+    typeUrl("https://github.com/features/actions");
+    fireEvent.click(screen.getByRole("button", { name: /read the repo/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/not a repository one/i);
+    expect(createBuild).not.toHaveBeenCalled();
+  });
+
+  it("lands the creator on their empty draft when the repository cannot be read", async () => {
+    createBuild.mockResolvedValue(BUILD);
+    // What a private repository actually produces, message and all.
+    requestRepoProposal.mockRejectedValue(
+      new Error("acme/widget-factory is private, does not exist, or has been renamed."),
+    );
+
+    renderIntake();
+    typeUrl("https://github.com/acme/widget-factory");
+    fireEvent.click(screen.getByRole("button", { name: /read the repo/i }));
+
+    // The draft exists by then, so the creator is handed it with the reason.
+    await waitFor(() => expect(screen.getByTestId("path").textContent).toBe("/compose/b1"));
+
+    const handed = JSON.parse(screen.getByTestId("state").textContent ?? "null");
+    expect(handed.intake.tone).toBe("failed");
+    expect(handed.intake.message).toMatch(/is private, does not exist/i);
+    expect(handed.intake.message).toMatch(/draft is here and empty/i);
+  });
+
+  it("shows honest reading copy — no turn splitting for a repository", async () => {
+    createBuild.mockResolvedValue(BUILD);
+    requestRepoProposal.mockReturnValue(new Promise(() => {}));
+
+    renderIntake();
+    typeUrl("https://github.com/acme/widget-factory");
+    fireEvent.click(screen.getByRole("button", { name: /read the repo/i }));
+
+    expect(await screen.findByText(/reading the manifests/i)).toBeTruthy();
+    expect(screen.queryByText(/splitting it into turns/i)).toBeNull();
+    expect(screen.getByRole("heading", { name: "acme/widget-factory" })).toBeTruthy();
+  });
+
+  it("reviews the proposal on the same surface, with no sequence to show", async () => {
+    createBuild.mockResolvedValue(BUILD);
+    requestRepoProposal.mockResolvedValue(repoProposalOf());
+
+    renderIntake();
+    typeUrl("https://github.com/acme/widget-factory");
+    fireEvent.click(screen.getByRole("button", { name: /read the repo/i }));
+
+    // The same review component the other two parsers land on.
+    expect(await screen.findByRole("button", { name: /add 2 to the draft/i })).toBeTruthy();
+    // A repository has no events, so no prompt count is claimed.
+    expect(screen.queryByText(/prompts in sequence/i)).toBeNull();
+  });
+
+  it("applies repo_url and made_with on confirm, and only on the repo path", async () => {
+    createBuild.mockResolvedValue(BUILD);
+    requestRepoProposal.mockResolvedValue(repoProposalOf());
+    materialiseProposal.mockResolvedValue({
+      events: 0, nodes: 2, titleApplied: false, outcomeApplied: true, alreadyMaterialised: false,
+    });
+
+    renderIntake();
+    typeUrl("https://github.com/acme/widget-factory");
+    fireEvent.click(screen.getByRole("button", { name: /read the repo/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /add 2 to the draft/i }));
+
+    await waitFor(() => expect(applyRepoHeader).toHaveBeenCalled());
+    expect(applyRepoHeader).toHaveBeenCalledWith(
+      "b1",
+      expect.objectContaining({ summary: expect.objectContaining({ detected_format: "github-repo" }) }),
+      "https://github.com/acme/widget-factory",
+    );
+  });
+
+  it("does not claim an empty sequence on the way to the workspace", async () => {
+    createBuild.mockResolvedValue(BUILD);
+    requestRepoProposal.mockResolvedValue(repoProposalOf());
+    materialiseProposal.mockResolvedValue({
+      events: 0, nodes: 2, titleApplied: false, outcomeApplied: true, alreadyMaterialised: false,
+    });
+
+    renderIntake();
+    typeUrl("https://github.com/acme/widget-factory");
+    fireEvent.click(screen.getByRole("button", { name: /read the repo/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /add 2 to the draft/i }));
+
+    await waitFor(() => expect(screen.getByTestId("path").textContent).toBe("/compose/b1"));
+
+    const handed = JSON.parse(screen.getByTestId("state").textContent ?? "null");
+    expect(handed.intake.message).toMatch(/2 items are in your tray/i);
+    // "and 0 prompts are in the sequence" would read as something gone missing.
+    expect(handed.intake.message).not.toMatch(/sequence/i);
+  });
+
+  it("keeps the written rows when the header write fails", async () => {
+    createBuild.mockResolvedValue(BUILD);
+    requestRepoProposal.mockResolvedValue(repoProposalOf());
+    materialiseProposal.mockResolvedValue({
+      events: 0, nodes: 2, titleApplied: false, outcomeApplied: true, alreadyMaterialised: false,
+    });
+    applyRepoHeader.mockRejectedValue(new Error("made_with is not writable today"));
+
+    renderIntake();
+    typeUrl("https://github.com/acme/widget-factory");
+    fireEvent.click(screen.getByRole("button", { name: /read the repo/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /add 2 to the draft/i }));
+
+    // The tray is what matters. The header is a nicety, and losing it must not
+    // strand a creator on the review with rows already written.
+    await waitFor(() => expect(screen.getByTestId("path").textContent).toBe("/compose/b1"));
+
+    const handed = JSON.parse(screen.getByTestId("state").textContent ?? "null");
+    expect(handed.intake.tone).toBe("settled");
+    expect(handed.intake.message).toMatch(/2 items are in your tray/i);
+  });
+
+  it("submits on Enter, so the fastest way in needs no mouse", async () => {
+    createBuild.mockResolvedValue(BUILD);
+    requestRepoProposal.mockResolvedValue(repoProposalOf());
+
+    renderIntake();
+    const field = screen.getByLabelText(/or paste a repository url/i);
+    fireEvent.change(field, { target: { value: "https://github.com/acme/widget-factory" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+
+    await waitFor(() => expect(requestRepoProposal).toHaveBeenCalled());
+  });
+
+  it("creates exactly one build under strict mode", async () => {
+    createBuild.mockResolvedValue(BUILD);
+    requestRepoProposal.mockResolvedValue(repoProposalOf());
+
+    renderIntake({ strict: true });
+    typeUrl("https://github.com/acme/widget-factory");
+    fireEvent.click(screen.getByRole("button", { name: /read the repo/i }));
+    fireEvent.click(screen.getByRole("button", { name: /read the repo/i }));
+
+    await waitFor(() => expect(requestRepoProposal).toHaveBeenCalled());
     expect(createBuild).toHaveBeenCalledTimes(1);
   });
 });

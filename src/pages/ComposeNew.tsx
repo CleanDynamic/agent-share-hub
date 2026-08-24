@@ -15,6 +15,18 @@
 // They drop what they have. Only genuinely undecidable input asks, once, with
 // two options, and nothing about the answer is remembered.
 //
+// A FOURTH WAY IN (NS-P21): a repository URL. It gets its own field rather
+// than sharing the paste zone, because it is the one input that is decided by
+// LOOKING at it rather than by reading it — a URL either names a GitHub
+// repository or it does not, and there is no content to detect. A GitHub URL
+// pasted into the transcript box is still routed to parse-repo rather than fed
+// to parse-transcript, which would read a single line as a whole session.
+//
+// A REPOSITORY IS A SUGGESTION SOURCE. What comes back is a repo node, a
+// stack, prerequisites and at most one entrypoint file — never an import of
+// the source. The proposal is reviewed on the same surface as the other two,
+// because it is the same envelope.
+//
 // ORDER. On paste or drop the draft build is created FIRST, then the parser is
 // called with its id. The parser needs a real build to check ownership against,
 // and creating first means a parser failure leaves the creator with a usable
@@ -40,6 +52,14 @@ import {
   requestLovableProposal,
   type ExportSource,
 } from "@/lib/build/lovable";
+import {
+  applyRepoHeader,
+  isRepoUrl,
+  parseRepoUrl,
+  repoUrlComplaint,
+  requestRepoProposal,
+  type RepoProposal,
+} from "@/lib/build/repo";
 import { IntakeProposal } from "@/components/compose/IntakeProposal";
 import { IntakeProgress } from "@/components/compose/IntakeProgress";
 import {
@@ -70,10 +90,27 @@ const ACCEPTED_EXTENSIONS = [".txt", ".md", ".markdown", ".text", ".json", ".zip
 
 type Stage =
   | { name: "idle" }
-  | { name: "parsing"; buildId: string; sourceLabel: string; characterCount: number }
+  | {
+      name: "parsing";
+      buildId: string;
+      sourceLabel: string;
+      characterCount: number;
+      /** Overrides the turn-splitting copy, which is untrue for a repository. */
+      description?: string;
+    }
   /** Undecidable input. Asked once, answered once, and never recorded. */
   | { name: "asking"; rawText: string; sourceLabel: string }
-  | { name: "review"; buildId: string; proposal: TranscriptProposal };
+  /**
+   * `repoUrl` is set only on the repo path. It is what the confirm step needs
+   * to apply builds.repo_url and the proposal's made_with — two header facts
+   * the shared writer deliberately knows nothing about.
+   */
+  | {
+      name: "review";
+      buildId: string;
+      proposal: TranscriptProposal;
+      repoUrl: string | null;
+    };
 
 function looksAcceptable(file: File): boolean {
   const name = file.name.toLowerCase();
@@ -133,6 +170,7 @@ export default function ComposeNew() {
 
   const [stage, setStage] = useState<Stage>({ name: "idle" });
   const [text, setText] = useState("");
+  const [repoUrl, setRepoUrl] = useState("");
   const [selection, setSelection] = useState<IntakeSelectionState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isWriting, setWriting] = useState(false);
@@ -225,7 +263,7 @@ export default function ComposeNew() {
             : await requestProposal(buildId, rawText, sourceLabel);
         busyRef.current = false;
         setSelection(keepEverything(proposal));
-        setStage({ name: "review", buildId, proposal });
+        setStage({ name: "review", buildId, proposal, repoUrl: null });
       } catch (cause) {
         // The draft is already real. Hand it over with the reason attached.
         busyRef.current = false;
@@ -234,6 +272,72 @@ export default function ComposeNew() {
           message:
             `${source === "lovable" ? "The export" : "The transcript"} could not be read: ` +
             `${messageOf(cause)} Your draft is here and empty.`,
+        });
+      }
+    },
+    [goToWorkspace]
+  );
+
+  /**
+   * Take a repository URL: build first, parse second, exactly as a paste does.
+   *
+   * The order matters for the same reason it does above — the parser verifies
+   * ownership against a real build row, and creating the draft first means a
+   * parse failure hands the creator a usable empty draft rather than nothing.
+   * It matters MORE here, because more of what can go wrong is outside this
+   * application: a private repository, a renamed one, a rate-limited GitHub.
+   * parse-repo answers each of those with its own sentence, and requestRepoProposal
+   * carries that sentence through instead of "non-2xx status code".
+   */
+  const takeRepo = useCallback(
+    async (url: string) => {
+      if (busyRef.current) return;
+
+      const trimmed = url.trim();
+      const coordinates = parseRepoUrl(trimmed);
+      if (!coordinates) {
+        // Refused here rather than at the function, so a creator who pasted a
+        // GitLab URL is told that before a draft is created for it.
+        setError(repoUrlComplaint(trimmed));
+        return;
+      }
+
+      busyRef.current = true;
+      setError(null);
+
+      let buildId: string;
+      try {
+        const build = await createBuild({ title: DRAFT_TITLE });
+        buildId = build.id;
+      } catch (cause) {
+        busyRef.current = false;
+        setError(`The draft could not be created: ${messageOf(cause)}`);
+        return;
+      }
+
+      const label = `${coordinates.owner}/${coordinates.repo}`;
+      setStage({
+        name: "parsing",
+        buildId,
+        sourceLabel: label,
+        // Nothing has been read yet, so there is no character count to show.
+        characterCount: 0,
+        description:
+          "Reading the manifests, the README and one entrypoint file — not the " +
+          "whole repository. Nothing is saved until you have looked at what it found.",
+      });
+
+      try {
+        const proposal = await requestRepoProposal(buildId, trimmed, label);
+        busyRef.current = false;
+        setSelection(keepEverything(proposal));
+        setStage({ name: "review", buildId, proposal, repoUrl: trimmed });
+      } catch (cause) {
+        // The draft is already real. Hand it over with the reason attached.
+        busyRef.current = false;
+        goToWorkspace(buildId, {
+          tone: "failed",
+          message: `${label} could not be read: ${messageOf(cause)} Your draft is here and empty.`,
         });
       }
     },
@@ -290,15 +394,33 @@ export default function ComposeNew() {
 
     try {
       const counts = await materialiseProposal(stage.buildId, stage.proposal, selection);
+
+      // The repo path only. builds.repo_url and the proposal's made_with are
+      // header facts materialiseProposal deliberately knows nothing about, and
+      // neither is worth losing the written rows over: a failure here leaves a
+      // creator with everything that matters and two fields to set by hand.
+      if (stage.repoUrl) {
+        try {
+          await applyRepoHeader(stage.buildId, stage.proposal as RepoProposal, stage.repoUrl);
+        } catch {
+          // Deliberately swallowed. The tray is written; the header is a nicety.
+        }
+      }
+
       const landed = counts.events + counts.nodes;
       goToWorkspace(stage.buildId, {
         tone: "settled",
         message:
           landed === 0
             ? "Nothing kept. Add your first node from the panel on the left."
-            : `${counts.nodes} ${counts.nodes === 1 ? "item is" : "items are"} in your tray and ` +
-              `${counts.events} ${counts.events === 1 ? "prompt is" : "prompts are"} in the sequence — ` +
-              `drag from the tray into the build to place them.`,
+            : counts.events === 0
+              // A repository has no sequence, so naming an empty one would read
+              // as something having gone missing.
+              ? `${counts.nodes} ${counts.nodes === 1 ? "item is" : "items are"} in your tray — ` +
+                `drag them into the build to place them.`
+              : `${counts.nodes} ${counts.nodes === 1 ? "item is" : "items are"} in your tray and ` +
+                `${counts.events} ${counts.events === 1 ? "prompt is" : "prompts are"} in the sequence — ` +
+                `drag from the tray into the build to place them.`,
       });
     } catch (cause) {
       setWriting(false);
@@ -335,6 +457,7 @@ export default function ComposeNew() {
         <IntakeProgress
           sourceLabel={stage.sourceLabel}
           characterCount={stage.characterCount}
+          description={stage.description}
         />
       </Shell>
     );
@@ -439,8 +562,105 @@ export default function ComposeNew() {
         <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
           If you built this in a chat, bring the chat. It gets split into the
           prompts you sent and the code and settings that came back, and all of
-          it lands in your tray for you to arrange.
+          it lands in your tray for you to arrange. If what you have is a public
+          repository, bring that instead — it is read for its stack, its
+          prerequisites and what it says it does.
         </p>
+      </div>
+
+      {/* A PEER OF THE PASTE ZONE, not a control inside it (NS-P21).
+          A URL is decided by looking at it; a transcript is decided by reading
+          it. Putting a one-line field inside a drop target labelled "paste the
+          transcript" would blur both. The panel is a single 720px column, so
+          peers stack — which is also what this would do on a narrow screen if
+          it were laid out in a row. No existing element's layout was touched to
+          place it. */}
+      <div
+        data-visual-slot="intake-repo-url"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          padding: 14,
+          borderRadius: 12,
+          border: `1px solid ${HAIRLINE}`,
+          background: "rgba(255,255,255,0.02)",
+        }}
+      >
+        <label htmlFor="intake-repo-url" style={{ ...labelText, textTransform: "uppercase" }}>
+          Or paste a repository URL
+        </label>
+
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+          <input
+            id="intake-repo-url"
+            type="url"
+            inputMode="url"
+            autoComplete="off"
+            spellCheck={false}
+            value={repoUrl}
+            onChange={(event) => {
+              setRepoUrl(event.target.value);
+              if (error) setError(null);
+            }}
+            onKeyDown={(event) => {
+              // Enter submits: a one-line field that needed a mouse to send
+              // would be the slowest way in on the page.
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              if (!busy) void takeRepo(repoUrl);
+            }}
+            disabled={busy}
+            placeholder="https://github.com/owner/repository"
+            style={{
+              flex: "1 1 260px",
+              minWidth: 0,
+              boxSizing: "border-box",
+              fontFamily: FONT_STACK,
+              fontSize: 13,
+              fontWeight: 300,
+              lineHeight: 1.6,
+              color: TEXT_PRIMARY,
+              background: "rgba(255,255,255,0.025)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 10,
+              padding: "9px 12px",
+              outline: "none",
+            }}
+          />
+
+          {/* VISUAL SLOT — the primary button surface is supplied externally.
+              Structure only here: pill geometry, disabled state, no surface. */}
+          <span data-visual-slot="btn-primary" style={{ display: "inline-flex" }}>
+            <button
+              type="button"
+              onClick={() => void takeRepo(repoUrl)}
+              disabled={busy}
+              style={{
+                fontFamily: "inherit",
+                fontSize: 12,
+                fontWeight: 500,
+                letterSpacing: "0.04em",
+                height: 34,
+                padding: "0 18px",
+                borderRadius: 100,
+                background: "rgba(255,255,255,0.025)",
+                border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
+                color: busy ? TEXT_MUTED : TEAL,
+                cursor: busy ? "wait" : "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Read the repo
+            </button>
+          </span>
+        </div>
+
+        <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED }}>
+          Public GitHub repositories only. Nothing is cloned — the manifests, the
+          README and one entrypoint file are read, and everything found is a
+          suggestion you confirm.
+        </span>
       </div>
 
       {/* The zone is both the paste target and the drop target: one surface, so
@@ -551,6 +771,15 @@ export default function ComposeNew() {
           <button
             type="button"
             onClick={() => {
+              // A GitHub URL pasted into the transcript box is still a
+              // repository. Feeding one line to parse-transcript would read it
+              // as a whole session and propose nothing worth keeping.
+              const pasted = text.trim();
+              if (!/\s/.test(pasted) && isRepoUrl(pasted)) {
+                void takeRepo(pasted);
+                return;
+              }
+
               const source = detectExportSource(text);
               if (source === "ambiguous") {
                 setError(null);
