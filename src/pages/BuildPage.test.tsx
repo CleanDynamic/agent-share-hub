@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getBuildBySlug = vi.fn();
 const getMediaForBuild = vi.fn().mockResolvedValue([]);
+const getApprovedLayers = vi.fn().mockResolvedValue([]);
 const forkBuild = vi.fn();
 const getForkOrigin = vi.fn().mockResolvedValue(null);
 const auth = vi.hoisted(() => ({ isLoggedIn: false }));
@@ -28,6 +29,7 @@ vi.mock("@/lib/build", async (importOriginal) => {
     ...actual,
     getBuildBySlug: (slug: string) => getBuildBySlug(slug),
     getMediaForBuild: (buildId: string) => getMediaForBuild(buildId),
+    getApprovedLayers: (buildId: string) => getApprovedLayers(buildId),
     forkBuild: (input: unknown) => forkBuild(input),
     getForkOrigin: (build: unknown) => getForkOrigin(build),
     signedMediaUrl: async (media: { path: string }, options?: { width?: number }) =>
