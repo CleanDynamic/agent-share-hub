@@ -238,7 +238,12 @@ export async function readArchive(file: File): Promise<string> {
 /** True for a file whose bytes start with a local file header. */
 export async function isArchive(file: File): Promise<boolean> {
   if (file.size < 4) return false;
-  const head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+  const slice = file.slice(0, 4);
+  // Blob.arrayBuffer is universal in browsers but absent in some File-like
+  // objects. Sniffing is an optimisation over reading the whole file, so a
+  // missing one degrades to "not an archive" rather than failing the drop.
+  if (typeof slice.arrayBuffer !== "function") return false;
+  const head = new Uint8Array(await slice.arrayBuffer());
   // "PK\x03\x04". Read from the bytes, not the extension.
   return head[0] === 0x50 && head[1] === 0x4b && head[2] === 0x03 && head[3] === 0x04;
 }
