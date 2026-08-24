@@ -33,6 +33,12 @@ verify_jwt = false
 [functions.generate-ai-pdf]
 verify_jwt = false
 
+[functions.parse-lovable]
+# Deliberately true, for the same reason as parse-transcript below: NS-P20
+# proposes a draft against a build the caller must own, so the gateway must
+# reject an unauthenticated call before the function runs.
+verify_jwt = true
+
 [functions.parse-transcript]
 # Deliberately true. NS-P13 proposes a draft against a build the caller must own,
 # so the gateway must reject an unauthenticated call before the function runs.

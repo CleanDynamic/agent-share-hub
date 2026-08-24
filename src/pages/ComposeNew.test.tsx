@@ -27,6 +27,18 @@ vi.mock("@/lib/build/intake", async (importOriginal) => {
   };
 });
 
+const requestLovableProposal = vi.fn();
+vi.mock("@/lib/build/lovable", async (importOriginal) => {
+  // detectExportSource and readDroppedFile stay real — routing the right file
+  // to the right parser IS the behaviour under test, so a stubbed detector
+  // would test nothing.
+  const actual = await importOriginal<typeof import("@/lib/build/lovable")>();
+  return {
+    ...actual,
+    requestLovableProposal: (...args: unknown[]) => requestLovableProposal(...args),
+  };
+});
+
 const auth = { user: { id: "me" }, isLoggedIn: true, loading: false };
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => auth }));
 
@@ -124,10 +136,108 @@ const paste = (text: string) =>
 beforeEach(() => {
   createBuild.mockReset();
   requestProposal.mockReset();
+  requestLovableProposal.mockReset();
   materialiseProposal.mockReset();
   auth.user = { id: "me" };
   auth.isLoggedIn = true;
   auth.loading = false;
+});
+
+/** A dropped file, as the browser delivers one to the zone. */
+function dropFile(name: string, body: string, type = "text/plain") {
+  // Fired on the textarea: React's synthetic drop bubbles to the zone's
+  // handler, and targeting the zone by DOM shape would break on any reflow.
+  const file = new File([body], name, { type });
+  fireEvent.drop(screen.getByLabelText(/paste the transcript/i), {
+    dataTransfer: { files: [file] },
+  });
+  return file;
+}
+
+const LOVABLE_EXPORT = JSON.stringify({
+  exportedAt: "2026-08-20T18:04:11.522Z",
+  url: "https://lovable.dev/projects/recipe-box-planner",
+  messageCount: 2,
+  messages: [
+    {
+      id: "umsg_01", role: "user",
+      timestampText: "Aug 18, 2026, 9:12 AM", topPx: 120,
+      contentHtml: "<p>Build me a recipe box.</p>",
+      contentText: "Build me a recipe box.",
+    },
+    {
+      id: "amsg_01", role: "ai",
+      timestampText: "Aug 18, 2026, 9:13 AM", topPx: 340,
+      contentHtml: "<p>Done.</p>", contentText: "Done.",
+    },
+  ],
+});
+
+describe("two parsers, no picker (NS-P20)", () => {
+  // Acceptance 3: the same zone takes both, and works out which is which from
+  // the content. Neither of these tests touches a control that names a format,
+  // because there is no such control.
+
+  it("routes a Lovable export to parse-lovable", async () => {
+    createBuild.mockResolvedValue(BUILD);
+    requestLovableProposal.mockResolvedValue(proposalOf(1));
+    renderIntake();
+
+    dropFile("lovable-chat-2026-08-20.json", LOVABLE_EXPORT, "application/json");
+
+    await waitFor(() => expect(requestLovableProposal).toHaveBeenCalledTimes(1));
+    expect(requestProposal).not.toHaveBeenCalled();
+    expect(requestLovableProposal.mock.calls[0][1]).toBe(LOVABLE_EXPORT);
+  });
+
+  it("routes a plain transcript to parse-transcript", async () => {
+    createBuild.mockResolvedValue(BUILD);
+    requestProposal.mockResolvedValue(proposalOf(1));
+    renderIntake();
+
+    dropFile("chat.txt", "You said:\nBuild me a recipe box.\n\nChatGPT said:\nDone.");
+
+    await waitFor(() => expect(requestProposal).toHaveBeenCalledTimes(1));
+    expect(requestLovableProposal).not.toHaveBeenCalled();
+  });
+
+  it("routes a Lovable source-only download to parse-lovable, which explains it", async () => {
+    // The obvious path a creator takes. It carries no session, and the parser
+    // is the one place that says so.
+    createBuild.mockResolvedValue(BUILD);
+    requestLovableProposal.mockResolvedValue(proposalOf(0));
+    renderIntake();
+
+    dropFile("project.json", '{"name":"app","dependencies":{"react":"18.3.1"}}', "application/json");
+
+    await waitFor(() => expect(requestLovableProposal).toHaveBeenCalledTimes(1));
+    expect(requestProposal).not.toHaveBeenCalled();
+  });
+
+  it("asks once when the content is genuinely undecidable, and remembers nothing", async () => {
+    createBuild.mockResolvedValue(BUILD);
+    requestProposal.mockResolvedValue(proposalOf(1));
+    renderIntake();
+
+    // Valid JSON, no Lovable marker, not a transcript either.
+    dropFile("mystery.json", '{"foo":[1,2,3]}', "application/json");
+
+    await screen.findByText(/which is this\?/i);
+    // Two options, and neither parser called until one is chosen.
+    expect(requestProposal).not.toHaveBeenCalled();
+    expect(requestLovableProposal).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /a lovable session export/i })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /a chat transcript/i }));
+    await waitFor(() => expect(requestProposal).toHaveBeenCalledTimes(1));
+
+    // Nothing was remembered: the next undecidable file asks again.
+    requestProposal.mockClear();
+    renderIntake();
+    dropFile("mystery-2.json", '{"bar":[4,5]}', "application/json");
+    await screen.findByText(/which is this\?/i);
+    expect(requestProposal).not.toHaveBeenCalled();
+  });
 });
 
 describe("the offer", () => {
@@ -137,7 +247,7 @@ describe("the offer", () => {
     // None of them behind a disclosure: a creator with nothing to paste must
     // not have to hunt for the way in.
     expect(screen.getByLabelText(/paste the transcript/i)).toBeTruthy();
-    expect(screen.getByText(/drop a \.txt or \.md file/i)).toBeTruthy();
+    expect(screen.getByText(/drop a transcript \(\.txt, \.md\)/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /start empty instead/i })).toBeTruthy();
   });
 
