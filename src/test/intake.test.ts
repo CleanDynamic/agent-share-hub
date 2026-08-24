@@ -381,6 +381,111 @@ describe("materialiseProposal", () => {
   });
 });
 
+describe("a Lovable proposal (NS-P20)", () => {
+  // Acceptance 4: materialiseProposal writes it with no source-specific branch.
+  // The proposal here is not hand-written — it is whatever parse-lovable's own
+  // reading returns for a real export shape, so this breaks if the two
+  // envelopes ever drift apart.
+
+  const LOVABLE_EXPORT = JSON.stringify({
+    exportedAt: "2026-08-20T18:04:11.522Z",
+    url: "https://lovable.dev/projects/recipe-box-planner",
+    messageCount: 4,
+    messages: [
+      { id: "umsg_01", role: "user", timestampText: "Aug 18, 2026, 9:12 AM", topPx: 120,
+        contentHtml: "", contentText: "Build me a recipe box." },
+      { id: "amsg_01", role: "ai", timestampText: "Aug 18, 2026, 9:13 AM", topPx: 340,
+        contentHtml: "",
+        contentText: "Done.\n\n```tsx src/components/RecipeCard.tsx\nexport const RecipeCard = () => null;\n```" },
+      { id: "umsg_02", role: "user", timestampText: "Aug 18, 2026, 10:02 AM", topPx: 560,
+        contentHtml: "", contentText: "Publish it." },
+      { id: "amsg_02", role: "ai", timestampText: "Aug 18, 2026, 10:03 AM", topPx: 780,
+        contentHtml: "", contentText: "Published. Your app is live at https://recipe-box-planner.lovable.app" },
+    ],
+  });
+
+  async function lovableProposal(): Promise<TranscriptProposal> {
+    const { parseLovable } = await import("../../supabase/functions/parse-lovable/parse.ts");
+    return parseLovable(LOVABLE_EXPORT, {
+      session_id: SESSION,
+      source_hint: "lovable export",
+    }) as unknown as TranscriptProposal;
+  }
+
+  it("writes events and tray nodes through the same path a transcript takes", async () => {
+    const proposal = await lovableProposal();
+    state.builds.push({ id: BUILD_ID, title: "Untitled build" });
+
+    const counts = await materialiseProposal(BUILD_ID, proposal, keepEverything(proposal));
+
+    expect(counts.events).toBe(proposal.events.length);
+    expect(counts.nodes).toBe(proposal.nodes.length);
+
+    // Ordinals are renumbered against the build, as for any proposal.
+    const written = state.eventInserts[0];
+    expect(written.map((row) => row.ordinal)).toEqual(
+      proposal.events.map((_, index) => index + 1),
+    );
+
+    // build_events has no source_ref column, so provenance is folded into
+    // payload — and it carries "lovable", untouched by the writer.
+    expect((written[0].payload as { source_ref: { source: string } }).source_ref.source).toBe(
+      "lovable",
+    );
+
+    // Everything lands in the tray. Nothing is auto-placed.
+    for (const row of state.nodeInserts[0]) expect(row.position).toBeNull();
+  });
+
+  it("keeps the event kinds the export earned", async () => {
+    const proposal = await lovableProposal();
+    state.builds.push({ id: BUILD_ID, title: "Untitled build" });
+
+    await materialiseProposal(BUILD_ID, proposal, keepEverything(proposal));
+
+    // A deploy read out of the reply survives as kind 'deploy' rather than
+    // being flattened to 'prompt' on the way in.
+    const kinds = state.eventInserts[0].map((row) => row.kind);
+    expect(kinds).toContain("prompt");
+    expect(kinds).toContain("deploy");
+  });
+
+  it("links a code node to the event that produced it", async () => {
+    const proposal = await lovableProposal();
+    state.builds.push({ id: BUILD_ID, title: "Untitled build" });
+
+    await materialiseProposal(BUILD_ID, proposal, keepEverything(proposal));
+
+    // The fence came out of message 2, which the prompt on message 1 opened.
+    const code = state.nodeInserts[0].find((row) => row.type === "code");
+    expect(code).toBeTruthy();
+    expect(code!.event_id).toBeTruthy();
+    expect((code!.source_ref as { source: string }).source).toBe("lovable");
+  });
+
+  it("applies the proposed title and outcome to the build header", async () => {
+    const proposal = await lovableProposal();
+    state.builds.push({ id: BUILD_ID, title: "Untitled build" });
+
+    const counts = await materialiseProposal(BUILD_ID, proposal, keepEverything(proposal));
+
+    expect(counts.titleApplied).toBe(true);
+    expect(state.buildUpdates[0].title).toBe("recipe box planner");
+  });
+
+  it("is idempotent, exactly as a transcript proposal is", async () => {
+    const proposal = await lovableProposal();
+    state.builds.push({ id: BUILD_ID, title: "Untitled build" });
+
+    await materialiseProposal(BUILD_ID, proposal, keepEverything(proposal));
+    const second = await materialiseProposal(BUILD_ID, proposal, keepEverything(proposal));
+
+    expect(second.events).toBe(0);
+    expect(second.nodes).toBe(0);
+    expect(second.alreadyMaterialised).toBe(true);
+  });
+});
+
 describe("requestProposal", () => {
   it("sends raw_text and build_id to the function", async () => {
     state.invoke = { data: proposalOf(1), error: null };

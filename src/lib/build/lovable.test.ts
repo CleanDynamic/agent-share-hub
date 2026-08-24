@@ -180,3 +180,92 @@ describe("readArchive", () => {
     await expect(readArchive(new File(["not a zip"], "x.zip"))).rejects.toThrow(/not a zip/i);
   });
 });
+
+describe("the shared envelope (NS-P13 <-> NS-P20)", () => {
+  // Acceptance 2, kept as a standing guard rather than a one-off check: the
+  // two parsers are deployed separately and nothing but this stops them
+  // drifting. If one grows a field, this fails until the other grows it too.
+
+  const TRANSCRIPT = "You said:\nBuild me a recipe box.\n\nChatGPT said:\nDone.\n\n```ts a.ts\nconst x = 1;\n```\n";
+
+  /** Both sides must yield at least one event and one node, or the diff is vacuous. */
+  const WITH_CODE = JSON.stringify({
+    exportedAt: "2026-08-20T18:04:11.522Z",
+    url: "https://lovable.dev/projects/recipe-box-planner",
+    messageCount: 2,
+    messages: [
+      { id: "umsg_01", role: "user", timestampText: "Aug 18, 2026, 9:12 AM", topPx: 120,
+        contentHtml: "", contentText: "Build me a recipe box." },
+      { id: "amsg_01", role: "ai", timestampText: "Aug 18, 2026, 9:13 AM", topPx: 340,
+        contentHtml: "",
+        contentText: "Done.\n\n```ts src/lib/store.ts\nexport const store = {};\n```" },
+    ],
+  });
+
+  async function both() {
+    const { parseTranscript } = await import(
+      "../../../supabase/functions/parse-transcript/parse.ts"
+    );
+    const { parseLovable } = await import(
+      "../../../supabase/functions/parse-lovable/parse.ts"
+    );
+    const transcript = parseTranscript(TRANSCRIPT, { session_id: "t" });
+    const lovable = parseLovable(WITH_CODE, { session_id: "l" });
+    // Guard the guard: a vacuous diff would pass silently forever.
+    expect(transcript.events.length).toBeGreaterThan(0);
+    expect(transcript.nodes.length).toBeGreaterThan(0);
+    expect(lovable.events.length).toBeGreaterThan(0);
+    expect(lovable.nodes.length).toBeGreaterThan(0);
+    return { transcript, lovable };
+  }
+
+  const keys = (value: object) => Object.keys(value).sort();
+
+  it("returns the same top-level fields", async () => {
+    const { transcript, lovable } = await both();
+    expect(keys(lovable)).toEqual(keys(transcript));
+  });
+
+  it("returns the same summary fields", async () => {
+    const { transcript, lovable } = await both();
+    expect(keys(lovable.summary)).toEqual(keys(transcript.summary));
+  });
+
+  it("returns the same event fields, payload and source_ref included", async () => {
+    const { transcript, lovable } = await both();
+    expect(keys(lovable.events[0])).toEqual(keys(transcript.events[0]));
+    expect(keys(lovable.events[0].payload)).toEqual(keys(transcript.events[0].payload));
+    expect(keys(lovable.events[0].source_ref)).toEqual(keys(transcript.events[0].source_ref));
+  });
+
+  it("returns the same node fields", async () => {
+    const { transcript, lovable } = await both();
+    expect(keys(lovable.nodes[0])).toEqual(keys(transcript.nodes[0]));
+  });
+
+  it("returns the same proposed-field and warning shapes", async () => {
+    const { transcript, lovable } = await both();
+    expect(keys(lovable.summary.proposed_title!)).toEqual(
+      keys(transcript.summary.proposed_title!),
+    );
+    // A file that is not a Lovable export answers 200 with a warning rather
+    // than throwing — that is what lets the intake surface route on the
+    // parser's own answer instead of on an exception.
+    const { parseLovable } = await import(
+      "../../../supabase/functions/parse-lovable/parse.ts"
+    );
+    const refused = parseLovable("You said:\nhello", { session_id: "l" });
+    expect(refused.summary.detected_format).toBe("unrecognised");
+    expect(keys(refused.warnings[0])).toEqual(["code", "message"]);
+    expect(keys(refused.warnings[0])).toEqual(keys(transcript.warnings[0] ?? refused.warnings[0]));
+  });
+
+  it("differs only where a parser is SUPPOSED to differ", async () => {
+    const { transcript, lovable } = await both();
+    // source_ref.source is the discriminator, and detected_format names the
+    // shape. intake.ts types both as string and branches on neither.
+    expect(transcript.events[0].source_ref.source).toBe("transcript");
+    expect(lovable.events[0].source_ref.source).toBe("lovable");
+    expect(lovable.summary.detected_format).toBe("lovable_chat_export");
+  });
+});
