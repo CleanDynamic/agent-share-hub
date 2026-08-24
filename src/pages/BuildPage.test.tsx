@@ -5,6 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getBuildBySlug = vi.fn();
 const getMediaForBuild = vi.fn().mockResolvedValue([]);
+const forkBuild = vi.fn();
+const getForkOrigin = vi.fn().mockResolvedValue(null);
+const auth = vi.hoisted(() => ({ isLoggedIn: false }));
+
+/** The fork control asks who is reading. Nothing else on this page does. */
+vi.mock("@/contexts/AuthContext", () => ({
+  useAuth: () => ({ isLoggedIn: auth.isLoggedIn, user: null }),
+}));
 
 /**
  * The record and the media are stubbed; the rest of the lib layer is real.
@@ -20,6 +28,8 @@ vi.mock("@/lib/build", async (importOriginal) => {
     ...actual,
     getBuildBySlug: (slug: string) => getBuildBySlug(slug),
     getMediaForBuild: (buildId: string) => getMediaForBuild(buildId),
+    forkBuild: (input: unknown) => forkBuild(input),
+    getForkOrigin: (build: unknown) => getForkOrigin(build),
     signedMediaUrl: async (media: { path: string }, options?: { width?: number }) =>
       `https://project.supabase.co/storage/v1/render/image/sign/build-media/${media.path}` +
       `?width=${options?.width}&quality=75&token=t`,
@@ -80,6 +90,39 @@ const record = {
   nodeTypes,
 };
 
+/**
+ * The record with a sequence on it: nine visible events across two phases, one
+ * of them a breakage, one of them producing a node.
+ *
+ * Hidden events are absent because getEvents excludes them in the query — this
+ * fixture is what the page receives, not what the table holds.
+ */
+function withSequence() {
+  const events = [
+    { ordinal: 1, kind: "note", visibility: "kept", payload: { text: "Started from the actual problem." } },
+    { ordinal: 2, kind: "note", visibility: "folded", payload: { text: "Labelled sixty emails by hand." } },
+    { ordinal: 4, kind: "prompt", visibility: "kept", payload: { text: "Classify into one of three." }, produced_node_id: "n11" },
+    { ordinal: 6, kind: "breakage", visibility: "kept", payload: {
+        symptom: "Long threads all came back archive.",
+        cause: "The newest message ended up buried.",
+        resolution: "A summary plus the last three messages.",
+      } },
+    { ordinal: 7, kind: "note", visibility: "folded", payload: { text: "A bigger window made it worse." } },
+    { ordinal: 8, kind: "prompt", visibility: "kept", payload: { text: "Summary first, newest three after." } },
+    { ordinal: 9, kind: "milestone", visibility: "kept", payload: { text: "91% after the fix." } },
+  ].map((spec, index) => ({
+    id: `e${spec.ordinal}`,
+    build_id: "b",
+    occurred_at: `2026-07-2${index + 1}T09:00:00Z`,
+    phase: spec.ordinal <= 6 ? 1 : 2,
+    phase_title: spec.ordinal <= 6 ? "Reading the inbox" : "Making it read the newest message",
+    produced_node_id: null,
+    created_at: "2026-07-28T00:00:00Z",
+    ...spec,
+  }));
+  return { ...record, events };
+}
+
 function renderAt(slug: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -94,6 +137,8 @@ function renderAt(slug: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   getMediaForBuild.mockResolvedValue([]);
+  getForkOrigin.mockResolvedValue(null);
+  auth.isLoggedIn = false;
 });
 
 describe("BuildPage", () => {
@@ -145,14 +190,136 @@ describe("BuildPage", () => {
     expect(container.querySelector('[data-visual-slot="build-anatomy-tree"]')).toBeTruthy();
   });
 
-  it("leaves the three unbuilt tabs disabled", async () => {
+  it("leaves only the unbuilt tab disabled", async () => {
     getBuildBySlug.mockResolvedValue(record);
     renderAt("inbox-triage-agent-demo");
     await screen.findByText("Inbox triage agent");
 
-    for (const label of [/Watch it get built/, /Where it broke/, /Forks/]) {
-      expect(screen.getByRole("tab", { name: label }).hasAttribute("disabled")).toBe(true);
+    // NS-P16 handed panels to Watch it get built and Where it broke, so they
+    // are live even on a build whose sequence is empty — the panels say so
+    // themselves rather than the tab going dark.
+    for (const label of [/Watch it get built/, /Where it broke/]) {
+      expect(screen.getByRole("tab", { name: label }).hasAttribute("disabled")).toBe(false);
     }
+    expect(screen.getByRole("tab", { name: /Forks/ }).hasAttribute("disabled")).toBe(true);
+  });
+
+  it("sends a breakage into the replay at the step it broke", async () => {
+    getBuildBySlug.mockResolvedValue(withSequence());
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    fireEvent.click(screen.getByRole("tab", { name: /Where it broke/ }));
+    fireEvent.click(screen.getByRole("button", { name: "step 6 — watch it" }));
+
+    // The click crosses tabs and lands on the ordinal, not on step 1.
+    expect(screen.getByRole("tab", { name: /Watch it get built/ }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByText("step 6 of 9")).toBeTruthy();
+  });
+
+  it("offers a fork in the header and at every replay position", async () => {
+    auth.isLoggedIn = true;
+    forkBuild.mockResolvedValue({ id: "fork-1" });
+    getBuildBySlug.mockResolvedValue(withSequence());
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    expect(screen.getByRole("button", { name: "Fork" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("tab", { name: /Watch it get built/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Fork from here" }));
+    await waitFor(() =>
+      expect(forkBuild).toHaveBeenCalledWith({ sourceBuildId: "b", atEventOrdinal: 1 })
+    );
+  });
+
+  it("forks the whole build from the header, and the step from the replay", async () => {
+    auth.isLoggedIn = true;
+    forkBuild.mockResolvedValue({ id: "fork-1" });
+    getBuildBySlug.mockResolvedValue(withSequence());
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    fireEvent.click(screen.getByRole("button", { name: "Fork" }));
+    await waitFor(() =>
+      expect(forkBuild).toHaveBeenCalledWith({ sourceBuildId: "b", atEventOrdinal: undefined })
+    );
+  });
+
+  it("sends a reader who is not signed in to sign in, rather than failing", async () => {
+    getBuildBySlug.mockResolvedValue(withSequence());
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign in to fork" }));
+    expect(forkBuild).not.toHaveBeenCalled();
+  });
+
+  it("says so when the fork could not be created", async () => {
+    auth.isLoggedIn = true;
+    forkBuild.mockRejectedValue(new Error("forkBuild (nodes) failed: boom"));
+    getBuildBySlug.mockResolvedValue(withSequence());
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    fireEvent.click(screen.getByRole("button", { name: "Fork" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("forkBuild (nodes) failed: boom");
+  });
+
+  it("credits the source on a forked build, naming the step", async () => {
+    getForkOrigin.mockResolvedValue({
+      build: { id: "b-source", slug: "inbox-triage-agent-demo", title: "Inbox triage agent" },
+      ordinal: 12,
+    });
+    getBuildBySlug.mockResolvedValue({
+      ...record,
+      build: { ...record.build, id: "fork-1", slug: "my-fork", title: "My inbox triage", parent_build_id: "b-source", forked_from_event_id: "ev12" },
+    });
+    renderAt("my-fork");
+
+    const line = await screen.findByText(/forked from/);
+    expect(line.textContent).toBe("forked from Inbox triage agent at step 12");
+    expect(within(line).getByRole("link", { name: "Inbox triage agent" }).getAttribute("href"))
+      .toBe("/b2/inbox-triage-agent-demo");
+  });
+
+  it("credits the source without a step when the whole build was forked", async () => {
+    getForkOrigin.mockResolvedValue({
+      build: { id: "b-source", slug: "inbox-triage-agent-demo", title: "Inbox triage agent" },
+      ordinal: null,
+    });
+    getBuildBySlug.mockResolvedValue({
+      ...record,
+      build: { ...record.build, id: "fork-1", slug: "my-fork", parent_build_id: "b-source" },
+    });
+    renderAt("my-fork");
+
+    expect((await screen.findByText(/forked from/)).textContent).toBe(
+      "forked from Inbox triage agent"
+    );
+  });
+
+  it("says nothing about lineage on a build that is not a fork", async () => {
+    getBuildBySlug.mockResolvedValue(record);
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    expect(screen.queryByText(/forked from/)).toBeNull();
+    // No parent, no query: a build that is not a fork pays nothing for lineage.
+    expect(getForkOrigin).not.toHaveBeenCalled();
+  });
+
+  it("renders no attribution when the source is no longer readable", async () => {
+    getForkOrigin.mockResolvedValue(null);
+    getBuildBySlug.mockResolvedValue({
+      ...record,
+      build: { ...record.build, slug: "my-fork", parent_build_id: "gone" },
+    });
+    renderAt("my-fork");
+    await screen.findByText("Inbox triage agent");
+
+    await waitFor(() => expect(getForkOrigin).toHaveBeenCalled());
+    expect(screen.queryByText(/forked from/)).toBeNull();
   });
 
   it("renders a not-found state for an unknown slug", async () => {

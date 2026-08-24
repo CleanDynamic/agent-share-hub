@@ -6,7 +6,7 @@
 // is lazy because this page pulls in the whole build record renderer and no
 // other route needs it.
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { getBuildBySlug, getMediaForBuild } from "@/lib/build";
@@ -19,8 +19,12 @@ import {
   type ResolveMedia,
 } from "@/components/build/MediaFigure";
 import { BuildHeader } from "@/components/build/BuildHeader";
+import { BreakageView } from "@/components/build/BreakageView";
 import { BuildTabs } from "@/components/build/BuildTabs";
+import { ForkAttribution } from "@/components/build/ForkAttribution";
+import { ForkControl, useForkBuild } from "@/components/build/ForkControl";
 import { PortableExport } from "@/components/build/PortableExport";
+import { Replay } from "@/components/build/Replay";
 import { RunView } from "@/components/build/RunView";
 import {
   FONT_STACK,
@@ -190,6 +194,28 @@ function Message({ heading, detail }: { heading: string; detail: string }) {
 export default function BuildPage() {
   const { slug } = useParams<{ slug: string }>();
 
+  // The tab strip is controlled from here so that a breakage can send the
+  // reader into the replay at the step it broke.
+  const [tab, setTab] = useState("anatomy");
+
+  /**
+   * A one-shot jump request for the replay.
+   *
+   * Set on the way into the Watch tab and cleared on the very next commit, so
+   * that asking for the same ordinal twice in a row is two jumps rather than
+   * one. Child effects flush before parent effects, so the replay has already
+   * read the ordinal by the time this clears it.
+   */
+  const [jumpTo, setJumpTo] = useState<number | null>(null);
+  useEffect(() => {
+    if (jumpTo !== null) setJumpTo(null);
+  }, [jumpTo]);
+
+  const openReplayAt = useCallback((ordinal: number) => {
+    setJumpTo(ordinal);
+    setTab("watch");
+  }, []);
+
   const { data, isLoading, isError, error } = useQuery<BuildRecord | null>({
     queryKey: ["build", slug],
     queryFn: () => getBuildBySlug(slug as string),
@@ -216,6 +242,7 @@ export default function BuildPage() {
   });
 
   // Above the early returns: hooks cannot be conditional.
+  const forkState = useForkBuild(data?.build);
   const nodesById = useMemo(() => indexTree(data?.tree ?? []), [data?.tree]);
   const resolveNode = useMemo(
     () => (id: string) => nodesById.get(id),
@@ -289,14 +316,47 @@ export default function BuildPage() {
   return (
     <Frame>
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+        {/* Above the build, not under it: a reader meets the provenance before
+            they meet the work. */}
+        <ForkAttribution build={data.build} />
         <BuildHeader
           build={data.build}
           tree={treeWithHero}
           nodeTypes={data.nodeTypes}
-          actions={<PortableExport record={data} />}
+          actions={
+            <>
+              <PortableExport record={data} />
+              <ForkControl state={forkState} />
+            </>
+          }
         />
         <BuildTabs
+          active={tab}
+          onActiveChange={setTab}
+          watch={
+            <Replay
+              build={data.build}
+              events={data.events}
+              nodeTypes={data.nodeTypes}
+              resolveNode={resolveNode}
+              resolveMedia={resolveMedia}
+              focusOrdinal={jumpTo}
+              onFork={forkState.fork}
+              forkPending={forkState.pending}
+            />
+          }
           run={<RunView tree={data.tree} nodeTypes={data.nodeTypes} build={data.build} />}
+          broke={
+            <BreakageView
+              build={data.build}
+              events={data.events}
+              tree={data.tree}
+              nodeTypes={data.nodeTypes}
+              resolveNode={resolveNode}
+              resolveMedia={resolveMedia}
+              onOpenReplay={openReplayAt}
+            />
+          }
         >
           <AnatomyTree
             tree={data.tree}
