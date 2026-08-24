@@ -21,6 +21,7 @@ import {
 import { BuildHeader } from "@/components/build/BuildHeader";
 import { BreakageView } from "@/components/build/BreakageView";
 import { BuildTabs } from "@/components/build/BuildTabs";
+import { ForkAttribution } from "@/components/build/ForkAttribution";
 import { ForkControl, useForkBuild } from "@/components/build/ForkControl";
 import { PortableExport } from "@/components/build/PortableExport";
 import { Replay } from "@/components/build/Replay";
@@ -315,6 +316,9 @@ export default function BuildPage() {
   return (
     <Frame>
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+        {/* Above the build, not under it: a reader meets the provenance before
+            they meet the work. */}
+        <ForkAttribution build={data.build} />
         <BuildHeader
           build={data.build}
           tree={treeWithHero}

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const getBuildBySlug = vi.fn();
 const getMediaForBuild = vi.fn().mockResolvedValue([]);
 const forkBuild = vi.fn();
+const getForkOrigin = vi.fn().mockResolvedValue(null);
 const auth = vi.hoisted(() => ({ isLoggedIn: false }));
 
 /** The fork control asks who is reading. Nothing else on this page does. */
@@ -28,6 +29,7 @@ vi.mock("@/lib/build", async (importOriginal) => {
     getBuildBySlug: (slug: string) => getBuildBySlug(slug),
     getMediaForBuild: (buildId: string) => getMediaForBuild(buildId),
     forkBuild: (input: unknown) => forkBuild(input),
+    getForkOrigin: (build: unknown) => getForkOrigin(build),
     signedMediaUrl: async (media: { path: string }, options?: { width?: number }) =>
       `https://project.supabase.co/storage/v1/render/image/sign/build-media/${media.path}` +
       `?width=${options?.width}&quality=75&token=t`,
@@ -135,6 +137,7 @@ function renderAt(slug: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   getMediaForBuild.mockResolvedValue([]);
+  getForkOrigin.mockResolvedValue(null);
   auth.isLoggedIn = false;
 });
 
@@ -261,6 +264,62 @@ describe("BuildPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Fork" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("forkBuild (nodes) failed: boom");
+  });
+
+  it("credits the source on a forked build, naming the step", async () => {
+    getForkOrigin.mockResolvedValue({
+      build: { id: "b-source", slug: "inbox-triage-agent-demo", title: "Inbox triage agent" },
+      ordinal: 12,
+    });
+    getBuildBySlug.mockResolvedValue({
+      ...record,
+      build: { ...record.build, id: "fork-1", slug: "my-fork", title: "My inbox triage", parent_build_id: "b-source", forked_from_event_id: "ev12" },
+    });
+    renderAt("my-fork");
+
+    const line = await screen.findByText(/forked from/);
+    expect(line.textContent).toBe("forked from Inbox triage agent at step 12");
+    expect(within(line).getByRole("link", { name: "Inbox triage agent" }).getAttribute("href"))
+      .toBe("/b2/inbox-triage-agent-demo");
+  });
+
+  it("credits the source without a step when the whole build was forked", async () => {
+    getForkOrigin.mockResolvedValue({
+      build: { id: "b-source", slug: "inbox-triage-agent-demo", title: "Inbox triage agent" },
+      ordinal: null,
+    });
+    getBuildBySlug.mockResolvedValue({
+      ...record,
+      build: { ...record.build, id: "fork-1", slug: "my-fork", parent_build_id: "b-source" },
+    });
+    renderAt("my-fork");
+
+    expect((await screen.findByText(/forked from/)).textContent).toBe(
+      "forked from Inbox triage agent"
+    );
+  });
+
+  it("says nothing about lineage on a build that is not a fork", async () => {
+    getBuildBySlug.mockResolvedValue(record);
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    expect(screen.queryByText(/forked from/)).toBeNull();
+    // No parent, no query: a build that is not a fork pays nothing for lineage.
+    expect(getForkOrigin).not.toHaveBeenCalled();
+  });
+
+  it("renders no attribution when the source is no longer readable", async () => {
+    getForkOrigin.mockResolvedValue(null);
+    getBuildBySlug.mockResolvedValue({
+      ...record,
+      build: { ...record.build, slug: "my-fork", parent_build_id: "gone" },
+    });
+    renderAt("my-fork");
+    await screen.findByText("Inbox triage agent");
+
+    await waitFor(() => expect(getForkOrigin).toHaveBeenCalled());
+    expect(screen.queryByText(/forked from/)).toBeNull();
   });
 
   it("renders a not-found state for an unknown slug", async () => {
