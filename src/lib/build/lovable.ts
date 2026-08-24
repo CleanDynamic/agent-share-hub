@@ -177,6 +177,14 @@ async function readEntry(buffer: ArrayBuffer, view: DataView, entry: ZipEntry): 
   const nameLength = view.getUint16(entry.offset + 26, true);
   const extraLength = view.getUint16(entry.offset + 28, true);
   const start = entry.offset + 30 + nameLength + extraLength;
+
+  // A zip64 archive stores 0xFFFFFFFF here and the real size in an extra
+  // field this reader does not parse. Bounds-checking turns that — and any
+  // truncated download — into a sentence rather than a RangeError.
+  if (start + entry.compressedSize > buffer.byteLength) {
+    throw new Error(`${entry.name} is truncated or uses a zip64 extension this cannot read`);
+  }
+
   const bytes = new Uint8Array(buffer, start, entry.compressedSize);
   return inflate(bytes, entry.method);
 }
