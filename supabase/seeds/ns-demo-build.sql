@@ -2,8 +2,8 @@
 -- NeoScale — demo build seed (NS-P03)
 -- =============================================================================
 -- ONE complete, representative build record: a published 'app' build with a
--- twelve-node tree three levels deep, two tray nodes, and an eight-event
--- sequence across two phases.
+-- twelve-node tree three levels deep, two tray nodes, and an eighteen-event
+-- sequence across four phases.
 --
 -- THIS IS A SEED, NOT A MIGRATION. It lives in supabase/seeds/ deliberately.
 -- Do not move it into supabase/migrations/ — it inserts sample rows against a
@@ -22,7 +22,7 @@
 -- ROW COUNTS the acceptance check expects:
 --   builds        1
 --   build_nodes  14  (12 placed + 2 in the tray)
---   build_events  8  (ordinals 1-8)
+--   build_events 18  (ordinals 1-18, two of them hidden)
 --
 -- Every payload below matches the schema its node_types row declares, in the
 -- six-field-type dialect seeded by NS-P02.
@@ -51,6 +51,16 @@ BEGIN;
 \set ev6 '11111111-1000-4000-8000-000000000006'
 \set ev7 '11111111-1000-4000-8000-000000000007'
 \set ev8 '11111111-1000-4000-8000-000000000008'
+\set ev9 '11111111-1000-4000-8000-000000000009'
+\set ev10 '11111111-1000-4000-8000-00000000000a'
+\set ev11 '11111111-1000-4000-8000-00000000000b'
+\set ev12 '11111111-1000-4000-8000-00000000000c'
+\set ev13 '11111111-1000-4000-8000-00000000000d'
+\set ev14 '11111111-1000-4000-8000-00000000000e'
+\set ev15 '11111111-1000-4000-8000-00000000000f'
+\set ev16 '11111111-1000-4000-8000-000000000010'
+\set ev17 '11111111-1000-4000-8000-000000000011'
+\set ev18 '11111111-1000-4000-8000-000000000012'
 
 -- placed nodes — level 1
 \set n_live_app     '11111111-2000-4000-8000-000000000001'
@@ -138,10 +148,19 @@ INSERT INTO public.builds (
 
 
 -- =============================================================================
--- 2. The event sequence — 8 events, ordinals 1-8, two phases, mixed visibility
+-- 2. The event sequence — 18 events, ordinals 1-18, four phases, mixed visibility
 -- =============================================================================
 -- Inserted before the nodes because build_nodes.event_id points at these.
--- build_events.produced_node_id points the other way and is set in section 4.
+-- build_events.produced_node_id points the other way and is set in section 5.
+--
+-- Eight kept, eight folded, two hidden. The two hidden events are the whole
+-- point of the visibility column and the reason getEvents filters in the query
+-- rather than in the caller: nothing below carrying 'hidden' may ever appear in
+-- a network response for the public build page, whatever the page then renders.
+--
+-- Ordinals are dense and 1-based, and occurred_at rises with the ordinal, so a
+-- replay scrubber reading the sequence in ordinal order also reads it in time
+-- order.
 INSERT INTO public.build_events
   (id, build_id, ordinal, occurred_at, kind, phase, phase_title, visibility, payload)
 VALUES
@@ -152,49 +171,108 @@ VALUES
    "text": "Started from the actual problem: 340 unread, most of it not for me. Wanted a triage pass I could trust enough not to re-read."
  }'::jsonb),
 
-(:'ev2'::uuid, :'build_id'::uuid, 2, '2026-07-28T09:26:00Z', 'prompt', 1,
+(:'ev9'::uuid, :'build_id'::uuid, 2, '2026-07-28T08:52:00Z', 'note', 1,
+ 'Reading the inbox', 'folded', '{
+   "text": "Labelled sixty of my own emails by hand before writing a single prompt. Without the labels there is nothing to argue with when the model disagrees with me."
+ }'::jsonb),
+
+(:'ev10'::uuid, :'build_id'::uuid, 3, '2026-07-28T09:10:00Z', 'prompt', 1,
+ 'Reading the inbox', 'folded', '{
+   "text": "Sort this email into one of: urgent, reply, delegate, read later, archive. Explain your reasoning.",
+   "model": "claude-opus-4-5",
+   "note": "Five categories was one argument with myself too many. Urgent and reply were the same pile, and read later was where everything went to die."
+ }'::jsonb),
+
+(:'ev2'::uuid, :'build_id'::uuid, 4, '2026-07-28T09:26:00Z', 'prompt', 1,
  'Reading the inbox', 'kept', '{
    "text": "Classify this email into exactly one of: reply, delegate, archive. Answer with the label and one sentence of reasoning.",
    "model": "claude-opus-4-5",
    "note": "First working classifier. 60 hand-labelled emails, 41 right."
  }'::jsonb),
 
-(:'ev3'::uuid, :'build_id'::uuid, 3, '2026-07-29T11:02:00Z', 'breakage', 1,
+(:'ev11'::uuid, :'build_id'::uuid, 5, '2026-07-28T17:30:00Z', 'note', 1,
+ 'Reading the inbox', 'folded', '{
+   "text": "41 of 60 written down as the baseline. Every number after this one is measured against the same set, so a change that only looks better does not count."
+ }'::jsonb),
+
+(:'ev3'::uuid, :'build_id'::uuid, 6, '2026-07-29T11:02:00Z', 'breakage', 1,
  'Reading the inbox', 'kept', '{
    "symptom": "Every thread longer than about forty messages came back as archive, including ones that were plainly waiting on me.",
    "cause": "The whole thread was being pasted in and the newest message ended up buried past the point the model was actually weighting.",
    "resolution": "Send the last three messages plus a generated thread summary instead of the raw thread."
  }'::jsonb),
 
-(:'ev4'::uuid, :'build_id'::uuid, 4, '2026-07-29T15:48:00Z', 'milestone', 1,
- 'Reading the inbox', 'kept', '{
+-- --- phase 2: making it read the newest message ------------------------------
+(:'ev12'::uuid, :'build_id'::uuid, 7, '2026-07-29T12:20:00Z', 'note', 2,
+ 'Making it read the newest message', 'folded', '{
+   "text": "First instinct was a bigger context window. It made it worse: more thread, same burial, twice the spend."
+ }'::jsonb),
+
+(:'ev13'::uuid, :'build_id'::uuid, 8, '2026-07-29T14:05:00Z', 'prompt', 2,
+ 'Making it read the newest message', 'kept', '{
+   "text": "Here is a summary of the thread, then the three most recent messages newest first. Classify on the newest message and use the summary only for context.",
+   "model": "claude-opus-4-5",
+   "note": "The ordering is the whole fix. Newest first, and say out loud which part to decide on."
+ }'::jsonb),
+
+(:'ev4'::uuid, :'build_id'::uuid, 9, '2026-07-29T15:48:00Z', 'milestone', 2,
+ 'Making it read the newest message', 'kept', '{
    "text": "Classifier at 91% on the 60-case set after the thread-window fix. Good enough to start drafting replies against."
  }'::jsonb),
 
--- --- phase 2: drafting and shipping -----------------------------------------
-(:'ev5'::uuid, :'build_id'::uuid, 5, '2026-08-02T10:15:00Z', 'prompt', 2,
- 'Drafting and shipping', 'folded', '{
+-- --- phase 3: drafting in my own voice ---------------------------------------
+(:'ev5'::uuid, :'build_id'::uuid, 10, '2026-08-02T10:15:00Z', 'prompt', 3,
+ 'Drafting in my own voice', 'folded', '{
    "text": "Draft a reply in my voice. Match the register of my last five replies to this person. Never invent a commitment, a date or a number.",
    "model": "claude-opus-4-5",
    "note": "The register instruction is what stopped the drafts reading like a press release."
  }'::jsonb),
 
-(:'ev6'::uuid, :'build_id'::uuid, 6, '2026-08-05T13:30:00Z', 'note', 2,
- 'Drafting and shipping', 'folded', '{
+(:'ev14'::uuid, :'build_id'::uuid, 11, '2026-08-03T09:40:00Z', 'breakage', 3,
+ 'Drafting in my own voice', 'kept', '{
+   "symptom": "Three drafts in one morning promised a delivery date that existed nowhere in the thread. One of them was to a client.",
+   "cause": "Voice matching retrieves my own previous replies, and my previous replies are full of dates. The model read the retrieved examples as facts about this thread rather than as samples of how I write.",
+   "resolution": "The retrieved replies are labelled as style samples in the prompt, and a check now refuses any draft carrying a date or a figure that does not appear in the thread it is answering."
+ }'::jsonb),
+
+(:'ev15'::uuid, :'build_id'::uuid, 12, '2026-08-03T16:12:00Z', 'prompt', 3,
+ 'Drafting in my own voice', 'folded', '{
+   "text": "The five replies below are STYLE SAMPLES. Take the register from them and nothing else. Any date, figure or commitment must appear in the thread you are answering, quoted from it.",
+   "model": "claude-opus-4-5",
+   "note": "Shouting STYLE SAMPLES in capitals is not elegant and it is what worked."
+ }'::jsonb),
+
+(:'ev6'::uuid, :'build_id'::uuid, 13, '2026-08-05T13:30:00Z', 'note', 3,
+ 'Drafting in my own voice', 'folded', '{
    "text": "Tried a cheaper model for the classify step and kept the expensive one for drafting. Saved about 60% of the spend for a two-point accuracy drop."
  }'::jsonb),
 
-(:'ev7'::uuid, :'build_id'::uuid, 7, '2026-08-08T16:44:00Z', 'note', 2,
- 'Drafting and shipping', 'hidden', '{
+(:'ev16'::uuid, :'build_id'::uuid, 14, '2026-08-14T09:12:00Z', 'milestone', 3,
+ 'Drafting in my own voice', 'kept', '{
+   "text": "58 of 60 on the hand-labelled set with the guardrail in place, and no invented date in two weeks of drafts."
+ }'::jsonb),
+
+-- --- phase 4: putting it in front of a real inbox ----------------------------
+(:'ev7'::uuid, :'build_id'::uuid, 15, '2026-08-14T15:20:00Z', 'note', 4,
+ 'Putting it in front of a real inbox', 'hidden', '{
    "text": "Scratch: the OAuth consent screen took two days of review and has nothing to do with the build. Keeping the account details out of the public record."
  }'::jsonb),
 
-(:'ev8'::uuid, :'build_id'::uuid, 8, '2026-08-15T17:02:00Z', 'deploy', 2,
- 'Drafting and shipping', 'kept', '{
+(:'ev17'::uuid, :'build_id'::uuid, 16, '2026-08-15T09:05:00Z', 'note', 4,
+ 'Putting it in front of a real inbox', 'folded', '{
+   "text": "Ran it alongside manual triage for two weeks before trusting it. It disagreed with me 11 times and it was right 4 of those."
+ }'::jsonb),
+
+(:'ev18'::uuid, :'build_id'::uuid, 17, '2026-08-15T11:40:00Z', 'note', 4,
+ 'Putting it in front of a real inbox', 'hidden', '{
+   "text": "Scratch: the routing spreadsheet, with names and workloads on it. Useful to me, nobody else needs to read it."
+ }'::jsonb),
+
+(:'ev8'::uuid, :'build_id'::uuid, 18, '2026-08-15T17:02:00Z', 'deploy', 4,
+ 'Putting it in front of a real inbox', 'kept', '{
    "text": "Deployed to Vercel behind Google sign-in. Running on my own inbox daily since.",
    "url": "https://inbox-triage.demo.neoscaleai.com"
  }'::jsonb);
-
 
 -- =============================================================================
 -- 3. The node tree — 12 placed nodes, all six categories, three levels deep
@@ -279,8 +357,8 @@ VALUES
    "cause": "The full thread was pasted into the prompt newest-last, so the message that actually mattered sat at the far end of a very long context and got weighted like background.",
    "resolution": "Stopped sending raw threads. The prompt now carries a generated thread summary plus the last three messages, newest first.",
    "attempts": 6,
-   "event_start": 3,
-   "event_end": 4
+   "event_start": 6,
+   "event_end": 9
  }'::jsonb, NULL),
 
 -- narrative / gap — is_gap true
@@ -314,7 +392,7 @@ VALUES
 (:'n_tool'::uuid, :'build_id'::uuid, :'n_agent'::uuid, 1, 'tool_definition',
  'fetch_thread_context',
  'The tool that fixed the long-thread breakage.',
- NULL, false, '{
+ :'ev13'::uuid, false, '{
    "name": "fetch_thread_context",
    "description": "Return a summary of a Gmail thread plus its three most recent messages, newest first. Replaces pasting the raw thread, which buried the message that mattered.",
    "parameters": "{ \"thread_id\": { \"type\": \"string\", \"required\": true }, \"message_limit\": { \"type\": \"integer\", \"default\": 3 } }",
@@ -336,7 +414,7 @@ VALUES
 (:'n_eval'::uuid, :'build_id'::uuid, :'n_result'::uuid, 0, 'eval_run',
  'Classifier accuracy, 14 August',
  NULL,
- NULL, false, '{
+ :'ev16'::uuid, false, '{
    "harness": "promptfoo, run locally against the hand-labelled set",
    "dataset_ref": "11111111-2000-4000-8000-000000000003",
    "score": 0.9667,
@@ -413,8 +491,24 @@ UPDATE public.builds
  WHERE id = :'build_id'::uuid;
 
 UPDATE public.build_events
+   SET produced_node_id = :'n_prompt'::uuid
+ WHERE id = :'ev2'::uuid;
+
+UPDATE public.build_events
    SET produced_node_id = :'n_code'::uuid
  WHERE id = :'ev3'::uuid;
+
+UPDATE public.build_events
+   SET produced_node_id = :'n_tool'::uuid
+ WHERE id = :'ev13'::uuid;
+
+UPDATE public.build_events
+   SET produced_node_id = :'n_result'::uuid
+ WHERE id = :'ev4'::uuid;
+
+UPDATE public.build_events
+   SET produced_node_id = :'n_eval'::uuid
+ WHERE id = :'ev16'::uuid;
 
 UPDATE public.build_events
    SET produced_node_id = :'n_live_app'::uuid
@@ -431,12 +525,21 @@ DECLARE
   v_placed    int;
   v_tray      int;
   v_events    int;
+  v_hidden    int;
+  v_breakage  int;
+  v_produced  int;
   v_cats      int;
 BEGIN
   SELECT count(*) INTO v_nodes  FROM public.build_nodes WHERE build_id = v_build_id;
   SELECT count(*) INTO v_placed FROM public.build_nodes WHERE build_id = v_build_id AND position IS NOT NULL;
   SELECT count(*) INTO v_tray   FROM public.build_nodes WHERE build_id = v_build_id AND position IS NULL;
   SELECT count(*) INTO v_events FROM public.build_events WHERE build_id = v_build_id;
+  SELECT count(*) INTO v_hidden FROM public.build_events
+   WHERE build_id = v_build_id AND visibility = 'hidden';
+  SELECT count(*) INTO v_breakage FROM public.build_events
+   WHERE build_id = v_build_id AND kind = 'breakage';
+  SELECT count(*) INTO v_produced FROM public.build_events
+   WHERE build_id = v_build_id AND produced_node_id IS NOT NULL;
   SELECT count(DISTINCT nt.category) INTO v_cats
     FROM public.build_nodes bn
     JOIN public.node_types nt ON nt.key = bn.type
@@ -445,11 +548,16 @@ BEGIN
   IF v_nodes  <> 14 THEN RAISE EXCEPTION 'expected 14 build_nodes, got %',  v_nodes;  END IF;
   IF v_placed <> 12 THEN RAISE EXCEPTION 'expected 12 placed nodes, got %', v_placed; END IF;
   IF v_tray   <>  2 THEN RAISE EXCEPTION 'expected 2 tray nodes, got %',    v_tray;   END IF;
-  IF v_events <>  8 THEN RAISE EXCEPTION 'expected 8 build_events, got %',  v_events; END IF;
+  IF v_events <> 18 THEN RAISE EXCEPTION 'expected 18 build_events, got %', v_events; END IF;
+  -- The replay depends on all three: something to hide, something that
+  -- broke, and events that point at what they produced.
+  IF v_hidden   <  2 THEN RAISE EXCEPTION 'expected 2+ hidden events, got %', v_hidden; END IF;
+  IF v_breakage <  1 THEN RAISE EXCEPTION 'expected a breakage event, got %', v_breakage; END IF;
+  IF v_produced <  6 THEN RAISE EXCEPTION 'expected 6+ events with a produced node, got %', v_produced; END IF;
   IF v_cats   <>  6 THEN RAISE EXCEPTION 'expected all 6 categories, got %', v_cats;  END IF;
 
-  RAISE NOTICE 'ns-demo-build: 1 build, % nodes (% placed, % tray), % events, % categories',
-    v_nodes, v_placed, v_tray, v_events, v_cats;
+  RAISE NOTICE 'ns-demo-build: 1 build, % nodes (% placed, % tray), % events (% hidden, % breakage, % producing), % categories',
+    v_nodes, v_placed, v_tray, v_events, v_hidden, v_breakage, v_produced, v_cats;
 END $$;
 
 COMMIT;
