@@ -13,13 +13,25 @@
 // completeness checklist uses. "Not good enough" is not a sentence this file
 // is permitted to imply.
 //
+// WHAT SITS BETWEEN THE PRESS AND THE CONFIRMATION. Since NS-P23, one screen:
+// the review pass, where a creator decides what NeoScale is allowed to say
+// about their build. It is offered, never imposed — it appears only when there
+// is something unreviewed to show, it is asked once per workspace session, and
+// both of its controls publish. Escape is the only way out that does not, and
+// it says so on the screen. PUBLICATION IS NEVER BLOCKED BY IT: a layers read
+// that fails, a build with nothing placed, a creator who declined this exact
+// record before — each of those publishes on the first press with no screen at
+// all.
+//
 // Styled with inline style objects like everything else on this route:
 // Tailwind's generated utilities win over hand-written classes at build time.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useBuildLayers } from "@/hooks/useBuildLayers";
+import { LayerReview, type LayerReviewResult } from "@/components/compose/LayerReview";
 import {
   galleryShortfall,
   galleryThreshold,
@@ -84,6 +96,22 @@ export function PublishControl({
   publishError,
 }: PublishControlProps) {
   const [confirmation, setConfirmation] = useState<Build | null>(null);
+  const [reviewing, setReviewing] = useState(false);
+
+  // The layers this build already has, shared with the staleness line through
+  // one react-query key rather than read twice.
+  const { hash, ensure, shouldOffer, applyLayers } = useBuildLayers(build.id, tree);
+
+  /**
+   * Asked once per workspace session.
+   *
+   * A creator who has answered — either way — is publishing from here on. The
+   * answer itself is remembered further down: approving writes the rows,
+   * declining is remembered against this record's hash, and both outlive the
+   * session. This ref is only what stops a second press in the same minute
+   * from asking again.
+   */
+  const asked = useRef(false);
 
   // The hook has already computed this record's completeness, memoised on the
   // same inputs. Deriving readiness from it keeps the bar off the tree on every
@@ -104,13 +132,47 @@ export function PublishControl({
         ? "Live. Open the link, and see what would put it in the gallery."
         : "Put this in front of readers. It stays yours to edit.";
 
-  const handleClick = useCallback(() => {
+  const publishNow = useCallback(() => {
     void onPublish()
       .then((row) => setConfirmation(row))
       .catch(() => {
         /* surfaced through publishError, on the control itself */
       });
   }, [onPublish]);
+
+  const handleClick = useCallback(() => {
+    if (asked.current) {
+      publishNow();
+      return;
+    }
+
+    // The rows first, so a creator who publishes the second the workspace
+    // opens is asked the same question as one who has been editing for ten
+    // minutes. A read that fails publishes rather than blocking: this feature
+    // is not allowed to stand between a creator and a live page.
+    void ensure()
+      .then((rows) => {
+        if (!shouldOffer(rows)) {
+          publishNow();
+          return;
+        }
+        asked.current = true;
+        setReviewing(true);
+      })
+      .catch(() => publishNow());
+  }, [ensure, publishNow, shouldOffer]);
+
+  /** Either control on the review pass: write what it decided, then publish. */
+  const onReviewed = useCallback(
+    (result: LayerReviewResult) => {
+      // Generated first, written over the top: a layer the creator approved or
+      // rewrote wins over the row it was generated from.
+      applyLayers([...result.generated, ...result.written]);
+      setReviewing(false);
+      publishNow();
+    },
+    [applyLayers, publishNow]
+  );
 
   return (
     <>
@@ -162,6 +224,20 @@ export function PublishControl({
         </TooltipTrigger>
         <TooltipContent side="bottom">{explanation}</TooltipContent>
       </Tooltip>
+
+      {reviewing ? (
+        <LayerReview
+          buildId={build.id}
+          hash={hash}
+          onResolve={onReviewed}
+          // Escape: nothing written, nothing published, the control goes back
+          // to saying Publish. The next press asks again.
+          onCancel={() => {
+            asked.current = false;
+            setReviewing(false);
+          }}
+        />
+      ) : null}
 
       {confirmation ? (
         <PublishConfirmation

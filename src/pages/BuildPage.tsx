@@ -9,8 +9,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { getBuildBySlug, getMediaForBuild } from "@/lib/build";
-import type { BuildMedia, BuildNode, BuildRecord, NodeTree } from "@/lib/build";
+import { getApprovedLayers, getBuildBySlug, getMediaForBuild, layerOf } from "@/lib/build";
+import type { BuildLayer, BuildMedia, BuildNode, BuildRecord, NodeTree } from "@/lib/build";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import {
   MEDIA_WIDTH,
@@ -22,6 +22,7 @@ import { BuildHeader } from "@/components/build/BuildHeader";
 import { BreakageView } from "@/components/build/BreakageView";
 import { BuildTabs } from "@/components/build/BuildTabs";
 import { ForkAttribution } from "@/components/build/ForkAttribution";
+import { LayerView, RunItPanel } from "@/components/build/LayerView";
 import { ForkControl, useForkBuild } from "@/components/build/ForkControl";
 import { PortableExport } from "@/components/build/PortableExport";
 import { ReproductionAction } from "@/components/build/ReproductionAction";
@@ -227,6 +228,38 @@ export default function BuildPage() {
    * refetching the whole record to move one integer would rebuild the page
    * under the reader.
    */
+  /**
+   * A step of a generated layer naming the node it explains.
+   *
+   * The Anatomy tab is untouched by this prompt, so the jump is made from the
+   * outside: switch to the tab, then find the card by the data-node-id every
+   * NodeCard has carried since NS-P04 and scroll it into view. Nothing about
+   * the anatomy has to know a layer exists.
+   */
+  const [pendingNodeId, setPendingNodeId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingNodeId) return;
+    const frame = window.requestAnimationFrame(() => {
+      const escaped =
+        typeof CSS !== "undefined" && typeof CSS.escape === "function"
+          ? CSS.escape(pendingNodeId)
+          : pendingNodeId;
+      const card = document.querySelector(`[data-node-id="${escaped}"]`);
+      // jsdom has no layout, so scrollIntoView is not always there to call.
+      if (card && typeof card.scrollIntoView === "function") {
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      setPendingNodeId(null);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [pendingNodeId]);
+
+  const openNodeInAnatomy = useCallback((nodeId: string) => {
+    setTab("anatomy");
+    setPendingNodeId(nodeId);
+  }, []);
+
   const onReproductionRecorded = useCallback(
     (build: BuildRecord["build"]) => {
       queryClient.setQueryData<BuildRecord | null>(["build", slug], (record) =>
@@ -260,6 +293,25 @@ export default function BuildPage() {
     staleTime: STALE_TIME,
     refetchOnWindowFocus: false,
   });
+
+  /**
+   * The generated layers this build's creator has APPROVED.
+   *
+   * A separate query key from the compose workspace's, and a separate function:
+   * getApprovedLayers filters approved = true in the request, so unapproved
+   * text never arrives in a reader's browser at all. A build with no approved
+   * layer answers with an empty array and costs one small indexed read.
+   */
+  const { data: layers } = useQuery<BuildLayer[]>({
+    queryKey: ["build-layers-approved", buildId],
+    queryFn: () => getApprovedLayers(buildId as string),
+    enabled: Boolean(buildId),
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
+  const runLayer = layerOf(layers ?? [], "run");
+  const understandLayer = layerOf(layers ?? [], "understand");
 
   // Above the early returns: hooks cannot be conditional.
   const forkState = useForkBuild(data?.build);
@@ -371,7 +423,29 @@ export default function BuildPage() {
               forkPending={forkState.pending}
             />
           }
-          run={<RunView tree={data.tree} nodeTypes={data.nodeTypes} build={data.build} />}
+          run={
+            runLayer ? (
+              <RunItPanel
+                sequence={
+                  <RunView tree={data.tree} nodeTypes={data.nodeTypes} build={data.build} />
+                }
+                layer={runLayer}
+                resolveNode={resolveNode}
+                onOpenNode={openNodeInAnatomy}
+              />
+            ) : (
+              <RunView tree={data.tree} nodeTypes={data.nodeTypes} build={data.build} />
+            )
+          }
+          understand={
+            understandLayer ? (
+              <LayerView
+                layer={understandLayer}
+                resolveNode={resolveNode}
+                onOpenNode={openNodeInAnatomy}
+              />
+            ) : undefined
+          }
           broke={
             <BreakageView
               build={data.build}

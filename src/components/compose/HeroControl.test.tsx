@@ -9,12 +9,21 @@
 // it is not a hero — pointing at one would leave the header with nothing to
 // render and the creator with no way to tell why.
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Build, BuildPatch } from "@/lib/build";
 import { ComposeTopBar } from "./ComposeTopBar";
+
+// The publish control beside this one reads the build's explanation layers
+// (NS-P23), so the bar now needs a QueryClient and one stubbed read. Neither
+// has anything to do with the hero.
+vi.mock("@/lib/build", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/build")>()),
+  getLayers: () => Promise.resolve([]),
+}));
 
 function makeBuild(heroNodeId: string | null): Build {
   return {
@@ -36,7 +45,9 @@ function renderBar({
   heroEligible?: boolean;
 }) {
   const onPatch = vi.fn<(patch: BuildPatch) => void>();
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
+    <QueryClientProvider client={client}>
     <MemoryRouter>
       <TooltipProvider>
         <ComposeTopBar
@@ -56,6 +67,7 @@ function renderBar({
         />
       </TooltipProvider>
     </MemoryRouter>
+    </QueryClientProvider>
   );
   return { onPatch };
 }

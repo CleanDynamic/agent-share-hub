@@ -1,8 +1,15 @@
-// The five tabs of a build page. Only Forks is still dark.
+// The tabs of a build page. Only Forks is still dark.
 //
 // It is rendered and visibly disabled rather than omitted: the strip is the map
 // of what a build record is going to hold, and a reader seeing "Forks" greyed
 // out learns more than a reader seeing nothing at all.
+//
+// UNDERSTAND IT IS THE ONE TAB THAT DISAPPEARS. It exists only where a creator
+// has approved a generated understand layer, and where they have not, a greyed
+// tab would advertise something that is not coming — the opposite of what the
+// Forks placeholder does. So a tab is rendered when it has a panel OR it
+// declares a placeholder, and Understand it declares neither until NS-P23's
+// review pass has been through.
 //
 // A tab is live when a panel is handed in for it, never because this file
 // hardcodes which ones work. NS-P06 activated Run it yourself by passing one
@@ -24,6 +31,8 @@ interface BuildTabsProps {
   watch?: ReactNode;
   /** The Run it yourself panel. Absent leaves the tab disabled. */
   run?: ReactNode;
+  /** The approved understand layer. Absent removes the tab entirely. */
+  understand?: ReactNode;
   /** The Where it broke panel. Absent leaves the tab disabled. */
   broke?: ReactNode;
   /** Controlled selection. Omit to let the strip own it. */
@@ -39,10 +48,14 @@ interface TabDef {
   placeholder?: string;
 }
 
+// Understand it sits beside Run it yourself rather than at the end: they are
+// the two readings of the same record, and a reader who wants the explanation
+// looks for it next to the instructions, not past the breakages.
 const TABS: TabDef[] = [
   { id: "anatomy", label: "Anatomy" },
   { id: "watch", label: "Watch it get built" },
   { id: "run", label: "Run it yourself" },
+  { id: "understand", label: "Understand it" },
   { id: "broke", label: "Where it broke" },
   { id: "forks", label: "Forks", placeholder: "Derived builds — soon" },
 ];
@@ -65,6 +78,7 @@ export function BuildTabs({
   children,
   watch,
   run,
+  understand,
   broke,
   active,
   onActiveChange,
@@ -74,9 +88,13 @@ export function BuildTabs({
   const panels: Record<string, ReactNode> = { anatomy: children };
   if (watch !== undefined) panels.watch = watch;
   if (run !== undefined) panels.run = run;
+  if (understand !== undefined) panels.understand = understand;
   if (broke !== undefined) panels.broke = broke;
 
   const live = TABS.filter((tab) => panels[tab.id] !== undefined);
+  // A tab with neither a panel nor a placeholder has nothing to say, so it is
+  // not in the strip at all.
+  const shown = TABS.filter((tab) => panels[tab.id] !== undefined || tab.placeholder);
   const selected = active ?? own;
   const current = panels[selected] !== undefined ? selected : "anatomy";
 
@@ -111,7 +129,7 @@ export function BuildTabs({
           overflowX: "auto",
         }}
       >
-        {TABS.map((tab) => {
+        {shown.map((tab) => {
           const enabled = panels[tab.id] !== undefined;
           const selected = enabled && tab.id === current;
           return (
