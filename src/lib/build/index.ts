@@ -88,6 +88,28 @@ export {
 } from "./intake";
 export type { IntakeArrival } from "./intake";
 export {
+  GALLERY_BUILD_COLUMNS,
+  GALLERY_MAX_THRESHOLD,
+  GALLERY_NODE_TYPES,
+  GALLERY_PAGE_SIZE,
+  GALLERY_REQUIREMENT_KEYS,
+  GALLERY_THRESHOLD,
+  NO_FACETS,
+  galleryShortfall,
+  galleryThreshold,
+  getGalleryFacets,
+  inGallery,
+  listGallery,
+  type GalleryBuild,
+  type GalleryFacet,
+  type GalleryFacets,
+  type GalleryFilters,
+  type GalleryMedia,
+  type GalleryNode,
+  type GalleryPage,
+  type ListGalleryOptions,
+} from "./gallery";
+export {
   publishBuild,
   publishReadiness,
   type PublishReadiness,

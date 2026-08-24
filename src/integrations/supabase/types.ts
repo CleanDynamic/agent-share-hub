@@ -5097,6 +5097,7 @@ export type Database = {
         Returns: boolean
       }
       claim_challenge: { Args: { _challenge_id: string }; Returns: Json }
+      gallery_facets: { Args: { thresholds?: Json }; Returns: Json }
       get_email_by_username: { Args: { _username: string }; Returns: string }
       get_post_lineage: {
         Args: { _root_id: string }
