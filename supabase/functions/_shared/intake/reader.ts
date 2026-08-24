@@ -122,7 +122,10 @@ export function isWrongFile(outcome: ReadOutcome): boolean {
  * diagnosed rather than guessed at.
  */
 export interface SchemaProvenance {
-  /** The shape this describes — a reader's own detected_format value. */
+  /**
+   * The shape this describes — a reader's own detected_format value, or one
+   * family name where every shape a reader reads shares a provenance.
+   */
   format: string;
   /** The serialising source the schema was read from, in words. */
   source: string;

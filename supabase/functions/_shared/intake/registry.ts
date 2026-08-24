@@ -79,7 +79,13 @@ export class ReaderRegistry {
       .sort((a, b) => b.detection.confidence - a.detection.confidence);
   }
 
-  /** The reader this file belongs to, or null when nothing claimed it. */
+  /**
+   * The reader this file belongs to, or null when nothing claimed it.
+   *
+   * A tie is resolved silently here, by registration order. A caller that
+   * wants to notice an undecidable file — the compose route asks the creator
+   * rather than guessing — compares the top two bids from detect() instead.
+   */
   route(file: IntakeFile): Routing | null {
     const [best] = this.detect(file);
     return best && best.detection.confidence >= ROUTING_FLOOR ? best : null;
