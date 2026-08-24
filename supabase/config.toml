@@ -33,6 +33,12 @@ verify_jwt = false
 [functions.generate-ai-pdf]
 verify_jwt = false
 
+[functions.generate-build-layers]
+# Deliberately true, for the same reason as the three parsers below: NS-P22
+# writes explanation layers for a build the caller must own, so the gateway
+# must reject an unauthenticated call before the function runs.
+verify_jwt = true
+
 [functions.parse-repo]
 # Deliberately true, for the same reason as the two parsers below: NS-P21
 # proposes a draft against a build the caller must own, so the gateway must
