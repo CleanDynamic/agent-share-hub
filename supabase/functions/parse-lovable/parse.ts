@@ -1,10 +1,10 @@
 // =============================================================================
 // NeoScale — parse-lovable (NS-P20): the reading
 // =============================================================================
-// Pure. Imports nothing, touches no Deno API, performs no I/O. A string in, a
-// ParseResult out — which is what lets this be exercised without a running
-// Supabase, and what let the shape below be checked against parse-transcript's
-// envelope field by field before it was ever deployed.
+// Pure. Imports only the shared intake substrate, touches no Deno API, performs
+// no I/O. A string in, a ParseResult out — which is what lets this be exercised
+// without a running Supabase, and what let the shape below be checked against
+// parse-transcript's envelope field by field before it was ever deployed.
 //
 // THE ENVELOPE IS parse-transcript's, UNCHANGED. Every field NS-P13 returns is
 // returned here with the same name, the same type and the same meaning. The
@@ -21,13 +21,19 @@
 // schema was read from. A creator drops what they have; this works out what it
 // is rather than asking them to classify it.
 //
-// FENCE HANDLING IS RE-IMPLEMENTED HERE, deliberately and against the advice in
+// WHAT NS-P20a MOVED, AND WHAT IT DID NOT. The pipeline half now lives in
+// _shared/intake/ and is imported below: the envelope types, timestamp
+// resolution, inferred marking, local_id minting, source_ref shaping and event
+// ordinal assignment. Behaviour is unchanged — both readers were run against
+// every sample in their READMEs before and after, and the JSON is identical.
+//
+// FENCE HANDLING IS STILL RE-IMPLEMENTED HERE, and still against the advice in
 // the NS-P13 README. That README invites the next parser to borrow fenceMask,
 // extractFences and excerpt — but those are module-private in
 // parse-transcript/parse.ts (`function`, not `export function`), and exporting
-// them would mean editing a file this prompt puts out of bounds. Re-deriving a
-// hundred lines was the cheaper of the two rule-breaks. NS-P21 should lift the
-// shared half into supabase/functions/_shared/ and have both parsers import it.
+// them means editing a file NS-P20 and NS-P20a both put out of bounds. Two
+// copies remain, and the second one is here. Whichever prompt is allowed to
+// edit parse-transcript should lift them into _shared/intake/ as well.
 // =============================================================================
 
 export const MAX_RAW_TEXT_CHARS = 400_000;
@@ -53,6 +59,14 @@ import type {
   ProposedNode as SharedProposedNode,
   SourceRef as SharedSourceRef,
 } from "../_shared/intake/envelope.ts";
+
+// The pipeline both readers share. NS-P20a moved these out of this file rather
+// than reimplementing them: rule 1 (every item carries source_ref) and rule 2
+// (anything guessed says so, with a reason) now have one implementation each.
+import { guessed, mark, verbatim } from "../_shared/intake/inferred.ts";
+import { createLocalIdMinter, renumberLocalIds } from "../_shared/intake/local-id.ts";
+import { createOrdinalCounter } from "../_shared/intake/ordinals.ts";
+import { sourceRefFor } from "../_shared/intake/source-ref.ts";
 
 export type DetectedFormat =
   /** The Chrome extension's JSON: {exportedAt, url, messageCount, messages[]}. */
@@ -179,99 +193,21 @@ function htmlToText(html: string): string {
 // -----------------------------------------------------------------------------
 // Timestamps
 // -----------------------------------------------------------------------------
-// build_events.occurred_at is timestamptz, so a value without a date is worse
-// than no value: it would anchor the event to a day the export never named.
-// NS-P13 drops those and warns; this does the same, with one addition it can
-// honestly make and NS-P13 could not — a relative stamp ("2 days ago") is
-// resolvable against the export's own exportedAt, and is marked inferred.
+// Moved to _shared/intake/timestamps.ts by NS-P20a and re-exported here, so the
+// names this module has always exported still resolve from this path. The rules
+// are unchanged and are recorded in that module's header: an absolute date read
+// as-is, a relative stamp resolved against the export's own exportedAt and
+// marked inferred, a bare clock time dropped rather than anchored to a day the
+// export never named.
 
-const ISO_LIKE =
-  /\b(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?)\s*(Z|[+-]\d{2}:?\d{2})?)?\b/;
+import {
+  readAnchor,
+  readTimestamp,
+  RELATIVE_TIMESTAMP_REASON,
+} from "../_shared/intake/timestamps.ts";
 
-const MONTHS: Record<string, number> = {
-  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
-};
-
-/** "Aug 24, 2026, 2:31 PM" and "24 August 2026 14:31". */
-const NAMED_MONTH =
-  /\b(?:(\d{1,2})\s+)?([A-Za-z]{3,9})\.?\s+(?:(\d{1,2})[,\s]+)?(\d{4})\b(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([ap]\.?m\.?)?)?/i;
-
-const RELATIVE = /\b(\d+)\s*(second|minute|hour|day|week|month)s?\s+ago\b/i;
-const CLOCK_ONLY = /\b\d{1,2}:\d{2}(?::\d{2})?\s*(?:[ap]\.?m\.?)?\b/i;
-
-function toIso(date: Date): string | null {
-  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
-}
-
-function withClock(
-  year: number, month: number, day: number,
-  hour: string | undefined, minute: string | undefined,
-  second: string | undefined, meridiem: string | undefined,
-): string | null {
-  let h = hour ? Number(hour) : 0;
-  if (meridiem) {
-    const pm = /^p/i.test(meridiem);
-    if (h === 12) h = pm ? 12 : 0;
-    else if (pm) h += 12;
-  }
-  return toIso(new Date(Date.UTC(year, month, day, h, minute ? Number(minute) : 0, second ? Number(second) : 0)));
-}
-
-export interface TimestampReading {
-  iso: string | null;
-  inferred: boolean;
-  /** A clock time with no date — the one case that is dropped rather than kept. */
-  clockOnly: boolean;
-}
-
-/**
- * Read whatever a display string is willing to give up.
- *
- * `anchor` is the export's own exportedAt, and is the only thing that makes a
- * relative stamp resolvable. Without it a relative stamp reads as no date.
- */
-export function readTimestamp(raw: string | null, anchor: Date | null): TimestampReading {
-  const none: TimestampReading = { iso: null, inferred: false, clockOnly: false };
-  if (!raw || raw.trim() === "") return none;
-  const text = raw.trim();
-
-  const iso = text.match(ISO_LIKE);
-  if (iso) {
-    const [, date, clock, zone] = iso;
-    // A stamp naming no zone is read as UTC rather than as the server's local
-    // time, so the same export parses identically wherever it is parsed.
-    const composed = clock ? `${date}T${clock}${zone ?? "Z"}` : `${date}T00:00:00Z`;
-    const parsed = toIso(new Date(composed));
-    if (parsed) return { iso: parsed, inferred: false, clockOnly: false };
-  }
-
-  const named = text.match(NAMED_MONTH);
-  if (named) {
-    const [, dayBefore, monthWord, dayAfter, year, hour, minute, second, meridiem] = named;
-    const month = MONTHS[monthWord.slice(0, 3).toLowerCase()];
-    const day = dayBefore ?? dayAfter;
-    if (month !== undefined && day) {
-      const parsed = withClock(Number(year), month, Number(day), hour, minute, second, meridiem);
-      if (parsed) return { iso: parsed, inferred: false, clockOnly: false };
-    }
-  }
-
-  const relative = text.match(RELATIVE);
-  if (relative && anchor) {
-    const amount = Number(relative[1]);
-    const unit = relative[2].toLowerCase();
-    const ms: Record<string, number> = {
-      second: 1000, minute: 60_000, hour: 3_600_000,
-      day: 86_400_000, week: 604_800_000, month: 2_592_000_000,
-    };
-    const parsed = toIso(new Date(anchor.getTime() - amount * (ms[unit] ?? 0)));
-    // Computed, not read: the creator is told, and can disagree.
-    if (parsed) return { iso: parsed, inferred: true, clockOnly: false };
-  }
-
-  return { iso: null, inferred: false, clockOnly: CLOCK_ONLY.test(text) };
-}
+export { readTimestamp };
+export type { TimestampReading } from "../_shared/intake/timestamps.ts";
 
 // -----------------------------------------------------------------------------
 // Fenced code
@@ -461,9 +397,9 @@ export function detect(root: unknown): Detection {
       : [];
 
   const projectUrl = readString(container?.url) ?? null;
-  const anchorRaw = readString(container?.exportedAt) ?? readString(container?.exported_at);
-  const anchor = anchorRaw ? new Date(anchorRaw) : null;
-  const usableAnchor = anchor && Number.isFinite(anchor.getTime()) ? anchor : null;
+  const usableAnchor = readAnchor(
+    readString(container?.exportedAt) ?? readString(container?.exported_at),
+  );
 
   if (list.length === 0) {
     // A Lovable code download has no messages anywhere in it. Saying so is far
@@ -606,7 +542,7 @@ function read(detection: Detection, sessionId: string): Reading {
   const nodes: ProposedNode[] = [];
   const warnings: ParseWarning[] = [];
 
-  const ref = (index: number): SourceRef => ({ source: "lovable", session_id: sessionId, index });
+  const ref = sourceRefFor("lovable", sessionId);
 
   let clockOnlySeen = false;
   let relativeSeen = false;
@@ -615,8 +551,9 @@ function read(detection: Detection, sessionId: string): Reading {
   let breakageCount = 0;
 
   /** Ordinals run 1..N across every kind, so each is a unique selection key. */
-  let ordinal = 0;
-  const nextOrdinal = () => (ordinal += 1);
+  const ordinal = createOrdinalCounter();
+  /** A handle within this response only. Renumbered once the nodes are sorted. */
+  const nextLocalId = createLocalIdMinter();
 
   let previousUserText: string | null = null;
   let failureSincePrompt: string | null = null;
@@ -634,17 +571,14 @@ function read(detection: Detection, sessionId: string): Reading {
       if (message.occurred_at_inferred) relativeSeen = true;
 
       events.push({
-        ordinal: nextOrdinal(),
+        ordinal: ordinal.next(),
         kind: "prompt",
         visibility: "folded",
         occurred_at: message.occurred_at,
         payload: { text: message.text, response_summary: responseSummary },
         source_ref: ref(message.index),
         // The prompt is read verbatim. Only a computed timestamp makes it a guess.
-        inferred: message.occurred_at_inferred,
-        inferred_reason: message.occurred_at_inferred
-          ? "occurred_at was computed from a relative timestamp ('2 days ago') against the export's own exportedAt, not read as a date."
-          : null,
+        ...mark(message.occurred_at_inferred ? RELATIVE_TIMESTAMP_REASON : null),
       });
 
       // --- a retry after a failure -----------------------------------------
@@ -659,7 +593,7 @@ function read(detection: Detection, sessionId: string): Reading {
       if (failureSincePrompt && (repeats || saysRetry) && breakageCount < MAX_BREAKAGE_CANDIDATES) {
         breakageCount += 1;
         events.push({
-          ordinal: nextOrdinal(),
+          ordinal: ordinal.next(),
           kind: "breakage",
           visibility: "folded",
           occurred_at: message.occurred_at,
@@ -668,10 +602,11 @@ function read(detection: Detection, sessionId: string): Reading {
             response_summary: excerpt(failureSincePrompt, RESPONSE_SUMMARY_CHARS),
           },
           source_ref: ref(message.index),
-          inferred: true,
-          inferred_reason: repeats
-            ? "The previous reply reported an error and this prompt largely repeats the one before it, which reads as a retry. Neither export shape records failure, so this is a candidate for you to confirm or discard."
-            : "The previous reply reported an error and this prompt says the problem persists. Neither export shape records failure, so this is a candidate for you to confirm or discard.",
+          ...guessed(
+            repeats
+              ? "The previous reply reported an error and this prompt largely repeats the one before it, which reads as a retry. Neither export shape records failure, so this is a candidate for you to confirm or discard."
+              : "The previous reply reported an error and this prompt says the problem persists. Neither export shape records failure, so this is a candidate for you to confirm or discard.",
+          ),
         });
       }
 
@@ -688,7 +623,7 @@ function read(detection: Detection, sessionId: string): Reading {
     const deployUrl = message.text.match(DEPLOY_URL)?.[0] ?? null;
     if (deployUrl || matchesAny(message.text, DEPLOY_PATTERNS)) {
       events.push({
-        ordinal: nextOrdinal(),
+        ordinal: ordinal.next(),
         kind: "deploy",
         visibility: "folded",
         occurred_at: message.occurred_at,
@@ -697,22 +632,22 @@ function read(detection: Detection, sessionId: string): Reading {
           response_summary: null,
         },
         source_ref: ref(message.index),
-        inferred: true,
-        inferred_reason: deployUrl
-          ? "Read from a deployment URL in the reply. Neither export shape records deploys as events, so the moment is inferred from what the reply said."
-          : "Read from deployment wording in the reply. Neither export shape records deploys as events, and wording alone can describe a deploy that never happened.",
+        ...guessed(
+          deployUrl
+            ? "Read from a deployment URL in the reply. Neither export shape records deploys as events, so the moment is inferred from what the reply said."
+            : "Read from deployment wording in the reply. Neither export shape records deploys as events, and wording alone can describe a deploy that never happened.",
+        ),
       });
 
       if (deployUrl) {
         nodes.push({
-          local_id: `node-${nodes.length + 1}`,
+          local_id: nextLocalId(),
           type: "live_app",
           title: "Live app",
           note: null,
           payload: { url: deployUrl, embeddable: false },
           source_ref: ref(message.index),
-          inferred: true,
-          inferred_reason: "The URL was read from the reply, but nothing confirms it is still live.",
+          ...guessed("The URL was read from the reply, but nothing confirms it is still live."),
         });
       }
     }
@@ -727,15 +662,15 @@ function read(detection: Detection, sessionId: string): Reading {
     for (const entry of message.patch) {
       const { language } = languageForPath(entry.path);
       nodes.push({
-        local_id: `node-${nodes.length + 1}`,
+        local_id: nextLocalId(),
         type: "code",
         title: entry.path,
         note: `${entry.action} by this prompt. The export records the path and the action, not the file contents — paste the code in.`,
         payload: { language, source: "", filename: entry.path, entrypoint: false },
         source_ref: ref(message.index),
-        inferred: true,
-        inferred_reason:
+        ...guessed(
           "The path and the action were read from the export's file-change record, but it carries no file body, so the code itself is missing.",
+        ),
       });
     }
 
@@ -745,7 +680,7 @@ function read(detection: Detection, sessionId: string): Reading {
     for (const fence of fences) {
       if (fence.unmapped) unmappedLanguage = true;
       nodes.push({
-        local_id: `node-${nodes.length + 1}`,
+        local_id: nextLocalId(),
         type: "code",
         title: fence.filename ?? `${fence.language} block`,
         note: null,
@@ -757,8 +692,7 @@ function read(detection: Detection, sessionId: string): Reading {
         },
         source_ref: ref(message.index),
         // Read out of a fence, verbatim. The one thing here that is not a guess.
-        inferred: false,
-        inferred_reason: null,
+        ...verbatim(),
       });
     }
   }
@@ -812,9 +746,7 @@ function read(detection: Detection, sessionId: string): Reading {
   // session ran; local_id is only a handle within one response, so renumbering
   // after the sort costs nothing and keeps the handles ascending too.
   nodes.sort((a, b) => a.source_ref.index - b.source_ref.index);
-  nodes.forEach((node, position) => {
-    node.local_id = `node-${position + 1}`;
-  });
+  renumberLocalIds(nodes);
 
   return { events, nodes, warnings };
 }
@@ -834,7 +766,7 @@ function proposeTitleAndOutcome(
   sessionId: string,
 ): { title: ProposedField | null; outcome: ProposedField | null } {
   const firstUser = detection.messages.find((message) => message.role === "user" && message.text !== "");
-  const ref = (index: number): SourceRef => ({ source: "lovable", session_id: sessionId, index });
+  const ref = sourceRefFor("lovable", sessionId);
 
   let title: ProposedField | null = null;
 
@@ -842,17 +774,17 @@ function proposeTitleAndOutcome(
     title = {
       value: excerpt(detection.projectName, TITLE_CHARS),
       source_ref: ref(firstUser?.index ?? 1),
-      inferred: true,
-      inferred_reason:
+      ...guessed(
         "Read from the project URL in the export. It is the name the project was given in Lovable, not a title written for readers.",
+      ),
     };
   } else if (firstUser) {
     title = {
       value: excerpt(firstUser.text, TITLE_CHARS),
       source_ref: ref(firstUser.index),
-      inferred: true,
-      inferred_reason:
+      ...guessed(
         "Taken from the opening prompt, which is what was asked for rather than what was built.",
+      ),
     };
   }
 
@@ -860,9 +792,9 @@ function proposeTitleAndOutcome(
     ? {
         value: excerpt(firstUser.text, OUTCOME_CHARS),
         source_ref: ref(firstUser.index),
-        inferred: true,
-        inferred_reason:
+        ...guessed(
           "Taken from the opening prompt. It describes the intention the session started with, not what it ended up producing.",
+        ),
       }
     : null;
 
