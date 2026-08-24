@@ -14,11 +14,20 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 const createBuild = vi.fn();
 const getBuild = vi.fn();
 const updateBuild = vi.fn();
-vi.mock("@/lib/build", () => ({
-  createBuild: (input: unknown) => createBuild(input),
-  getBuild: (id: string) => getBuild(id),
-  updateBuild: (id: string, patch: unknown) => updateBuild(id, patch),
-}));
+/**
+ * The three calls the route makes are stubbed; the rest of the lib layer is
+ * real. computeCompleteness in particular: the hook writes the column it
+ * returns, so a stub of it would prove nothing about what lands in the row.
+ */
+vi.mock("@/lib/build", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/build")>();
+  return {
+    ...actual,
+    createBuild: (input: unknown) => createBuild(input),
+    getBuild: (id: string) => getBuild(id),
+    updateBuild: (id: string, patch: unknown) => updateBuild(id, patch),
+  };
+});
 
 const auth = { user: { id: "me" }, isLoggedIn: true, loading: false };
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => auth }));
@@ -32,6 +41,10 @@ const OWNED = {
   title: "Untitled build",
   shape: "other",
   status: "draft",
+  // An empty draft's record is 0% filled in, and the column says so. Without
+  // it the hook would find the stored value disagreeing with the computed one
+  // and correct it, which is a second write and the right behaviour.
+  completeness: 0,
 };
 
 const record = (build: Record<string, unknown>) => ({

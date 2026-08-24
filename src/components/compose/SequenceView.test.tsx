@@ -130,6 +130,7 @@ function composeFixture(): ComposeBuild {
     tray: trayNodes(),
     events: [],
     nodeTypes: NODE_TYPES,
+    completeness: null,
     selectedNodeId: null,
     setSelectedNodeId: () => {},
     patchBuild: () => {},
