@@ -21,6 +21,14 @@
 // for a build nobody has confirmed, and a build nobody has confirmed has no
 // freshness — so the block says it has not been confirmed rather than dating a
 // confirmation that never happened.
+//
+// THE CREATOR GETS A DIFFERENT CONTROL, not a broken one. They cannot record a
+// reproduction of their own build — the database refuses the row — so offering
+// them "I ran this and it worked" would be offering a button that fails. What
+// they get instead is a re-confirmation, which moves the freshness date and
+// leaves the count alone, and it is put in front of them when the build has
+// gone quiet for four months rather than sitting there inviting a creator to
+// keep their own work looking fresh.
 
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -36,7 +44,9 @@ import {
   freshnessLabel,
   getBuildHeader,
   getReproductions,
+  isStale,
   recordReproduction,
+  recordSelfConfirmation,
   type Build,
   type BuildReproduction,
 } from "@/lib/build";
@@ -169,6 +179,7 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
 
   const count = build.reproduction_count ?? 0;
   const freshness = freshnessLabel(build);
+  const stale = isStale(build);
 
   /** The models this build says it was made with, offered rather than imposed. */
   const suggestions = useMemo(
@@ -183,11 +194,18 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
       navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`);
       return;
     }
-    setModel(mine?.model_used ?? "");
+    setModel((isCreator ? build.last_confirmed_model : mine?.model_used) ?? "");
     setNote(mine?.note ?? "");
     setError(null);
     setOpen(true);
-  }, [isLoggedIn, location.pathname, mine, navigate]);
+  }, [
+    build.last_confirmed_model,
+    isCreator,
+    isLoggedIn,
+    location.pathname,
+    mine,
+    navigate,
+  ]);
 
   const submit = useCallback(
     async (worked: boolean) => {
@@ -221,6 +239,32 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
     },
     [build.id, model, note, onRecorded, refetch]
   );
+
+  /**
+   * The creator saying it still works.
+   *
+   * The header is re-read afterwards for the same reason a reproduction re-reads
+   * it: what the page renders should be what the database holds, not what this
+   * component believes it just wrote.
+   */
+  const confirmStillWorks = useCallback(async () => {
+    setPending(true);
+    setError(null);
+    try {
+      await recordSelfConfirmation({ buildId: build.id, modelUsed: model });
+      const fresh = await getBuildHeader(build.id);
+      if (fresh) onRecorded?.(fresh);
+      setOpen(false);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "That could not be recorded. Try again in a moment."
+      );
+    } finally {
+      setPending(false);
+    }
+  }, [build.id, model, onRecorded]);
 
   return (
     <div
@@ -263,10 +307,35 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
       )}
 
       {isCreator ? (
-        <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED, maxWidth: 420 }}>
-          This is your build. The count is other people — a confirmation you
-          could give yourself would not be worth reading.
-        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {stale ? (
+            <p
+              data-testid="stale-prompt"
+              style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY, maxWidth: 460 }}
+            >
+              no one has confirmed this in four months — is it still working?
+            </p>
+          ) : null}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={openSheet}
+              style={{
+                ...controlBase,
+                color: stale ? VOID : TEXT_SECONDARY,
+                background: stale ? ORANGE : "rgba(255,255,255,0.025)",
+                border: `1px solid ${stale ? ORANGE : "rgba(255,255,255,0.06)"}`,
+                fontWeight: stale ? 600 : 500,
+              }}
+            >
+              It still works
+            </button>
+            <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED, maxWidth: 320 }}>
+              The count is other people. Your own confirmation moves the date,
+              not the number.
+            </span>
+          </div>
+        </div>
       ) : (
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           {mine ? (
@@ -356,10 +425,13 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
             borderRadius: "12px 12px 0 0",
           }}
         >
-          <SheetTitle style={{ ...titleText, margin: 0 }}>You ran this build</SheetTitle>
+          <SheetTitle style={{ ...titleText, margin: 0 }}>
+            {isCreator ? "You ran your own build" : "You ran this build"}
+          </SheetTitle>
           <SheetDescription style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
-            What you say here is what the next reader sees. Both answers are
-            worth having.
+            {isCreator
+              ? "This moves the date on the freshness line. It does not touch the count — that stays other people."
+              : "What you say here is what the next reader sees. Both answers are worth having."}
           </SheetDescription>
 
           <Field
@@ -387,16 +459,21 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
             </datalist>
           </Field>
 
-          <Field label="Anything worth adding? (optional)">
-            <textarea
-              id="reproduction-note"
-              rows={3}
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              placeholder="What you changed, what tripped you up, what it cost you."
-              style={{ ...inputStyle, minHeight: 64, resize: "vertical", display: "block" }}
-            />
-          </Field>
+          {/* A self-confirmation writes two columns on builds and no row, so
+              there is nowhere for a note to go. Asking for one and dropping it
+              would be worse than not asking. */}
+          {isCreator ? null : (
+            <Field label="Anything worth adding? (optional)">
+              <textarea
+                id="reproduction-note"
+                rows={3}
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                placeholder="What you changed, what tripped you up, what it cost you."
+                style={{ ...inputStyle, minHeight: 64, resize: "vertical", display: "block" }}
+              />
+            </Field>
+          )}
 
           {error ? (
             <span role="alert" style={{ ...bodyText, fontSize: 12, color: GAP_RED }}>
@@ -417,30 +494,38 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
           >
             {/* The quieter path. Quieter, not hidden: a build that does not
                 work for someone is the single most useful thing this page can
-                learn, and it must not cost more clicks than the happy answer. */}
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => void submit(false)}
-              style={{
-                ...controlBase,
-                padding: "6px 0",
-                background: "transparent",
-                border: "none",
-                color: TEXT_SECONDARY,
-                textDecoration: "underline",
-                textUnderlineOffset: 3,
-                cursor: pending ? "progress" : "pointer",
-              }}
-            >
-              it did not work
-            </button>
+                learn, and it must not cost more clicks than the happy answer.
+                A creator has no such path — "it did not work" from the author
+                is an edit to make, not a signal to file. */}
+            {isCreator ? (
+              <span />
+            ) : (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => void submit(false)}
+                style={{
+                  ...controlBase,
+                  padding: "6px 0",
+                  background: "transparent",
+                  border: "none",
+                  color: TEXT_SECONDARY,
+                  textDecoration: "underline",
+                  textUnderlineOffset: 3,
+                  cursor: pending ? "progress" : "pointer",
+                }}
+              >
+                it did not work
+              </button>
+            )}
 
             <span data-visual-slot="btn-primary" style={{ display: "inline-flex" }}>
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => void submit(true)}
+                onClick={() =>
+                  isCreator ? void confirmStillWorks() : void submit(true)
+                }
                 style={{
                   ...controlBase,
                   color: VOID,
@@ -450,7 +535,7 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
                   cursor: pending ? "progress" : "pointer",
                 }}
               >
-                {pending ? "Recording…" : "It worked"}
+                {pending ? "Recording…" : isCreator ? "It still works" : "It worked"}
               </button>
             </span>
           </div>
