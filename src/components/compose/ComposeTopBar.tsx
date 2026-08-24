@@ -1,15 +1,26 @@
 // The compose workspace's top bar.
 //
 // Title, shape, save state, the hero control, a way to see the build as a
-// reader sees it, and a Publish control that does not publish yet. Everything
-// here is styled with inline style objects: Tailwind's generated utilities win
-// over hand-written classes at build time, so a class would not survive the
-// build.
+// reader sees it, and the Publish control. Everything here is styled with
+// inline style objects: Tailwind's generated utilities win over hand-written
+// classes at build time, so a class would not survive the build.
+//
+// Publishing itself lives in PublishControl, which owns the readiness test and
+// the confirmation screen. This bar hands it the record and gets out of the
+// way.
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { Build, BuildPatch, BuildShape } from "@/lib/build";
+import { PublishControl } from "@/components/compose/PublishControl";
+import type {
+  Build,
+  BuildPatch,
+  BuildShape,
+  Completeness,
+  NodeTree,
+  NodeType,
+} from "@/lib/build";
 import {
   GAP_RED,
   HAIRLINE,
@@ -75,6 +86,14 @@ interface ComposeTopBarProps {
    * a live app. Computed by the frame, which is inside the media context.
    */
   heroEligible: boolean;
+  /** The PLACED tree, for the publish readiness test. */
+  tree: NodeTree[];
+  nodeTypes: NodeType[];
+  /** The hook's answer. This bar does not compute a second one. */
+  completeness: Completeness | null;
+  onPublish: () => Promise<Build>;
+  isPublishing: boolean;
+  publishError: Error | null;
 }
 
 function SaveState({
@@ -201,6 +220,12 @@ export function ComposeTopBar({
   onOpenInspector,
   selectedNodeId,
   heroEligible,
+  tree,
+  nodeTypes,
+  completeness,
+  onPublish,
+  isPublishing,
+  publishError,
 }: ComposeTopBarProps) {
   // Inline styles cannot express :focus, so the focus treatment is state.
   const [titleFocused, setTitleFocused] = useState(false);
@@ -300,33 +325,15 @@ export function ComposeTopBar({
         View
       </Link>
 
-      <Tooltip>
-        {/* A disabled button fires no pointer events, so the span carries them. */}
-        <TooltipTrigger asChild>
-          {/* VISUAL SLOT — the primary button surface is supplied externally.
-              Structure only here: pill geometry, disabled state, no surface. */}
-          <span
-            data-visual-slot="btn-primary"
-            style={{ display: "inline-flex", flexShrink: 0 }}
-          >
-            <button
-              type="button"
-              disabled
-              style={{
-                ...controlBase,
-                borderRadius: 100,
-                padding: "0 14px",
-                color: TEXT_MUTED,
-                cursor: "not-allowed",
-                pointerEvents: "none",
-              }}
-            >
-              Publish
-            </button>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">publishing arrives in NS-P19</TooltipContent>
-      </Tooltip>
+      <PublishControl
+        build={build}
+        tree={tree}
+        nodeTypes={nodeTypes}
+        completeness={completeness}
+        onPublish={onPublish}
+        isPublishing={isPublishing}
+        publishError={publishError}
+      />
     </header>
   );
 }

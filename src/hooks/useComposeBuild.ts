@@ -17,7 +17,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeCompleteness, getBuild, updateBuild } from "@/lib/build";
+import { computeCompleteness, getBuild, publishPatch, updateBuild } from "@/lib/build";
 import type {
   Build,
   BuildEvent,
@@ -60,6 +60,16 @@ export interface ComposeBuild {
   setSelectedNodeId: (id: string | null) => void;
   /** Merge a header patch into local state now, write it through after 800ms. */
   patchBuild: (patch: BuildPatch) => void;
+  /**
+   * Set the build live, carrying any unsaved header edits with it.
+   *
+   * ONE WRITE, not two: a creator who types their outcome and clicks Publish
+   * a moment later would otherwise race a debounced save against a status
+   * update. Resolves with the row as it stands after the write.
+   */
+  publish: () => Promise<Build>;
+  isPublishing: boolean;
+  publishError: Error | null;
   isSaving: boolean;
   lastSavedAt: Date | null;
   // --- beyond the exposed contract, for the route's gates ---
@@ -97,11 +107,15 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [saveError, setSaveError] = useState<Error | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<Error | null>(null);
 
   /** Edits accumulated since the last write went out. */
   const pendingRef = useRef<BuildPatch>({});
   const timerRef = useRef<number | null>(null);
   const inFlightRef = useRef(false);
+  /** The write currently open, so publish can wait for it rather than race it. */
+  const settleRef = useRef<Promise<void> | null>(null);
   const mountedRef = useRef(true);
   const buildIdRef = useRef<string | undefined>(buildId);
   buildIdRef.current = buildId;
@@ -121,7 +135,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => {
       timerRef.current = null;
-      void flushRef.current();
+      settleRef.current = flushRef.current();
     }, SAVE_DEBOUNCE_MS);
   }, []);
 
@@ -194,6 +208,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     setSelectedNodeId(null);
     setLastSavedAt(null);
     setSaveError(null);
+    setPublishError(null);
     pendingRef.current = {};
   }, [buildId]);
 
@@ -243,6 +258,81 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     patchBuild({ completeness: completeness.score });
   }, [build, completeness, patchBuild]);
 
+  /** The overlaid build, for publish — a callback cannot close over a memo. */
+  const buildRef = useRef<Build | null>(null);
+  buildRef.current = build;
+
+  /**
+   * Publish, folding any unsaved header edits into the same row update.
+   *
+   * WHY IT DOES NOT CALL publishBuild. That helper issues its own write, which
+   * would race the debounced one this hook may already have open — a creator
+   * typing their outcome and clicking Publish a second later is the ordinary
+   * case, not a corner. Here the pending patch and the publish columns go out
+   * together, after whatever write is already in flight has landed.
+   */
+  const publish = useCallback(async (): Promise<Build> => {
+    const id = buildIdRef.current;
+    const current = buildRef.current;
+    if (!id || !current) throw new Error("There is no build to publish.");
+    if (!isOwnerRef.current) {
+      throw new Error("Only a build's creator can publish it.");
+    }
+
+    setIsPublishing(true);
+    try {
+      // Let an open save land first. The publish write touches the same row
+      // and must not overtake it.
+      if (settleRef.current) await settleRef.current.catch(() => {});
+
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+
+      const pending = pendingRef.current;
+      pendingRef.current = {};
+      const patch: BuildPatch = { ...pending, ...publishPatch(current) };
+
+      // Already live, already dated, nothing typed since: re-opening the
+      // confirmation to read the link back does not cost a write.
+      if (Object.keys(patch).length === 0) return current;
+
+      try {
+        const row = await updateBuild(id, patch);
+        if (mountedRef.current && buildIdRef.current === id) {
+          queryClient.setQueryData<BuildRecord | null>(
+            composeBuildQueryKey(id),
+            (previous) => (previous ? { ...previous, build: row } : previous)
+          );
+          setOverlay((currentOverlay) => {
+            const next = { ...currentOverlay };
+            for (const key of Object.keys(patch)) {
+              if (!(key in pendingRef.current)) {
+                delete next[key as keyof BuildPatch];
+              }
+            }
+            return next;
+          });
+          setPublishError(null);
+          setLastSavedAt(new Date());
+        }
+        return row;
+      } catch (cause) {
+        // The creator's own edits go back on the queue: a failed publish must
+        // not also lose the sentence they had just typed.
+        pendingRef.current = { ...pending, ...pendingRef.current };
+        throw cause;
+      }
+    } catch (cause) {
+      const error = cause instanceof Error ? cause : new Error(String(cause));
+      if (mountedRef.current && buildIdRef.current === id) setPublishError(error);
+      throw error;
+    } finally {
+      if (mountedRef.current && buildIdRef.current === id) setIsPublishing(false);
+    }
+  }, [queryClient]);
+
   return {
     build,
     tree,
@@ -253,6 +343,9 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     selectedNodeId,
     setSelectedNodeId,
     patchBuild,
+    publish,
+    isPublishing,
+    publishError,
     isSaving,
     lastSavedAt,
     isLoading: query.isLoading,

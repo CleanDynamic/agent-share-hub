@@ -359,6 +359,12 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
           lastSavedAt={compose.lastSavedAt}
           saveError={compose.saveError}
           onPatch={compose.patchBuild}
+          tree={compose.tree}
+          nodeTypes={compose.nodeTypes}
+          completeness={compose.completeness}
+          onPublish={compose.publish}
+          isPublishing={compose.isPublishing}
+          publishError={compose.publishError}
           onOpenTray={isSingleColumn ? () => setTrayOpen(true) : undefined}
           onOpenInspector={isSingleColumn ? () => setInspectorOpen(true) : undefined}
         />

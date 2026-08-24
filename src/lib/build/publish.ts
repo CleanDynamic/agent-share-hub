@@ -102,7 +102,7 @@ function publishReason(blocking: MissingItem[]): string {
 export type PublishTarget = Pick<Build, "id" | "status" | "published_at">;
 
 /**
- * Set the build live.
+ * The columns publishing writes, and only those.
  *
  * WHAT IT WILL NOT OVERWRITE:
  *
@@ -116,11 +116,15 @@ export type PublishTarget = Pick<Build, "id" | "status" | "published_at">;
  * publishing is exactly what a creator does after acting on the gallery line
  * shown to them on the way out.
  *
- * The caller is expected to have asked publishReadiness first. This function
- * does not re-check it: it takes the header alone, and the requirements need
- * the node tree.
+ * The caller is expected to have asked publishReadiness first. Neither this nor
+ * publishBuild re-checks it: they take the header alone, and the requirements
+ * need the node tree.
+ *
+ * An empty patch means the build is already live and already dated. That is a
+ * real outcome, not an error — a creator re-opening the confirmation to see
+ * their link should not cost a write.
  */
-export async function publishBuild(build: PublishTarget): Promise<Build> {
+export function publishPatch(build: PublishTarget): BuildPatch {
   const patch: BuildPatch = {};
 
   if (build.status !== "gallery") {
@@ -129,6 +133,21 @@ export async function publishBuild(build: PublishTarget): Promise<Build> {
   if (!build.published_at) {
     patch.published_at = new Date().toISOString();
   }
+
+  return patch;
+}
+
+/**
+ * Set the build live.
+ *
+ * The compose workspace does not call this: it has unsaved header edits in
+ * hand and folds publishPatch into the same row update, so a creator who types
+ * their outcome and immediately clicks Publish gets one write rather than a
+ * race between two. This is the standalone path, for a caller holding nothing
+ * but an id.
+ */
+export async function publishBuild(build: PublishTarget): Promise<Build> {
+  const patch = publishPatch(build);
 
   // Already published, already dated: nothing to write, and an empty PATCH is
   // a PostgREST error rather than a no-op.

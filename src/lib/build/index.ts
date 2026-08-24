@@ -111,6 +111,7 @@ export {
 } from "./gallery";
 export {
   publishBuild,
+  publishPatch,
   publishReadiness,
   type PublishReadiness,
   type PublishSource,
