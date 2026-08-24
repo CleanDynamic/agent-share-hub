@@ -55,6 +55,14 @@ export {
   type UploadMediaInput,
 } from "./media";
 export {
+  forkBuild,
+  getForkOrigin,
+  nodesToCopy,
+  rewritePayload,
+  type ForkBuildInput,
+  type ForkOrigin,
+} from "./fork";
+export {
   NODE_TYPE_COLUMNS,
   clearNodeTypeCache,
   getFieldsFor,
