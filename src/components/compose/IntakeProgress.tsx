@@ -27,9 +27,26 @@ interface IntakeProgressProps {
   sourceLabel: string;
   /** Characters handed to the parser. Shown so a slow parse has a reason. */
   characterCount?: number;
+  /**
+   * What is being done, when it is not turn-splitting.
+   *
+   * Added for NS-P21: parse-repo reads manifests and a README rather than
+   * turns, and telling a creator their repository is being split into turns
+   * would be a sentence that is simply not true. Optional, so the two existing
+   * call sites are unchanged.
+   */
+  description?: string;
 }
 
-export function IntakeProgress({ sourceLabel, characterCount }: IntakeProgressProps) {
+const DEFAULT_DESCRIPTION =
+  "Splitting it into turns and pulling out the prompts, code and settings. " +
+  "Nothing is saved until you have looked at what it found.";
+
+export function IntakeProgress({
+  sourceLabel,
+  characterCount,
+  description,
+}: IntakeProgressProps) {
   const [patient, setPatient] = useState(false);
 
   useEffect(() => {
@@ -82,8 +99,7 @@ export function IntakeProgress({ sourceLabel, characterCount }: IntakeProgressPr
       </div>
 
       <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
-        Splitting it into turns and pulling out the prompts, code and settings.
-        Nothing is saved until you have looked at what it found.
+        {description ?? DEFAULT_DESCRIPTION}
       </p>
 
       {size ? <span style={{ ...labelText, color: TEXT_MUTED }}>{size}</span> : null}
@@ -100,8 +116,8 @@ export function IntakeProgress({ sourceLabel, characterCount }: IntakeProgressPr
             color: TEXT_SECONDARY,
           }}
         >
-          Still reading. A long transcript takes a few seconds — your draft
-          already exists, so nothing is lost if this fails.
+          Still reading. This takes a few seconds — your draft already exists,
+          so nothing is lost if this fails.
         </p>
       ) : null}
     </div>
