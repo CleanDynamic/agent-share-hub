@@ -132,6 +132,56 @@ export async function getReproductions(
   return (data ?? []) as BuildReproduction[];
 }
 
+/** The columns a self-confirmation writes back. */
+export type SelfConfirmation = Pick<
+  Build,
+  "id" | "last_confirmed_at" | "last_confirmed_model" | "reproduction_count"
+>;
+
+export interface RecordSelfConfirmationInput {
+  buildId: string;
+  /** What the creator has just run it on. Omit it rather than guess it. */
+  modelUsed?: string | null;
+}
+
+/**
+ * The creator saying their own build still works.
+ *
+ * NOT a reproduction, and deliberately not one: it writes builds directly and
+ * leaves build_reproductions alone, so reproduction_count keeps meaning "people
+ * other than the creator who ran this". The database would refuse the row
+ * anyway — the creator exclusion is an RLS policy — and quietly routing a
+ * creator's confirmation into the counter is exactly the self-service the
+ * exclusion exists to prevent.
+ *
+ * What it does move is the freshness clock. A four-month-old build whose author
+ * has just re-run it is not stale, and a reader is better served by that than
+ * by a warning nobody can clear.
+ *
+ * WHY AN UNSTATED MODEL CLEARS last_confirmed_model. The two columns are read
+ * as one sentence — "last confirmed working today, on Sonnet 4.5" — so leaving
+ * a model from an older confirmation in place would attach a name nobody said
+ * to a date they did not say it on. Nothing is lost: the column is denormalised
+ * from build_reproductions, and the trigger there recomputes it the next time
+ * anyone records one.
+ */
+export async function recordSelfConfirmation(
+  input: RecordSelfConfirmationInput
+): Promise<SelfConfirmation> {
+  const { data, error } = await supabase
+    .from("builds")
+    .update({
+      last_confirmed_at: new Date().toISOString(),
+      last_confirmed_model: trimToNull(input.modelUsed),
+    })
+    .eq("id", input.buildId)
+    .select("id, last_confirmed_at, last_confirmed_model, reproduction_count")
+    .single();
+
+  if (error) throw buildLayerError("recordSelfConfirmation", error);
+  return data as SelfConfirmation;
+}
+
 // =============================================================================
 // Freshness
 // =============================================================================

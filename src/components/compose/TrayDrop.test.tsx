@@ -149,6 +149,7 @@ function Harness({ selectedNodeId = null }: { selectedNodeId?: string | null }) 
         tray: data?.tray ?? [],
         events: [],
         nodeTypes: data?.nodeTypes ?? [],
+        completeness: null,
         selectedNodeId,
         setSelectedNodeId: () => {},
         patchBuild: () => {},

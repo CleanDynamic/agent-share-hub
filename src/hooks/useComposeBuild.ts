@@ -6,17 +6,25 @@
 //
 // The header write is debounced: a creator typing a title produces one row
 // update, not one per keystroke. Local state leads, the server row reconciles.
+//
+// COMPLETENESS IS COMPUTED HERE AND WRITTEN LIKE ANY OTHER COLUMN. It is not a
+// database trigger, and it cannot be: the rules are shape-relative and read the
+// node type registry, so they live in TypeScript where the shapes are defined.
+// The effect below recomputes on every change to the record and pushes the
+// result through patchBuild, which means it is debounced by the same 800ms as a
+// title and lands in the same row update rather than in a second one.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { getBuild, updateBuild } from "@/lib/build";
+import { computeCompleteness, getBuild, updateBuild } from "@/lib/build";
 import type {
   Build,
   BuildEvent,
   BuildNode,
   BuildPatch,
   BuildRecord,
+  Completeness,
   NodeTree,
   NodeType,
 } from "@/lib/build";
@@ -42,6 +50,12 @@ export interface ComposeBuild {
   tray: BuildNode[];
   events: BuildEvent[];
   nodeTypes: NodeType[];
+  /**
+   * What this shape's record is still missing, recomputed from local state.
+   * null until the record has loaded. The panel that renders it does not
+   * compute its own — one answer per render, and it is this one.
+   */
+  completeness: Completeness | null;
   selectedNodeId: string | null;
   setSelectedNodeId: (id: string | null) => void;
   /** Merge a header patch into local state now, write it through after 800ms. */
@@ -211,12 +225,31 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
       : loaded;
   }, [query.data?.build, overlay]);
 
+  const tree = query.data?.tree ?? NO_TREE;
+  const nodeTypes = query.data?.nodeTypes ?? NO_NODE_TYPES;
+
+  /** Off the OVERLAID build, so a cost typed a moment ago already counts. */
+  const completeness = useMemo(
+    () => (build ? computeCompleteness(build, tree, nodeTypes) : null),
+    [build, nodeTypes, tree]
+  );
+
+  // Writing it back converges: patchBuild puts the new number in the overlay,
+  // which is what `build` is read through, so the next run of this effect finds
+  // the column already equal to the computed value and does nothing.
+  useEffect(() => {
+    if (!build || !completeness) return;
+    if (build.completeness === completeness.score) return;
+    patchBuild({ completeness: completeness.score });
+  }, [build, completeness, patchBuild]);
+
   return {
     build,
-    tree: query.data?.tree ?? NO_TREE,
+    tree,
     tray: query.data?.tray ?? NO_TRAY,
     events: query.data?.events ?? NO_EVENTS,
-    nodeTypes: query.data?.nodeTypes ?? NO_NODE_TYPES,
+    nodeTypes,
+    completeness,
     selectedNodeId,
     setSelectedNodeId,
     patchBuild,
