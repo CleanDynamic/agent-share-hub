@@ -6,7 +6,7 @@
 // is lazy because this page pulls in the whole build record renderer and no
 // other route needs it.
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { getBuildBySlug, getMediaForBuild } from "@/lib/build";
@@ -19,6 +19,7 @@ import {
   type ResolveMedia,
 } from "@/components/build/MediaFigure";
 import { BuildHeader } from "@/components/build/BuildHeader";
+import { BreakageView } from "@/components/build/BreakageView";
 import { BuildTabs } from "@/components/build/BuildTabs";
 import { PortableExport } from "@/components/build/PortableExport";
 import { Replay } from "@/components/build/Replay";
@@ -191,6 +192,28 @@ function Message({ heading, detail }: { heading: string; detail: string }) {
 export default function BuildPage() {
   const { slug } = useParams<{ slug: string }>();
 
+  // The tab strip is controlled from here so that a breakage can send the
+  // reader into the replay at the step it broke.
+  const [tab, setTab] = useState("anatomy");
+
+  /**
+   * A one-shot jump request for the replay.
+   *
+   * Set on the way into the Watch tab and cleared on the very next commit, so
+   * that asking for the same ordinal twice in a row is two jumps rather than
+   * one. Child effects flush before parent effects, so the replay has already
+   * read the ordinal by the time this clears it.
+   */
+  const [jumpTo, setJumpTo] = useState<number | null>(null);
+  useEffect(() => {
+    if (jumpTo !== null) setJumpTo(null);
+  }, [jumpTo]);
+
+  const openReplayAt = useCallback((ordinal: number) => {
+    setJumpTo(ordinal);
+    setTab("watch");
+  }, []);
+
   const { data, isLoading, isError, error } = useQuery<BuildRecord | null>({
     queryKey: ["build", slug],
     queryFn: () => getBuildBySlug(slug as string),
@@ -297,6 +320,8 @@ export default function BuildPage() {
           actions={<PortableExport record={data} />}
         />
         <BuildTabs
+          active={tab}
+          onActiveChange={setTab}
           watch={
             <Replay
               build={data.build}
@@ -304,9 +329,21 @@ export default function BuildPage() {
               nodeTypes={data.nodeTypes}
               resolveNode={resolveNode}
               resolveMedia={resolveMedia}
+              focusOrdinal={jumpTo}
             />
           }
           run={<RunView tree={data.tree} nodeTypes={data.nodeTypes} build={data.build} />}
+          broke={
+            <BreakageView
+              build={data.build}
+              events={data.events}
+              tree={data.tree}
+              nodeTypes={data.nodeTypes}
+              resolveNode={resolveNode}
+              resolveMedia={resolveMedia}
+              onOpenReplay={openReplayAt}
+            />
+          }
         >
           <AnatomyTree
             tree={data.tree}

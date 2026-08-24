@@ -80,6 +80,39 @@ const record = {
   nodeTypes,
 };
 
+/**
+ * The record with a sequence on it: nine visible events across two phases, one
+ * of them a breakage, one of them producing a node.
+ *
+ * Hidden events are absent because getEvents excludes them in the query — this
+ * fixture is what the page receives, not what the table holds.
+ */
+function withSequence() {
+  const events = [
+    { ordinal: 1, kind: "note", visibility: "kept", payload: { text: "Started from the actual problem." } },
+    { ordinal: 2, kind: "note", visibility: "folded", payload: { text: "Labelled sixty emails by hand." } },
+    { ordinal: 4, kind: "prompt", visibility: "kept", payload: { text: "Classify into one of three." }, produced_node_id: "n11" },
+    { ordinal: 6, kind: "breakage", visibility: "kept", payload: {
+        symptom: "Long threads all came back archive.",
+        cause: "The newest message ended up buried.",
+        resolution: "A summary plus the last three messages.",
+      } },
+    { ordinal: 7, kind: "note", visibility: "folded", payload: { text: "A bigger window made it worse." } },
+    { ordinal: 8, kind: "prompt", visibility: "kept", payload: { text: "Summary first, newest three after." } },
+    { ordinal: 9, kind: "milestone", visibility: "kept", payload: { text: "91% after the fix." } },
+  ].map((spec, index) => ({
+    id: `e${spec.ordinal}`,
+    build_id: "b",
+    occurred_at: `2026-07-2${index + 1}T09:00:00Z`,
+    phase: spec.ordinal <= 6 ? 1 : 2,
+    phase_title: spec.ordinal <= 6 ? "Reading the inbox" : "Making it read the newest message",
+    produced_node_id: null,
+    created_at: "2026-07-28T00:00:00Z",
+    ...spec,
+  }));
+  return { ...record, events };
+}
+
 function renderAt(slug: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -145,14 +178,31 @@ describe("BuildPage", () => {
     expect(container.querySelector('[data-visual-slot="build-anatomy-tree"]')).toBeTruthy();
   });
 
-  it("leaves the three unbuilt tabs disabled", async () => {
+  it("leaves only the unbuilt tab disabled", async () => {
     getBuildBySlug.mockResolvedValue(record);
     renderAt("inbox-triage-agent-demo");
     await screen.findByText("Inbox triage agent");
 
-    for (const label of [/Watch it get built/, /Where it broke/, /Forks/]) {
-      expect(screen.getByRole("tab", { name: label }).hasAttribute("disabled")).toBe(true);
+    // NS-P16 handed panels to Watch it get built and Where it broke, so they
+    // are live even on a build whose sequence is empty — the panels say so
+    // themselves rather than the tab going dark.
+    for (const label of [/Watch it get built/, /Where it broke/]) {
+      expect(screen.getByRole("tab", { name: label }).hasAttribute("disabled")).toBe(false);
     }
+    expect(screen.getByRole("tab", { name: /Forks/ }).hasAttribute("disabled")).toBe(true);
+  });
+
+  it("sends a breakage into the replay at the step it broke", async () => {
+    getBuildBySlug.mockResolvedValue(withSequence());
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    fireEvent.click(screen.getByRole("tab", { name: /Where it broke/ }));
+    fireEvent.click(screen.getByRole("button", { name: "step 6 — watch it" }));
+
+    // The click crosses tabs and lands on the ordinal, not on step 1.
+    expect(screen.getByRole("tab", { name: /Watch it get built/ }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByText("step 6 of 9")).toBeTruthy();
   });
 
   it("renders a not-found state for an unknown slug", async () => {

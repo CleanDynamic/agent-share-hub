@@ -1,14 +1,17 @@
-// The five tabs of a build page. Anatomy, Watch it get built and Run it
-// yourself are live.
+// The five tabs of a build page. Only Forks is still dark.
 //
-// The rest are rendered and visibly disabled rather than omitted: the strip is
-// the map of what a build record is going to hold, and a reader seeing "Forks"
-// greyed out learns more than a reader seeing nothing at all.
+// It is rendered and visibly disabled rather than omitted: the strip is the map
+// of what a build record is going to hold, and a reader seeing "Forks" greyed
+// out learns more than a reader seeing nothing at all.
 //
 // A tab is live when a panel is handed in for it, never because this file
 // hardcodes which ones work. NS-P06 activated Run it yourself by passing one
-// and NS-P16 activated Watch it get built the same way; the ones still dark go
-// the same way when their panel exists.
+// and NS-P16 activated Watch it get built and Where it broke the same way; the
+// one still dark goes the same way when its panel exists.
+//
+// Selection is uncontrolled by default and controlled when a caller passes
+// `active`. The build page takes control so that a link out of one panel — a
+// breakage saying "watch it" — can land the reader in another.
 
 import { useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
@@ -21,6 +24,12 @@ interface BuildTabsProps {
   watch?: ReactNode;
   /** The Run it yourself panel. Absent leaves the tab disabled. */
   run?: ReactNode;
+  /** The Where it broke panel. Absent leaves the tab disabled. */
+  broke?: ReactNode;
+  /** Controlled selection. Omit to let the strip own it. */
+  active?: string;
+  /** Fires on every selection, controlled or not. */
+  onActiveChange?: (id: string) => void;
 }
 
 interface TabDef {
@@ -34,7 +43,7 @@ const TABS: TabDef[] = [
   { id: "anatomy", label: "Anatomy" },
   { id: "watch", label: "Watch it get built" },
   { id: "run", label: "Run it yourself" },
-  { id: "broke", label: "Where it broke", placeholder: "Breakages — soon" },
+  { id: "broke", label: "Where it broke" },
   { id: "forks", label: "Forks", placeholder: "Derived builds — soon" },
 ];
 
@@ -52,15 +61,32 @@ const tabBase: CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-export function BuildTabs({ children, watch, run }: BuildTabsProps) {
-  const [active, setActive] = useState("anatomy");
+export function BuildTabs({
+  children,
+  watch,
+  run,
+  broke,
+  active,
+  onActiveChange,
+}: BuildTabsProps) {
+  const [own, setOwn] = useState("anatomy");
 
   const panels: Record<string, ReactNode> = { anatomy: children };
   if (watch !== undefined) panels.watch = watch;
   if (run !== undefined) panels.run = run;
+  if (broke !== undefined) panels.broke = broke;
 
   const live = TABS.filter((tab) => panels[tab.id] !== undefined);
-  const current = panels[active] !== undefined ? active : "anatomy";
+  const selected = active ?? own;
+  const current = panels[selected] !== undefined ? selected : "anatomy";
+
+  const setActive = (id: string) => {
+    // The internal state is kept in step even when a caller controls the
+    // selection, so dropping the prop later does not snap the strip back to a
+    // tab the reader left three clicks ago.
+    setOwn(id);
+    onActiveChange?.(id);
+  };
 
   /** Left and right move between the live tabs, as a tablist is expected to. */
   const onKeyDown = (event: React.KeyboardEvent, id: string) => {
