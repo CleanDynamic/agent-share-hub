@@ -87,3 +87,22 @@ export {
   type TranscriptSourceRef,
 } from "./intake";
 export type { IntakeArrival } from "./intake";
+export {
+  MINIMUM_PUBLISHABLE_SCORE,
+  REPRODUCTION_COLUMNS,
+  SHAPE_RULES,
+  STALE_AFTER_DAYS,
+  computeCompleteness,
+  freshnessLabel,
+  getReproductions,
+  isStale,
+  recordReproduction,
+  type Completeness,
+  type CompletenessSource,
+  type FreshnessSource,
+  type MissingItem,
+  type RecordReproductionInput,
+  type RequirementKey,
+  type ShapeRequirement,
+  type StalenessSource,
+} from "./signals";
