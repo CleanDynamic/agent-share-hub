@@ -30,6 +30,7 @@ import { nodeMediaId } from "@/components/build/MediaFigure";
 import { ComposeTopBar } from "@/components/compose/ComposeTopBar";
 import { CompletenessPanel } from "@/components/compose/CompletenessPanel";
 import { Inspector } from "@/components/compose/Inspector";
+import { LayerStaleNotice } from "@/components/compose/LayerStaleNotice";
 import { findNodeInRecord } from "@/components/compose/SchemaForm";
 import { CentrePanel } from "@/components/compose/CentrePanel";
 import { TrayPanel } from "@/components/compose/TrayPanel";
@@ -145,10 +146,10 @@ function DragGhost({ compose, drag }: PanelProps) {
 }
 
 /**
- * The inspector, and the checklist beneath it.
+ * The inspector, the checklist beneath it, and the staleness line beneath that.
  *
- * One component so the pair travels together into the bottom sheet below the
- * breakpoint: a creator on a narrow screen gets the same two panels in the same
+ * One component so the set travels together into the bottom sheet below the
+ * breakpoint: a creator on a narrow screen gets the same panels in the same
  * order, rather than a checklist that only exists on a wide one.
  *
  * The checklist adds a node through the tree's own add — the same call the
@@ -179,6 +180,9 @@ function RightPanelContent({
         onSelectNode={compose.setSelectedNodeId}
         onAddNode={drag.addNode}
       />
+      {/* Last in the rail and quiet by design: it is a question about text a
+          reader may be seeing, not a step in making the build. */}
+      <LayerStaleNotice build={build} tree={compose.tree} />
     </>
   );
 }

@@ -66,6 +66,15 @@ export interface LayerReviewResult {
   approved: boolean;
   /** The rows actually written, so a caller can update its cache. */
   written: BuildLayer[];
+  /**
+   * The rows the generator returned, written or not.
+   *
+   * A caller needs these even when the creator approved nothing: a forced
+   * regeneration replaced the stored content whatever the creator then
+   * decided, and a cache still holding the old rows would go on offering to
+   * regenerate what has just been regenerated.
+   */
+  generated: BuildLayer[];
 }
 
 export interface LayerReviewProps {
@@ -416,7 +425,13 @@ export function LayerReview({
       else recordLayerReviewDeclined(buildId, writtenHash ?? hash);
 
       if (mounted.current) setCommitting(false);
-      onResolve({ approved: anyApproved, written });
+      onResolve({
+        approved: anyApproved,
+        written,
+        generated: panels
+          .map((panel) => panel.row)
+          .filter((row): row is BuildLayer => row !== null),
+      });
     },
     [buildId, hash, onResolve, panels, writtenHash]
   );

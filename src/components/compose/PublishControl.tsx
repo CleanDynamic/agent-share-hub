@@ -165,7 +165,9 @@ export function PublishControl({
   /** Either control on the review pass: write what it decided, then publish. */
   const onReviewed = useCallback(
     (result: LayerReviewResult) => {
-      applyLayers(result.written);
+      // Generated first, written over the top: a layer the creator approved or
+      // rewrote wins over the row it was generated from.
+      applyLayers([...result.generated, ...result.written]);
       setReviewing(false);
       publishNow();
     },
