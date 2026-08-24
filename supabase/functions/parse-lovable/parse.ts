@@ -38,6 +38,21 @@ export const MAX_BREAKAGE_CANDIDATES = 8;
 // -----------------------------------------------------------------------------
 // Types — the same envelope parse-transcript returns
 // -----------------------------------------------------------------------------
+// The envelope is declared once, in _shared/intake/envelope.ts, and narrowed
+// here to this reader's own literals. NS-P20 re-declared it field by field to
+// avoid editing parse-transcript; NS-P20a moved the declarations to the shared
+// module so there is one source of truth rather than two agreeing copies.
+// `import type` is erased at compile time, so this adds no runtime import.
+import type {
+  ParseOptions as SharedParseOptions,
+  ParseResult as SharedParseResult,
+  ParseSummary as SharedParseSummary,
+  ParseWarning as SharedParseWarning,
+  ProposedEvent as SharedProposedEvent,
+  ProposedField as SharedProposedField,
+  ProposedNode as SharedProposedNode,
+  SourceRef as SharedSourceRef,
+} from "../_shared/intake/envelope.ts";
 
 export type DetectedFormat =
   /** The Chrome extension's JSON: {exportedAt, url, messageCount, messages[]}. */
@@ -53,81 +68,28 @@ export type DetectedFormat =
  * {source, session_id, index} — structurally identical to NS-P13's SourceRef.
  * `source` is the discriminator, and build_nodes.source_ref holds it as-is.
  */
-export interface SourceRef {
-  source: "lovable";
-  session_id: string;
-  /** Message ordinal, counted across both speakers from 1 — NS-P13's `index`. */
-  index: number;
-}
+export type SourceRef = SharedSourceRef<"lovable">;
 
-export interface ProposedEvent {
-  ordinal: number;
-  /** build_events.kind. 'prompt' | 'deploy' | 'breakage' are all in the check constraint. */
-  kind: "prompt" | "deploy" | "breakage";
-  visibility: "folded";
-  occurred_at: string | null;
-  payload: { text: string; response_summary: string | null };
-  source_ref: SourceRef;
-  inferred: boolean;
-  inferred_reason: string | null;
-}
+/** `kind` is wider here than NS-P13's: this shape earns deploy and breakage too. */
+export type ProposedEvent = SharedProposedEvent<"lovable", "prompt" | "deploy" | "breakage">;
 
-export interface ProposedNode {
-  local_id: string;
-  type: string;
-  title: string | null;
-  note: string | null;
-  payload: Record<string, unknown>;
-  source_ref: SourceRef;
-  inferred: boolean;
-  inferred_reason: string | null;
-}
+export type ProposedNode = SharedProposedNode<"lovable">;
 
-export interface ProposedField {
-  value: string;
-  source_ref: SourceRef;
-  inferred: boolean;
-  inferred_reason: string | null;
-}
+export type ProposedField = SharedProposedField<"lovable">;
 
-export interface ParseWarning {
-  code: string;
-  message: string;
-}
+export type ParseWarning = SharedParseWarning;
 
 /**
- * Field-for-field NS-P13's ParseSummary. turn_count / user_turn_count /
- * assistant_turn_count keep their transcript names even though a Lovable export
- * calls them messages: renaming them would fork the envelope, and the client
- * reads them by name.
+ * Field-for-field NS-P13's ParseSummary, because it IS NS-P13's ParseSummary.
+ * turn_count / user_turn_count / assistant_turn_count keep their transcript
+ * names even though a Lovable export calls them messages: renaming them would
+ * fork the envelope, and the client reads them by name.
  */
-export interface ParseSummary {
-  session_id: string;
-  source_hint: string | null;
-  detected_format: DetectedFormat;
-  detected_labels: { user: string[]; assistant: string[] };
-  turn_count: number;
-  user_turn_count: number;
-  assistant_turn_count: number;
-  event_count: number;
-  node_count: number;
-  character_count: number;
-  line_count: number;
-  proposed_title: ProposedField | null;
-  proposed_outcome: ProposedField | null;
-}
+export type ParseSummary = SharedParseSummary<DetectedFormat, "lovable">;
 
-export interface ParseResult {
-  events: ProposedEvent[];
-  nodes: ProposedNode[];
-  summary: ParseSummary;
-  warnings: ParseWarning[];
-}
+export type ParseResult = SharedParseResult<DetectedFormat, "lovable", "prompt" | "deploy" | "breakage">;
 
-export interface ParseOptions {
-  session_id: string;
-  source_hint?: string | null;
-}
+export type ParseOptions = SharedParseOptions;
 
 // -----------------------------------------------------------------------------
 // The normalised message
