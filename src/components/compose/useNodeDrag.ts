@@ -233,9 +233,20 @@ export interface MovePlan {
   toTray: BuildNode | null;
 }
 
+/**
+ * A planned move, or the reason there is not one.
+ *
+ * The absent half of each arm is declared as an optional `never` rather than
+ * left off. This project compiles with strictNullChecks off, and under that
+ * setting TypeScript will not narrow a union by the truthiness of a boolean
+ * discriminant — `if (!result.ok)` leaves the type as the whole union, so
+ * `result.reason` is an error on every caller. Naming both properties in both
+ * arms makes the access legal whichever way a caller tests `ok`, and `never`
+ * keeps it impossible to actually supply the wrong one.
+ */
 export type PlanResult =
-  | { ok: true; plan: MovePlan }
-  | { ok: false; reason: string };
+  | { ok: true; plan: MovePlan; reason?: never }
+  | { ok: false; reason: string; plan?: never };
 
 /**
  * Why a drop cannot happen, or null when it can.
