@@ -11,6 +11,7 @@ import {
   type BuildPatch,
   type BuildRecord,
   type BuildShape,
+  type BuildStatus,
 } from "./types";
 
 // One string literal, not a concatenation: PostgREST parses the column list at
@@ -39,6 +40,8 @@ export interface CreateBuildInput {
 export interface ListBuildsOptions {
   limit?: number;
   offset?: number;
+  /** Narrow to one status. Omitted, the creator's builds come back whole. */
+  status?: BuildStatus;
 }
 
 /** Six random characters from a-z0-9, so two identical titles never collide. */
@@ -181,12 +184,16 @@ export async function updateBuild(
  */
 export async function listBuildsByCreator(
   creatorId: string,
-  { limit = CREATOR_LIST_LIMIT, offset = 0 }: ListBuildsOptions = {}
+  { limit = CREATOR_LIST_LIMIT, offset = 0, status }: ListBuildsOptions = {}
 ): Promise<Build[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("builds")
     .select(BUILD_COLUMNS)
-    .eq("creator_id", creatorId)
+    .eq("creator_id", creatorId);
+
+  if (status) query = query.eq("status", status);
+
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1)
     .limit(limit);
