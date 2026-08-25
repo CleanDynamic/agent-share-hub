@@ -663,33 +663,39 @@ export type Database = {
       build_reproductions: {
         Row: {
           build_id: string
+          confirmed_at: string
           created_at: string
           id: string
           metadata: Json | null
           model_used: string | null
           note: string | null
-          result: string
+          result: string | null
           user_id: string
+          worked: boolean
         }
         Insert: {
           build_id: string
+          confirmed_at?: string
           created_at?: string
           id?: string
           metadata?: Json | null
           model_used?: string | null
           note?: string | null
-          result: string
+          result?: string | null
           user_id: string
+          worked?: boolean
         }
         Update: {
           build_id?: string
+          confirmed_at?: string
           created_at?: string
           id?: string
           metadata?: Json | null
           model_used?: string | null
           note?: string | null
-          result?: string
+          result?: string | null
           user_id?: string
+          worked?: boolean
         }
         Relationships: [
           {
