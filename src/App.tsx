@@ -73,6 +73,10 @@ const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
 // the workspace before the creator has decided to open one.
 const ComposeNew = lazy(() => import("./pages/ComposeNew"));
+// The conversion offer for one existing post. Its own chunk and its own route:
+// the affordance belongs on the creator's post page, and ContentDetail is on
+// the existing content path, which this rebuild does not edit.
+const ConvertPrompt = lazy(() => import("./components/build/ConvertPrompt"));
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -152,6 +156,7 @@ const App = () => (
               <Route path="/gallery" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><Gallery /></Suspense>} />
               <Route path="/compose/new" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><ComposeNew /></Suspense>} />
               <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><Compose /></Suspense>} />
+              <Route path="/convert/:contentItemId" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><ConvertPrompt /></Suspense>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </UploadPickerProvider>

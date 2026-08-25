@@ -55,6 +55,28 @@ export {
   type UploadMediaInput,
 } from "./media";
 export {
+  EXACT_NODE_TYPE,
+  SOURCE_BLOCK_COLUMNS,
+  SOURCE_ITEM_COLUMNS,
+  blockLabel,
+  blockTitle,
+  convertContentItem,
+  detectLanguage,
+  detectSteps,
+  findConversion,
+  mapBlock,
+  parseModelParams,
+  parseTable,
+  planConversion,
+  readSource,
+  type ConversionCounts,
+  type ConversionPlan,
+  type ConversionSource,
+  type NodePlan,
+  type SourceBlock,
+  type SourceItem,
+} from "./convert";
+export {
   forkBuild,
   getForkOrigin,
   nodesToCopy,
