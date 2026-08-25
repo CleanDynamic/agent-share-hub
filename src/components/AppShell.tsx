@@ -102,7 +102,7 @@ export function AppShell() {
     { key: "home",     icon: NAV_ICONS.home,     label: "Home",      route: "/" },
     { key: "discover", icon: NAV_ICONS.discover, label: "Discover",  route: "/browse" },
     { key: "library",  icon: NAV_ICONS.library,  label: "Library",   route: "/library",  authOnly: true, dot: hasUnseenSaves },
-    { key: "upload",   icon: NAV_ICONS.upload,   label: "Upload",    route: "/upload",   divider: true },
+    { key: "upload",   icon: NAV_ICONS.upload,   label: "Upload",    route: "/compose/new",   divider: true },
     { key: "drafts",   icon: NAV_ICONS.drafts,   label: "Drafts",    route: "/drafts",   authOnly: true, badge: draftBadge, badgeMuted: true },
     { key: "messages", icon: NAV_ICONS.messages, label: "Messages",  route: "/messages", authOnly: true, badge: msgBadge, divider: true },
     { key: "notifications", icon: NAV_ICONS.notifications, label: "Notifications", route: "/notifications", authOnly: true, badge: notifBadge },
@@ -116,11 +116,11 @@ export function AppShell() {
     return true;
   });
 
+  /* Upload used to intercept the click and open the type picker. It now
+     navigates like every other entry, so the nav lands in the build
+     workspace. The picker is still reachable from every other New
+     affordance — Cmd/Ctrl+N, the mobile drawer, the drafts page. */
   const onNavClick = (item: FlatShellNavItem) => {
-    if (item.key === "upload") {
-      openUploadTypePicker();
-      return;
-    }
     navigate(item.route);
   };
 

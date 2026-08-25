@@ -25,6 +25,7 @@ import Upload from "./pages/Upload";
 import UploadTypeSelector from "./pages/UploadTypeSelector";
 import BlogUpload from "./pages/BlogUpload";
 import BountyUploadShell from "./pages/BountyUploadShell";
+import { LegacyUploadRoute } from "@/components/upload/LegacyUploadNotice";
 import About from "./pages/About";
 import ContentDetail from "./pages/ContentDetail";
 import ContentOrReblogRoute from "@/components/routing/ContentOrReblogRoute";
@@ -106,10 +107,14 @@ const App = () => (
                 <Route path="/fyp" element={<FYPPage />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/category/:slug" element={<Category />} />
-                <Route path="/upload" element={<UploadTypeSelector />} />
-                <Route path="/upload/blueprint" element={<Upload />} />
-                <Route path="/upload/blog" element={<BlogUpload />} />
-                <Route path="/upload/bounty" element={<BountyUploadShell />} />
+                {/* The previous publishing tool. Still registered, still
+                    saving, still publishing — wrapped in a banner that names
+                    it as previous and links to the replacement. No redirect:
+                    a draft in progress has to be finishable. */}
+                <Route path="/upload" element={<LegacyUploadRoute><UploadTypeSelector /></LegacyUploadRoute>} />
+                <Route path="/upload/blueprint" element={<LegacyUploadRoute><Upload /></LegacyUploadRoute>} />
+                <Route path="/upload/blog" element={<LegacyUploadRoute><BlogUpload /></LegacyUploadRoute>} />
+                <Route path="/upload/bounty" element={<LegacyUploadRoute><BountyUploadShell /></LegacyUploadRoute>} />
                 <Route path="/about" element={<About />} />
                 <Route path="/api-docs" element={<ApiDocs />} />
                 <Route path="/content/:id" element={<ContentDetail />} />

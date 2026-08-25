@@ -195,6 +195,29 @@ export async function listBuildsByCreator(
   return (data ?? []) as Build[];
 }
 
+/**
+ * A creator's unpublished builds, most recently worked on first.
+ *
+ * Ordered by updated_at rather than created_at because this feeds a drafts
+ * list, where "what was I last in the middle of" is the question being asked.
+ */
+export async function listDraftBuildsByCreator(
+  creatorId: string,
+  { limit = CREATOR_LIST_LIMIT, offset = 0 }: ListBuildsOptions = {}
+): Promise<Build[]> {
+  const { data, error } = await supabase
+    .from("builds")
+    .select(BUILD_COLUMNS)
+    .eq("creator_id", creatorId)
+    .eq("status", "draft")
+    .order("updated_at", { ascending: false })
+    .range(offset, offset + limit - 1)
+    .limit(limit);
+
+  if (error) throw buildLayerError("listDraftBuildsByCreator", error);
+  return (data ?? []) as Build[];
+}
+
 /** Delete a build. Nodes and events go with it — the FKs cascade. */
 export async function deleteBuild(id: string): Promise<void> {
   const { error } = await supabase.from("builds").delete().eq("id", id);
