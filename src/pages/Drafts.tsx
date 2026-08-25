@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUploadPicker } from "@/contexts/UploadPickerContext";
@@ -16,6 +16,10 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { displayContentType } from "@/lib/content-types";
 import { ShellHeader } from "@/components/shell/ShellHeader";
+// Straight from the module, not the @/lib/build barrel: this page is eagerly
+// imported by App, and the barrel would pull the whole build layer — intake,
+// portable, gallery, layers — into the main chunk with it.
+import { listDraftBuildsByCreator } from "@/lib/build/builds";
 
 function completionCount(item: any): { filled: number; total: number } {
   const total = 5;
@@ -28,6 +32,32 @@ function completionCount(item: any): { filled: number; total: number } {
   return { filled, total };
 }
 
+/* ── Two tools, one list ────────────────────────────────────────────────────
+   Drafts live in two places now: content_items, written by the previous
+   upload editor, and builds, written by the build workspace. A creator with
+   work in both has to be able to see all of it, so both are fetched and
+   merged into one list ordered by when each was last worked on. Every row
+   says which tool it belongs to and opens in that tool.
+   ────────────────────────────────────────────────────────────────────────── */
+
+type DraftSource = "content" | "build";
+
+/** What a row needs, whichever tool wrote it. */
+interface DraftRow {
+  source: DraftSource;
+  id: string;
+  /** Last-worked-on time — the sort key for the merged list. */
+  savedAt: string;
+  displayName: string | null;
+  /** The original record, for the fields only one of the two shapes has. */
+  item: any;
+}
+
+const TOOL_LABEL: Record<DraftSource, { label: string; color: string }> = {
+  build:   { label: "Build workspace",  color: "#E8571A" },
+  content: { label: "Previous tool",    color: "#9CA3AF" },
+};
+
 export default function DraftsPage() {
   const { isLoggedIn, profile, loading } = useAuth();
   const navigate = useNavigate();
@@ -39,7 +69,7 @@ export default function DraftsPage() {
     if (!loading && !isLoggedIn) navigate("/login", { replace: true });
   }, [loading, isLoggedIn, navigate]);
 
-  const { data: drafts, isLoading } = useQuery({
+  const { data: contentDrafts, isLoading: contentLoading } = useQuery({
     queryKey: ["my_drafts", profile?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -65,6 +95,36 @@ export default function DraftsPage() {
     },
     enabled: !!profile?.id,
   });
+
+  const { data: buildDrafts, isLoading: buildsLoading } = useQuery({
+    queryKey: ["my_build_drafts", profile?.id],
+    queryFn: () => listDraftBuildsByCreator(profile!.id),
+    enabled: !!profile?.id,
+  });
+
+  const isLoading = contentLoading || buildsLoading;
+
+  const drafts: DraftRow[] = useMemo(() => {
+    const rows: DraftRow[] = [
+      ...(contentDrafts ?? []).map((d) => ({
+        source: "content" as const,
+        id: d.id,
+        savedAt: d.draft_saved_at || d.created_at,
+        displayName: d.draft_name || d.title || null,
+        item: d,
+      })),
+      ...(buildDrafts ?? []).map((b) => ({
+        source: "build" as const,
+        id: b.id,
+        savedAt: b.updated_at || b.created_at,
+        displayName: b.title || null,
+        item: b,
+      })),
+    ];
+    return rows.sort(
+      (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
+    );
+  }, [contentDrafts, buildDrafts]);
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -97,15 +157,18 @@ export default function DraftsPage() {
           </div>
         ) : drafts && drafts.length > 0 ? (
           <div className="space-y-3">
-            {drafts.map((draft: any) => {
+            {drafts.map((row: DraftRow) => {
+              const draft = row.item;
+              const isBuild = row.source === "build";
+              const tool = TOOL_LABEL[row.source];
               const { filled, total } = completionCount(draft);
               const allComplete = filled === total;
-              const displayName = draft.draft_name || draft.title || null;
-              const savedAt = draft.draft_saved_at || draft.created_at;
+              const displayName = row.displayName;
+              const savedAt = row.savedAt;
 
               return (
                 <div
-                  key={draft.id}
+                  key={`${row.source}:${row.id}`}
                   style={{
                     background: 'rgba(255,255,255,0.025)',
                     border: '1px solid rgba(255, 255, 255, 0.14)',
@@ -126,7 +189,18 @@ export default function DraftsPage() {
                       {displayName || "Untitled draft"}
                     </p>
                     <div className="flex items-center flex-wrap" style={{ gap: 6 }}>
-                      {(() => {
+                      {/* Which tool this draft belongs to, and so which editor
+                          the Continue button opens. */}
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 100, background: `${tool.color}14`, color: tool.color, border: `1px solid ${tool.color}40` }}>
+                        {tool.label}
+                      </span>
+                      {isBuild ? (
+                        draft.shape && (
+                          <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(139,69,19,0.08)', color: '#8B4513', border: '1px solid rgba(139,69,19,0.2)' }}>
+                            {draft.shape}
+                          </span>
+                        )
+                      ) : (() => {
                         const pt = (draft.post_type as string | null) || 'blueprint';
                         const ptMap: Record<string, { label: string; color: string }> = {
                           blueprint: { label: 'Blueprint', color: '#E8571A' },
@@ -136,17 +210,17 @@ export default function DraftsPage() {
                         };
                         const meta = ptMap[pt] ?? ptMap.blueprint;
                         return (
-                          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 100, background: `${meta.color}14`, color: meta.color, border: `1px solid ${meta.color}40` }}>
+                          <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: `${meta.color}14`, color: meta.color, border: `1px solid ${meta.color}40` }}>
                             {meta.label}
                           </span>
                         );
                       })()}
-                      {draft.content_type && (
+                      {!isBuild && draft.content_type && (
                         <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(139,69,19,0.08)', color: '#8B4513', border: '1px solid rgba(139,69,19,0.2)' }}>
                           {displayContentType(draft.content_type)}
                         </span>
                       )}
-                      {draft.difficulty && (
+                      {!isBuild && draft.difficulty && (
                         <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(255, 255, 255, 0.12)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.08)' }}>
                           {draft.difficulty}
                         </span>
@@ -155,15 +229,24 @@ export default function DraftsPage() {
                     <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
                       Last saved {formatDistanceToNow(new Date(savedAt), { addSuffix: true })}
                     </p>
-                    <p style={{ fontSize: 12, color: allComplete ? '#34D399' : 'rgba(255,255,255,0.35)' }}>
-                      {allComplete ? "Ready to preview ✓" : `${filled} of ${total} required fields complete`}
-                    </p>
+                    {isBuild ? (
+                      <p style={{ fontSize: 12, color: (draft.completeness ?? 0) >= 100 ? '#34D399' : 'rgba(255,255,255,0.35)' }}>
+                        {(draft.completeness ?? 0) >= 100
+                          ? "Ready to publish ✓"
+                          : `${draft.completeness ?? 0}% of this shape's record filled in`}
+                      </p>
+                    ) : (
+                      <p style={{ fontSize: 12, color: allComplete ? '#34D399' : 'rgba(255,255,255,0.35)' }}>
+                        {allComplete ? "Ready to preview ✓" : `${filled} of ${total} required fields complete`}
+                      </p>
+                    )}
                   </div>
 
                   {/* Right */}
                   <div className="flex items-center shrink-0" style={{ gap: 8 }}>
                     <button
                       onClick={() => {
+                        if (isBuild) { navigate(`/compose/${draft.id}`); return; }
                         const pt = (draft.post_type as string | null) || 'blueprint';
                         if (pt === 'blog') navigate(`/upload/blog?draft=${draft.id}`);
                         else if (pt === 'bounty') navigate(`/upload/bounty?id=${draft.id}`);
@@ -173,18 +256,25 @@ export default function DraftsPage() {
                     >
                       <Pencil style={{ width: 13, height: 13 }} /> Continue editing
                     </button>
-                    <button
-                      onClick={() => navigate(`/content/${draft.id}`)}
-                      style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.60)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-                    >
-                      <Eye style={{ width: 13, height: 13 }} /> Preview
-                    </button>
-                    <button
-                      onClick={() => setDeleteTarget(draft.id)}
-                      style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: '1px solid rgba(239,68,68,0.25)', color: '#EF4444', background: 'transparent', cursor: 'pointer' }}
-                    >
-                      <Trash2 style={{ width: 14, height: 14 }} />
-                    </button>
+                    {/* Preview and delete stay on the old path only. A draft
+                        build has no public page to preview, and deleting one
+                        is the workspace's own job. */}
+                    {!isBuild && (
+                      <>
+                        <button
+                          onClick={() => navigate(`/content/${draft.id}`)}
+                          style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.60)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                        >
+                          <Eye style={{ width: 13, height: 13 }} /> Preview
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(draft.id)}
+                          style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: '1px solid rgba(239,68,68,0.25)', color: '#EF4444', background: 'transparent', cursor: 'pointer' }}
+                        >
+                          <Trash2 style={{ width: 14, height: 14 }} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               );
