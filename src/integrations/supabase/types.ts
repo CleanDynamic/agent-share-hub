@@ -715,6 +715,7 @@ export type Database = {
           root_build_id: string | null
           shape: string
           slug: string
+          source_content_item_id: string | null
           status: string
           time_to_first_result: number | null
           title: string
@@ -746,6 +747,7 @@ export type Database = {
           root_build_id?: string | null
           shape?: string
           slug: string
+          source_content_item_id?: string | null
           status?: string
           time_to_first_result?: number | null
           title: string
@@ -777,6 +779,7 @@ export type Database = {
           root_build_id?: string | null
           shape?: string
           slug?: string
+          source_content_item_id?: string | null
           status?: string
           time_to_first_result?: number | null
           title?: string
@@ -823,6 +826,13 @@ export type Database = {
             columns: ["root_build_id"]
             isOneToOne: false
             referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builds_source_content_item_id_fkey"
+            columns: ["source_content_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
         ]
