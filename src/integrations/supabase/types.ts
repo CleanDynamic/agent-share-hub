@@ -464,6 +464,56 @@ export type Database = {
           },
         ]
       }
+      build_layers: {
+        Row: {
+          approved: boolean
+          approved_at: string | null
+          build_id: string
+          content: Json
+          created_at: string
+          edited_by_creator: boolean
+          generated_at: string
+          generated_from_hash: string
+          id: string
+          layer: string
+          model_used: string | null
+        }
+        Insert: {
+          approved?: boolean
+          approved_at?: string | null
+          build_id: string
+          content?: Json
+          created_at?: string
+          edited_by_creator?: boolean
+          generated_at?: string
+          generated_from_hash: string
+          id?: string
+          layer: string
+          model_used?: string | null
+        }
+        Update: {
+          approved?: boolean
+          approved_at?: string | null
+          build_id?: string
+          content?: Json
+          created_at?: string
+          edited_by_creator?: boolean
+          generated_at?: string
+          generated_from_hash?: string
+          id?: string
+          layer?: string
+          model_used?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "build_layers_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       build_media: {
         Row: {
           bucket: string
