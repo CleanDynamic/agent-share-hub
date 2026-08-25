@@ -387,7 +387,11 @@ function truncate(value: string, max: number): string {
  * would otherwise close the block early and swallow the rest of the document.
  */
 function fence(text: string): string {
-  const longest = (text.match(/`+/g) ?? []).reduce((max, run) => Math.max(max, run.length), 0);
+  // Annotated rather than inferred. `String.match` and the `[]` fallback are
+  // two different array types, and reducing over the union of them resolves
+  // the accumulator to `never`, so the arithmetic below stops compiling.
+  const runs: string[] = text.match(/`+/g) ?? [];
+  const longest = runs.reduce((max, run) => Math.max(max, run.length), 0);
   return "`".repeat(Math.max(3, longest + 1));
 }
 

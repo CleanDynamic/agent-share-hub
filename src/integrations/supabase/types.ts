@@ -518,15 +518,17 @@ export type Database = {
         Row: {
           bucket: string
           build_id: string
-          bytes: number
+          bytes: number | null
           caption: string | null
           created_at: string
-          filename: string
+          duration: number | null
+          filename: string | null
           height: number | null
           id: string
           kind: string
           metadata: Json | null
-          mime: string
+          mime: string | null
+          node_id: string | null
           path: string
           poster_path: string | null
           width: number | null
@@ -534,15 +536,17 @@ export type Database = {
         Insert: {
           bucket?: string
           build_id: string
-          bytes: number
+          bytes?: number | null
           caption?: string | null
           created_at?: string
-          filename: string
+          duration?: number | null
+          filename?: string | null
           height?: number | null
           id?: string
           kind: string
           metadata?: Json | null
-          mime: string
+          mime?: string | null
+          node_id?: string | null
           path: string
           poster_path?: string | null
           width?: number | null
@@ -550,15 +554,17 @@ export type Database = {
         Update: {
           bucket?: string
           build_id?: string
-          bytes?: number
+          bytes?: number | null
           caption?: string | null
           created_at?: string
-          filename?: string
+          duration?: number | null
+          filename?: string | null
           height?: number | null
           id?: string
           kind?: string
           metadata?: Json | null
-          mime?: string
+          mime?: string | null
+          node_id?: string | null
           path?: string
           poster_path?: string | null
           width?: number | null
@@ -569,6 +575,13 @@ export type Database = {
             columns: ["build_id"]
             isOneToOne: false
             referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "build_media_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "build_nodes"
             referencedColumns: ["id"]
           },
         ]
@@ -650,33 +663,39 @@ export type Database = {
       build_reproductions: {
         Row: {
           build_id: string
+          confirmed_at: string
           created_at: string
           id: string
           metadata: Json | null
           model_used: string | null
           note: string | null
-          result: string
+          result: string | null
           user_id: string
+          worked: boolean
         }
         Insert: {
           build_id: string
+          confirmed_at?: string
           created_at?: string
           id?: string
           metadata?: Json | null
           model_used?: string | null
           note?: string | null
-          result: string
+          result?: string | null
           user_id: string
+          worked?: boolean
         }
         Update: {
           build_id?: string
+          confirmed_at?: string
           created_at?: string
           id?: string
           metadata?: Json | null
           model_used?: string | null
           note?: string | null
-          result?: string
+          result?: string | null
           user_id?: string
+          worked?: boolean
         }
         Relationships: [
           {
@@ -5149,6 +5168,7 @@ export type Database = {
         Returns: boolean
       }
       claim_challenge: { Args: { _challenge_id: string }; Returns: Json }
+      gallery_facets: { Args: { thresholds?: Json }; Returns: Json }
       get_email_by_username: { Args: { _username: string }; Returns: string }
       get_post_lineage: {
         Args: { _root_id: string }
