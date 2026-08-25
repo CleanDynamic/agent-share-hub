@@ -518,15 +518,17 @@ export type Database = {
         Row: {
           bucket: string
           build_id: string
-          bytes: number
+          bytes: number | null
           caption: string | null
           created_at: string
-          filename: string
+          duration: number | null
+          filename: string | null
           height: number | null
           id: string
           kind: string
           metadata: Json | null
-          mime: string
+          mime: string | null
+          node_id: string | null
           path: string
           poster_path: string | null
           width: number | null
@@ -534,15 +536,17 @@ export type Database = {
         Insert: {
           bucket?: string
           build_id: string
-          bytes: number
+          bytes?: number | null
           caption?: string | null
           created_at?: string
-          filename: string
+          duration?: number | null
+          filename?: string | null
           height?: number | null
           id?: string
           kind: string
           metadata?: Json | null
-          mime: string
+          mime?: string | null
+          node_id?: string | null
           path: string
           poster_path?: string | null
           width?: number | null
@@ -550,15 +554,17 @@ export type Database = {
         Update: {
           bucket?: string
           build_id?: string
-          bytes?: number
+          bytes?: number | null
           caption?: string | null
           created_at?: string
-          filename?: string
+          duration?: number | null
+          filename?: string | null
           height?: number | null
           id?: string
           kind?: string
           metadata?: Json | null
-          mime?: string
+          mime?: string | null
+          node_id?: string | null
           path?: string
           poster_path?: string | null
           width?: number | null
@@ -569,6 +575,13 @@ export type Database = {
             columns: ["build_id"]
             isOneToOne: false
             referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "build_media_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "build_nodes"
             referencedColumns: ["id"]
           },
         ]
