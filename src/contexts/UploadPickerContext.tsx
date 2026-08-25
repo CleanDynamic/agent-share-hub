@@ -18,8 +18,15 @@ export function useUploadPicker() {
   return ctx;
 }
 
+// Blueprint authoring lives on the build record path. Blog and bounty stay on
+// the original editor: neither has a replacement yet, and a path that is still
+// the only way to do something does not get repointed.
+//
+// /upload/blueprint stays registered. It is how an existing draft is reopened
+// (Drafts.tsx, ContentDetail.tsx), so drafts written before this change remain
+// finishable; it is simply no longer where a new blueprint starts.
 const ROUTE_FOR_TYPE: Record<UploadContentType, string> = {
-  blueprint: "/upload/blueprint",
+  blueprint: "/compose/new",
   blog: "/upload/blog",
   bounty: "/upload/bounty",
   "meta-bounty": "/upload?type=meta-bounty",
