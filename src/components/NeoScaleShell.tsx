@@ -1539,7 +1539,7 @@ export function NeoScaleShell() {
     { key: "home",     icon: ICONS.home,     label: "Home",      route: "/" },
     { key: "discover", icon: ICONS.discover, label: "Discover",  route: "/browse" },
     { key: "library",  icon: ICONS.library,  label: "Library",   route: "/library",  authOnly: true },
-    { key: "upload",   icon: ICONS.upload,   label: "Upload",    route: "/upload",   divider: true },
+    { key: "upload",   icon: ICONS.upload,   label: "Upload",    route: "/compose/new",   divider: true },
     { key: "drafts",   icon: ICONS.drafts,   label: "Drafts",    route: "/drafts",   authOnly: true, badge: draftBadge },
     { key: "messages", icon: ICONS.messages, label: "Messages",  route: "/messages", authOnly: true, badge: msgBadge, divider: true },
     { key: "notifications", icon: ICONS.notifications, label: "Notifications", route: "/notifications", authOnly: true, badge: notifBadge },
