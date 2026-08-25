@@ -18,8 +18,11 @@ export function useUploadPicker() {
   return ctx;
 }
 
+// Blueprint is the one the build workspace replaces. Blog and bounty are not
+// replaced by that rebuild and keep their existing editors — merging bounties
+// into the gap node type is a product decision nobody has made.
 const ROUTE_FOR_TYPE: Record<UploadContentType, string> = {
-  blueprint: "/upload/blueprint",
+  blueprint: "/compose/new",
   blog: "/upload/blog",
   bounty: "/upload/bounty",
   "meta-bounty": "/upload?type=meta-bounty",
