@@ -470,6 +470,7 @@ export type Database = {
           approved_at: string | null
           build_id: string
           content: Json
+          created_at: string
           edited_by_creator: boolean
           generated_at: string
           generated_from_hash: string
@@ -481,7 +482,8 @@ export type Database = {
           approved?: boolean
           approved_at?: string | null
           build_id: string
-          content: Json
+          content?: Json
+          created_at?: string
           edited_by_creator?: boolean
           generated_at?: string
           generated_from_hash: string
@@ -494,6 +496,7 @@ export type Database = {
           approved_at?: string | null
           build_id?: string
           content?: Json
+          created_at?: string
           edited_by_creator?: boolean
           generated_at?: string
           generated_from_hash?: string
@@ -513,46 +516,49 @@ export type Database = {
       }
       build_media: {
         Row: {
-          build_id: string
           bucket: string
-          bytes: number | null
+          build_id: string
+          bytes: number
+          caption: string | null
           created_at: string
-          duration: number | null
+          filename: string
           height: number | null
           id: string
           kind: string
-          mime: string | null
-          node_id: string | null
+          metadata: Json | null
+          mime: string
           path: string
           poster_path: string | null
           width: number | null
         }
         Insert: {
-          build_id: string
           bucket?: string
-          bytes?: number | null
+          build_id: string
+          bytes: number
+          caption?: string | null
           created_at?: string
-          duration?: number | null
+          filename: string
           height?: number | null
           id?: string
           kind: string
-          mime?: string | null
-          node_id?: string | null
+          metadata?: Json | null
+          mime: string
           path: string
           poster_path?: string | null
           width?: number | null
         }
         Update: {
-          build_id?: string
           bucket?: string
-          bytes?: number | null
+          build_id?: string
+          bytes?: number
+          caption?: string | null
           created_at?: string
-          duration?: number | null
+          filename?: string
           height?: number | null
           id?: string
           kind?: string
-          mime?: string | null
-          node_id?: string | null
+          metadata?: Json | null
+          mime?: string
           path?: string
           poster_path?: string | null
           width?: number | null
@@ -563,13 +569,6 @@ export type Database = {
             columns: ["build_id"]
             isOneToOne: false
             referencedRelation: "builds"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "build_media_node_id_fkey"
-            columns: ["node_id"]
-            isOneToOne: false
-            referencedRelation: "build_nodes"
             referencedColumns: ["id"]
           },
         ]
@@ -651,30 +650,33 @@ export type Database = {
       build_reproductions: {
         Row: {
           build_id: string
-          confirmed_at: string
+          created_at: string
           id: string
+          metadata: Json | null
           model_used: string | null
           note: string | null
+          result: string
           user_id: string
-          worked: boolean
         }
         Insert: {
           build_id: string
-          confirmed_at?: string
+          created_at?: string
           id?: string
+          metadata?: Json | null
           model_used?: string | null
           note?: string | null
+          result: string
           user_id: string
-          worked?: boolean
         }
         Update: {
           build_id?: string
-          confirmed_at?: string
+          created_at?: string
           id?: string
+          metadata?: Json | null
           model_used?: string | null
           note?: string | null
+          result?: string
           user_id?: string
-          worked?: boolean
         }
         Relationships: [
           {
@@ -682,13 +684,6 @@ export type Database = {
             columns: ["build_id"]
             isOneToOne: false
             referencedRelation: "builds"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "build_reproductions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -5154,7 +5149,6 @@ export type Database = {
         Returns: boolean
       }
       claim_challenge: { Args: { _challenge_id: string }; Returns: Json }
-      gallery_facets: { Args: { thresholds?: Json }; Returns: Json }
       get_email_by_username: { Args: { _username: string }; Returns: string }
       get_post_lineage: {
         Args: { _root_id: string }
