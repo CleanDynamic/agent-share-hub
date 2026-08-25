@@ -23,6 +23,7 @@ import Discover from "./pages/Discover";
 import DiscoverLegacy from "./pages/Discover.legacy";
 import Upload from "./pages/Upload";
 import UploadTypeSelector from "./pages/UploadTypeSelector";
+import { LegacyUploadBanner } from "@/components/upload/LegacyUploadBanner";
 import BlogUpload from "./pages/BlogUpload";
 import BountyUploadShell from "./pages/BountyUploadShell";
 import About from "./pages/About";
@@ -107,7 +108,10 @@ const App = () => (
                 <Route path="/search" element={<Search />} />
                 <Route path="/category/:slug" element={<Category />} />
                 <Route path="/upload" element={<UploadTypeSelector />} />
-                <Route path="/upload/blueprint" element={<Upload />} />
+                {/* The old blueprint editor stays registered, stays working and is
+                    not redirected: a draft in progress must be finishable. The
+                    banner is a route-level sibling, so Upload.tsx is untouched. */}
+                <Route path="/upload/blueprint" element={<><LegacyUploadBanner /><Upload /></>} />
                 <Route path="/upload/blog" element={<BlogUpload />} />
                 <Route path="/upload/bounty" element={<BountyUploadShell />} />
                 <Route path="/about" element={<About />} />
