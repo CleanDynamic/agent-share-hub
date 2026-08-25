@@ -328,8 +328,17 @@ function mediaUrlOf(block: SourceBlock): string {
 /**
  * Everything the payload has no field for, as prose on the node's one prose
  * column. Nothing a creator wrote is dropped on the floor.
+ *
+ * `used` is the URL the caller has already put IN the payload — the image on a
+ * screenshot, the link on a document. Only that one is left out of the note.
+ * Every other URL the block carries is written down, because most node types
+ * have nowhere to put one and a file a creator attached must not vanish
+ * because its block became a type with no url field.
  */
-function noteFor(block: SourceBlock, extra: string[] = []): string | null {
+function noteFor(
+  block: SourceBlock,
+  { extra = [], used = "" }: { extra?: string[]; used?: string } = {}
+): string | null {
   const lines = [...extra];
 
   const instructions = text(block.use_instructions);
@@ -339,9 +348,17 @@ function noteFor(block: SourceBlock, extra: string[] = []): string | null {
   if (repo) lines.push(`GitHub: ${repo}`);
 
   const attachment = text(block.file_url);
-  if (attachment && attachment !== mediaUrlOf(block)) {
+  if (attachment && attachment !== used) {
     lines.push(`Attached file: ${text(block.file_name) || attachment}`);
   }
+
+  const external = text(block.external_file_url);
+  if (external && external !== used && external !== attachment) {
+    lines.push(`Linked file: ${external}`);
+  }
+
+  const image = text(block.image_url);
+  if (image && image !== used) lines.push(`Image: ${image}`);
 
   const joined = lines.filter(Boolean).join("\n");
   return joined || null;
@@ -563,12 +580,12 @@ export function mapBlock(block: SourceBlock): NodePlan {
       carrier,
       payload,
       `A ${blockLabel(blockType).toLowerCase()} block has no node type that means the same thing. It is here as a ${carrier} for you to place or drop.`,
-      noteFor(block, carrier === "document" && media ? [] : media ? [`Media: ${media}`] : [])
+      noteFor(block, { used: carrier === "document" ? media || text(block.github_url) : "" })
     );
   }
 
   const empty = (reason: string) =>
-    trayPlan(block, nodeType, {}, reason, noteFor(block, body ? [body] : []));
+    trayPlan(block, nodeType, {}, reason, noteFor(block, { extra: body ? [body] : [] }));
 
   switch (nodeType) {
     case "prompt": {
@@ -624,14 +641,14 @@ export function mapBlock(block: SourceBlock): NodePlan {
           "model_params",
           {},
           "The parameters could not be read as fields. The text you wrote is on the note, unchanged.",
-          noteFor(block, body ? [body] : [])
+          noteFor(block, { extra: body ? [body] : [] })
         );
       }
       return {
         blockId: block.id, blockType, type: "model_params", title,
         // The prose stays whole next to the fields read out of it, so a wrong
         // reading is visible rather than authoritative.
-        note: noteFor(block, [body]),
+        note: noteFor(block, { extra: [body] }),
         payload: params,
         placed: true, trayReason: null, children: [],
       };
@@ -666,7 +683,7 @@ export function mapBlock(block: SourceBlock): NodePlan {
       if (!body && !media) return empty("The result block carried neither text nor an image.");
       return {
         blockId: block.id, blockType, type: "result", title,
-        note: noteFor(block),
+        note: noteFor(block, { used: media }),
         // media_id holds the post's own public URL. Nothing is copied.
         payload: compact({ summary: body, media_id: media }),
         placed: true, trayReason: null, children: [],
@@ -681,7 +698,7 @@ export function mapBlock(block: SourceBlock): NodePlan {
           "comparison_table",
           {},
           "The comparison could not be read as a table. The text you wrote is on the note, unchanged.",
-          noteFor(block, body ? [body] : [])
+          noteFor(block, { extra: body ? [body] : [] })
         );
       }
       return {
@@ -712,12 +729,12 @@ export function mapBlock(block: SourceBlock): NodePlan {
           "screenshot",
           compact({ caption: text(block.image_description) }),
           "The image block has no image on it any more.",
-          noteFor(block, body ? [body] : [])
+          noteFor(block, { extra: body ? [body] : [] })
         );
       }
       return {
         blockId: block.id, blockType, type: "screenshot", title,
-        note: noteFor(block, body ? [body] : []),
+        note: noteFor(block, { extra: body ? [body] : [], used: media }),
         // The post's own URL, referenced where the media id would go. The
         // object stays in content-files and the post keeps serving it.
         payload: compact({ media_id: media, caption: text(block.image_description) }),

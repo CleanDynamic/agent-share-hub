@@ -292,6 +292,33 @@ describe("mapping one block", () => {
     expect(plan.note).toContain("Lower it for classification.");
   });
 
+  it("writes down a file the node type has nowhere to put", () => {
+    const plan = mapBlock(
+      block({
+        block_type: "code",
+        text_content: "python agent.py",
+        file_url: "https://project.supabase.co/storage/v1/object/public/content-files/agent.py",
+        file_name: "agent.py",
+        github_url: "https://github.com/acme/agent",
+      })
+    );
+    expect(plan.placed).toBe(true);
+    expect(plan.note).toContain("agent.py");
+    expect(plan.note).toContain("https://github.com/acme/agent");
+  });
+
+  it("does not repeat a URL it already put in the payload", () => {
+    const screenshot = mapBlock(block({ block_type: "image", image_url: IMAGE_URL }));
+    expect(screenshot.payload.media_id).toBe(IMAGE_URL);
+    expect(screenshot.note ?? "").not.toContain(IMAGE_URL);
+
+    const resource = mapBlock(
+      block({ block_type: "resource", file_url: "https://arxiv.org/abs/1", text_content: "Paper" })
+    );
+    expect(resource.payload.url).toBe("https://arxiv.org/abs/1");
+    expect(resource.note ?? "").not.toContain("https://arxiv.org/abs/1");
+  });
+
   it("trays a comparison it cannot read as a table, keeping the text", () => {
     const plan = mapBlock(
       block({ block_type: "comparison", text_content: "Opus was better than Sonnet at this." })
