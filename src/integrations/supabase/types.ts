@@ -597,6 +597,47 @@ export type Database = {
           },
         ]
       }
+      build_reproductions: {
+        Row: {
+          build_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          model_used: string | null
+          note: string | null
+          result: string
+          user_id: string
+        }
+        Insert: {
+          build_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          model_used?: string | null
+          note?: string | null
+          result: string
+          user_id: string
+        }
+        Update: {
+          build_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          model_used?: string | null
+          note?: string | null
+          result?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "build_reproductions_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       builds: {
         Row: {
           completeness: number | null
