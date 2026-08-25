@@ -162,6 +162,8 @@ export interface NodePlan {
   /** The content block this came from. null for a node derived from the post itself. */
   blockId: string | null;
   blockType: string | null;
+  /** The block's position in the post, so a node can be lined up against it. */
+  blockPosition: number | null;
   /** node_types.key */
   type: string;
   title: string;
@@ -542,6 +544,7 @@ function trayPlan(
   return {
     blockId: block.id,
     blockType: block.block_type,
+    blockPosition: block.position,
     type,
     title: blockTitle(block),
     note,
@@ -591,7 +594,7 @@ export function mapBlock(block: SourceBlock): NodePlan {
     case "prompt": {
       if (!body) return empty("The prompt block carried no text.");
       return {
-        blockId: block.id, blockType, type: "prompt", title,
+        blockId: block.id, blockType, blockPosition: block.position, type: "prompt", title,
         note: noteFor(block),
         payload: compact({ text: body }),
         placed: true, trayReason: null, children: [],
@@ -601,7 +604,7 @@ export function mapBlock(block: SourceBlock): NodePlan {
     case "agent_config": {
       if (!body) return empty("The agent config block carried no text.");
       return {
-        blockId: block.id, blockType, type: "agent_config", title,
+        blockId: block.id, blockType, blockPosition: block.position, type: "agent_config", title,
         note: noteFor(block),
         payload: compact({ system_prompt: body }),
         placed: true, trayReason: null, children: [],
@@ -612,7 +615,7 @@ export function mapBlock(block: SourceBlock): NodePlan {
       const steps = detectSteps(block);
       if (!body && steps.length === 0) return empty("The workflow block carried no text.");
       return {
-        blockId: block.id, blockType, type: "stack", title,
+        blockId: block.id, blockType, blockPosition: block.position, type: "stack", title,
         note: noteFor(block),
         payload: compact({ notes: body }),
         placed: true, trayReason: null,
@@ -622,6 +625,7 @@ export function mapBlock(block: SourceBlock): NodePlan {
         children: steps.map((step) => ({
           blockId: block.id,
           blockType,
+          blockPosition: block.position,
           type: "prompt",
           title: truncate(step, TITLE_MAX),
           note: null,
@@ -645,7 +649,7 @@ export function mapBlock(block: SourceBlock): NodePlan {
         );
       }
       return {
-        blockId: block.id, blockType, type: "model_params", title,
+        blockId: block.id, blockType, blockPosition: block.position, type: "model_params", title,
         // The prose stays whole next to the fields read out of it, so a wrong
         // reading is visible rather than authoritative.
         note: noteFor(block, { extra: [body] }),
@@ -658,7 +662,7 @@ export function mapBlock(block: SourceBlock): NodePlan {
       const service = subBlocksOf(block).subheading || firstLine(body);
       if (!body && !service) return empty("The tool setup block carried no text.");
       return {
-        blockId: block.id, blockType, type: "integration", title,
+        blockId: block.id, blockType, blockPosition: block.position, type: "integration", title,
         note: noteFor(block),
         payload: compact({ service: truncate(service, TITLE_MAX), notes: body }),
         placed: true, trayReason: null, children: [],
@@ -668,7 +672,7 @@ export function mapBlock(block: SourceBlock): NodePlan {
     case "code": {
       if (!body) return empty("The code block carried no source.");
       return {
-        blockId: block.id, blockType, type: "code", title,
+        blockId: block.id, blockType, blockPosition: block.position, type: "code", title,
         note: noteFor(block),
         payload: compact({
           source: body,
@@ -682,7 +686,7 @@ export function mapBlock(block: SourceBlock): NodePlan {
     case "result": {
       if (!body && !media) return empty("The result block carried neither text nor an image.");
       return {
-        blockId: block.id, blockType, type: "result", title,
+        blockId: block.id, blockType, blockPosition: block.position, type: "result", title,
         note: noteFor(block, { used: media }),
         // media_id holds the post's own public URL. Nothing is copied.
         payload: compact({ summary: body, media_id: media }),
@@ -702,7 +706,7 @@ export function mapBlock(block: SourceBlock): NodePlan {
         );
       }
       return {
-        blockId: block.id, blockType, type: "comparison_table", title,
+        blockId: block.id, blockType, blockPosition: block.position, type: "comparison_table", title,
         note: noteFor(block),
         payload: compact({
           columns: table.columns as unknown as Json,
@@ -715,7 +719,7 @@ export function mapBlock(block: SourceBlock): NodePlan {
     case "note": {
       if (!body) return empty("The text block carried no text.");
       return {
-        blockId: block.id, blockType, type: "note", title,
+        blockId: block.id, blockType, blockPosition: block.position, type: "note", title,
         note: noteFor(block),
         payload: { body },
         placed: true, trayReason: null, children: [],
@@ -733,7 +737,7 @@ export function mapBlock(block: SourceBlock): NodePlan {
         );
       }
       return {
-        blockId: block.id, blockType, type: "screenshot", title,
+        blockId: block.id, blockType, blockPosition: block.position, type: "screenshot", title,
         note: noteFor(block, { extra: body ? [body] : [], used: media }),
         // The post's own URL, referenced where the media id would go. The
         // object stays in content-files and the post keeps serving it.
@@ -770,6 +774,7 @@ export function planConversion({ item, blocks }: ConversionSource): ConversionPl
     fromPost.push({
       blockId: null,
       blockType: null,
+      blockPosition: null,
       type: "document",
       title: "Attached file",
       note: null,
@@ -792,6 +797,7 @@ export function planConversion({ item, blocks }: ConversionSource): ConversionPl
     fromPost.push({
       blockId: null,
       blockType: null,
+      blockPosition: null,
       type: "note",
       title: label,
       note: null,
@@ -884,10 +890,15 @@ function nodeRows(buildId: string, contentItemId: string, plan: ConversionPlan):
     title: node.title,
     note: node.note,
     payload: node.payload as Json,
+    // {source, session_id, index} is the shape every source_ref in this
+    // codebase carries. index is WHERE IN THE POST this came from, so a node
+    // can be lined up against the block it was read out of; a node derived
+    // from the post itself rather than from a block has no position and says
+    // so with 0.
     source_ref: {
       source: "content_item",
       session_id: contentItemId,
-      index: rows.length,
+      index: node.blockPosition ?? 0,
       block_id: node.blockId,
       block_type: node.blockType,
     } as unknown as Json,

@@ -519,6 +519,21 @@ describe("converting a post", () => {
     expect(children.map((row) => row.position)).toEqual([0, 1]);
   });
 
+  it("records where in the post each node came from", async () => {
+    blockRows = wholePost();
+    await convertContentItem(ITEM_ID);
+
+    const rows = writes[0].rows as { source_ref: Record<string, unknown> }[];
+    expect(rows[0].source_ref).toEqual({
+      source: "content_item",
+      session_id: ITEM_ID,
+      index: 1,
+      block_id: "block-1",
+      block_type: "text",
+    });
+    expect(rows.map((row) => row.source_ref.index)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
   it("offers the existing draft rather than converting a second time", async () => {
     existingBuild = { id: BUILD_ID, status: "draft", source_content_item_id: ITEM_ID };
 
