@@ -622,7 +622,7 @@ describe("acceptance 3 — a private or missing repository is a sentence, not a 
     fakeGitHub({ tree: {}, recordStatus: 404 });
 
     await expect(readRepoSnapshot(COORDINATES)).rejects.toThrowError(RepoReadError);
-    const error = await readRepoSnapshot(COORDINATES).catch((cause) => cause as RepoReadError);
+    const error = (await readRepoSnapshot(COORDINATES).catch((cause) => cause)) as RepoReadError;
 
     expect(error.status).toBe(404);
     expect(error.message).toMatch(/private, does not exist, or has been renamed/);
@@ -633,7 +633,7 @@ describe("acceptance 3 — a private or missing repository is a sentence, not a 
   it("refuses a private repository even when a token can see it", async () => {
     fakeGitHub({ tree: {}, record: { private: true } });
 
-    const error = await readRepoSnapshot(COORDINATES).catch((cause) => cause as RepoReadError);
+    const error = (await readRepoSnapshot(COORDINATES).catch((cause) => cause)) as RepoReadError;
     expect(error).toBeInstanceOf(RepoReadError);
     expect(error.status).toBe(403);
     expect(error.message).toMatch(/Private repositories are out of scope/);
@@ -642,7 +642,7 @@ describe("acceptance 3 — a private or missing repository is a sentence, not a 
   it("turns a rate limit into a 429 that says to wait", async () => {
     fakeGitHub({ tree: {}, recordStatus: 403, recordBody: '{"message":"API rate limit exceeded"}' });
 
-    const error = await readRepoSnapshot(COORDINATES).catch((cause) => cause as RepoReadError);
+    const error = (await readRepoSnapshot(COORDINATES).catch((cause) => cause)) as RepoReadError;
     expect(error.status).toBe(429);
     expect(error.message).toMatch(/rate-limiting/);
   });
@@ -650,7 +650,7 @@ describe("acceptance 3 — a private or missing repository is a sentence, not a 
   it("turns a GitHub outage into a 502 rather than a 500", async () => {
     fakeGitHub({ tree: {}, recordStatus: 503 });
 
-    const error = await readRepoSnapshot(COORDINATES).catch((cause) => cause as RepoReadError);
+    const error = (await readRepoSnapshot(COORDINATES).catch((cause) => cause)) as RepoReadError;
     expect(error.status).toBe(502);
   });
 });
