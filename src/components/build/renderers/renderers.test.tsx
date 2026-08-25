@@ -266,7 +266,7 @@ const promptNode = makeNode({
 });
 
 describe("the seeded prompt node", () => {
-  const writeText = vi.fn(() => Promise.resolve());
+  const writeText = vi.fn((_text: string) => Promise.resolve());
 
   beforeEach(() => {
     writeText.mockClear();
@@ -285,7 +285,7 @@ describe("the seeded prompt node", () => {
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
 
-    const copied = writeText.mock.calls[0][0] as unknown as string;
+    const copied = writeText.mock.calls[0][0];
     // Exactly the payload text: no label, no model line, no markup, no trim.
     expect(copied).toBe(PROMPT_TEXT);
     expect(copied).not.toMatch(/<[a-z]/i);
