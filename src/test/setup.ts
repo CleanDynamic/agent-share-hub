@@ -21,7 +21,7 @@ for (const [name, read] of [
   ["arrayBuffer", (buffer: ArrayBuffer) => buffer],
   ["text", (buffer: ArrayBuffer) => new TextDecoder().decode(buffer)],
 ] as const) {
-  if (typeof (Blob.prototype as Record<string, unknown>)[name] !== "function") {
+  if (typeof (Blob.prototype as unknown as Record<string, unknown>)[name] !== "function") {
     Object.defineProperty(Blob.prototype, name, {
       configurable: true,
       writable: true,
