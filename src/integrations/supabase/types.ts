@@ -407,6 +407,276 @@ export type Database = {
           },
         ]
       }
+      build_events: {
+        Row: {
+          build_id: string
+          created_at: string
+          id: string
+          kind: string
+          occurred_at: string | null
+          ordinal: number
+          payload: Json
+          phase: number | null
+          phase_title: string | null
+          produced_node_id: string | null
+          visibility: string
+        }
+        Insert: {
+          build_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          occurred_at?: string | null
+          ordinal: number
+          payload?: Json
+          phase?: number | null
+          phase_title?: string | null
+          produced_node_id?: string | null
+          visibility?: string
+        }
+        Update: {
+          build_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          occurred_at?: string | null
+          ordinal?: number
+          payload?: Json
+          phase?: number | null
+          phase_title?: string | null
+          produced_node_id?: string | null
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "build_events_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "build_events_produced_node_id_fkey"
+            columns: ["produced_node_id"]
+            isOneToOne: false
+            referencedRelation: "build_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      build_nodes: {
+        Row: {
+          build_id: string
+          created_at: string
+          event_id: string | null
+          id: string
+          is_gap: boolean
+          note: string | null
+          parent_id: string | null
+          payload: Json
+          position: number | null
+          source_ref: Json | null
+          title: string | null
+          type: string
+        }
+        Insert: {
+          build_id: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          is_gap?: boolean
+          note?: string | null
+          parent_id?: string | null
+          payload?: Json
+          position?: number | null
+          source_ref?: Json | null
+          title?: string | null
+          type: string
+        }
+        Update: {
+          build_id?: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          is_gap?: boolean
+          note?: string | null
+          parent_id?: string | null
+          payload?: Json
+          position?: number | null
+          source_ref?: Json | null
+          title?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "build_nodes_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "build_nodes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "build_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "build_nodes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "build_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "build_nodes_type_fkey"
+            columns: ["type"]
+            isOneToOne: false
+            referencedRelation: "node_types"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      builds: {
+        Row: {
+          completeness: number | null
+          cost_monthly: number | null
+          cost_setup: number | null
+          created_at: string
+          creator_id: string
+          currency: string | null
+          donation_enabled: boolean | null
+          forked_from_event_id: string | null
+          hero_node_id: string | null
+          id: string
+          last_confirmed_at: string | null
+          last_confirmed_model: string | null
+          live_url: string | null
+          made_for: string[] | null
+          made_with: string[] | null
+          monetisation_type: string | null
+          outcome: string | null
+          parent_build_id: string | null
+          price_gbp: number | null
+          published_at: string | null
+          repo_url: string | null
+          reproduction_count: number
+          root_build_id: string | null
+          shape: string
+          slug: string
+          status: string
+          time_to_first_result: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completeness?: number | null
+          cost_monthly?: number | null
+          cost_setup?: number | null
+          created_at?: string
+          creator_id: string
+          currency?: string | null
+          donation_enabled?: boolean | null
+          forked_from_event_id?: string | null
+          hero_node_id?: string | null
+          id?: string
+          last_confirmed_at?: string | null
+          last_confirmed_model?: string | null
+          live_url?: string | null
+          made_for?: string[] | null
+          made_with?: string[] | null
+          monetisation_type?: string | null
+          outcome?: string | null
+          parent_build_id?: string | null
+          price_gbp?: number | null
+          published_at?: string | null
+          repo_url?: string | null
+          reproduction_count?: number
+          root_build_id?: string | null
+          shape?: string
+          slug: string
+          status?: string
+          time_to_first_result?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completeness?: number | null
+          cost_monthly?: number | null
+          cost_setup?: number | null
+          created_at?: string
+          creator_id?: string
+          currency?: string | null
+          donation_enabled?: boolean | null
+          forked_from_event_id?: string | null
+          hero_node_id?: string | null
+          id?: string
+          last_confirmed_at?: string | null
+          last_confirmed_model?: string | null
+          live_url?: string | null
+          made_for?: string[] | null
+          made_with?: string[] | null
+          monetisation_type?: string | null
+          outcome?: string | null
+          parent_build_id?: string | null
+          price_gbp?: number | null
+          published_at?: string | null
+          repo_url?: string | null
+          reproduction_count?: number
+          root_build_id?: string | null
+          shape?: string
+          slug?: string
+          status?: string
+          time_to_first_result?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "builds_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "builds_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builds_forked_from_event_id_fkey"
+            columns: ["forked_from_event_id"]
+            isOneToOne: false
+            referencedRelation: "build_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builds_hero_node_id_fkey"
+            columns: ["hero_node_id"]
+            isOneToOne: false
+            referencedRelation: "build_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builds_parent_build_id_fkey"
+            columns: ["parent_build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builds_root_build_id_fkey"
+            columns: ["root_build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_history: {
         Row: {
           challenge_key: string
@@ -2890,6 +3160,45 @@ export type Database = {
         Update: {
           description?: string | null
           tag?: string
+        }
+        Relationships: []
+      }
+      node_types: {
+        Row: {
+          category: string
+          colour: string
+          copyable: boolean
+          icon: string | null
+          is_active: boolean
+          key: string
+          label: string
+          renderer: string
+          schema: Json
+          sort: number
+        }
+        Insert: {
+          category: string
+          colour: string
+          copyable?: boolean
+          icon?: string | null
+          is_active?: boolean
+          key: string
+          label: string
+          renderer: string
+          schema?: Json
+          sort?: number
+        }
+        Update: {
+          category?: string
+          colour?: string
+          copyable?: boolean
+          icon?: string | null
+          is_active?: boolean
+          key?: string
+          label?: string
+          renderer?: string
+          schema?: Json
+          sort?: number
         }
         Relationships: []
       }
