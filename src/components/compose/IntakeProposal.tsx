@@ -14,6 +14,14 @@
 // The events are collapsed to a count. A twenty-exchange transcript is forty
 // rows of chat that the creator has already read once, and rendering it in
 // full turns a review into a scroll.
+//
+// EXTENDED, NOT FORKED (NS-P34). A Build File dropped on /import or
+// /compose/new is reviewed here too, because a creator confirming imported
+// material should not have to learn a second surface to do it on. Four optional
+// props carry what a Build File has and a transcript does not — the line naming
+// the tool that wrote it, the note about where kept nodes land, the scan for
+// keys that travelled in the file, and test ids for the import flow. All four
+// are absent on the transcript path, which renders exactly as it did.
 
 import { useMemo, useState } from "react";
 import type { CSSProperties } from "react";
@@ -24,6 +32,7 @@ import type {
   ProposedNode,
   TranscriptProposal,
 } from "@/lib/build/intake";
+import type { SecretWarning } from "@/lib/build/buildfile";
 import {
   CATEGORY_COLOUR,
   GAP_RED,
@@ -479,6 +488,90 @@ function NodeSection({
   );
 }
 
+/** "node 1.2 · params" — where in the file the match was found. */
+function secretLocation(secret: SecretWarning): string {
+  const subject = secret.where === "event" ? `step ${secret.ref}` : `node ${secret.ref}`;
+  return secret.field ? `${subject} · ${secret.field}` : subject;
+}
+
+/**
+ * Keys and passwords that travelled in the file.
+ *
+ * IT NEVER BLOCKS THE IMPORT. The scan cannot tell a live key from an example
+ * one, and a surface that refused the file would be wrong often enough to teach
+ * creators to route around it. Nor does anything here edit the payload: the
+ * match is shown already masked by the scanner, and what gets written is what
+ * the file said. Import that silently edits a build is a worse failure than
+ * import that shows a creator what is in their own file and lets them decide.
+ *
+ * Red, at the alpha the intake error panel already uses, because this is the
+ * one thing on the review worth stopping to read.
+ */
+function SecretsBanner({ secrets }: { secrets: SecretWarning[] }) {
+  if (secrets.length === 0) return null;
+
+  return (
+    <section
+      data-testid="import-secrets-banner"
+      data-visual-slot="intake-secrets"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        padding: "12px 14px",
+        borderRadius: 10,
+        border: `1px solid ${hexToRgba(GAP_RED, 0.3)}`,
+        background: hexToRgba(GAP_RED, 0.06),
+      }}
+    >
+      <span style={{ ...labelText, textTransform: "uppercase", color: GAP_RED }}>
+        {secrets.length === 1 ? "1 possible secret" : `${secrets.length} possible secrets`}
+      </span>
+      <p style={{ ...bodyText, margin: 0, color: TEXT_PRIMARY }}>
+        Looks like a key or password travelled in this file. Check these before
+        you publish — clear them in the fields after import.
+      </p>
+      <ul
+        style={{
+          listStyle: "none",
+          margin: 0,
+          padding: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: 5,
+        }}
+      >
+        {secrets.map((secret, index) => (
+          <li
+            key={`${secret.where}-${secret.ref}-${secret.field}-${index}`}
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <code
+              style={{
+                ...bodyText,
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                fontSize: 12,
+                color: TEXT_PRIMARY,
+                wordBreak: "break-all",
+              }}
+            >
+              {secret.excerpt}
+            </code>
+            <span style={{ ...labelText, fontSize: 11, color: TEXT_SECONDARY }}>
+              {secretLocation(secret)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 // -----------------------------------------------------------------------------
 // The review
 // -----------------------------------------------------------------------------
@@ -492,6 +585,25 @@ interface IntakeProposalProps {
   onSkip: () => void;
   isWriting: boolean;
   error: string | null;
+  /**
+   * "From Claude, 12 parts and 30 steps" — what wrote the file and how much of
+   * it there is. Absent on the transcript path, which has no such provenance to
+   * state: it was parsed from a paste, and saying so would be filler.
+   */
+  sourceLine?: string | null;
+  /**
+   * Where kept items land, when it is not the tray.
+   *
+   * The default sentence is true of every parser that guesses at structure. A
+   * Build File carries the structure, so its nodes are placed and telling a
+   * creator to go and arrange them would be wrong.
+   */
+  arrivalNote?: string;
+  /** Keys and passwords found in the file. Advisory; never blocks the import. */
+  secrets?: SecretWarning[];
+  /** For the import flow's own tests. Omitted on the transcript path. */
+  testId?: string;
+  confirmTestId?: string;
 }
 
 export function IntakeProposal({
@@ -502,6 +614,11 @@ export function IntakeProposal({
   onSkip,
   isWriting,
   error,
+  sourceLine,
+  arrivalNote,
+  secrets,
+  testId,
+  confirmTestId,
 }: IntakeProposalProps) {
   const { events, nodes, summary, warnings } = proposal;
 
@@ -527,20 +644,32 @@ export function IntakeProposal({
 
   return (
     <div
+      {...(testId ? { "data-testid": testId } : {})}
       data-visual-slot="intake-proposal"
       style={{ display: "flex", flexDirection: "column", gap: 18, width: "100%" }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <h1 style={{ ...pageHeadingText, margin: 0 }}>Here is what it found</h1>
+        {sourceLine ? (
+          <p
+            data-testid="import-source-line"
+            style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}
+          >
+            {sourceLine}
+          </p>
+        ) : null}
         <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
           {found.length > 0 ? found.join(" · ") : "Nothing it could split into turns"}
         </p>
         <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED }}>
           Anything marked <span style={{ color: ORANGE }}>Guess</span> was inferred
-          rather than read — hover it for the reason. Everything you keep lands
-          in the tray, unplaced, for you to arrange.
+          rather than read — hover it for the reason.{" "}
+          {arrivalNote ??
+            "Everything you keep lands in the tray, unplaced, for you to arrange."}
         </p>
       </div>
+
+      <SecretsBanner secrets={secrets ?? []} />
 
       {warnings.length > 0 ? (
         <ul
@@ -556,8 +685,14 @@ export function IntakeProposal({
             background: hexToRgba(ORANGE, 0.05),
           }}
         >
-          {warnings.map((warning) => (
-            <li key={warning.code} style={{ ...bodyText, fontSize: 12, color: TEXT_SECONDARY }}>
+          {warnings.map((warning, index) => (
+            /* Keyed by position as well as code: one Build File can raise the
+               same code many times — an unknown type per node — and a bare code
+               would collide. */
+            <li
+              key={`${warning.code}-${index}`}
+              style={{ ...bodyText, fontSize: 12, color: TEXT_SECONDARY }}
+            >
               {warning.message}
             </li>
           ))}
@@ -626,6 +761,7 @@ export function IntakeProposal({
         <span data-visual-slot="btn-primary" style={{ display: "inline-flex", marginTop: 14 }}>
           <button
             type="button"
+            {...(confirmTestId ? { "data-testid": confirmTestId } : {})}
             onClick={onConfirm}
             disabled={isWriting}
             style={{
