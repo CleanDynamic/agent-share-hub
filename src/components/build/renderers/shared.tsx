@@ -268,6 +268,9 @@ export function MediaImage({
 }) {
   const src = mediaSrc(reference, { width, quality });
   const [failed, setFailed] = useState(false);
+  // Never an empty alt: an empty one means "decoration", and a figure a
+  // creator put in their record is not decoration.
+  const description = alt.trim() || "Build media";
 
   if (!src) {
     return (
@@ -291,7 +294,7 @@ export function MediaImage({
   return (
     <img
       src={failed ? (originalSrc(src) ?? src) : src}
-      alt={alt}
+      alt={description}
       loading="lazy"
       decoding="async"
       onError={() => setFailed(true)}

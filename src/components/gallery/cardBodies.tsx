@@ -13,7 +13,7 @@
 //   PromptCardBody   prompt text   -> DefaultCardBody
 //   StudyCardBody    table         -> DefaultCardBody
 //   MediaCardBody    variant grid  -> DefaultCardBody
-//   DefaultCardBody  hero media -> evidence media -> evidence words -> outcome
+//   DefaultCardBody  cover media -> evidence words -> outcome
 //
 // DefaultCardBody cannot itself fall through, because its last branch is the
 // outcome set large — not a placeholder standing in for a missing image, but
@@ -30,18 +30,19 @@ import {
   TEXT_MUTED,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
+  VOID,
   hexToRgba,
 } from "@/components/build/tokens";
 import type { GalleryBuild, GalleryMedia } from "@/lib/build";
 import {
   EVIDENCE_TYPES,
-  evidenceMedia,
+  coverMedia,
   firstNodeOfType,
-  heroMedia,
   listField,
+  mediaAlt,
   numberField,
   payloadOf,
-  srcFor,
+  stillFor,
   textField,
   variantsOf,
   type MediaSrcMap,
@@ -315,7 +316,7 @@ export function MediaCardBody({ build, srcByPath }: CardBodyProps) {
   const variants = variantsOf(
     build,
     firstNodeOfType(build, "generated_media")
-  ).filter((variant) => srcFor(srcByPath, variant.media) !== null);
+  ).filter((variant) => stillFor(srcByPath, variant.media) !== null);
 
   if (variants.length === 0) {
     return <DefaultCardBody build={build} srcByPath={srcByPath} />;
@@ -335,8 +336,8 @@ export function MediaCardBody({ build, srcByPath }: CardBodyProps) {
       {variants.map((variant) => (
         <div key={variant.media.id} style={{ position: "relative", overflow: "hidden" }}>
           <img
-            src={srcFor(srcByPath, variant.media) ?? ""}
-            alt={variant.note ?? `${build.title ?? "Build"} — variant`}
+            src={stillFor(srcByPath, variant.media) ?? ""}
+            alt={variant.note ?? mediaAlt(build, variant.media)}
             loading="lazy"
             decoding="async"
             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
@@ -370,19 +371,18 @@ export function MediaCardBody({ build, srcByPath }: CardBodyProps) {
 // =============================================================================
 
 /**
- * Hero media, else the first evidence node, else the outcome set large.
+ * The cover, else the first evidence node's words, else the outcome set large.
  *
  * The body every shape without one of its own gets, and the tail the other
- * four delegate to. The evidence branch renders a node's own words when it has
- * no picture: a result's summary is a perfectly good card, and reaching the
- * outcome only because a screenshot is missing would throw it away.
+ * four delegate to. Its picture is now whatever coverMedia resolves — the
+ * creator's chosen cover ahead of anything this file would have guessed — and
+ * the branch beneath it is unchanged: a result's summary is a perfectly good
+ * card, and reaching the outcome only because a screenshot is missing would
+ * throw it away.
  */
 export function DefaultCardBody({ build, srcByPath }: CardBodyProps) {
-  const picture = mediaBlock(
-    heroMedia(build) ?? evidenceMedia(build),
-    srcByPath,
-    `${build.title ?? "Build"} — evidence`
-  );
+  const media = coverMedia(build);
+  const picture = mediaBlock(media, srcByPath, mediaAlt(build, media));
   if (picture) return picture;
 
   const stated = evidenceWords(build);
@@ -514,9 +514,12 @@ function mediaBlock(
   srcByPath: MediaSrcMap,
   label: string
 ): ReactElement | null {
-  const src = srcFor(srcByPath, media);
+  const src = stillFor(srcByPath, media);
   if (!src || !media) return null;
 
+  // objectFit cover on the IMAGE, so the picture is cropped to the slot the
+  // grid already gives every card rather than the slot being reshaped around
+  // the picture. The card's own box is untouched by what lands in it.
   const fill: CSSProperties = {
     width: "100%",
     height: "100%",
@@ -524,22 +527,78 @@ function mediaBlock(
     display: "block",
   };
 
+  const video = media.kind === "video";
+  // A poster is a still, so it takes the transform and the play glyph reads as
+  // an affordance over it. Without one there is nothing to show but the video's
+  // own first frame, which is what preload="metadata" fetches — and no more.
+  const posterOnly = video && Boolean(media.poster_path);
+
   return (
     <div data-card-branch="media" style={bodyFrame}>
-      {media.kind === "video" ? (
+      {video && !posterOnly ? (
+        // Muted, never autoplaying: a grid of cards is not a wall of moving
+        // pictures, and nothing on this page downloads a video to play it.
         <video src={src} muted playsInline preload="metadata" aria-label={label} style={fill} />
       ) : (
         <img
           src={src}
           alt={label}
-          // The bytes for an off-screen card are never fetched. This is what
-          // makes one batched, untransformed signing call affordable.
+          // The bytes for an off-screen card are never fetched.
           loading="lazy"
           decoding="async"
           style={fill}
         />
       )}
+      {video ? <PlayGlyph /> : null}
     </div>
+  );
+}
+
+/**
+ * The centred play mark that says "this one moves".
+ *
+ * Decoration for a screen reader — the picture beneath it already carries the
+ * description, and the card is a link to the build rather than a player, so a
+ * second announcement would be a promise the card does not keep.
+ */
+function PlayGlyph() {
+  return (
+    <span
+      aria-hidden
+      data-card-mark="play"
+      style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        width: 44,
+        height: 44,
+        borderRadius: "50%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        // Opaque enough to read over any frame, and deliberately NOT a
+        // backdrop-filter: this app already pays for nine nested ones in the
+        // shell, and a grid of cards is the last place to add more.
+        background: hexToRgba(VOID, 0.62),
+        border: "1px solid rgba(255,255,255,0.22)",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.35)",
+      }}
+    >
+      <span
+        style={{
+          // A triangle drawn in borders rather than a glyph, so it is the same
+          // shape at every font stack. Nudged right, because a triangle's
+          // optical centre sits left of its box.
+          width: 0,
+          height: 0,
+          marginLeft: 3,
+          borderTop: "7px solid transparent",
+          borderBottom: "7px solid transparent",
+          borderLeft: `12px solid ${TEXT_PRIMARY}`,
+        }}
+      />
+    </span>
   );
 }
 

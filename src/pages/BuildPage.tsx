@@ -23,7 +23,7 @@ import {
   useMediaSrc,
   type ResolveMedia,
 } from "@/components/build/MediaFigure";
-import { BuildHeader } from "@/components/build/BuildHeader";
+import { BuildHeader, type HeroMedia } from "@/components/build/BuildHeader";
 import { BreakageView } from "@/components/build/BreakageView";
 import { BuildTabs } from "@/components/build/BuildTabs";
 import { ForkAttribution } from "@/components/build/ForkAttribution";
@@ -131,6 +131,21 @@ function withHeroMedia(
   };
 
   return walk(tree);
+}
+
+function trimmed(value: string | null | undefined): string | null {
+  const text = (value ?? "").trim();
+  return text.length > 0 ? text : null;
+}
+
+/** The creator's own description of the picture, when the payload carries one. */
+function payloadCaption(node: BuildNode | undefined): string | null {
+  const payload =
+    node?.payload && typeof node.payload === "object" && !Array.isArray(node.payload)
+      ? (node.payload as Record<string, unknown>)
+      : null;
+  const caption = payload?.caption;
+  return typeof caption === "string" ? trimmed(caption) : null;
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
@@ -338,10 +353,15 @@ export default function BuildPage() {
   );
 
   // The hero: whatever hero_node_id points at, resolved through the same one
-  // query. A video hero renders from its poster, because the header's slot is
-  // an image; a video with no poster leaves the hero empty and the title leads.
+  // query.
+  //
+  // A VIDEO HERO IS NOW A PLAYER, not a still (NS-P31). Both are signed: the
+  // poster because it is what fills the slot before anyone presses play, and
+  // the video because a recording at the top of a build is the thing a reader
+  // came to watch. A video with no poster still plays; it simply opens black.
   const heroNodeId = data?.build.hero_node_id ?? null;
   const heroMedia = resolveMedia(nodeMediaId(heroNodeId ? nodesById.get(heroNodeId) : undefined));
+  const heroVideo = heroMedia?.kind === "video" ? heroMedia : null;
   const heroImage =
     heroMedia?.kind === "image"
       ? heroMedia
@@ -349,6 +369,25 @@ export default function BuildPage() {
         ? { bucket: heroMedia.bucket, path: heroMedia.poster_path, kind: "image" as const }
         : null;
   const heroSrc = useMediaSrc(heroImage, MEDIA_WIDTH.hero);
+  const heroVideoSrc = useMediaSrc(heroVideo, MEDIA_WIDTH.hero);
+
+  // What the header is told about the hero: what it is, and what to call it.
+  // A caption is the creator's own words for the picture; the node's title is
+  // its words for the step, and the build's title is the floor.
+  const hero = useMemo<HeroMedia | undefined>(() => {
+    const node = heroNodeId ? nodesById.get(heroNodeId) : undefined;
+    const alt =
+      payloadCaption(node) ??
+      trimmed(node?.title) ??
+      trimmed(data?.build.title) ??
+      "Build hero";
+
+    if (heroVideo && heroVideoSrc) {
+      return { kind: "video", src: heroVideoSrc, poster: heroSrc, alt };
+    }
+    if (heroSrc) return { kind: "image", src: heroSrc, alt };
+    return undefined;
+  }, [data?.build.title, heroNodeId, heroSrc, heroVideo, heroVideoSrc, nodesById]);
   const treeWithHero = useMemo(
     () => withHeroMedia(data?.tree ?? [], heroNodeId, heroSrc),
     [data?.tree, heroNodeId, heroSrc]
@@ -400,6 +439,7 @@ export default function BuildPage() {
           build={data.build}
           tree={treeWithHero}
           nodeTypes={data.nodeTypes}
+          hero={hero}
           actions={
             <>
               <PortableExport record={data} />

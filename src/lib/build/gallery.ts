@@ -214,7 +214,13 @@ export const GALLERY_BUILD_COLUMNS =
 
 const GALLERY_NODE_COLUMNS = "id, type, title, payload, position, is_gap";
 
-const GALLERY_MEDIA_COLUMNS = "id, node_id, bucket, path, kind, width, height";
+/**
+ * poster_path is on this list because a card renders a VIDEO from its poster
+ * (NS-P31): a still it can transform to the card's width, rather than a video
+ * element pulling frames for a card nobody has clicked.
+ */
+const GALLERY_MEDIA_COLUMNS =
+  "id, node_id, bucket, path, kind, width, height, poster_path";
 
 /**
  * The select string, embeds and all.
@@ -235,7 +241,14 @@ export type GalleryNode = Pick<
 /** A card's media row. Satisfies MediaRef, so mediaUrl takes it as it stands. */
 export type GalleryMedia = Pick<
   BuildMedia,
-  "id" | "node_id" | "bucket" | "path" | "kind" | "width" | "height"
+  | "id"
+  | "node_id"
+  | "bucket"
+  | "path"
+  | "kind"
+  | "width"
+  | "height"
+  | "poster_path"
 >;
 
 /** One card: a build header, the nodes its body reads, and their media. */

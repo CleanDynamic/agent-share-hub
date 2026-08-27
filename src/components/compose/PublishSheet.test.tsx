@@ -34,8 +34,8 @@ vi.mock("@/lib/build", async (importOriginal) => {
   };
 });
 
-/** The card signs its media exactly as the gallery page does. */
-const createSignedUrls = vi.fn();
+/** The card signs its media exactly as the gallery page does: one per row. */
+const createSignedUrl = vi.fn();
 
 vi.mock("@/integrations/supabase/client", async (importOriginal) => {
   const actual =
@@ -44,7 +44,7 @@ vi.mock("@/integrations/supabase/client", async (importOriginal) => {
     ...actual,
     supabase: {
       ...actual.supabase,
-      storage: { from: () => ({ createSignedUrls }) },
+      storage: { from: () => ({ createSignedUrl }) },
     },
   };
 });
@@ -162,7 +162,10 @@ describe("the publish sheet", () => {
     vi.clearAllMocks();
     getMediaForBuild.mockResolvedValue([]);
     getLayers.mockResolvedValue([]);
-    createSignedUrls.mockResolvedValue({ data: [], error: null });
+    createSignedUrl.mockImplementation(async (path: string) => ({
+      data: { signedUrl: `https://signed.test/${path}` },
+      error: null,
+    }));
     updateBuild.mockImplementation(async (_id: string, patch: Record<string, unknown>) => ({
       ...draft(),
       ...patch,
@@ -238,10 +241,6 @@ describe("the publish sheet", () => {
 
   it("leads the card with the resolved cover, and does not nudge for one", async () => {
     getMediaForBuild.mockResolvedValue([coverRow()]);
-    createSignedUrls.mockResolvedValue({
-      data: [{ path: COVER_PATH, signedUrl: `https://signed.test/${COVER_PATH}`, error: null }],
-      error: null,
-    });
     getBuild.mockResolvedValue(publishable({ cover_media_id: "m1" }));
     renderCompose();
 

@@ -60,6 +60,8 @@ export {
   nodeMediaId,
   resolveCover,
   setCover,
+  type CoverMedia,
+  type CoverNode,
   type CoverSource,
 } from "./cover";
 export {
