@@ -150,11 +150,27 @@ function renderCompose() {
   );
 }
 
-async function pressPublish() {
-  const button = await screen.findByRole("button", { name: "Publish" });
+/**
+ * Press Publish, all the way through.
+ *
+ * Since NS-P29 that is two presses rather than one: the pill in the top bar
+ * opens the publish sheet, and the sheet's own Publish is what starts the
+ * write. The review pass is unchanged and still sits between that press and
+ * the confirmation, which is what the rest of this file is about.
+ */
+async function pressPublish(name: "Publish" | "Published" = "Publish") {
+  const button = await screen.findByRole("button", { name });
   await waitFor(() => expect(button).not.toBeDisabled());
   fireEvent.click(button);
+  await confirmInSheet();
   return button;
+}
+
+/** The sheet's primary action. Lazy-loaded, so it is awaited rather than got. */
+async function confirmInSheet() {
+  const confirm = await screen.findByTestId("publish-confirm");
+  await waitFor(() => expect(confirm).not.toBeDisabled());
+  fireEvent.click(confirm);
 }
 
 function review() {
@@ -395,9 +411,7 @@ describe("the review pass", () => {
     updateBuild.mockResolvedValue(publishableRecord().build);
 
     renderCompose();
-    const button = await screen.findByRole("button", { name: "Published" });
-    await waitFor(() => expect(button).not.toBeDisabled());
-    fireEvent.click(button);
+    await pressPublish("Published");
 
     // Straight through: the same record, already answered, is not asked again.
     await screen.findByRole("dialog", { name: /Your build is live/i });

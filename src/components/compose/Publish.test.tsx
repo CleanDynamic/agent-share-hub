@@ -15,6 +15,12 @@
 // the rule that decides when it appears, are covered in LayerReview.test.tsx;
 // this file is about the write, and about the fact that nothing was allowed to
 // gate it.
+//
+// SINCE NS-P29 THE PRESS IS TWO PRESSES. The pill in the top bar opens the
+// publish sheet; the sheet's Publish starts the write. The gate did not move
+// with it — it is the same expression, tested here on the control it now sits
+// on — and the pill deliberately opens for a record that cannot be published
+// yet, because the sheet is where a creator reads what is outstanding.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -121,7 +127,24 @@ function renderCompose() {
 }
 
 function publishButton(): HTMLButtonElement {
-  return screen.getByRole("button", { name: /^Publish$|^Published$|^Publishing/ }) as HTMLButtonElement;
+  return screen.getAllByRole("button", {
+    name: /^Publish$|^Published$|^Publishing/,
+  })[0] as HTMLButtonElement;
+}
+
+/** The sheet's primary action. Lazy-loaded, so it is awaited rather than got. */
+async function confirmInSheet(): Promise<HTMLButtonElement> {
+  return (await screen.findByTestId("publish-confirm")) as HTMLButtonElement;
+}
+
+/** Open the sheet and press its Publish: the whole path, end to end. */
+async function pressPublish(name: "Publish" | "Published" = "Publish") {
+  const pill = await screen.findByRole("button", { name });
+  await waitFor(() => expect(pill).not.toBeDisabled());
+  fireEvent.click(pill);
+  const confirm = await confirmInSheet();
+  await waitFor(() => expect(confirm).not.toBeDisabled());
+  fireEvent.click(confirm);
 }
 
 /** The patches updateBuild was called with, ignoring the completeness autosave. */
@@ -147,10 +170,7 @@ describe("the publish action", () => {
     getBuild.mockResolvedValue(minimumRecord());
     renderCompose();
 
-    const button = await screen.findByRole("button", { name: "Publish" });
-    await waitFor(() => expect(button).not.toBeDisabled());
-
-    fireEvent.click(button);
+    await pressPublish();
 
     await waitFor(() => expect(publishPatches()).toHaveLength(1));
     const patch = publishPatches()[0];
@@ -178,19 +198,30 @@ describe("the publish action", () => {
     );
   });
 
-  it("stays disabled and names the missing piece when the record is short", async () => {
+  it("refuses a short record, for the same reason, on the control that publishes", async () => {
     // An outcome and a prompt, but nothing showing it worked.
     getBuild.mockResolvedValue(
       record(draft({ outcome: "Triages an inbox." }), [node("n1", "prompt", "The prompt")])
     );
     renderCompose();
 
-    const button = await screen.findByRole("button", { name: "Publish" });
-    expect(button).toBeDisabled();
+    // The pill OPENS: a creator whose record is short is exactly the one who
+    // needs to read what is left, and refusing to open would hide it from them.
+    const pill = await screen.findByRole("button", { name: "Publish" });
+    expect(pill).not.toBeDisabled();
+    fireEvent.click(pill);
 
-    // The reason is what a creator reads off the control, and it names ONE
-    // thing: the next one to do, not the list of everything outstanding.
-    fireEvent.focus(button);
+    // The gate itself is unmoved — same expression, same sentence, now on the
+    // control that would do the writing.
+    const confirm = await confirmInSheet();
+    expect(confirm).toBeDisabled();
+
+    const sheet = await screen.findByTestId("publish-sheet");
+    expect(sheet).toHaveTextContent(/add one piece of evidence/i);
+
+    // And it names ONE thing on the pill, as it always has: the next one to
+    // do, not the list of everything outstanding.
+    fireEvent.focus(pill);
     await waitFor(() => {
       expect(
         screen.getAllByText(/add one piece of evidence/i).length
@@ -203,11 +234,9 @@ describe("the publish action", () => {
     getBuild.mockResolvedValue(minimumRecord());
     renderCompose();
 
-    const button = await screen.findByRole("button", { name: "Publish" });
-    await waitFor(() => expect(button).not.toBeDisabled());
-    fireEvent.click(button);
+    await pressPublish();
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("dialog", { name: /Your build is live/i });
     expect(dialog).toHaveTextContent("/b2/inbox-triage-agent-demo");
 
     // Live and forkable, on the profile — the gallery is a further thing, never
@@ -235,6 +264,9 @@ describe("the publish action", () => {
     const button = publishButton();
     await waitFor(() => expect(button).not.toBeDisabled(), { timeout: 3000 });
     fireEvent.click(button);
+    const confirm = await confirmInSheet();
+    await waitFor(() => expect(confirm).not.toBeDisabled());
+    fireEvent.click(confirm);
 
     await waitFor(() => expect(publishPatches()).toHaveLength(1));
     // One write, carrying both. Not a title update followed by a status update.
@@ -257,11 +289,9 @@ describe("the publish action", () => {
     );
     renderCompose();
 
-    const button = await screen.findByRole("button", { name: "Published" });
-    await waitFor(() => expect(button).not.toBeDisabled());
-    fireEvent.click(button);
+    await pressPublish("Published");
 
-    await screen.findByRole("dialog");
+    await screen.findByRole("dialog", { name: /Your build is live/i });
     // Nothing to write: an editorial promotion is not undone by its creator
     // opening the confirmation, and the original date is not moved.
     expect(publishPatches()).toHaveLength(0);

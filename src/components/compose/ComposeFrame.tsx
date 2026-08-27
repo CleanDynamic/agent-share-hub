@@ -23,7 +23,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import type { Build } from "@/lib/build";
+import type { Build, RequirementKey } from "@/lib/build";
 import type { ComposeBuild } from "@/hooks/useComposeBuild";
 import { MediaProvider, useComposeMedia } from "@/hooks/useComposeMedia";
 import { nodeMediaId } from "@/components/build/MediaFigure";
@@ -261,6 +261,50 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
   const [trayOpen, setTrayOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
 
+  /**
+   * A row in the publish sheet's checklist, resolved by the panel that already
+   * knows what each requirement needs.
+   *
+   * CompletenessPanel's rows have opened the right field, selected the right
+   * node or created a missing one since NS-P17. Reproducing that decision in
+   * the sheet would be a second copy of it, free to drift; pressing the row is
+   * the same act a creator would perform by hand. Below the breakpoint the
+   * panel lives inside the inspector sheet, so that has to be open first.
+   */
+  const focusRequirement = useCallback(
+    (key: RequirementKey) => {
+      if (isSingleColumn) setInspectorOpen(true);
+
+      /**
+       * Not on this frame, and not always on the next one either.
+       *
+       * On a wide screen the panel is already mounted and the first attempt
+       * lands. Below the breakpoint it lives inside the inspector sheet, which
+       * has only just been asked to open and animates in — so this looks again
+       * for a few frames rather than giving up on the first miss. Bounded, so
+       * a requirement whose row genuinely is not rendered stops rather than
+       * spinning.
+       */
+      let framesLeft = 12;
+      const find = () => {
+        const row = document.querySelector<HTMLButtonElement>(
+          `[data-requirement="${key}"]`
+        );
+        if (!row) {
+          framesLeft -= 1;
+          if (framesLeft > 0) window.requestAnimationFrame(find);
+          return;
+        }
+        if (typeof row.scrollIntoView === "function") {
+          row.scrollIntoView({ block: "center" });
+        }
+        row.click();
+      };
+      window.requestAnimationFrame(find);
+    },
+    [isSingleColumn]
+  );
+
   /** Whether the selected node could be the hero. See HeroControl. */
   const heroEligible = useMemo(() => {
     if (!compose.selectedNodeId) return false;
@@ -372,6 +416,7 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
           publishError={compose.publishError}
           onOpenTray={isSingleColumn ? () => setTrayOpen(true) : undefined}
           onOpenInspector={isSingleColumn ? () => setInspectorOpen(true) : undefined}
+          onFocusRequirement={focusRequirement}
         />
 
         {/* A NEW element between the bar and the panels. The row below is

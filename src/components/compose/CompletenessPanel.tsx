@@ -456,6 +456,10 @@ export function CompletenessPanel({
               <li key={row.key} style={{ margin: 0, padding: 0 }}>
                 <button
                   type="button"
+                  // The one handle every requirement is addressable by. The
+                  // publish sheet's checklist routes a row here rather than
+                  // carrying a second copy of what each one should do.
+                  data-requirement={row.key}
                   onClick={() => act(row.key)}
                   aria-expanded={FIELD_KEYS.has(row.key) ? openField === row.key : undefined}
                   style={{
