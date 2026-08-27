@@ -74,6 +74,9 @@ const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
 // the workspace before the creator has decided to open one.
 const ComposeNew = lazy(() => import("./pages/ComposeNew"));
+// The Build File kit: two documents and the three steps that use them. Its
+// own chunk — the prose is only read by someone who came to import a build.
+const ImportPage = lazy(() => import("./pages/ImportPage"));
 // The conversion offer for one existing post. Its own chunk and its own route:
 // the affordance belongs on the creator's post page, and ContentDetail is on
 // the existing content path, which this rebuild does not edit.
@@ -159,6 +162,7 @@ const App = () => (
               </Route>
               <Route path="/b2/:slug" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><BuildPage /></Suspense>} />
               <Route path="/gallery" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><Gallery /></Suspense>} />
+              <Route path="/import" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><ImportPage /></Suspense>} />
               <Route path="/compose/new" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><ComposeNew /></Suspense>} />
               <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><Compose /></Suspense>} />
               <Route path="/convert/:contentItemId" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><ConvertPrompt /></Suspense>} />

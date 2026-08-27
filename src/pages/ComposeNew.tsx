@@ -34,7 +34,7 @@
 // a bad minute and a lost submission.
 
 import { useCallback, useRef, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { createBuild } from "@/lib/build";
 import {
@@ -852,6 +852,25 @@ export default function ComposeNew() {
         >
           {isStarting ? "Creating a draft…" : "Start empty instead"}
         </button>
+
+        <span aria-hidden style={{ width: 1, height: 16, background: HAIRLINE }} />
+
+        {/* A FOURTH WAY IN, added as a peer link rather than as a restructure
+            (NS-P33). Someone who has the chat but does not want to paste it —
+            or whose chat is too long to paste — gets the Extractor instead and
+            comes back with one file. Nothing above was moved to place it. */}
+        <Link
+          to="/import"
+          style={{
+            ...labelText,
+            fontFamily: "inherit",
+            color: TEXT_SECONDARY,
+            textDecoration: "underline",
+            textUnderlineOffset: 3,
+          }}
+        >
+          Import a build
+        </Link>
       </div>
     </Shell>
   );
