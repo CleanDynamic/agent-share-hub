@@ -7,11 +7,15 @@
 // hands them a document to paste into the chat they already have open, and the
 // AI that helped them build it writes the record instead.
 //
-// THREE STEPS, AND THE THIRD IS NOT BUILT YET. Copy the Extractor, save what
-// comes back, drop the file here. The drop target is a labelled placeholder in
-// this prompt — NS-P34 activates it — and it is rendered rather than omitted
-// because a two-step page followed by a third step appearing later reads as a
-// different page. The shape is the explanation; the wiring comes next.
+// THREE STEPS. Copy the Extractor, save what comes back, drop the file here.
+// The third step was a labelled placeholder until NS-P34; it is now the real
+// target, and the whole page is a drop surface behind it — someone dragging a
+// file at this page is aiming at the page, not at a rectangle on it.
+//
+// THE DROP REPLACES THE PAGE, it does not sit under it. Once a file is being
+// read the steps are gone and the review is what is on screen: a creator who
+// has dropped their file is finished with the instructions, and leaving them
+// above a proposal would be asking them to scroll past work they have done.
 //
 // THE DOCUMENTS ARE STATIC ASSETS, not strings in this bundle. They are read by
 // a chatbot, not by this application, so what a person needs is text they can
@@ -32,6 +36,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
+import { BuildFileIntake } from "@/components/compose/BuildFileIntake";
+import {
+  BUILD_FILE_EXTENSIONS,
+  useBuildFileDrop,
+} from "@/components/compose/useBuildFileDrop";
 import {
   FONT_STACK,
   HAIRLINE,
@@ -300,11 +309,79 @@ function Step({
   );
 }
 
+/**
+ * Step three, live.
+ *
+ * A button rather than a styled div: the whole page already answers a drag, so
+ * what this element adds is the other way in — clicking to choose a file — and
+ * that has to work from a keyboard. The hidden input is the file picker; the
+ * button is what a person sees and focuses.
+ */
+function DropTarget({
+  isDragging,
+  onFile,
+}: {
+  isDragging: boolean;
+  onFile: (file: File) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  return (
+    <>
+      <button
+        type="button"
+        data-testid="import-drop"
+        data-visual-slot="import-drop"
+        onClick={() => inputRef.current?.click()}
+        style={{
+          fontFamily: "inherit",
+          width: "100%",
+          padding: "18px 14px",
+          borderRadius: 12,
+          border: `1px dashed ${isDragging ? hexToRgba(TEAL, 0.55) : HAIRLINE}`,
+          background: isDragging ? hexToRgba(TEAL, 0.07) : "rgba(255,255,255,0.02)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+          textAlign: "center",
+          cursor: "pointer",
+          transition: "background 120ms ease, border-color 120ms ease",
+        }}
+      >
+        <span style={{ ...bodyText, color: isDragging ? TEAL : TEXT_SECONDARY }}>
+          {isDragging ? "Let go to read it" : "Drag your Build File anywhere on this page"}
+        </span>
+        <span style={{ ...labelText, color: TEXT_MUTED }}>
+          {`or click to choose one — ${BUILD_FILE_EXTENSIONS.join(", ")}, up to 2 MB`}
+        </span>
+      </button>
+
+      <input
+        ref={inputRef}
+        type="file"
+        data-testid="import-file-input"
+        accept={BUILD_FILE_EXTENSIONS.join(",")}
+        style={{ display: "none" }}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          // Cleared so choosing the same file twice fires change both times.
+          event.target.value = "";
+          if (file) onFile(file);
+        }}
+      />
+    </>
+  );
+}
+
 export default function ImportPage() {
   const [compilerOpen, setCompilerOpen] = useState(false);
 
   const extractor = useKitDocument(EXTRACTOR_URL, true);
   const compiler = useKitDocument(COMPILER_URL, compilerOpen);
+
+  const drop = useBuildFileDrop();
+  /** Reading, reviewing or refusing: the steps have been left behind. */
+  const taking = drop.state.name !== "idle";
 
   return (
     <div
@@ -315,6 +392,10 @@ export default function ImportPage() {
         color: TEXT_PRIMARY,
         fontFamily: FONT_STACK,
         isolation: "isolate",
+        // Visual only: an inset ring while a file is over the page, so the
+        // whole surface reads as the target it is. No structural property here.
+        boxShadow: drop.isDragging ? `inset 0 0 0 2px ${hexToRgba(TEAL, 0.4)}` : "none",
+        transition: "box-shadow 120ms ease",
       }}
     >
       <Helmet>
@@ -341,135 +422,46 @@ export default function ImportPage() {
               ← NeoScale
             </Link>
           </div>
-          <h1 style={{ ...pageHeadingText, margin: 0 }}>
-            Post a build without writing it up.
-          </h1>
-          <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
-            The chat where you built the thing already knows what you did. Give
-            it the document below and it writes your build up for you — the
-            prompts you sent, the settings you landed on, what worked and what
-            broke. You bring the file back here.
-          </p>
+          {taking ? null : (
+            <>
+              <h1 style={{ ...pageHeadingText, margin: 0 }}>
+                Post a build without writing it up.
+              </h1>
+              <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+                The chat where you built the thing already knows what you did.
+                Give it the document below and it writes your build up for you —
+                the prompts you sent, the settings you landed on, what worked and
+                what broke. You bring the file back here.
+              </p>
+            </>
+          )}
         </header>
 
-        <ol
-          style={{
-            listStyle: "none",
-            margin: 0,
-            padding: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-          }}
-        >
-          <Step ordinal={1} title="Copy the Extractor">
-            <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
-              Paste it into the chat where you built your thing — ChatGPT,
-              Claude, Lovable, Cursor, any of them.
-            </p>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                flexWrap: "wrap",
-              }}
-            >
-              <CopyDocumentButton
-                testId="copy-extractor"
-                label="Copy the Extractor"
-                document={extractor}
-              />
-              <DownloadLink
-                testId="download-extractor"
-                href={EXTRACTOR_URL}
-                filename={EXTRACTOR_FILENAME}
-              />
-            </div>
-            {extractor.failed ? (
-              <p style={{ ...bodyText, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
-                The document could not be loaded. The download link still serves
-                it, and Copy will try again.
-              </p>
-            ) : null}
-          </Step>
-
-          <Step ordinal={2} title="Save what it gives you">
-            <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
-              The AI writes your build up as one file. Save it as a .md or .json
-              file.
-            </p>
-          </Step>
-
-          <Step ordinal={3} title="Drop it here">
-            {/* PLACEHOLDER, NOT A DROP TARGET. NS-P34 wires the handlers; until
-                then this is disabled and says so, rather than accepting a file
-                and doing nothing with it. */}
-            <div
-              data-testid="import-drop-placeholder"
-              aria-disabled="true"
-              style={{
-                padding: "18px 14px",
-                borderRadius: 12,
-                border: `1px dashed ${HAIRLINE}`,
-                background: "rgba(255,255,255,0.02)",
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                textAlign: "center",
-              }}
-            >
-              <span style={{ ...bodyText, color: TEXT_SECONDARY }}>
-                Drag your Build File anywhere on this page
-              </span>
-              <span style={{ ...labelText, color: TEXT_MUTED }}>
-                Not switched on yet — it lands in the next release.
-              </span>
-            </div>
-          </Step>
-        </ol>
-
-        {/* FOLDED, because it is the exception. Most builds happen in one chat,
-            and a second document on the page unasked would read as a second
-            required step rather than an answer to a rarer question. */}
-        <section
-          data-visual-slot="import-compiler"
-          style={{
-            ...cardGlass,
-            padding: 16,
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setCompilerOpen((open) => !open)}
-            aria-expanded={compilerOpen}
+        {taking ? (
+          <BuildFileIntake
+            state={drop.state}
+            onReset={drop.reset}
+            /* The Extractor is a scroll away on this page, so the refusal
+               shortcut returns to it rather than navigating to where it
+               already is. */
+            onCopyExtractor={drop.reset}
+          />
+        ) : (
+          <>
+          <ol
             style={{
-              ...titleText,
-              fontFamily: "inherit",
-              background: "transparent",
-              border: "none",
+              listStyle: "none",
+              margin: 0,
               padding: 0,
-              textAlign: "left",
-              cursor: "pointer",
               display: "flex",
-              alignItems: "center",
-              gap: 8,
+              flexDirection: "column",
+              gap: 12,
             }}
           >
-            <span aria-hidden style={{ color: TEXT_MUTED, fontSize: 12 }}>
-              {compilerOpen ? "▾" : "▸"}
-            </span>
-            Built across more than one AI?
-          </button>
-
-          {compilerOpen ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Step ordinal={1} title="Copy the Extractor">
               <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
-                Paste the Compiler plus every Build File into one chat; it merges
-                them into one.
+                Paste it into the chat where you built your thing — ChatGPT,
+                Claude, Lovable, Cursor, any of them.
               </p>
               <div
                 style={{
@@ -480,32 +472,122 @@ export default function ImportPage() {
                 }}
               >
                 <CopyDocumentButton
-                  testId="copy-compiler"
-                  label="Copy the Compiler"
-                  document={compiler}
+                  testId="copy-extractor"
+                  label="Copy the Extractor"
+                  document={extractor}
                 />
-                <DownloadLink href={COMPILER_URL} filename={COMPILER_FILENAME} />
+                <DownloadLink
+                  testId="download-extractor"
+                  href={EXTRACTOR_URL}
+                  filename={EXTRACTOR_FILENAME}
+                />
               </div>
-              {compiler.failed ? (
+              {extractor.failed ? (
                 <p style={{ ...bodyText, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
-                  The document could not be loaded. The download link still
-                  serves it, and Copy will try again.
+                  The document could not be loaded. The download link still serves
+                  it, and Copy will try again.
                 </p>
               ) : null}
-            </div>
-          ) : null}
-        </section>
+            </Step>
 
-        <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED }}>
-          Would rather do it by hand?{" "}
-          <Link
-            to="/compose/new"
-            style={{ color: TEAL, textDecoration: "underline", textUnderlineOffset: 3 }}
+            <Step ordinal={2} title="Save what it gives you">
+              <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+                The AI writes your build up as one file. Save it as a .md or .json
+                file.
+              </p>
+            </Step>
+
+            <Step ordinal={3} title="Drop it here">
+              <DropTarget
+                isDragging={drop.isDragging}
+                onFile={(file) => void drop.acceptFile(file)}
+              />
+              <p style={{ ...bodyText, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
+                You see what it found before anything is saved, and nothing is
+                published until you say so.
+              </p>
+            </Step>
+          </ol>
+
+          {/* FOLDED, because it is the exception. Most builds happen in one chat,
+              and a second document on the page unasked would read as a second
+              required step rather than an answer to a rarer question. */}
+          <section
+            data-visual-slot="import-compiler"
+            style={{
+              ...cardGlass,
+              padding: 16,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
           >
-            Start a build from a transcript or an empty draft
-          </Link>
-          .
-        </p>
+            <button
+              type="button"
+              onClick={() => setCompilerOpen((open) => !open)}
+              aria-expanded={compilerOpen}
+              style={{
+                ...titleText,
+                fontFamily: "inherit",
+                background: "transparent",
+                border: "none",
+                padding: 0,
+                textAlign: "left",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span aria-hidden style={{ color: TEXT_MUTED, fontSize: 12 }}>
+                {compilerOpen ? "▾" : "▸"}
+              </span>
+              Built across more than one AI?
+            </button>
+
+            {compilerOpen ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+                  Paste the Compiler plus every Build File into one chat; it merges
+                  them into one.
+                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <CopyDocumentButton
+                    testId="copy-compiler"
+                    label="Copy the Compiler"
+                    document={compiler}
+                  />
+                  <DownloadLink href={COMPILER_URL} filename={COMPILER_FILENAME} />
+                </div>
+                {compiler.failed ? (
+                  <p style={{ ...bodyText, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
+                    The document could not be loaded. The download link still
+                    serves it, and Copy will try again.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </section>
+
+          <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED }}>
+            Would rather do it by hand?{" "}
+            <Link
+              to="/compose/new"
+              style={{ color: TEAL, textDecoration: "underline", textUnderlineOffset: 3 }}
+            >
+              Start a build from a transcript or an empty draft
+            </Link>
+            .
+          </p>
+          </>
+        )}
       </div>
     </div>
   );

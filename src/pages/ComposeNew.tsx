@@ -27,6 +27,15 @@
 // the source. The proposal is reviewed on the same surface as the other two,
 // because it is the same envelope.
 //
+// A FIFTH WAY IN (NS-P34): a Build File, written by the AI that helped build
+// the thing. It gets its own card rather than sharing the paste zone, and for
+// the opposite reason to the repository field — a Build File is a .md or a
+// .json, exactly what the paste zone already takes, so the two are told apart
+// by where the file was dropped rather than by reading it. The paste zone's
+// behaviour is deliberately untouched: a file dropped there still goes to the
+// transcript and Lovable readers as it always has, and a file dropped on the
+// Build File card, or anywhere else on the page, is read by the local parser.
+//
 // ORDER. On paste or drop the draft build is created FIRST, then the parser is
 // called with its id. The parser needs a real build to check ownership against,
 // and creating first means a parser failure leaves the creator with a usable
@@ -62,6 +71,11 @@ import {
 } from "@/lib/build/repo";
 import { IntakeProposal } from "@/components/compose/IntakeProposal";
 import { IntakeProgress } from "@/components/compose/IntakeProgress";
+import { BuildFileIntake } from "@/components/compose/BuildFileIntake";
+import {
+  BUILD_FILE_EXTENSIONS,
+  useBuildFileDrop,
+} from "@/components/compose/useBuildFileDrop";
 import {
   FONT_STACK,
   GAP_RED,
@@ -178,8 +192,15 @@ export default function ComposeNew() {
   const [isStarting, setStarting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const buildFileInputRef = useRef<HTMLInputElement | null>(null);
   /** One build per intake, whatever the creator clicks twice. */
   const busyRef = useRef(false);
+
+  /**
+   * The Build File path. Off unless this page is idle, so a file dropped while
+   * a transcript is parsing or a proposal is open cannot cut in front of it.
+   */
+  const drop = useBuildFileDrop({ enabled: stage.name === "idle" && !isStarting });
 
   const goToWorkspace = useCallback(
     (buildId: string, arrival: IntakeArrival) => {
@@ -451,6 +472,16 @@ export default function ComposeNew() {
     return <Navigate to={`/login?redirect=${encodeURIComponent(returnTo)}`} replace />;
   }
 
+  // Ahead of the page's own stages: a creator who has dropped a Build File is
+  // looking at what it found, not at the four ways in they have finished with.
+  if (drop.state.name !== "idle") {
+    return (
+      <Shell>
+        <BuildFileIntake state={drop.state} onReset={drop.reset} />
+      </Shell>
+    );
+  }
+
   if (stage.name === "parsing") {
     return (
       <Shell>
@@ -661,6 +692,97 @@ export default function ComposeNew() {
           README and one entrypoint file are read, and everything found is a
           suggestion you confirm.
         </span>
+      </div>
+
+      {/* NS-P34. A peer of the other ways in, laid out as the repository card
+          is: its own bordered block in the same column, so nothing already on
+          this page had to move to make room for it. */}
+      <div
+        data-visual-slot="intake-build-file"
+        data-testid="import-drop"
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          // Claimed here so the window listener does not read it a second time.
+          event.preventDefault();
+          const file = event.dataTransfer.files?.[0];
+          if (file) void drop.acceptFile(file);
+        }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          padding: 14,
+          borderRadius: 12,
+          border: `1px solid ${drop.isDragging ? hexToRgba(TEAL, 0.55) : HAIRLINE}`,
+          background: drop.isDragging ? hexToRgba(TEAL, 0.06) : "rgba(255,255,255,0.02)",
+          transition: "background 120ms ease, border-color 120ms ease",
+        }}
+      >
+        <span style={{ ...labelText, textTransform: "uppercase" }}>
+          Or drop a Build File
+        </span>
+
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+          {/* VISUAL SLOT — the primary button surface is supplied externally.
+              Structure only here: pill geometry, disabled state, no surface. */}
+          <span data-visual-slot="btn-primary" style={{ display: "inline-flex" }}>
+            <button
+              type="button"
+              data-testid="import-choose-build-file"
+              onClick={() => buildFileInputRef.current?.click()}
+              disabled={busy}
+              style={{
+                fontFamily: "inherit",
+                fontSize: 12,
+                fontWeight: 500,
+                letterSpacing: "0.04em",
+                height: 34,
+                padding: "0 18px",
+                borderRadius: 100,
+                background: "rgba(255,255,255,0.025)",
+                border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
+                color: busy ? TEXT_MUTED : TEAL,
+                cursor: busy ? "wait" : "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Choose a Build File
+            </button>
+          </span>
+
+          <Link
+            to="/import"
+            style={{
+              ...labelText,
+              color: TEXT_SECONDARY,
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Get the Extractor
+          </Link>
+        </div>
+
+        <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED }}>
+          {drop.isDragging
+            ? "Let go to read it."
+            : `The file the AI wrote up for you (${BUILD_FILE_EXTENSIONS.join(", ")}). ` +
+              "It arrives already structured — you see what it found before anything is saved."}
+        </span>
+
+        <input
+          ref={buildFileInputRef}
+          type="file"
+          accept={BUILD_FILE_EXTENSIONS.join(",")}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            // Cleared so choosing the same file twice fires change again.
+            event.target.value = "";
+            if (file) void drop.acceptFile(file);
+          }}
+          style={{ display: "none" }}
+        />
       </div>
 
       {/* The zone is both the paste target and the drop target: one surface, so
