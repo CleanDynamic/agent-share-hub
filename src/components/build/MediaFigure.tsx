@@ -37,13 +37,22 @@ export type { ResolveMedia };
 
 /**
  * The width each slot asks for. These are the only widths on the read path,
- * so a new slot picks one of them rather than inventing a fourth.
+ * so a new slot picks one of them rather than inventing a fifth.
  */
 export const MEDIA_WIDTH = {
   /** The header hero on /b2/:slug. */
   hero: 1200,
   /** A figure inside a node card in the anatomy tree. */
   tree: 640,
+  /**
+   * The body of a gallery card, and the card preview inside PublishSheet.
+   *
+   * The same number as `tree` and deliberately its own entry: a card body is
+   * about 300 CSS pixels wide, so 640 is the retina width for it, and the two
+   * slots will not stay equal — a grid that gains a column moves this one and
+   * must not silently move the tree figure with it.
+   */
+  card: 640,
   /** One cell of the generated_media variant grid, and the inspector preview. */
   variant: 240,
 } as const;

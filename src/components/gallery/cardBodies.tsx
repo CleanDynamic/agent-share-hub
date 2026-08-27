@@ -13,7 +13,7 @@
 //   PromptCardBody   prompt text   -> DefaultCardBody
 //   StudyCardBody    table         -> DefaultCardBody
 //   MediaCardBody    variant grid  -> DefaultCardBody
-//   DefaultCardBody  hero media -> evidence media -> evidence words -> outcome
+//   DefaultCardBody  cover media -> evidence words -> outcome
 //
 // DefaultCardBody cannot itself fall through, because its last branch is the
 // outcome set large — not a placeholder standing in for a missing image, but
@@ -35,13 +35,12 @@ import {
 import type { GalleryBuild, GalleryMedia } from "@/lib/build";
 import {
   EVIDENCE_TYPES,
-  evidenceMedia,
+  coverMedia,
   firstNodeOfType,
-  heroMedia,
   listField,
   numberField,
   payloadOf,
-  srcFor,
+  stillFor,
   textField,
   variantsOf,
   type MediaSrcMap,
@@ -315,7 +314,7 @@ export function MediaCardBody({ build, srcByPath }: CardBodyProps) {
   const variants = variantsOf(
     build,
     firstNodeOfType(build, "generated_media")
-  ).filter((variant) => srcFor(srcByPath, variant.media) !== null);
+  ).filter((variant) => stillFor(srcByPath, variant.media) !== null);
 
   if (variants.length === 0) {
     return <DefaultCardBody build={build} srcByPath={srcByPath} />;
@@ -335,7 +334,7 @@ export function MediaCardBody({ build, srcByPath }: CardBodyProps) {
       {variants.map((variant) => (
         <div key={variant.media.id} style={{ position: "relative", overflow: "hidden" }}>
           <img
-            src={srcFor(srcByPath, variant.media) ?? ""}
+            src={stillFor(srcByPath, variant.media) ?? ""}
             alt={variant.note ?? `${build.title ?? "Build"} — variant`}
             loading="lazy"
             decoding="async"
@@ -370,16 +369,19 @@ export function MediaCardBody({ build, srcByPath }: CardBodyProps) {
 // =============================================================================
 
 /**
- * Hero media, else the first evidence node, else the outcome set large.
+ * The cover, else the first evidence node's words, else the outcome set large.
  *
  * The body every shape without one of its own gets, and the tail the other
- * four delegate to. The evidence branch renders a node's own words when it has
- * no picture: a result's summary is a perfectly good card, and reaching the
- * outcome only because a screenshot is missing would throw it away.
+ * four delegate to. Its picture is now whatever coverMedia resolves — the
+ * creator's chosen cover ahead of anything this file would have guessed — and
+ * the branch beneath it is unchanged: a result's summary is a perfectly good
+ * card, and reaching the outcome only because a screenshot is missing would
+ * throw it away.
  */
 export function DefaultCardBody({ build, srcByPath }: CardBodyProps) {
+  const media = coverMedia(build);
   const picture = mediaBlock(
-    heroMedia(build) ?? evidenceMedia(build),
+    media,
     srcByPath,
     `${build.title ?? "Build"} — evidence`
   );
@@ -514,7 +516,7 @@ function mediaBlock(
   srcByPath: MediaSrcMap,
   label: string
 ): ReactElement | null {
-  const src = srcFor(srcByPath, media);
+  const src = stillFor(srcByPath, media);
   if (!src || !media) return null;
 
   const fill: CSSProperties = {

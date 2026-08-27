@@ -131,6 +131,9 @@ function toGalleryMedia(row: BuildMedia): GalleryMedia {
     kind: row.kind,
     width: row.width,
     height: row.height,
+    // A video's still. The preview card renders it exactly as the gallery
+    // does, so a creator sees the poster their card will lead with.
+    poster_path: row.poster_path,
   };
 }
 

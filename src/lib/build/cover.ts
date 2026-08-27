@@ -27,7 +27,7 @@
 // what the rest of src/lib/build/ is built on and this file does not break it.
 
 import { updateBuild } from "./builds";
-import type { Build, BuildMedia, BuildNode, NodeTree } from "./types";
+import type { Build, BuildMedia, BuildNode } from "./types";
 
 /**
  * The node types in the registry's `evidence` category.
@@ -58,6 +58,26 @@ export const EVIDENCE_NODE_TYPES: ReadonlySet<string> = new Set([
 export type CoverSource = Pick<Build, "cover_media_id" | "hero_node_id">;
 
 /**
+ * The node fields the chain reads, nested if the caller has a nested tree.
+ *
+ * Deliberately narrower than BuildNode. The build page hands this a NodeTree;
+ * the gallery card (NS-P31) hands it the flat, position-ordered node window
+ * that came back on the card query, which carries no children and only the
+ * columns a card body reads. Asking for a whole BuildNode would have made the
+ * gallery cast, and a cast is how two surfaces start disagreeing about which
+ * image a build leads with.
+ */
+export type CoverNode = Pick<BuildNode, "id" | "type" | "payload" | "is_gap"> & {
+  readonly children?: readonly CoverNode[];
+};
+
+/**
+ * The media fields the chain reads. Any build_media row satisfies this, as
+ * does the gallery's narrower embedded row.
+ */
+export type CoverMedia = Pick<BuildMedia, "id" | "node_id">;
+
+/**
  * The media id a node points at, or null.
  *
  * media_id is the field key every type carrying one media reference declares.
@@ -71,7 +91,9 @@ export type CoverSource = Pick<Build, "cover_media_id" | "hero_node_id">;
  * where it belongs; BuildPage now imports it from here. MediaFigure keeps its
  * own copy for the compose frame until NS-P28 touches that file.
  */
-export function nodeMediaId(node: BuildNode | null | undefined): string | null {
+export function nodeMediaId(
+  node: Pick<BuildNode, "payload"> | null | undefined
+): string | null {
   const payload =
     node?.payload && typeof node.payload === "object" && !Array.isArray(node.payload)
       ? (node.payload as Record<string, unknown>)
@@ -103,12 +125,12 @@ export function nodeMediaId(node: BuildNode | null | undefined): string | null {
  * as it does on the page. The tray is absent by construction — it is not part
  * of the tree — which is right: nothing unplaced should become a build's cover.
  */
-function flatten(tree: readonly NodeTree[]): BuildNode[] {
-  const out: BuildNode[] = [];
-  const walk = (nodes: readonly NodeTree[]) => {
+function flatten(tree: readonly CoverNode[]): CoverNode[] {
+  const out: CoverNode[] = [];
+  const walk = (nodes: readonly CoverNode[]) => {
     for (const node of nodes) {
       out.push(node);
-      if (node.children.length > 0) walk(node.children);
+      if (node.children && node.children.length > 0) walk(node.children);
     }
   };
   walk(tree);
@@ -116,7 +138,7 @@ function flatten(tree: readonly NodeTree[]): BuildNode[] {
 }
 
 /** One media row by id, out of the list already loaded. */
-function byId(media: readonly BuildMedia[], id: string | null): BuildMedia | null {
+function byId<M extends CoverMedia>(media: readonly M[], id: string | null): M | null {
   if (!id) return null;
   return media.find((row) => row.id === id) ?? null;
 }
@@ -131,11 +153,11 @@ function byId(media: readonly BuildMedia[], id: string | null): BuildMedia | nul
  * and a card that renders nothing because of a race is worse than one that
  * shows the next-best thing.
  */
-export function resolveCover(
+export function resolveCover<M extends CoverMedia>(
   build: CoverSource | null | undefined,
-  tree: readonly NodeTree[],
-  media: readonly BuildMedia[]
-): BuildMedia | null {
+  tree: readonly CoverNode[],
+  media: readonly M[]
+): M | null {
   if (!build) return null;
 
   // 1. The creator's explicit choice.

@@ -26,16 +26,25 @@ vi.mock("@/lib/build", async (importOriginal) => {
   };
 });
 
-/** Every signing call, so a card that signs its own media is visible here. */
-const createSignedUrls = vi.fn();
+/**
+ * Every signing call, with the transform it asked for.
+ *
+ * Signing is one call per image since NS-P31 — the transform has to be signed
+ * into the token, so a batch call cannot carry one — which makes the thing
+ * worth asserting the WIDTH rather than the count. A card serving originals is
+ * the regression this guards, and it shows up here as a missing transform.
+ */
+const createSignedUrl = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    storage: { from: () => ({ createSignedUrls }) },
+    storage: { from: () => ({ createSignedUrl }) },
   },
 }));
 
 import Gallery from "@/pages/Gallery";
+import { CARD_MEDIA_WIDTH } from "@/components/gallery/cardMedia";
+import { DEFAULT_MEDIA_QUALITY } from "@/lib/build";
 
 function build(over: Record<string, unknown> = {}) {
   return {
@@ -86,7 +95,10 @@ function renderGallery() {
 describe("the gallery page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    createSignedUrls.mockResolvedValue({ data: [], error: null });
+    createSignedUrl.mockImplementation(async (path: string) => ({
+      data: { signedUrl: `https://signed.test/${path}` },
+      error: null,
+    }));
     getGalleryFacets.mockResolvedValue(FACETS);
     listGallery.mockResolvedValue({ builds: [build()], total: 1 });
   });
@@ -100,10 +112,11 @@ describe("the gallery page", () => {
     expect(getGalleryFacets).toHaveBeenCalledTimes(1);
     // No media on these builds, so nothing is signed either. A card resolving
     // its own media would show up here as a third call and then some.
-    expect(createSignedUrls).not.toHaveBeenCalled();
+    expect(createSignedUrl).not.toHaveBeenCalled();
   });
 
-  it("signs every card's media in one call, not one call per card", async () => {
+  // NS-P31 ACCEPTANCE 2
+  it("asks for every card image at card width, never the original", async () => {
     const withMedia = (id: string) =>
       build({
         id,
@@ -119,6 +132,7 @@ describe("the gallery page", () => {
             kind: "image",
             width: 800,
             height: 600,
+            poster_path: null,
           },
         ],
       });
@@ -131,12 +145,54 @@ describe("the gallery page", () => {
     renderGallery();
     await screen.findByText("Build one");
 
-    await waitFor(() => expect(createSignedUrls).toHaveBeenCalledTimes(1));
-    expect(createSignedUrls.mock.calls[0][0]).toEqual([
+    // One image per card, and each one asked for at the card's own width. A
+    // card that signed the same row twice, or asked for it without a
+    // transform, fails here.
+    await waitFor(() => expect(createSignedUrl).toHaveBeenCalledTimes(3));
+    expect(createSignedUrl.mock.calls.map((call) => call[0]).sort()).toEqual([
       "one/hero.png",
       "three/hero.png",
       "two/hero.png",
     ]);
+    for (const call of createSignedUrl.mock.calls) {
+      expect(call[2]).toMatchObject({
+        transform: { width: CARD_MEDIA_WIDTH, quality: DEFAULT_MEDIA_QUALITY },
+      });
+    }
+  });
+
+  // NS-P31 ACCEPTANCE 3
+  it("leads a video card with its poster, not with the video", async () => {
+    listGallery.mockResolvedValue({
+      builds: [
+        build({
+          hero_node_id: "n1",
+          media: [
+            {
+              id: "m1",
+              node_id: "n1",
+              bucket: "build-media",
+              path: "b1/demo.mp4",
+              kind: "video",
+              width: 1920,
+              height: 1080,
+              poster_path: "b1/demo-poster.jpg",
+            },
+          ],
+        }),
+      ],
+      total: 1,
+    });
+
+    renderGallery();
+    await screen.findByText("Inbox triage agent");
+
+    // The poster is signed at card width; the video file is never requested.
+    await waitFor(() => expect(createSignedUrl).toHaveBeenCalledTimes(1));
+    expect(createSignedUrl.mock.calls[0][0]).toBe("b1/demo-poster.jpg");
+    expect(createSignedUrl.mock.calls[0][2]).toMatchObject({
+      transform: { width: CARD_MEDIA_WIDTH },
+    });
   });
 
   // ACCEPTANCE 4
