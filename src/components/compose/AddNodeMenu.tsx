@@ -143,7 +143,24 @@ export function AddNodeMenu({ nodeTypes, onAdd, disabled, levelLabel }: AddNodeM
                       flexShrink: 0,
                     }}
                   />
-                  {type.label}
+                  <span style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    <span>{type.label}</span>
+                    {/* What kind of thing this is, in the colour that means it.
+                        The group heading says the same word, but a creator
+                        scanning a scrolled menu is not always looking at one,
+                        and the colour is the part they learn to read. */}
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 400,
+                        letterSpacing: "0.04em",
+                        textTransform: "uppercase",
+                        color: colour,
+                      }}
+                    >
+                      {categoryLabel(category)}
+                    </span>
+                  </span>
                 </DropdownMenuItem>
               );
             })}
