@@ -41,6 +41,7 @@ import {
   setCover,
   type Build,
   type BuildMedia,
+  type BuildPatch,
   type BuildRecord,
   type MediaKind,
   type MediaRef,
@@ -73,6 +74,7 @@ import {
  */
 const DROP_HEADLINE = "Show what you made — drop a screenshot or video, or browse";
 const DROP_SUBLINE = "This becomes your post's picture everywhere on NeoScale.";
+const OUTCOME_PLACEHOLDER = "What does it do? One sentence, your words.";
 
 /** A cover is something a reader can see. Audio and documents are not covers. */
 const COVER_KINDS: readonly MediaKind[] = ["image", "video"];
@@ -80,6 +82,9 @@ const COVER_KINDS: readonly MediaKind[] = ["image", "video"];
 /** Empty, the target is a band. Filled, it is a 16:9 thumbnail 320 x 180. */
 const EMPTY_HEIGHT = 120;
 const THUMB_WIDTH = 320;
+
+/** The description sits beside the cover, not across the whole workspace. */
+const OUTCOME_MAX_WIDTH = 520;
 
 const quietButton: CSSProperties = {
   ...labelText,
@@ -136,18 +141,20 @@ function posterRef(media: BuildMedia | null | undefined): MediaRef | null {
 
 interface CoverStripProps {
   build: Build;
-  /** True below the compose breakpoint: the cover stacks above the tree. */
+  /** The workspace's debounced header write. The description goes through it. */
+  onPatch: (patch: BuildPatch) => void;
+  /** True below the compose breakpoint: the cover stacks above the description. */
   stacked: boolean;
 }
 
 /**
- * The cover.
+ * The cover, and the sentence beside it.
  *
  * A NEW element between the top bar and the three-panel frame. Nothing that
  * already lays this page out is touched: the panel row below is flex:1 and
  * absorbs whatever height this takes.
  */
-export function CoverStrip({ build, stacked }: CoverStripProps) {
+export function CoverStrip({ build, onPatch, stacked }: CoverStripProps) {
   const media = useComposeMedia();
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -155,6 +162,7 @@ export function CoverStrip({ build, stacked }: CoverStripProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [over, setOver] = useState(false);
+  const [outcomeFocused, setOutcomeFocused] = useState(false);
 
   const coverId = build.cover_media_id ?? null;
   // undefined while the media list is still loading, null when it holds no
@@ -329,6 +337,73 @@ export function CoverStrip({ build, stacked }: CoverStripProps) {
         ) : null}
       </div>
 
+      <div
+        style={{
+          flex: "1 1 0",
+          minWidth: 0,
+          maxWidth: stacked ? undefined : OUTCOME_MAX_WIDTH,
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+        }}
+      >
+        <label
+          htmlFor="compose-outcome"
+          style={{ ...labelText, textTransform: "uppercase", color: TEXT_MUTED }}
+        >
+          Description
+        </label>
+        {/* builds.outcome. The column keeps its name; the word a creator reads
+            is Description, because "outcome" is a word about the record and
+            this is a question about their work. */}
+        <input
+          id="compose-outcome"
+          data-testid="outcome-input"
+          type="text"
+          value={build.outcome ?? ""}
+          placeholder={OUTCOME_PLACEHOLDER}
+          spellCheck
+          onChange={(event) =>
+            onPatch({ outcome: event.target.value === "" ? null : event.target.value })
+          }
+          onFocus={() => setOutcomeFocused(true)}
+          onBlur={() => setOutcomeFocused(false)}
+          style={{
+            ...bodyText,
+            fontFamily: "inherit",
+            fontSize: 14,
+            width: "100%",
+            height: 38,
+            padding: "0 10px",
+            borderRadius: 8,
+            outline: "none",
+            background: outcomeFocused
+              ? "rgba(255,255,255,0.05)"
+              : "rgba(255,255,255,0.025)",
+            border: `1px solid ${
+              outcomeFocused ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.06)"
+            }`,
+            color: TEXT_PRIMARY,
+            transition: "background 120ms ease, border-color 120ms ease",
+          }}
+        />
+        {/* Dropped when the strip is stacked: on a phone this band already
+            costs a third of the viewport before the tree begins, and the
+            placeholder above says the same thing in fewer words. */}
+        {stacked ? null : (
+          <span
+            style={{
+              ...labelText,
+              fontSize: 11,
+              fontWeight: 400,
+              letterSpacing: 0,
+              color: TEXT_MUTED,
+            }}
+          >
+            The line a reader sees under your cover, everywhere on NeoScale.
+          </span>
+        )}
+      </div>
     </section>
   );
 }

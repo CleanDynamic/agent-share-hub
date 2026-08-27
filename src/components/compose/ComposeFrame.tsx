@@ -377,7 +377,11 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
         {/* A NEW element between the bar and the panels. The row below is
             flex:1, so it absorbs whatever height this takes and nothing that
             already lays the workspace out changes. */}
-        <CoverStrip build={build} stacked={isSingleColumn} />
+        <CoverStrip
+          build={build}
+          onPatch={compose.patchBuild}
+          stacked={isSingleColumn}
+        />
 
         <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
           {!isSingleColumn && (

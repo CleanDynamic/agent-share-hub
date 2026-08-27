@@ -1,16 +1,22 @@
 // Acceptance cover for the compose cover strip (NS-P28).
 //
 // The claim is that the top of the workspace asks for a picture first and takes
-// one: the band says what it wants, a dropped image becomes
-// builds.cover_media_id, and Remove puts the column back to null.
+// one: the band says what it wants, a dropped image becomes builds.cover_media_id,
+// Remove puts the column back to null, and the sentence beside it is
+// builds.outcome written through the same debounced save the title uses.
 //
 // Rendered inside a real MediaProvider rather than a stubbed context, because
 // the interesting part of the upload is the hand-off — uploadMedia's row has to
 // land in the workspace's media cache for the thumbnail to resolve at all, and
 // a fake resolveMedia would assert that hand-off away.
 
-import { useMemo } from "react";
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -33,7 +39,7 @@ vi.mock("@/lib/build", async (importOriginal) => {
   };
 });
 
-import type { Build, BuildRecord } from "@/lib/build";
+import type { Build, BuildPatch, BuildRecord } from "@/lib/build";
 import { MEDIA_MAX_BYTES } from "@/lib/build";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { MediaProvider } from "@/hooks/useComposeMedia";
@@ -76,6 +82,7 @@ function mediaRow(id: string, kind = "image", mime = "image/png") {
 }
 
 let record: BuildRecord;
+const onPatch = vi.fn<(patch: BuildPatch) => void>();
 
 /**
  * The build comes from the cache, as it does in the workspace.
@@ -84,6 +91,7 @@ let record: BuildRecord;
  * this record, and the next render has to read it.
  */
 function Harness({ stacked = false }: { stacked?: boolean }) {
+  const queryClient = useQueryClient();
   const { data } = useQuery({
     queryKey: composeBuildQueryKey(BUILD_ID),
     queryFn: () => record,
@@ -92,9 +100,24 @@ function Harness({ stacked = false }: { stacked?: boolean }) {
   });
   const build = useMemo(() => data?.build ?? baseBuild, [data]);
 
+  // Stands in for useComposeBuild's overlay: a controlled input whose patch
+  // never comes back is an input that cannot be cleared, and clearing it is
+  // half of what this file has to prove.
+  const patch = useCallback(
+    (next: BuildPatch) => {
+      onPatch(next);
+      queryClient.setQueryData<BuildRecord | null>(
+        composeBuildQueryKey(BUILD_ID),
+        (previous) =>
+          previous ? { ...previous, build: { ...previous.build, ...next } } : previous
+      );
+    },
+    [queryClient]
+  );
+
   return (
     <MediaProvider buildId={BUILD_ID} nodeId={null}>
-      <CoverStrip build={build} stacked={stacked} />
+      <CoverStrip build={build} onPatch={patch} stacked={stacked} />
     </MediaProvider>
   );
 }
@@ -213,6 +236,29 @@ describe("the cover strip", () => {
     expect(message).toHaveTextContent("A cover is a picture or a video");
     expect(uploadMedia).not.toHaveBeenCalled();
     expect(setCover).not.toHaveBeenCalled();
+  });
+
+  it("writes the description to builds.outcome through the workspace's save", async () => {
+    renderStrip();
+
+    const input = screen.getByTestId("outcome-input");
+    expect(input).toHaveAttribute(
+      "placeholder",
+      "What does it do? One sentence, your words."
+    );
+    // The column keeps its name; the word a creator reads is Description.
+    expect(screen.getByText("Description")).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "Sorts a full inbox in a minute." } });
+    expect(onPatch).toHaveBeenCalledWith({ outcome: "Sorts a full inbox in a minute." });
+    // React Query notifies its observers off the synchronous path, so the
+    // controlled value arrives a tick after the patch it came from.
+    await waitFor(() => expect(input).toHaveValue("Sorts a full inbox in a minute."));
+
+    // Emptied is null, not "": an empty string would read as an answered
+    // question to every completeness check downstream.
+    fireEvent.change(input, { target: { value: "" } });
+    expect(onPatch).toHaveBeenCalledWith({ outcome: null });
   });
 
   it("still takes a file when it is stacked above a single-column tree", async () => {
