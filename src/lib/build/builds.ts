@@ -15,8 +15,14 @@ import {
 
 // One string literal, not a concatenation: PostgREST parses the column list at
 // the type level, and `+` erases the literal type it needs.
+//
+// The five rebuild columns are on the end because NS-P36 added them and every
+// caller of this list already types its result as `Build`, which claims them —
+// a header that did not select them was a row lying about its own shape, and
+// startRebuild would have written the attribution snapshot and handed back a
+// build with no sign of it.
 export const BUILD_COLUMNS =
-  "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, cover_media_id, cost_setup, cost_monthly, currency, time_to_first_result, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, parent_build_id, root_build_id, forked_from_event_id, source_content_item_id, monetisation_type, price_gbp, donation_enabled, created_at, updated_at, published_at";
+  "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, cover_media_id, cost_setup, cost_monthly, currency, time_to_first_result, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, parent_build_id, root_build_id, forked_from_event_id, source_content_item_id, monetisation_type, price_gbp, donation_enabled, created_at, updated_at, published_at, rebuild_note, rebuild_count, source_title_at_fork, source_handle_at_fork, solves_node_id";
 
 const CREATOR_LIST_LIMIT = 50;
 
