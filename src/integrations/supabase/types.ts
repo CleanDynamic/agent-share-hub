@@ -710,6 +710,7 @@ export type Database = {
       builds: {
         Row: {
           completeness: number | null
+          cover_media_id: string | null
           cost_monthly: number | null
           cost_setup: number | null
           created_at: string
@@ -742,6 +743,7 @@ export type Database = {
         }
         Insert: {
           completeness?: number | null
+          cover_media_id?: string | null
           cost_monthly?: number | null
           cost_setup?: number | null
           created_at?: string
@@ -774,6 +776,7 @@ export type Database = {
         }
         Update: {
           completeness?: number | null
+          cover_media_id?: string | null
           cost_monthly?: number | null
           cost_setup?: number | null
           created_at?: string
@@ -805,6 +808,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "builds_cover_media_id_fkey"
+            columns: ["cover_media_id"]
+            isOneToOne: false
+            referencedRelation: "build_media"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "builds_creator_id_fkey"
             columns: ["creator_id"]
