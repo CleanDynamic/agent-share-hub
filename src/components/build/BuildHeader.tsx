@@ -3,8 +3,12 @@
 // Resolution order for the hero slot:
 //   1. builds.live_url, when the build is shaped 'app' — an iframe behind a
 //      click-to-load poster, so nothing third-party runs until a reader asks.
-//   2. hero_node_id, when it resolves to a placed node carrying media.
-//   3. nothing at all, and the title leads.
+//   2. the `hero` prop, when the page has resolved and signed one. A video
+//      arrives here as a video and renders as a player (NS-P31); before that
+//      every hero was flattened to a still and a recording could not be
+//      watched from the top of its own build.
+//   3. hero_node_id, when its payload already carries a loadable URL.
+//   4. nothing at all, and the title leads.
 
 import { useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
@@ -33,6 +37,24 @@ interface BuildHeaderProps {
    * one. Omitted, the slot falls back to the state NS-P04 shipped.
    */
   reproduction?: ReactNode;
+  /**
+   * The hero, resolved and signed by the page.
+   *
+   * The header knows nothing about build_media and does not need to; what it
+   * needs to know is whether the thing it is about to render MOVES, which a
+   * payload URL cannot tell it. Omitted, the payload path below still runs, so
+   * a caller that has not resolved a hero renders exactly what it used to.
+   */
+  hero?: HeroMedia;
+}
+
+/** A hero the page has already resolved: what it is, and where to get it. */
+export interface HeroMedia {
+  kind: "image" | "video";
+  src: string;
+  /** A video's still. Shown before play, and while it buffers. */
+  poster?: string | null;
+  alt: string;
 }
 
 /** Depth-first, in render order. The tree is three levels at most. */
@@ -56,6 +78,11 @@ function resolveMediaSrc(node: BuildNode | undefined): string | null {
     if (typeof value === "string" && /^(https?:\/\/|\/)/.test(value)) return value;
   }
   return null;
+}
+
+function nonEmpty(value: string | null | undefined): string | null {
+  const trimmed = (value ?? "").trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function payloadString(node: BuildNode | undefined, key: string): string | null {
@@ -189,6 +216,7 @@ export function BuildHeader({
   nodeTypes,
   actions,
   reproduction,
+  hero,
 }: BuildHeaderProps) {
   const placed = flatten(tree);
   const heroNode = build.hero_node_id
@@ -196,7 +224,8 @@ export function BuildHeader({
     : undefined;
 
   const showLiveApp = Boolean(build.live_url) && build.shape === "app";
-  const heroMediaSrc = showLiveApp ? null : resolveMediaSrc(heroNode);
+  const heroMediaSrc = showLiveApp ? null : hero?.src ?? resolveMediaSrc(heroNode);
+  const heroAlt = hero?.alt ?? nonEmpty(heroNode?.title) ?? nonEmpty(build.title) ?? "Build hero";
 
   const prerequisites = placed.filter((node) => node.type === "prerequisite");
   const typesByKey = new Map(nodeTypes.map((type) => [type.key, type]));
@@ -213,11 +242,29 @@ export function BuildHeader({
         />
       ) : heroMediaSrc ? (
         <div data-visual-slot="build-hero" style={{ ...cardGlass, overflow: "hidden" }}>
-          <img
-            src={heroMediaSrc}
-            alt={heroNode?.title ?? build.title}
-            style={{ display: "block", width: "100%", height: "auto" }}
-          />
+          {hero?.kind === "video" ? (
+            // Muted by default and never autoplaying: a build page opens in
+            // silence, and preload="metadata" means the frames are fetched
+            // when a reader asks for them rather than on arrival.
+            <video
+              src={heroMediaSrc}
+              poster={hero.poster ?? undefined}
+              controls
+              muted
+              playsInline
+              preload="metadata"
+              aria-label={heroAlt}
+              style={{ display: "block", width: "100%", height: "auto", background: "#000" }}
+            >
+              {heroAlt}
+            </video>
+          ) : (
+            <img
+              src={heroMediaSrc}
+              alt={heroAlt}
+              style={{ display: "block", width: "100%", height: "auto" }}
+            />
+          )}
         </div>
       ) : null}
 

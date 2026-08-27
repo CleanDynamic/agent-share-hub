@@ -240,6 +240,52 @@ export function variantsOf(build: GalleryBuild, node: GalleryNode | null): Varia
   return ordered.slice(0, VARIANT_GRID_MAX);
 }
 
+// =============================================================================
+// Describing a picture
+// =============================================================================
+
+/**
+ * A node type key as a reader would say it: `comparison_table` -> "Comparison
+ * table".
+ *
+ * Derived rather than looked up, because the registry's own labels arrive from
+ * node_types and a card does not load that table — one query per grid to
+ * capitalise a word is not a trade worth making. The keys are written to read
+ * this way, so the derivation and the registry agree in every case seeded so
+ * far; where they ever disagree the cost is one alt string reading slightly
+ * plainer than the label a build page shows.
+ */
+export function nodeTypeLabel(type: string): string {
+  const words = type.replace(/_/g, " ").trim();
+  return words ? words[0].toUpperCase() + words.slice(1) : "Media";
+}
+
+/**
+ * What a screen reader is told about a card's picture.
+ *
+ * The creator's caption first, always: screenshot and recording payloads carry
+ * one, and it is the only text on the record written to describe the image
+ * rather than the build. Absent that, the build and the kind of thing being
+ * shown — "Inbox triage agent — Screenshot" — which is worth more than the
+ * filename and never worth less than an empty attribute.
+ */
+export function mediaAlt(
+  build: GalleryBuild,
+  media: GalleryMedia | null | undefined
+): string {
+  const title = (build.title ?? "").trim() || "Build";
+  if (!media) return title;
+
+  const node =
+    build.nodes.find((entry) => entry.id === media.node_id) ??
+    build.nodes.find((entry) => payloadOf(entry).media_id === media.id);
+
+  const caption = textField(node, "caption") ?? textField(node, "note");
+  if (caption) return caption;
+
+  return node ? `${title} — ${nodeTypeLabel(node.type)}` : title;
+}
+
 /** A card row, and the width of the slot it lands in. */
 export interface CardMedia extends GalleryMedia {
   /**

@@ -23,6 +23,8 @@ import {
   CARD_VARIANT_WIDTH,
   cardMedia,
   coverMedia,
+  mediaAlt,
+  nodeTypeLabel,
   stillRef,
 } from "./cardMedia";
 
@@ -194,5 +196,39 @@ describe("what a card asks the network for", () => {
   it("falls back to the video itself when no poster was made", () => {
     const video = media({ id: "m-demo", path: "b1/n-shot/demo.mp4", kind: "video" });
     expect(stillRef(video).path).toBe("b1/n-shot/demo.mp4");
+  });
+});
+
+describe("what a card's picture is called", () => {
+  // ACCEPTANCE 4
+  it("uses the creator's caption when the payload carries one", () => {
+    expect(mediaAlt(build(), media())).toBe("The inbox, after");
+  });
+
+  it("falls back to the build and the kind of thing being shown", () => {
+    const uncaptioned = build({
+      nodes: [
+        {
+          id: "n-shot",
+          type: "comparison_table",
+          title: null,
+          payload: {},
+          position: 0,
+          is_gap: false,
+        },
+      ],
+    });
+
+    expect(mediaAlt(uncaptioned, media())).toBe("A build — Comparison table");
+  });
+
+  it("is never empty, even for a build with no title and no node", () => {
+    const bare = build({ title: "  ", nodes: [] });
+    expect(mediaAlt(bare, media()).trim().length).toBeGreaterThan(0);
+  });
+
+  it("says a node type the way a reader would", () => {
+    expect(nodeTypeLabel("screenshot")).toBe("Screenshot");
+    expect(nodeTypeLabel("comparison_table")).toBe("Comparison table");
   });
 });

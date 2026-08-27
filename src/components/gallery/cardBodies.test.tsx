@@ -303,6 +303,68 @@ describe("the floor under every body", () => {
     expect(body).toHaveTextContent("Untitled build");
   });
 
+  // NS-P31 ACCEPTANCE 3
+  it("shows a video's poster with a play mark, and never the video", () => {
+    const recording = {
+      id: "m2",
+      node_id: "hero-node",
+      bucket: "build-media",
+      path: "b1/demo.mp4",
+      kind: "video",
+      width: 1920,
+      height: 1080,
+      poster_path: "b1/demo-poster.jpg",
+    };
+    const signed: MediaSrcMap = new Map([
+      ["b1/demo-poster.jpg", "https://signed.example/demo-poster.jpg"],
+    ]);
+
+    const { body } = renderCard(
+      build({ hero_node_id: "hero-node", media: [recording] } as Partial<GalleryBuild>),
+      signed
+    );
+
+    const image = body.querySelector("img");
+    expect(image?.getAttribute("src")).toBe("https://signed.example/demo-poster.jpg");
+    // A still, not a player: nothing in a grid of cards fetches video.
+    expect(body.querySelector("video")).toBeNull();
+    // And the mark that says this one moves.
+    expect(body.querySelector('[data-card-mark="play"]')).not.toBeNull();
+  });
+
+  // NS-P31 ACCEPTANCE 4
+  it("describes the picture with the creator's caption", () => {
+    const { body } = renderCard(
+      build({
+        hero_node_id: "hero-node",
+        media: [heroMediaRow],
+        nodes: [
+          node({
+            id: "hero-node",
+            type: "screenshot",
+            payload: { caption: "The queue, sorted" },
+          }),
+        ],
+      } as Partial<GalleryBuild>),
+      SIGNED
+    );
+
+    expect(body.querySelector("img")?.getAttribute("alt")).toBe("The queue, sorted");
+  });
+
+  it("names the build and the kind of thing when there is no caption", () => {
+    const { body } = renderCard(
+      build({
+        hero_node_id: "hero-node",
+        media: [heroMediaRow],
+        nodes: [node({ id: "hero-node", type: "screenshot", payload: {} })],
+      } as Partial<GalleryBuild>),
+      SIGNED
+    );
+
+    expect(body.querySelector("img")?.getAttribute("alt")).toBe("A build — Screenshot");
+  });
+
   it("treats an unsigned media row as no media rather than a broken image", () => {
     // The signatures have not come back yet. The card must already be a card.
     const { body, branch } = renderCard(

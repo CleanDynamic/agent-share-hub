@@ -203,6 +203,10 @@ export function MediaFigure({
 }: MediaFigureProps) {
   const id = (reference ?? "").trim();
   const media = id ? resolveMedia(id) : null;
+  // An empty alt tells a screen reader the image is decoration. Nothing a
+  // creator uploaded to a build is decoration, so a caller whose caption and
+  // title were both blank gets a description rather than silence.
+  const description = alt.trim() || "Build media";
 
   // Hooks before any branch: an unresolved reference renders a placeholder,
   // it does not skip a hook.
@@ -221,7 +225,7 @@ export function MediaFigure({
       return (
         <img
           src={legacy}
-          alt={alt}
+          alt={description}
           loading="lazy"
           decoding="async"
           style={{
@@ -265,7 +269,7 @@ export function MediaFigure({
     return (
       <img
         src={src}
-        alt={alt}
+        alt={description}
         loading="lazy"
         decoding="async"
         width={media.width ?? undefined}
@@ -288,7 +292,7 @@ export function MediaFigure({
         preload="none"
         style={{ ...frame, background: "#000", width: "100%" }}
       >
-        {alt}
+        {description}
       </video>
     );
   }
@@ -297,7 +301,7 @@ export function MediaFigure({
     if (!src) return <MediaPending media={media} style={style} />;
     return (
       <audio src={src} controls preload="none" style={{ width: "100%", ...style }}>
-        {alt}
+        {description}
       </audio>
     );
   }

@@ -443,6 +443,45 @@ describe("BuildPage media", () => {
     expect(getMediaForBuild).toHaveBeenCalledTimes(1);
   });
 
+  // NS-P31 ACCEPTANCE 3
+  it("renders a video hero as a muted player over its poster", async () => {
+    const recording = {
+      ...mediaRow("media-4"),
+      path: `${MEDIA_BUILD_ID}/n/demo.mp4`,
+      kind: "video",
+      mime: "video/mp4",
+      poster_path: `${MEDIA_BUILD_ID}/n/demo-poster.jpg`,
+    };
+    const withVideo = mediaRecord("m1");
+    withVideo.tree = [
+      node("m1", "screenshot", "The run, recorded", {
+        payload: { media_id: "media-4", caption: "Forty seconds, start to digest" },
+      }),
+    ];
+    getBuildBySlug.mockResolvedValue(withVideo);
+    getMediaForBuild.mockResolvedValue([recording]);
+    renderAt("media-build");
+
+    const player = await waitFor(() => {
+      const element = document.querySelector('[data-visual-slot="build-hero"] video');
+      if (!element) throw new Error("no hero video yet");
+      return element as HTMLVideoElement;
+    });
+
+    expect(player.getAttribute("src")).toContain("demo.mp4");
+    // Muted by default, and no autoplay: a build page opens in silence.
+    expect(player.muted).toBe(true);
+    expect(player.getAttribute("autoplay")).toBeNull();
+    // The poster fills the slot until someone presses play — at hero width,
+    // because it is a still and a still takes the transform.
+    expect(player.getAttribute("poster")).toContain("demo-poster.jpg");
+    expect(player.getAttribute("poster")).toContain("width=1200");
+    // The creator's own words for the recording, not the node's title.
+    expect(player.getAttribute("aria-label")).toBe("Forty seconds, start to digest");
+    // And the header does not also render it as a still.
+    expect(document.querySelector('[data-visual-slot="build-hero"] img')).toBeNull();
+  });
+
   it("leads with the title when hero_node_id points at nothing renderable", async () => {
     getBuildBySlug.mockResolvedValue(mediaRecord("m-missing"));
     renderAt("media-build");
