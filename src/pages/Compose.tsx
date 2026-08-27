@@ -275,12 +275,20 @@ export default function Compose() {
     );
   }
 
-  // Router state from /compose/new. Absent on every other way in.
-  const arrival = (location.state as { intake?: IntakeArrival } | null)?.intake ?? null;
+  // Router state from /compose/new, or from a Build File dropped on /import or
+  // /compose/new (NS-P34). Absent on every other way in.
+  const routed = location.state as
+    | { intake?: IntakeArrival; justArrived?: number }
+    | null;
+  const arrival = routed?.intake ?? null;
 
   return (
     <>
-      <ComposeFrame build={compose.build} compose={compose} />
+      <ComposeFrame
+        build={compose.build}
+        compose={compose}
+        justArrived={routed?.justArrived}
+      />
       {arrival ? <ArrivalNotice arrival={arrival} /> : null}
     </>
   );
