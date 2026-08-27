@@ -9,12 +9,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { getApprovedLayers, getBuildBySlug, getMediaForBuild, layerOf } from "@/lib/build";
+import {
+  getApprovedLayers,
+  getBuildBySlug,
+  getMediaForBuild,
+  layerOf,
+  nodeMediaId,
+} from "@/lib/build";
 import type { BuildLayer, BuildMedia, BuildNode, BuildRecord, NodeTree } from "@/lib/build";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import {
   MEDIA_WIDTH,
-  nodeMediaId,
   useMediaSrc,
   type ResolveMedia,
 } from "@/components/build/MediaFigure";
