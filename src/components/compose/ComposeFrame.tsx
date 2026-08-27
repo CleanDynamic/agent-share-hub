@@ -83,7 +83,18 @@ interface PanelProps {
   drag: NodeDrag;
 }
 
-function LeftPanelContent({ compose, drag }: PanelProps) {
+/**
+ * How many nodes an import just wrote, for the tray's arrival banner.
+ *
+ * Threaded from the route rather than read here: it arrives in router state
+ * from /import or /compose/new (NS-P34), and the frame is the one place that
+ * already hands the tray its props.
+ */
+interface ArrivalProps {
+  justArrived?: number;
+}
+
+function LeftPanelContent({ compose, drag, justArrived }: PanelProps & ArrivalProps) {
   return (
     <TrayPanel
       tray={compose.tray}
@@ -91,6 +102,7 @@ function LeftPanelContent({ compose, drag }: PanelProps) {
       selectedNodeId={compose.selectedNodeId}
       onSelect={compose.setSelectedNodeId}
       drag={drag}
+      justArrived={justArrived}
     />
   );
 }
@@ -239,6 +251,8 @@ interface ComposeFrameProps {
   /** Narrowed by the route: the frame is only reached for a loaded, owned build. */
   build: Build;
   compose: ComposeBuild;
+  /** Nodes a Build File import just wrote. Absent on every other way in. */
+  justArrived?: number;
 }
 
 /**
@@ -248,7 +262,7 @@ interface ComposeFrameProps {
  * the context the frame mounts — a provider cannot be consumed by the
  * component that renders it.
  */
-function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
+function ComposeWorkspace({ build, compose, justArrived }: ComposeFrameProps) {
   const isSingleColumn = useIsSingleColumn();
   const media = useComposeMedia();
   const drag = useNodeDrag({
@@ -442,7 +456,7 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
                 ...railScroll,
               }}
             >
-              <LeftPanelContent compose={compose} drag={drag} />
+              <LeftPanelContent compose={compose} drag={drag} justArrived={justArrived} />
             </aside>
           )}
 
@@ -490,7 +504,7 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
                 style={{ ...panelGlass, color: TEXT_PRIMARY, fontFamily: FONT_STACK }}
               >
                 <SheetTitle style={{ ...labelText, color: TEXT_SECONDARY }}>Tray</SheetTitle>
-                <LeftPanelContent compose={compose} drag={drag} />
+                <LeftPanelContent compose={compose} drag={drag} justArrived={justArrived} />
               </SheetContent>
             </Sheet>
 
@@ -534,10 +548,10 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
  * Everything below it — the panels, the inspector's upload control, the drop
  * path on the frame itself — reads the build's media from one query held here.
  */
-export function ComposeFrame({ build, compose }: ComposeFrameProps) {
+export function ComposeFrame({ build, compose, justArrived }: ComposeFrameProps) {
   return (
     <MediaProvider buildId={build.id} nodeId={compose.selectedNodeId}>
-      <ComposeWorkspace build={build} compose={compose} />
+      <ComposeWorkspace build={build} compose={compose} justArrived={justArrived} />
     </MediaProvider>
   );
 }
