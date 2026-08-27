@@ -266,6 +266,19 @@ function renderInspector(node: BuildNode, nodeTypes: NodeType[] = [PROMPT_TYPE, 
   return renderBuild({ nodes: [node], selectedNodeId: node.id, nodeTypes });
 }
 
+/**
+ * Open the "More detail" fold, if this node type has one.
+ *
+ * Since NS-P30 a type with three or more optional fields keeps them behind an
+ * expander, so a test reaching for an optional field opens it the way a creator
+ * would rather than asserting against a panel no creator sees. A type with a
+ * short optional tail has no expander and this is a no-op.
+ */
+function openMoreDetail(view: { queryByTestId: typeof screen.queryByTestId } = screen) {
+  const toggle = view.queryByTestId("inspector-more-detail");
+  if (toggle) fireEvent.click(toggle);
+}
+
 /** Let the debounce fire and the write's promise chain settle. */
 async function settle() {
   await act(async () => {
@@ -308,8 +321,11 @@ describe("Inspector", () => {
   it("builds a prompt's form from the schema alone", () => {
     renderInspector(makeNode("n1", "prompt"));
 
-    // Every control here comes from a row in node_types, not from this file.
+    // The required field leads, in the open, before anything is expanded.
     expect(screen.getByLabelText("Prompt text").tagName).toBe("TEXTAREA");
+
+    openMoreDetail();
+    // Every control here comes from a row in node_types, not from this file.
     expect(screen.getByLabelText("Model").tagName).toBe("INPUT");
     expect(screen.getByLabelText("Parameters").tagName).toBe("TEXTAREA");
     // format hints resolve to their own controls since NS-P10, and the schema
@@ -330,6 +346,7 @@ describe("Inspector", () => {
 
   it("writes one merged payload after the debounce, not one per keystroke", async () => {
     renderInspector(makeNode("n1", "prompt"));
+    openMoreDetail();
 
     fireEvent.change(screen.getByLabelText("Model"), { target: { value: "opus" } });
     fireEvent.change(screen.getByLabelText("Model"), { target: { value: "opus-5" } });
@@ -342,6 +359,7 @@ describe("Inspector", () => {
 
   it("keeps a field it did not touch when another is edited", async () => {
     renderInspector(makeNode("n1", "prompt"));
+    openMoreDetail();
 
     fireEvent.change(screen.getByLabelText("Model"), { target: { value: "opus-5" } });
     await settle();
@@ -358,6 +376,7 @@ describe("Inspector", () => {
 
   it("never sends parent_id or position, so it cannot fight a drag", async () => {
     renderInspector(makeNode("n1", "prompt"));
+    openMoreDetail();
     fireEvent.change(screen.getByLabelText("Model"), { target: { value: "opus-5" } });
     await settle();
 
@@ -382,6 +401,7 @@ describe("Inspector", () => {
   describe("the list widget", () => {
     it("adds rows and persists them in order", async () => {
       renderInspector(makeNode("n1", "prompt"));
+      openMoreDetail();
       const add = screen.getByRole("button", { name: /Add variables/i });
 
       fireEvent.click(add);
@@ -408,6 +428,7 @@ describe("Inspector", () => {
           variables: [{ name: "topic" }, { name: "tone" }, { name: "length" }],
         })
       );
+      openMoreDetail();
 
       expect(sortable.ids).toHaveLength(3);
       const [first, second] = sortable.ids;
@@ -436,6 +457,7 @@ describe("Inspector", () => {
       renderInspector(
         makeNode("n1", "prompt", { variables: [{ name: "topic" }, { name: "tone" }] })
       );
+      openMoreDetail();
 
       fireEvent.click(screen.getByRole("button", { name: "Remove row 1" }));
       await settle();
@@ -500,6 +522,9 @@ describe("Inspector", () => {
         expect(
           view.queryByText(/arrives in NS-P10|not yet wired|no form yet/i)
         ).not.toBeInTheDocument();
+
+        // Whatever NS-P30 folded away is still reachable, on every type.
+        openMoreDetail(view);
 
         // Every field the row declares produced a control of some kind.
         for (const field of type.schema.fields) {
@@ -566,6 +591,7 @@ describe("Inspector", () => {
         selectedNodeId: "n1",
         nodeTypes: [PROMPT, RESULT],
       });
+      openMoreDetail();
 
       fireEvent.click(screen.getByRole("combobox", { name: "Output" }));
       fireEvent.click(screen.getByRole("option", { name: /The score/ }));
@@ -583,6 +609,7 @@ describe("Inspector", () => {
         selectedNodeId: "n1",
         nodeTypes: [PROMPT, RESULT],
       });
+      openMoreDetail();
 
       fireEvent.click(screen.getByRole("combobox", { name: "Output" }));
       expect(screen.getByRole("option", { name: /Unplaced result/ })).toBeInTheDocument();
@@ -594,6 +621,7 @@ describe("Inspector", () => {
         selectedNodeId: "n1",
         nodeTypes: [PROMPT],
       });
+      openMoreDetail();
 
       fireEvent.click(screen.getByRole("combobox", { name: "Output" }));
       expect(screen.queryByRole("option", { name: /This very prompt/ })).not.toBeInTheDocument();
@@ -606,6 +634,7 @@ describe("Inspector", () => {
         selectedNodeId: "n1",
         nodeTypes: [PROMPT, RESULT],
       });
+      openMoreDetail();
 
       fireEvent.click(screen.getByRole("combobox", { name: "Output" }));
       fireEvent.click(screen.getByRole("option", { name: /The score/ }));
@@ -631,6 +660,7 @@ describe("Inspector", () => {
         selectedNodeId: "n1",
         nodeTypes: [PROMPT, RESULT],
       });
+      openMoreDetail();
 
       fireEvent.click(screen.getByRole("button", { name: "Clear Output" }));
       await settle();
@@ -646,6 +676,7 @@ describe("Inspector", () => {
         selectedNodeId: "n1",
         nodeTypes: [AGENT, TOOL],
       });
+      openMoreDetail();
 
       fireEvent.click(screen.getByRole("button", { name: /Add tools/i }));
       await settle();
@@ -716,6 +747,7 @@ describe("Inspector", () => {
   describe("the timestamp field", () => {
     it("stores what the creator picked as ISO 8601 UTC and reads it back", async () => {
       renderInspector(makeNode("n1", "prompt"));
+      openMoreDetail();
 
       const input = screen.getByLabelText("Sent at");
       fireEvent.change(input, { target: { value: "2026-08-23T14:30" } });
@@ -730,6 +762,7 @@ describe("Inspector", () => {
 
     it("clears to null rather than to an empty string", async () => {
       renderInspector(makeNode("n1", "prompt", { sent_at: "2026-08-23T14:30:00.000Z" }));
+      openMoreDetail();
       fireEvent.change(screen.getByLabelText("Sent at"), { target: { value: "" } });
       await settle();
       expect(lastPayload().sent_at).toBeNull();
@@ -928,6 +961,181 @@ describe("Inspector", () => {
       // The nested list rendered no control of its own — not even an add button.
       expect(screen.queryByRole("button", { name: /Add deeper/i })).not.toBeInTheDocument();
       warn.mockRestore();
+    });
+  });
+});
+
+// --- NS-P30: the panel speaking like a person --------------------------------
+//
+// Three behaviours, none of which a type checker can see: the registry's own
+// help sentence rendered under the label it belongs to, required fields leading
+// whatever order the schema declared them in, and a long optional tail folded
+// away until the creator asks for it.
+//
+// The copy is all registry data. Nothing below asserts a sentence this file
+// wrote — the fixture carries the help strings, exactly as a node_types row
+// would, and the component's job is only to put them somewhere sensible.
+
+/** Two required fields declared after an optional one, each with a help line. */
+const HELPED_TYPE = {
+  key: "helped_demo",
+  label: "Helped demo",
+  category: "narrative",
+  colour: "#9CA3AF",
+  schema: {
+    fields: [
+      { key: "aside", label: "An aside", type: "string", help: "Say it however you like." },
+      { key: "what", label: "What happened", type: "text", required: true, help: "In your own words." },
+      { key: "when", label: "When", type: "string", required: true },
+      { key: "extra_one", label: "Extra one", type: "string" },
+      { key: "extra_two", label: "Extra two", type: "string" },
+    ],
+  },
+} as unknown as NodeType;
+
+/** The same type with only two optional fields: too short a tail to fold. */
+const SHORT_TAIL_TYPE = {
+  key: "short_tail_demo",
+  label: "Short tail demo",
+  category: "narrative",
+  colour: "#9CA3AF",
+  schema: {
+    fields: [
+      { key: "what", label: "What happened", type: "text", required: true },
+      { key: "extra_one", label: "Extra one", type: "string" },
+      { key: "extra_two", label: "Extra two", type: "string" },
+    ],
+  },
+} as unknown as NodeType;
+
+describe("the inspector in plain language", () => {
+  describe("help text", () => {
+    it("puts the registry's help under the label it belongs to", () => {
+      renderInspector(makeNode("n1", "helped_demo"), [HELPED_TYPE]);
+
+      const help = screen.getByText("In your own words.");
+      expect(help).toBeInTheDocument();
+
+      // Under the label and above the control, so it is read before the field
+      // is filled in rather than after.
+      const label = screen.getByText("What happened");
+      expect(label.compareDocumentPosition(help)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      const control = screen.getByLabelText("What happened");
+      expect(help.compareDocumentPosition(control)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+
+    it("shows no help for a field the registry gave none", () => {
+      renderInspector(makeNode("n1", "helped_demo"), [HELPED_TYPE]);
+      // "When" is required and rendered, and carries nothing under it: this
+      // panel never invents a sentence for a field that has no help string.
+      expect(screen.getByLabelText("When")).toBeInTheDocument();
+      expect(screen.queryByText(/^Say it however you like\.$/)).not.toBeInTheDocument();
+    });
+
+    it("carries an optional field's help out of the fold with it", () => {
+      renderInspector(makeNode("n1", "helped_demo"), [HELPED_TYPE]);
+      expect(screen.queryByText("Say it however you like.")).not.toBeInTheDocument();
+
+      openMoreDetail();
+      expect(screen.getByText("Say it however you like.")).toBeInTheDocument();
+    });
+  });
+
+  describe("field order", () => {
+    it("leads with the required fields whatever order the schema declared", () => {
+      renderInspector(makeNode("n1", "helped_demo"), [HELPED_TYPE]);
+      openMoreDetail();
+
+      const labels = screen
+        .getAllByText(/^(An aside|What happened|When|Extra one|Extra two)$/)
+        .map((node) => node.textContent);
+
+      // "An aside" is first in the schema and last-but-two on the panel.
+      expect(labels).toEqual(["What happened", "When", "An aside", "Extra one", "Extra two"]);
+    });
+
+    it("keeps each group in the order the schema gave it", () => {
+      renderInspector(makeNode("n1", "helped_demo"), [HELPED_TYPE]);
+      openMoreDetail();
+
+      const labels = screen
+        .getAllByText(/^(An aside|Extra one|Extra two)$/)
+        .map((node) => node.textContent);
+      // Required-first is a partition, not a re-sort: the optional fields keep
+      // their declared order among themselves.
+      expect(labels).toEqual(["An aside", "Extra one", "Extra two"]);
+    });
+  });
+
+  describe("the More detail fold", () => {
+    it("hides a long optional tail until it is asked for", () => {
+      renderInspector(makeNode("n1", "helped_demo"), [HELPED_TYPE]);
+
+      expect(screen.getByLabelText("What happened")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Extra one")).not.toBeInTheDocument();
+
+      const toggle = screen.getByTestId("inspector-more-detail");
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      // The count is on the door, so the creator knows what is behind it.
+      expect(toggle).toHaveTextContent("3");
+
+      fireEvent.click(toggle);
+      expect(screen.getByLabelText("Extra one")).toBeInTheDocument();
+      expect(screen.getByTestId("inspector-more-detail")).toHaveAttribute("aria-expanded", "true");
+    });
+
+    it("closes again on a second click", () => {
+      renderInspector(makeNode("n1", "helped_demo"), [HELPED_TYPE]);
+
+      fireEvent.click(screen.getByTestId("inspector-more-detail"));
+      expect(screen.getByLabelText("Extra one")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId("inspector-more-detail"));
+      expect(screen.queryByLabelText("Extra one")).not.toBeInTheDocument();
+    });
+
+    it("does not put a door in front of a short optional tail", () => {
+      renderInspector(makeNode("n1", "short_tail_demo"), [SHORT_TAIL_TYPE]);
+
+      expect(screen.queryByTestId("inspector-more-detail")).not.toBeInTheDocument();
+      expect(screen.getByLabelText("Extra one")).toBeInTheDocument();
+      expect(screen.getByLabelText("Extra two")).toBeInTheDocument();
+    });
+
+    it("remembers what was open per node while the session lasts", () => {
+      const record: BuildRecord = {
+        build: { id: BUILD_ID } as BuildRecord["build"],
+        tree: [makeNode("n1", "helped_demo"), makeNode("n2", "helped_demo")].map((node) => ({
+          ...node,
+          children: [],
+        })),
+        tray: [],
+        events: [],
+        nodeTypes: [HELPED_TYPE],
+      };
+      const client = new QueryClient({
+        defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+      });
+      const panel = (selectedNodeId: string) => (
+        <QueryClientProvider client={client}>
+          <Harness record={record} selectedNodeId={selectedNodeId} />
+        </QueryClientProvider>
+      );
+
+      const { rerender } = render(panel("n1"));
+      fireEvent.click(screen.getByTestId("inspector-more-detail"));
+      expect(screen.getByLabelText("Extra one")).toBeInTheDocument();
+
+      // The sibling's own fold is closed: the memory is per node, not one flag
+      // for the whole panel.
+      rerender(panel("n2"));
+      expect(screen.getByTestId("inspector-more-detail")).toHaveAttribute("aria-expanded", "false");
+      expect(screen.queryByLabelText("Extra one")).not.toBeInTheDocument();
+
+      // Back to the first node and it is still open, without a second click.
+      rerender(panel("n1"));
+      expect(screen.getByTestId("inspector-more-detail")).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByLabelText("Extra one")).toBeInTheDocument();
     });
   });
 });

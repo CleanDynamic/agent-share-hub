@@ -322,21 +322,46 @@ export function FieldShell({
     </span>
   );
 
+  // Under the label and above the control, because it is an instruction for
+  // filling the field in rather than a footnote about what was typed. Never in
+  // a list row, where the sub-field label is carried by the placeholder and
+  // there is no label for it to sit under.
+  const helpLine = field.help && !compact ? <p style={helpStyle}>{field.help}</p> : null;
+
+  if (inlineLabel) {
+    // A toggle keeps its label beside it, so the label and its help stack on
+    // the left of the row and the control stays on the right.
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <span style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          {labelRow}
+          {helpLine}
+        </span>
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
         display: "flex",
-        flexDirection: inlineLabel ? "row" : "column",
-        alignItems: inlineLabel ? "center" : "stretch",
-        justifyContent: inlineLabel ? "space-between" : undefined,
-        gap: inlineLabel ? 12 : 5,
+        flexDirection: "column",
+        alignItems: "stretch",
+        gap: 5,
       }}
     >
       {labelRow}
+      {helpLine}
       {children}
-      {field.help && !compact && !inlineLabel && (
-        <p style={helpStyle}>{field.help}</p>
-      )}
     </div>
   );
 }
@@ -349,6 +374,38 @@ interface SchemaFormProps {
   fields: FieldDef[];
 }
 
+/**
+ * Fewer than this and the optional fields simply follow the required ones.
+ *
+ * A fold that hides one or two fields costs a click and saves no reading, and
+ * it teaches the creator that things are hidden from them on a panel where
+ * mostly they are not.
+ */
+const FOLD_THRESHOLD = 3;
+
+/**
+ * Required fields first, each group in the order the schema declared it.
+ *
+ * A partition rather than a sort: `Array.prototype.sort` is stable in every
+ * engine this ships to, but a comparator over a boolean says less about the
+ * intent than two passes do, and this way relative order inside each group is
+ * a property of the code rather than a property of the runtime.
+ */
+function orderRequiredFirst(fields: FieldDef[]): {
+  required: FieldDef[];
+  optional: FieldDef[];
+} {
+  const required: FieldDef[] = [];
+  const optional: FieldDef[] = [];
+  for (const field of fields) {
+    // Strictly true: a schema row carrying "required": "yes" is a mistake to
+    // surface as optional, not a truthiness to interpret.
+    if (field.required === true) required.push(field);
+    else optional.push(field);
+  }
+  return { required, optional };
+}
+
 export function SchemaForm({ buildId, node, fields }: SchemaFormProps) {
   const { patchPayload } = useNodeWrite(buildId, node.id);
   const payload = asPayload(node.payload);
@@ -358,9 +415,41 @@ export function SchemaForm({ buildId, node, fields }: SchemaFormProps) {
   const [touched, setTouched] = useState<Set<string>>(() => new Set());
   useEffect(() => setTouched(new Set()), [node.id]);
 
+  /**
+   * The nodes whose optional fields the creator has opened, by id.
+   *
+   * Component state, not storage: it is a working preference for this sitting,
+   * and a creator who opened one node's detail last Tuesday should not find
+   * every node opened today. Keyed by node so moving along the tree and back
+   * returns to what was open, which it can because this component is not
+   * remounted when the selection changes.
+   */
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => new Set());
+
   const markTouched = useCallback((key: string) => {
     setTouched((current) => (current.has(key) ? current : new Set(current).add(key)));
   }, []);
+
+  const { required, optional } = useMemo(() => orderRequiredFirst(fields), [fields]);
+
+  const renderField = (field: FieldDef) => {
+    const Widget = resolveWidget(field);
+    const fieldId = `field-${node.id}-${field.key}`;
+    return (
+      <Widget
+        key={field.key}
+        field={field}
+        id={fieldId}
+        value={payload[field.key]}
+        touched={touched.has(field.key)}
+        onTouch={() => markTouched(field.key)}
+        onChange={(next) => {
+          markTouched(field.key);
+          patchPayload({ [field.key]: next });
+        }}
+      />
+    );
+  };
 
   if (fields.length === 0) {
     return (
@@ -370,26 +459,54 @@ export function SchemaForm({ buildId, node, fields }: SchemaFormProps) {
     );
   }
 
+  // A short tail of optional fields is not worth a door. Everything renders,
+  // required first, and there is nothing to open.
+  const folds = optional.length >= FOLD_THRESHOLD;
+  const isOpen = expandedNodes.has(node.id);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {fields.map((field) => {
-        const Widget = resolveWidget(field);
-        const fieldId = `field-${node.id}-${field.key}`;
-        return (
-          <Widget
-            key={field.key}
-            field={field}
-            id={fieldId}
-            value={payload[field.key]}
-            touched={touched.has(field.key)}
-            onTouch={() => markTouched(field.key)}
-            onChange={(next) => {
-              markTouched(field.key);
-              patchPayload({ [field.key]: next });
+      {required.map(renderField)}
+      {!folds && optional.map(renderField)}
+
+      {folds && (
+        <>
+          <button
+            type="button"
+            data-testid="inspector-more-detail"
+            aria-expanded={isOpen}
+            onClick={() =>
+              setExpandedNodes((current) => {
+                const next = new Set(current);
+                if (next.has(node.id)) next.delete(node.id);
+                else next.add(node.id);
+                return next;
+              })
+            }
+            style={{
+              ...fieldLabelStyle,
+              alignSelf: "flex-start",
+              fontFamily: "inherit",
+              color: secondaryTextColour,
+              background: "transparent",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
             }}
-          />
-        );
-      })}
+          >
+            {/* A chevron rather than a word for the state: the label stays the
+                same thing whichever way the fold is facing. */}
+            <span aria-hidden="true" style={{ fontSize: 9 }}>
+              {isOpen ? "\u25BE" : "\u25B8"}
+            </span>
+            More detail
+            <span style={{ fontSize: 10, fontWeight: 400, color: TEXT_MUTED }}>
+              {optional.length}
+            </span>
+          </button>
+          {isOpen && optional.map(renderField)}
+        </>
+      )}
     </div>
   );
 }
