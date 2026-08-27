@@ -20,6 +20,7 @@ import type {
   Completeness,
   NodeTree,
   NodeType,
+  RequirementKey,
 } from "@/lib/build";
 import {
   GAP_RED,
@@ -94,6 +95,8 @@ interface ComposeTopBarProps {
   onPublish: () => Promise<Build>;
   isPublishing: boolean;
   publishError: Error | null;
+  /** Passed straight to PublishControl for the publish sheet's checklist. */
+  onFocusRequirement?: (key: RequirementKey) => void;
 }
 
 function SaveState({
@@ -226,6 +229,7 @@ export function ComposeTopBar({
   onPublish,
   isPublishing,
   publishError,
+  onFocusRequirement,
 }: ComposeTopBarProps) {
   // Inline styles cannot express :focus, so the focus treatment is state.
   const [titleFocused, setTitleFocused] = useState(false);
@@ -333,6 +337,7 @@ export function ComposeTopBar({
         onPublish={onPublish}
         isPublishing={isPublishing}
         publishError={publishError}
+        onFocusRequirement={onFocusRequirement}
       />
     </header>
   );

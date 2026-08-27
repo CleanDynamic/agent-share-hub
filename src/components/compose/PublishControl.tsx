@@ -13,6 +13,13 @@
 // completeness checklist uses. "Not good enough" is not a sentence this file
 // is permitted to imply.
 //
+// WHAT THE PRESS NOW DOES. Since NS-P29 the pill is a TRIGGER, not the write.
+// It opens PublishSheet, which shows the creator the card the feed will render
+// from what they have so far and what is left to say beside it; the write
+// happens when they press Publish in there. The gate is untouched and is still
+// computed here — what moved is only where it is enforced, because a control
+// that refused to open would hide the checklist from the builds that need it.
+//
 // WHAT SITS BETWEEN THE PRESS AND THE CONFIRMATION. Since NS-P23, one screen:
 // the review pass, where a creator decides what NeoScale is allowed to say
 // about their build. It is offered, never imposed — it appears only when there
@@ -26,7 +33,7 @@
 // Styled with inline style objects like everything else on this route:
 // Tailwind's generated utilities win over hand-written classes at build time.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -42,6 +49,7 @@ import {
   type MissingItem,
   type NodeTree,
   type NodeType,
+  type RequirementKey,
 } from "@/lib/build";
 import {
   GAP_RED,
@@ -60,6 +68,18 @@ import {
   titleText,
 } from "@/components/build/tokens";
 
+/**
+ * The sheet is the heaviest thing on this route that most presses never reach:
+ * it pulls in the gallery card and its five bodies. Split out, so the workspace
+ * pays for it at the moment a creator asks to see their post rather than on
+ * every load of /compose.
+ */
+const PublishSheet = lazy(() =>
+  import("@/components/compose/PublishSheet").then((module) => ({
+    default: module.PublishSheet,
+  }))
+);
+
 export interface PublishControlProps {
   build: Build;
   /** The PLACED tree. Tray nodes are not part of the record. */
@@ -70,6 +90,12 @@ export interface PublishControlProps {
   onPublish: () => Promise<Build>;
   isPublishing: boolean;
   publishError: Error | null;
+  /**
+   * A checklist row in the sheet that needs the workspace to resolve it — a
+   * node to select or create, or a header field whose only editor is in the
+   * right rail. Optional; without it those rows only close the sheet.
+   */
+  onFocusRequirement?: (key: RequirementKey) => void;
 }
 
 const controlBase: React.CSSProperties = {
@@ -94,9 +120,11 @@ export function PublishControl({
   onPublish,
   isPublishing,
   publishError,
+  onFocusRequirement,
 }: PublishControlProps) {
   const [confirmation, setConfirmation] = useState<Build | null>(null);
   const [reviewing, setReviewing] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // The layers this build already has, shared with the staleness line through
   // one react-query key rather than read twice.
@@ -120,7 +148,20 @@ export function PublishControl({
     ? readinessFrom(completeness)
     : publishReadiness(build, tree, nodeTypes);
   const isLive = build.status === "published" || build.status === "gallery";
-  const enabled = (readiness.ready || isLive) && !isPublishing;
+
+  /**
+   * THE GATE, UNCHANGED. The same expression this control has always used, and
+   * still the only thing that decides whether a build may be written live. What
+   * moved in NS-P29 is where it is enforced: it now sits on the sheet's Publish
+   * rather than on this pill, so a creator whose record is short can still open
+   * the sheet, see the post they are working towards, and read what is left.
+   * Refusing to open it would hide the checklist from exactly the builds it was
+   * written for.
+   */
+  const canPublish = (readiness.ready || isLive) && !isPublishing;
+
+  /** The pill only opens a sheet, so nothing but a write in flight closes it. */
+  const canOpen = !isPublishing;
 
   const label = isPublishing ? "Publishing…" : isLive ? "Published" : "Publish";
 
@@ -140,7 +181,12 @@ export function PublishControl({
       });
   }, [onPublish]);
 
-  const handleClick = useCallback(() => {
+  /**
+   * The publish path, exactly as it was: the review pass if there is something
+   * unreviewed to show, otherwise straight to the write. Reached from the
+   * sheet's Publish now rather than from the pill, and otherwise untouched.
+   */
+  const startPublish = useCallback(() => {
     if (asked.current) {
       publishNow();
       return;
@@ -161,6 +207,16 @@ export function PublishControl({
       })
       .catch(() => publishNow());
   }, [ensure, publishNow, shouldOffer]);
+
+  /**
+   * The sheet's primary action. It closes first: the review pass is a second
+   * modal, and two stacked overlays is not a thing a creator should have to
+   * read their way out of.
+   */
+  const confirm = useCallback(() => {
+    setSheetOpen(false);
+    startPublish();
+  }, [startPublish]);
 
   /** Either control on the review pass: write what it decided, then publish. */
   const onReviewed = useCallback(
@@ -187,8 +243,8 @@ export function PublishControl({
           >
             <button
               type="button"
-              disabled={!enabled}
-              onClick={handleClick}
+              disabled={!canOpen}
+              onClick={() => setSheetOpen(true)}
               style={{
                 ...controlBase,
                 whiteSpace: "nowrap",
@@ -196,25 +252,27 @@ export function PublishControl({
                   ? GAP_RED
                   : isLive
                     ? TEAL
-                    : enabled
+                    : canOpen
                       ? TEXT_PRIMARY
                       : TEXT_MUTED,
+                // The accent is still the readiness signal: armed when the
+                // record clears the gate, quiet while it does not.
                 borderColor: publishError
                   ? hexToRgba(GAP_RED, 0.35)
                   : isLive
                     ? hexToRgba(TEAL, 0.35)
-                    : enabled
+                    : canPublish
                       ? hexToRgba(ORANGE, 0.45)
                       : "rgba(255,255,255,0.06)",
                 background: publishError
                   ? hexToRgba(GAP_RED, 0.1)
                   : isLive
                     ? hexToRgba(TEAL, 0.1)
-                    : enabled
+                    : canPublish
                       ? hexToRgba(ORANGE, 0.14)
                       : "rgba(255,255,255,0.025)",
-                cursor: enabled ? "pointer" : "not-allowed",
-                pointerEvents: enabled ? "auto" : "none",
+                cursor: canOpen ? "pointer" : "not-allowed",
+                pointerEvents: canOpen ? "auto" : "none",
                 opacity: isPublishing ? 0.7 : 1,
               }}
             >
@@ -224,6 +282,23 @@ export function PublishControl({
         </TooltipTrigger>
         <TooltipContent side="bottom">{explanation}</TooltipContent>
       </Tooltip>
+
+      {sheetOpen ? (
+        <Suspense fallback={null}>
+          <PublishSheet
+            build={build}
+            tree={tree}
+            completeness={completeness}
+            readiness={readiness}
+            open
+            onOpenChange={setSheetOpen}
+            onConfirm={confirm}
+            isPublishing={isPublishing}
+            publishError={publishError}
+            onFocusRequirement={onFocusRequirement}
+          />
+        </Suspense>
+      ) : null}
 
       {reviewing ? (
         <LayerReview
