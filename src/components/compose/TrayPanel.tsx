@@ -2,12 +2,25 @@
 //
 // A tray node is one with position IS NULL. It is captured but not placed: it
 // does not render publicly, it is not exported, and it does not count towards
-// the build. The line at the top of this panel says exactly that and never goes
-// away, because it is what lets a creator drop something in without first
-// deciding where it belongs.
+// the build.
 //
-// The whole panel is one droppable, so dragging a node anywhere over the tray
-// unplaces it. Each item is draggable back out into the tree.
+// THE PANEL EARNS ITS SPACE (NS-P30)
+// ----------------------------------
+// An empty tray is not a feature to advertise. It collapses to one slim muted
+// line — "Not placed yet · 0" — and says nothing else, because a creator who
+// has never put anything here does not need a paragraph about it. The privacy
+// promise appears only once there is something for it to be a promise about,
+// and it is worded as a plain statement rather than a policy:
+//
+//   "These aren't in your post. They stay private until you place them."
+//
+// The one thing an empty tray still does is answer a drag. The whole panel is
+// one droppable, and while a node is held over it the drop hint comes back:
+// that is a reply to the creator's own gesture, not an idle invitation.
+//
+// NS-P34 will land Build File imports here. `justArrived` is the seam it needs
+// and nothing sets it today — a positive count renders one line above the
+// list, an absent or zero count renders nothing at all.
 
 import type { CSSProperties } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
@@ -140,12 +153,36 @@ interface TrayPanelProps {
   selectedNodeId: string | null;
   onSelect: (id: string | null) => void;
   drag: NodeDrag;
+  /**
+   * How many nodes have just arrived from an import, for the one-line banner.
+   *
+   * The seam for NS-P34's Build File drop and nothing else. It is a count, not
+   * a flag, because the banner names the number; an absent or zero count is the
+   * ordinary tray and renders no banner at all. Whoever sets it owns clearing
+   * it — this panel never writes it, so the banner stays up until the surface
+   * that raised it decides the arrival has been seen.
+   */
+  justArrived?: number;
 }
 
-export function TrayPanel({ tray, nodeTypes, selectedNodeId, onSelect, drag }: TrayPanelProps) {
+export function TrayPanel({
+  tray,
+  nodeTypes,
+  selectedNodeId,
+  onSelect,
+  drag,
+  justArrived,
+}: TrayPanelProps) {
   const { setNodeRef } = useDroppable({ id: TRAY_DROP_ID });
   const typesByKey = new Map(nodeTypes.map((type) => [type.key, type]));
   const isOver = drag.overTarget?.kind === "tray";
+  const hasItems = tray.length > 0;
+  // Guarded rather than trusted: a caller counting wrong must not put "0 items
+  // arrived" or "-1 items arrived" on the panel.
+  const arrived =
+    typeof justArrived === "number" && Number.isFinite(justArrived)
+      ? Math.max(0, Math.trunc(justArrived))
+      : 0;
 
   return (
     <div
@@ -161,36 +198,62 @@ export function TrayPanel({ tray, nodeTypes, selectedNodeId, onSelect, drag }: T
         transition: "background 120ms ease",
       }}
     >
-      <span style={{ ...labelText, textTransform: "uppercase", color: TEXT_SECONDARY }}>
-        Tray
-      </span>
-
-      {/* Permanent, not a hint that fades: it is the promise that makes the
-          tray usable without a decision. */}
-      <p
+      {/* The whole panel when the tray is empty: a count, in the quietest
+          weight the token set has, naming what it is in words a creator would
+          use rather than the word "tray". */}
+      <span
+        data-testid="tray-header"
         style={{
-          margin: 0,
-          padding: "8px 10px",
-          borderRadius: 8,
-          border: `1px solid ${HAIRLINE}`,
-          background: "rgba(255,255,255,0.02)",
-          fontSize: 12,
-          fontWeight: 500,
-          letterSpacing: "0.04em",
-          lineHeight: 1.5,
-          color: TEXT_SECONDARY,
+          ...labelText,
+          textTransform: "uppercase",
+          color: hasItems ? TEXT_SECONDARY : TEXT_MUTED,
         }}
       >
-        Anything left here stays private and is never published.
-      </p>
+        {`Not placed yet · ${tray.length}`}
+      </span>
 
-      {tray.length === 0 ? (
-        <p style={{ fontSize: 13, fontWeight: 300, lineHeight: 1.6, margin: 0, color: TEXT_MUTED }}>
-          {isOver
-            ? "Drop it here to unplace it."
-            : "Nothing unplaced. Drag a node here to take it out of the build without losing it."}
+      {arrived > 0 ? (
+        <p
+          data-testid="tray-arrival"
+          style={{
+            margin: 0,
+            padding: "8px 10px",
+            borderRadius: 8,
+            border: `1px solid ${hexToRgba(TEAL, 0.35)}`,
+            background: hexToRgba(TEAL, 0.08),
+            fontSize: 12,
+            fontWeight: 500,
+            letterSpacing: "0.04em",
+            lineHeight: 1.5,
+            color: TEAL,
+          }}
+        >
+          {`${arrived} ${arrived === 1 ? "item" : "items"} arrived — drag the keepers into your build`}
         </p>
-      ) : (
+      ) : null}
+
+      {hasItems ? (
+        /* Shown only against something: an empty tray needs no promise about
+           material it does not hold. */
+        <p
+          style={{
+            margin: 0,
+            padding: "8px 10px",
+            borderRadius: 8,
+            border: `1px solid ${HAIRLINE}`,
+            background: "rgba(255,255,255,0.02)",
+            fontSize: 12,
+            fontWeight: 500,
+            letterSpacing: "0.04em",
+            lineHeight: 1.5,
+            color: TEXT_SECONDARY,
+          }}
+        >
+          {"These aren't in your post. They stay private until you place them."}
+        </p>
+      ) : null}
+
+      {hasItems ? (
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
           {tray.map((node) => (
             <TrayItem
@@ -202,7 +265,13 @@ export function TrayPanel({ tray, nodeTypes, selectedNodeId, onSelect, drag }: T
             />
           ))}
         </ul>
-      )}
+      ) : isOver ? (
+        // Nothing at rest, but a drag still gets an answer: this hint is a reply
+        // to a gesture the creator is already making, not an idle invitation.
+        <p style={{ fontSize: 13, fontWeight: 300, lineHeight: 1.6, margin: 0, color: TEXT_MUTED }}>
+          Drop it here to unplace it.
+        </p>
+      ) : null}
     </div>
   );
 }
