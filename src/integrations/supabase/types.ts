@@ -730,12 +730,17 @@ export type Database = {
           parent_build_id: string | null
           price_gbp: number | null
           published_at: string | null
+          rebuild_count: number
+          rebuild_note: string | null
           repo_url: string | null
           reproduction_count: number
           root_build_id: string | null
           shape: string
           slug: string
+          solves_node_id: string | null
           source_content_item_id: string | null
+          source_handle_at_fork: string | null
+          source_title_at_fork: string | null
           status: string
           time_to_first_result: number | null
           title: string
@@ -763,12 +768,17 @@ export type Database = {
           parent_build_id?: string | null
           price_gbp?: number | null
           published_at?: string | null
+          rebuild_count?: number
+          rebuild_note?: string | null
           repo_url?: string | null
           reproduction_count?: number
           root_build_id?: string | null
           shape?: string
           slug: string
+          solves_node_id?: string | null
           source_content_item_id?: string | null
+          source_handle_at_fork?: string | null
+          source_title_at_fork?: string | null
           status?: string
           time_to_first_result?: number | null
           title: string
@@ -796,12 +806,17 @@ export type Database = {
           parent_build_id?: string | null
           price_gbp?: number | null
           published_at?: string | null
+          rebuild_count?: number
+          rebuild_note?: string | null
           repo_url?: string | null
           reproduction_count?: number
           root_build_id?: string | null
           shape?: string
           slug?: string
+          solves_node_id?: string | null
           source_content_item_id?: string | null
+          source_handle_at_fork?: string | null
+          source_title_at_fork?: string | null
           status?: string
           time_to_first_result?: number | null
           title?: string
@@ -855,6 +870,13 @@ export type Database = {
             columns: ["root_build_id"]
             isOneToOne: false
             referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builds_solves_node_id_fkey"
+            columns: ["solves_node_id"]
+            isOneToOne: false
+            referencedRelation: "build_nodes"
             referencedColumns: ["id"]
           },
           {
