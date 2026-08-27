@@ -1139,3 +1139,100 @@ describe("the inspector in plain language", () => {
     });
   });
 });
+
+// --- NS-P30 end to end: the registry's copy on the real panel ----------------
+//
+// The two halves of NS-P30 were built apart — the panel renders whatever `help`
+// a row carries, the migration puts the sentences on the rows — and each was
+// proven on its own. This joins them: the seed schema with the NS-P30 copy
+// applied to it exactly as the migration applies it, rendered through the real
+// Inspector, asserting the sentence a creator actually reads.
+//
+// Both migrations are read rather than transcribed, so a sentence reworded in
+// SQL is a sentence reworded here.
+
+/** The NS-P30 (type, field) -> sentence pairs, read out of the migration's CTE. */
+function readHelpCopy(): Map<string, string> {
+  const sql = readFileSync("supabase/migrations/20260827130000_node_type_help_copy.sql", "utf8");
+  // The CTE only: the verification block below it repeats the pairs without
+  // their copy, and must not be read as a second, shorter set.
+  const cte = sql.slice(sql.indexOf("WITH help_copy"), sql.indexOf("UPDATE public.node_types"));
+  const copy = new Map<string, string>();
+  for (const match of cte.matchAll(/\('([a-z_]+)',\s*'([a-z_]+)',\s*'((?:[^']|'')*)'\)/g)) {
+    copy.set(`${match[1]}.${match[2]}`, match[3].replace(/''/g, "'"));
+  }
+  return copy;
+}
+
+const HELP_COPY = readHelpCopy();
+
+/**
+ * A registry row as it stands AFTER the NS-P30 migration.
+ *
+ * The same operation the SQL performs: set `help` on the entries the copy
+ * names, pass every other field through untouched.
+ */
+function migratedType(key: string): NodeType {
+  const type = registryType(key);
+  return {
+    ...type,
+    schema: {
+      fields: type.schema.fields.map((field) => {
+        const help = HELP_COPY.get(`${key}.${field.key}`);
+        return help === undefined ? field : { ...field, help };
+      }),
+    },
+  } as NodeType;
+}
+
+describe("a prompt node after the help copy migration", () => {
+  it("shows the registry's sentence under the Prompt text label", () => {
+    renderInspector(makeNode("n1", "prompt"), [migratedType("prompt")]);
+
+    const help = screen.getByText("Paste exactly what you typed into the AI.");
+    const label = screen.getByText("Prompt text");
+    expect(label.compareDocumentPosition(help)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it("puts everything optional behind More detail, and opens it", () => {
+    renderInspector(makeNode("n1", "prompt"), [migratedType("prompt")]);
+
+    // The one required field leads; the five optional ones are behind the door.
+    expect(screen.getByLabelText("Prompt text")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Model")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("inspector-more-detail"));
+    expect(screen.getByLabelText("Model")).toBeInTheDocument();
+    expect(screen.getByLabelText("Parameters")).toBeInTheDocument();
+    expect(screen.getByLabelText("Sent at")).toBeInTheDocument();
+  });
+
+  it("carries a sentence for the required field of all twelve covered types", () => {
+    const covered = [
+      "prompt", "system_prompt", "model_params", "agent_config", "code", "result",
+      "screenshot", "recording", "note", "decision", "breakage", "gap",
+    ];
+
+    for (const key of covered) {
+      const type = migratedType(key);
+      const view = renderBuild({
+        nodes: [makeNode(`node-${key}`, key)],
+        selectedNodeId: `node-${key}`,
+        nodeTypes: [type],
+      });
+
+      for (const field of type.schema.fields.filter((f) => f.required === true)) {
+        const sentence = HELP_COPY.get(`${key}.${field.key}`);
+        expect(sentence, `${key}.${field.key} has no sentence`).toBeTruthy();
+        // Rendered, and rendered without the fold having to be opened: a
+        // required field is never behind the door.
+        expect(
+          view.queryAllByText(sentence as string).length,
+          `${key}.${field.key}'s help did not reach the panel`
+        ).toBeGreaterThan(0);
+      }
+
+      view.unmount();
+    }
+  });
+});
