@@ -1,0 +1,77 @@
+-- =============================================================================
+-- NeoScale — the build's chosen cover image (NS-P27)
+-- =============================================================================
+-- One column, one foreign key. Nothing else.
+--
+-- WHY A SECOND POINTER WHEN hero_node_id ALREADY EXISTS
+-- -----------------------------------------------------
+-- hero_node_id names a NODE — "this part of the build speaks for it" — and a
+-- card gets an image out of it only by chasing that node's payload to a media
+-- id. That indirection is right for the build page, where the hero is a piece
+-- of the record being led with, and wrong for a card, where the creator is
+-- choosing a picture. The two questions are not the same question, and a
+-- creator who wants a different image on the card than in the hero slot has,
+-- until now, had no way to say so.
+--
+-- So cover_media_id points at build_media directly. It is the first link in
+-- the resolution chain in src/lib/build/cover.ts:
+--
+--   cover_media_id  ->  the hero node's media  ->  the first evidence media
+--
+-- Nothing is required to set it. The chain's later links are what guarantee
+-- every build can still produce a card image, exactly as they did before this
+-- column existed, so this migration changes no build's appearance on its own.
+--
+-- ON DELETE SET NULL, NOT CASCADE
+-- -------------------------------
+-- Deleting an image must never delete the build it was the cover of. The build
+-- falls back down the chain to its hero or its evidence, which is the same
+-- place a build that never had a cover lands.
+--
+-- NO RLS CHANGE
+-- -------------
+-- builds already carries its own policies and a new column on it is covered by
+-- the ones that are there. build_media readability is inherited from the
+-- parent build the same way, so a cover is exactly as visible as the build
+-- pointing at it — a draft's cover stays as unreachable as its rows.
+--
+-- NO INDEX, WHICH IS A DEPARTURE FROM idx_builds_source_content_item
+-- ------------------------------------------------------------------
+-- NS-P24 added a partial index on builds.source_content_item_id because that
+-- column IS queried — "has this post already been converted?" is a lookup by
+-- the column's value. cover_media_id is never queried that way: the build row
+-- is already loaded and the media row is fetched by its own primary key, so no
+-- statement in src/lib/build/ has cover_media_id in a WHERE clause.
+--
+-- The cost this leaves on the table is the delete path. ON DELETE SET NULL
+-- makes Postgres find the referencing rows when a build_media row is deleted,
+-- and with no index that is a sequential scan of builds per deleteMedia call.
+-- On a builds table of this size that is cheaper than the index it would take
+-- to avoid it. It stops being true somewhere in the tens of thousands of
+-- builds, and the fix is one line:
+--
+--   CREATE INDEX idx_builds_cover_media ON public.builds (cover_media_id)
+--     WHERE cover_media_id IS NOT NULL;
+--
+-- A NOTE FOR ANYONE WRITING A POSTGREST EMBED AFTER THIS
+-- ------------------------------------------------------
+-- This column makes a SECOND foreign key between builds and build_media, so
+-- `build_media(...)` embedded from builds is now ambiguous and PostgREST will
+-- refuse it. Every embed must name the relationship it means, the way
+-- GALLERY_SELECT in src/lib/build/gallery.ts already does:
+--
+--   build_media!build_media_build_id_fkey(...)   the build's media
+--
+-- The one embed in the codebase today already carries that hint, which is why
+-- this migration breaks no existing query.
+--
+-- This migration adds one nullable column to a table introduced by NS-P01. It
+-- alters no existing column, policy, function or row, and adds no policy.
+-- =============================================================================
+
+ALTER TABLE public.builds
+  ADD COLUMN cover_media_id UUID NULL
+    REFERENCES public.build_media(id) ON DELETE SET NULL;
+
+COMMENT ON COLUMN public.builds.cover_media_id IS
+  'The image the creator chose for this build''s card (NS-P27). NULL means "no explicit choice" — resolveCover in src/lib/build/cover.ts then falls back to the hero node''s media, then to the first evidence media. Never assume a build without one has no card image.';

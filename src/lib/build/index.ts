@@ -56,6 +56,13 @@ export {
   type UploadMediaInput,
 } from "./media";
 export {
+  EVIDENCE_NODE_TYPES,
+  nodeMediaId,
+  resolveCover,
+  setCover,
+  type CoverSource,
+} from "./cover";
+export {
   EXACT_NODE_TYPE,
   SOURCE_BLOCK_COLUMNS,
   SOURCE_ITEM_COLUMNS,

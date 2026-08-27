@@ -210,7 +210,7 @@ const GALLERY_MEDIA_KINDS = ["image", "video"] as const;
  * that never shows them.
  */
 export const GALLERY_BUILD_COLUMNS =
-  "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, published_at";
+  "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, cover_media_id, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, published_at";
 
 const GALLERY_NODE_COLUMNS = "id, type, title, payload, position, is_gap";
 
@@ -254,6 +254,7 @@ export interface GalleryBuild
     | "live_url"
     | "repo_url"
     | "hero_node_id"
+    | "cover_media_id"
     | "completeness"
     | "reproduction_count"
     | "last_confirmed_at"
