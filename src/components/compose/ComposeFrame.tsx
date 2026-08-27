@@ -28,6 +28,7 @@ import type { ComposeBuild } from "@/hooks/useComposeBuild";
 import { MediaProvider, useComposeMedia } from "@/hooks/useComposeMedia";
 import { nodeMediaId } from "@/components/build/MediaFigure";
 import { ComposeTopBar } from "@/components/compose/ComposeTopBar";
+import { CoverStrip } from "@/components/compose/CoverStrip";
 import { CompletenessPanel } from "@/components/compose/CompletenessPanel";
 import { Inspector } from "@/components/compose/Inspector";
 import { LayerStaleNotice } from "@/components/compose/LayerStaleNotice";
@@ -372,6 +373,11 @@ function ComposeWorkspace({ build, compose }: ComposeFrameProps) {
           onOpenTray={isSingleColumn ? () => setTrayOpen(true) : undefined}
           onOpenInspector={isSingleColumn ? () => setInspectorOpen(true) : undefined}
         />
+
+        {/* A NEW element between the bar and the panels. The row below is
+            flex:1, so it absorbs whatever height this takes and nothing that
+            already lays the workspace out changes. */}
+        <CoverStrip build={build} stacked={isSingleColumn} />
 
         <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
           {!isSingleColumn && (
