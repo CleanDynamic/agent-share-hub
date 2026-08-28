@@ -89,6 +89,7 @@ import DescendantBadge from "@/components/remix/DescendantBadge";
 import RemixButton from "@/components/remix/RemixButton";
 import { useLineageParent, useRemixCount } from "@/lib/remix/hooks";
 import { createRemix } from "@/lib/remix/createRemix";
+import { REMIX_CREATE_ENABLED } from "@/lib/remix/flags";
 
 const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" | "bounty" => {
   if (raw === "blog") return "blog";
@@ -2405,7 +2406,12 @@ function RemixLineageRow({
 }) {
   const { data: parent } = useLineageParent(postId);
   const { data: remixCount = 0 } = useRemixCount(postId);
-  const showRemixButton = isRemixable && !isOwnPost && !!remixerId;
+  // NS-P43 — remix creation is retired; Rebuild replaces it. One additive
+  // condition on the affordance, exactly as NS-P42 guarded the reblog
+  // buttons: the chip and the badge below still read the lineage of a post
+  // derived before the freeze, and the row still renders for them.
+  const showRemixButton =
+    REMIX_CREATE_ENABLED && isRemixable && !isOwnPost && !!remixerId;
   if (!parent && remixCount === 0 && !showRemixButton) return null;
   return (
     <div

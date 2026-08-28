@@ -4,6 +4,7 @@ import type { Reblog } from "./types";
 import {
   REBLOG_TEXT_MAX,
   ReblogValidationError,
+  assertReblogAuthoringEnabled,
   generateReblogSlug,
   uploadReblogMedia,
   validateMedia,
@@ -25,8 +26,15 @@ export interface CreateReblogInput {
  * Create a reblog. DB triggers enforce rate limits and counters; this layer
  * does the content/media validation, slug generation, root-post resolution,
  * media upload, insert, and best-effort notification fan-out.
+ *
+ * FROZEN — NS-P43. Throws ReblogValidationError("REBLOG_RETIRED") while
+ * REBLOG_COMPOSE_ENABLED is false. The body below is left exactly as it was so
+ * that flipping the flag restores composing whole; see src/lib/reblog/flags.ts.
+ * Its only call site is ReblogComposeContext.handlePost, which NS-P42 already
+ * made unreachable at every affordance that opens the composer.
  */
 export async function createReblog(input: CreateReblogInput): Promise<Reblog> {
+  assertReblogAuthoringEnabled();
   const text = (input.text ?? "").trim();
   const hasText = text.length > 0;
   const hasMedia = !!input.mediaFile;
