@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { assertRemixCreateEnabled } from "./flags";
 
 /**
  * Create a new draft that remixes an existing post. Copies the source
@@ -7,11 +8,17 @@ import { supabase } from "@/integrations/supabase/client";
  *
  * Returns `{ draftId, postType }` so the caller can route into the
  * correct editor mode (blueprint / blog).
+ *
+ * FROZEN — NS-P43. Throws RemixValidationError("REMIX_RETIRED") while
+ * REMIX_CREATE_ENABLED is false; the body below is left exactly as it was so
+ * that flipping the flag restores remixing whole. Reading a lineage already
+ * recorded is untouched — see ./flags.ts.
  */
 export async function createRemix(args: {
   sourcePostId: string;
   remixerId: string;
 }): Promise<{ draftId: string; postType: "blueprint" | "blog" | "bounty" }> {
+  assertRemixCreateEnabled();
   const { sourcePostId, remixerId } = args;
 
   // Fetch the source post
