@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,10 +12,28 @@ import { ProjectFeedCard } from "@/components/ProjectFeedCard";
 import { ReblogCard } from "@/components/ReblogCard";
 import { FeedReblogAdapter, type FeedReblogRow } from "@/components/reblog/FeedReblogAdapter";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { FeedShell, type FeedTabKey, type BountyPreview } from "@/components/feed/FeedShell";
+import {
+  FeedShell,
+  FeedSkeleton,
+  type FeedTabKey,
+  type BountyPreview,
+} from "@/components/feed/FeedShell";
 import { resolvePostType } from "@/lib/content-types";
 
-const VALID_TABS: FeedTabKey[] = ["foryou", "following", "trending", "recent", "bounties"];
+/**
+ * The Builds tab (NS-P41), in its own chunk.
+ *
+ * Home is the entry bundle, and this tab brings the gallery card, its five
+ * bodies and the build data layer with it — none of which the other five tabs
+ * touch. Lazy, so a reader who never opens it never downloads it, and so that
+ * none of it can reach the initial bundle by being imported here.
+ *
+ * It owns its own query for the same reason: a hook in this file would pull
+ * those modules in whether or not the tab is ever shown.
+ */
+const BuildsTab = lazy(() => import("@/components/feed/BuildsTab"));
+
+const VALID_TABS: FeedTabKey[] = ["builds", "foryou", "following", "trending", "recent", "bounties"];
 
 function adaptToFeedPost(item: any): FeedPost {
   const p = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles;
@@ -392,7 +410,21 @@ const Home = () => {
   const bountiesQ = useBountiesData(true); // also used by the strip
 
   const tabData =
-    activeTab === "recent" ? recent
+    // NS-P41, first because it is the first tab. It renders as a single entry
+    // in the existing content area and reports neither loading nor empty:
+    // BuildsTab does both itself, with the same skeleton and the same empty
+    // state this shell would have drawn, because it is the thing that knows
+    // when its own lazily loaded page has arrived.
+    activeTab === "builds" ? {
+        cards: [
+          <Suspense key="builds-tab" fallback={<FeedSkeleton />}>
+            <BuildsTab />
+          </Suspense>,
+        ],
+        isLoading: false,
+        isEmpty: false,
+      }
+    : activeTab === "recent" ? recent
     : activeTab === "following" ? following
     : activeTab === "trending" ? trending
     : activeTab === "bounties" ? {

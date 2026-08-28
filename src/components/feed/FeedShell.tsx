@@ -8,9 +8,18 @@ import {
   TrendingUp,
   Clock,
   ChevronUp,
+  Layers,
 } from "lucide-react";
 
-export type FeedTabKey = "foryou" | "following" | "trending" | "recent" | "bounties";
+export type FeedTabKey =
+  // NS-P41. First in the union and first in TABS below, additive: the five
+  // that follow it keep their order, their labels and their data paths.
+  | "builds"
+  | "foryou"
+  | "following"
+  | "trending"
+  | "recent"
+  | "bounties";
 
 export interface BountyPreview {
   id: string;
@@ -46,6 +55,7 @@ interface FeedShellProps {
 }
 
 const TABS: { key: FeedTabKey; label: string }[] = [
+  { key: "builds", label: "Builds" },
   { key: "foryou", label: "For You" },
   { key: "following", label: "Following" },
   { key: "trending", label: "Trending" },
@@ -57,6 +67,12 @@ const EMPTY_STATES: Record<
   FeedTabKey,
   { icon: React.ElementType; headline: string; body: string; cta?: string }
 > = {
+  builds: {
+    icon: Layers,
+    headline: "Nothing here yet",
+    body: "Builds, rebuilds and the notes people leave after running one land here as they are published. The gallery has more.",
+    cta: "Open the gallery",
+  },
   foryou: {
     icon: Sparkles,
     headline: "Your feed is waiting",
@@ -320,6 +336,7 @@ function FeedTabBar({
               tabRefs.current[i] = el;
             }}
             onClick={() => onTabChange(tab.key)}
+            data-testid={`feed-tab-${tab.key}`}
             className="cursor-pointer transition-colors relative"
             style={{
               flex: "1 1 0",
@@ -426,93 +443,11 @@ function FeedContentArea({
   isEmpty: boolean;
   onEmptyCTAClick: () => void;
 }) {
-  if (isLoading) {
-    return (
-      <div className="space-y-0">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-32 mb-3 rounded-xl overflow-hidden relative"
-            style={{ background: "rgba(255,255,255,0.04)" }}
-          >
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)",
-                animation: "ns-shimmer 1.6s infinite",
-              }}
-            />
-          </div>
-        ))}
-        <style>{`@keyframes ns-shimmer { 0% { transform: translateX(-100%);} 100% { transform: translateX(100%);} }`}</style>
-      </div>
-    );
-  }
+  if (isLoading) return <FeedSkeleton />;
 
   if (isEmpty) {
-    const e = EMPTY_STATES[activeTab];
-    const Icon = e.icon;
     return (
-      <div className="flex flex-col items-center text-center" style={{ marginTop: 48 }}>
-        <div
-          className="flex items-center justify-center"
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: "50%",
-            background: "rgba(232, 87, 26, 0.08)",
-            border: "0.5px solid rgba(232, 87, 26, 0.20)",
-            marginBottom: 16,
-          }}
-        >
-          <Icon style={{ width: 32, height: 32, color: "#E8571A" }} />
-        </div>
-        <div
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: 18,
-            fontWeight: 600,
-            color: "rgba(255,255,255,0.92)",
-            marginBottom: 8,
-          }}
-        >
-          {e.headline}
-        </div>
-        <p
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: 13,
-            fontWeight: 400,
-            lineHeight: 1.55,
-            color: "rgba(255,255,255,0.55)",
-            maxWidth: 380,
-            marginBottom: e.cta ? 20 : 0,
-          }}
-        >
-          {e.body}
-        </p>
-        {e.cta && (
-          <button
-            onClick={onEmptyCTAClick}
-            className="feed-empty-cta transition-colors"
-            style={{
-              padding: "10px 24px",
-              borderRadius: 100,
-              background: "rgba(232, 87, 26, 0.10)",
-              border: "0.5px solid rgba(232, 87, 26, 0.40)",
-              color: "#E8571A",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "'Inter', sans-serif",
-            }}
-          >
-            {e.cta}
-          </button>
-        )}
-        <style>{`.feed-empty-cta:hover { background: rgba(232,87,26,0.16) !important; border-color: rgba(232,87,26,0.60) !important; }`}</style>
-      </div>
+      <FeedEmptyState activeTab={activeTab} onEmptyCTAClick={onEmptyCTAClick} />
     );
   }
 
@@ -531,6 +466,110 @@ function FeedContentArea({
           )}
         </React.Fragment>
       ))}
+    </div>
+  );
+}
+
+/**
+ * The three shimmering blocks a tab shows while its first page is in flight.
+ *
+ * EXPORTED because NS-P41's Builds tab loads its own content lazily and has to
+ * show the same thing while it does. Two implementations of "the feed is
+ * loading" would drift, and a reader switching tabs would see the drift.
+ */
+export function FeedSkeleton() {
+  return (
+    <div className="space-y-0">
+      {[1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="h-32 mb-3 rounded-xl overflow-hidden relative"
+          style={{ background: "rgba(255,255,255,0.04)" }}
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)",
+              animation: "ns-shimmer 1.6s infinite",
+            }}
+          />
+        </div>
+      ))}
+      <style>{`@keyframes ns-shimmer { 0% { transform: translateX(-100%);} 100% { transform: translateX(100%);} }`}</style>
+    </div>
+  );
+}
+
+/** What a tab says when it has nothing. Exported for the same reason. */
+export function FeedEmptyState({
+  activeTab,
+  onEmptyCTAClick,
+}: {
+  activeTab: FeedTabKey;
+  onEmptyCTAClick: () => void;
+}) {
+  const e = EMPTY_STATES[activeTab];
+  const Icon = e.icon;
+  return (
+    <div className="flex flex-col items-center text-center" style={{ marginTop: 48 }}>
+      <div
+        className="flex items-center justify-center"
+        style={{
+          width: 72,
+          height: 72,
+          borderRadius: "50%",
+          background: "rgba(232, 87, 26, 0.08)",
+          border: "0.5px solid rgba(232, 87, 26, 0.20)",
+          marginBottom: 16,
+        }}
+      >
+        <Icon style={{ width: 32, height: 32, color: "#E8571A" }} />
+      </div>
+      <div
+        style={{
+          fontFamily: "'Inter', sans-serif",
+          fontSize: 18,
+          fontWeight: 600,
+          color: "rgba(255,255,255,0.92)",
+          marginBottom: 8,
+        }}
+      >
+        {e.headline}
+      </div>
+      <p
+        style={{
+          fontFamily: "'Inter', sans-serif",
+          fontSize: 13,
+          fontWeight: 400,
+          lineHeight: 1.55,
+          color: "rgba(255,255,255,0.55)",
+          maxWidth: 380,
+          marginBottom: e.cta ? 20 : 0,
+        }}
+      >
+        {e.body}
+      </p>
+      {e.cta && (
+        <button
+          onClick={onEmptyCTAClick}
+          className="feed-empty-cta transition-colors"
+          style={{
+            padding: "10px 24px",
+            borderRadius: 100,
+            background: "rgba(232, 87, 26, 0.10)",
+            border: "0.5px solid rgba(232, 87, 26, 0.40)",
+            color: "#E8571A",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontFamily: "'Inter', sans-serif",
+          }}
+        >
+          {e.cta}
+        </button>
+      )}
+      <style>{`.feed-empty-cta:hover { background: rgba(232,87,26,0.16) !important; border-color: rgba(232,87,26,0.60) !important; }`}</style>
     </div>
   );
 }
