@@ -126,6 +126,160 @@ needs the same guard before it goes live.
 
 ---
 
+## Generation-1 bounty responses
+
+**Frozen** NS-P44 (28 Aug 2026).
+
+**Replaced by** generation 2 — `solutions` and its satellites, served by
+`src/lib/bounty-solver/` (17 files), `BountySolvePage` and the bounty surfaces
+of `src/pages/ContentDetail.tsx`. Generation 1 is the March 2026 shape:
+`bounty_responses` with its `inline_blocks` jsonb, `upvotes`, `verified_count`
+and generated `score` column, plus `bounty_me_too`,
+`bounty_response_verifications` and a row of `bounty_*` columns on
+`content_items`.
+
+**Flag** `GEN1_BOUNTY_RESPONSES_ENABLED` in `src/lib/bounty-gen1/flags.ts`,
+currently `false`.
+
+### The audit, before the freeze
+
+Measured 28 Aug 2026 against the Supabase project this repository points at —
+`project_id` in `supabase/config.toml`, the same host in `.env` and
+`netlify.toml`, and the only Supabase host that appears anywhere in the tree.
+Read-only, through the publishable (anon) key, one `count=exact` HEAD per table.
+
+| Table | Rows | Newest row | Verdict |
+| --- | --- | --- | --- |
+| `bounty_responses` | none — no table | none | **Never deployed.** PGRST205, "could not find the table in the schema cache" |
+| `bounty_response_verifications` | none — no table | none | **Never deployed.** PGRST205 |
+| `bounty_me_too` | none — no table | none | **Never deployed.** PGRST205 |
+| `solutions` (generation 2, for comparison) | 2 | 2026-08-18T13:21:39Z | Live, and the system in use |
+
+Reference points from the same run: `content_items` 76 rows (newest
+2026-08-17T13:21:23Z), of which 3 are `post_type = 'bounty'`; `profiles` 23;
+`builds` 1. Every generation-2 satellite — `solution_votes`,
+`solution_acceptance_log`, `solution_comments`, `bounty_discussion_comments`,
+`bounty_comment_reactions`, `bounty_comment_last_read` — answers 200 with a
+count of 0. They exist and are empty, which is a different thing from what the
+three generation-1 tables answer.
+
+**Why "never deployed" and not "empty".** A table that exists but is closed by
+RLS answers 200 with a count of zero, the way `solution_votes` does above. A
+table that is not there answers PGRST205 — and so does a table name invented for
+the probe, which was run as a control and came back identical. Two more probes
+put it beyond doubt: `content_items.bounty_enabled` and
+`profiles.bounties_solved` each answer Postgres error 42703, "column does not
+exist", which comes from the planner rather than from the schema cache. No
+migration in `supabase/migrations/` drops any of it. So
+`supabase/migrations/20260323000001_bounty_system.sql` was authored in March and
+never applied to this project.
+
+**What was not measured, and cannot be from here.** There is no second Supabase
+project in this repository, so "the production-mirroring dev database" and
+production are the same host as far as this tree can see. The session held no
+service-role key, so the numbers above are what the anon role can see under RLS:
+for `solutions` that is the public, non-draft rows on published bounties, not
+necessarily every row. For the three generation-1 tables the distinction does not
+arise — RLS cannot hide a table that is absent.
+
+### Where generation 1 is referenced, and whether anything can reach it
+
+| File | Reference | Reachable? |
+| --- | --- | --- |
+| `src/components/BountyResponseComposer.tsx` | inserts into `bounty_responses` | **No.** Its only mount is `ContentDetail.legacy.tsx`, below |
+| `src/pages/ContentDetail.legacy.tsx` | the response list, the sort, `bounty_me_too` toggle, `bounty_response_verifications` write, mark-as-solution, and the composer mount | **No.** No route registers it and no module imports it — `App.tsx` routes `/content/:id` to `ContentDetail.tsx`, and `Discover.legacy` is the only `.legacy` page with a route (`/discover-legacy`) |
+| `src/pages/CreatorProfile.tsx` | the Solutions tab reads `bounty_responses`; the "★ N bounties solved" chip reads `profile.bounties_solved` | **Route yes, code no.** `/creator/:username` is live, but the tab is only added when `bounties_solved > 0`, and that column does not exist on `profiles`, so `?? 0` makes it 0 for every creator. The tab never appears and its query, gated on `activeTab === "solutions"`, never fires |
+| `src/pages/Profile.legacy.tsx` | the same tab and chip | **No.** Not routed, not imported |
+| `supabase/functions/seed-demo-data/index.ts` | inserts `bounty_responses`, `bounty_response_verifications`, `bounty_me_too` | **Not a UI path.** Left untouched — it is a demo seeder, and against the current schema its inserts fail the same way the composer's would. It is the one generation-1 write path outside this freeze |
+
+The prompt that ordered this work expected the composer to mount on the live
+`ContentDetail`, which would have meant responses might still be arriving. It
+does not, so none are — and the freeze below was applied anyway, because the
+point of a freeze is the shape not coming back, not the row count on the day.
+
+### What the flag holds down
+
+| Layer | What is frozen |
+| --- | --- |
+| Affordance | The "Submit a Blueprint →" button in the bounty response section of `ContentDetail.legacy.tsx` — the only control that set `composerOpen` |
+| Component | `BountyResponseComposer` renders `null`, so mounting it opens nothing, from any call site, including one added after the freeze |
+| Write | The composer's `handleSubmit` calls `assertGen1BountyResponsesEnabled()` before it inserts |
+
+The gate throws:
+
+```ts
+Gen1BountyValidationError(
+  "GEN1_BOUNTY_RESPONSES_RETIRED",
+  "Generation-1 bounty responses are frozen. Bounties are solved through solutions."
+)
+```
+
+The implementation is left whole — every hook, field and branch of the composer
+still compiles and still works. The guard is a wrapper around it rather than an
+early return inside it, because the implementation calls hooks and returning
+before them would make the hook order conditional.
+
+### What is still live, and must stay live
+
+- Every read of a generation-1 row, wherever it renders today: the response list
+  and its sort, the me-too count, the verification counts and the mark-as-
+  solution control in `ContentDetail.legacy.tsx`; the Solutions tab and the
+  "★ N bounties solved" chip on `CreatorProfile.tsx` and `Profile.legacy.tsx`.
+  None of them is inside the flag. Whatever they render before the freeze they
+  render after it.
+- All of generation 2. `solutions`, `solution_votes`, `solution_acceptance_log`,
+  `solution_comments`, `bounty_discussion_comments`, `bounty_comment_reactions`,
+  `bounty_comment_last_read`, every file in `src/lib/bounty-solver/`, and the
+  bounty surfaces of `ContentDetail.tsx`. Untouched by NS-P44.
+
+### The rule NS-P45 through NS-P49 must follow
+
+**Generation-1 tables are not repointed and not dropped.** NS-P45 creates the
+`bounties` header table; it must not carry `bounty_responses`,
+`bounty_me_too` or `bounty_response_verifications` with it, must not add a
+foreign key to any of them, and must not backfill from them. Nothing in
+NS-P45–P49 drops them either.
+
+They ride with the frozen legacy read path until the operator retires
+`content_items` entirely — every one of them hangs off `content_items(id)`, so
+their retirement is that decision, not a separate one, and it is taken under
+[Dropping any of this](#dropping-any-of-this) below.
+
+**The number NS-P45's backfill has to account for is zero, and the reason
+matters more than the number.** There is nothing to migrate from generation 1 —
+no rows, and no tables to hold them. A backfill written against
+`bounty_responses` will not return an empty set; it will fail with PGRST205 or
+42703. The generation-1 counters on `content_items` are in the same position:
+`bounty_enabled`, `bounty_status`, `bounty_me_too_count`,
+`bounty_solved_response_id`, `bounty_closes_at`, `bounty_tip_gbp` and
+`bounty_gap` are all absent, so any code reading them — `BountyCard.tsx`,
+`Browse.tsx`'s me-too sort, `CreatorProfile.tsx`'s Bounties tab — is already
+reading `undefined` and falling back. The live bounty count to size against is
+the generation-2 one: 3 `content_items` rows with `post_type = 'bounty'`, and 2
+`solutions` between them.
+
+### Rollback
+
+1. Set `GEN1_BOUNTY_RESPONSES_ENABLED = true` in `src/lib/bounty-gen1/flags.ts`.
+2. Revert the first describe block of
+   `src/lib/bounty-gen1/gen1ResponsesRetired.test.tsx`, which asserts the frozen
+   behaviour and will fail — correctly — once it is unfrozen. Its second block,
+   the read-path proof, passes either way and stays. Exercised: with the flag
+   true, three of the four cases fail and the read-path case still passes.
+3. **Apply `supabase/migrations/20260323000001_bounty_system.sql`**, which this
+   rollback needs and the reblog and remix rollbacks above do not. Unfreezing
+   alone gives you a composer that submits into a table that is not there. The
+   migration also needs its five RLS policies rewritten to
+   `(select auth.uid())` before it is applied — it was authored with bare
+   `auth.uid()`, which re-evaluates per row.
+4. Re-route `src/pages/ContentDetail.legacy.tsx`, or mount the composer
+   somewhere reachable. Nothing in the live routing table reaches it today.
+
+Nothing was deleted, no component was removed, and no migration was written by
+NS-P44.
+
+---
+
 ## What remains in the database
 
 No schema change was made by NS-P42 or NS-P43. Every object below still

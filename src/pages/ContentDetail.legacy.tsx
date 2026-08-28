@@ -97,6 +97,7 @@ const POST_TYPE_DISPLAY = {
   },
 };
 import { BountyResponseComposer } from "@/components/BountyResponseComposer";
+import { GEN1_BOUNTY_RESPONSES_ENABLED } from "@/lib/bounty-gen1/flags";
 import { insertNotification } from "@/lib/notifications";
 import { ReblogDetailView } from "@/components/ReblogDetailView";
 import { ReblogCard } from "@/components/ReblogCard";
@@ -1598,7 +1599,12 @@ const ContentDetail = () => {
                         </button>
                       ))}
                     </div>
-                    {isLoggedIn && !isPoster && (item as any).bounty_status !== "solved" &&
+                    {/* NS-P44 — the one generation-1 authoring affordance on this
+                        page, and the only edit made to it. Everything else in
+                        this bounty section reads: the response list and its
+                        sort, the me-too toggle, the verification counts and the
+                        mark-as-solution control are untouched. */}
+                    {GEN1_BOUNTY_RESPONSES_ENABLED && isLoggedIn && !isPoster && (item as any).bounty_status !== "solved" &&
                       !(bountyResponses ?? []).some((r: any) => r.responder_id === user?.id) && (
                       <button
                         onClick={() => setComposerOpen(true)}
