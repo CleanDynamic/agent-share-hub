@@ -24,7 +24,7 @@ export async function getLeaderboardActivity(
   const { data: solutions } = await (supabase as any)
     .from("solutions")
     .select("id, solver_id, slot_id, status, submitted_at, accepted_at, vote_count, created_at")
-    .eq("bounty_id", bountyId)
+    .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
     .order("created_at", { ascending: false })
     .limit(limit * 2);
 

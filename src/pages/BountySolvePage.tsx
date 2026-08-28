@@ -95,7 +95,7 @@ export default function BountySolvePage() {
       const { count } = await (supabase as any)
         .from("solutions")
         .select("*", { count: "exact", head: true })
-        .eq("bounty_id", bounty!.id)
+        .eq("legacy_bounty_item_id", bounty!.id) // NS-P46 shim (removed in NS-P50)
         .eq("slot_id", slotId!)
         .in("status", ["submitted", "accepted"]);
       return count ?? 0;

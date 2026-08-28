@@ -32,7 +32,10 @@ async function authoredZone({
     const { data, error } = await (supabase as any)
       .from("solution_acceptance_log")
       .select(
-        "id, accepted_at, slot_kind, bounty_id, solution_id, content_items!solution_acceptance_log_bounty_id_fkey(id, title, slug, post_type)"
+        // NS-P46 shim (removed in NS-P50): bounty_id points at public.bounties
+        // now, so the content_items embed goes through the shim column's
+        // foreign key instead.
+        "id, accepted_at, slot_kind, legacy_bounty_item_id, solution_id, content_items!solution_acceptance_log_legacy_bounty_item_id_fkey(id, title, slug, post_type)"
       )
       .eq("solver_id", userId)
       .order("accepted_at", { ascending: false })
@@ -47,7 +50,7 @@ async function authoredZone({
       subtitle: `${r.slot_kind} slot`,
       href: r.content_items?.slug
         ? `/content/${r.content_items.slug}#solution-${r.solution_id}`
-        : `/content/${r.bounty_id}#solution-${r.solution_id}`,
+        : `/content/${r.legacy_bounty_item_id}#solution-${r.solution_id}`,
       occurredAt: r.accepted_at,
     }));
     return pack(items, limit);

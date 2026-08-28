@@ -280,6 +280,69 @@ NS-P44.
 
 ---
 
+## The NS-P46 repoint — two map tables and a shim column
+
+**Added** NS-P46 (28 Aug 2026). **Kept until NS-P56 signs off.**
+
+Nothing is frozen here. This section is on this page because NS-P46 left three
+objects in the database whose only job is to make a change reversible, and an
+object with no product purpose needs a written reason to exist and a written
+date to stop existing.
+
+`supabase/migrations/20260828160000_repoint_solutions.sql` moved
+`solutions.bounty_id` and `solution_acceptance_log.bounty_id` off
+`content_items(id)` and onto `bounties(id)`, through the `legacy_item_id`
+mapping NS-P45 backfilled.
+
+| Object | Kind | Why it stays |
+| --- | --- | --- |
+| `public.ns_p46_migration_map_solutions` | table | One row per repointed solution: its id, and the `content_items` id its `bounty_id` held before. The only record of the old values. RLS on, no policy — operator access only. |
+| `public.ns_p46_migration_map_acceptance_log` | table | The same, for `solution_acceptance_log`. |
+| `solutions.legacy_bounty_item_id` and `solution_acceptance_log.legacy_bounty_item_id` | columns | The shim the live legacy read path runs on. Derived by `set_legacy_bounty_item_id()` from `bounties.legacy_item_id`, never written by a client. |
+
+### Why the shim column exists
+
+A legacy bounty page routes on a `content_items` id. After the repoint that id
+is not in `solutions.bounty_id` any more, so every read starting from a route
+param would return nothing — which looks exactly like a bounty nobody has
+solved, not like a bug. The column keeps the old id on the row; each read that
+needs it was moved across and flagged `// NS-P46 shim` in the source.
+
+**NS-P50 removes them.** `grep -rn "NS-P46 shim" src/` is the complete list:
+19 lines at the time of writing — 16 of them call sites across 15 files, plus
+the field's declaration in `bounty-solver/types.ts` and the header of
+`legacyBountyShim.test.ts`, which is the spec that fails when a shim is removed
+without its caller being rewired. When the last call site is rewired onto
+`bounties` directly, the two columns, `set_legacy_bounty_item_id()` and its two
+triggers go with them.
+
+### Reversing the repoint
+
+The order matters and is not obvious — the triggers NS-P46 installs reject the
+rollback UPDATE if they are still attached when it runs. Section 2 of the
+migration carries the four steps, in order, and they were run end to end
+against a Postgres 16 harness before being written down.
+
+### What is still live, and must stay live
+
+- The legacy bounty page: its solutions list, its per-slot counts, its
+  provenance panel, its solver leaderboard and analytics, and voting on a
+  solution. Proven under real RLS by
+  `supabase/tests/ns-p46-repoint-solutions.sql` (check 6) and at the data layer
+  by `src/lib/bounty-solver/legacyBountyShim.test.ts`.
+- Every one of the twelve legacy `bounty_*` columns on `content_items`. NS-P46
+  reads them through the shim and does not drop, rename or stop writing any.
+
+### One thing NS-P50 has to decide
+
+`solution_acceptance_log` still carries `"Public can read acceptance log"` with
+`USING (true)`, untouched by NS-P46 because it names no table the repoint
+moved. Once the new path writes acceptance rows for bounties on unpublished
+builds, that policy publishes them. Tightening it is a behaviour change on a
+live surface and belongs with the prompt that gives it rows.
+
+---
+
 ## What remains in the database
 
 No schema change was made by NS-P42 or NS-P43. Every object below still

@@ -23,12 +23,23 @@ export async function acceptSolution(args: {
   if (sErr) throw sErr;
   const solution = sol as Solution;
 
+  // NS-P46 shim (removed in NS-P50). solution.bounty_id is a public.bounties id
+  // now; everything below that reads or writes content_items — the stage_grids
+  // merge, the solved counters, the notification target, the metadata
+  // recompute — needs the legacy id instead. This function IS the legacy
+  // acceptance path: a bounty that lives on a build has no legacy item and no
+  // stage_grids to merge into, and belongs to NS-P50's rewrite, not here.
+  const legacyBountyItemId = solution.legacy_bounty_item_id;
+  if (!legacyBountyItemId) {
+    throw new Error("This solution is not on a legacy bounty; acceptance for build bounties arrives in NS-P50");
+  }
+
   const { data: bounty, error: bErr } = await (supabase as any)
     .from("content_items")
     .select(
       "id, creator_id, stage_grids, bounty_solved_count, bounty_total_slots, bounty_reward_amount, bounty_reward_type",
     )
-    .eq("id", solution.bounty_id)
+    .eq("id", legacyBountyItemId)
     .single();
   if (bErr) throw bErr;
   if (bounty.creator_id !== accepterId) {
@@ -55,7 +66,10 @@ export async function acceptSolution(args: {
     .eq("id", solutionId);
   if (updErr) throw updErr;
 
-  // 3b. Append to acceptance log.
+  // 3b. Append to acceptance log. bounty_id is deliberately NOT shimmed here:
+  // solution_acceptance_log.bounty_id points at public.bounties since NS-P46,
+  // which is exactly what solution.bounty_id now holds. The log's own shim
+  // column is derived by the database, not written by this insert.
   await (supabase as any).from("solution_acceptance_log").insert({
     solution_id: solutionId,
     bounty_id: solution.bounty_id,
@@ -94,7 +108,7 @@ export async function acceptSolution(args: {
       bounty_solved_count: newSolved,
       ...(isFullySolved ? { bounty_status: "solved" } : {}),
     } as any)
-    .eq("id", solution.bounty_id);
+    .eq("id", legacyBountyItemId);
 
   // 3f. Notify solver.
   void createNotification({
@@ -102,7 +116,7 @@ export async function acceptSolution(args: {
     actorId: accepterId,
     kind: "bounty_interaction",
     targetType: "bounty",
-    targetId: solution.bounty_id,
+    targetId: legacyBountyItemId,
     metadata: {
       subkind: "solution_accepted",
       solution_id: solutionId,
@@ -144,5 +158,5 @@ export async function acceptSolution(args: {
   })();
 
   // 3j. Recompute metadata on bounty.
-  void recomputeMetadata(solution.bounty_id).catch(() => {});
+  void recomputeMetadata(legacyBountyItemId).catch(() => {});
 }

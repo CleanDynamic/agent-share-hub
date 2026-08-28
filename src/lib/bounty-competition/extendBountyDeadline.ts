@@ -50,7 +50,7 @@ export async function extendBountyDeadline({
         (supabase as any)
           .from("solutions")
           .select("solver_id")
-          .eq("bounty_id", bountyId)
+          .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
           .in("status", ["draft", "submitted"]),
         (supabase as any)
           .from("bounty_discussion_comments")
