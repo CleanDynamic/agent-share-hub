@@ -25,6 +25,7 @@ import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import type { Build, RequirementKey } from "@/lib/build";
 import type { ComposeBuild } from "@/hooks/useComposeBuild";
+import { useRebuildDiff } from "@/hooks/useRebuildDiff";
 import { MediaProvider, useComposeMedia } from "@/hooks/useComposeMedia";
 import { nodeMediaId } from "@/components/build/MediaFigure";
 import { ComposeTopBar } from "@/components/compose/ComposeTopBar";
@@ -253,6 +254,17 @@ interface ComposeFrameProps {
   compose: ComposeBuild;
   /** Nodes a Build File import just wrote. Absent on every other way in. */
   justArrived?: number;
+  /**
+   * The creator arrived through /rebuild/:slug, this moment, rather than
+   * reopening a draft they already had.
+   *
+   * It changes one thing: what has the creator's attention on the first frame.
+   * A rebuild opens onto a tree that is already full of somebody else's work,
+   * so the first inherited node is selected and the inspector opens on it —
+   * there is nothing to say about an empty tray on a build that arrived with
+   * everything placed.
+   */
+  fromRebuild?: boolean;
 }
 
 /**
@@ -262,9 +274,18 @@ interface ComposeFrameProps {
  * the context the frame mounts — a provider cannot be consumed by the
  * component that renders it.
  */
-function ComposeWorkspace({ build, compose, justArrived }: ComposeFrameProps) {
+function ComposeWorkspace({
+  build,
+  compose,
+  justArrived,
+  fromRebuild,
+}: ComposeFrameProps) {
   const isSingleColumn = useIsSingleColumn();
   const media = useComposeMedia();
+  // What this draft changed about the build it was forked from, recomputed on
+  // the save cycle rather than on the keystroke. One answer, read by the top
+  // bar's count and by every row of the tree.
+  const rebuild = useRebuildDiff(compose);
   const drag = useNodeDrag({
     buildId: build.id,
     tree: compose.tree,
@@ -374,6 +395,24 @@ function ComposeWorkspace({ build, compose, justArrived }: ComposeFrameProps) {
     [media]
   );
 
+  /**
+   * The first inherited node, once, on arrival from /rebuild/:slug.
+   *
+   * A ref rather than a dependency on the selection, so a creator who then
+   * clicks away — or deliberately clears the selection — is not dragged back to
+   * the top of the tree by a later render. It fires on the first frame the tree
+   * has anything in it, which on a fork is the first frame the record loads.
+   */
+  const focusedFirstRef = useRef(false);
+  const selectNode = compose.setSelectedNodeId;
+  const firstNodeId = compose.tree[0]?.id ?? null;
+
+  useEffect(() => {
+    if (!fromRebuild || focusedFirstRef.current || !firstNodeId) return;
+    focusedFirstRef.current = true;
+    selectNode(firstNodeId);
+  }, [firstNodeId, fromRebuild, selectNode]);
+
   // Widening past the breakpoint puts both panels back on screen, so a sheet
   // left open would be a second copy of a panel already visible.
   useEffect(() => {
@@ -431,6 +470,7 @@ function ComposeWorkspace({ build, compose, justArrived }: ComposeFrameProps) {
           onOpenTray={isSingleColumn ? () => setTrayOpen(true) : undefined}
           onOpenInspector={isSingleColumn ? () => setInspectorOpen(true) : undefined}
           onFocusRequirement={focusRequirement}
+          rebuild={rebuild}
         />
 
         {/* A NEW element between the bar and the panels. The row below is
@@ -465,7 +505,12 @@ function ComposeWorkspace({ build, compose, justArrived }: ComposeFrameProps) {
             aria-label="Anatomy and sequence"
             style={{ flex: 1, minWidth: 0, ...railScroll }}
           >
-            <CentrePanel buildId={build.id} compose={compose} drag={drag} />
+            <CentrePanel
+              buildId={build.id}
+              compose={compose}
+              drag={drag}
+              rebuildNodes={rebuild.nodes}
+            />
           </section>
 
           {!isSingleColumn && (
@@ -548,10 +593,20 @@ function ComposeWorkspace({ build, compose, justArrived }: ComposeFrameProps) {
  * Everything below it — the panels, the inspector's upload control, the drop
  * path on the frame itself — reads the build's media from one query held here.
  */
-export function ComposeFrame({ build, compose, justArrived }: ComposeFrameProps) {
+export function ComposeFrame({
+  build,
+  compose,
+  justArrived,
+  fromRebuild,
+}: ComposeFrameProps) {
   return (
     <MediaProvider buildId={build.id} nodeId={compose.selectedNodeId}>
-      <ComposeWorkspace build={build} compose={compose} justArrived={justArrived} />
+      <ComposeWorkspace
+        build={build}
+        compose={compose}
+        justArrived={justArrived}
+        fromRebuild={fromRebuild}
+      />
     </MediaProvider>
   );
 }
