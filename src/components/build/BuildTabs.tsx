@@ -1,20 +1,23 @@
-// The tabs of a build page. Only Forks is still dark.
+// The tabs of a build page. Every one of them is live.
 //
-// It is rendered and visibly disabled rather than omitted: the strip is the map
-// of what a build record is going to hold, and a reader seeing "Forks" greyed
-// out learns more than a reader seeing nothing at all.
+// THE LAST DARK TAB WAS "FORKS — DERIVED BUILDS, SOON", and NS-P40 is what it
+// was waiting for. It is now Rebuilds, and it carries no placeholder, because
+// the thing it advertised has arrived: a greyed "soon" on a shipped feature is
+// a worse lie than an absent tab. So it follows the Understand it rule below
+// rather than the placeholder rule — present when there is something to show,
+// gone when there is not. A build nobody has rebuilt has no Rebuilds tab, and
+// the rebuild count in its header does not render either, so the strip and the
+// header agree about the same silence.
 //
-// UNDERSTAND IT IS THE ONE TAB THAT DISAPPEARS. It exists only where a creator
-// has approved a generated understand layer, and where they have not, a greyed
-// tab would advertise something that is not coming — the opposite of what the
-// Forks placeholder does. So a tab is rendered when it has a panel OR it
-// declares a placeholder, and Understand it declares neither until NS-P23's
-// review pass has been through.
+// UNDERSTAND IT AND REBUILDS ARE THE TABS THAT DISAPPEAR. Understand it exists
+// only where a creator has approved a generated understand layer; Rebuilds
+// only where a published rebuild exists. A tab is rendered when it has a panel
+// OR it declares a placeholder, and neither of those two declares one.
 //
 // A tab is live when a panel is handed in for it, never because this file
-// hardcodes which ones work. NS-P06 activated Run it yourself by passing one
-// and NS-P16 activated Watch it get built and Where it broke the same way; the
-// one still dark goes the same way when its panel exists.
+// hardcodes which ones work. NS-P06 activated Run it yourself by passing one,
+// NS-P16 activated Watch it get built and Where it broke the same way, and
+// NS-P40 activated Rebuilds the same way again.
 //
 // Selection is uncontrolled by default and controlled when a caller passes
 // `active`. The build page takes control so that a link out of one panel — a
@@ -35,6 +38,8 @@ interface BuildTabsProps {
   understand?: ReactNode;
   /** The Where it broke panel. Absent leaves the tab disabled. */
   broke?: ReactNode;
+  /** The Rebuilds panel. Absent removes the tab entirely — see the header. */
+  rebuilds?: ReactNode;
   /** Controlled selection. Omit to let the strip own it. */
   active?: string;
   /** Fires on every selection, controlled or not. */
@@ -57,7 +62,7 @@ const TABS: TabDef[] = [
   { id: "run", label: "Run it yourself" },
   { id: "understand", label: "Understand it" },
   { id: "broke", label: "Where it broke" },
-  { id: "forks", label: "Forks", placeholder: "Derived builds — soon" },
+  { id: "rebuilds", label: "Rebuilds" },
 ];
 
 const tabBase: CSSProperties = {
@@ -80,6 +85,7 @@ export function BuildTabs({
   run,
   understand,
   broke,
+  rebuilds,
   active,
   onActiveChange,
 }: BuildTabsProps) {
@@ -90,6 +96,7 @@ export function BuildTabs({
   if (run !== undefined) panels.run = run;
   if (understand !== undefined) panels.understand = understand;
   if (broke !== undefined) panels.broke = broke;
+  if (rebuilds !== undefined) panels.rebuilds = rebuilds;
 
   const live = TABS.filter((tab) => panels[tab.id] !== undefined);
   // A tab with neither a panel nor a placeholder has nothing to say, so it is

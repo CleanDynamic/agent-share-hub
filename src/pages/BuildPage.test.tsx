@@ -8,6 +8,8 @@ const getMediaForBuild = vi.fn().mockResolvedValue([]);
 const getApprovedLayers = vi.fn().mockResolvedValue([]);
 const forkBuild = vi.fn();
 const getForkOrigin = vi.fn().mockResolvedValue(null);
+const listRebuilds = vi.fn().mockResolvedValue([]);
+const getBuild = vi.fn().mockResolvedValue(null);
 const auth = vi.hoisted(() => ({ isLoggedIn: false }));
 
 /** The fork control asks who is reading. Nothing else on this page does. */
@@ -32,6 +34,8 @@ vi.mock("@/lib/build", async (importOriginal) => {
     getApprovedLayers: (buildId: string) => getApprovedLayers(buildId),
     forkBuild: (input: unknown) => forkBuild(input),
     getForkOrigin: (build: unknown) => getForkOrigin(build),
+    listRebuilds: (buildId: string, options?: unknown) => listRebuilds(buildId, options),
+    getBuild: (id: string) => getBuild(id),
     signedMediaUrl: async (media: { path: string }, options?: { width?: number }) =>
       `https://project.supabase.co/storage/v1/render/image/sign/build-media/${media.path}` +
       `?width=${options?.width}&quality=75&token=t`,
@@ -148,6 +152,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   getMediaForBuild.mockResolvedValue([]);
   getForkOrigin.mockResolvedValue(null);
+  listRebuilds.mockResolvedValue([]);
+  getBuild.mockResolvedValue(null);
   auth.isLoggedIn = false;
 });
 
@@ -161,9 +167,11 @@ describe("BuildPage", () => {
     expect(screen.getByText("not yet confirmed by anyone")).toBeTruthy();
     expect(screen.getByText("Load it here")).toBeTruthy();
 
-    for (const tab of ["Anatomy", "Watch it get built", "Run it yourself", "Where it broke", "Forks"]) {
+    for (const tab of ["Anatomy", "Watch it get built", "Run it yourself", "Where it broke"]) {
       expect(screen.getByText(tab)).toBeTruthy();
     }
+    // Rebuilds is absent, not greyed: nobody has rebuilt this one (NS-P40).
+    expect(screen.queryByRole("tab", { name: /Rebuilds/ })).toBeNull();
 
     expect(screen.getByText("Per-email classify call")).toBeTruthy();
     expect(screen.getByText("Never invent a date.")).toBeTruthy();
@@ -200,7 +208,7 @@ describe("BuildPage", () => {
     expect(container.querySelector('[data-visual-slot="build-anatomy-tree"]')).toBeTruthy();
   });
 
-  it("leaves only the unbuilt tab disabled", async () => {
+  it("leaves no tab disabled, and shows none it cannot fill", async () => {
     getBuildBySlug.mockResolvedValue(record);
     renderAt("inbox-triage-agent-demo");
     await screen.findByText("Inbox triage agent");
@@ -211,7 +219,11 @@ describe("BuildPage", () => {
     for (const label of [/Watch it get built/, /Where it broke/]) {
       expect(screen.getByRole("tab", { name: label }).hasAttribute("disabled")).toBe(false);
     }
-    expect(screen.getByRole("tab", { name: /Forks/ }).hasAttribute("disabled")).toBe(true);
+    // NS-P40 turned the last dark tab — "Forks — derived builds, soon" — into
+    // Rebuilds, which is present when there are rebuilds and gone when there
+    // are not. Nothing is greyed out any more.
+    expect(screen.queryAllByRole("tab").filter((tab) => tab.hasAttribute("disabled"))).toEqual([]);
+    expect(screen.queryByRole("tab", { name: /Forks/ })).toBeNull();
   });
 
   it("sends a breakage into the replay at the step it broke", async () => {
@@ -353,6 +365,172 @@ describe("BuildPage", () => {
     getBuildBySlug.mockRejectedValue(new Error("getBuildBySlug failed: boom"));
     renderAt("kaboom");
     expect(await screen.findByText("This build could not be loaded")).toBeTruthy();
+  });
+});
+
+// --- rebuild attribution (NS-P40) --------------------------------------------
+//
+// The three surfaces the credit becomes public through: the banner on the
+// rebuild's own page, the Rebuilds tab on the source's, and the count that
+// joins the reproduction count in the header.
+
+/** A published rebuild of `record`, carrying the frozen snapshot columns. */
+function rebuildRecord(over: Record<string, unknown> = {}) {
+  return {
+    ...record,
+    build: {
+      ...record.build,
+      id: "child-1",
+      slug: "my-inbox-triage",
+      title: "My inbox triage",
+      outcome: "Sorts a full inbox, and drafts the replies.",
+      parent_build_id: "b-source",
+      forked_from_event_id: "ev12",
+      source_title_at_fork: "Inbox triage agent",
+      source_handle_at_fork: "amara",
+      rebuild_note: "Swapped the model and gave it the last three messages.\nIt got quicker.",
+      ...over,
+    },
+  };
+}
+
+const sourceHeader = {
+  id: "b-source",
+  slug: "inbox-triage-agent-demo",
+  title: "Inbox triage agent",
+};
+
+function rebuildRow(over: Record<string, unknown> = {}) {
+  return {
+    id: "child-1",
+    slug: "my-inbox-triage",
+    title: "My inbox triage",
+    creator: { id: "u2", username: "sam", display_name: "Sam", avatar_url: null },
+    rebuild_note: "Swapped the model.\nAnd cut two steps.",
+    created_at: "2026-08-20T09:00:00Z",
+    forked_from_event_id: "e6",
+    reproduction_count: 3,
+    ...over,
+  };
+}
+
+describe("BuildPage rebuild attribution", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getMediaForBuild.mockResolvedValue([]);
+    getApprovedLayers.mockResolvedValue([]);
+    getForkOrigin.mockResolvedValue(null);
+    listRebuilds.mockResolvedValue([]);
+    getBuild.mockResolvedValue(null);
+    auth.isLoggedIn = false;
+  });
+
+  // ACCEPTANCE 1
+  it("credits the source it was rebuilt from, quotes the note, and links the source", async () => {
+    getForkOrigin.mockResolvedValue({ build: sourceHeader, ordinal: 12 });
+    getBuildBySlug.mockResolvedValue(rebuildRecord());
+    renderAt("my-inbox-triage");
+
+    // The link arrives with the parent lookup; the sentence is there from the
+    // first paint, because the snapshot needs no lookup at all.
+    const link = await screen.findByRole("link", { name: "Inbox triage agent" });
+    const banner = screen.getByTestId("rebuild-banner");
+    expect(banner.textContent).toContain("Rebuilt from Inbox triage agent by @amara");
+    expect(banner.textContent).not.toContain("no longer available");
+
+    expect(link.getAttribute("href")).toBe("/b2/inbox-triage-agent-demo");
+    expect(within(banner).getByRole("link", { name: "@amara" }).getAttribute("href"))
+      .toBe("/creator/amara");
+
+    // The rebuilder's own words, in full and in their own block.
+    expect(screen.getByTestId("rebuild-banner-note").textContent).toContain(
+      "Swapped the model and gave it the last three messages."
+    );
+  });
+
+  // ACCEPTANCE 1
+  it("computes what changed only when the reader asks, and lists it", async () => {
+    getForkOrigin.mockResolvedValue({ build: sourceHeader, ordinal: 12 });
+    getBuildBySlug.mockResolvedValue(rebuildRecord());
+    getBuild.mockResolvedValue(record);
+
+    renderAt("my-inbox-triage");
+    const expander = await screen.findByTestId("rebuild-banner-expander");
+
+    // Nothing is fetched for a diff nobody has asked for.
+    expect(getBuild).not.toHaveBeenCalled();
+
+    fireEvent.click(expander);
+
+    const lines = await screen.findByTestId("rebuild-banner-changes");
+    // The outcome is the one thing this fixture pair differs on, and the line
+    // names it in the words serialiseChangeSet chose.
+    expect(within(lines).getByText("Rewrote what it does")).toBeTruthy();
+    // ONE read, not two: the page already holds the record being rendered, so
+    // only the source has to be fetched.
+    expect(getBuild.mock.calls).toEqual([["b-source"]]);
+  });
+
+  // ACCEPTANCE 3
+  it("keeps the credit, and drops the diff, when the source is gone", async () => {
+    // Deleting a build sets parent_build_id to NULL on every child (ON DELETE
+    // SET NULL). The frozen snapshot is all that is left, and it is enough.
+    getBuildBySlug.mockResolvedValue(
+      rebuildRecord({ parent_build_id: null, forked_from_event_id: null })
+    );
+    renderAt("my-inbox-triage");
+
+    const banner = await screen.findByTestId("rebuild-banner");
+    expect(banner.textContent).toContain("Rebuilt from Inbox triage agent by @amara");
+    expect(banner.textContent).toContain("(no longer available)");
+
+    // Nothing to link to and nothing to diff against, so neither is offered.
+    expect(within(banner).queryByRole("link")).toBeNull();
+    expect(screen.queryByTestId("rebuild-banner-expander")).toBeNull();
+    // The note survives the source: it is the rebuilder's, not the source's.
+    expect(screen.getByTestId("rebuild-banner-note")).toBeTruthy();
+    expect(getForkOrigin).not.toHaveBeenCalled();
+  });
+
+  // ACCEPTANCE 2
+  it("lists the rebuilds of a source, and counts them beside the reproductions", async () => {
+    listRebuilds.mockResolvedValue([rebuildRow()]);
+    getBuildBySlug.mockResolvedValue({
+      ...record,
+      build: { ...record.build, rebuild_count: 1 },
+    });
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    // The two earned numbers are siblings in the same strip.
+    const count = await screen.findByTestId("rebuild-count");
+    expect(count.textContent).toContain("1 rebuild");
+    expect(screen.getByTestId("reproduction-count")).toBeTruthy();
+
+    // The count is the way into the tab.
+    fireEvent.click(count);
+    expect(screen.getByRole("tab", { name: /Rebuilds/ }).getAttribute("aria-selected")).toBe("true");
+
+    const tab = screen.getByTestId("rebuilds-tab");
+    expect(within(tab).getByText("My inbox triage")).toBeTruthy();
+    expect(within(tab).getByText(/@sam/)).toBeTruthy();
+    // The note is one line here; the rebuild's own page renders all of it.
+    expect(within(tab).getByText("Swapped the model.")).toBeTruthy();
+    expect(within(tab).queryByText(/And cut two steps/)).toBeNull();
+    expect(within(tab).getByText("3")).toBeTruthy();
+
+    const row = within(tab).getByTestId("rebuild-row");
+    expect(row.getAttribute("href")).toBe("/b2/my-inbox-triage");
+  });
+
+  it("shows no tab and no count on a build nobody has rebuilt", async () => {
+    getBuildBySlug.mockResolvedValue(record);
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    await waitFor(() => expect(listRebuilds).toHaveBeenCalledWith("b", undefined));
+    expect(screen.queryByRole("tab", { name: /Rebuilds/ })).toBeNull();
+    expect(screen.queryByTestId("rebuild-count")).toBeNull();
   });
 });
 

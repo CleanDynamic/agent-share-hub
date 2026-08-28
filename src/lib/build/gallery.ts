@@ -206,11 +206,21 @@ const GALLERY_MEDIA_KINDS = ["image", "video"] as const;
 
 /**
  * The header columns a card reads. Explicit, because `*` on this table would
- * put monetisation, fork lineage and cost columns on the wire for every card
- * that never shows them.
+ * put monetisation and cost columns on the wire for every card that never
+ * shows them.
+ *
+ * THE FIVE REBUILD COLUMNS ARE HERE BECAUSE THE CARD RENDERS THEM (NS-P40).
+ * source_title_at_fork and source_handle_at_fork compose the credit line, which
+ * the page hands down as a prop — they are on the wire so that the line can be
+ * composed WITHOUT a second query per card, which is the whole reason
+ * rebuildCredit.ts reads the frozen snapshot rather than the live parent.
+ * parent_build_id and rebuild_note come with them because a card that credits a
+ * source should be able to say whether that source is still there and what the
+ * rebuilder said about it, and rebuild_count is the second earned number, shown
+ * beside the reproduction count.
  */
 export const GALLERY_BUILD_COLUMNS =
-  "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, cover_media_id, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, published_at";
+  "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, cover_media_id, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, published_at, parent_build_id, rebuild_count, rebuild_note, source_title_at_fork, source_handle_at_fork";
 
 const GALLERY_NODE_COLUMNS = "id, type, title, payload, position, is_gap";
 
@@ -273,6 +283,11 @@ export interface GalleryBuild
     | "last_confirmed_at"
     | "last_confirmed_model"
     | "published_at"
+    | "parent_build_id"
+    | "rebuild_count"
+    | "rebuild_note"
+    | "source_title_at_fork"
+    | "source_handle_at_fork"
   > {
   nodes: GalleryNode[];
   media: GalleryMedia[];

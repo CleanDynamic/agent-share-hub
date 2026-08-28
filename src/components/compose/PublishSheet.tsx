@@ -208,6 +208,14 @@ function previewBuild(
       last_confirmed_at: build.last_confirmed_at,
       last_confirmed_model: build.last_confirmed_model,
       published_at: build.published_at,
+      // The lineage columns the card reads (NS-P40). Copied through rather than
+      // defaulted, so the preview shows what the row holds — including a
+      // rebuild_count of 0, which is what a draft's own count truthfully is.
+      parent_build_id: build.parent_build_id,
+      rebuild_count: build.rebuild_count,
+      rebuild_note: build.rebuild_note,
+      source_title_at_fork: build.source_title_at_fork,
+      source_handle_at_fork: build.source_handle_at_fork,
       nodes,
       media: rows,
     },

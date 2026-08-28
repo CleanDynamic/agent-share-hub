@@ -41,6 +41,7 @@ import {
   type GalleryPage,
 } from "@/lib/build";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
+import { rebuildCreditLine } from "@/components/build/rebuildCredit";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import {
   FONT_STACK,
@@ -380,8 +381,17 @@ function Results({
           alignItems: "start",
         }}
       >
+        {/* The credit is composed HERE, not in the card: rebuildCreditLine reads
+            the two frozen snapshot columns, which ride in on the same query as
+            everything else the card shows, so a rebuild's credit costs the grid
+            nothing. See rebuildCredit.ts for why it is a string. */}
         {builds.map((build) => (
-          <GalleryCard key={build.id} build={build} srcByPath={srcByPath} />
+          <GalleryCard
+            key={build.id}
+            build={build}
+            srcByPath={srcByPath}
+            credit={rebuildCreditLine(build)}
+          />
         ))}
       </div>
     </>

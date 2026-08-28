@@ -18,6 +18,7 @@
 
 import type { ReactElement } from "react";
 import { Link } from "react-router-dom";
+import { BranchIcon } from "@/components/build/BranchIcon";
 import {
   HAIRLINE,
   ORANGE,
@@ -137,7 +138,20 @@ export function GalleryCard({ build, srcByPath, credit }: GalleryCardProps) {
           </p>
         </div>
 
-        <ReproductionFigure count={count} stale={stale} />
+        {/* The two earned numbers, stacked as siblings: how many people ran
+            it, and how many took it somewhere else. */}
+        <div
+          style={{
+            flexShrink: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: 5,
+          }}
+        >
+          <ReproductionFigure count={count} stale={stale} />
+          <RebuildFigure count={build.rebuild_count ?? 0} />
+        </div>
       </div>
 
       {/* The credit, on a rebuild only. One muted line, below the title block
@@ -250,5 +264,43 @@ function ReproductionFigure({ count, stale }: { count: number; stale: boolean })
         {count === 1 ? "REPRODUCTION" : "REPRODUCTIONS"}
       </span>
     </div>
+  );
+}
+
+/**
+ * The rebuild count, in the card's smallest voice.
+ *
+ * ABSENT AT ZERO, unlike the reproduction figure beside it, which shows its
+ * zero. "Nobody has run this yet" is a fact a reader is entitled to before they
+ * spend an hour on a build; "nobody has rebuilt this yet" is not a warning
+ * about anything, and printing it on every card in the grid would put a column
+ * of noughts down the page. The build page's header takes the same position for
+ * the same reason.
+ *
+ * NOT A CONTROL, because the whole card is already one link and an anchor
+ * cannot hold another. On the build page this number is a button that opens the
+ * Rebuilds tab; here, clicking it opens the build, which is where that tab is.
+ */
+function RebuildFigure({ count }: { count: number }) {
+  if (count <= 0) return null;
+
+  return (
+    <span
+      data-testid="rebuild-count"
+      title={`${count} ${count === 1 ? "build was" : "builds were"} started from this one.`}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
+        ...labelText,
+        fontSize: 10.5,
+        color: TEXT_MUTED,
+      }}
+    >
+      <BranchIcon size={11} colour={TEXT_MUTED} />
+      <span style={{ fontVariantNumeric: "tabular-nums" }}>
+        {count} {count === 1 ? "REBUILD" : "REBUILDS"}
+      </span>
+    </span>
   );
 }

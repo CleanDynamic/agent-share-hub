@@ -14,9 +14,17 @@ import {
   getBuildBySlug,
   getMediaForBuild,
   layerOf,
+  listRebuilds,
   nodeMediaId,
 } from "@/lib/build";
-import type { BuildLayer, BuildMedia, BuildNode, BuildRecord, NodeTree } from "@/lib/build";
+import type {
+  BuildLayer,
+  BuildMedia,
+  BuildNode,
+  BuildRecord,
+  NodeTree,
+  RebuildSummary,
+} from "@/lib/build";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import {
   MEDIA_WIDTH,
@@ -31,6 +39,7 @@ import { LayerView, RunItPanel } from "@/components/build/LayerView";
 import { ForkControl, useForkBuild } from "@/components/build/ForkControl";
 import { PortableExport } from "@/components/build/PortableExport";
 import { ReproductionAction } from "@/components/build/ReproductionAction";
+import { RebuildCount, RebuildsTab } from "@/components/build/RebuildsTab";
 import { Replay } from "@/components/build/Replay";
 import { RunView } from "@/components/build/RunView";
 import {
@@ -330,6 +339,31 @@ export default function BuildPage() {
     refetchOnWindowFocus: false,
   });
 
+  /**
+   * The published rebuilds of this build (NS-P40).
+   *
+   * ONE QUERY SERVES THREE SURFACES: the Rebuilds tab's rows, the count beside
+   * the reproduction count, and the divergence markers on the replay scrubber.
+   * Fetching it once here rather than in each of the three is the same rule the
+   * media query follows, and it is why the marker row can never disagree with
+   * the tab about which rebuilds exist.
+   *
+   * It runs on every build page rather than only where builds.rebuild_count is
+   * already above zero. The counter is maintained by a trigger and is right in
+   * every path the application takes, but it is denormalised, the NS-P36
+   * migration documents an insert path that can undercount it, and gating the
+   * fetch on it would let one stale integer hide a real rebuild from its
+   * source's own page. One indexed read against a partial index, on a page that
+   * already makes four, is the cheaper mistake.
+   */
+  const { data: rebuilds } = useQuery<RebuildSummary[]>({
+    queryKey: ["build-rebuilds", buildId],
+    queryFn: () => listRebuilds(buildId as string),
+    enabled: Boolean(buildId),
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
   const runLayer = layerOf(layers ?? [], "run");
   const understandLayer = layerOf(layers ?? [], "understand");
 
@@ -429,12 +463,24 @@ export default function BuildPage() {
     );
   }
 
+  /**
+   * The number beside the reproduction count.
+   *
+   * builds.rebuild_count is the earned figure and the one the gallery card
+   * shows, so it leads — it is uncapped, while the list above is not. Where the
+   * counter has drifted BELOW what the list actually found, the list wins: a
+   * tab listing two rebuilds beside a header saying none is worse than either
+   * number on its own.
+   */
+  const found = (rebuilds ?? []).length;
+  const rebuildCount = Math.max(data.build.rebuild_count ?? 0, found);
+
   return (
     <Frame>
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {/* Above the build, not under it: a reader meets the provenance before
             they meet the work. */}
-        <ForkAttribution build={data.build} />
+        <ForkAttribution build={data.build} record={data} />
         <BuildHeader
           build={data.build}
           tree={treeWithHero}
@@ -450,6 +496,12 @@ export default function BuildPage() {
             <ReproductionAction
               build={data.build}
               onRecorded={onReproductionRecorded}
+            />
+          }
+          rebuilds={
+            <RebuildCount
+              count={rebuildCount}
+              onOpen={() => setTab("rebuilds")}
             />
           }
         />
@@ -490,6 +542,9 @@ export default function BuildPage() {
                 onOpenNode={openNodeInAnatomy}
               />
             ) : undefined
+          }
+          rebuilds={
+            (rebuilds ?? []).length > 0 ? <RebuildsTab rebuilds={rebuilds ?? []} /> : undefined
           }
           broke={
             <BreakageView
