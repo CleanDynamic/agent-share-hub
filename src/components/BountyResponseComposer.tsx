@@ -9,6 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Loader2, X, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { insertNotification } from "@/lib/notifications";
+import {
+  GEN1_BOUNTY_RESPONSES_ENABLED,
+  assertGen1BountyResponsesEnabled,
+} from "@/lib/bounty-gen1/flags";
 
 const TESTED_ON_OPTIONS = ["Any Tool", "ChatGPT", "Claude", "Gemini", "Grok", "Make", "Zapier", "n8n", "Other"];
 
@@ -22,7 +26,7 @@ interface Props {
 
 type SourceMode = "link" | "write";
 
-export function BountyResponseComposer({ bountyContentId, bountyTitle, bountyCreatorId, onClose, onSubmitted }: Props) {
+function BountyResponseComposerImpl({ bountyContentId, bountyTitle, bountyCreatorId, onClose, onSubmitted }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [sourceMode, setSourceMode] = useState<SourceMode>("write");
@@ -72,6 +76,11 @@ export function BountyResponseComposer({ bountyContentId, bountyTitle, bountyCre
     if (!user || !canSubmit) return;
     setSubmitting(true);
     try {
+      // NS-P44 — the generation-1 write gate. First statement inside the try so
+      // a frozen submit surfaces as the same toast any other failure would,
+      // rather than as an unhandled rejection.
+      assertGen1BountyResponsesEnabled();
+
       const inlineBlocks = sourceMode === "write" && inlineText.trim()
         ? [{ position: 1, block_type: "text", formatting_type: "paragraph", text_content: inlineText.trim() }]
         : null;
@@ -266,4 +275,23 @@ export function BountyResponseComposer({ bountyContentId, bountyTitle, bountyCre
       </div>
     </div>
   );
+}
+
+/**
+ * NS-P44 — the generation-1 authoring gate, at the component boundary.
+ *
+ * The implementation above is left whole: every hook, every field, every
+ * branch of it still compiles and still works, which is what makes the
+ * rollback in src/lib/bounty-gen1/flags.ts real rather than notional. What
+ * changes while GEN1_BOUNTY_RESPONSES_ENABLED is false is that mounting this
+ * component renders nothing at all — so the composer cannot be opened even by
+ * a call site that has not been guarded, or one added after the freeze.
+ *
+ * The wrapper exists rather than an early return inside the implementation
+ * because the implementation calls hooks; returning before them would make the
+ * hook order conditional. Here there are no hooks to skip.
+ */
+export function BountyResponseComposer(props: Props) {
+  if (!GEN1_BOUNTY_RESPONSES_ENABLED) return null;
+  return <BountyResponseComposerImpl {...props} />;
 }
