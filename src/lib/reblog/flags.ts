@@ -44,7 +44,7 @@
  * ROLLBACK. Flip this to `true`. Every guarded affordance reappears where it
  * was, the write functions answer again, and composing works end to end —
  * nothing else has to be restored, because nothing else was removed. The one
- * companion step is src/lib/retiredSurfaces.test.ts, whose reblog cases assert
+ * companion step is src/lib/retiredSurfaces.test.tsx, whose reblog cases assert
  * the frozen behaviour and are expected to be reverted alongside the flip.
  */
 export const REBLOG_COMPOSE_ENABLED = false as const;

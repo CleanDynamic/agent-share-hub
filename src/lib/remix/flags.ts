@@ -26,7 +26,7 @@
  *
  * ROLLBACK. Flip this to `true`. The button returns to the lineage row and
  * createRemix answers again; nothing was removed, so nothing else has to be
- * restored. The one companion step is src/lib/retiredSurfaces.test.ts, whose
+ * restored. The one companion step is src/lib/retiredSurfaces.test.tsx, whose
  * remix cases assert the frozen behaviour and are expected to be reverted
  * alongside the flip.
  */
