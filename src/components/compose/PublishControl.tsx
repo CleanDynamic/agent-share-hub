@@ -30,25 +30,44 @@
 // record before — each of those publishes on the first press with no screen at
 // all.
 //
+// WHAT A REBUILD ADDS (NS-P39). One section in the sheet's slot, and one extra
+// rule on the sheet's Publish. The section is the diff — the change lines are
+// the content of a rebuild, and the note beneath them is optional gloss. The
+// rule is rebuild.ts's: a fork published untouched is a duplicate of somebody
+// else's page carrying their credit, so the platform declines to call it a
+// rebuild, in that gate's own sentence, inline beside the button.
+//
+// THE PILL IS DELIBERATELY UNCHANGED BY THAT RULE. NS-P38 put "no changes yet"
+// in the top bar an inch away from it, so a creator meets the requirement while
+// they work rather than as news at the moment they try to post; a second, later
+// refusal painted onto the pill would be the same fact said twice.
+//
 // Styled with inline style objects like everything else on this route:
 // Tailwind's generated utilities win over hand-written classes at build time.
 
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBuildLayers } from "@/hooks/useBuildLayers";
 import { LayerReview, type LayerReviewResult } from "@/components/compose/LayerReview";
+import { RebuildSection } from "@/components/compose/RebuildSection";
+import { rebuildCreditLine } from "@/components/build/rebuildCredit";
+import type { RebuildDiff } from "@/hooks/useRebuildDiff";
 import {
+  NO_CHANGES_REASON,
   galleryShortfall,
   galleryThreshold,
   publishReadiness,
   readinessFrom,
+  rebuildReadiness,
   type Build,
+  type ChangeLine,
   type Completeness,
   type MissingItem,
   type NodeTree,
   type NodeType,
+  type PublishReadiness,
   type RequirementKey,
 } from "@/lib/build";
 import {
@@ -87,7 +106,11 @@ export interface PublishControlProps {
   nodeTypes: NodeType[];
   /** Computed once by the hook; this control never computes a second answer. */
   completeness: Completeness | null;
-  onPublish: () => Promise<Build>;
+  /**
+   * The workspace's publish path. The optional note is the rebuild variant —
+   * see useComposeBuild. An ordinary draft is published with no argument.
+   */
+  onPublish: (rebuildNote?: string | null) => Promise<Build>;
   isPublishing: boolean;
   publishError: Error | null;
   /**
@@ -96,7 +119,17 @@ export interface PublishControlProps {
    * right rail. Optional; without it those rows only close the sheet.
    */
   onFocusRequirement?: (key: RequirementKey) => void;
+  /**
+   * What the workspace knows about being a rebuild (NS-P38's hook).
+   *
+   * Absent, or carrying isRebuild: false, on an ordinary draft — which renders
+   * exactly the control and exactly the sheet that were here before NS-P39.
+   */
+  rebuild?: RebuildDiff;
 }
+
+/** Stable identity for a control mounted without the hook's answer. */
+const NO_LINES: ChangeLine[] = [];
 
 const controlBase: React.CSSProperties = {
   fontFamily: "inherit",
@@ -121,10 +154,30 @@ export function PublishControl({
   isPublishing,
   publishError,
   onFocusRequirement,
+  rebuild,
 }: PublishControlProps) {
   const [confirmation, setConfirmation] = useState<Build | null>(null);
   const [reviewing, setReviewing] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  /**
+   * The rebuild note, as a local draft.
+   *
+   * NOT written through patchBuild as it is typed, and that is the point: a
+   * note is what a creator decides to say at the moment they post, and a column
+   * saved per keystroke on a draft that may never be published is a sentence
+   * they cannot take back by closing the sheet. It reaches the row in the same
+   * statement that sets the status, and nowhere else. Seeded from the column so
+   * that re-publishing a live rebuild opens on what it already says.
+   */
+  const [note, setNote] = useState(build.rebuild_note ?? "");
+  /** Read inside publishNow, which the review pass captures a frame earlier. */
+  const noteRef = useRef(note);
+  noteRef.current = note;
+
+  /** The spec is the column, not the hook: a draft with a parent is a rebuild
+   *  whether or not its source is still readable. */
+  const isRebuild = Boolean(build.parent_build_id);
 
   // The layers this build already has, shared with the staleness line through
   // one react-query key rather than read twice.
@@ -160,6 +213,45 @@ export function PublishControl({
    */
   const canPublish = (readiness.ready || isLive) && !isPublishing;
 
+  /**
+   * The one extra thing a rebuild is asked, from rebuild.ts.
+   *
+   * Memoised on the SETTLED pair the diff itself was computed from, so the
+   * tree walk inside it happens on the save beat rather than on the keystroke
+   * of a title — the same reason readinessFrom exists above.
+   */
+  const rebuildGate = useMemo<PublishReadiness | null>(() => {
+    if (!isRebuild) return null;
+    const source = rebuild?.source;
+    const draft = rebuild?.draft;
+    const changes = rebuild?.changes;
+    // No source means no diff, and no diff means nothing can be PROVEN
+    // unchanged. Publishing is never blocked on a question we cannot ask.
+    if (!source || !draft || !changes) return null;
+    return rebuildReadiness(source, draft, changes);
+  }, [isRebuild, rebuild?.changes, rebuild?.draft, rebuild?.source]);
+
+  /**
+   * What the sheet gates on: the live base requirements, plus the divergence
+   * rule.
+   *
+   * The two are taken from different places on purpose. `readiness` is derived
+   * from the completeness the hook recomputes on every edit, so it answers
+   * about THIS keystroke; rebuildGate re-tests the same base requirements
+   * against the settled snapshot, which lags it by the save debounce. Letting
+   * the stale copy speak would have a creator who has just typed their outcome
+   * line read a complaint about not having typed it. So the base gate stays
+   * live, and rebuildGate is consulted only for the rule it alone knows —
+   * recognised by the reason it is exported with rather than re-derived here.
+   */
+  const sheetReadiness =
+    readiness.ready && rebuildGate?.reason === NO_CHANGES_REASON
+      ? rebuildGate
+      : readiness;
+
+  /** Frozen at the fork, and rendered by the card exactly as it reads here. */
+  const credit = isRebuild ? rebuildCreditLine(build) : null;
+
   /** The pill only opens a sheet, so nothing but a write in flight closes it. */
   const canOpen = !isPublishing;
 
@@ -174,12 +266,15 @@ export function PublishControl({
         : "Put this in front of readers. It stays yours to edit.";
 
   const publishNow = useCallback(() => {
-    void onPublish()
+    // A rebuild passes its note — null included, which is a real answer — and
+    // takes rebuild.ts's publish path. An ordinary draft passes nothing and
+    // takes the path it always has.
+    void (isRebuild ? onPublish(noteRef.current) : onPublish())
       .then((row) => setConfirmation(row))
       .catch(() => {
         /* surfaced through publishError, on the control itself */
       });
-  }, [onPublish]);
+  }, [isRebuild, onPublish]);
 
   /**
    * The publish path, exactly as it was: the review pass if there is something
@@ -289,12 +384,25 @@ export function PublishControl({
             build={build}
             tree={tree}
             completeness={completeness}
-            readiness={readiness}
+            readiness={sheetReadiness}
             open
             onOpenChange={setSheetOpen}
             onConfirm={confirm}
             isPublishing={isPublishing}
             publishError={publishError}
+            credit={credit}
+            sections={
+              isRebuild ? (
+                <RebuildSection
+                  lines={rebuild?.lines ?? NO_LINES}
+                  // A diff, rather than an empty one. See RebuildSection.
+                  diffed={Boolean(rebuild?.changes)}
+                  note={note}
+                  onNoteChange={setNote}
+                  credit={credit}
+                />
+              ) : undefined
+            }
             onFocusRequirement={onFocusRequirement}
           />
         </Suspense>
