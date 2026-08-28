@@ -70,7 +70,13 @@ export interface ReplayProps {
    * to know which of them survived the visibility filter.
    */
   focusOrdinal?: number | null;
-  /** Fork the build at this ordinal. Omitted, the control does not render. */
+  /**
+   * Fork the build at this ordinal. Omitted, the control does not render.
+   *
+   * NS-P38 relabelled the control "Rebuild from here" and left the behaviour
+   * exactly as it was: a fork at a moment, straight into compose. The mechanics
+   * are the hook's, not this component's.
+   */
   onFork?: (ordinal: number) => void;
   /** A fork is in flight; the controls say so and stop taking clicks. */
   forkPending?: boolean;
@@ -484,7 +490,7 @@ export function Replay({
                 cursor: forkPending ? "progress" : "pointer",
               }}
             >
-              {forkPending ? "Forking…" : "Fork from here"}
+              {forkPending ? "Rebuilding…" : "Rebuild from here"}
             </button>
           ) : null}
         </div>

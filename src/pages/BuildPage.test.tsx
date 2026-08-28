@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getBuildBySlug = vi.fn();
@@ -125,11 +125,19 @@ function withSequence() {
   return { ...record, events };
 }
 
+/** Where the router ended up. The rebuild entry point navigates rather than
+ *  writing, so the address is the assertion. */
+function LocationProbe() {
+  const location = useLocation();
+  return <span data-testid="path">{`${location.pathname}${location.search}`}</span>;
+}
+
 function renderAt(slug: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[`/b2/${slug}`]}>
+        <LocationProbe />
         <Routes><Route path="/b2/:slug" element={<BuildPage />} /></Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -219,41 +227,51 @@ describe("BuildPage", () => {
     expect(screen.getByText("step 6 of 9")).toBeTruthy();
   });
 
-  it("offers a fork in the header and at every replay position", async () => {
+  it("offers a rebuild in the header and at every replay position", async () => {
     auth.isLoggedIn = true;
     forkBuild.mockResolvedValue({ id: "fork-1" });
     getBuildBySlug.mockResolvedValue(withSequence());
     renderAt("inbox-triage-agent-demo");
     await screen.findByText("Inbox triage agent");
 
-    expect(screen.getByRole("button", { name: "Fork" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Rebuild this" })).toBeTruthy();
 
+    // The moment variant keeps its mechanics: it forks at the ordinal, here,
+    // because /rebuild/:slug names a build and has nowhere to put a step.
     fireEvent.click(screen.getByRole("tab", { name: /Watch it get built/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Fork from here" }));
+    fireEvent.click(screen.getByRole("button", { name: "Rebuild from here" }));
     await waitFor(() =>
       expect(forkBuild).toHaveBeenCalledWith({ sourceBuildId: "b", atEventOrdinal: 1 })
     );
   });
 
-  it("forks the whole build from the header, and the step from the replay", async () => {
+  it("sends the header's rebuild to /rebuild/:slug rather than forking in place", async () => {
     auth.isLoggedIn = true;
-    forkBuild.mockResolvedValue({ id: "fork-1" });
     getBuildBySlug.mockResolvedValue(withSequence());
     renderAt("inbox-triage-agent-demo");
     await screen.findByText("Inbox triage agent");
 
-    fireEvent.click(screen.getByRole("button", { name: "Fork" }));
+    fireEvent.click(screen.getByRole("button", { name: "Rebuild this" }));
+
     await waitFor(() =>
-      expect(forkBuild).toHaveBeenCalledWith({ sourceBuildId: "b", atEventOrdinal: undefined })
+      expect(screen.getByTestId("path").textContent).toBe("/rebuild/inbox-triage-agent-demo")
     );
+    // The route owns the fork now. Nothing is written from the build page.
+    expect(forkBuild).not.toHaveBeenCalled();
   });
 
-  it("sends a reader who is not signed in to sign in, rather than failing", async () => {
+  it("sends a reader who is not signed in into the rebuild route, which asks for a session", async () => {
     getBuildBySlug.mockResolvedValue(withSequence());
     renderAt("inbox-triage-agent-demo");
     await screen.findByText("Inbox triage agent");
 
-    fireEvent.click(screen.getByRole("button", { name: "Sign in to fork" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in to rebuild" }));
+
+    // One round trip, not two: /rebuild/:slug asks for the session itself and
+    // returns to the flow, so the reader's intention survives as an address.
+    await waitFor(() =>
+      expect(screen.getByTestId("path").textContent).toBe("/rebuild/inbox-triage-agent-demo")
+    );
     expect(forkBuild).not.toHaveBeenCalled();
   });
 
@@ -264,7 +282,8 @@ describe("BuildPage", () => {
     renderAt("inbox-triage-agent-demo");
     await screen.findByText("Inbox triage agent");
 
-    fireEvent.click(screen.getByRole("button", { name: "Fork" }));
+    fireEvent.click(screen.getByRole("tab", { name: /Watch it get built/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Rebuild from here" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("forkBuild (nodes) failed: boom");
   });
 

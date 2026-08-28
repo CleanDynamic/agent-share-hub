@@ -74,6 +74,10 @@ const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
 // the workspace before the creator has decided to open one.
 const ComposeNew = lazy(() => import("./pages/ComposeNew"));
+// The door into a rebuild: resolve a slug, fork it, hand the creator to their
+// own workspace. Its own chunk — it is two queries and a sentence, and nothing
+// that is not rebuilding should carry it.
+const RebuildRoute = lazy(() => import("./pages/RebuildRoute"));
 // The Build File kit: two documents and the three steps that use them. Its
 // own chunk — the prose is only read by someone who came to import a build.
 const ImportPage = lazy(() => import("./pages/ImportPage"));
@@ -165,6 +169,7 @@ const App = () => (
               <Route path="/import" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><ImportPage /></Suspense>} />
               <Route path="/compose/new" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><ComposeNew /></Suspense>} />
               <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><Compose /></Suspense>} />
+              <Route path="/rebuild/:slug" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><RebuildRoute /></Suspense>} />
               <Route path="/convert/:contentItemId" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><ConvertPrompt /></Suspense>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
