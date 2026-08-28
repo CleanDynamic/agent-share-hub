@@ -12,7 +12,7 @@ export async function getSolutions(args: {
   let q = (supabase as any)
     .from("solutions")
     .select("*")
-    .eq("bounty_id", bountyId)
+    .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
     .in("status", ["submitted", "accepted"]);
   if (slotId && slotId !== "all") q = q.eq("slot_id", slotId);
   if (sort === "mine" && viewerId) q = q.eq("solver_id", viewerId);

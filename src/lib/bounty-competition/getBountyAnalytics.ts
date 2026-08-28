@@ -22,7 +22,7 @@ export async function getBountyAnalytics(
         .select(
           "id, solver_id, vote_count, status, submitted_at, accepted_at, slot_kind, slot_id, created_at",
         )
-        .eq("bounty_id", bountyId),
+        .eq("legacy_bounty_item_id", bountyId), // NS-P46 shim (removed in NS-P50)
       (supabase as any)
         .from("bounty_discussion_comments")
         .select("id, author_id, created_at")

@@ -22,7 +22,7 @@ export async function refreshLeaderboardCache(
   const { data: rows, error } = await (supabase as any)
     .from("solutions")
     .select("solver_id, vote_count, status, submitted_at")
-    .eq("bounty_id", bountyId)
+    .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
     .in("status", ["submitted", "accepted"]);
   if (error) throw error;
 

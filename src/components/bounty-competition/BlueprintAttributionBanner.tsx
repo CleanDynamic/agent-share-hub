@@ -48,7 +48,7 @@ export function BlueprintAttributionBanner({
       const { count } = await (supabase as any)
         .from("solutions")
         .select("solver_id", { count: "exact", head: true })
-        .eq("bounty_id", bountyId)
+        .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
         .eq("status", "accepted");
 
       return {

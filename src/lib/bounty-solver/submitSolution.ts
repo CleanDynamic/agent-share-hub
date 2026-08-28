@@ -34,18 +34,25 @@ export async function submitSolution(solutionId: string): Promise<Solution> {
   // Bounty author + solver count bump (best-effort; non-blocking).
   void (async () => {
     try {
-      const { data: bounty } = await (supabase as any)
-        .from("content_items")
-        .select("creator_id, title, slug")
-        .eq("id", sol.bounty_id)
-        .maybeSingle();
-      if (bounty?.creator_id) {
+      // NS-P46 shim (removed in NS-P50): sol.bounty_id is a public.bounties id,
+      // so the bounty's content_items row is found through the legacy id. A
+      // build-backed bounty has none; its author is notified by NS-P50's path,
+      // and the solver's counter below still runs either way.
+      const legacyBountyItemId = sol.legacy_bounty_item_id;
+      const { data: bounty } = legacyBountyItemId
+        ? await (supabase as any)
+            .from("content_items")
+            .select("creator_id, title, slug")
+            .eq("id", legacyBountyItemId)
+            .maybeSingle()
+        : { data: null };
+      if (bounty?.creator_id && legacyBountyItemId) {
         await createNotification({
           recipientId: bounty.creator_id,
           actorId: sol.solver_id,
           kind: "bounty_interaction",
           targetType: "bounty",
-          targetId: sol.bounty_id,
+          targetId: legacyBountyItemId,
           metadata: {
             subkind: "solution_submitted",
             solution_id: solutionId,

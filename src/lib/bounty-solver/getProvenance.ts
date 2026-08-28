@@ -32,7 +32,7 @@ export async function getProvenance(bountyId: string): Promise<{
   const { data: log } = await (supabase as any)
     .from("solution_acceptance_log")
     .select("solver_id, slot_kind, slot_id, accepted_at")
-    .eq("bounty_id", bountyId)
+    .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
     .order("accepted_at", { ascending: true });
 
   const rows = (log ?? []) as any[];

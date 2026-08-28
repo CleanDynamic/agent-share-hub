@@ -40,7 +40,10 @@ export function useBountySolutionUpdates(
           event: "*",
           schema: "public",
           table: "solutions",
-          filter: `bounty_id=eq.${bountyId}`,
+          // NS-P46 shim (removed in NS-P50): bountyId is a content_items id and
+          // solutions.bounty_id is a public.bounties id, so the live filter
+          // reads the shim column like every other legacy read does.
+          filter: `legacy_bounty_item_id=eq.${bountyId}`,
         },
         callback,
       )

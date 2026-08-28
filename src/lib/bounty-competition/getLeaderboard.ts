@@ -71,7 +71,7 @@ export async function getLeaderboard({
     (supabase as any)
       .from("solutions")
       .select("solver_id")
-      .eq("bounty_id", bountyId)
+      .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
       .eq("status", "draft")
       .in("solver_id", userIds),
   ]);

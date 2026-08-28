@@ -20,11 +20,16 @@ export async function forkSolution(args: {
   if (error) throw error;
   const solution = sol as Solution;
 
-  const { data: bounty } = await (supabase as any)
-    .from("content_items")
-    .select("title")
-    .eq("id", solution.bounty_id)
-    .maybeSingle();
+  // NS-P46 shim (removed in NS-P50): solution.bounty_id is a public.bounties id,
+  // so the title comes from the legacy content item it was filed against.
+  const legacyBountyItemId = solution.legacy_bounty_item_id;
+  const { data: bounty } = legacyBountyItemId
+    ? await (supabase as any)
+        .from("content_items")
+        .select("title")
+        .eq("id", legacyBountyItemId)
+        .maybeSingle()
+    : { data: null };
 
   const grids: any = { stages: {}, blocks: {} };
   if (solution.slot_kind === "stage") {

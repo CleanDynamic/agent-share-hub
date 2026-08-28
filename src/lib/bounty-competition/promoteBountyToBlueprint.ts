@@ -99,7 +99,7 @@ export async function promoteBountyToBlueprint(
   const { data: acceptedSolvers } = await (supabase as any)
     .from("solutions")
     .select("solver_id")
-    .eq("bounty_id", bountyId)
+    .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
     .eq("status", "accepted");
   for (const s of (acceptedSolvers ?? []) as any[]) {
     if (!s?.solver_id) continue;
