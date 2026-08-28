@@ -23,6 +23,7 @@
 import { useMemo, useState } from "react";
 import { GitBranch, ListOrdered } from "lucide-react";
 import type { ComposeBuild } from "@/hooks/useComposeBuild";
+import type { NodeTreatment } from "@/hooks/useRebuildDiff";
 import {
   FONT_STACK,
   TEAL,
@@ -48,9 +49,11 @@ interface CentrePanelProps {
   buildId: string;
   compose: ComposeBuild;
   drag: NodeDrag;
+  /** The rebuild treatment for the anatomy's rows. Null on an ordinary draft. */
+  rebuildNodes?: Map<string, NodeTreatment> | null;
 }
 
-export function CentrePanel({ buildId, compose, drag }: CentrePanelProps) {
+export function CentrePanel({ buildId, compose, drag, rebuildNodes }: CentrePanelProps) {
   const [view, setView] = useState<CentreView>("anatomy");
   /** Once true it stays true: leaving the tab must not throw the query away and
    *  make coming back a second round trip. */
@@ -154,6 +157,7 @@ export function CentrePanel({ buildId, compose, drag }: CentrePanelProps) {
           selectedNodeId={compose.selectedNodeId}
           onSelect={compose.setSelectedNodeId}
           drag={drag}
+          rebuildNodes={rebuildNodes}
         />
       </div>
 

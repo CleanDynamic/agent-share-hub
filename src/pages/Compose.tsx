@@ -282,12 +282,20 @@ export default function Compose() {
     | null;
   const arrival = routed?.intake ?? null;
 
+  // A query parameter rather than router state, because /rebuild/:slug replaces
+  // itself in history and a reload of the workspace should still be the arrival
+  // it was — state does not survive that, and the flag decides where the
+  // creator's attention lands rather than anything about the record.
+  const fromRebuild =
+    new URLSearchParams(location.search).get("from") === "rebuild";
+
   return (
     <>
       <ComposeFrame
         build={compose.build}
         compose={compose}
         justArrived={routed?.justArrived}
+        fromRebuild={fromRebuild}
       />
       {arrival ? <ArrivalNotice arrival={arrival} /> : null}
     </>

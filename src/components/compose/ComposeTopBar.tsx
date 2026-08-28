@@ -8,11 +8,24 @@
 // Publishing itself lives in PublishControl, which owns the readiness test and
 // the confirmation screen. This bar hands it the record and gets out of the
 // way.
+//
+// ON A REBUILD IT SAYS TWO MORE THINGS (NS-P38): who is being rebuilt, and how
+// far from them this draft has moved. Both are quiet and both are permanent
+// while the workspace is open — a creator working inside somebody else's build
+// should never have to go looking for either fact, and the count in particular
+// is what the publish gate will ask about, so meeting it here rather than in
+// the sheet means it is never news.
+//
+// The credit line is a SIBLING of the bar rather than a second row inside it.
+// The bar is a fixed 52px flex row and the panels below it are flex:1, so a new
+// element between them is absorbed by the row below and nothing that already
+// lays the workspace out changes — the same seam CoverStrip took in NS-P28.
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PublishControl } from "@/components/compose/PublishControl";
+import type { RebuildDiff } from "@/hooks/useRebuildDiff";
 import type {
   Build,
   BuildPatch,
@@ -25,10 +38,12 @@ import type {
 import {
   GAP_RED,
   HAIRLINE,
+  ORANGE,
   TEAL,
   TEXT_MUTED,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
+  hexToRgba,
   labelText,
   panelGlass,
   titleText,
@@ -97,6 +112,12 @@ interface ComposeTopBarProps {
   publishError: Error | null;
   /** Passed straight to PublishControl for the publish sheet's checklist. */
   onFocusRequirement?: (key: RequirementKey) => void;
+  /**
+   * What the workspace knows about being a rebuild. Absent, or carrying
+   * isRebuild: false, on an ordinary draft — which renders exactly the bar that
+   * was here before NS-P38.
+   */
+  rebuild?: RebuildDiff;
 }
 
 function SaveState({
@@ -144,6 +165,107 @@ function SaveState({
       />
       {text}
     </span>
+  );
+}
+
+/**
+ * How far this draft has moved from the build it was forked from.
+ *
+ * From serialiseChangeSet rather than changeCount, so the number the creator
+ * watches all the way through is the number of LINES the record will show a
+ * reader — a renamed build and two added steps are three things somebody will
+ * read, and a count that ignored them would be smaller than the diff.
+ *
+ * Zero is not an error and is not styled as one. A rebuild opens at zero by
+ * definition; the muted phrasing says "not yet" rather than "not allowed", and
+ * the publish gate is where "a rebuild has to change something" belongs.
+ */
+function ChangeCount({ count }: { count: number }) {
+  const none = count === 0;
+
+  return (
+    <span
+      data-testid="rebuild-change-count"
+      title={
+        none
+          ? "A rebuild has to change something before it can be published."
+          : "What this rebuild changed about the build it came from."
+      }
+      style={{
+        ...labelText,
+        flexShrink: 0,
+        whiteSpace: "nowrap",
+        color: none ? TEXT_MUTED : TEAL,
+      }}
+    >
+      {none ? "no changes yet" : `${count} change${count === 1 ? "" : "s"}`}
+    </span>
+  );
+}
+
+/**
+ * The credit line, from the rebuilder's side.
+ *
+ * It reads the SNAPSHOT columns, not the live parent: parent_build_id is
+ * ON DELETE SET NULL and a source can be renamed at any time, so a credit
+ * resolved live is a credit the credited party can revoke. startRebuild froze
+ * both at the fork (NS-P37) and this renders what it froze.
+ *
+ * The link is the one live part, and it is optional for the same reason
+ * ForkAttribution's is: a link to a build that no longer resolves is worse than
+ * the name on its own. A draft forked before those columns existed — or by the
+ * replay's moment variant, which calls forkBuild directly — falls back to the
+ * live parent's title, and renders nothing at all if that is gone too, because
+ * "Rebuilding from" naming nobody claims a provenance no one can check.
+ */
+function RebuildOriginStrip({
+  build,
+  rebuild,
+}: {
+  build: Build;
+  rebuild: RebuildDiff;
+}) {
+  const source = rebuild.source;
+  const title = build.source_title_at_fork ?? source?.build.title ?? null;
+  if (!title) return null;
+
+  const handle = build.source_handle_at_fork;
+  const slug = source?.build.slug ?? null;
+
+  return (
+    <div
+      data-testid="rebuild-origin-strip"
+      data-visual-slot="compose-rebuild-origin"
+      style={{
+        ...panelGlass,
+        border: "none",
+        borderBottom: `1px solid ${HAIRLINE}`,
+        borderLeft: `2px solid ${hexToRgba(ORANGE, 0.5)}`,
+        background: hexToRgba(ORANGE, 0.05),
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
+        padding: "6px 14px",
+      }}
+    >
+      <span style={{ ...labelText, fontSize: 11, color: TEXT_SECONDARY }}>
+        Rebuilding from{" "}
+        {slug ? (
+          <Link
+            to={`/b2/${slug}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: ORANGE, textDecoration: "none" }}
+          >
+            {title}
+          </Link>
+        ) : (
+          <span style={{ color: TEXT_PRIMARY }}>{title}</span>
+        )}
+        {handle ? ` by @${handle}` : null}
+      </span>
+    </div>
   );
 }
 
@@ -230,11 +352,19 @@ export function ComposeTopBar({
   isPublishing,
   publishError,
   onFocusRequirement,
+  rebuild,
 }: ComposeTopBarProps) {
   // Inline styles cannot express :focus, so the focus treatment is state.
   const [titleFocused, setTitleFocused] = useState(false);
 
+  // The count waits for the diff rather than guessing at it. A rebuild whose
+  // source is still loading — or has been unpublished since the fork — shows no
+  // number, because "no changes yet" on an uncomputed diff is a claim, not a
+  // blank.
+  const isRebuild = Boolean(rebuild?.isRebuild);
+
   return (
+    <>
     <header
       data-visual-slot="compose-top-bar"
       style={{
@@ -320,6 +450,8 @@ export function ComposeTopBar({
 
       <SaveState isSaving={isSaving} lastSavedAt={lastSavedAt} saveError={saveError} />
 
+      {isRebuild && rebuild?.changes ? <ChangeCount count={rebuild.lines.length} /> : null}
+
       <Link
         to={`/b2/${build.slug}`}
         target="_blank"
@@ -340,5 +472,8 @@ export function ComposeTopBar({
         onFocusRequirement={onFocusRequirement}
       />
     </header>
+
+    {isRebuild && rebuild ? <RebuildOriginStrip build={build} rebuild={rebuild} /> : null}
+    </>
   );
 }

@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { NodeTree, NodeType } from "@/lib/build";
+import type { NodeTreatment } from "@/hooks/useRebuildDiff";
 import {
   CATEGORY_COLOUR,
   GAP_RED,
@@ -44,6 +45,53 @@ import { descendantIds, insideDropId, type NodeDrag } from "./useNodeDrag";
 
 /** Matches the active nav treatment used across the application. */
 const SELECTED_BACKGROUND = "rgba(232,87,26,0.08)";
+
+/**
+ * What a rebuild's tree says about each row, as an accent and a small label.
+ *
+ * INHERITED IS THE QUIET ONE, and that is the whole design. A rebuild opens
+ * holding somebody else's work; the creator's own contribution is what they
+ * need to see. So the material they arrived with recedes to a grey barely above
+ * the background, and only what they have touched carries colour — orange for a
+ * part they changed, teal for a part they added, matching what those two
+ * colours already mean everywhere else in the application.
+ *
+ * Inherited has no pill: a label on every unchanged row is noise on the
+ * majority of the tree, and its silence is already the answer.
+ */
+const REBUILD_TREATMENT: Record<
+  NodeTreatment,
+  { accent: string; pill: string | null; colour: string }
+> = {
+  inherited: { accent: "rgba(255,255,255,0.18)", pill: null, colour: TEXT_MUTED },
+  changed: { accent: hexToRgba(ORANGE, 0.75), pill: "changed", colour: ORANGE },
+  added: { accent: TEAL, pill: "new", colour: TEAL },
+};
+
+/** The 10px marker a touched row carries. Inline, like everything on this
+ *  route: a class would not survive the build. */
+function TreatmentPill({ treatment }: { treatment: NodeTreatment }) {
+  const { pill, colour } = REBUILD_TREATMENT[treatment];
+  if (!pill) return null;
+
+  return (
+    <span
+      data-testid="rebuild-node-pill"
+      style={{
+        ...labelText,
+        flexShrink: 0,
+        fontSize: 10,
+        padding: "1px 6px",
+        borderRadius: 100,
+        background: hexToRgba(colour, 0.15),
+        color: colour,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {pill}
+    </span>
+  );
+}
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -117,6 +165,16 @@ interface TreeNodeProps {
   onToggle: (id: string) => void;
   onSelect: (id: string) => void;
   drag: NodeDrag;
+  /**
+   * Draft node id -> what it is against the build this one was forked from.
+   *
+   * Null on an ordinary draft, which is most of them, and the row then looks
+   * exactly as it did before NS-P38. A non-null map means this IS a rebuild, so
+   * a node the map does not name is inherited and unchanged rather than
+   * untreated — that is the quiet grey, and it has to be said for every row the
+   * creator has not touched.
+   */
+  rebuildNodes?: Map<string, NodeTreatment> | null;
 }
 
 export function TreeNode({
@@ -127,6 +185,7 @@ export function TreeNode({
   onToggle,
   onSelect,
   drag,
+  rebuildNodes,
 }: TreeNodeProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -144,9 +203,22 @@ export function TreeNode({
     drag.overTarget?.kind === "inside" && drag.overTarget.nodeId === node.id;
   const nestRefused = isNestTarget && drag.hoverRejection !== null;
 
+  const treatment: NodeTreatment | null = rebuildNodes
+    ? (rebuildNodes.get(node.id) ?? "inherited")
+    : null;
+
   // The selected treatment wins over the gap treatment: a creator who has just
   // clicked a row needs to see which row that was more than they need the flag.
-  const accent = isSelected ? ORANGE : node.is_gap ? GAP_RED : "transparent";
+  // Both still win over the rebuild treatment, which takes the slot that was
+  // transparent before it — the diff is context for the work, and neither
+  // "this is the row you are editing" nor "this one is a hole" gives way to it.
+  const accent = isSelected
+    ? ORANGE
+    : node.is_gap
+      ? GAP_RED
+      : treatment
+        ? REBUILD_TREATMENT[treatment].accent
+        : "transparent";
 
   const rowStyle: CSSProperties = {
     display: "flex",
@@ -170,7 +242,12 @@ export function TreeNode({
 
   return (
     <>
-      <div ref={setDropRef} style={rowStyle} data-node-id={node.id}>
+      <div
+        ref={setDropRef}
+        style={rowStyle}
+        data-node-id={node.id}
+        data-rebuild={treatment ?? undefined}
+      >
         <button
           type="button"
           ref={setDragRef}
@@ -226,6 +303,8 @@ export function TreeNode({
             {node.title || `Untitled ${nodeType?.label ?? node.type}`}
           </span>
         </button>
+
+        {treatment ? <TreatmentPill treatment={treatment} /> : null}
 
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>

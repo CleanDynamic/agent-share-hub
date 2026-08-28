@@ -209,7 +209,7 @@ describe("Replay", () => {
     const onFork = vi.fn();
     const { container } = renderReplay({ onFork });
     fireEvent.click(container.querySelector('[data-tick-ordinal="6"]') as Element);
-    fireEvent.click(screen.getByRole("button", { name: "Fork from here" }));
+    fireEvent.click(screen.getByRole("button", { name: "Rebuild from here" }));
     expect(onFork).toHaveBeenCalledWith(6);
   });
 

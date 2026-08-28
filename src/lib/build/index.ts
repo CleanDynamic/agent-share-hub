@@ -6,6 +6,7 @@ export {
   getBuild,
   getBuildBySlug,
   getBuildHeader,
+  getBuildHeaderBySlug,
   listBuildsByCreator,
   listDraftBuildsByCreator,
   slugifyTitle,

@@ -129,6 +129,26 @@ export async function getBuildHeader(id: string): Promise<Build | null> {
 }
 
 /**
+ * The build header, addressed by slug. One indexed read and no composition.
+ *
+ * The sibling of getBuildHeader, and it exists for the same reason: a caller
+ * that only needs to know WHICH build a slug names should not pay for the tree,
+ * the tray, the events and the registry to find out. /rebuild/:slug is exactly
+ * that caller — it wants an id to fork and a title to say out loud, and the
+ * fork it starts reads the whole record a moment later anyway.
+ */
+export async function getBuildHeaderBySlug(slug: string): Promise<Build | null> {
+  const { data, error } = await supabase
+    .from("builds")
+    .select(BUILD_COLUMNS)
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) throw buildLayerError("getBuildHeaderBySlug", error);
+  return (data as Build | null) ?? null;
+}
+
+/**
  * The composed build record: header, placed tree, tray, events and the node
  * type registry, in one call.
  *

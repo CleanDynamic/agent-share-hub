@@ -17,6 +17,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import type { NodeTree as NodeTreeShape, NodeType } from "@/lib/build";
+import type { NodeTreatment } from "@/hooks/useRebuildDiff";
 import {
   GAP_RED,
   HAIRLINE,
@@ -79,10 +80,12 @@ interface LevelProps {
   selectedNodeId: string | null;
   onSelect: (id: string) => void;
   drag: NodeDrag;
+  rebuildNodes?: Map<string, NodeTreatment> | null;
 }
 
 function Level({ nodes, parentId, depth, ...shared }: LevelProps) {
-  const { typesByKey, collapsed, onToggle, selectedNodeId, onSelect, drag } = shared;
+  const { typesByKey, collapsed, onToggle, selectedNodeId, onSelect, drag, rebuildNodes } =
+    shared;
   const nested = depth > 1;
 
   return (
@@ -116,6 +119,7 @@ function Level({ nodes, parentId, depth, ...shared }: LevelProps) {
               onToggle={onToggle}
               onSelect={onSelect}
               drag={drag}
+              rebuildNodes={rebuildNodes}
             />
             {isExpanded ? (
               <Level nodes={node.children} parentId={node.id} depth={depth + 1} {...shared} />
@@ -194,9 +198,24 @@ interface NodeTreeProps {
   selectedNodeId: string | null;
   onSelect: (id: string | null) => void;
   drag: NodeDrag;
+  /**
+   * The rebuild treatment for every row, or null on an ordinary draft.
+   *
+   * Passed straight through rather than computed here: one ChangeSet feeds the
+   * tree and the top bar's count, so the two can never say different things
+   * about the same edit.
+   */
+  rebuildNodes?: Map<string, NodeTreatment> | null;
 }
 
-export function NodeTree({ tree, nodeTypes, selectedNodeId, onSelect, drag }: NodeTreeProps) {
+export function NodeTree({
+  tree,
+  nodeTypes,
+  selectedNodeId,
+  onSelect,
+  drag,
+  rebuildNodes,
+}: NodeTreeProps) {
   // Collapsed rather than expanded, so a node nested by a drag and a node just
   // added are both visible without anyone having to open their parent.
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
@@ -262,6 +281,7 @@ export function NodeTree({ tree, nodeTypes, selectedNodeId, onSelect, drag }: No
           selectedNodeId={selectedNodeId}
           onSelect={onSelect}
           drag={drag}
+          rebuildNodes={rebuildNodes}
         />
       )}
     </div>
