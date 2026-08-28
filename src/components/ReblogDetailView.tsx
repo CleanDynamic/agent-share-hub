@@ -28,6 +28,7 @@ import { Eye, Download, MessageSquare, Repeat2, ExternalLink, ArrowLeft } from "
 import { timeAgo, formatNum, difficultyColor } from "@/components/FeedItem";
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { ReblogComposer, type ReblogComposerOriginal } from "@/components/ReblogComposer";
+import { REBLOG_COMPOSE_ENABLED } from "@/lib/reblog/flags";
 
 // ── Quoted post card (large, detail page version) ───────────
 
@@ -302,7 +303,10 @@ export function ReblogDetailView({ item }: ReblogDetailViewProps) {
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Repeat2 className="h-4 w-4" />{formatNum(reblogCount ?? 0)}
         </div>
-        {isLoggedIn && (
+        {/* NS-P42 — "Reblog this" is retired; see lib/reblog/flags.ts. The
+            spacer goes with it so nothing is left where the button sat. The
+            view counts, comments and the composer below stay as they were. */}
+        {isLoggedIn && REBLOG_COMPOSE_ENABLED && (
           <>
             <div className="ml-auto" />
             <button

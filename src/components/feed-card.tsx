@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useReblogCompose } from "@/contexts/ReblogComposeContext"
+import { REBLOG_COMPOSE_ENABLED } from "@/lib/reblog/flags"
 import { useToast } from "@/hooks/use-toast"
 import { getPrimaryTypeLabel } from "@/lib/content-types"
 import ActionXpHint from "@/components/ambient/ActionXpHint"
@@ -695,7 +696,8 @@ export function FeedCard({ post }: { post: FeedPost }) {
           <span>{post.comment_count ?? 0}</span>
         </button>
 
-        {/* Reblog */}
+        {/* Reblog — NS-P42: composing is retired; see lib/reblog/flags.ts. */}
+        {REBLOG_COMPOSE_ENABLED && (
         <button
           style={{
             display: "flex", alignItems: "center", gap: 6,
@@ -731,6 +733,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
           <Repeat2 size={15} style={{ color: userHasReblogged ? "#16A34A" : "currentColor" }} />
           {(reblogCount ?? 0) > 0 && <span style={{ color: userHasReblogged ? "#16A34A" : undefined }}>{reblogCount}</span>}
         </button>
+        )}
 
         {/* Save */}
         <ActionXpHint amount={1} trigger={saveXpTrigger}>

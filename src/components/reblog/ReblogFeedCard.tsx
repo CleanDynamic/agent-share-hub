@@ -19,6 +19,7 @@ import {
   type Excerpt,
   type SourcePost,
 } from "@/components/reblog/EmbeddedExcerptCard";
+import { REBLOG_COMPOSE_ENABLED } from "@/lib/reblog/flags";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -160,7 +161,9 @@ function EngagementRow({
           )}
         </button>
 
-        {/* Reblog */}
+        {/* Reblog — NS-P42: composing is retired; see lib/reblog/flags.ts.
+            Like, comment, bookmark and share beside it are untouched. */}
+        {REBLOG_COMPOSE_ENABLED && (
         <button
           onClick={stop(onReblogClick)}
           className={iconBtn}
@@ -174,6 +177,7 @@ function EngagementRow({
             <span>{formatCount(engagement.reblogCount)}</span>
           )}
         </button>
+        )}
 
         {/* Bookmark */}
         <button

@@ -25,6 +25,7 @@ import { Eye, Download, MessageSquare, Repeat2, ChevronDown, ChevronUp } from "l
 import { timeAgo, formatNum, difficultyColor } from "@/components/FeedItem";
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { ReblogComposer, type ReblogComposerOriginal } from "@/components/ReblogComposer";
+import { REBLOG_COMPOSE_ENABLED } from "@/lib/reblog/flags";
 
 // ── Quoted post card (embedded inside feed card) ──────────────
 
@@ -424,7 +425,10 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
           </span>
         </div>
 
-        {isLoggedIn && (
+        {/* NS-P42 — "Reblog this" is retired; see lib/reblog/flags.ts. The
+            stats beside it, and this card's like/bookmark/view behaviour,
+            are untouched. */}
+        {isLoggedIn && REBLOG_COMPOSE_ENABLED && (
           <button
             onClick={(e) => { stop(e); setReblogOpen(true); }}
             className="text-[11px] font-medium transition-colors hover:opacity-80"

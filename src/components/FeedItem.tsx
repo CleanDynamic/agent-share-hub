@@ -10,6 +10,7 @@ import { ShareToDMModal } from "@/components/dm/ShareToDMModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { BountyCard } from "@/components/BountyCard";
 import { useReblogCompose } from "@/contexts/ReblogComposeContext";
+import { REBLOG_COMPOSE_ENABLED } from "@/lib/reblog/flags";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -385,6 +386,8 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
                   >
                     <SendIcon style={{ width: 15, height: 15 }} />
                   </button>
+                  {/* NS-P42 — reblog composing is retired; see lib/reblog/flags.ts. */}
+                  {REBLOG_COMPOSE_ENABLED && (
                   <button
                     onClick={(e) => {
                       stop(e);
@@ -400,6 +403,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
                     <Repeat2 style={{ width: 15, height: 15, color: userHasReblogged ? "#16A34A" : "currentColor" }} />
                     {(reblogCount ?? 0) > 0 && <span style={{ color: userHasReblogged ? "#16A34A" : undefined }}>{formatNum(reblogCount ?? 0)}</span>}
                   </button>
+                  )}
                 </>
               )}
             </div>
