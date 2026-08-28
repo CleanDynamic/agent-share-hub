@@ -38,6 +38,19 @@ interface BuildHeaderProps {
    */
   reproduction?: ReactNode;
   /**
+   * The rebuild count, beside the reproduction block (NS-P40).
+   *
+   * A SEPARATE SLOT RATHER THAN PART OF THE ONE ABOVE, because the two numbers
+   * are earned in different ways and are owned by different components: the
+   * reproduction block writes, and this one only ever navigates. Passing it
+   * here rather than folding it into `reproduction` also means it renders on
+   * the fallback path too — a caller that has not supplied a reproduction
+   * block still gets the second number in the same strip.
+   *
+   * Omitted, or rendering nothing, the strip is exactly what it was.
+   */
+  rebuilds?: ReactNode;
+  /**
    * The hero, resolved and signed by the page.
    *
    * The header knows nothing about build_media and does not need to; what it
@@ -216,6 +229,7 @@ export function BuildHeader({
   nodeTypes,
   actions,
   reproduction,
+  rebuilds,
   hero,
 }: BuildHeaderProps) {
   const placed = flatten(tree);
@@ -349,6 +363,8 @@ export function BuildHeader({
             )}
           </div>
         )}
+
+        {rebuilds}
       </div>
 
       {prerequisites.length > 0 ? (

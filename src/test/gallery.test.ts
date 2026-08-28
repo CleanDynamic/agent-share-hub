@@ -94,9 +94,21 @@ describe("the gallery query", () => {
     expect(columns).not.toContain("*");
     expect(columns).toContain("reproduction_count");
     expect(columns).toContain("completeness");
-    // Monetisation and fork lineage are on the table and not on a card.
+    // Monetisation is on the table and not on a card.
     expect(columns).not.toContain("monetisation_type");
-    expect(columns).not.toContain("parent_build_id");
+    expect(columns).not.toContain("cost_monthly");
+    // The lineage columns ARE on a card as of NS-P40: the credit line is
+    // composed from the two frozen snapshots, and the rebuild count is the
+    // second earned number beside the reproductions.
+    for (const column of [
+      "parent_build_id",
+      "rebuild_count",
+      "rebuild_note",
+      "source_title_at_fork",
+      "source_handle_at_fork",
+    ]) {
+      expect(columns).toContain(column);
+    }
     // The count rides the same response, so pagination costs no second request.
     expect(options).toEqual({ count: "exact" });
   });

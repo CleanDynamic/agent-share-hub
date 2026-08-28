@@ -220,8 +220,12 @@ export {
 } from "./publish";
 export {
   NO_CHANGES_REASON,
+  REBUILDS_PAGE_SIZE,
+  REBUILD_LIST_COLUMNS,
   changeCount,
   changeSet,
+  countRebuilds,
+  listRebuilds,
   matchNodes,
   publishRebuild,
   rebuildReadiness,
@@ -231,10 +235,13 @@ export {
   type ChangeLine,
   type ChangeSet,
   type FieldChange,
+  type ListRebuildsOptions,
   type NodeChange,
   type NodeMatch,
   type NodeMatching,
   type NodeRef,
+  type RebuildCreator,
+  type RebuildSummary,
   type StartRebuildInput,
 } from "./rebuild";
 export {

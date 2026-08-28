@@ -872,3 +872,129 @@ export async function publishRebuild(
   await updateBuild(draft.id, { rebuild_note: trimToNull(note) });
   return publishBuild(draft);
 }
+
+// =============================================================================
+// Reading rebuilds
+// =============================================================================
+
+/**
+ * The children a build has earned, for the Rebuilds tab and the scrubber's
+ * divergence markers.
+ *
+ * PUBLISHED CHILDREN ONLY, and 'gallery' counts as published — it is a curated
+ * published build rather than a third state, exactly as the NS-P36 counter
+ * treats it. A draft fork of your build is the forker's business and appears
+ * nowhere on your page; leaving it out here is the same rule the trigger
+ * enforces on rebuild_count, so the tab and the number beside it cannot
+ * disagree about what a rebuild is.
+ *
+ * ONE REQUEST, NAMED COLUMNS, EMBEDDED CREATOR. The tab renders a handle and an
+ * avatar per row, and a component that resolved those itself would issue one
+ * query per row — the home feed's mistake, at a smaller scale. The !hint is
+ * required rather than decorative: builds.creator_id has a foreign key that
+ * PostgREST can resolve to either `profiles` or the `profile_stats` view, and
+ * naming the constraint tells it which side of the pair this embed means.
+ *
+ * NEWEST FIRST BY created_at, which is the column the row displays. The
+ * alternative, published_at, would sort a long-held draft by the day it went
+ * live while its row showed the day it was forked, and a list whose order
+ * contradicts its own timestamps is a list a reader cannot trust.
+ */
+export const REBUILD_LIST_COLUMNS =
+  "id, slug, title, rebuild_note, created_at, forked_from_event_id, reproduction_count, " +
+  "creator:profiles!builds_creator_id_fkey(id, username, display_name, avatar_url)";
+
+/** The statuses that mean "a reader can open this". See above. */
+const PUBLISHED_STATUSES = ["published", "gallery"] as const;
+
+/** Enough rows to fill the tab. A build with more has a paging problem worth
+ *  solving with a control, not by removing the cap. */
+export const REBUILDS_PAGE_SIZE = 20;
+
+/** Who published a rebuild, as the row names them. */
+export interface RebuildCreator {
+  id: string;
+  /** The handle. Null on a profile that has not set one. */
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
+/** One published child of a build. */
+export interface RebuildSummary {
+  id: string;
+  slug: string;
+  title: string;
+  /** Null only if the embed came back empty, which the FK should prevent. */
+  creator: RebuildCreator | null;
+  rebuild_note: string | null;
+  created_at: string;
+  /** The event of the SOURCE this was forked at, when the fork named one. */
+  forked_from_event_id: string | null;
+  reproduction_count: number;
+}
+
+export interface ListRebuildsOptions {
+  /** Capped at REBUILDS_PAGE_SIZE. */
+  limit?: number;
+}
+
+/**
+ * The published rebuilds of one build, newest first.
+ *
+ * Reads through the partial index on builds(parent_build_id) that NS-P36
+ * created for exactly this question. Returns an empty array for a build nobody
+ * has rebuilt, which is the ordinary case and not an error.
+ */
+export async function listRebuilds(
+  buildId: string,
+  options: ListRebuildsOptions = {}
+): Promise<RebuildSummary[]> {
+  const limit = Math.max(1, Math.min(options.limit ?? REBUILDS_PAGE_SIZE, REBUILDS_PAGE_SIZE));
+
+  const { data, error } = await supabase
+    .from("builds")
+    .select(REBUILD_LIST_COLUMNS)
+    .eq("parent_build_id", buildId)
+    .in("status", [...PUBLISHED_STATUSES])
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw buildLayerError("listRebuilds", error);
+  return ((data ?? []) as unknown as RebuildRow[]).map(toRebuildSummary);
+}
+
+/**
+ * How many published rebuilds a build has, without reading any of them.
+ *
+ * ESTIMATED rather than exact: this decides whether a tab appears, and the
+ * planner's estimate is right to the row at the counts this will see for years.
+ * An exact count locks the whole matching set to answer a yes/no question.
+ *
+ * The source's own builds.rebuild_count answers the same question for free
+ * wherever the header row is already loaded — the build page and the gallery
+ * card both read it rather than calling this. This is for the caller holding an
+ * id and nothing else.
+ */
+export async function countRebuilds(buildId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("builds")
+    .select("id", { count: "estimated", head: true })
+    .eq("parent_build_id", buildId)
+    .in("status", [...PUBLISHED_STATUSES]);
+
+  if (error) throw buildLayerError("countRebuilds", error);
+  return count ?? 0;
+}
+
+/** The row as PostgREST returns it: the embed keyed by its alias. */
+interface RebuildRow extends Omit<RebuildSummary, "creator"> {
+  /** An embedded to-one arrives as an object; some proxies hand back an array
+   *  of one. Both are read rather than trusting either. */
+  creator: RebuildCreator | RebuildCreator[] | null;
+}
+
+function toRebuildSummary(row: RebuildRow): RebuildSummary {
+  const creator = Array.isArray(row.creator) ? row.creator[0] ?? null : row.creator;
+  return { ...row, creator: creator ?? null };
+}

@@ -15,6 +15,15 @@
 // the leak and the DOM the fix, which is exactly backwards. If a hidden event
 // ever reaches this component, the bug is in the query and belongs there.
 //
+// DIVERGENCE MARKERS (NS-P40)
+// --------------------------
+// A teal dot above the tick of every event somebody has rebuilt from. It is a
+// ROW OF ITS OWN above the scrubber, sized cell-for-cell against the ticks, and
+// not a decoration inside the tick buttons: the scrubber's mechanics — what a
+// tick does, what it looks like, what the keyboard does to it — are untouched
+// by this file's newest feature, and a marker row that renders nothing when
+// there are no rebuilds leaves the panel exactly as NS-P16 shipped it.
+//
 // WHY THE ARTEFACT COMES FROM THE NODE RENDERERS
 // ----------------------------------------------
 // The state at a position is whatever node the most recent producing event
@@ -25,8 +34,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import type { Build, BuildEvent, BuildNode, NodeType } from "@/lib/build";
+import type { Build, BuildEvent, BuildNode, NodeType, RebuildSummary } from "@/lib/build";
 import { GenericPayload } from "./GenericPayload";
+import { creatorLabel } from "./rebuildDisplay";
 import { NodeCard } from "./NodeCard";
 import type { ResolveMedia, ResolveNode } from "./renderers";
 import {
@@ -54,6 +64,9 @@ import {
 /** One event per this many milliseconds while playing. */
 export const PLAY_INTERVAL_MS = 1500;
 
+/** The divergence dot. Small enough to sit over a 6px tick without hiding it. */
+export const DIVERGENCE_DOT = 6;
+
 export interface ReplayProps {
   build: Build;
   /**
@@ -80,6 +93,25 @@ export interface ReplayProps {
   onFork?: (ordinal: number) => void;
   /** A fork is in flight; the controls say so and stop taking clicks. */
   forkPending?: boolean;
+  /**
+   * Published rebuilds of THIS build (NS-P40). The ones naming an event of this
+   * sequence in forked_from_event_id get a marker over that event's tick; the
+   * rest — whole-build rebuilds, which name no moment — get none, because there
+   * is no moment to point at.
+   *
+   * The page fetches this once for the Rebuilds tab and hands the same array
+   * here, so the tab and the scrubber can never disagree about what exists.
+   */
+  divergences?: RebuildSummary[];
+  /**
+   * Open one. Omitted, the markers still render and still name who is behind
+   * them — they simply stop being a way through to the build.
+   *
+   * A callback rather than a Link because this component is deliberately
+   * router-free: it is rendered in tests without one, and onFork above already
+   * hands navigation back to the page for the same reason.
+   */
+  onOpenRebuild?: (rebuild: RebuildSummary) => void;
 }
 
 interface PhaseRun {
@@ -270,6 +302,22 @@ function EventRow({
   );
 }
 
+/** "@sam rebuilt from here", or "3 people rebuilt from here". */
+export function markerLabel(rebuilds: RebuildSummary[]): string {
+  if (rebuilds.length === 1) return `${creatorLabel(rebuilds[0])} rebuilt from here`;
+  return `${rebuilds.length} people rebuilt from here`;
+}
+
+/** What the line says while nothing is being pointed at. */
+function summaryLabel(markers: Map<number, RebuildSummary[]>): string {
+  let total = 0;
+  for (const bucket of markers.values()) total += bucket.length;
+  const moments = markers.size;
+  return `${total} rebuild${total === 1 ? "" : "s"} started from ${
+    moments === 1 ? "a step" : `${moments} steps`
+  } in this sequence`;
+}
+
 export function Replay({
   build,
   events,
@@ -279,9 +327,13 @@ export function Replay({
   focusOrdinal,
   onFork,
   forkPending = false,
+  divergences,
+  onOpenRebuild,
 }: ReplayProps) {
   const [position, setPosition] = useState(0);
   const [playing, setPlaying] = useState(false);
+  /** The marker a reader is pointing at, as an index into `events`. */
+  const [named, setNamed] = useState<number | null>(null);
   const rows = useRef<Array<HTMLLIElement | null>>([]);
   const moved = useRef(false);
 
@@ -291,6 +343,34 @@ export function Replay({
     () => new Map(nodeTypes.map((type) => [type.key, type])),
     [nodeTypes]
   );
+
+  /**
+   * Which events somebody rebuilt from, keyed by their index in this list.
+   *
+   * Keyed by INDEX rather than by ordinal because the row below is laid out
+   * cell-per-event against the ticks, and ordinals are not contiguous — the
+   * sequence in front of a reader has already had hidden events removed. A
+   * rebuild naming an event that is not in this list (hidden, or since deleted)
+   * lands in no bucket and shows no marker, which is the honest outcome: there
+   * is no tick for it to sit over.
+   */
+  const markers = useMemo(() => {
+    const byEventId = new Map<string, number>();
+    events.forEach((event, index) => byEventId.set(event.id, index));
+
+    const out = new Map<number, RebuildSummary[]>();
+    for (const rebuild of divergences ?? []) {
+      if (!rebuild.forked_from_event_id) continue;
+      const index = byEventId.get(rebuild.forked_from_event_id);
+      if (index === undefined) continue;
+      const bucket = out.get(index);
+      if (bucket) bucket.push(rebuild);
+      else out.set(index, [rebuild]);
+    }
+    return out;
+  }, [divergences, events]);
+
+  const namedRebuilds = named === null ? undefined : markers.get(named);
 
   const step = useCallback(
     (next: number) => {
@@ -414,6 +494,66 @@ export function Replay({
             ))}
           </div>
 
+          {/* The divergence markers, one cell per event so each dot sits over
+              its own tick. Rendered only where there is something to mark, so a
+              build nobody has rebuilt from gets the panel it always had. */}
+          {markers.size > 0 ? (
+            <div
+              data-visual-slot="build-replay-divergences"
+              style={{ display: "flex", gap: 2, minWidth: 320, marginBottom: 3 }}
+            >
+              {events.map((event, index) => {
+                const here = markers.get(index);
+                return (
+                  <div
+                    key={event.id}
+                    style={{
+                      flex: "1 1 0",
+                      minWidth: 6,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "flex-end",
+                      height: DIVERGENCE_DOT + 2,
+                    }}
+                  >
+                    {here ? (
+                      <button
+                        type="button"
+                        data-testid="divergence-marker"
+                        data-divergence-ordinal={event.ordinal}
+                        data-divergence-count={here.length}
+                        aria-label={markerLabel(here)}
+                        title={markerLabel(here)}
+                        onMouseEnter={() => setNamed(index)}
+                        onMouseLeave={() => setNamed((at) => (at === index ? null : at))}
+                        onFocus={() => setNamed(index)}
+                        onBlur={() => setNamed((at) => (at === index ? null : at))}
+                        onClick={() => {
+                          setNamed(index);
+                          // One rebuild is unambiguous, so the click IS the
+                          // opening. Several share a moment, and picking for the
+                          // reader would be picking wrong five times in six —
+                          // they are named below instead, each its own control.
+                          if (here.length === 1 && onOpenRebuild) onOpenRebuild(here[0]);
+                        }}
+                        style={{
+                          width: DIVERGENCE_DOT,
+                          height: DIVERGENCE_DOT,
+                          padding: 0,
+                          border: "none",
+                          borderRadius: 999,
+                          background: TEAL,
+                          boxShadow: `0 0 0 2px ${hexToRgba(TEAL, 0.18)}`,
+                          cursor: "pointer",
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+
           {/* The scrubber. Roving tabindex: one tick in the tab order, arrows
               move between them, space plays. */}
           <div
@@ -494,6 +634,41 @@ export function Replay({
             </button>
           ) : null}
         </div>
+
+        {/* Who diverged, in words. It holds its line whether or not a marker is
+            being pointed at, so nothing under the panel jumps as the pointer
+            crosses the row — and on a touch screen, where there is no hover,
+            the summary is the naming. */}
+        {markers.size > 0 ? (
+          <p
+            data-testid="divergence-names"
+            style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, margin: 0 }}
+          >
+            {namedRebuilds
+              ? namedRebuilds.map((rebuild, index) => (
+                  <span key={rebuild.id}>
+                    {index > 0 ? ", " : null}
+                    <button
+                      type="button"
+                      onClick={() => onOpenRebuild?.(rebuild)}
+                      style={{
+                        ...labelText,
+                        fontFamily: "inherit",
+                        fontSize: 11,
+                        padding: 0,
+                        background: "transparent",
+                        border: "none",
+                        color: TEAL,
+                        cursor: onOpenRebuild ? "pointer" : "default",
+                      }}
+                    >
+                      {creatorLabel(rebuild)} rebuilt from here
+                    </button>
+                  </span>
+                ))
+              : summaryLabel(markers)}
+          </p>
+        ) : null}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
