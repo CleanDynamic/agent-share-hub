@@ -218,6 +218,25 @@ export {
   type PublishTarget,
 } from "./publish";
 export {
+  NO_CHANGES_REASON,
+  changeCount,
+  changeSet,
+  matchNodes,
+  publishRebuild,
+  rebuildReadiness,
+  serialiseChangeSet,
+  startRebuild,
+  type ChangeKind,
+  type ChangeLine,
+  type ChangeSet,
+  type FieldChange,
+  type NodeChange,
+  type NodeMatch,
+  type NodeMatching,
+  type NodeRef,
+  type StartRebuildInput,
+} from "./rebuild";
+export {
   MINIMUM_PUBLISHABLE_KEYS,
   MINIMUM_PUBLISHABLE_SCORE,
   REPRODUCTION_COLUMNS,
