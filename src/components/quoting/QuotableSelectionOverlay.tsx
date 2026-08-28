@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { Repeat2, MessageSquarePlus, Copy } from "lucide-react";
+import { REBLOG_COMPOSE_ENABLED } from "@/lib/reblog/flags";
 
 export interface SelectionData {
   text: string;
@@ -134,7 +135,9 @@ export function QuotableSelectionOverlay({
         />
       </svg>
 
-      {ACTIONS.map((a) => (
+      {/* NS-P42 — "Reblog with quote" is retired; see lib/reblog/flags.ts.
+          Annotate and Copy are unaffected and keep their places. */}
+      {ACTIONS.filter((a) => a.id !== "quote-reblog" || REBLOG_COMPOSE_ENABLED).map((a) => (
         <ActionButton
           key={a.id}
           icon={a.icon}
