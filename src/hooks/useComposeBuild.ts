@@ -17,7 +17,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeCompleteness, getBuild, publishPatch, updateBuild } from "@/lib/build";
+import {
+  computeCompleteness,
+  getBuild,
+  publishPatch,
+  publishRebuild,
+  updateBuild,
+} from "@/lib/build";
 import type {
   Build,
   BuildEvent,
@@ -66,8 +72,14 @@ export interface ComposeBuild {
    * ONE WRITE, not two: a creator who types their outcome and clicks Publish
    * a moment later would otherwise race a debounced save against a status
    * update. Resolves with the row as it stands after the write.
+   *
+   * PASSING A NOTE PUBLISHES IT AS A REBUILD (NS-P39), through rebuild.ts's
+   * publishRebuild rather than through the fold above. An ORDINARY draft calls
+   * this with no argument and takes the path it always has — the parameter is
+   * the whole of the difference, and `undefined` is not the same answer as
+   * `null`: null is a rebuild whose creator wrote nothing.
    */
-  publish: () => Promise<Build>;
+  publish: (rebuildNote?: string | null) => Promise<Build>;
   isPublishing: boolean;
   publishError: Error | null;
   isSaving: boolean;
@@ -271,7 +283,7 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
    * case, not a corner. Here the pending patch and the publish columns go out
    * together, after whatever write is already in flight has landed.
    */
-  const publish = useCallback(async (): Promise<Build> => {
+  const publish = useCallback(async (rebuildNote?: string | null): Promise<Build> => {
     const id = buildIdRef.current;
     const current = buildRef.current;
     if (!id || !current) throw new Error("There is no build to publish.");
@@ -294,16 +306,40 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
       pendingRef.current = {};
       const patch: BuildPatch = { ...pending, ...publishPatch(current) };
 
+      /**
+       * A rebuild publishes through rebuild.ts, and cannot take the fold.
+       *
+       * publishRebuild writes the note in its own statement BEFORE the status,
+       * so the record is never readable in a state where the rebuild is live
+       * and its note is not — an ordering a single merged PATCH cannot express.
+       * The reason the fold exists is a RACE, not a round trip, and there is no
+       * race here: these statements are sequential and run under the same
+       * in-flight lock a debounced save takes.
+       */
+      const asRebuild = rebuildNote !== undefined;
+
       // Already live, already dated, nothing typed since: re-opening the
-      // confirmation to read the link back does not cost a write.
-      if (Object.keys(patch).length === 0) return current;
+      // confirmation to read the link back does not cost a write. A rebuild
+      // still writes, because its note is what may have changed.
+      if (!asRebuild && Object.keys(patch).length === 0) return current;
 
       // Hold the same lock a debounced save takes, so a timer that fires
       // mid-publish declines to overlap rather than issuing a second PATCH
       // against the row this one is already writing.
       inFlightRef.current = true;
       try {
-        const row = await updateBuild(id, patch);
+        let row: Build;
+        if (asRebuild) {
+          // The creator's own header edits go out first, so the sentence they
+          // typed a second ago is not lost to publishRebuild's ordering.
+          if (Object.keys(pending).length > 0) await updateBuild(id, pending);
+          row = await publishRebuild(
+            { id, status: current.status, published_at: current.published_at },
+            rebuildNote ?? null
+          );
+        } else {
+          row = await updateBuild(id, patch);
+        }
         if (mountedRef.current && buildIdRef.current === id) {
           queryClient.setQueryData<BuildRecord | null>(
             composeBuildQueryKey(id),

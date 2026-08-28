@@ -107,7 +107,8 @@ interface ComposeTopBarProps {
   nodeTypes: NodeType[];
   /** The hook's answer. This bar does not compute a second one. */
   completeness: Completeness | null;
-  onPublish: () => Promise<Build>;
+  /** Passed straight through. The optional note is the rebuild variant. */
+  onPublish: (rebuildNote?: string | null) => Promise<Build>;
   isPublishing: boolean;
   publishError: Error | null;
   /** Passed straight to PublishControl for the publish sheet's checklist. */
@@ -470,6 +471,7 @@ export function ComposeTopBar({
         isPublishing={isPublishing}
         publishError={publishError}
         onFocusRequirement={onFocusRequirement}
+        rebuild={rebuild}
       />
     </header>
 

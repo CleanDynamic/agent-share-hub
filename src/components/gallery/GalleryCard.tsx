@@ -66,9 +66,22 @@ export interface GalleryCardProps {
   build: GalleryBuild;
   /** Signed once for the whole page, never per card. */
   srcByPath: MediaSrcMap;
+  /**
+   * "Rebuilt from Inbox triage agent by @amara", from rebuildCredit.ts.
+   *
+   * A PROP RATHER THAN SOMETHING THIS CARD WORKS OUT, because it cannot: the
+   * columns it is composed from are not in GALLERY_BUILD_COLUMNS, and a card
+   * that fetched them would issue one query per card. The page that lists the
+   * builds composes the line once and hands it down.
+   *
+   * Absent on every build that is not a rebuild, and absent is the ordinary
+   * case — nothing renders, and a card without one is the card that was here
+   * before this prop existed.
+   */
+  credit?: string | null;
 }
 
-export function GalleryCard({ build, srcByPath }: GalleryCardProps) {
+export function GalleryCard({ build, srcByPath, credit }: GalleryCardProps) {
   const Body =
     BODY_FOR_SHAPE[(build.shape ?? "other") as BuildShape] ?? DefaultCardBody;
 
@@ -126,6 +139,27 @@ export function GalleryCard({ build, srcByPath }: GalleryCardProps) {
 
         <ReproductionFigure count={count} stale={stale} />
       </div>
+
+      {/* The credit, on a rebuild only. One muted line, below the title block
+          and above the tags, because it is provenance rather than a claim the
+          card is making for itself — it should be findable, not loud. */}
+      {credit ? (
+        <p
+          data-testid="gallery-card-credit"
+          title={credit}
+          style={{
+            ...labelText,
+            margin: 0,
+            fontSize: 11,
+            color: TEXT_MUTED,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {credit}
+        </p>
+      ) : null}
 
       {(build.made_for?.length ?? 0) > 0 || promoted ? (
         <div

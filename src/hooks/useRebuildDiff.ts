@@ -60,6 +60,17 @@ export interface RebuildDiff {
    * stops claiming to know what they changed, because it cannot.
    */
   source: BuildRecord | null;
+  /**
+   * The draft the diff was computed against — the SETTLED snapshot, not the
+   * live record.
+   *
+   * Returned so the publish gate can be asked about the same pair the lines
+   * were derived from: rebuildReadiness takes source, draft and changes, and
+   * handing it a live draft beside a settled ChangeSet would let it answer
+   * about two different moments. It also keeps the gate off the keystroke —
+   * this identity changes on the save beat, so a memo keyed on it does.
+   */
+  draft: BuildRecord | null;
   /** The diff, or null until both records are in hand. */
   changes: ChangeSet | null;
   /** The diff as lines. NS-P39's sheet renders these; the bar counts them. */
@@ -150,5 +161,5 @@ export function useRebuildDiff(compose: ComposeBuild): RebuildDiff {
     return map;
   }, [changes, isRebuild]);
 
-  return { isRebuild, source: source ?? null, changes, lines, nodes };
+  return { isRebuild, source: source ?? null, draft: settled, changes, lines, nodes };
 }
