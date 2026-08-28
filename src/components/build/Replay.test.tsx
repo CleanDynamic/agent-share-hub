@@ -11,7 +11,7 @@
 
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { Build, BuildEvent, BuildNode, NodeType } from "@/lib/build";
+import type { Build, BuildEvent, BuildNode, NodeType, RebuildSummary } from "@/lib/build";
 import { Replay, producedAt, phaseRuns } from "./Replay";
 
 const nodeTypes = [
@@ -242,6 +242,101 @@ describe("phaseRuns", () => {
   it("splits a phase that is no longer contiguous rather than claiming it", () => {
     const shuffled = [events[0], events[6], events[1]];
     expect(phaseRuns(shuffled)).toHaveLength(3);
+  });
+});
+
+describe("Replay divergence markers (NS-P40)", () => {
+  const rebuild = (over: Record<string, unknown> = {}) =>
+    ({
+      id: "r1",
+      slug: "sams-rebuild",
+      title: "Sam's rebuild",
+      creator: { id: "u2", username: "sam", display_name: "Sam", avatar_url: null },
+      rebuild_note: null,
+      created_at: "2026-08-20T09:00:00Z",
+      forked_from_event_id: events[3].id,
+      reproduction_count: 0,
+      ...over,
+    }) as RebuildSummary;
+
+  it("marks the step a rebuild was taken at, and nothing else", () => {
+    const { container } = renderReplay({ divergences: [rebuild()] });
+
+    const marks = container.querySelectorAll("[data-testid='divergence-marker']");
+    expect(marks).toHaveLength(1);
+    expect(marks[0].getAttribute("data-divergence-ordinal")).toBe(String(events[3].ordinal));
+    // The row is cell-per-event, so the dot lines up with its own tick.
+    const row = container.querySelector("[data-visual-slot='build-replay-divergences']");
+    expect(row?.children).toHaveLength(events.length);
+  });
+
+  it("renders nothing at all for a build nobody has rebuilt from", () => {
+    const { container } = renderReplay({ divergences: [] });
+    expect(container.querySelector("[data-visual-slot='build-replay-divergences']")).toBeNull();
+    expect(screen.queryByTestId("divergence-names")).toBeNull();
+  });
+
+  it("ignores a rebuild that names no moment, or one this sequence does not hold", () => {
+    const { container } = renderReplay({
+      divergences: [
+        rebuild({ id: "whole", forked_from_event_id: null }),
+        // Hidden events never reach this component, so a rebuild taken at one
+        // has no tick to sit over.
+        rebuild({ id: "hidden", forked_from_event_id: "e15" }),
+      ],
+    });
+    expect(container.querySelectorAll("[data-testid='divergence-marker']")).toHaveLength(0);
+  });
+
+  it("names who rebuilt from a step when the marker is pointed at", () => {
+    renderReplay({ divergences: [rebuild()] });
+
+    // Before anything is pointed at, the line counts them.
+    expect(screen.getByTestId("divergence-names").textContent).toBe(
+      "1 rebuild started from a step in this sequence"
+    );
+
+    fireEvent.mouseEnter(screen.getByTestId("divergence-marker"));
+    expect(screen.getByTestId("divergence-names").textContent).toBe("@sam rebuilt from here");
+
+    fireEvent.mouseLeave(screen.getByTestId("divergence-marker"));
+    expect(screen.getByTestId("divergence-names").textContent).toContain("1 rebuild started");
+  });
+
+  it("opens the rebuild on a click, and leaves the scrubber where it was", () => {
+    const onOpenRebuild = vi.fn();
+    renderReplay({ divergences: [rebuild()], onOpenRebuild });
+
+    fireEvent.click(screen.getByTestId("divergence-marker"));
+
+    expect(onOpenRebuild).toHaveBeenCalledWith(expect.objectContaining({ slug: "sams-rebuild" }));
+    // The marker is not a tick: pressing it moves nobody's position.
+    expect(screen.getByText(`step ${events[0].ordinal} of ${events[events.length - 1].ordinal}`))
+      .toBeTruthy();
+  });
+
+  it("names both when two rebuilds left from the same step, and opens neither", () => {
+    const onOpenRebuild = vi.fn();
+    renderReplay({
+      divergences: [
+        rebuild(),
+        rebuild({ id: "r2", slug: "ninas-rebuild", creator: { id: "u3", username: "nina", display_name: "Nina", avatar_url: null } }),
+      ],
+      onOpenRebuild,
+    });
+
+    const marker = screen.getByTestId("divergence-marker");
+    expect(marker.getAttribute("data-divergence-count")).toBe("2");
+    expect(marker.getAttribute("aria-label")).toBe("2 people rebuilt from here");
+
+    fireEvent.click(marker);
+    // Picking one of two for the reader would be picking wrong half the time.
+    expect(onOpenRebuild).not.toHaveBeenCalled();
+
+    const names = screen.getByTestId("divergence-names");
+    expect(within(names).getByRole("button", { name: "@sam rebuilt from here" })).toBeTruthy();
+    fireEvent.click(within(names).getByRole("button", { name: "@nina rebuilt from here" }));
+    expect(onOpenRebuild).toHaveBeenCalledWith(expect.objectContaining({ slug: "ninas-rebuild" }));
   });
 });
 

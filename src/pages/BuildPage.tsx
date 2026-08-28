@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   getApprovedLayers,
   getBuildBySlug,
@@ -225,6 +225,7 @@ function Message({ heading, detail }: { heading: string; detail: string }) {
 export default function BuildPage() {
   const { slug } = useParams<{ slug: string }>();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // The tab strip is controlled from here so that a breakage can send the
   // reader into the replay at the step it broke.
@@ -283,6 +284,13 @@ export default function BuildPage() {
     });
     return () => window.cancelAnimationFrame(frame);
   }, [pendingNodeId]);
+
+  /** A divergence marker on the scrubber, opened. The replay is router-free by
+   *  design, so the page does the navigating for it. */
+  const openRebuild = useCallback(
+    (rebuild: RebuildSummary) => navigate(`/b2/${rebuild.slug}`),
+    [navigate]
+  );
 
   const openNodeInAnatomy = useCallback((nodeId: string) => {
     setTab("anatomy");
@@ -518,6 +526,8 @@ export default function BuildPage() {
               focusOrdinal={jumpTo}
               onFork={forkState.fork}
               forkPending={forkState.pending}
+              divergences={rebuilds}
+              onOpenRebuild={openRebuild}
             />
           }
           run={
