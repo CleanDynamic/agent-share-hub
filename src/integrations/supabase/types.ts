@@ -225,6 +225,93 @@ export type Database = {
           },
         ]
       }
+      bounties: {
+        Row: {
+          accepted_solution_id: string | null
+          author_id: string
+          build_id: string | null
+          closes_at: string | null
+          created_at: string
+          gap_node_id: string | null
+          id: string
+          is_meta: boolean
+          legacy_item_id: string | null
+          me_too_count: number
+          meta_parent_id: string | null
+          reward_gbp: number | null
+          solved_at: string | null
+          status: string
+        }
+        Insert: {
+          accepted_solution_id?: string | null
+          author_id: string
+          build_id?: string | null
+          closes_at?: string | null
+          created_at?: string
+          gap_node_id?: string | null
+          id?: string
+          is_meta?: boolean
+          legacy_item_id?: string | null
+          me_too_count?: number
+          meta_parent_id?: string | null
+          reward_gbp?: number | null
+          solved_at?: string | null
+          status?: string
+        }
+        Update: {
+          accepted_solution_id?: string | null
+          author_id?: string
+          build_id?: string | null
+          closes_at?: string | null
+          created_at?: string
+          gap_node_id?: string | null
+          id?: string
+          is_meta?: boolean
+          legacy_item_id?: string | null
+          me_too_count?: number
+          meta_parent_id?: string | null
+          reward_gbp?: number | null
+          solved_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bounties_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bounties_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bounties_gap_node_id_fkey"
+            columns: ["gap_node_id"]
+            isOneToOne: false
+            referencedRelation: "build_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bounties_legacy_item_id_fkey"
+            columns: ["legacy_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bounties_meta_parent_id_fkey"
+            columns: ["meta_parent_id"]
+            isOneToOne: false
+            referencedRelation: "bounties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bounty_author_review: {
         Row: {
           author_id: string
