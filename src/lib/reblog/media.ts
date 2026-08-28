@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { REBLOG_COMPOSE_ENABLED } from "./flags";
 
 export const REBLOG_TEXT_MAX = 500;
 export const REBLOG_IMAGE_MAX_BYTES = 8 * 1024 * 1024;   // 8MB
@@ -16,7 +17,33 @@ export class ReblogValidationError extends Error {
   }
 }
 
+/**
+ * NS-P43 — the reblog authoring gate.
+ *
+ * Called as the first statement of every reblog write (createReblog,
+ * updateReblog, deleteReblog, uploadReblogMedia, generateReblogSlug). While
+ * REBLOG_COMPOSE_ENABLED is false it throws, so those functions are explicit
+ * dead code rather than live code nothing happens to call: a caller that
+ * appears later — a stale import, a half-reverted component, a script — gets a
+ * named error instead of writing a row into a retired table.
+ *
+ * It lives here because this is the module that owns ReblogValidationError;
+ * flags.ts stays a leaf that imports nothing, so there is no cycle.
+ *
+ * NOT gated by it: the read path, and the engagement writes on an existing
+ * reblog (likeReblog, bookmarkReblog). Those are outside the freeze by design
+ * — see flags.ts and docs/retired-surfaces.md.
+ */
+export function assertReblogAuthoringEnabled(): void {
+  if (REBLOG_COMPOSE_ENABLED) return;
+  throw new ReblogValidationError(
+    "REBLOG_RETIRED",
+    "Reblogging has been replaced by Rebuild."
+  );
+}
+
 export function generateReblogSlug(): string {
+  assertReblogAuthoringEnabled();
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   let hash = "";
   for (let i = 0; i < 8; i++) hash += chars[Math.floor(Math.random() * chars.length)];
@@ -53,6 +80,7 @@ export async function uploadReblogMedia(args: {
   reblogId: string;
   file: File;
 }): Promise<{ url: string; kind: "image" | "video" }> {
+  assertReblogAuthoringEnabled();
   const kind = validateMedia(args.file);
   const ext = args.file.name.split(".").pop()?.toLowerCase() || (kind === "image" ? "jpg" : "mp4");
   const uuid = crypto.randomUUID();

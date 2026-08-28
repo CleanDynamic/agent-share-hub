@@ -1,14 +1,27 @@
 import { supabase } from "@/integrations/supabase/client";
-import { REBLOG_TEXT_MAX, ReblogValidationError } from "./media";
+import {
+  REBLOG_TEXT_MAX,
+  ReblogValidationError,
+  assertReblogAuthoringEnabled,
+} from "./media";
 import type { Reblog } from "./types";
 
 const EDIT_WINDOW_MS = 5 * 60 * 1000;
 
+/**
+ * Edit a reblog's text inside the five-minute window.
+ *
+ * FROZEN — NS-P43. Throws ReblogValidationError("REBLOG_RETIRED") while
+ * REBLOG_COMPOSE_ENABLED is false. It had no call site anywhere in the app
+ * before the freeze: the edit affordance was never built, so nothing in the
+ * UI changes here.
+ */
 export async function updateReblog(args: {
   reblogId: string;
   userId: string;
   text: string;
 }): Promise<Reblog> {
+  assertReblogAuthoringEnabled();
   const text = (args.text ?? "").trim();
   if (text.length === 0) {
     throw new ReblogValidationError("EMPTY_REBLOG", "Reblog text cannot be empty.");
