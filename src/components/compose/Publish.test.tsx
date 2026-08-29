@@ -159,10 +159,23 @@ describe("the publish action", () => {
     vi.clearAllMocks();
     getMediaForBuild.mockResolvedValue([]);
     getLayers.mockResolvedValue([]);
-    updateBuild.mockImplementation(async (_id: string, patch: Record<string, unknown>) => ({
-      ...draft(),
-      ...patch,
-    }));
+    // The row this returns is written straight into the compose cache as the
+    // whole build — useComposeBuild.ts:173 replaces `build` with it — so it has
+    // to carry every column the record already had, exactly as the real
+    // updateBuild's returning row does.
+    //
+    // Merging onto a pristine draft() instead drops whatever the test seeded.
+    // The completeness autosave (useComposeBuild.ts:268-271) fires on load with
+    // { completeness: 60 }, so a draft()-based row silently reset outcome to
+    // null moments after render, publishReadiness went not-ready, and the
+    // sheet's publish-confirm stayed disabled. Whether that landed before or
+    // after the click is a race, which is why it failed intermittently.
+    updateBuild.mockImplementation(async (_id: string, patch: Record<string, unknown>) => {
+      const seeded = (await getBuild.mock.results.at(-1)?.value) as
+        | { build?: Record<string, unknown> }
+        | undefined;
+      return { ...(seeded?.build ?? draft()), ...patch };
+    });
   });
 
   // ACCEPTANCE 1

@@ -1088,3 +1088,537 @@ prompt in it should perform it. When it is taken, in this order:
 
 Until all four have happened, these objects are archived in place, not
 deprecated.
+
+---
+
+# NS-P56 — the series closing report
+
+**Swept 29 Aug 2026, at `a245b8a`.** Two fixes were needed to reach a green
+suite, both test-only, plus one reverted misdiagnosis kept in the history. This
+section is the handover: what the series delivered, what was verified and how,
+and what the operator is left holding.
+
+Read the one thing that changes what you do next first.
+
+## The finding that outranks the rest: the database is twelve migrations behind
+
+Every schema object this series created exists in the repository and **none of
+it is live**. Probed against the deployed project (`zybdotagjwektucfdkri`) with
+the anon key in `.env`, and against a local Postgres 16 rebuilt from
+`supabase/migrations` for comparison:
+
+| Migration | Marker probed | Deployed | Local rebuild |
+| --- | --- | --- | --- |
+| `20260823120000` core (pre-series) | `builds.parent_build_id` | PRESENT | PRESENT |
+| `20260824160000` layers (pre-series) | table `build_layers` | PRESENT | PRESENT |
+| `20260827120000` NS-P27 cover | `builds.cover_media_id` | **ABSENT** | PRESENT |
+| `20260827140000` NS-P36 rebuild | `builds.rebuild_count` | **ABSENT** | PRESENT |
+| `20260827140000` NS-P36 rebuild | `builds.solves_node_id` | **ABSENT** | PRESENT |
+| `20260828140000` NS-P45 bounties | table `bounties` | **ABSENT** | PRESENT |
+| `20260829200000` NS-P52 me-too | table `bounty_me_too_marks` | **ABSENT** | PRESENT |
+| `20260830120000` NS-P53 solution | `solutions.solution_build_id` | **ABSENT** | PRESENT |
+
+`get_build_feed` and `accept_bounty_solution` both return PGRST202 — not found —
+on the deployed project. They exist locally.
+
+The boundary is exact: everything through `20260825140200` is live, everything
+from `20260827120000` on is not. That is the whole of NS-P27–NS-P56's schema,
+twelve migration files.
+
+**What this means in practice.** The Builds tab calls `get_build_feed`, which
+does not exist. The bounty surfaces read `bounties`, which does not exist. A
+Rebuild reads `rebuild_count` and `solves_node_id`, which do not exist. The
+front-end for all of it is deployed from `main`; the schema under it is not.
+Whatever is running in production today is not running this series.
+
+**One caveat, stated because it cannot be ruled out from here.** PostgREST
+answers from a schema cache, so "not applied" and "applied but the cache is
+stale since 27 Aug" produce identical 404s over the anon API. Distinguishing
+them needs service-role or direct database access, which this sweep did not
+have. Either way the live API does not serve the series' schema, which is the
+operational fact. Confirming which it is, is the first thing to do with an
+operator credential — and if it is the cache, a reload settles it.
+
+## Scope delivered
+
+Thirty prompts, NS-P27–NS-P56. Commits carrying each label, on this branch:
+
+```
+P27:2  P28:2  P29:1  P30:5  P31:2  P32:1  P33:2  P34:5  P35:2  P36:1
+P37:3  P38:2  P39:1  P40:2  P41:2  P42:1  P43:3  P44:2  P45:1  P46:2
+P47:2  P48:2  P49:0  P50:2  P51:2  P52:3  P53:2  P54:4  P55:1  P56:2
+```
+
+**NS-P49 was never taken.** It owned the `meta_bounty_pledges` repoint, and the
+table still keys `content_items`:
+
+```
+FOREIGN KEY (meta_bounty_id) REFERENCES content_items(id) ON DELETE CASCADE
+```
+
+`legacyMetaRedirect.test.ts:206` asserts exactly this and names it "NS-P49's
+move". NS-P50 dropped the shim columns for "NS-P46-P49" while the P49 repoint
+behind them had not happened. Nothing is broken by this — the legacy meta
+surfaces read `content_items` and still work — but the bounty estate is
+repointed four tables out of five, and the fifth is not scheduled.
+
+NS-P55 is recorded above as attempted and not taken; its three gates still fail
+at this head, and this sweep re-derived gate 1 independently (below).
+
+## Toolchain at head
+
+| Check | Result |
+| --- | --- |
+| `npm run build` | **passes**, 8.38s |
+| `npm run test` (vitest) | **973 passed / 973**, 67 files — after the two fixes below |
+| `npx playwright test` | **7 passed, 22 skipped, 0 failed** — see the gap below |
+| `npm run lint` | **fails**: 2369 problems (2233 errors, 136 warnings) across 298 files |
+
+The lint failure is a pre-existing baseline, not a regression: 2157 of the 2369
+are `@typescript-eslint/no-explicit-any`, and neither file this sweep touched
+appears in the output at all. It is stated here because "green" should not be
+claimed for a command that exits 1.
+
+## The two fixes
+
+One commit each, both test-only, no product code changed.
+
+**`13f76b7` — the self-confirmation stub was pinned to a calendar date.**
+`ReproductionAction.test.tsx` stubbed `recordSelfConfirmation` and
+`getBuildHeader` with a literal `last_confirmed_at` of `2026-08-24T09:00:00Z`,
+then asserted the block reads "last confirmed working today". `freshnessLabel`
+formats relative to `Date.now()` (`signals.ts:210`) and `relativeDays` returns
+"today" only at zero days elapsed, so the assertion held on 24 Aug and no other
+day; at this head it rendered "5 days ago". The real `recordSelfConfirmation`
+writes `new Date().toISOString()` (`signals.ts:173`); the stub now says the
+same. The sibling "four months" assertion is unaffected — that string is a
+literal in `ReproductionAction.tsx:316`, not a computed interval.
+
+**`a245b8a` — an `updateBuild` stub that returned a bare draft.**
+`Publish.test.tsx`'s first case failed intermittently under the full suite and
+passed alone.
+
+The first attempt at this (`1827ec2`) raised the readiness wait from
+testing-library's 1000ms default to the 3000ms the file already used elsewhere.
+It was wrong — the button was not slow to enable, it never enabled — and it is
+reverted in `d19aee2`. Recorded here rather than tidied away, because the
+misdiagnosis is the instructive part: the assertion that fails is a wait, and
+the wait is the last thing to blame.
+
+The cause is stub fidelity. `useComposeBuild.ts:173` writes `updateBuild`'s
+returning row into the compose cache as the **entire** build:
+
+```js
+(previous) => (previous ? { ...previous, build: row } : previous)
+```
+
+which is correct for the real function, whose row carries every column the
+record already had. The stub returned `{ ...draft(), ...patch }`, and `draft()`
+has `outcome: null`. The completeness autosave (`useComposeBuild.ts:268-271`)
+fires on load with `{ completeness: 60 }`, so its stubbed row reset `outcome` to
+null moments after render; `publishReadiness` (`PublishControl.tsx:359`) went
+not-ready, and `PublishSheet` held `publish-confirm` disabled
+(`PublishSheet.tsx:327,540`). Whether that landed before or after the click is a
+race — which is what made it intermittent rather than constant, and what made it
+pass in isolation, where the timing differs.
+
+The stub now merges the patch onto the build the test seeded through `getBuild`,
+so it returns what the persisted row would. Verified over three consecutive
+full-suite runs, 973/973 each.
+
+Worth knowing for the next reader: the comment above that cache write says "the
+row is authoritative for the keys it just wrote", but the code assigns the whole
+row. That is right in production and unforgiving of any stub that returns less
+than a complete build — this is the second place it has bitten.
+
+## Spec inventory and results
+
+Twelve tier-3 specs, 29 tests. Desktop project, one recorded run:
+
+| Spec | Tests | Ran | Skipped |
+| --- | --- | --- | --- |
+| `legacy-bounty-create-retired` | 3 | **3** | 0 |
+| `builds-feed` | 5 | **4** | 1 |
+| `bounty-publish` | 2 | 0 | 2 |
+| `bounty-solve-by-rebuild` | 1 | 0 | 1 |
+| `bounty-solve-loop` | 1 | 0 | 1 |
+| `gen1-bounty-frozen` | 2 | 0 | 2 |
+| `legacy-bounty-discussion` | 2 | 0 | 2 |
+| `legacy-bounty-solutions` | 2 | 0 | 2 |
+| `legacy-meta-bounty` | 3 | 0 | 3 |
+| `lineage-readable` | 2 | 0 | 2 |
+| `reblog-retired` | 2 | 0 | 2 |
+| `rebuild-attribution` | 4 | 0 | 4 |
+| **Total** | **29** | **7** | **22** |
+
+**Nothing failed. Nothing that matters ran.** All 22 skips are
+`test.skip(!SLUG || !EMAIL ..., NEEDS_SEED)` guards on 23 `E2E_*` variables —
+seeded slugs, legacy bounty URLs and two sets of credentials — pointing at a dev
+project with this series' schema and content. No such project is configured;
+`.env` carries a URL and an anon key and nothing else. The seven that ran are
+the route-and-notice assertions that need no data.
+
+**"Both viewports" could not be delivered, and not for want of trying.**
+NS-P55 recorded that tiers 1 and 2 do not exist. They still do not:
+
+```
+$ ls -d e2e/tier1 e2e/tier2 e2e/tier3
+ls: cannot access 'e2e/tier1': No such file or directory
+ls: cannot access 'e2e/tier2': No such file or directory
+e2e/tier3
+$ npx playwright test --project=mobile --list
+Total: 0 tests in 0 files
+```
+
+`playwright.config.ts:65` matches the mobile project to `e2e/tier1/*.spec.ts`,
+which matches nothing, so the mobile viewport runs zero tests — as it has for
+the whole series. The `setup` project matches `*.setup.ts`; there are none, so
+no storage state is written and no spec is ever authenticated. A suite cannot be
+green at a viewport that collects no tests, and this sweep did not manufacture
+one: inventing the safety net is not verifying it.
+
+Two sandbox-only obstacles were worked around without touching the repo, and
+neither is a defect in it: the image ships Chromium 1194 while
+`@playwright/test` 1.58.2 resolves 1208, and the sandbox has no IPv6 while the
+config's `webServer` binds `::`. Both were handled with a throwaway config and a
+manually started server, since a CI runner with IPv6 and matching browsers hits
+neither.
+
+## RLS spot-proofs
+
+Run against a local Postgres 16 with all 24 series migrations applied, seeded
+with two users, three builds, two bounties, two solutions, two events and two
+pledges. Each block sets `request.jwt.claims` and `SET LOCAL ROLE` exactly as
+PostgREST does. All six behave as designed.
+
+**1 — cross-user draft invisibility (builds).** `SELECT slug, status FROM builds`
+
+| Role | Rows |
+| --- | --- |
+| anon | `a-published` |
+| user A | `a-draft`, `a-published` |
+| user B | `a-published`, `b-draft` |
+
+Neither user sees the other's draft. Policy:
+`(status <> 'draft') OR (creator_id = (select auth.uid())) OR is_admin(...)`.
+
+**2 — a draft build hides its nodes too (imports).**
+`SELECT b.slug, n.type FROM build_nodes n JOIN builds b ON b.id = n.build_id`
+
+| Role | Rows |
+| --- | --- |
+| anon | `a-published` |
+| user A | `a-draft`, `a-published` |
+| user B | `a-published` |
+
+An imported build is a draft build; its nodes inherit readability through the
+`EXISTS` subquery on the parent, so an import in progress is invisible until
+published.
+
+**3 — a bounty on a draft build is invisible.** Deliberately a LEFT join, so a
+bounty visible without its build would still show. It does not.
+
+| Role | Rows (`reward_gbp`, home, status) |
+| --- | --- |
+| anon | `50, a-published, published` |
+| user A (author) | `50, a-draft, draft` and `50, a-published, published` |
+| user B | `50, a-published, published` |
+
+**4 — solutions travel with their bounty.** `SELECT id, status FROM solutions`
+
+| Role | Rows |
+| --- | --- |
+| anon | the solution on the published bounty only |
+| user A (bounty author) | both |
+| user B (the solver) | both |
+
+Public readers get non-draft solutions on published bounties; the author sees
+solutions on their own bounties, the solver sees their own. No path leaks the
+solution attached to the draft build's bounty to an unrelated reader.
+
+**5 — anonymous pledges are masked.**
+`SELECT amount, is_anonymous FROM meta_bounty_pledges`
+
+| Role | Rows |
+| --- | --- |
+| anon | `40.00, f` |
+| user A (pledged 25 anonymously) | `25.00, t` and `40.00, f` |
+| user B (pledged 40 openly) | `40.00, f` |
+
+B cannot see A's anonymous pledge; A can see their own. Policy:
+`(is_anonymous = false) OR (pledger_id = auth.uid()) OR is_admin(auth.uid())`.
+
+**6 — hidden events, and the layer that actually excludes them.** This one
+passes, and it is worth being precise about *where*:
+
+| Query, as user B (not the owner) | Rows |
+| --- | --- |
+| raw `SELECT ordinal, visibility FROM build_events` | `1 kept`, **`2 hidden`** |
+| `... WHERE visibility <> 'hidden'` — what the fork surface issues | `1 kept` |
+| same raw read as user A, forking their own build | `1 kept`, `2 hidden` |
+
+RLS lets any reader of a published build select its hidden events. The exclusion
+is `getEvents` applying `.neq("visibility", "hidden")` (`events.ts:45`), called
+by `forkBuild` as `getEvents(sourceBuildId, { includeHidden: ownBuild })`
+(`fork.ts:107`). The code says so itself at `fork.ts:36-40`. So the fork surface
+is correct and a direct PostgREST call by a signed-in reader is not covered.
+See the recommendations.
+
+## The dead-writer proof, re-run
+
+Verbatim. Independent re-run over 915 files in `src/` and
+`supabase/functions/`, pairing every `.insert(` with its nearest preceding
+`.from("…")` rather than a character window — 1114 `.from()` calls in total.
+
+A first pass with the window method NS-P54 used returned 20 hits, and a naive
+nearest-`from` pass returned 24. Both over-report: the regex has to allow
+`.from("comment_likes" as any)`, or those `.from` calls are invisible and their
+inserts get attributed to a `content_items` read further up. `CommentsSection`,
+`StarRating` and `useCanvasDocument` are all false positives of exactly that
+shape. Corrected, the answer is **15 true `content_items` inserts**:
+
+```
+src/components/ForkModal.tsx:52
+src/components/ProjectUploadForm.tsx:665
+src/components/ReblogComposer.tsx:612
+src/lib/bounty-competition/createMetaBounty.ts:60
+src/lib/bounty-competition/pledgeToSubBounty.ts:87
+src/lib/bounty-competition/promoteBountyToBlueprint.ts:97
+src/lib/bounty-solver/forkSolution.ts:45
+src/lib/remix/createRemix.ts:64
+src/pages/BountyUpload.tsx:71
+src/pages/BountyUploadShell.tsx:61
+src/pages/Upload.tsx:694
+src/pages/Upload.tsx:1002
+supabase/functions/seed-demo-data/index.ts:229
+supabase/functions/seed-ecosystem/index.ts:259
+supabase/functions/seed-new-posts/index.ts:98
+```
+
+Followed to an affordance, the five **reachable** ones reproduce NS-P54 and
+NS-P55 exactly:
+
+| Live writer | Reachable from |
+| --- | --- |
+| `Upload.tsx:694` (draft save) | `/upload/blueprint`, `/upload/blog` |
+| `Upload.tsx:1002` (publish) | the same two routes |
+| `ProjectUploadForm.tsx:665` | mounted by `Upload.tsx` |
+| `forkSolution.ts:45` | `ContentDetail.tsx:1162` |
+| `pledgeToSubBounty.ts:87` | `MetaBountyBody.tsx:269`, mounted at `ContentDetail.tsx:1506` |
+
+The other ten are closed, and each was checked rather than assumed:
+
+- `ForkModal.tsx:52` — mounted only by `ContentDetail.legacy.tsx:1818`, which
+  nothing imports and no route renders. Orphaned.
+- `ReblogComposer.tsx:612` — both mounts sit behind `reblogOpen`, whose only
+  setters are behind `isLoggedIn && REBLOG_COMPOSE_ENABLED` (`ReblogCard.tsx:431`,
+  `ReblogDetailView.tsx:309`). The flag is `false`.
+- `createRemix.ts:64` — `assertRemixCreateEnabled`; `REMIX_CREATE_ENABLED` is `false`.
+- `createMetaBounty.ts:60`, `promoteBountyToBlueprint.ts:97`,
+  `BountyUpload.tsx:71`, `BountyUploadShell.tsx:61` —
+  `assertLegacyBountyCreateEnabled`; `LEGACY_BOUNTY_CREATE_ENABLED` is `false`.
+- the three `seed-*` edge functions — service-role operator tools, not user
+  surfaces.
+
+**The gate NS-P55 set for itself is still shut: four reachable writers were
+required to be zero, and five remain.** Three of them are not the upload path's
+to close — `forkSolution` and `pledgeToSubBounty` are legacy bounty surfaces,
+and `ProjectUploadForm` rides on `Upload.tsx`.
+
+A runtime check was attempted and could not be completed: proving no insert
+fires at runtime needs the tier-3 suite to actually exercise the authoring
+paths, and 22 of its 29 tests skip for want of a seeded project. The static
+proof above is what this sweep can stand behind.
+
+## Performance snapshot
+
+**Initial bundle, against NS-P55's claim.** NS-P55 measured
+`dist/assets/index-*.js` at 3,301.49 kB raw / 899.13 kB gzip. At this head Vite
+reports:
+
+```
+dist/assets/index-B-9nJcXl.js    3,301.49 kB │ gzip: 899.13 kB
+```
+
+**Byte-identical.** Nothing in NS-P55 or NS-P56 moved the initial chunk, which
+is what NS-P55 predicted.
+
+Its reasoning also holds. There is no separate TipTap chunk: `ContentDetail.tsx`
+statically imports `ArticleViewer` (line 11) and `BlogView` (line 13), both of
+which pull `@tiptap/*`, so the editor suite sits in the initial bundle held by a
+**read** path. Monaco is the opposite case and worth not confusing with it —
+`@monaco-editor/react` is a dependency but `monaco-editor` is not, so only the
+small loader is bundled and the editor itself is fetched at runtime.
+
+**Route measurements**, production build via `vite preview`, desktop 1440×900:
+
+| Route | load | TTFB | FCP | LCP | CLS | reqs | JS |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `/` | 522ms | 9ms | 636ms | 636ms | 0 | 21 | 3690 kB |
+| `/gallery` | 540ms | 7ms | 880ms | 880ms | 0 | 29 | 3791 kB |
+| `/b2/:slug` | 549ms | 8ms | 868ms | 868ms | 0 | 30 | 3861 kB |
+| `/compose/new` | 537ms | 17ms | 920ms | 920ms | 0 | 25 | 3797 kB |
+
+Read these as **shell** figures. Supabase calls were failed instantly, because
+the deployed project cannot answer this series' queries at all (see the top of
+this section), so LCP here is the shell painting, not content arriving. CLS of 0
+is real but measured on a page with no data in it.
+
+**A finding that is real in production too:** `index.html` loads two
+render-blocking Google Fonts stylesheets, Inter and Playfair Display. With them
+unreachable, every route measured **12.8s** to `load` and ~13s to FCP — the
+browser waiting out two `ERR_CONNECTION_RESET`s, while the 3.3 MB bundle itself
+transferred in 221ms. In production they resolve and the cost is a round trip
+rather than a timeout, but they are on the critical path to first paint and
+nothing renders until they settle. Worth `preconnect`, `font-display: swap`, or
+self-hosting.
+
+**Lazy-loading confirmed.** `Compose` and `ComposeNew` are `React.lazy`
+(`App.tsx:73,76`) and ship as their own chunks — `Compose-KUTjOAEz.js` 99.12 kB
+and `ComposeNew-D6A-3Jiw.js` 19.60 kB. Watching the network per route, a
+`Compose*.js` chunk was requested on `/compose/new` and on **none** of `/`,
+`/gallery` or `/b2/:slug`. Hard constraint 8 holds.
+
+**`get_build_feed` under realistic rows.** Local Postgres seeded to 20,003
+builds (85% published), 60,002 nodes, 40,002 events, 2,002 bounties, then
+`ANALYZE`d. Called as `anon` with RLS live, 25 runs of
+`get_build_feed(now(), 24)`:
+
+```
+min 2.33 ms | median 2.71 ms | p95 4.60 ms | max 12.08 ms
+```
+
+The plan is clean. Every one of the five UNION branches takes an index and none
+takes a sequential scan — `idx_builds_feed_published`, `idx_builds_feed_rebuilt`,
+`idx_build_reproductions_noted`, `idx_bounties_feed_open`, and `builds_pkey` for
+the joins. A `Merge Append` with per-branch `LIMIT` feeds a 24-row quicksort of
+29 kB. Keyset pagination behaves: `before` is a required cursor, and passing
+`NULL` correctly returns nothing rather than scanning the table.
+
+## Migration-map cleanup decision — recommendation, not executed
+
+The brief names these `_ns_migration_map_*`. **No table by that name exists.**
+NS-P48 renamed the family to `ns_pNN_migration_map_<what>` deliberately, and
+recorded why: a leading underscore would have been the only such identifier in
+the schema, and PostgREST exposes it just the same. Seven tables, all with RLS
+enabled and **zero policies** — operator-only by design, service-role only:
+
+| Table | Key | Rows, deployed | Rows, local rebuild |
+| --- | --- | --- | --- |
+| `ns_p46_migration_map_solutions` | `id` | table absent | 0 |
+| `ns_p46_migration_map_acceptance_log` | `id` | table absent | 0 |
+| `ns_p47_migration_map_bounty_discussion_comments` | `id` | table absent | 0 |
+| `ns_p47_migration_map_bounty_deadline_extensions` | `id` | table absent | 0 |
+| `ns_p47_migration_map_bounty_author_review` | `id` | table absent | 0 |
+| `ns_p47_migration_map_bounty_comment_last_read` | `(old_bounty_id, user_id)` | table absent | 0 |
+| `ns_p48_migration_map_meta_subs` | `id` | table absent | 0 |
+
+All seven return HTTP 404 on the deployed project, for the reason at the top of
+this report: the migrations that create them have not been applied. The local
+counts are 0 because that database was rebuilt from migrations with no
+production data — they are a structural check, not a census.
+
+What the maps *would* hold, from the deployed row counts of the tables they
+mirror:
+
+```
+solutions                     2      bounty_deadline_extensions    0
+solution_acceptance_log       0      bounty_author_review          0
+bounty_discussion_comments    0      meta_bounty_sub_definitions   5
+bounty_comment_last_read      (RLS-masked from anon, as designed)
+```
+
+**Seven rows across the entire rollback net.**
+
+**Recommendation: do not schedule a drop. Delete the question instead.**
+
+1. **Nothing to drop.** They do not exist in production. A drop migration today
+   would be a no-op against reality and would only add a file.
+2. **When the migrations are applied**, they will be created holding ~7 rows.
+   That is not a storage concern, an index concern, or a query concern. The cost
+   of keeping them is nil.
+3. **The gate they were kept for has not been reached.** They were kept "until
+   NS-P56 signs off". This sweep does not sign off, because the repoint they
+   protect is not live, has never run against production data, and NS-P49's
+   share of it was never written at all. A rollback net is retired after the
+   thing it protects has proven itself in production. Neither half of that has
+   happened.
+4. **The earliest sensible drop** is one full release cycle after the series'
+   migrations are applied and the bounty surfaces have been exercised against
+   real data — and even then it buys ~7 rows. Treat it as tidying, at the same
+   time as the `content_items` decision under *Dropping any of this*, not as its
+   own prompt.
+
+## Open recommendations
+
+Ordered by what costs most to leave alone.
+
+**1. Establish why the deployed database is twelve migrations behind.** Before
+any further feature work. Everything this series built is inert until this is
+answered, and the answer decides whether the fix is a schema-cache reload or
+twelve migrations and a data check. Nothing below matters more.
+
+**2. Give the suite a safety net that exists.** Tiers 1 and 2 have been named as
+the safety net since NS-P26 and have never existed; the mobile viewport has run
+zero tests for thirty prompts; there is no `*.setup.ts`, so no spec is ever
+authenticated. Either build the tiers and the auth setup, or change
+`playwright.config.ts` to stop claiming a mobile project that collects nothing.
+The second is ten minutes and stops the config lying.
+
+**3. Seed a dev project and wire the 23 `E2E_*` variables.** 22 of 29 tier-3
+tests have never run. The specs are written and look sound; they are simply
+pointed at nothing.
+
+**4. NS-P49, or an explicit decision not to.** `meta_bounty_pledges` still keys
+`content_items` while its four sibling tables key `bounties`. Either finish the
+repoint or record it as deliberate, so the next reader is not left inferring it
+from a gap in the commit log.
+
+**5. Hidden events over PostgREST.** A signed-in reader can select
+`visibility = 'hidden'` events on any published build directly. The fork surface
+is correct; the database is not enforcing it. Either add the predicate to the
+`build_events` SELECT policy or record the exposure as accepted — the current
+state is a comment in `fork.ts` doing a policy's job.
+
+**6. Two render-blocking font stylesheets.** See the performance section.
+`preconnect` plus `font-display: swap`, or self-host.
+
+**7. The RLS wrapping sweep, unchanged from the original handover.** 325
+policies use bare `auth.uid()`. `meta_bounty_pledges` is a live example — all
+three of its policies. Everything this series added uses
+`(select auth.uid())` correctly, so the debt is entirely pre-existing. One
+migration, zero code.
+
+**8. Legacy feed consolidation, as the next workstream.** The five old Home tabs
+onto database functions, with `get_build_feed` as the template. At 20k builds it
+runs in 2.71 ms median on an all-index plan; it is a good pattern to copy.
+
+**9. The flat-shell replacement**, its own workstream, unchanged.
+
+**10. Reblog and remix tables, and the `reblog-media` bucket** become droppable
+when the archive window under *Dropping any of this* closes. Nothing in this
+series schedules it; the four-step order recorded there still applies.
+
+One incidental, found while seeding and worth a line so nobody re-derives it:
+`validate_bounty_publish()` fires only when `post_type = 'bounty'`, and
+`content_items_post_type_check` restricts `post_type` to
+`build | technique | discovery | discussion`. The trigger cannot fire on any new
+row. Legacy bounty rows predate the constraint. Harmless today, confusing later.
+
+## What this sweep did not verify
+
+Stated plainly, because the acceptance criteria asked for more than the
+environment could give.
+
+- **No suite ran at the mobile viewport.** There is nothing there to run.
+- **22 of 29 tier-3 tests did not execute.** No seeded project, no credentials.
+- **No RLS proof ran against production.** The proofs ran against a local
+  rebuild with the full migration set — correct for the *policies as written*,
+  and silent about the data actually in production.
+- **The runtime half of the dead-writer proof was not completed.** The static
+  half is above and reproduces the previous two audits.
+- **Route timings are shell timings.** No route was measured serving real data,
+  because the deployed database cannot serve it.
+- **`npm run lint` exits 1** on a large pre-existing baseline, untouched here.
+
+*End of the NS-P27–NS-P56 series.*

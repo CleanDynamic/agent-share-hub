@@ -336,14 +336,18 @@ describe("ReproductionAction", () => {
         last_confirmed_model: "claude-sonnet-4-5",
       })
     );
+    // recordSelfConfirmation writes new Date().toISOString(); the stub has to
+    // say the same, or the "today" assertion below only holds on the day the
+    // literal was typed. freshnessLabel renders relative to Date.now().
+    const confirmedNow = new Date().toISOString();
     recordSelfConfirmation.mockResolvedValue({
-      id: "b", last_confirmed_at: "2026-08-24T09:00:00Z",
+      id: "b", last_confirmed_at: confirmedNow,
       last_confirmed_model: "Claude Opus 4.5", reproduction_count: 4,
     });
     getBuildHeader.mockResolvedValue(
       buildRow({
         reproduction_count: 4,
-        last_confirmed_at: "2026-08-24T09:00:00Z",
+        last_confirmed_at: confirmedNow,
         last_confirmed_model: "Claude Opus 4.5",
       })
     );
