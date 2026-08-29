@@ -10,7 +10,7 @@
 // A DOMAIN MODULE, not a hook and not a query inside a component. Data access
 // on this codebase lives in src/lib/<domain>/ as named typed functions, and
 // this is the feed domain's first one. src/lib/build/ is where BUILD access
-// lives; the feed reads across three sources and belongs beside them rather
+// lives; the feed reads across four sources and belongs beside them rather
 // than inside one of them.
 //
 // WHY THE ROW TYPE IS HAND-WRITTEN. Every other row shape in this codebase is
@@ -31,8 +31,8 @@ import {
 /** What the Builds tab asks for, and what the function defaults to. */
 export const FEED_PAGE_SIZE = 20;
 
-/** The three kinds of thing the feed carries. */
-export type FeedItemKind = "build" | "rebuild" | "repro_note";
+/** The four kinds of thing the feed carries. */
+export type FeedItemKind = "build" | "rebuild" | "repro_note" | "bounty";
 
 /**
  * One row of get_build_feed, exactly as the function declares it.
@@ -72,6 +72,10 @@ export interface BuildFeedRow {
   cover_kind: string | null;
   cover_poster_path: string | null;
   repro_worked: boolean | null;
+  /** NS-P52. Null on every row that is not a bounty. */
+  bounty_id: string | null;
+  bounty_reward_gbp: number | string | null;
+  bounty_gap_title: string | null;
 }
 
 /**
@@ -124,7 +128,33 @@ export interface ReproNoteFeedItem {
   worked: boolean;
 }
 
-export type FeedItem = BuildFeedItem | RebuildFeedItem | ReproNoteFeedItem;
+/**
+ * An open bounty on a published build (NS-P52).
+ *
+ * A CARD, unlike the reproduction note beside it, and the difference is what
+ * each one is about. A note is one person's sentence about somebody else's
+ * build; a bounty is an invitation to work on the build itself, and a reader
+ * deciding whether to take it on needs to see what the build IS. So it renders
+ * as the gallery card with a red strip above it, rather than as a line.
+ */
+export interface BountyFeedItem {
+  kind: "bounty";
+  key: string;
+  /** The keyset cursor this row sits at: bounties.created_at. */
+  at: string;
+  build: GalleryBuild;
+  bountyId: string;
+  /** Pounds, or null for an unpriced ask — which is still a real bounty. */
+  reward: number | string | null;
+  /** The gap node's title. Null for a build-level ask that names no node. */
+  gapTitle: string | null;
+}
+
+export type FeedItem =
+  | BuildFeedItem
+  | RebuildFeedItem
+  | ReproNoteFeedItem
+  | BountyFeedItem;
 
 export interface BuildFeedPage {
   items: FeedItem[];
@@ -240,6 +270,22 @@ function toGalleryBuild(row: BuildFeedRow): GalleryBuild {
     source_handle_at_fork: row.source_handle_at_fork,
     nodes: [],
     media: coverRows(row),
+    // NS-P52. A 'bounty' row knows about exactly one ask — its own — so the
+    // card it renders carries that one and shows the pill. Every other kind of
+    // row was not asked the question, and `bounties` is left ABSENT rather than
+    // empty for them: an empty list would have the card assert that a build has
+    // no open ask on the strength of a query that never looked.
+    ...(row.item_kind === "bounty" && row.bounty_id
+      ? {
+          bounties: [
+            {
+              id: row.bounty_id,
+              reward_gbp: row.bounty_reward_gbp as number | null,
+              status: "open",
+            },
+          ],
+        }
+      : {}),
   };
 }
 
@@ -316,6 +362,20 @@ export function toFeedItem(row: BuildFeedRow): FeedItem {
       // NOT defaulted to true. A null here means the column did not arrive,
       // and "it worked" is not the thing to assume on somebody else's behalf.
       worked: row.repro_worked === true,
+    };
+  }
+
+  if (row.item_kind === "bounty") {
+    return {
+      kind: "bounty",
+      key: feedKey(row),
+      at: row.item_at,
+      build: toGalleryBuild(row),
+      // The function admits no bounty row without an id; the fallback is for a
+      // row that arrived from somewhere else.
+      bountyId: row.bounty_id ?? "",
+      reward: row.bounty_reward_gbp,
+      gapTitle: row.bounty_gap_title,
     };
   }
 
