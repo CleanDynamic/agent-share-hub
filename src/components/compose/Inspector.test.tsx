@@ -1236,3 +1236,110 @@ describe("a prompt node after the help copy migration", () => {
     }
   });
 });
+
+// --- NS-P51: the unsolved toggle ---------------------------------------------
+//
+// Three behaviours that decide whether a gap is worth marking at all.
+//
+// THE TYPE SURVIVES. This is the acceptance criterion and the whole design
+// argument: a model_params node whose parameters are not right yet is still a
+// model_params node. Retyping it to the registry's 'gap' type would be the easy
+// implementation and would throw away both the fields the creator had filled in
+// and the shape a solver's answer has to take.
+//
+// THE STATEMENT IS A PAYLOAD KEY. `gap_problem`, undeclared by any schema, so
+// the assertions below are on the written row rather than on a column.
+//
+// THE SENTENCE OUTLIVES THE FLAG. Turning the toggle off is one click and is
+// frequently a mis-click; losing a paragraph to it is not a trade this codebase
+// makes anywhere else.
+
+/** The acceptance criterion's own type, as the NS-P02 registry declares it. */
+const MODEL_PARAMS_TYPE = {
+  key: "model_params",
+  label: "Model parameters",
+  category: "configuration",
+  colour: "#22C55E",
+  schema: {
+    fields: [
+      { key: "model", label: "Model", type: "string", required: true },
+      { key: "temperature", label: "Temperature", type: "number" },
+    ],
+  },
+} as unknown as NodeType;
+
+/** The row of the most recent upsert, whatever columns it carried. */
+function lastRow(): Record<string, unknown> {
+  const calls = upsertNode.mock.calls;
+  expect(calls.length).toBeGreaterThan(0);
+  return calls[calls.length - 1][0] as Record<string, unknown>;
+}
+
+describe("marking a part of the build unsolved", () => {
+  it("flags the node without changing its type or its fields", async () => {
+    renderInspector(makeNode("n1", "model_params", { model: "opus-5" }), [
+      MODEL_PARAMS_TYPE,
+    ]);
+
+    const toggle = screen.getByTestId("gap-toggle");
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    fireEvent.click(toggle);
+    await settle();
+
+    const row = lastRow();
+    expect(row.is_gap).toBe(true);
+    expect(row.type).toBe("model_params");
+    // One column, not a rewrite: the flag is the only thing that changed, so
+    // the payload is not even in the body.
+    expect(row).not.toHaveProperty("payload");
+
+    // The type's own form is still the form, with what was in it still in it.
+    expect(screen.getByLabelText("Model")).toHaveValue("opus-5");
+    expect(screen.getByTestId("gap-toggle")).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("opens the problem field on the flag, and writes it to payload.gap_problem", async () => {
+    renderInspector(makeNode("n1", "model_params", { model: "opus-5" }), [
+      MODEL_PARAMS_TYPE,
+    ]);
+
+    // Nothing to answer until there is a question.
+    expect(screen.queryByTestId("gap-problem")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("gap-toggle"));
+    await settle();
+
+    fireEvent.change(screen.getByTestId("gap-problem"), {
+      target: { value: "Temperature above 0.4 makes it invent citations." },
+    });
+    await settle();
+
+    // Merged into the payload rather than replacing it — the same guarantee
+    // every other field on this panel has.
+    expect(lastPayload()).toEqual({
+      model: "opus-5",
+      gap_problem: "Temperature above 0.4 makes it invent citations.",
+    });
+  });
+
+  it("keeps the problem statement when the flag goes back off", async () => {
+    renderInspector(makeNode("n1", "model_params"), [MODEL_PARAMS_TYPE]);
+
+    fireEvent.click(screen.getByTestId("gap-toggle"));
+    await settle();
+    fireEvent.change(screen.getByTestId("gap-problem"), {
+      target: { value: "Needs a seed that reproduces." },
+    });
+    await settle();
+
+    fireEvent.click(screen.getByTestId("gap-toggle"));
+    await settle();
+    expect(lastRow().is_gap).toBe(false);
+    expect(screen.queryByTestId("gap-problem")).not.toBeInTheDocument();
+
+    // Back on, and the paragraph is where it was left.
+    fireEvent.click(screen.getByTestId("gap-toggle"));
+    await settle();
+    expect(screen.getByTestId("gap-problem")).toHaveValue("Needs a seed that reproduces.");
+  });
+});

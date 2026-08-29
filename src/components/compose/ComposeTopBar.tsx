@@ -26,6 +26,7 @@ import { Link } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PublishControl } from "@/components/compose/PublishControl";
 import type { RebuildDiff } from "@/hooks/useRebuildDiff";
+import type { BuildBounties } from "@/hooks/useBuildBounties";
 import type {
   Build,
   BuildPatch,
@@ -119,6 +120,12 @@ interface ComposeTopBarProps {
    * was here before NS-P38.
    */
   rebuild?: RebuildDiff;
+  /**
+   * The asks already filed on this build, passed straight to PublishControl for
+   * the publish sheet's bounty section (NS-P51). Absent on a caller that has
+   * not read them, which renders the sheet exactly as it was before.
+   */
+  bounties?: BuildBounties;
 }
 
 function SaveState({
@@ -354,6 +361,7 @@ export function ComposeTopBar({
   publishError,
   onFocusRequirement,
   rebuild,
+  bounties,
 }: ComposeTopBarProps) {
   // Inline styles cannot express :focus, so the focus treatment is state.
   const [titleFocused, setTitleFocused] = useState(false);
@@ -472,6 +480,7 @@ export function ComposeTopBar({
         publishError={publishError}
         onFocusRequirement={onFocusRequirement}
         rebuild={rebuild}
+        bounties={bounties}
       />
     </header>
 

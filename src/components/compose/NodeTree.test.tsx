@@ -26,6 +26,7 @@ vi.mock("sonner", () => ({
 
 import type { BuildNode, NodeTree as NodeTreeShape } from "@/lib/build";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
+import { GAP_RED } from "@/components/build/tokens";
 import { TreeNode } from "./TreeNode";
 import {
   MAX_DEPTH,
@@ -368,6 +369,25 @@ describe("TreeNode", () => {
     fireEvent.click(screen.getByText("Delete"));
     await waitFor(() => expect(deleteNodeFn).toHaveBeenCalledWith("D"));
     expect(screen.queryByText(/nested under it/i)).toBeNull();
+  });
+
+  // NS-P51's acceptance, from the tree's side: the inspector's toggle writes
+  // is_gap, and the row it wrote it on has to look different. The accent is the
+  // one this codebase already spends on holes — the same GAP_RED the public
+  // build page rules a gap card with — so a creator meets one colour for one
+  // meaning across the editor and the page.
+  it("rules an unsolved row in the gap accent", () => {
+    const plain = node("D", 2, null);
+    const { unmount } = renderRow(plain);
+    expect(document.querySelector('[data-node-id="D"]')).toHaveStyle({
+      borderLeftColor: "transparent",
+    });
+    unmount();
+
+    renderRow({ ...plain, is_gap: true });
+    expect(document.querySelector('[data-node-id="D"]')).toHaveStyle({
+      borderLeftColor: GAP_RED,
+    });
   });
 });
 

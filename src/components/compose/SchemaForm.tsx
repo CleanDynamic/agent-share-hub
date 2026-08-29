@@ -15,10 +15,19 @@
 // the row being sent, because the row being sent is the current one.
 //
 // Two writers are open on the same node — this one for `payload`, the Inspector
-// for `title` and `note`. They own disjoint column sets and PostgREST's
-// ON CONFLICT DO UPDATE only touches the columns present in the body, so
-// neither can clobber the other however their debounces interleave. Neither
-// touches `parent_id` or `position`, so neither can fight a drag either.
+// for `title`, `note`, `is_gap` and, since NS-P51, `payload` as well. Neither
+// touches `parent_id` or `position`, so neither can fight a drag.
+//
+// THE TWO SHARE `payload` AND STILL CANNOT CLOBBER EACH OTHER, for the reason
+// stated above and worth saying again because it is now load-bearing rather
+// than incidental: a flush does not send the value that triggered it. It reads
+// the node out of the query cache at flush time, and both writers merge into
+// that same cache the instant an edit happens. So whichever of them flushes,
+// and in whatever order, the body carries the payload as it stands right then —
+// the merge of everything both writers have accepted. Two writes of the same
+// value, not two values fighting. What would break this is a writer that
+// captured a payload at edit time and sent it later; there is no such writer,
+// and adding one would be the bug.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";

@@ -26,6 +26,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import type { Build, RequirementKey } from "@/lib/build";
 import type { ComposeBuild } from "@/hooks/useComposeBuild";
 import { useRebuildDiff } from "@/hooks/useRebuildDiff";
+import { useBuildBounties } from "@/hooks/useBuildBounties";
 import { MediaProvider, useComposeMedia } from "@/hooks/useComposeMedia";
 import { nodeMediaId } from "@/components/build/MediaFigure";
 import { ComposeTopBar } from "@/components/compose/ComposeTopBar";
@@ -286,6 +287,10 @@ function ComposeWorkspace({
   // the save cycle rather than on the keystroke. One answer, read by the top
   // bar's count and by every row of the tree.
   const rebuild = useRebuildDiff(compose);
+  // The asks already filed on this build. One read, feeding the tree's pill and
+  // the publish sheet's bounty section, so neither can claim something the
+  // other contradicts.
+  const bounties = useBuildBounties(build.id);
   const drag = useNodeDrag({
     buildId: build.id,
     tree: compose.tree,
@@ -471,6 +476,7 @@ function ComposeWorkspace({
           onOpenInspector={isSingleColumn ? () => setInspectorOpen(true) : undefined}
           onFocusRequirement={focusRequirement}
           rebuild={rebuild}
+          bounties={bounties}
         />
 
         {/* A NEW element between the bar and the panels. The row below is
@@ -510,6 +516,7 @@ function ComposeWorkspace({
               compose={compose}
               drag={drag}
               rebuildNodes={rebuild.nodes}
+              bountyNodes={bounties.byNode}
             />
           </section>
 
