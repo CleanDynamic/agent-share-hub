@@ -3444,6 +3444,8 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          legacy_meta_item_id: string | null
+          legacy_spawned_item_id: string | null
           meta_bounty_id: string
           position: number
           spawn_threshold_pct: number
@@ -3456,6 +3458,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          legacy_meta_item_id?: string | null
+          legacy_spawned_item_id?: string | null
           meta_bounty_id: string
           position?: number
           spawn_threshold_pct?: number
@@ -3468,6 +3472,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          legacy_meta_item_id?: string | null
+          legacy_spawned_item_id?: string | null
           meta_bounty_id?: string
           position?: number
           spawn_threshold_pct?: number
@@ -3478,17 +3484,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "meta_bounty_sub_definitions_legacy_meta_item_id_fkey"
+            columns: ["legacy_meta_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_bounty_sub_definitions_legacy_spawned_item_id_fkey"
+            columns: ["legacy_spawned_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "meta_bounty_sub_definitions_meta_bounty_id_fkey"
             columns: ["meta_bounty_id"]
             isOneToOne: false
-            referencedRelation: "content_items"
+            referencedRelation: "bounties"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "meta_bounty_sub_definitions_spawned_bounty_id_fkey"
             columns: ["spawned_bounty_id"]
             isOneToOne: false
-            referencedRelation: "content_items"
+            referencedRelation: "bounties"
             referencedColumns: ["id"]
           },
         ]
@@ -3675,6 +3695,24 @@ export type Database = {
         Update: {
           id?: string
           old_bounty_id?: string
+        }
+        Relationships: []
+      }
+      ns_p48_migration_map_meta_subs: {
+        Row: {
+          id: string
+          old_meta_bounty_id: string
+          old_spawned_bounty_id: string | null
+        }
+        Insert: {
+          id: string
+          old_meta_bounty_id: string
+          old_spawned_bounty_id?: string | null
+        }
+        Update: {
+          id?: string
+          old_meta_bounty_id?: string
+          old_spawned_bounty_id?: string | null
         }
         Relationships: []
       }

@@ -233,13 +233,19 @@ async function expandBountySearchIds(
   if (params.postType && params.postType !== "bounty") return [];
 
   const safe = q.split("%").join("").split(",").join(" ");
+  // NS-P48 shim (removed in NS-P50). The caller OR-includes these ids into a
+  // content_items id filter, and since NS-P48 meta_bounty_id holds a
+  // public.bounties id. legacy_meta_item_id is the content_items id it held
+  // before, derived by the database from bounties.legacy_item_id.
   const { data } = await (supabase as any)
     .from("meta_bounty_sub_definitions")
-    .select("meta_bounty_id")
+    .select("legacy_meta_item_id")
     .or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
     .limit(200);
   return Array.from(
-    new Set(((data ?? []) as any[]).map((r) => r.meta_bounty_id).filter(Boolean)),
+    new Set(
+      ((data ?? []) as any[]).map((r) => r.legacy_meta_item_id).filter(Boolean),
+    ),
   );
 }
 

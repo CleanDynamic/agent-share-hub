@@ -96,10 +96,16 @@ async function fetchSubBounties(
   metaIds: string[],
 ): Promise<Map<string, MetaBountyCardModel["subBounties"]>> {
   if (metaIds.length === 0) return new Map();
+  // NS-P48 shim (removed in NS-P50). `metaIds` are content_items ids — this
+  // strip reads content_items — and since NS-P48 meta_bounty_id holds a
+  // public.bounties id. legacy_meta_item_id is the old value, derived by the
+  // database from bounties.legacy_item_id on every write.
   const { data } = await (supabase as any)
     .from("meta_bounty_sub_definitions")
-    .select("id, meta_bounty_id, title, target_amount, spawned_bounty_id, position")
-    .in("meta_bounty_id", metaIds)
+    .select(
+      "id, legacy_meta_item_id, title, target_amount, spawned_bounty_id, position",
+    )
+    .in("legacy_meta_item_id", metaIds)
     .order("position", { ascending: true });
 
   const { data: pledges } = await (supabase as any)
@@ -116,7 +122,9 @@ async function fetchSubBounties(
 
   const out = new Map<string, MetaBountyCardModel["subBounties"]>();
   for (const sub of (data ?? []) as any[]) {
-    const list = out.get(sub.meta_bounty_id) ?? [];
+    // NS-P48 shim (removed in NS-P50). Grouped by the legacy id, because the
+    // caller's map is keyed on content_items ids.
+    const list = out.get(sub.legacy_meta_item_id) ?? [];
     list.push({
       id: sub.id,
       title: sub.title,
@@ -124,7 +132,7 @@ async function fetchSubBounties(
       pledged: pledgedBySub.get(sub.id) ?? 0,
       status: sub.spawned_bounty_id ? "spawned" : "funding",
     });
-    out.set(sub.meta_bounty_id, list);
+    out.set(sub.legacy_meta_item_id, list);
   }
   return out;
 }
