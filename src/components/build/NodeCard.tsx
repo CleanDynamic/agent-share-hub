@@ -7,7 +7,7 @@
 // what "copy this node" means for the type and renders one button, or none.
 
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { Build, BuildNode, NodeType } from "@/lib/build";
 import {
   getNodeCopyText,
@@ -35,6 +35,16 @@ interface NodeCardProps {
   resolveNode: ResolveNode;
   /** The build's media, loaded once by the page. See MediaFigure.tsx. */
   resolveMedia: ResolveMedia;
+  /**
+   * Whatever the page wants to hang under this node (NS-P52).
+   *
+   * The gap panel on a node with an open bounty, the solver's credit on one a
+   * bounty has filled — and nothing at all on the great majority of nodes. It
+   * arrives as a rendered child rather than as data because this card must go
+   * on knowing nothing about bounties: it draws a node, and the page decides
+   * what else is true about that node.
+   */
+  footer?: ReactNode;
 }
 
 /** How long the button stays in its confirmed state. */
@@ -87,6 +97,7 @@ export function NodeCard({
   build,
   resolveNode,
   resolveMedia,
+  footer,
 }: NodeCardProps) {
   const colour =
     nodeType?.colour ??
@@ -163,6 +174,8 @@ export function NodeCard({
           resolveMedia={resolveMedia}
         />
       </div>
+
+      {footer}
     </article>
   );
 }

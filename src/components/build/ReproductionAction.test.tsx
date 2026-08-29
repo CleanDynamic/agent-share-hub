@@ -30,6 +30,22 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: auth.user, isLoggedIn: auth.isLoggedIn }),
 }));
 
+/**
+ * The bounty layer answers empty (NS-P52).
+ *
+ * BuildPage reads the open asks on the build and the handles behind any solve
+ * credits; this file's builds have neither, and a page test about reproduction
+ * should not depend on a network read about bounties.
+ */
+vi.mock("@/lib/bounty", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/bounty")>();
+  return {
+    ...actual,
+    listBuildBounties: async () => [],
+    listSolverHandles: async () => new Map(),
+  };
+});
+
 /** The writes and the reads around them are stubbed; the rest is real. */
 vi.mock("@/lib/build", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/build")>();

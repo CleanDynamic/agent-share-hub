@@ -16,6 +16,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const listGallery = vi.fn();
 const getGalleryFacets = vi.fn();
+const countOpenBountyBuilds = vi.fn();
 
 vi.mock("@/lib/build", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/build")>();
@@ -23,6 +24,7 @@ vi.mock("@/lib/build", async (importOriginal) => {
     ...actual,
     listGallery: (options: unknown) => listGallery(options),
     getGalleryFacets: () => getGalleryFacets(),
+    countOpenBountyBuilds: () => countOpenBountyBuilds(),
   };
 });
 
@@ -100,6 +102,7 @@ describe("the gallery page", () => {
       error: null,
     }));
     getGalleryFacets.mockResolvedValue(FACETS);
+    countOpenBountyBuilds.mockResolvedValue(0);
     listGallery.mockResolvedValue({ builds: [build()], total: 1 });
   });
 
@@ -110,6 +113,9 @@ describe("the gallery page", () => {
 
     expect(listGallery).toHaveBeenCalledTimes(1);
     expect(getGalleryFacets).toHaveBeenCalledTimes(1);
+    // NS-P52 adds one head request for the bounty chip's number, cached beside
+    // the facets and never refetched on a filter change. One, not one per card.
+    expect(countOpenBountyBuilds).toHaveBeenCalledTimes(1);
     // No media on these builds, so nothing is signed either. A card resolving
     // its own media would show up here as a third call and then some.
     expect(createSignedUrl).not.toHaveBeenCalled();
@@ -231,6 +237,73 @@ describe("the gallery page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(4));
     expect(listGallery.mock.calls[3][0]).toMatchObject({ madeFor: [], madeWith: [] });
+  });
+
+  // NS-P52 ACCEPTANCE 2
+  it("filters to builds carrying an open bounty, in one request", async () => {
+    countOpenBountyBuilds.mockResolvedValue(3);
+    renderGallery();
+    await screen.findByText("Inbox triage agent");
+    expect(listGallery.mock.calls[0][0]).toMatchObject({ openBounties: false });
+
+    const chip = screen.getByTestId("facet-bounties");
+    expect(chip).toHaveTextContent("Open bounties");
+    // The number is the size of the grid the chip produces, not the number of
+    // asks: a reader is deciding about builds.
+    await waitFor(() => expect(chip).toHaveTextContent("3"));
+
+    fireEvent.click(chip);
+    await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(2));
+    expect(listGallery.mock.calls[1][0]).toMatchObject({ openBounties: true });
+    expect(chip).toHaveAttribute("aria-pressed", "true");
+
+    // The options are not the results: neither the facets nor the count is
+    // refetched because a filter moved.
+    expect(getGalleryFacets).toHaveBeenCalledTimes(1);
+    expect(countOpenBountyBuilds).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(3));
+    expect(listGallery.mock.calls[2][0]).toMatchObject({ openBounties: false });
+  });
+
+  it("puts a red bounty pill on a card with an open ask, and none on one without", async () => {
+    listGallery.mockResolvedValue({
+      builds: [
+        build({
+          id: "b1",
+          slug: "asking",
+          title: "Asking for help",
+          bounties: [{ id: "bo1", reward_gbp: 120, status: "open" }],
+        }),
+        build({ id: "b2", slug: "settled", title: "Nothing outstanding", bounties: [] }),
+      ],
+      total: 2,
+    });
+
+    renderGallery();
+    await screen.findByText("Asking for help");
+
+    const pills = screen.getAllByTestId("gallery-card-bounty");
+    expect(pills).toHaveLength(1);
+    expect(pills[0]).toHaveTextContent("bounty · £120");
+    // The pill rides in on the grid's own query: no card fetched anything.
+    expect(listGallery).toHaveBeenCalledTimes(1);
+  });
+
+  it("says bounty without a price when the ask is unpriced", async () => {
+    listGallery.mockResolvedValue({
+      builds: [
+        build({ bounties: [{ id: "bo1", reward_gbp: null, status: "open" }] }),
+      ],
+      total: 1,
+    });
+
+    renderGallery();
+    const pill = await screen.findByTestId("gallery-card-bounty");
+    // An unpriced gap is still a real open bounty. See bountyDisplay.ts.
+    expect(pill).toHaveTextContent("bounty");
+    expect(pill).not.toHaveTextContent("£");
   });
 
   it("puts both filters at the top of the page rather than behind a menu", async () => {

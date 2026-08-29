@@ -18,6 +18,27 @@ vi.mock("@/contexts/AuthContext", () => ({
 }));
 
 /**
+ * The bounty layer is stubbed to silence (NS-P52).
+ *
+ * The page asks it for the open asks on this build and for the handles behind
+ * any solve credits. Both are network reads, and every test in this file is
+ * about a build with neither — so they answer empty here, and the gap panel's
+ * own behaviour is covered in src/components/build/GapPanel.test.tsx where the
+ * bounty is the subject rather than the noise.
+ */
+const listBuildBounties = vi.fn().mockResolvedValue([]);
+const listSolverHandles = vi.fn().mockResolvedValue(new Map());
+
+vi.mock("@/lib/bounty", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/bounty")>();
+  return {
+    ...actual,
+    listBuildBounties: (options: unknown) => listBuildBounties(options),
+    listSolverHandles: (ids: unknown) => listSolverHandles(ids),
+  };
+});
+
+/**
  * The record and the media are stubbed; the rest of the lib layer is real.
  *
  * signedMediaUrl is the one thing on the read path that talks to storage —

@@ -20,6 +20,7 @@ import type { ReactElement } from "react";
 import { Link } from "react-router-dom";
 import { BranchIcon } from "@/components/build/BranchIcon";
 import {
+  GAP_RED,
   HAIRLINE,
   ORANGE,
   TEAL,
@@ -36,6 +37,7 @@ import {
   type BuildShape,
   type GalleryBuild,
 } from "@/lib/build";
+import { bountyPillLabel } from "@/components/bounty/bountyDisplay";
 import {
   AppCardBody,
   DefaultCardBody,
@@ -90,6 +92,7 @@ export function GalleryCard({ build, srcByPath, credit }: GalleryCardProps) {
   const freshness = freshnessLabel(build);
   const stale = isStale(build);
   const promoted = build.status === "gallery";
+  const bounty = openBountyPill(build);
 
   return (
     <Link
@@ -175,7 +178,7 @@ export function GalleryCard({ build, srcByPath, credit }: GalleryCardProps) {
         </p>
       ) : null}
 
-      {(build.made_for?.length ?? 0) > 0 || promoted ? (
+      {(build.made_for?.length ?? 0) > 0 || promoted || bounty ? (
         <div
           style={{
             display: "flex",
@@ -186,6 +189,24 @@ export function GalleryCard({ build, srcByPath, credit }: GalleryCardProps) {
             borderTop: `1px solid ${HAIRLINE}`,
           }}
         >
+          {/* First in the row, and the only red thing on the card: an open
+              bounty is the one fact here that asks the reader for something
+              rather than telling them about the build. */}
+          {bounty ? (
+            <span
+              data-testid="gallery-card-bounty"
+              style={{
+                ...labelText,
+                fontSize: 10.5,
+                color: GAP_RED,
+                padding: "1px 6px",
+                borderRadius: 4,
+                background: hexToRgba(GAP_RED, 0.1),
+              }}
+            >
+              {bounty}
+            </span>
+          ) : null}
           {promoted ? (
             <span
               style={{
@@ -209,6 +230,31 @@ export function GalleryCard({ build, srcByPath, credit }: GalleryCardProps) {
       ) : null}
     </Link>
   );
+}
+
+/**
+ * "bounty · £120", "bounty", or null (NS-P52).
+ *
+ * The rows arrive on the card's own query, already filtered to open ones, so
+ * this is a read rather than a fetch — see GALLERY_BOUNTY_COLUMNS. A build with
+ * several open asks gets ONE pill carrying the largest reward: the card is a
+ * badge, not a board, and the biggest number is the one that decides whether a
+ * reader clicks through to the rest.
+ *
+ * Null for a build with no open ask AND for one whose query never asked, which
+ * is why `bounties` is optional on GalleryBuild rather than defaulted to empty.
+ */
+function openBountyPill(build: GalleryBuild): string | null {
+  const open = (build.bounties ?? []).filter((row) => row.status === "open");
+  if (open.length === 0) return null;
+
+  let best: number | null = null;
+  for (const row of open) {
+    const amount =
+      typeof row.reward_gbp === "number" ? row.reward_gbp : Number(row.reward_gbp);
+    if (Number.isFinite(amount) && (best === null || amount > best)) best = amount;
+  }
+  return bountyPillLabel(best);
 }
 
 /**

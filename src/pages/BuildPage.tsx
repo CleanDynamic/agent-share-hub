@@ -25,7 +25,10 @@ import type {
   NodeTree,
   RebuildSummary,
 } from "@/lib/build";
+import { listBuildBounties, listSolverHandles, type BuildBounty } from "@/lib/bounty";
+import { useAuth } from "@/contexts/AuthContext";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
+import { GapPanel, SolvedCredit } from "@/components/build/GapPanel";
 import {
   MEDIA_WIDTH,
   useMediaSrc,
@@ -92,6 +95,36 @@ function indexTree(tree: NodeTree[]): Map<string, BuildNode> {
  */
 function indexMedia(media: BuildMedia[]): Map<string, BuildMedia> {
   return new Map(media.map((row) => [row.id, row]));
+}
+
+/**
+ * The solver a bounty credited on this node, or null.
+ *
+ * accept_bounty_solution writes source_ref = {source: 'bounty', solution_id,
+ * solver_id} onto the node it fills, keeping the {source, ...} shape every
+ * other writer uses. Anything else in that column — a Build File import, a
+ * transcript turn, nothing at all — is not a solve and reads as null here.
+ */
+function bountySolverId(node: BuildNode): string | null {
+  const ref = node.source_ref;
+  if (!ref || typeof ref !== "object" || Array.isArray(ref)) return null;
+  const record = ref as Record<string, unknown>;
+  if (record.source !== "bounty") return null;
+  return typeof record.solver_id === "string" ? record.solver_id : null;
+}
+
+/** Every node in the tree that a bounty filled, by its solver's id. */
+function solverIdsIn(tree: NodeTree[]): string[] {
+  const ids = new Set<string>();
+  const walk = (nodes: NodeTree[]) => {
+    for (const node of nodes) {
+      const solver = bountySolverId(node);
+      if (solver) ids.add(solver);
+      if (node.children.length > 0) walk(node.children);
+    }
+  };
+  walk(tree);
+  return [...ids];
 }
 
 /**
@@ -226,6 +259,9 @@ export default function BuildPage() {
   const { slug } = useParams<{ slug: string }>();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  // Read for one reason: whose me-too marks to fetch. Nothing on this page is
+  // hidden from a signed-out reader.
+  const { user } = useAuth();
 
   // The tab strip is controlled from here so that a breakage can send the
   // reader into the replay at the step it broke.
@@ -435,6 +471,111 @@ export default function BuildPage() {
     [data?.tree, heroNodeId, heroSrc]
   );
 
+  /**
+   * The bounties on this build, with the counts their panels print (NS-P52).
+   *
+   * ONE QUERY FOR THE PAGE, whatever number of gaps it carries: listBuildBounties
+   * reads the headers, then counts every one of their solutions and the reader's
+   * own me-too marks in two batched lookups. A panel per gap fetching its own
+   * counts is the fifteen-query pattern in miniature, and it is what this page
+   * has avoided everywhere else.
+   *
+   * The viewer is in the key because the me-too mark is theirs: signing in has
+   * to move the button from "I need this too" to "you need this too", and a
+   * cache entry that did not name them would show one reader another's mark.
+   */
+  const { data: bounties, refetch: refetchBounties } = useQuery<BuildBounty[]>({
+    queryKey: ["build-bounties", buildId, user?.id ?? null],
+    queryFn: () =>
+      listBuildBounties({ buildId: buildId as string, viewerId: user?.id ?? null }),
+    enabled: Boolean(buildId),
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
+  /**
+   * The handles behind the solve credits on this build's nodes.
+   *
+   * Only fetched when a node actually carries a bounty source_ref, which on
+   * most builds is never, and then in ONE query for all of them. The ids come
+   * off the record already loaded, so nothing here re-reads the tree.
+   */
+  const solverIds = useMemo(() => solverIdsIn(data?.tree ?? []), [data?.tree]);
+  const { data: solverHandles } = useQuery<Map<string, string | null>>({
+    queryKey: ["build-solver-handles", buildId, solverIds.join(",")],
+    queryFn: () => listSolverHandles(solverIds),
+    enabled: solverIds.length > 0,
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
+  /** gap_node_id -> its open ask. Build-level bounties name no node and are
+   *  absent: there is no card for them to grow out of. */
+  const bountyByNode = useMemo(() => {
+    const index = new Map<string, BuildBounty>();
+    for (const entry of bounties ?? []) {
+      if (entry.bounty.gap_node_id) index.set(entry.bounty.gap_node_id, entry);
+    }
+    return index;
+  }, [bounties]);
+
+  /**
+   * Something in the bounty layer moved.
+   *
+   * An acceptance changes the RECORD — the gap node holds the answer now and is
+   * no longer a gap — so the whole build query is invalidated and the page
+   * repaints with the filled node and its credit line. A submission and a
+   * me-too change only the counts, so the bounties query alone is refetched and
+   * the reader's scroll position stays where it was.
+   */
+  const onBountyChanged = useCallback(
+    (change: "submitted" | "accepted" | "me_too") => {
+      void refetchBounties();
+      if (change === "accepted") {
+        void queryClient.invalidateQueries({ queryKey: ["build", slug] });
+      }
+    },
+    [queryClient, refetchBounties, slug]
+  );
+
+  /**
+   * What hangs under a node: the gap panel, the solve credit, or nothing.
+   *
+   * The anatomy asks this of every node it draws and has no opinion about the
+   * answer. A node is only offered a panel while it IS still a gap — the
+   * bounty's status is the database's answer to the same question, and the two
+   * disagree for exactly as long as it takes the record to refetch after an
+   * acceptance.
+   */
+  const renderNodeFooter = useCallback(
+    (node: BuildNode) => {
+      if (!data) return null;
+
+      const entry = bountyByNode.get(node.id);
+      if (entry && node.is_gap && entry.bounty.status === "open") {
+        return (
+          <GapPanel
+            node={node}
+            nodeType={data.nodeTypes.find((type) => type.key === node.type)}
+            build={data.build}
+            entry={entry}
+            resolveNode={resolveNode}
+            resolveMedia={resolveMedia}
+            onChanged={onBountyChanged}
+          />
+        );
+      }
+
+      const solver = bountySolverId(node);
+      if (solver) {
+        return <SolvedCredit handle={solverHandles?.get(solver) ?? null} />;
+      }
+
+      return null;
+    },
+    [bountyByNode, data, onBountyChanged, resolveMedia, resolveNode, solverHandles]
+  );
+
   if (isLoading) {
     return (
       <Frame>
@@ -574,6 +715,7 @@ export default function BuildPage() {
             build={data.build}
             resolveNode={resolveNode}
             resolveMedia={resolveMedia}
+            renderFooter={renderNodeFooter}
           />
         </BuildTabs>
       </div>

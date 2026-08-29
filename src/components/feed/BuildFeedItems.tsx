@@ -1,4 +1,4 @@
-// The three things the Builds tab renders.
+// The four things the Builds tab renders.
 //
 // A build and a rebuild are the SAME COMPONENT the gallery renders, and that
 // is deliberate rather than lazy. A build looks like itself wherever it
@@ -22,16 +22,21 @@ import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
 import { rebuildCreditLine } from "@/components/build/rebuildCredit";
+import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import {
+  GAP_RED,
   HAIRLINE,
   TEAL,
   TEXT_MUTED,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   cardGlass,
+  hexToRgba,
+  labelText,
 } from "@/components/build/tokens";
 import type {
+  BountyFeedItem,
   BuildFeedItem,
   FeedItem,
   RebuildFeedItem,
@@ -57,6 +62,9 @@ export function BuildFeedItemView({ item, srcByPath }: BuildFeedItemViewProps) {
   if (item.kind === "repro_note") return <ReproNoteStrip item={item} />;
   if (item.kind === "rebuild") {
     return <RebuildItem item={item} srcByPath={srcByPath} />;
+  }
+  if (item.kind === "bounty") {
+    return <BountyItem item={item} srcByPath={srcByPath} />;
   }
   return <BuildItem item={item} srcByPath={srcByPath} />;
 }
@@ -132,6 +140,75 @@ function RebuildItem({
         srcByPath={srcByPath}
         credit={rebuildCreditLine(item.build)}
       />
+    </div>
+  );
+}
+
+/**
+ * An open ask: the red strip, then the build it is a hole in (NS-P52).
+ *
+ * THE STRIP LEADS, for the same reason the rebuild note does: the line above a
+ * card is read as the thing being said and the card as what it is about, and
+ * that is the relationship here — the creator is asking for one part of the
+ * build below.
+ *
+ * IT SAYS WHICH PART, when the bounty names a gap node. "An open bounty on
+ * Inbox triage agent" tells a reader nothing they can act on; "Unsolved: the
+ * retry prompt" tells them whether it is theirs to solve. A build-level ask
+ * names no node, and then the strip says the plain thing rather than inventing
+ * a part.
+ *
+ * The card carries the pill as well, and that is not a duplication to tidy
+ * away: the strip is this item, and the pill is the card's own summary of the
+ * build — the same card appears in the gallery wearing it.
+ */
+function BountyItem({
+  item,
+  srcByPath,
+}: {
+  item: BountyFeedItem;
+  srcByPath: MediaSrcMap;
+}) {
+  const reward = rewardLabel(item.reward);
+  const part = (item.gapTitle ?? "").trim();
+
+  return (
+    <div data-testid="feed-item-bounty" style={itemFrame}>
+      <div
+        data-visual-slot="feed-bounty-strip"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          flexWrap: "wrap",
+          padding: "6px 10px",
+          borderRadius: 8,
+          borderLeft: `2px solid ${GAP_RED}`,
+          background: hexToRgba(GAP_RED, 0.06),
+        }}
+      >
+        <span style={{ ...labelText, fontSize: 11, color: GAP_RED, textTransform: "uppercase" }}>
+          Open bounty
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 300, lineHeight: 1.5, color: TEXT_SECONDARY }}>
+          {part ? (
+            <>
+              <span style={{ color: TEXT_PRIMARY }}>{part}</span> is unsolved
+            </>
+          ) : (
+            "part of this build is unsolved"
+          )}
+        </span>
+        {reward ? (
+          <span
+            data-testid="feed-bounty-reward"
+            style={{ ...labelText, fontSize: 11, color: GAP_RED }}
+          >
+            {reward}
+          </span>
+        ) : null}
+      </div>
+      <GalleryCard build={item.build} srcByPath={srcByPath} credit={null} />
     </div>
   );
 }

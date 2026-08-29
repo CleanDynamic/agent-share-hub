@@ -281,3 +281,217 @@ export async function acceptSolution(
 
   return accepted;
 }
+
+// =============================================================================
+// Reading the answers back
+// =============================================================================
+//
+// getSolutions in src/lib/bounty-solver/ does this for the LEGACY path and
+// cannot be reused here: its first act is resolveBountyByLegacyItem, which
+// takes a content_items id and throws for a bounty that never had one. A
+// bounty on a build never had one. So the read is written out again, over the
+// same table, in the shape the new path's panel needs.
+
+/** Who answered. The four public columns a byline renders, and no more. */
+export interface SolutionSolver {
+  id: string;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
+/**
+ * One solution, as the solve panel renders it.
+ *
+ * `content_payload` is typed as NodePayload rather than Json because every row
+ * this path writes went through checkNodePayload against the gap node's type
+ * before it was stored. A row written by something else could hold anything;
+ * the renderer that draws it treats a payload defensively either way, exactly
+ * as it does for a node.
+ */
+export interface BountySolution {
+  id: string;
+  bounty_id: string;
+  slot_id: string;
+  solver_id: string;
+  solver_note: string | null;
+  content_payload: NodePayload;
+  vote_count: number;
+  i_would_implement_count: number;
+  status: string;
+  submitted_at: string | null;
+  created_at: string;
+  /** Null when the solver's profile is gone. The byline says "someone". */
+  solver: SolutionSolver | null;
+  /** Whether the viewer has upvoted this one. False for a signed-out reader. */
+  myVote: boolean;
+  /** Whether the viewer has said they would implement it. */
+  myImplement: boolean;
+}
+
+export interface ListSolutionsOptions {
+  bountyId: string;
+  /** The reader, so their own votes come back marked. Null when signed out. */
+  viewerId?: string | null;
+}
+
+/** A gap with more answers than this has a spam problem, not a panel. */
+const SOLUTIONS_LIMIT = 100;
+
+/**
+ * Every submitted and accepted solution on one bounty, with its solver.
+ *
+ * THREE QUERIES, NEVER ONE PER ROW. The solutions come back first because they
+ * name the solvers; the profiles and the viewer's own votes are then two
+ * batched `in` lookups over that one set of ids, run concurrently. A panel with
+ * twelve answers costs three requests, not twenty-five.
+ *
+ * Drafts are excluded, as everywhere else on this path: a draft is one person's
+ * unfinished work and is not an answer to anything yet.
+ *
+ * THE ORDER IS THE ANSWER FIRST. An accepted solution leads whatever its vote
+ * count, because it is no longer a candidate — it is what the build now says.
+ * Below it, most-voted first, and the older one wins a tie: two answers with
+ * one vote each are ordered by who got there first, which is the only tiebreak
+ * that does not reward posting late.
+ */
+export async function listSolutions({
+  bountyId,
+  viewerId = null,
+}: ListSolutionsOptions): Promise<BountySolution[]> {
+  const { data, error } = await supabase
+    .from("solutions")
+    .select(SOLUTION_COLUMNS)
+    .eq("bounty_id", bountyId)
+    .in("status", ["submitted", "accepted"])
+    .order("created_at", { ascending: true })
+    .limit(SOLUTIONS_LIMIT);
+  if (error) throw bountyLayerError("listSolutions", error);
+
+  const rows = (data ?? []) as unknown as Array<
+    Omit<BountySolution, "solver" | "myVote" | "myImplement">
+  >;
+  if (rows.length === 0) return [];
+
+  const solverIds = [...new Set(rows.map((row) => row.solver_id))];
+  const solutionIds = rows.map((row) => row.id);
+
+  const [profiles, votes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, username, display_name, avatar_url")
+      .in("id", solverIds)
+      .limit(solverIds.length),
+    viewerId
+      ? supabase
+          .from("solution_votes")
+          .select("solution_id, vote_kind")
+          .eq("voter_id", viewerId)
+          .in("solution_id", solutionIds)
+          // Two kinds per solution at most, and the set is already capped.
+          .limit(solutionIds.length * 2)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  // A failed profile read costs the bylines their names, not the panel its
+  // answers: the payloads are the substance and they are already in hand.
+  if (profiles.error) {
+    console.warn("[listSolutions] solver profiles failed", profiles.error);
+  }
+  if (votes.error) throw bountyLayerError("listSolutions (votes)", votes.error);
+
+  const byId = new Map<string, SolutionSolver>();
+  for (const row of (profiles.data ?? []) as SolutionSolver[]) byId.set(row.id, row);
+
+  const mine = new Set<string>();
+  for (const vote of (votes.data ?? []) as Array<{
+    solution_id: string;
+    vote_kind: string;
+  }>) {
+    mine.add(`${vote.solution_id}::${vote.vote_kind}`);
+  }
+
+  const solutions: BountySolution[] = rows.map((row) => ({
+    ...row,
+    content_payload: (row.content_payload ?? {}) as NodePayload,
+    solver: byId.get(row.solver_id) ?? null,
+    myVote: mine.has(`${row.id}::upvote`),
+    myImplement: mine.has(`${row.id}::i_would_implement`),
+  }));
+
+  solutions.sort((a, b) => {
+    const accepted = Number(b.status === "accepted") - Number(a.status === "accepted");
+    if (accepted !== 0) return accepted;
+    if (b.vote_count !== a.vote_count) return b.vote_count - a.vote_count;
+    return a.created_at.localeCompare(b.created_at);
+  });
+
+  return solutions;
+}
+
+/**
+ * How many answers each of these bounties has, in ONE query.
+ *
+ * The build page renders a panel per open bounty and each one shows a count.
+ * countsFor() above answers that for a single bounty in three counting reads,
+ * which is right for a bounty's own page and wrong for a page holding four of
+ * them — twelve requests to print four integers. This reads the ids of the
+ * matching rows once and counts them here.
+ *
+ * The cap is the same one listSolutions applies, for the same reason, and a
+ * bounty that reaches it undercounts rather than lying about which answers
+ * exist. Bounties with no answers are absent from the map; callers read a
+ * missing key as zero.
+ */
+export async function countSolutionsByBounty(
+  bountyIds: readonly string[],
+): Promise<Map<string, number>> {
+  const wanted = [...new Set(bountyIds)];
+  const counts = new Map<string, number>();
+  if (wanted.length === 0) return counts;
+
+  const { data, error } = await supabase
+    .from("solutions")
+    .select("id, bounty_id")
+    .in("bounty_id", wanted)
+    .in("status", ["submitted", "accepted"])
+    .limit(SOLUTIONS_LIMIT * wanted.length);
+  if (error) throw bountyLayerError("countSolutionsByBounty", error);
+
+  for (const row of (data ?? []) as Array<{ bounty_id: string }>) {
+    counts.set(row.bounty_id, (counts.get(row.bounty_id) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/**
+ * profiles.username for a set of solvers, in ONE query.
+ *
+ * What the build page's credit line reads. accept_bounty_solution writes
+ * source_ref = {source: 'bounty', solver_id, solution_id} onto the node it
+ * fills, which names the solver by id and not by handle — deliberately, because
+ * a handle can be changed and an id cannot. Turning the ids into names is
+ * therefore a read, and it is one read for the page rather than one per node.
+ *
+ * A solver whose profile is gone, or who has no username, maps to null: the
+ * credit line says "a solver" rather than inventing one.
+ */
+export async function listSolverHandles(
+  solverIds: readonly string[],
+): Promise<Map<string, string | null>> {
+  const wanted = [...new Set(solverIds)];
+  const handles = new Map<string, string | null>();
+  if (wanted.length === 0) return handles;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, username")
+    .in("id", wanted)
+    .limit(wanted.length);
+  if (error) throw bountyLayerError("listSolverHandles", error);
+
+  for (const row of (data ?? []) as Array<{ id: string; username: string | null }>) {
+    handles.set(row.id, row.username ?? null);
+  }
+  return handles;
+}
