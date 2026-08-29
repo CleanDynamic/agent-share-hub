@@ -12,9 +12,16 @@ import type { ReactNode } from "react";
    It is deliberately a route-level wrapper rather than an edit to Upload.tsx.
    Upload.tsx is not touched by this sequence, and reverting the commit that
    mounts this wrapper takes the banner off every upload route at once.
+
+   NS-P54 extends it to /bounty/new, and adds a second line for the two bounty
+   routes. Bounties are the one thing on this surface that is retired rather
+   than superseded-but-still-working: their creation is frozen behind
+   src/lib/bounty-legacy/flags.ts, so the line names where the ask lives now
+   rather than inviting the creator to finish here. The blueprint and blog
+   routes keep the original single-line copy, because they still create.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-export function LegacyUploadNotice() {
+export function LegacyUploadNotice({ bounty = false }: { bounty?: boolean }) {
   return (
     <div
       data-visual-slot="legacy-upload-notice"
@@ -47,6 +54,15 @@ export function LegacyUploadNotice() {
           Blueprints are now built in the build workspace. This editor still
           saves and publishes — finish anything you have in progress here.
         </p>
+        {/* NS-P54. Only on the two bounty routes: the blueprint and blog
+            editors still create, and telling their creators about a retirement
+            that is not theirs would be noise. */}
+        {bounty && (
+          <p style={{ fontSize: 13, fontWeight: 300, color: "rgba(255,255,255,0.60)" }}>
+            Bounties are now part of publishing a build — mark a part unsolved
+            in the composer.
+          </p>
+        )}
       </div>
 
       <Link
@@ -79,13 +95,19 @@ export function LegacyUploadNotice() {
  * and giving the page region flex:1/minHeight:0 leaves that chain intact — the
  * page still owns its scrolling, the banner stays put above it.
  */
-export function LegacyUploadRoute({ children }: { children: ReactNode }) {
+export function LegacyUploadRoute({
+  children,
+  bounty = false,
+}: {
+  children: ReactNode;
+  bounty?: boolean;
+}) {
   return (
     <div
       data-visual-slot="legacy-upload-route"
       style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}
     >
-      <LegacyUploadNotice />
+      <LegacyUploadNotice bounty={bounty} />
       <div style={{ flex: "1 1 auto", minHeight: 0 }}>{children}</div>
     </div>
   );
