@@ -138,12 +138,19 @@ async function confirmInSheet(): Promise<HTMLButtonElement> {
 }
 
 /** Open the sheet and press its Publish: the whole path, end to end. */
+// Both waits are on readiness, which PublishControl computes from build, tree
+// and nodeTypes once they have loaded — so each one spans a lazy chunk plus a
+// resolved query, not a synchronous render. testing-library's 1000ms default
+// is too tight for that under full-suite parallelism, which is why the same
+// assertion below already carries an explicit 3000ms. Kept identical here.
+const READINESS_TIMEOUT = 3000;
+
 async function pressPublish(name: "Publish" | "Published" = "Publish") {
   const pill = await screen.findByRole("button", { name });
-  await waitFor(() => expect(pill).not.toBeDisabled());
+  await waitFor(() => expect(pill).not.toBeDisabled(), { timeout: READINESS_TIMEOUT });
   fireEvent.click(pill);
   const confirm = await confirmInSheet();
-  await waitFor(() => expect(confirm).not.toBeDisabled());
+  await waitFor(() => expect(confirm).not.toBeDisabled(), { timeout: READINESS_TIMEOUT });
   fireEvent.click(confirm);
 }
 
