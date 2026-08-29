@@ -44,8 +44,14 @@
 // last month is not a failure of the code.
 //
 // Selectors are the testids NS-P52 introduced — gap-panel, solve-open,
-// solution-submit, solution-accept, feed-item-bounty — and roles and labels
-// everywhere else. Nothing here selects on a class: see the e2e skill.
+// solution-submit, solution-accept, feed-item-bounty — plus NS-P53's
+// solve-direct, which is where the typed form moved to when the rebuild became
+// the primary path. Roles and labels everywhere else. Nothing here selects on a
+// class: see the e2e skill.
+//
+// THIS SPEC IS NOW ALSO THE LEGACY GUARD. NS-P53 added a second way to answer a
+// gap and did not change this one; that this spec still passes unchanged apart
+// from one click is the evidence for it.
 
 import { expect, test, type Page } from "@playwright/test";
 
@@ -163,6 +169,12 @@ test.describe("the bounty loop, from ask to credit", () => {
     await panel.getByTestId("solve-open").click();
     const sheet = page.getByTestId("solve-panel");
     await expect(sheet).toBeVisible();
+
+    // NS-P53 RANKED THE TWO WAYS IN, and this spec is the one that proves the
+    // SECOND one still works end to end: the typed payload path is now behind
+    // "Just send the missing part", and everything after this click is exactly
+    // what NS-P52 asserted, unchanged.
+    await sheet.getByTestId("solve-direct").click();
 
     // The form is the GAP NODE'S OWN TYPE, so the field is whatever that type
     // declares. The first textbox in the sheet is its first field, which is

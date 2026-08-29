@@ -23,7 +23,7 @@
 import { Suspense, lazy, useCallback, useState } from "react";
 import type { CSSProperties } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toggleMeToo, type BuildBounty } from "@/lib/bounty";
 import { gapProblem, type Build, type BuildNode, type NodeType } from "@/lib/build";
@@ -314,20 +314,53 @@ export function GapPanel({
  * that column, read out. It is quiet on purpose: the node is the creator's
  * build and the solver's contribution is provenance, not a byline over the
  * work.
+ *
+ * AND WHERE THE ANSWER LIVES, when there is somewhere (NS-P53). A solution
+ * submitted as a rebuild adds solution_build_id to that same source_ref, and
+ * this renders it as a second line: the payload above came out of a published
+ * build, and a reader who wants the context — what the solver changed around
+ * it, and how many people have run it — should be one click from it.
+ *
+ * A SECOND LINE RATHER THAN A LONGER FIRST ONE. The credit is about a person
+ * and the link is about a record; running them together would make the handle
+ * look like part of the build's name.
  */
-export function SolvedCredit({ handle }: { handle: string | null }) {
+export function SolvedCredit({
+  handle,
+  build = null,
+}: {
+  handle: string | null;
+  /** The solver's rebuild, when the answer came from one and it still reads. */
+  build?: { slug: string; title: string } | null;
+}) {
   return (
-    <p
-      data-testid="gap-solved-credit"
-      style={{
-        ...labelText,
-        margin: 0,
-        fontSize: 11,
-        color: TEAL,
-      }}
-    >
-      Solved by {handle ? `@${handle}` : "a solver"}
-    </p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <p
+        data-testid="gap-solved-credit"
+        style={{
+          ...labelText,
+          margin: 0,
+          fontSize: 11,
+          color: TEAL,
+        }}
+      >
+        Solved by {handle ? `@${handle}` : "a solver"}
+      </p>
+      {build ? (
+        <p
+          data-testid="gap-solved-build"
+          style={{ ...bodyText, margin: 0, fontSize: 11, color: TEXT_MUTED }}
+        >
+          from{" "}
+          <Link
+            to={`/b2/${build.slug}`}
+            style={{ color: TEAL, textDecoration: "none" }}
+          >
+            {build.title}
+          </Link>
+        </p>
+      ) : null}
+    </div>
   );
 }
 

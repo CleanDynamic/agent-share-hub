@@ -76,6 +76,25 @@ export interface BountyCounts {
   comments: number;
 }
 
+// --- read shapes -------------------------------------------------------------
+
+/**
+ * The solution columns every reader on this path names. Never `*`.
+ *
+ * IT LIVES HERE, not in solutions.ts, so that solutionRebuild.ts can write a
+ * row without importing the module that imports it. acceptSolution has to call
+ * into the rebuild path to resolve a payload, and the rebuild path has to
+ * insert a solutions row; a constant both need is the whole of what made that a
+ * cycle, and types.ts is the file neither of them can be imported by.
+ *
+ * solution_build_id (NS-P53) is read everywhere a solution is: it is what tells
+ * a renderer whether it is looking at a typed payload or at somebody's build.
+ */
+export const SOLUTION_COLUMNS =
+  "id, bounty_id, slot_kind, slot_id, solver_id, solver_note, content_payload, " +
+  "solution_build_id, vote_count, i_would_implement_count, status, submitted_at, " +
+  "accepted_at, created_at, updated_at";
+
 // --- errors ------------------------------------------------------------------
 
 /**

@@ -25,6 +25,17 @@
 //   nobody is worse than no line: it claims a provenance the reader cannot
 //   check.
 //
+// A REBUILD THAT ANSWERS A BOUNTY SAYS SO (NS-P53). builds.solves_node_id is
+// the declaration startSolutionRebuild wrote onto the draft, and a build
+// carrying it is not merely derived from its source — it was made to fill a
+// named hole in it. That is worth a line of its own under the credit, pointing
+// at the gap itself rather than at the source's front page, because the reader
+// following it wants the question this build is the answer to.
+//
+// IT RENDERS WHETHER OR NOT THE SOLUTION WAS EVER ACCEPTED, and that is the
+// point: an answer nobody took up is still an answer, and a line that appeared
+// only on acceptance would quietly delete every rebuild that lost.
+//
 // THE EXPANDER IS COMPUTED AT VIEW TIME, NOT STORED. changeSet takes two whole
 // records, so the parent's record is fetched only when a reader asks to see
 // what changed — the banner itself costs one header read, and the diff costs a
@@ -65,6 +76,8 @@ const STALE_TIME = 300_000;
 /** What the banner says when the source cannot be reached any more. */
 const GONE = "(no longer available)";
 
+/** The bounty line. The source is named by the same snapshot the credit uses. */
+const SOLVES_PREFIX = "Solves a bounty on ";
 const EXPAND_LABEL = "See what changed";
 const COLLAPSE_LABEL = "Hide what changed";
 /** An expander that opens onto nothing has to say so in its own words. */
@@ -231,6 +244,37 @@ function RebuildBanner({
         ) : null}
         {gone ? <span style={{ color: TEXT_MUTED }}> {GONE}</span> : null}
       </p>
+
+      {/* Under the credit, above the note: it qualifies what this build IS,
+          which the rebuilder's commentary on it does not. The link carries the
+          gap's node id in the hash, which the build page reads to scroll the
+          gap panel into view — the panel is a card in the tree, not a route, so
+          the address has to name the node rather than a page of its own. */}
+      {build.solves_node_id ? (
+        <p
+          data-testid="rebuild-solves-line"
+          data-solves-node={build.solves_node_id}
+          style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}
+        >
+          {SOLVES_PREFIX}
+          {resolved ? (
+            <Link
+              to={`/b2/${resolved.slug}#node-${build.solves_node_id}`}
+              // The credit above links the same title to the source's front
+              // page, so the two would otherwise be one accessible name over
+              // two destinations. This one says where it actually goes.
+              aria-label={`Open the gap this build solves on ${title || resolved.title}`}
+              style={{ color: ORANGE, textDecoration: "none", fontWeight: 400 }}
+            >
+              {title || resolved.title}
+            </Link>
+          ) : (
+            // Same rule the credit above follows: what a reader loses when the
+            // source disappears is somewhere to click, not what was answered.
+            <span style={{ color: TEXT_PRIMARY }}>{title || "a build"}</span>
+          )}
+        </p>
+      ) : null}
 
       {/* The rebuilder's own words, quoted rather than paraphrased. */}
       {note ? (

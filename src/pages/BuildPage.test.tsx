@@ -469,6 +469,35 @@ describe("BuildPage rebuild attribution", () => {
     );
   });
 
+  // NS-P53 ACCEPTANCE 6 — the banner half of the round trip.
+  it("says a rebuild solves a bounty, and links the gap it answers", async () => {
+    getForkOrigin.mockResolvedValue({ build: sourceHeader, ordinal: 12 });
+    getBuildBySlug.mockResolvedValue(rebuildRecord({ solves_node_id: "gap-7" }));
+    renderAt("my-inbox-triage");
+
+    const line = await screen.findByTestId("rebuild-solves-line");
+    expect(line.textContent).toContain("Solves a bounty on Inbox triage agent");
+
+    // The hash names the NODE, because the gap panel is a card in the source's
+    // tree and not a route of its own. BuildPage reads it and scrolls there.
+    // Awaited rather than read at once: the sentence needs no lookup, but the
+    // LINK waits on the parent resolving, exactly as the credit above it does.
+    const link = await screen.findByRole("link", {
+      name: "Open the gap this build solves on Inbox triage agent",
+    });
+    expect(link.getAttribute("href")).toBe("/b2/inbox-triage-agent-demo#node-gap-7");
+  });
+
+  // NS-P53 — an ordinary rebuild is not accused of answering anything.
+  it("says nothing about bounties on a rebuild that solves none", async () => {
+    getForkOrigin.mockResolvedValue({ build: sourceHeader, ordinal: 12 });
+    getBuildBySlug.mockResolvedValue(rebuildRecord());
+    renderAt("my-inbox-triage");
+
+    await screen.findByTestId("rebuild-banner");
+    expect(screen.queryByTestId("rebuild-solves-line")).toBeNull();
+  });
+
   // ACCEPTANCE 1
   it("computes what changed only when the reader asks, and lists it", async () => {
     getForkOrigin.mockResolvedValue({ build: sourceHeader, ordinal: 12 });

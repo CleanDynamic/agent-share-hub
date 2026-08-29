@@ -58,6 +58,24 @@ export {
   type OpenBountiesPage,
 } from "./bounties";
 
+// The rebuild path (NS-P53): a solution that IS a build. The primary way to
+// answer a gap that needed more than one node changed to solve — see the header
+// of solutionRebuild.ts for why it is the primary one.
+export {
+  SOLUTION_BUILD_COLUMNS,
+  getSolutionBuild,
+  isEmptyPayload,
+  listMySolutionRebuilds,
+  listSolutionBuilds,
+  matchSolutionNode,
+  resolveSolutionNode,
+  startSolutionRebuild,
+  submitSolutionRebuild,
+  type MatchedSolutionNode,
+  type SolutionBuild,
+  type SubmitSolutionRebuildInput,
+} from "./solutionRebuild";
+
 export {
   SOLUTION_COLUMNS,
   acceptSolution,

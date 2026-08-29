@@ -11,10 +11,18 @@ import { getFieldsFor } from "@/lib/build/nodeTypes";
 import { createNotification } from "@/lib/notifications/createNotification";
 import type { NodePayload } from "@/lib/build/types";
 import { checkNodePayload, payloadRejectionMessage } from "./payload";
-import { bountyLayerError, type Bounty } from "./types";
+import {
+  getSolutionBuild,
+  listSolutionBuilds,
+  resolveSolutionNode,
+  type SolutionBuild,
+} from "./solutionRebuild";
+import { SOLUTION_COLUMNS, bountyLayerError, type Bounty } from "./types";
 
-export const SOLUTION_COLUMNS =
-  "id, bounty_id, slot_kind, slot_id, solver_id, solver_note, content_payload, vote_count, i_would_implement_count, status, submitted_at, accepted_at, created_at, updated_at";
+// Moved to types.ts by NS-P53 so the rebuild path can write a solutions row
+// without importing this module, which imports it. Re-exported unchanged: every
+// caller has always read it from here.
+export { SOLUTION_COLUMNS };
 
 export interface SubmitSolutionInput {
   bountyId: string;
@@ -37,6 +45,8 @@ export interface SubmittedSolution {
   solver_id: string;
   solver_note: string | null;
   content_payload: NodePayload;
+  /** The solver's own published rebuild, when that is what was submitted. */
+  solution_build_id: string | null;
   status: string;
   submitted_at: string | null;
   created_at: string;
@@ -184,6 +194,22 @@ export async function submitSolution({
  * before the substitution is asked for. It was validated at submission; a node
  * type's schema can be edited by an admin in between, and this is the last
  * moment before the payload becomes a node in somebody's published build.
+ *
+ * WHERE THE PAYLOAD COMES FROM (NS-P53). A solution carrying solution_build_id
+ * was submitted as a REBUILD: the solver forked this build, filled the gap
+ * inside their own copy and published it. What is pulled into the author's node
+ * is then the solver's filled node AS IT STANDS NOW, not the copy stored on the
+ * solutions row when it was filed — the build is the published record and the
+ * row's content_payload is a summary of it, so where the two disagree the one a
+ * reader can open is the one that is true.
+ *
+ * Matching the gap to its counterpart is matchNodes' job and happens here, in
+ * the client, because a fork shares no node ids with its source and the pairing
+ * heuristic has exactly one implementation. The id is then NAMED to the
+ * database, which re-proves every fact about it against data no client can
+ * edit — the build is the solver's, published, and declares this gap; the node
+ * belongs to it, is of the gap's type, is filled and is not empty — so the
+ * resolution below is a convenience for the caller and never the authority.
  */
 export async function acceptSolution(
   bountyId: string,
@@ -191,7 +217,9 @@ export async function acceptSolution(
 ): Promise<AcceptedSolution> {
   const { data: solutionRow, error: solutionError } = await supabase
     .from("solutions")
-    .select("id, bounty_id, slot_kind, slot_id, solver_id, status, content_payload")
+    .select(
+      "id, bounty_id, slot_kind, slot_id, solver_id, status, content_payload, solution_build_id",
+    )
     .eq("id", solutionId)
     .eq("bounty_id", bountyId)
     .maybeSingle();
@@ -207,6 +235,7 @@ export async function acceptSolution(
     solver_id: string;
     status: string;
     content_payload: unknown;
+    solution_build_id: string | null;
   };
   if (solution.status !== "submitted") {
     throw new Error(
@@ -219,23 +248,49 @@ export async function acceptSolution(
 
   const { data: node, error: nodeError } = await supabase
     .from("build_nodes")
-    .select("id, type")
+    .select("id, type, build_id")
     .eq("id", solution.slot_id)
     .maybeSingle();
   if (nodeError) throw bountyLayerError("acceptSolution (gap node)", nodeError);
   if (!node) throw new Error("The gap node this solution answers no longer exists");
 
-  const fields = await getFieldsFor((node as { type: string }).type);
-  const checked = checkNodePayload(solution.content_payload, fields);
-  if (checked.errors.length > 0) {
-    throw new Error(
-      `This solution no longer fits the node's type: ${payloadRejectionMessage(checked.errors)}`,
-    );
+  // THE REBUILD BRANCH. Resolving the solver's filled node also re-checks
+  // everything that made the rebuild submittable in the first place — still
+  // published, still declaring this gap, still filled — because all three can
+  // have changed since it was filed, and the acceptance is the moment that
+  // matters. resolveSolutionNode validates the payload it returns against the
+  // node's own type, so the typed-payload re-validation below is skipped for
+  // this branch rather than run twice over the same fields.
+  const solvedNodeId = solution.solution_build_id
+    ? (
+        await resolveSolutionNode({
+          bounty: {
+            id: bountyId,
+            build_id: (node as { build_id: string }).build_id,
+            gap_node_id: solution.slot_id,
+          },
+          rebuild: await getSolutionBuild(solution.solution_build_id),
+          operation: "acceptSolution",
+        })
+      ).node.id
+    : null;
+
+  if (!solution.solution_build_id) {
+    const fields = await getFieldsFor((node as { type: string }).type);
+    const checked = checkNodePayload(solution.content_payload, fields);
+    if (checked.errors.length > 0) {
+      throw new Error(
+        `This solution no longer fits the node's type: ${payloadRejectionMessage(checked.errors)}`,
+      );
+    }
   }
 
+  // p_solved_node_id is omitted entirely on the typed-payload path, where the
+  // function defaults it to NULL and behaves exactly as it did in NS-P50.
   const { data, error } = await supabase.rpc("accept_bounty_solution", {
     p_bounty_id: bountyId,
     p_solution_id: solutionId,
+    ...(solvedNodeId ? { p_solved_node_id: solvedNodeId } : {}),
   });
   if (error) throw bountyLayerError("acceptSolution", error);
 
@@ -316,6 +371,19 @@ export interface BountySolution {
   solver_id: string;
   solver_note: string | null;
   content_payload: NodePayload;
+  /**
+   * The solver's own published rebuild, when the answer was submitted as one
+   * (NS-P53). Null on a typed-payload solution, which is every legacy row.
+   */
+  solution_build_id: string | null;
+  /**
+   * That build's header, resolved in the same batch as the profiles. Null when
+   * solution_build_id is null, and ALSO null when the build can no longer be
+   * read — deleted, or unpublished since it was filed. The row still renders:
+   * the payload on it is what was offered, and losing the link is not losing
+   * the answer.
+   */
+  solutionBuild: SolutionBuild | null;
   vote_count: number;
   i_would_implement_count: number;
   status: string;
@@ -369,14 +437,21 @@ export async function listSolutions({
   if (error) throw bountyLayerError("listSolutions", error);
 
   const rows = (data ?? []) as unknown as Array<
-    Omit<BountySolution, "solver" | "myVote" | "myImplement">
+    Omit<BountySolution, "solver" | "myVote" | "myImplement" | "solutionBuild">
   >;
   if (rows.length === 0) return [];
 
   const solverIds = [...new Set(rows.map((row) => row.solver_id))];
   const solutionIds = rows.map((row) => row.id);
+  // A THIRD BATCHED LOOKUP, NOT A FOURTH REQUEST PER ROW. The rebuild rows on a
+  // panel are usually one or two and often none, and listSolutionBuilds returns
+  // an empty map without querying when there are none — so a panel of typed
+  // payloads costs exactly what it cost before NS-P53.
+  const rebuildIds = rows
+    .map((row) => row.solution_build_id)
+    .filter((id): id is string => Boolean(id));
 
-  const [profiles, votes] = await Promise.all([
+  const [profiles, votes, builds] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, username, display_name, avatar_url")
@@ -391,6 +466,7 @@ export async function listSolutions({
           // Two kinds per solution at most, and the set is already capped.
           .limit(solutionIds.length * 2)
       : Promise.resolve({ data: [], error: null }),
+    listSolutionBuilds(rebuildIds),
   ]);
 
   // A failed profile read costs the bylines their names, not the panel its
@@ -414,6 +490,9 @@ export async function listSolutions({
   const solutions: BountySolution[] = rows.map((row) => ({
     ...row,
     content_payload: (row.content_payload ?? {}) as NodePayload,
+    solutionBuild: row.solution_build_id
+      ? builds.get(row.solution_build_id) ?? null
+      : null,
     solver: byId.get(row.solver_id) ?? null,
     myVote: mine.has(`${row.id}::upvote`),
     myImplement: mine.has(`${row.id}::i_would_implement`),
