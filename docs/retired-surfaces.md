@@ -656,6 +656,203 @@ gap was never filled.
 
 ---
 
+## Legacy bounty creation
+
+**Frozen** NS-P54 (29 Aug 2026) — entry points, writers and the dual counter, in
+one prompt.
+
+**Replaced by** the bounty on a build: a gap node marked unsolved in the
+composer (`src/components/compose/BountySection.tsx`), priced in the publish
+sheet, filed against `public.bounties`, surfaced on the build page, the gallery
+and the feed, and answered by a typed payload or a rebuild — NS-P45 through
+NS-P53. That path was proven before this retirement was taken, which is the
+gate the whole series works to.
+
+**Flag** `LEGACY_BOUNTY_CREATE_ENABLED` in `src/lib/bounty-legacy/flags.ts`,
+currently `false`.
+
+### Why the form moved rather than the feature
+
+`/bounty/new` asked a creator to start from the ask — to describe a hole before
+they had done any of the work around it. Almost nobody does. The gap panel asks
+the same question at the one moment the answer is already in front of them:
+they are publishing a build, and one part of it is missing.
+
+### The volume this retired
+
+Measured 29 Aug 2026 against the project in `supabase/config.toml`, read-only
+through the publishable (anon) key.
+
+| Probe | Answer |
+| --- | --- |
+| `content_items` where `post_type = 'bounty'` | **3** |
+| ...of those, created in the last 7 days | **0** |
+| Newest of the three | 2026-08-14 — fifteen days before this freeze |
+| `content_items` readable in total, for scale | 76 |
+
+Nobody has created a legacy bounty in a fortnight. The freeze is still the
+point regardless of the number: it is what stops the shape coming back.
+
+### What the flag holds down
+
+| Layer | What is frozen |
+| --- | --- |
+| Route (commit 1) | `/bounty/new` — `BountyUpload`'s submit handler, which inserted an APPROVED `content_items` row straight from a three-step form |
+| Route (commit 1) | `/upload/bounty` **with no `?id`** — `BountyUploadShell`'s bootstrap, which minted a draft row on arrival and redirected to itself |
+| Affordance (commit 1) | The upload picker's **Bounty** card (`ROUTE_FOR_TYPE.bounty` in `src/contexts/UploadPickerContext.tsx`) and Home's bounties-tab empty CTA (`onEmptyCTAClick` in `src/pages/Home.tsx`) — both now land on `/compose/new`. The label "Post a bounty" is unchanged: the destination moved, the promise did not |
+| Write (commit 2) | `createMetaBounty` and `promoteBountyToBlueprint` in `src/lib/bounty-competition/` |
+
+Each frozen writer calls `assertLegacyBountyCreateEnabled()` as its first
+statement, before any state is read and before any row is touched. While the
+flag is false that throws:
+
+```ts
+LegacyBountyValidationError(
+  "BOUNTY_RETIRED",
+  "Bounties are now part of publishing a build — mark a part unsolved in the composer."
+)
+```
+
+It is a refusal, not a rolled-back write: no query of any kind is built behind
+the error, which is what the specs assert.
+
+`/bounty/new` is wrapped in `LegacyUploadRoute` — the same NS-P25 component that
+carries the previous publishing tool's banner — with `ProtectedRoute` left
+outermost, so a signed-out visitor still meets the login redirect rather than a
+notice over one. The notice gains a second line on the two bounty routes only;
+`/upload/blueprint` and `/upload/blog` still create, and a retirement that is
+not theirs would be noise on them.
+
+### What is still live, and must stay live
+
+- **A bounty draft already in progress.** `/upload/bounty?id={draftId}` mounts
+  the shared editor in bounty mode and still saves and publishes through
+  `Upload.tsx`, which NS-P54 does not touch. `src/pages/Drafts.tsx` still routes
+  a `post_type = 'bounty'` draft there, deliberately. What stopped is the
+  bootstrap that MINTED a new draft, not the editor that finishes one.
+- **Every legacy bounty read page**: `/content/:id` with its solutions and
+  discussion, `/b/:id/thread`, `/b/:id/leaderboard`, and the legacy meta-bounty
+  page with its pledge and spawn affordances.
+- **Solving one.** All of `src/lib/bounty-solver/`, `markSolutionReviewStatus`,
+  `getBountyAnalytics`, `extendBountyDeadline`, and `refreshLeaderboardCache` —
+  which is deliberately outside the freeze and says so in its own header,
+  because it creates no bounty and freezing it would leave the leaderboard page
+  rendering stale ranks after every vote with nothing on screen to say why.
+- **`pledgeToSubBounty`.** Its spawn branch still writes a `content_items` row
+  when a pledge crosses a sub-bounty's threshold. It hangs off a meta-bounty
+  that already exists rather than creating one, it is reachable from
+  `MetaBountyBody` on the live `ContentDetail`, and it is NS-P49's. Freezing it
+  here would break a live surface this prompt is told to leave alone.
+
+### The dual counter, ended
+
+`supabase/migrations/20260830140000_single_me_too_counter.sql` replaces one
+function body. `public.update_bounty_me_too_count()` stops writing
+`content_items.bounty_me_too_count` and keeps writing `bounties.me_too_count`.
+Nothing else changes: no table, column, index, policy, trigger or row.
+
+NS-P47 made that a dual-write on purpose, and said so here, because the legacy
+surfaces read the `content_items` counter. This ends it and repoints those
+surfaces in the same commit, so no surface is left reading a number that has
+stopped moving.
+
+| Call site | Was | Is |
+| --- | --- | --- |
+| `src/components/BountyCard.tsx` — the "N have this" line | `item.bounty_me_too_count` | `useLegacyMeTooCount(item.id, frozen)` |
+| `src/pages/Discover.legacy.tsx` — the default me-too sort | `a.bounty_me_too_count` | `useLegacyMeTooCounts(ids)`, frozen value as the per-row fallback |
+| `src/pages/Browse.tsx` — an identical me-too sort | unchanged | **Unreachable.** No module imports this file; it is a stale copy of `Discover.legacy` |
+| `src/pages/ContentDetail.legacy.tsx` — the me-too toggle and count | unchanged | **Unreachable.** No route registers it and no module imports it, as NS-P44 measured |
+
+Both repointed readers keep the frozen column as their **fallback** and render
+it immediately. A bounty with no `bounties` header, or a database where the
+header table is not applied, shows the last true number rather than a zero —
+which would assert that nobody ever needed it. The loader
+(`src/lib/bounty/legacyMeToo.ts`) coalesces every id asked for in the same
+microtask, so a screenful of bounty cards costs one resolve and one count query
+rather than one pair per card.
+
+**The column keeps its last value.** Not dropped, and not zeroed. A frozen
+number that was true on the day it froze is a record.
+
+### The rule this leaves behind
+
+**The `bounty_*` columns on `content_items` are dropped only when
+`content_items` itself is retired.** There are twelve of them and they are not
+NS-P54's to remove one at a time — every one hangs off a table the legacy read
+path still serves, and dropping any of them is the same operator decision as
+retiring that table, taken under
+[Dropping any of this](#dropping-any-of-this) below. The same rule NS-P44 wrote
+for the generation-1 tables, applied to the columns beside them.
+
+### Rollback
+
+Reverse order — commit 4, then 3, then 2, then 1 — because each builds on the
+one before, the way NS-P43 built on NS-P42's flag.
+
+**Commit 3 (the counter).** Re-apply the NS-P47 function body from
+`supabase/migrations/20260829120000_repoint_bounty_satellites.sql` section 11,
+which restores the dual-write; both counters recompute from the same
+`COUNT(*)`, so the frozen column catches up on the next me-too rather than
+needing a backfill. Revert `BountyCard.tsx` and `Discover.legacy.tsx` to
+reading the column directly, and
+`supabase/tests/ns-p54-single-me-too-counter.sql`, whose check 1 asserts the
+single-leg body and will fail — correctly — once it is restored.
+
+**Commits 1 and 2 (the freeze).** Set `LEGACY_BOUNTY_CREATE_ENABLED = true` in
+`src/lib/bounty-legacy/flags.ts`. Both routes write again and both helpers
+answer; nothing was deleted, so nothing else has to be restored. Three
+companion steps:
+
+1. Point `ROUTE_FOR_TYPE.bounty` in `src/contexts/UploadPickerContext.tsx` back
+   at `"/upload/bounty"`, and Home's bounties CTA back at
+   `openUploadTypePicker("bounty")`.
+2. Unwrap `/bounty/new` from `LegacyUploadRoute` in `src/App.tsx`.
+3. Revert `src/lib/bounty-legacy/legacyBountyCreateRetired.test.tsx`, which
+   asserts the frozen behaviour directly, and the `createMetaBounty` case in
+   `src/lib/bounty-competition/legacyMetaRedirect.test.ts`, which NS-P54 updated
+   to the freeze rather than deleting — its original NS-P48 filing assertions
+   are in that file's history and go back with the flag.
+
+### The NS-P55 gate: every remaining `.insert` on `content_items`
+
+NS-P55 deletes the superseded upload code. Its opening question is whether
+anything still writes `content_items`. **The honest answer is that four writers
+remain, and the gate is therefore open for the bounty path and not for the
+document path.** Audited 29 Aug 2026 by grep across `src/` and
+`supabase/functions/`, matching `.insert` within 300 characters of a
+`content_items` `.from(...)`, then following each to its affordance.
+
+| Site | Status | Why |
+| --- | --- | --- |
+| `src/pages/Upload.tsx:694` (draft save) and `:1002` (publish) | **LIVE** | The shared editor, reachable at `/upload/blueprint` and `/upload/blog`. NS-P54 does not touch it; it is NS-P55's business. Note `:1002` writes `post_type: 'bounty'` when mounted in bounty mode, so **publishing an existing bounty draft still creates a bounty row** — deliberately, so a draft in progress is finishable. No route or affordance can create a new such draft |
+| `src/components/ProjectUploadForm.tsx:665` | **LIVE** | Mounted by `Upload.tsx`; creates a project. Outside the bounty path entirely |
+| `src/lib/bounty-solver/forkSolution.ts:45` | **LIVE** | Creates a blueprint DRAFT by forking a solution. Reachable from `ContentDetail.tsx:1162`. It is part of solving, not of creating a bounty, so NS-P54 leaves it |
+| `src/lib/bounty-competition/pledgeToSubBounty.ts:87` | **LIVE, conditional** | The spawn branch, when a pledge crosses a threshold. Reachable through `MetaBountyBody`. NS-P49's, as above |
+| `src/pages/BountyUpload.tsx:71` | **Frozen** | NS-P54, `BOUNTY_RETIRED` |
+| `src/pages/BountyUploadShell.tsx:61` | **Frozen** | NS-P54, `BOUNTY_RETIRED` |
+| `src/lib/bounty-competition/createMetaBounty.ts:60` | **Frozen** | NS-P54, `BOUNTY_RETIRED`. Also had no caller |
+| `src/lib/bounty-competition/promoteBountyToBlueprint.ts:97` | **Frozen** | NS-P54, `BOUNTY_RETIRED`. Its affordance was already unreachable — the dialog opens only when `bounty_status === 'solved'` and that column answers 42703 |
+| `src/lib/remix/createRemix.ts:64` | **Frozen** | NS-P43, `REMIX_RETIRED` |
+| `src/components/ReblogComposer.tsx:612` | **Unreachable** | Mounts only on `reblogOpen`, and both `setReblogOpen(true)` sites (`ReblogCard.tsx:433`, `ReblogDetailView.tsx:313`) are inside `REBLOG_COMPOSE_ENABLED &&` blocks, which is `false` |
+| `src/components/ForkModal.tsx:52` | **Unreachable** | Its only trigger is in `ContentDetail.legacy.tsx`, which no route registers and no module imports |
+| `supabase/functions/seed-demo-data`, `seed-new-posts`, `seed-ecosystem` | **Service role** | Seeders, not user paths. `seed-ecosystem` has been broken since NS-P46 and NS-P48 and is still unowned |
+
+Two sites that a naive grep for `content_items` near `.insert` catches and
+which are **not** `content_items` writes at all, listed so the next audit does
+not re-derive them: `src/pages/ContentEdit.tsx:216` and
+`src/components/PublishUpdateModal.tsx:95` are `.update()` on `content_items`
+whose neighbouring `.insert` is on `content_changelogs` and `content_versions`.
+`supabase/functions/generate-ai-pdf` is the same shape against `ai_export_log`.
+**Admin moderation is in this category too** — `src/pages/Admin.tsx` changes
+`status` on rows that already exist and creates nothing.
+
+**So: no path creates a legacy BOUNTY any more, and four paths still create
+other kinds of `content_items` row.** NS-P55 can delete the bounty creation
+code named above without stranding a user. It cannot yet treat `content_items`
+as write-dead.
+
+---
+
 ## `content_items.bounty_health_score` — unmaintained, and always was
 
 **Recorded** NS-P54 (29 Aug 2026). Nothing is frozen here and nothing changed.
