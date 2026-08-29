@@ -48,9 +48,12 @@ export {
   extendDeadline,
   getBounty,
   listBountiesForBuild,
+  listBuildBounties,
   listOpenBounties,
+  type BuildBounty,
   type CreateBountyForGapInput,
   type ExtendDeadlineInput,
+  type ListBuildBountiesOptions,
   type ListOpenBountiesOptions,
   type OpenBountiesPage,
 } from "./bounties";
@@ -58,11 +61,22 @@ export {
 export {
   SOLUTION_COLUMNS,
   acceptSolution,
+  countSolutionsByBounty,
+  listSolutions,
+  listSolverHandles,
   submitSolution,
   type AcceptedSolution,
+  type BountySolution,
+  type ListSolutionsOptions,
+  type SolutionSolver,
   type SubmitSolutionInput,
   type SubmittedSolution,
 } from "./solutions";
+
+// The reader's one-click answer to an open ask. Its table is NS-P52's and is
+// keyed at bounties; the generation-1 bounty_me_too is neither read nor
+// written here — see the header of meToo.ts.
+export { myMeToo, toggleMeToo } from "./meToo";
 
 export {
   checkNodeField,

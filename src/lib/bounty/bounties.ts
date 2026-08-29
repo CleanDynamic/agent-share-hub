@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { BUILD_COLUMNS } from "@/lib/build/builds";
 import { NODE_COLUMNS } from "@/lib/build/nodes";
 import type { Build, BuildNode } from "@/lib/build/types";
+import { myMeToo } from "./meToo";
+import { countSolutionsByBounty } from "./solutions";
 import {
   bountyLayerError,
   type Bounty,
@@ -380,4 +382,59 @@ async function getBountyRow(bountyId: string, operation: string): Promise<Bounty
     .single();
   if (error) throw bountyLayerError(operation, error);
   return data as Bounty;
+}
+
+// =============================================================================
+// What the build page's gap panels need
+// =============================================================================
+
+/** One open ask on a build, with the two numbers its panel prints. */
+export interface BuildBounty {
+  bounty: Bounty;
+  /** Submitted and accepted solutions. Drafts are nobody's answer yet. */
+  solutions: number;
+  /** Whether the reader has already said they need this too. */
+  meToo: boolean;
+}
+
+export interface ListBuildBountiesOptions {
+  buildId: string;
+  /** The reader, so their own me-too marks come back. Null when signed out. */
+  viewerId?: string | null;
+  /** Defaults to the open ones, which is what a gap panel is about. */
+  status?: BountyStatus | "any";
+}
+
+/**
+ * The bounties on a build, with the counts each panel renders.
+ *
+ * THREE QUERIES FOR THE WHOLE PAGE, whatever number of gaps it carries: the
+ * headers, then one batched count over every one of their ids and one batched
+ * read of the viewer's own marks, run concurrently. getBounty is the other
+ * shape — four reads about ONE bounty, for a surface that is about one bounty —
+ * and calling it per gap is where the N+1 would be.
+ *
+ * A build with no bounties costs exactly one query and returns an empty array;
+ * nothing below is attempted for it.
+ */
+export async function listBuildBounties({
+  buildId,
+  viewerId = null,
+  status = "open",
+}: ListBuildBountiesOptions): Promise<BuildBounty[]> {
+  const all = await listBountiesForBuild(buildId);
+  const bounties = status === "any" ? all : all.filter((row) => row.status === status);
+  if (bounties.length === 0) return [];
+
+  const ids = bounties.map((row) => row.id);
+  const [solutions, marks] = await Promise.all([
+    countSolutionsByBounty(ids),
+    viewerId ? myMeToo(ids, viewerId) : Promise.resolve(new Set<string>()),
+  ]);
+
+  return bounties.map((bounty) => ({
+    bounty,
+    solutions: solutions.get(bounty.id) ?? 0,
+    meToo: marks.has(bounty.id),
+  }));
 }

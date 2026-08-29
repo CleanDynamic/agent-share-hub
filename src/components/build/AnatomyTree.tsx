@@ -6,7 +6,8 @@
 // re-filtering here would only hide it.
 
 import { useState } from "react";
-import type { Build, NodeTree, NodeType } from "@/lib/build";
+import type { ReactNode } from "react";
+import type { Build, BuildNode, NodeTree, NodeType } from "@/lib/build";
 import { NodeCard } from "./NodeCard";
 import type { ResolveMedia, ResolveNode } from "./renderers";
 import { HAIRLINE, TEXT_MUTED, TEXT_SECONDARY, bodyText } from "./tokens";
@@ -19,6 +20,14 @@ interface AnatomyTreeProps {
   resolveNode: ResolveNode;
   /** Supplied by BuildPage from one media query, for the same reason. */
   resolveMedia: ResolveMedia;
+  /**
+   * What to hang under a given node, if anything (NS-P52).
+   *
+   * Passed straight through to NodeCard's footer. The tree does not look at
+   * what comes back and has no opinion about which nodes get one — that is the
+   * page's, which is the only layer that knows what bounties exist.
+   */
+  renderFooter?: (node: BuildNode) => ReactNode;
 }
 
 /** Indentation per level. Three levels deep is the deepest the schema allows. */
@@ -48,6 +57,7 @@ function TreeNode({
   build,
   resolveNode,
   resolveMedia,
+  renderFooter,
 }: {
   node: NodeTree;
   typesByKey: Map<string, NodeType>;
@@ -55,6 +65,7 @@ function TreeNode({
   build: Build;
   resolveNode: ResolveNode;
   resolveMedia: ResolveMedia;
+  renderFooter?: (node: BuildNode) => ReactNode;
 }) {
   // Expanded by default at every level: the anatomy is the point of the page.
   const [open, setOpen] = useState(true);
@@ -95,6 +106,7 @@ function TreeNode({
             build={build}
             resolveNode={resolveNode}
             resolveMedia={resolveMedia}
+            footer={renderFooter?.(node)}
           />
         </div>
       </div>
@@ -121,6 +133,7 @@ function TreeNode({
               build={build}
               resolveNode={resolveNode}
               resolveMedia={resolveMedia}
+              renderFooter={renderFooter}
             />
           ))}
         </ul>
@@ -135,6 +148,7 @@ export function AnatomyTree({
   build,
   resolveNode,
   resolveMedia,
+  renderFooter,
 }: AnatomyTreeProps) {
   const typesByKey = new Map(nodeTypes.map((type) => [type.key, type]));
 
@@ -167,6 +181,7 @@ export function AnatomyTree({
           build={build}
           resolveNode={resolveNode}
           resolveMedia={resolveMedia}
+          renderFooter={renderFooter}
         />
       ))}
     </ul>

@@ -381,6 +381,19 @@ interface SchemaFormProps {
   buildId: string;
   node: BuildNode;
   fields: FieldDef[];
+  /**
+   * CONTROLLED MODE. Pass both of these and the form stops being a writer: it
+   * renders the values given and reports every edit, and nothing is written to
+   * build_nodes at all.
+   *
+   * NS-P52 needs it for the solve panel, where the same node type's form is
+   * filled in by a SOLVER against an empty payload. The node being answered
+   * belongs to somebody else and the answer is a solutions row, so a form that
+   * debounced its way into build_nodes would be writing a stranger's draft into
+   * a published build — and would be refused by policy while it tried.
+   */
+  payload?: NodePayload;
+  onPatchPayload?: (fields: NodePayload) => void;
 }
 
 /**
@@ -415,14 +428,73 @@ function orderRequiredFirst(fields: FieldDef[]): {
   return { required, optional };
 }
 
-export function SchemaForm({ buildId, node, fields }: SchemaFormProps) {
-  const { patchPayload } = useNodeWrite(buildId, node.id);
-  const payload = asPayload(node.payload);
+/**
+ * The schema form, in one of its two modes.
+ *
+ * The branch is taken once per call site and never changes for an instance —
+ * a caller either passes the controlled pair or it does not — so the two
+ * bodies below are separate components rather than one body with a condition
+ * in it. That is what keeps the writer OUT of the controlled tree: a hook
+ * cannot be skipped, but a component that never mounts never runs one.
+ */
+export function SchemaForm(props: SchemaFormProps) {
+  const { buildId, node, fields, payload, onPatchPayload } = props;
 
+  if (payload !== undefined && onPatchPayload) {
+    return (
+      <SchemaFields
+        nodeId={node.id}
+        fields={fields}
+        payload={payload}
+        onPatch={onPatchPayload}
+      />
+    );
+  }
+
+  return <WritingSchemaForm buildId={buildId} node={node} fields={fields} />;
+}
+
+/** The ordinary workspace form: the node's own payload, written as it is typed. */
+function WritingSchemaForm({
+  buildId,
+  node,
+  fields,
+}: {
+  buildId: string;
+  node: BuildNode;
+  fields: FieldDef[];
+}) {
+  const { patchPayload } = useNodeWrite(buildId, node.id);
+  return (
+    <SchemaFields
+      nodeId={node.id}
+      fields={fields}
+      payload={asPayload(node.payload)}
+      onPatch={patchPayload}
+    />
+  );
+}
+
+interface SchemaFieldsProps {
+  /** Scopes the field ids and the touched set. Not read as a row anywhere. */
+  nodeId: string;
+  fields: FieldDef[];
+  payload: NodePayload;
+  onPatch: (fields: NodePayload) => void;
+}
+
+/**
+ * The fields themselves: required first, optional behind a fold, nothing more.
+ *
+ * Exported because a caller outside the workspace — the solve panel — renders
+ * a type's form over a payload of its own. It knows nothing about where the
+ * values come from or where they go, which is what makes it usable by both.
+ */
+export function SchemaFields({ nodeId, fields, payload, onPatch }: SchemaFieldsProps) {
   /** Which fields the creator has edited, so the required marker stays quiet
    *  until they have actually been somewhere and left it blank. */
   const [touched, setTouched] = useState<Set<string>>(() => new Set());
-  useEffect(() => setTouched(new Set()), [node.id]);
+  useEffect(() => setTouched(new Set()), [nodeId]);
 
   /**
    * The nodes whose optional fields the creator has opened, by id.
@@ -443,7 +515,7 @@ export function SchemaForm({ buildId, node, fields }: SchemaFormProps) {
 
   const renderField = (field: FieldDef) => {
     const Widget = resolveWidget(field);
-    const fieldId = `field-${node.id}-${field.key}`;
+    const fieldId = `field-${nodeId}-${field.key}`;
     return (
       <Widget
         key={field.key}
@@ -454,7 +526,7 @@ export function SchemaForm({ buildId, node, fields }: SchemaFormProps) {
         onTouch={() => markTouched(field.key)}
         onChange={(next) => {
           markTouched(field.key);
-          patchPayload({ [field.key]: next });
+          onPatch({ [field.key]: next });
         }}
       />
     );
@@ -471,7 +543,7 @@ export function SchemaForm({ buildId, node, fields }: SchemaFormProps) {
   // A short tail of optional fields is not worth a door. Everything renders,
   // required first, and there is nothing to open.
   const folds = optional.length >= FOLD_THRESHOLD;
-  const isOpen = expandedNodes.has(node.id);
+  const isOpen = expandedNodes.has(nodeId);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -487,8 +559,8 @@ export function SchemaForm({ buildId, node, fields }: SchemaFormProps) {
             onClick={() =>
               setExpandedNodes((current) => {
                 const next = new Set(current);
-                if (next.has(node.id)) next.delete(node.id);
-                else next.add(node.id);
+                if (next.has(nodeId)) next.delete(nodeId);
+                else next.add(nodeId);
                 return next;
               })
             }
