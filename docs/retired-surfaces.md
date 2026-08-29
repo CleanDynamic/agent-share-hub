@@ -282,7 +282,8 @@ NS-P44.
 
 ## The NS-P46 repoint — two map tables and a shim column
 
-**Added** NS-P46 (28 Aug 2026). **Kept until NS-P56 signs off.**
+**Added** NS-P46 (28 Aug 2026). **The two shim columns were dropped by NS-P50
+(29 Aug 2026); the two map tables are kept until NS-P56 signs off.**
 
 Nothing is frozen here. This section is on this page because NS-P46 left three
 objects in the database whose only job is to make a change reversible, and an
@@ -298,7 +299,7 @@ mapping NS-P45 backfilled.
 | --- | --- | --- |
 | `public.ns_p46_migration_map_solutions` | table | One row per repointed solution: its id, and the `content_items` id its `bounty_id` held before. The only record of the old values. RLS on, no policy — operator access only. |
 | `public.ns_p46_migration_map_acceptance_log` | table | The same, for `solution_acceptance_log`. |
-| `solutions.legacy_bounty_item_id` and `solution_acceptance_log.legacy_bounty_item_id` | columns | The shim the live legacy read path runs on. Derived by `set_legacy_bounty_item_id()` from `bounties.legacy_item_id`, never written by a client. |
+| ~~`solutions.legacy_bounty_item_id` and `solution_acceptance_log.legacy_bounty_item_id`~~ | columns | **Dropped by NS-P50.** They were the shim the live legacy read path ran on, derived by `set_legacy_bounty_item_id()` from `bounties.legacy_item_id`. Every reader now resolves that mapping through `resolveBountyByLegacyItem` and filters `bounty_id`. |
 
 ### Why the shim column exists
 
@@ -308,13 +309,14 @@ param would return nothing — which looks exactly like a bounty nobody has
 solved, not like a bug. The column keeps the old id on the row; each read that
 needs it was moved across and flagged `// NS-P46 shim` in the source.
 
-**NS-P50 removes them.** `grep -rn "NS-P46 shim" src/` is the complete list:
-19 lines at the time of writing — 16 of them call sites across 15 files, plus
-the field's declaration in `bounty-solver/types.ts` and the header of
-`legacyBountyShim.test.ts`, which is the spec that fails when a shim is removed
-without its caller being rewired. When the last call site is rewired onto
-`bounties` directly, the two columns, `set_legacy_bounty_item_id()` and its two
-triggers go with them.
+**NS-P50 removed them**, in
+`supabase/migrations/20260829180000_drop_bounty_shims.sql`, after the commit
+before it rewired every caller onto `bounties` directly. The two columns, their
+two indexes, `set_legacy_bounty_item_id()` and its two triggers went together.
+`src/lib/bounty-solver/legacyBountyShim.test.ts` became
+`legacyBountyRedirect.test.ts` and asserts the new path — the question it asks
+(does the legacy bounty page still find its own solutions?) outlived the shim
+that used to answer it.
 
 ### Reversing the repoint
 
@@ -333,17 +335,30 @@ against a Postgres 16 harness before being written down.
 - Every one of the twelve legacy `bounty_*` columns on `content_items`. NS-P46
   reads them through the shim and does not drop, rename or stop writing any.
 
-### One thing NS-P50 has to decide
+### The thing NS-P50 had to decide — decided
 
-`solution_acceptance_log` still carries `"Public can read acceptance log"` with
-`USING (true)`, untouched by NS-P46 because it names no table the repoint
-moved. Once the new path writes acceptance rows for bounties on unpublished
-builds, that policy publishes them. Tightening it is a behaviour change on a
-live surface and belongs with the prompt that gives it rows.
+`solution_acceptance_log` carried `"Public can read acceptance log"` with
+`USING (true)`, untouched by NS-P46 because it named no table the repoint moved.
+NS-P50's `accept_bounty_solution` is what gives that table rows for bounties on
+unpublished builds, so
+`supabase/migrations/20260829160000_accept_bounty_solution.sql` replaced it with
+two policies mirroring the `solutions` read rule: readable when the bounty's
+home is public, and otherwise by the solver, the bounty author and admins.
+Nobody who could read a row before lost it — every pre-existing row is a legacy
+bounty, and the legacy branch is the approved-item test that made those rows
+public in the first place.
+
+While it was there, one more fact worth writing down: **`solution_acceptance_log`
+has row level security enabled and no INSERT policy at all, and never has.** No
+client role can append to it, so the legacy `acceptSolution`'s insert has always
+been refused by policy with its error discarded. The new path appends through
+the SECURITY DEFINER function instead, which is why that function needs the
+definer right at all.
 
 ## The NS-P47 repoint — four map tables, four shim columns, one dual-write
 
-**Added** NS-P47 (29 Aug 2026). **Kept until NS-P56 signs off.**
+**Added** NS-P47 (29 Aug 2026). **The four shim columns were dropped by NS-P50
+(29 Aug 2026); the four map tables are kept until NS-P56 signs off.**
 
 Nothing is frozen here either. `supabase/migrations/20260829120000_repoint_bounty_satellites.sql`
 repeats the NS-P46 recipe on the four remaining generation-2 satellites that
@@ -408,10 +423,20 @@ thread subscribes with a `postgres_changes` filter, which is a single column
 comparison evaluated by the replication stream. It cannot join, so either the
 old id is on the row or the legacy thread stops updating live.
 
-**NS-P50 removes them.** `grep -rn "NS-P47 shim" src/` is the complete list.
-When the last call site is rewired onto `bounties` directly, the four columns
-and their four triggers go with them — and once NS-P46's two go too,
-`set_legacy_bounty_item_id()` goes with the last of the six.
+**NS-P50 removed them**, with NS-P46's two, in the same migration: the four
+columns, their four indexes and their four triggers, and
+`set_legacy_bounty_item_id()` with the last of the six.
+
+The realtime filter was the interesting one. A `postgres_changes` filter cannot
+join, so `useBountyDiscussionUpdates` and `useBountySolutionUpdates` now resolve
+the header id **before** they open the channel and filter `bounty_id` — the
+subscription became asynchronous, and tears down cleanly if the page is left
+during the resolve.
+
+One live bug came out with the shims: `getDiscussionThread`'s accepted-solver
+lookup named `solutions.bounty_id` and was handed the route's `content_items`
+id, so it had matched nothing since NS-P46 and no comment had carried its
+"accepted solver" mark. The resolve fixes it.
 
 ### Reversing the repoint
 
@@ -429,21 +454,25 @@ mapping because its map is keyed on the old pair.
   `src/lib/bounty-solver/legacyDiscussionShim.test.ts`.
 - Every generation-1 read, unchanged. NS-P47 froze nothing.
 
-### One thing NS-P50 has to decide
+### One thing NS-P50 left open, on purpose
 
 `bounty_comment_reactions` carries `"Public view comment reactions"` with
 `USING (true)` and does not join the comment, so a reaction on a comment nobody
-can read is itself readable. That was true before NS-P47 and is true after it —
-rewriting it here would have been a behaviour change on a live surface in a
-migration that moves foreign keys. It is a real gap and belongs with the prompt
-that rewires these tables.
+can read is itself readable. NS-P50 did not tighten it, and the reasoning is the
+same one NS-P47 gave plus one more: NS-P50 writes no row to that table and
+creates no new exposure there, so tightening it would be an unrelated behaviour
+change on a live legacy surface inside a migration whose job is dropping
+columns. It is still a real gap, and it is still worth a prompt of its own —
+the fix is to join `bounty_discussion_comments` in the policy the way the
+solution-comments policy joins `solutions`.
 
 ---
 
 ## The NS-P48 repoint — one map table, two shim columns, and a table closed forward
 
-**Added** NS-P48 (29 Aug 2026). **Map table and shims kept until NS-P56 signs
-off. The freeze is not a shim and does not expire with them.**
+**Added** NS-P48 (29 Aug 2026). **The two shim columns were dropped by NS-P50
+(29 Aug 2026); the map table is kept until NS-P56 signs off. The freeze is not a
+shim, did not expire with them, and is asserted by NS-P50's own SQL test.**
 
 This one is not only a repoint.
 `supabase/migrations/20260829140000_repoint_meta_sub_definitions.sql` moves both
@@ -464,7 +493,7 @@ spawned bounty still clears the pointer and leaves the sub-definition standing.
 | Object | Kind | Why it stays |
 | --- | --- | --- |
 | `public.ns_p48_migration_map_meta_subs` | table | One row per repointed sub-definition: its id, and the two `content_items` ids it held before. RLS on, no policy — operator access only. |
-| `legacy_meta_item_id`, `legacy_spawned_item_id` | columns | The shims the live legacy meta surfaces run on. Derived by `set_meta_sub_legacy_item_ids()`, never written by a client. |
+| ~~`legacy_meta_item_id`, `legacy_spawned_item_id`~~ | columns | **Dropped by NS-P50.** They were the shims the live legacy meta surfaces ran on, derived by `set_meta_sub_legacy_item_ids()`. The strip resolves its whole screenful in one batched lookup; `getMetaBountyState` maps each spawn pointer back so `MetaBountyBody` still navigates to a `/content/:id` that exists. |
 | `public.set_meta_sub_legacy_item_ids()` | function | Keeps both shims equal to their bounty's `legacy_item_id` on every write. NS-P46's `set_legacy_bounty_item_id()` could not be reused: it reads `NEW.bounty_id` and writes `NEW.legacy_bounty_item_id`, and this table has neither column. |
 
 ### Why the table is closed, and what that means
@@ -502,11 +531,11 @@ meta-bounty nobody has broken into sub-bounties, not like a bug.
 hands `spawnedBountyId` to `MetaBountyBody`, which navigates to `/content/:id`
 with it. A `bounties` id there is a 404 on a bounty that exists.
 
-**NS-P50 removes them.** `grep -rn "NS-P48 shim" src/` is the complete list.
-When the last call site is rewired onto `bounties` directly, the two columns,
-their two indexes, `set_meta_sub_legacy_item_ids()` and
-`trg_mbsd_legacy_item_ids` go with them. `trg_mbsd_freeze_to_legacy` does not:
-it is the decision, not the scaffolding.
+**NS-P50 removed them**: the two columns, their two indexes,
+`set_meta_sub_legacy_item_ids()` and `trg_mbsd_legacy_item_ids`.
+`trg_mbsd_freeze_to_legacy` did not go — it is the decision, not the
+scaffolding — and check 2 of
+`supabase/tests/ns-p50-drop-bounty-shims.sql` fails if a later hand drops it.
 
 ### Two legacy write paths now create a `bounties` header
 
@@ -540,21 +569,90 @@ it started with and no `updated_at` moved.
   `content_items` and its `sub_definition_id` still keys this table. It is
   NS-P49's, and check 3 of the SQL test asserts NS-P48 left it alone.
 
-### Two things NS-P50 has to decide
+### Two things NS-P50 left open, and why
 
 `meta_bounty_sub_definitions` carries `"Public can read sub definitions"` with
 `USING (true)`, so anyone can read the sub-definitions of a meta bounty whose
-`content_items` row is not approved. That was true before NS-P48 and is true
-after it — tightening it would be a behaviour change on a live surface in a
-migration that moves foreign keys. The freeze makes the worse version of it
-impossible today (there can be no sub-definition on an unpublished build), but
-the gap is real and belongs with the prompt that rewires this table.
+`content_items` row is not approved. NS-P50 did not tighten it: it writes no row
+to that table, the freeze still makes the worse version impossible (there can be
+no sub-definition on an unpublished build), and the change would be an unrelated
+one inside a migration that drops columns. Still real, still worth its own
+prompt.
 
 `supabase/functions/seed-ecosystem/index.ts` writes `meta_bounty_id` and
 `solutions.bounty_id` as `content_items` ids with the service role. It has been
-broken since NS-P46 for `solutions` and is broken by NS-P48 for
-sub-definitions — loudly, with a foreign-key error, not silently. It is a
-seeding function on the retired path and no prompt in NS-P45–P49 owns it.
+broken since NS-P46 for `solutions` and since NS-P48 for sub-definitions —
+loudly, with a foreign-key error, not silently. NS-P50 did not fix it either: it
+is a seeding function on the retired path, it is not reached by any user flow,
+and repairing it means deciding what a seeded ecosystem should look like under
+the record model. Still unowned.
+
+---
+
+## NS-P50 — the shims gone, and what the new path introduced
+
+**Added** NS-P50 (29 Aug 2026). Nothing here is frozen or retired. This section
+exists because NS-P50 is the first prompt that gives `public.bounties` rows a
+life outside `content_items`, and three of its consequences are the kind that
+are discovered at the worst moment if they are not written down.
+
+`src/lib/bounty/` is the forward path: a bounty is a gap node in a build, a
+solution is a payload for that node's type, and accepting one substitutes the
+answer into the build. `src/lib/bounty-solver/` is the legacy path and is
+unchanged in behaviour — it reads the same `bounties` table through
+`resolveBountyByLegacyItem`, which is the seam the shim columns used to be.
+
+### A build whose gap was solved cannot be deleted
+
+`solution_acceptance_log.bounty_id` is `ON DELETE RESTRICT` — an append-only
+record of who solved what must not vanish with the row it is about — and
+`builds → bounties` is `CASCADE`. The restrict therefore reaches all the way up:
+`deleteBuild` on a build with an accepted solution fails, and the error names
+`bounties`.
+
+Before NS-P50 no build could have an acceptance row, so this is new behaviour on
+the build path. It is deliberate and it is asserted, as check 6 of
+`scripts/verify-bounty-flow.ts`. **Whatever ships a delete affordance for builds
+owns the answer**: either the affordance refuses with an explanation, or the
+product decides an acceptance may be archived rather than kept, which is a
+change to what "append-only" means and not a change to a foreign key.
+
+### A build bounty has no notification target
+
+`createNotification` fills `notifications.content_id` when `targetType` is
+`'bounty'`, and that column is foreign-keyed to `content_items`. A `bounties` id
+there is a rejected insert. So the two notifications the new path sends —
+solution submitted, solution accepted — carry no `targetType` and put
+`bounty_id`, `build_id`, `node_id` and `solution_id` in `metadata` instead. They
+arrive; they do not deep-link. Giving notifications a target type that can name
+a build is a schema change and belongs with whatever renders these.
+
+### The gap trigger learned about solving
+
+NS-P45's `assert_bounty_gap_node()` asserted `is_gap` on every insert and update
+of a gap-bearing bounty. Accepting a solution clears `is_gap`, so under the
+original rule a solved bounty's row could never be written again — not to close
+it, not by an admin. NS-P50 amended the function: the node must still belong to
+the build always, and must still be a gap unless the bounty is `solved`.
+`'closed'` and `'expired'` get no exemption, because those are bounties whose
+gap was never filled.
+
+### What NS-P50 did NOT do
+
+- **`meta_bounty_pledges` is still NS-P49's**, untouched. Its `meta_bounty_id`
+  is still a `content_items` id, which is why `getMetaBountyState` reads two
+  different kinds of id in one function and says so in a comment.
+- **`createLegacyBountyHeader` still exists**, and `createMetaBounty` and the
+  spawn branch of `pledgeToSubBounty` still call it. NS-P48 anticipated NS-P50
+  rewiring both onto builds and gap nodes; that is a change to what a meta
+  bounty IS, not a shim removal, and it belongs with the prompt that moves
+  meta-bounties onto the record model.
+- **The three earlier SQL acceptance tests still assert the shims.** Checks in
+  `ns-p46-repoint-solutions.sql`, `ns-p47-repoint-bounty-satellites.sql` and
+  `ns-p48-repoint-meta-sub-definitions.sql` that name a `legacy_*_item_id`
+  column cannot pass after this migration; they are the record of what those
+  migrations proved on the day they ran. `ns-p50-drop-bounty-shims.sql` is the
+  one to run now.
 
 ---
 
