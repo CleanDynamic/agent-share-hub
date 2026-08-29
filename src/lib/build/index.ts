@@ -65,6 +65,7 @@ export {
   type CoverNode,
   type CoverSource,
 } from "./cover";
+export { GAP_PROBLEM_KEY, gapProblem, gapProblemPatch } from "./gaps";
 export {
   EXACT_NODE_TYPE,
   SOURCE_BLOCK_COLUMNS,

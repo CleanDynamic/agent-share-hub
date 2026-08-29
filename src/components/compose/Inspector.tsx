@@ -18,6 +18,13 @@
 // no list of type keys anywhere in this file to fall out of date with the
 // registry. A type whose form reads badly is a schema row to correct, not a
 // branch to add here.
+//
+// A FOURTH THING IS EDITED HERE SINCE NS-P51: `is_gap`, and the problem
+// statement that goes with it. Both belong to this file rather than to
+// SchemaForm for the same reason title and note do — they are columns and
+// conventions every node carries whatever its type, not fields of any type's
+// dialect. See src/lib/build/gaps.ts for why the node keeps its type and why
+// the statement lives at payload.gap_problem.
 
 import { useCallback, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
@@ -33,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Json } from "@/integrations/supabase/types";
 import type { FieldDef, NodePayload, NodeTree, NodeType } from "@/lib/build";
+import { gapProblem, gapProblemPatch } from "@/lib/build";
 import type { ComposeBuild } from "@/hooks/useComposeBuild";
 import {
   GAP_RED,
@@ -41,6 +49,7 @@ import {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   bodyText,
+  hexToRgba,
   labelText,
   titleText,
 } from "@/components/build/tokens";
@@ -147,6 +156,143 @@ function SuggestedFields({ fields, payload }: { fields: FieldDef[]; payload: Nod
   );
 }
 
+/**
+ * The copy, held as constants because it is the design.
+ *
+ * "Unsolved" is the word, because it is already the word — the public build
+ * page and the bounty board both use it for this flag, and a creator should
+ * meet one name for one thing. The help line says what turning it on actually
+ * does, all three consequences and none of them a punishment, so that it is an
+ * informed act rather than a guess about what red means.
+ */
+const UNSOLVED_LABEL = "Unsolved";
+const UNSOLVED_HELP =
+  "This part is a hole someone could fill. It goes red in the tree, reads as an admitted hole rather than a filled one, and can carry a bounty when you publish.";
+const PROBLEM_LABEL = "What is missing?";
+const PROBLEM_HELP =
+  "Optional, and the difference between a gap someone picks up and one they scroll past.";
+const PROBLEM_PLACEHOLDER =
+  "What you were trying to do, what you tried, and how you would know it was solved.";
+
+const TRACK_WIDTH = 34;
+const TRACK_HEIGHT = 20;
+const KNOB = 14;
+
+/**
+ * The unsolved flag, and the sentence that goes with it.
+ *
+ * TWO COLUMNS, TWO WRITERS, ONE HOOK. `is_gap` is a column and goes through
+ * `patch`; the problem statement is a payload key and goes through
+ * `patchPayload`. Both are this panel's own writer, which now touches `payload`
+ * as well as `title` and `note` — see the note at the top of SchemaForm.tsx for
+ * why that is safe alongside the form's own payload writer.
+ *
+ * TURNING THE FLAG OFF DOES NOT ERASE THE SENTENCE. The key stays in the
+ * payload, so a creator who mis-clicks and toggles straight back finds their
+ * paragraph where they left it. The cost is a key on a node that is no longer a
+ * gap — invisible on the public page, because no node type declares it and a
+ * renderer prints only what its type declares — and that is the cheaper of the
+ * two mistakes to make.
+ */
+function GapControl({
+  isGap,
+  problem,
+  onToggle,
+  onProblemChange,
+}: {
+  isGap: boolean;
+  problem: string;
+  onToggle: (next: boolean) => void;
+  onProblemChange: (text: string) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: `1px solid ${isGap ? hexToRgba(GAP_RED, 0.35) : HAIRLINE}`,
+        background: isGap ? hexToRgba(GAP_RED, 0.06) : "transparent",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+          <span style={{ ...labelText, color: isGap ? GAP_RED : TEXT_SECONDARY }}>
+            {UNSOLVED_LABEL}
+          </span>
+          <span style={{ ...helpStyle, color: TEXT_MUTED }}>{UNSOLVED_HELP}</span>
+        </span>
+
+        {/* The same switch geometry BooleanField uses, in the gap accent rather
+            than the teal one: red is what this flag means everywhere else. */}
+        <button
+          type="button"
+          role="switch"
+          data-testid="gap-toggle"
+          aria-checked={isGap}
+          aria-label={UNSOLVED_LABEL}
+          onClick={() => onToggle(!isGap)}
+          style={{
+            position: "relative",
+            flexShrink: 0,
+            width: TRACK_WIDTH,
+            height: TRACK_HEIGHT,
+            padding: 0,
+            borderRadius: TRACK_HEIGHT,
+            border: `1px solid ${isGap ? hexToRgba(GAP_RED, 0.75) : HAIRLINE}`,
+            background: isGap ? hexToRgba(GAP_RED, 0.75) : "rgba(255,255,255,0.04)",
+            cursor: "pointer",
+            transition: "background 140ms ease, border-color 140ms ease",
+          }}
+        >
+          <span
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: isGap ? TRACK_WIDTH - KNOB - 4 : 2,
+              width: KNOB,
+              height: KNOB,
+              marginTop: -(KNOB / 2),
+              borderRadius: "50%",
+              background: isGap ? "#08080C" : TEXT_MUTED,
+              transition: "left 140ms ease, background 140ms ease",
+            }}
+          />
+        </button>
+      </div>
+
+      {isGap ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          <label htmlFor="inspector-gap-problem" style={{ ...labelText }}>
+            {PROBLEM_LABEL}
+          </label>
+          <p style={{ ...helpStyle, margin: 0, color: TEXT_MUTED }}>{PROBLEM_HELP}</p>
+          <textarea
+            id="inspector-gap-problem"
+            data-testid="gap-problem"
+            value={problem}
+            rows={3}
+            placeholder={PROBLEM_PLACEHOLDER}
+            onChange={(event) => onProblemChange(event.target.value)}
+            onFocus={(event) => focusControl(event.currentTarget)}
+            onBlur={(event) => blurControl(event.currentTarget)}
+            style={{ ...controlStyle, minHeight: 64, resize: "vertical", display: "block" }}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 interface InspectorProps {
   buildId: string;
   compose: ComposeBuild;
@@ -168,7 +314,7 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
 
   // Held even when nothing is selected: a hook cannot be called conditionally,
   // and the writer is a no-op on a null node id.
-  const { patch } = useNodeWrite(buildId, node?.id ?? null);
+  const { patch, patchPayload } = useNodeWrite(buildId, node?.id ?? null);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const descendants = useMemo(
@@ -232,6 +378,16 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
           style={{ ...controlStyle, minHeight: 64, resize: "vertical", display: "block" }}
         />
       </div>
+
+      {/* Above the type's own fields, because "this part is not done" is a
+          statement about the whole node rather than a value inside it — the
+          same reason it sits beside title and note rather than in SchemaForm. */}
+      <GapControl
+        isGap={node.is_gap === true}
+        problem={gapProblem(node.payload)}
+        onToggle={(next) => patch({ is_gap: next })}
+        onProblemChange={(text) => patchPayload(gapProblemPatch(text))}
+      />
 
       <div style={{ height: 1, background: HAIRLINE }} />
 
