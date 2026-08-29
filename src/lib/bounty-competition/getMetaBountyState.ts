@@ -17,12 +17,16 @@ export async function getMetaBountyState(
   }
 
   const [{ data: subs }, { data: pledges }] = await Promise.all([
+    // NS-P48 shim (removed in NS-P50). `metaBountyId` is the content_items id
+    // /content/:id routes on; since NS-P48 meta_bounty_id holds a
+    // public.bounties id, so the filter and the spawn pointer both come off the
+    // legacy columns the database derives from bounties.legacy_item_id.
     (supabase as any)
       .from("meta_bounty_sub_definitions")
       .select(
-        "id, title, description, target_amount, spawn_threshold_pct, spawned_bounty_id, position",
+        "id, title, description, target_amount, spawn_threshold_pct, legacy_spawned_item_id, position",
       )
-      .eq("meta_bounty_id", metaBountyId)
+      .eq("legacy_meta_item_id", metaBountyId)
       .order("position", { ascending: true }),
     (supabase as any)
       .from("meta_bounty_pledges")
@@ -48,7 +52,9 @@ export async function getMetaBountyState(
       spawnThresholdPct: Number(s.spawn_threshold_pct),
       pledgedAmount,
       pledgerCount,
-      spawnedBountyId: s.spawned_bounty_id ?? null,
+      // NS-P48 shim (removed in NS-P50). MetaBountyBody navigates to
+      // /content/:id with this, so it has to stay a content_items id.
+      spawnedBountyId: s.legacy_spawned_item_id ?? null,
       position: s.position ?? 0,
     };
   });

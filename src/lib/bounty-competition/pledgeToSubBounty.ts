@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { createLegacyBountyHeader } from "./createLegacyBountyHeader";
 import { notifyMetaBountySubSpawned } from "@/lib/notifications/triggers";
 
 interface PledgeArgs {
@@ -30,12 +31,18 @@ export async function pledgeToSubBounty({
   if (mErr) throw mErr;
   if (!(meta as any).bounty_is_meta) throw new Error("Not a meta-bounty");
 
+  // NS-P48 shim (removed in NS-P50). `metaBountyId` is a content_items id;
+  // since NS-P48 meta_bounty_id holds a public.bounties id, so the read filters
+  // legacy_meta_item_id — the value the database derives from
+  // bounties.legacy_item_id on every write. `spawned_bounty_id` is read for
+  // truthiness only ("has this one spawned yet"), which the repoint does not
+  // change, so it stays on the real column.
   const { data: subs, error: subErr } = await (supabase as any)
     .from("meta_bounty_sub_definitions")
     .select(
-      "id, title, description, target_amount, spawn_threshold_pct, spawned_bounty_id, position",
+      "id, title, description, target_amount, spawn_threshold_pct, spawned_bounty_id, position, meta_bounty_id",
     )
-    .eq("meta_bounty_id", metaBountyId)
+    .eq("legacy_meta_item_id", metaBountyId)
     .order("position", { ascending: true });
   if (subErr) throw subErr;
   const sub = ((subs ?? []) as any[])[subBountyIndex];
@@ -99,12 +106,27 @@ export async function pledgeToSubBounty({
     if (spawnErr) throw spawnErr;
 
     const spawnedId = (newBounty as any).id as string;
+
+    // NS-P48 shim (removed in NS-P50). spawned_bounty_id is a public.bounties
+    // id now, and the content item created above has no header yet — so the
+    // spawned bounty gets one, carrying the pledged total as its reward and
+    // naming the meta's header as its parent, which is the shape NS-P45's
+    // backfill gives every other legacy bounty.
+    const spawnedHeaderId = await createLegacyBountyHeader({
+      legacyItemId: spawnedId,
+      authorId: meta.creator_id as string,
+      rewardGbp: currency === "GBP" ? pledgedTotal : null,
+      metaParentId: (sub.meta_bounty_id as string) ?? null,
+    });
+
     await (supabase as any)
       .from("meta_bounty_sub_definitions")
-      .update({ spawned_bounty_id: spawnedId } as any)
+      .update({ spawned_bounty_id: spawnedHeaderId } as any)
       .eq("id", sub.id);
 
     // Notify pledgers using the canonical 'meta_bounty_sub_spawned' subkind.
+    // `spawnedId`, not `spawnedHeaderId`: a notification target is a route, and
+    // this one routes to /content/:id.
     const pledgerIds = Array.from(
       new Set<string>(((subPledges ?? []) as any[]).map((p) => p.pledger_id)),
     );

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { createLegacyBountyHeader } from "./createLegacyBountyHeader";
 import type { SubBountyDefinitionInput } from "./types";
 
 interface CreateMetaArgs {
@@ -49,8 +50,21 @@ export async function createMetaBounty({
   if (error) throw error;
   const metaBountyId = (created as any).id as string;
 
+  // NS-P48 shim (removed in NS-P50). meta_bounty_sub_definitions.meta_bounty_id
+  // is a public.bounties id now, and a brand-new content item has no header —
+  // NS-P45 backfilled the ones that existed and nothing writes them since. The
+  // sub-definitions below are filed against this header, not against the
+  // content item, and the freeze installed by NS-P48 admits them because it is
+  // a LEGACY header (legacy_item_id is set).
+  const metaHeaderId = await createLegacyBountyHeader({
+    legacyItemId: metaBountyId,
+    authorId,
+    isMeta: true,
+    closesAt: fundingDeadline ?? null,
+  });
+
   const subRows = subBountyDefinitions.map((s, i) => ({
-    meta_bounty_id: metaBountyId,
+    meta_bounty_id: metaHeaderId,
     title: s.title,
     description: s.description ?? null,
     target_amount: s.targetAmount,

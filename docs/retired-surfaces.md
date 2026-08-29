@@ -440,6 +440,124 @@ that rewires these tables.
 
 ---
 
+## The NS-P48 repoint — one map table, two shim columns, and a table closed forward
+
+**Added** NS-P48 (29 Aug 2026). **Map table and shims kept until NS-P56 signs
+off. The freeze is not a shim and does not expire with them.**
+
+This one is not only a repoint.
+`supabase/migrations/20260829140000_repoint_meta_sub_definitions.sql` moves both
+of `meta_bounty_sub_definitions`' id columns off `content_items` and onto
+`bounties`, through the same `legacy_item_id` mapping, and then closes the table
+to anything that is not a legacy bounty.
+
+| Column | Before | After |
+| --- | --- | --- |
+| `meta_bounty_id` | `content_items(id)` CASCADE | `bounties(id)` CASCADE |
+| `spawned_bounty_id` | `content_items(id)` SET NULL | `bounties(id)` SET NULL |
+
+Both delete actions are preserved and both were read off the old constraints and
+asserted before they were dropped. `content_items → bounties` is itself CASCADE,
+so deleting a legacy meta still deletes its sub-definitions, and deleting a
+spawned bounty still clears the pointer and leaves the sub-definition standing.
+
+| Object | Kind | Why it stays |
+| --- | --- | --- |
+| `public.ns_p48_migration_map_meta_subs` | table | One row per repointed sub-definition: its id, and the two `content_items` ids it held before. RLS on, no policy — operator access only. |
+| `legacy_meta_item_id`, `legacy_spawned_item_id` | columns | The shims the live legacy meta surfaces run on. Derived by `set_meta_sub_legacy_item_ids()`, never written by a client. |
+| `public.set_meta_sub_legacy_item_ids()` | function | Keeps both shims equal to their bounty's `legacy_item_id` on every write. NS-P46's `set_legacy_bounty_item_id()` could not be reused: it reads `NEW.bounty_id` and writes `NEW.legacy_bounty_item_id`, and this table has neither column. |
+
+### Why the table is closed, and what that means
+
+Series decision 7: under the record model a meta-bounty is one build with
+several gap nodes. `build_nodes.is_gap` names the gap (NS-P36),
+`bounties.gap_node_id` is the header for it (NS-P45), and
+`solutions.slot_kind = 'node'` is how an answer names it (NS-P46). The whole
+mechanism already exists, so a sub-definition has no forward meaning — it is the
+generation-2 spelling of the same idea.
+
+**A new sub-definition therefore requires a parent bounty with
+`legacy_item_id IS NOT NULL`, and this is enforced twice on purpose.** The
+INSERT policy carries the rule, which is where a PostgREST client meets it.
+`trg_mbsd_freeze_to_legacy` carries it too, because row level security does not
+bind `service_role` and the code NS-P50 writes may not be a browser —
+`supabase/functions/seed-ecosystem/index.ts` is already a service-role writer of
+this table. The trigger also fires on `UPDATE OF meta_bounty_id`, which closes
+the way round the INSERT rule: file the row against a legacy meta, then move it.
+
+Nothing else about the table is frozen. Its author can still read, edit and
+delete their own sub-definitions, legacy or not; check 6d of the SQL test proves
+it. Deleting the last one is how this table empties.
+
+### Why the shim columns exist
+
+A legacy meta-bounty page routes on a `content_items` id, the home
+ActiveCompetitions strip works entirely in `content_items` ids, and the discover
+free-text expansion returns ids that are OR-included into a `content_items` id
+filter. After the repoint none of those ids is in `meta_bounty_id` any more, so
+every one of those reads would return nothing — which looks exactly like a
+meta-bounty nobody has broken into sub-bounties, not like a bug.
+
+`legacy_spawned_item_id` exists for a narrower reason: `getMetaBountyState`
+hands `spawnedBountyId` to `MetaBountyBody`, which navigates to `/content/:id`
+with it. A `bounties` id there is a 404 on a bounty that exists.
+
+**NS-P50 removes them.** `grep -rn "NS-P48 shim" src/` is the complete list.
+When the last call site is rewired onto `bounties` directly, the two columns,
+their two indexes, `set_meta_sub_legacy_item_ids()` and
+`trg_mbsd_legacy_item_ids` go with them. `trg_mbsd_freeze_to_legacy` does not:
+it is the decision, not the scaffolding.
+
+### Two legacy write paths now create a `bounties` header
+
+NS-P45 backfilled one header per `content_items` bounty that existed the day it
+ran and wired nothing to write one afterwards, so a legacy bounty created since
+then has none — and since NS-P48 a sub-definition cannot be filed against a
+bounty that has none. `createMetaBounty` and the spawn branch of
+`pledgeToSubBounty` therefore call
+`src/lib/bounty-competition/createLegacyBountyHeader.ts` immediately after
+creating their `content_items` row, and file against the id it returns. NS-P45's
+INSERT policy on `bounties` is written for exactly this window: the author of
+the content item, and only them, may attach its header. NS-P50 rewires both onto
+builds and gap nodes and deletes the file.
+
+### Reversing the repoint
+
+The order matters and is not obvious — the two triggers NS-P48 installs reject
+the rollback UPDATE if they are still attached when it runs. Section 2 of the
+migration carries the four steps, in order, and they were run end to end against
+a Postgres 16 harness before being written down: every row came back on the id
+it started with and no `updated_at` moved.
+
+### What is still live, and must stay live
+
+- The home ActiveCompetitions strip, the discover free-text expansion, and the
+  legacy meta-bounty page with its pledge and spawn affordances. Proven under
+  real RLS by `supabase/tests/ns-p48-repoint-meta-sub-definitions.sql` (checks 5
+  and 6) and at the data layer by
+  `src/lib/bounty-competition/legacyMetaShim.test.ts`.
+- `meta_bounty_pledges`, entirely untouched — its `meta_bounty_id` still keys
+  `content_items` and its `sub_definition_id` still keys this table. It is
+  NS-P49's, and check 3 of the SQL test asserts NS-P48 left it alone.
+
+### Two things NS-P50 has to decide
+
+`meta_bounty_sub_definitions` carries `"Public can read sub definitions"` with
+`USING (true)`, so anyone can read the sub-definitions of a meta bounty whose
+`content_items` row is not approved. That was true before NS-P48 and is true
+after it — tightening it would be a behaviour change on a live surface in a
+migration that moves foreign keys. The freeze makes the worse version of it
+impossible today (there can be no sub-definition on an unpublished build), but
+the gap is real and belongs with the prompt that rewires this table.
+
+`supabase/functions/seed-ecosystem/index.ts` writes `meta_bounty_id` and
+`solutions.bounty_id` as `content_items` ids with the service role. It has been
+broken since NS-P46 for `solutions` and is broken by NS-P48 for
+sub-definitions — loudly, with a foreign-key error, not silently. It is a
+seeding function on the retired path and no prompt in NS-P45–P49 owns it.
+
+---
+
 ---
 
 ## What remains in the database
