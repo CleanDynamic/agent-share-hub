@@ -6,6 +6,7 @@ import { Search, SlidersHorizontal, X, Clock, Users, Star, Eye } from "lucide-re
 import { FeedItem } from "@/components/FeedItem";
 import { FeedCard, type FeedPost } from '@/components/feed-card';
 import { BountyCard } from "@/components/BountyCard";
+import { useLegacyMeTooCounts } from "@/lib/bounty/legacyMeToo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -378,13 +379,27 @@ const DiscoverLegacy = () => {
 
   // bountyTypeFilter and bountyStatusTabFilter are hoisted above activeFilterCount useMemo
 
+  // NS-P54. The me-too sort below used to read content_items.bounty_me_too_count
+  // directly. That column stopped moving when the migration dropped its leg of
+  // the counter trigger, so it is now the FALLBACK — the value each row froze at
+  // — and the live number is bounties.me_too_count, resolved through
+  // bounties.legacy_item_id. One resolve and one count query for the whole tab,
+  // not one per row; see src/lib/bounty/legacyMeToo.ts.
+  const isBountyItem = (item: any) =>
+    item?.post_category === "bounty" || !!item?.bounty_enabled;
+  const bountyItemIds = useMemo(
+    () => (items ?? []).filter(isBountyItem).map((i: any) => i.id as string),
+    [items],
+  );
+  const liveMeToo = useLegacyMeTooCounts(bountyItemIds);
+
   const filteredBounties = useMemo(() => {
     if (!items) return [];
     const now = Date.now();
 
     let base = items.filter((item) => {
       // Only show bounty posts
-      if ((item as any).post_category !== "bounty" && !(item as any).bounty_enabled) return false;
+      if (!isBountyItem(item)) return false;
 
       const q = search.toLowerCase();
       if (q) {
@@ -407,14 +422,17 @@ const DiscoverLegacy = () => {
       return true;
     });
 
-    // Default sort: most me_too first, then recent
+    // Default sort: most me_too first, then recent. The live count where the
+    // bounty has a header, the frozen column where it does not — never zero for
+    // "not loaded yet", which would reorder the tab under the reader.
+    const meToo = (i: any) => liveMeToo.get(i.id) ?? i.bounty_me_too_count ?? 0;
     return base.sort((a, b) => {
-      const aMeToo = (a as any).bounty_me_too_count ?? 0;
-      const bMeToo = (b as any).bounty_me_too_count ?? 0;
+      const aMeToo = meToo(a);
+      const bMeToo = meToo(b);
       if (bMeToo !== aMeToo) return bMeToo - aMeToo;
       return new Date(b.approved_at || b.created_at).getTime() - new Date(a.approved_at || a.created_at).getTime();
     });
-  }, [items, search, bountyTypeFilter, bountyStatusTabFilter, timePeriod]);
+  }, [items, search, bountyTypeFilter, bountyStatusTabFilter, timePeriod, liveMeToo]);
 
   // ─── PROJECTS data ────────────────────────────────────────
 
