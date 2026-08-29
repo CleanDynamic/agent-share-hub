@@ -1093,9 +1093,10 @@ deprecated.
 
 # NS-P56 — the series closing report
 
-**Swept 29 Aug 2026, at `1827ec2`.** Two commits were needed to reach a green
-suite; both are test-only. This section is the handover: what the series
-delivered, what was verified and how, and what the operator is left holding.
+**Swept 29 Aug 2026, at `a245b8a`.** Two fixes were needed to reach a green
+suite, both test-only, plus one reverted misdiagnosis kept in the history. This
+section is the handover: what the series delivered, what was verified and how,
+and what the operator is left holding.
 
 Read the one thing that changes what you do next first.
 
@@ -1193,18 +1194,42 @@ writes `new Date().toISOString()` (`signals.ts:173`); the stub now says the
 same. The sibling "four months" assertion is unaffected — that string is a
 literal in `ReproductionAction.tsx:316`, not a computed interval.
 
-**`1827ec2` — a readiness wait on the library default.** `Publish.test.tsx`
-failed intermittently under the full suite and passed alone. Both waits in its
-`pressPublish` helper are on readiness, which `PublishControl` computes from
-`build`, `tree` and `nodeTypes` once they load (`PublishControl.tsx:359`), and
-which gates `publish-confirm` (`PublishSheet.tsx:327,540`) — so each spans a
-lazy chunk plus a resolved query. testing-library's 1000ms default covers that
-alone and not under 67 files in parallel. The same assertion at line 265 already
-carried an explicit 3000ms; the shared helper was the one place still on the
-default. No timeout was raised beyond the value the file had already set.
+**`a245b8a` — an `updateBuild` stub that returned a bare draft.**
+`Publish.test.tsx`'s first case failed intermittently under the full suite and
+passed alone.
 
-Not covered: the bare wait at line 268 is the same latent pattern and was left
-alone, because it did not fail.
+The first attempt at this (`1827ec2`) raised the readiness wait from
+testing-library's 1000ms default to the 3000ms the file already used elsewhere.
+It was wrong — the button was not slow to enable, it never enabled — and it is
+reverted in `d19aee2`. Recorded here rather than tidied away, because the
+misdiagnosis is the instructive part: the assertion that fails is a wait, and
+the wait is the last thing to blame.
+
+The cause is stub fidelity. `useComposeBuild.ts:173` writes `updateBuild`'s
+returning row into the compose cache as the **entire** build:
+
+```js
+(previous) => (previous ? { ...previous, build: row } : previous)
+```
+
+which is correct for the real function, whose row carries every column the
+record already had. The stub returned `{ ...draft(), ...patch }`, and `draft()`
+has `outcome: null`. The completeness autosave (`useComposeBuild.ts:268-271`)
+fires on load with `{ completeness: 60 }`, so its stubbed row reset `outcome` to
+null moments after render; `publishReadiness` (`PublishControl.tsx:359`) went
+not-ready, and `PublishSheet` held `publish-confirm` disabled
+(`PublishSheet.tsx:327,540`). Whether that landed before or after the click is a
+race — which is what made it intermittent rather than constant, and what made it
+pass in isolation, where the timing differs.
+
+The stub now merges the patch onto the build the test seeded through `getBuild`,
+so it returns what the persisted row would. Verified over three consecutive
+full-suite runs, 973/973 each.
+
+Worth knowing for the next reader: the comment above that cache write says "the
+row is authoritative for the keys it just wrote", but the code assigns the whole
+row. That is right in production and unforgiving of any stub that returns less
+than a complete build — this is the second place it has bitten.
 
 ## Spec inventory and results
 
