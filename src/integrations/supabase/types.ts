@@ -4673,6 +4673,7 @@ export type Database = {
           id: string
           slot_id: string
           slot_kind: string
+          solution_build_id: string | null
           solver_id: string
           solver_note: string | null
           status: string
@@ -4689,6 +4690,7 @@ export type Database = {
           id?: string
           slot_id: string
           slot_kind: string
+          solution_build_id?: string | null
           solver_id: string
           solver_note?: string | null
           status?: string
@@ -4705,6 +4707,7 @@ export type Database = {
           id?: string
           slot_id?: string
           slot_kind?: string
+          solution_build_id?: string | null
           solver_id?: string
           solver_note?: string | null
           status?: string
@@ -4718,6 +4721,13 @@ export type Database = {
             columns: ["bounty_id"]
             isOneToOne: false
             referencedRelation: "bounties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solutions_solution_build_id_fkey"
+            columns: ["solution_build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
             referencedColumns: ["id"]
           },
         ]
@@ -5326,7 +5336,11 @@ export type Database = {
     }
     Functions: {
       accept_bounty_solution: {
-        Args: { p_bounty_id: string; p_solution_id: string }
+        Args: {
+          p_bounty_id: string
+          p_solution_id: string
+          p_solved_node_id?: string
+        }
         Returns: Json
       }
       award_xp: {

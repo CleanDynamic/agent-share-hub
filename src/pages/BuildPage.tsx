@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   getApprovedLayers,
   getBuildBySlug,
@@ -25,7 +25,13 @@ import type {
   NodeTree,
   RebuildSummary,
 } from "@/lib/build";
-import { listBuildBounties, listSolverHandles, type BuildBounty } from "@/lib/bounty";
+import {
+  listBuildBounties,
+  listSolutionBuilds,
+  listSolverHandles,
+  type BuildBounty,
+  type SolutionBuild,
+} from "@/lib/bounty";
 import { useAuth } from "@/contexts/AuthContext";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import { GapPanel, SolvedCredit } from "@/components/build/GapPanel";
@@ -113,6 +119,21 @@ function bountySolverId(node: BuildNode): string | null {
   return typeof record.solver_id === "string" ? record.solver_id : null;
 }
 
+/**
+ * The rebuild a bounty solve came out of, or null (NS-P53).
+ *
+ * The same source_ref bountySolverId reads, one key along. It is present only
+ * on a node filled by a solution that was submitted as a rebuild, which is why
+ * the credit line's second half is conditional rather than always drawn.
+ */
+function bountySolutionBuildId(node: BuildNode): string | null {
+  const ref = node.source_ref;
+  if (!ref || typeof ref !== "object" || Array.isArray(ref)) return null;
+  const record = ref as Record<string, unknown>;
+  if (record.source !== "bounty") return null;
+  return typeof record.solution_build_id === "string" ? record.solution_build_id : null;
+}
+
 /** Every node in the tree that a bounty filled, by its solver's id. */
 function solverIdsIn(tree: NodeTree[]): string[] {
   const ids = new Set<string>();
@@ -120,6 +141,20 @@ function solverIdsIn(tree: NodeTree[]): string[] {
     for (const node of nodes) {
       const solver = bountySolverId(node);
       if (solver) ids.add(solver);
+      if (node.children.length > 0) walk(node.children);
+    }
+  };
+  walk(tree);
+  return [...ids];
+}
+
+/** The rebuilds named by solved nodes in this tree. One read for the page. */
+function solutionBuildIdsIn(tree: NodeTree[]): string[] {
+  const ids = new Set<string>();
+  const walk = (nodes: NodeTree[]) => {
+    for (const node of nodes) {
+      const buildId = bountySolutionBuildId(node);
+      if (buildId) ids.add(buildId);
       if (node.children.length > 0) walk(node.children);
     }
   };
@@ -353,6 +388,24 @@ export default function BuildPage() {
   const buildId = data?.build.id;
 
   /**
+   * #node-<id> in the address, scrolled to once the record is on screen.
+   *
+   * WHY THE PAGE HAS TO DO THIS AT ALL. A node is a card in a tree, not a
+   * route, and it carries data-node-id rather than an id attribute — so the
+   * browser's own hash jump finds nothing. NS-P53's "Solves a bounty on ..."
+   * link points at a gap this way, and it reuses the scroll the anatomy jump
+   * already owns rather than adding a second one that could disagree with it.
+   *
+   * It waits for `data`: firing while the tree is still loading would look for
+   * a card that has not rendered, find nothing, and clear itself.
+   */
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (!data || !hash.startsWith("#node-")) return;
+    setPendingNodeId(hash.slice("#node-".length));
+  }, [data, hash]);
+
+  /**
    * The build's media. ONE query for the page, whatever it holds.
    *
    * Separate from the record query rather than folded into getBuildBySlug so
@@ -509,6 +562,27 @@ export default function BuildPage() {
     refetchOnWindowFocus: false,
   });
 
+  /**
+   * The rebuilds those solves came out of, on the same terms (NS-P53).
+   *
+   * A second batched read rather than a join, and only when a node names one:
+   * a build whose gaps were all answered with typed payloads — which is every
+   * build published before this prompt — issues nothing for it. A rebuild that
+   * can no longer be read comes back absent and the credit line renders its
+   * first half alone, exactly as it did before.
+   */
+  const solutionBuildIds = useMemo(
+    () => solutionBuildIdsIn(data?.tree ?? []),
+    [data?.tree],
+  );
+  const { data: solutionBuilds } = useQuery<Map<string, SolutionBuild>>({
+    queryKey: ["build-solution-builds", buildId, solutionBuildIds.join(",")],
+    queryFn: () => listSolutionBuilds(solutionBuildIds),
+    enabled: solutionBuildIds.length > 0,
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
   /** gap_node_id -> its open ask. Build-level bounties name no node and are
    *  absent: there is no card for them to grow out of. */
   const bountyByNode = useMemo(() => {
@@ -568,12 +642,27 @@ export default function BuildPage() {
 
       const solver = bountySolverId(node);
       if (solver) {
-        return <SolvedCredit handle={solverHandles?.get(solver) ?? null} />;
+        const fromBuildId = bountySolutionBuildId(node);
+        const from = fromBuildId ? solutionBuilds?.get(fromBuildId) ?? null : null;
+        return (
+          <SolvedCredit
+            handle={solverHandles?.get(solver) ?? null}
+            build={from ? { slug: from.slug, title: from.title } : null}
+          />
+        );
       }
 
       return null;
     },
-    [bountyByNode, data, onBountyChanged, resolveMedia, resolveNode, solverHandles]
+    [
+      bountyByNode,
+      data,
+      onBountyChanged,
+      resolveMedia,
+      resolveNode,
+      solutionBuilds,
+      solverHandles,
+    ]
   );
 
   if (isLoading) {

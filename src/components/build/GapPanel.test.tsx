@@ -6,8 +6,9 @@
 //      the bounty is about, with the invitation, the problem, the price and
 //      the deadline — and nothing invented for the two that are optional
 //   2. the me-too action records a mark and the button says so afterwards
-//   3. "Offer a solution" opens the gap's OWN TYPE as a form, and submitting
-//      sends the payload that was typed into it
+//   3. "Offer a solution" ranks the two ways to answer (NS-P53) — the rebuild
+//      is the button, the typed form is a link behind it — and the form, once
+//      asked for, is still the gap's OWN TYPE and still sends what was typed
 //   4. only the author is offered "Accept", and the confirm names the
 //      consequence before anything is written
 //   5. after an acceptance the page shows the filled node with its credit line
@@ -36,6 +37,11 @@ const submitSolution = vi.fn();
 const acceptSolution = vi.fn();
 const toggleMeToo = vi.fn();
 const voteOnSolution = vi.fn();
+const startSolutionRebuild = vi.fn();
+const submitSolutionRebuild = vi.fn();
+/** No qualifying rebuild by default: the first visit is the ordinary case. */
+const listMySolutionRebuilds = vi.fn().mockResolvedValue([]);
+const listSolutionBuilds = vi.fn().mockResolvedValue(new Map());
 
 const auth = vi.hoisted(() => ({
   user: null as { id: string } | null,
@@ -70,6 +76,10 @@ vi.mock("@/lib/bounty", async (importOriginal) => {
       acceptSolution(bountyId, solutionId),
     toggleMeToo: (input: unknown) => toggleMeToo(input),
     voteOnSolution: (input: unknown) => voteOnSolution(input),
+    startSolutionRebuild: (bountyId: string) => startSolutionRebuild(bountyId),
+    submitSolutionRebuild: (input: unknown) => submitSolutionRebuild(input),
+    listMySolutionRebuilds: (options: unknown) => listMySolutionRebuilds(options),
+    listSolutionBuilds: (ids: unknown) => listSolutionBuilds(ids),
   };
 });
 
@@ -132,6 +142,19 @@ const FILLED = {
   is_gap: false,
   payload: { text: "Back off exponentially, six attempts." },
   source_ref: { source: "bounty", solution_id: "s1", solver_id: SOLVER },
+};
+
+/** The same node, filled by a solution that WAS a build (NS-P53). */
+const FILLED_BY_REBUILD = {
+  is_gap: false,
+  payload: { text: "Back off exponentially, six attempts, and log the last error." },
+  source_ref: {
+    source: "bounty",
+    solution_id: "s1",
+    solver_id: SOLVER,
+    solution_build_id: "rebuild-1",
+    solution_node_id: "n-solved",
+  },
 };
 
 function bounty(overrides: Record<string, unknown> = {}) {
@@ -265,6 +288,12 @@ describe("the solve loop", () => {
     const gap = await panel();
     fireEvent.click(within(gap).getByTestId("solve-open"));
 
+    // NS-P53: the typed form is the SECOND option and is asked for. Until it
+    // is, the panel offers the rebuild and nothing is on screen to type into.
+    await screen.findByTestId("solve-rebuild");
+    expect(screen.queryByLabelText("Text")).toBeNull();
+    fireEvent.click(screen.getByTestId("solve-direct"));
+
     // The form is the GAP NODE'S type, not a free-text box: a prompt node's
     // schema declares one text field, and that is what a solver fills in.
     const field = await screen.findByLabelText("Text");
@@ -281,6 +310,75 @@ describe("the solve loop", () => {
         nodePayload: { text: "Back off exponentially." },
         solverId: SOLVER,
         solverNote: "Held at 300 messages.",
+      })
+    );
+  });
+
+  it("ranks the rebuild first and hands the solver to their workspace", async () => {
+    auth.user = { id: SOLVER };
+    auth.isLoggedIn = true;
+    startSolutionRebuild.mockResolvedValue({ id: "draft-9" });
+    renderPage();
+
+    const gap = await panel();
+    fireEvent.click(within(gap).getByTestId("solve-open"));
+
+    const primary = await screen.findByTestId("solve-rebuild");
+    expect(primary).toHaveTextContent("Solve it in a rebuild");
+    // The sub-line is the argument for taking it, and it is the copy the
+    // prompt specifies word for word.
+    expect(
+      screen.getByText(
+        "You get the whole build to work with. Your solution is your version, published.",
+      ),
+    ).toBeTruthy();
+
+    // The quiet one is present and is not a button surface.
+    expect(screen.getByTestId("solve-direct")).toHaveTextContent(
+      "Just send the missing part",
+    );
+
+    fireEvent.click(primary);
+    await waitFor(() => expect(startSolutionRebuild).toHaveBeenCalledWith("bounty-1"));
+  });
+
+  it("offers a returning solver their published rebuild, pre-wired", async () => {
+    auth.user = { id: SOLVER };
+    auth.isLoggedIn = true;
+    listMySolutionRebuilds.mockResolvedValue([
+      {
+        id: "rebuild-1",
+        slug: "retry-that-works",
+        title: "Retry that works",
+        status: "published",
+        creator_id: SOLVER,
+        solves_node_id: "n-gap",
+        reproduction_count: 3,
+        published_at: "2026-08-29T10:00:00Z",
+      },
+    ]);
+    submitSolutionRebuild.mockResolvedValue({ id: "s9" });
+    renderPage();
+
+    const gap = await panel();
+    fireEvent.click(within(gap).getByTestId("solve-open"));
+
+    const submit = await screen.findByTestId("submit-rebuild-solution");
+    // The build is named and its evidence is beside it, because that is what
+    // ranks one answer against another.
+    expect(screen.getByTestId("solution-build-link")).toHaveTextContent("Retry that works");
+    expect(screen.getByTestId("solution-build-repros")).toHaveTextContent("3 repros");
+
+    fireEvent.change(screen.getByTestId("rebuild-solution-note"), {
+      target: { value: "The chunker was the problem." },
+    });
+    fireEvent.click(submit);
+
+    await waitFor(() =>
+      expect(submitSolutionRebuild).toHaveBeenCalledWith({
+        bountyId: "bounty-1",
+        solutionBuildId: "rebuild-1",
+        solverNote: "The chunker was the problem.",
       })
     );
   });
@@ -388,5 +486,56 @@ describe("the solve loop", () => {
     const credit = await screen.findByTestId("gap-solved-credit");
     expect(credit).toHaveTextContent("Solved by @rae");
     await waitFor(() => expect(screen.queryByTestId("gap-panel")).toBeNull());
+  });
+
+  // NS-P53 ACCEPTANCE 6 — the author's half of the round trip.
+  it("links a node filled from a rebuild to the build the answer came from", async () => {
+    listSolverHandles.mockResolvedValue(new Map([[SOLVER, "rae"]]));
+    listSolutionBuilds.mockResolvedValue(
+      new Map([
+        [
+          "rebuild-1",
+          {
+            id: "rebuild-1",
+            slug: "retry-that-works",
+            title: "Retry that works",
+            status: "published",
+            creator_id: SOLVER,
+            solves_node_id: "n2",
+            reproduction_count: 3,
+            published_at: "2026-08-29T10:00:00Z",
+          },
+        ],
+      ]),
+    );
+    getBuildBySlug.mockResolvedValue(record(FILLED_BY_REBUILD));
+    listBuildBounties.mockResolvedValue([]);
+    renderPage();
+
+    // Both halves arrive with their own query, so both are awaited: the line
+    // paints as "a solver" and gains the handle when the lookup lands.
+    const credit = await screen.findByTestId("gap-solved-credit");
+    await waitFor(() => expect(credit).toHaveTextContent("Solved by @rae"));
+
+    // The second line: where the payload above actually lives, one click away.
+    const from = await screen.findByTestId("gap-solved-build");
+    expect(from).toHaveTextContent("Retry that works");
+    expect(within(from).getByRole("link").getAttribute("href")).toBe(
+      "/b2/retry-that-works",
+    );
+  });
+
+  // A typed-payload solve names no build, so the line has no second half.
+  it("says nothing about a build when the answer was a typed payload", async () => {
+    listSolverHandles.mockResolvedValue(new Map([[SOLVER, "rae"]]));
+    getBuildBySlug.mockResolvedValue(record(FILLED));
+    listBuildBounties.mockResolvedValue([]);
+    renderPage();
+
+    const plain = await screen.findByTestId("gap-solved-credit");
+    await waitFor(() => expect(plain).toHaveTextContent("Solved by @rae"));
+    expect(screen.queryByTestId("gap-solved-build")).toBeNull();
+    // And nothing was read for a build nobody named.
+    expect(listSolutionBuilds).not.toHaveBeenCalled();
   });
 });

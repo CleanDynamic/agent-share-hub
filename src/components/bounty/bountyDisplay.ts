@@ -80,6 +80,21 @@ export function solutionCountLabel(count: number): string {
   return count === 1 ? "1 solution" : `${count} solutions`;
 }
 
+/**
+ * "3 REPROS" — the evidence under a rebuild-solution, in RebuildsTab's words.
+ *
+ * WHY A SOLUTION SHOWS THIS AT ALL. A rebuild-solution is a published build,
+ * and a published build has the one number on this platform that cannot be
+ * self-awarded: how many people ran it and said what happened. Two answers to
+ * the same gap are otherwise ranked by votes, which measure who read them
+ * first. This is what lets evidence rank them instead.
+ */
+export function reproductionLabel(count: number | null | undefined): string {
+  const runs = Number(count ?? 0);
+  if (!Number.isFinite(runs) || runs <= 0) return "no repros yet";
+  return runs === 1 ? "1 repro" : `${runs} repros`;
+}
+
 /** "@rae", or "someone" for a solver whose profile is gone. */
 export function solverHandle(
   solver: { username?: string | null; display_name?: string | null } | null,

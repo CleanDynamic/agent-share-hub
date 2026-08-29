@@ -334,7 +334,15 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
   const fields = nodeType?.schema.fields ?? [];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: 18 }}>
+    // The testid is an anchor for the e2e suite and nothing else: a spec that
+    // fills "the node's first field" has to be able to say which column it
+    // means, and the inspector has no role or accessible name of its own. No
+    // structure or style is changed by it — see the e2e skill's selector rules.
+    <div
+      data-testid="inspector"
+      data-node-id={node.id}
+      style={{ display: "flex", flexDirection: "column", gap: 16, padding: 18 }}
+    >
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <TypePill nodeType={nodeType} typeKey={node.type} />
         <span style={{ ...titleText, color: TEXT_PRIMARY }}>{label}</span>
