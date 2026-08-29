@@ -908,6 +908,150 @@ every choice is worse than no filter at all.
 
 ---
 
+## NS-P55 — the deletion, not taken
+
+**Attempted 29 Aug 2026. Nothing was deleted. No code changed.**
+
+NS-P55 was to run the deletion NS-P26 promised: remove the superseded upload
+authoring code and replace its routes with permanent redirects to
+`/compose/new`. Its own preconditions stopped it. All three of the gates it
+sets for itself fail at this head, and the third one is the reason the other
+two matter.
+
+This section is the record of that, so NS-P56 does not re-derive it and so a
+later prompt that reopens the deletion knows exactly what has to be true first.
+
+### Gate 1 — the insert audit says four writers remain, not zero
+
+NS-P55 requires "zero reachable inserts into `content_items`". The audit it
+cites as its gate is the one immediately above, and that audit's own conclusion
+is the opposite: **the gate is open for the bounty path and closed for the
+document path.**
+
+Re-run independently on 29 Aug 2026 — every `.insert` within 320 characters of
+a `content_items` `.from(...)` across `src/` and `supabase/functions/`, then
+followed to its affordance. The result reproduces NS-P54's exactly:
+
+| Live writer | Reachable from |
+| --- | --- |
+| `src/pages/Upload.tsx:693` (draft save) | `/upload/blueprint`, `/upload/blog` |
+| `src/pages/Upload.tsx:1002` (publish) | the same two routes |
+| `src/components/ProjectUploadForm.tsx:664` | mounted by `Upload.tsx` |
+| `src/lib/bounty-solver/forkSolution.ts:44` | `ContentDetail.tsx:1162` |
+| `src/lib/bounty-competition/pledgeToSubBounty.ts:86` | `MetaBountyBody`, conditional on a pledge crossing a threshold |
+
+`src/pages/Upload.tsx:1330` is a sixth grep hit and is **not** a sixth writer —
+it is an `.update()` whose neighbouring `.insert` is on `content_dependencies`,
+the same false-positive class NS-P54 already listed for `ContentEdit.tsx:216`
+and `PublishUpdateModal.tsx:95`.
+
+`LegacyUploadRoute` does not close any of this. It is a banner wrapper — it
+renders `LegacyUploadNotice` above its child and nothing else. The editor
+underneath it still saves and still publishes, which is what its own header
+says it is for.
+
+### Gate 2 — tiers 1 and 2 do not exist
+
+NS-P55 names the full tier-1 and tier-2 Playwright suites as "the safety net
+for every commit here" and requires them to pass at head before starting and
+after each removal commit.
+
+`e2e/` contains `tier3/` (12 specs) and `fixtures/`. There is no `e2e/tier1/`
+and no `e2e/tier2/`, anywhere in the tree. The only reference to either is
+`playwright.config.ts:65`, whose mobile project matches `e2e/tier1/*.spec.ts`
+and therefore matches nothing — the mobile viewport currently runs zero tests.
+
+A deletion prompt whose stated safety net does not exist has no way to show
+that any removal commit was safe. This is the gate that would matter even if
+the other two were clean.
+
+### Gate 3 — the import map excludes every candidate
+
+NS-P55 requires that each candidate be checked for importers outside the
+deletion set, and excluded rather than forced if one is found. Every candidate
+has one.
+
+**Group 2 — the authoring sub-components. All eleven excluded.**
+
+| File | Live importer outside the deletion set |
+| --- | --- |
+| `ContentBlockBuilder` | `ProjectUploadForm.tsx` (itself a live `content_items` writer) |
+| `WhatToExpectBuilder` | `ProjectUploadForm.tsx` |
+| `CollabInvitePicker` | `ProjectUploadForm.tsx` |
+| `DependencyPicker` | `ProjectUploadForm.tsx` |
+| `WorksWithPicker` | `Upload.tsx`, which is not deletable (gate 1) |
+| `TopicsPicker` | `Upload.tsx`, same |
+| `TipSelector` | `ContentDetail.legacy.tsx` — a protected read surface |
+| `PwywPriceSelector` | `ContentDetail.legacy.tsx` — same |
+| `BountyResponseComposer` | `ContentDetail.legacy.tsx` — same. Frozen since NS-P44, but frozen is not orphaned |
+| `documentPersistence.ts` | `article/ArticleEditor.tsx`, `article/StatusBar.tsx` |
+| `documentStore.ts` | **33 importers** across `article/`, `workspace/`, `lib/`, and `layout/RightPanel.tsx` — which hard constraint 6 forbids touching |
+
+**Group 3 — the preview and publish routes. Both excluded.**
+
+- `PublishMetadata` (`/publish/:contentItemId`) is a **live step in the working
+  publish flow**: `Upload.tsx:1542` navigates to `/publish/${id}` after a
+  successful publish. Deleting it breaks publishing for anyone finishing a
+  legacy draft.
+- `PostPreview` (`/upload/preview/:draftId`) is the one file in the whole
+  candidate set with no importer but `App.tsx` and no inbound navigation from
+  anywhere in `src/`. It is genuinely orphaned. It is also a single unreferenced
+  route, it is not worth a commit on its own while gate 2 is open, and removing
+  it in isolation buys nothing NS-P55 was for.
+
+### The consequence the redirects would have had
+
+Worth stating plainly, because it is the concrete harm the gates prevented.
+
+`src/pages/Drafts.tsx:249–253` — `/drafts`, which NS-P55 explicitly keeps —
+routes every legacy draft into exactly the routes NS-P55 would have redirected:
+
+```
+blog      → /upload/blog?draft={id}
+bounty    → /upload/bounty?id={id}
+blueprint → /upload/blueprint?draft={id}
+```
+
+A client-side `<Navigate to="/compose/new">` on those paths drops the query
+string. Every legacy draft still listed on `/drafts` would become unopenable:
+the row stays visible, the button still works, and it lands the creator on an
+empty new-build composer with their draft nowhere in it. Silent, and it looks
+like data loss to the person it happens to.
+
+### Bundle baseline, measured anyway
+
+`npm run build` at this head passes. Initial chunk
+`dist/assets/index-*.js` — **3,301.49 kB raw, 899.13 kB gzip.**
+
+NS-P55 asks whether the TipTap suite leaves the graph under the deletion.
+**It does not, and no deletion in this prompt's scope would move it.**
+`src/pages/ContentDetail.tsx` — the live read surface — statically imports both
+`components/blog/BlogView.tsx` and `components/article/ArticleViewer.tsx`, and
+both pull `@tiptap/*`. The editor chain is held in the initial bundle by a read
+path, not by the authoring path. The bundle delta of the full proposed deletion
+would be approximately zero for TipTap.
+
+### What has to be true before this is reopened
+
+1. **`Upload.tsx` stops being the only way to finish a legacy draft.** Either
+   the remaining drafts are migrated to the build record, or `/drafts` stops
+   offering to open what can no longer be opened. Until one of those, the
+   editor is live content maintenance, and hard constraint 1 protects it.
+2. **`ProjectUploadForm`, `forkSolution` and `pledgeToSubBounty` are each
+   repointed or frozen** — they are three separate decisions, and only the
+   first belongs to the upload path.
+3. **Tiers 1 and 2 exist and pass at both viewports.** No removal commit in
+   this series should be taken on a tree where the named safety net matches
+   zero files.
+4. **The redirects carry the draft id**, or the drafts they would strand are
+   gone first.
+
+`ContentEdit.tsx` stays regardless, and NS-P55 was already right about that:
+editing an existing legacy post is maintenance of live content, not new
+authoring.
+
+---
+
 ## What remains in the database
 
 No schema change was made by NS-P42 or NS-P43. Every object below still
