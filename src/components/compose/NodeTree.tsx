@@ -17,6 +17,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import type { NodeTree as NodeTreeShape, NodeType } from "@/lib/build";
+import type { Bounty } from "@/lib/bounty";
 import type { NodeTreatment } from "@/hooks/useRebuildDiff";
 import {
   GAP_RED,
@@ -81,11 +82,20 @@ interface LevelProps {
   onSelect: (id: string) => void;
   drag: NodeDrag;
   rebuildNodes?: Map<string, NodeTreatment> | null;
+  bountyNodes?: Map<string, Bounty> | null;
 }
 
 function Level({ nodes, parentId, depth, ...shared }: LevelProps) {
-  const { typesByKey, collapsed, onToggle, selectedNodeId, onSelect, drag, rebuildNodes } =
-    shared;
+  const {
+    typesByKey,
+    collapsed,
+    onToggle,
+    selectedNodeId,
+    onSelect,
+    drag,
+    rebuildNodes,
+    bountyNodes,
+  } = shared;
   const nested = depth > 1;
 
   return (
@@ -120,6 +130,7 @@ function Level({ nodes, parentId, depth, ...shared }: LevelProps) {
               onSelect={onSelect}
               drag={drag}
               rebuildNodes={rebuildNodes}
+              bountyNodes={bountyNodes}
             />
             {isExpanded ? (
               <Level nodes={node.children} parentId={node.id} depth={depth + 1} {...shared} />
@@ -206,6 +217,14 @@ interface NodeTreeProps {
    * about the same edit.
    */
   rebuildNodes?: Map<string, NodeTreatment> | null;
+  /**
+   * The asks already filed on this build, by gap node id.
+   *
+   * Passed straight through for the same reason: one read feeds this and the
+   * publish sheet's bounty section, so a row cannot claim an ask the sheet is
+   * about to offer to file again.
+   */
+  bountyNodes?: Map<string, Bounty> | null;
 }
 
 export function NodeTree({
@@ -215,6 +234,7 @@ export function NodeTree({
   onSelect,
   drag,
   rebuildNodes,
+  bountyNodes,
 }: NodeTreeProps) {
   // Collapsed rather than expanded, so a node nested by a drag and a node just
   // added are both visible without anyone having to open their parent.
@@ -282,6 +302,7 @@ export function NodeTree({
           onSelect={onSelect}
           drag={drag}
           rebuildNodes={rebuildNodes}
+          bountyNodes={bountyNodes}
         />
       )}
     </div>

@@ -42,20 +42,48 @@
 // they work rather than as news at the moment they try to post; a second, later
 // refusal painted onto the pill would be the same fact said twice.
 //
+// WHAT A DRAFT WITH GAPS ADDS (NS-P51). A second section in the sheet's slot,
+// and a step AFTER the publish write rather than a condition on it. The section
+// prices the holes; the step files them as bounties once the build is live.
+//
+// PUBLISHING IS NEVER ROLLED BACK BY A BOUNTY THAT DID NOT FILE, and the order
+// of operations here exists to make that structurally true rather than merely
+// intended. The publish write lands first and its confirmation is shown before
+// a single bounty is attempted, so there is no moment at which the sheet is
+// holding a live build hostage to a second write. A bounty that fails is a row
+// missing from a board — the build is public, its page is correct, the gap is
+// still marked unsolved on it, and the only thing lost is the ask. The creator
+// is told exactly that, in one sentence, with a retry that re-files only the
+// ones that failed. Nothing in this file deletes or unpublishes a build because
+// createBountyForGap returned an error, and nothing in it ever should: an
+// un-publish is a broken link and a lost post to pay for a missing row.
+//
 // Styled with inline style objects like everything else on this route:
 // Tailwind's generated utilities win over hand-written classes at build time.
 
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBuildLayers } from "@/hooks/useBuildLayers";
 import { LayerReview, type LayerReviewResult } from "@/components/compose/LayerReview";
 import { RebuildSection } from "@/components/compose/RebuildSection";
+import {
+  BountyOutcome,
+  BountySection,
+  DEFAULT_GAP_DRAFT,
+  closesAtFrom,
+  parseReward,
+  type GapDraft,
+} from "@/components/compose/BountySection";
 import { rebuildCreditLine } from "@/components/build/rebuildCredit";
 import type { RebuildDiff } from "@/hooks/useRebuildDiff";
+import type { BuildBounties } from "@/hooks/useBuildBounties";
+import { createBountyForGap, type Bounty } from "@/lib/bounty";
 import {
   NO_CHANGES_REASON,
+  collectGaps,
   galleryShortfall,
   galleryThreshold,
   publishReadiness,
@@ -126,10 +154,30 @@ export interface PublishControlProps {
    * exactly the control and exactly the sheet that were here before NS-P39.
    */
   rebuild?: RebuildDiff;
+  /**
+   * The asks already filed on this build (NS-P51).
+   *
+   * Absent on a caller that has not read them, which renders exactly the
+   * control and exactly the sheet that were here before — a draft with gaps
+   * then simply offers no bounty section rather than offering one that cannot
+   * tell which gaps are already spoken for.
+   */
+  bounties?: BuildBounties;
 }
 
 /** Stable identity for a control mounted without the hook's answer. */
 const NO_LINES: ChangeLine[] = [];
+/** The same, for a control mounted without the bounties read. */
+const NO_FILED: Map<string, Bounty> = new Map();
+
+/** One gap, resolved from its draft into the arguments a bounty is filed with. */
+interface BountyPlanItem {
+  nodeId: string;
+  /** For the failure sentence, which is read by someone, not by a machine. */
+  title: string;
+  rewardGbp: number | null;
+  closesAt: string | null;
+}
 
 const controlBase: React.CSSProperties = {
   fontFamily: "inherit",
@@ -155,6 +203,7 @@ export function PublishControl({
   publishError,
   onFocusRequirement,
   rebuild,
+  bounties,
 }: PublishControlProps) {
   const [confirmation, setConfirmation] = useState<Build | null>(null);
   const [reviewing, setReviewing] = useState(false);
@@ -174,6 +223,114 @@ export function PublishControl({
   /** Read inside publishNow, which the review pass captures a frame earlier. */
   const noteRef = useRef(note);
   noteRef.current = note;
+
+  /**
+   * What each gap is being offered for, as local drafts.
+   *
+   * Held here for exactly the reason the rebuild note is: these are decisions a
+   * creator makes at the moment they post, and writing them per keystroke onto
+   * a build that may never be published would be a price they cannot take back
+   * by closing the sheet. They reach the database once, as bounty rows, after
+   * the build is live.
+   */
+  const [gapDrafts, setGapDrafts] = useState<Record<string, GapDraft>>({});
+  const [skipBounties, setSkipBounties] = useState(false);
+  /** How the filing went, for the confirmation screen. */
+  const [filing, setFiling] = useState(false);
+  const [filedCount, setFiledCount] = useState(0);
+  const [attempted, setAttempted] = useState(0);
+  const [failedItems, setFailedItems] = useState<BountyPlanItem[]>([]);
+
+  const gaps = useMemo(() => collectGaps(tree), [tree]);
+  const filedByNode = bounties?.byNode ?? NO_FILED;
+  const typesByKey = useMemo(
+    () => new Map(nodeTypes.map((type) => [type.key, type])),
+    [nodeTypes]
+  );
+
+  /**
+   * The gaps that will be filed, resolved from their drafts.
+   *
+   * A gap that already carries an ask is not in here whatever its draft says:
+   * one bounty per gap is a unique index, and filing a second is a refusal the
+   * creator did nothing to earn. Nor is anything at all when the switch is on.
+   */
+  const plan = useMemo<BountyPlanItem[]>(() => {
+    if (skipBounties) return [];
+    return gaps
+      .filter((gap) => !filedByNode.has(gap.id))
+      .map((gap) => ({ gap, draft: gapDrafts[gap.id] ?? DEFAULT_GAP_DRAFT }))
+      .filter(({ draft }) => draft.ticked)
+      .map(({ gap, draft }) => ({
+        nodeId: gap.id,
+        title: gap.title || `Untitled ${typesByKey.get(gap.type)?.label ?? gap.type}`,
+        rewardGbp: parseReward(draft.reward),
+        closesAt: closesAtFrom(draft.deadline),
+      }));
+  }, [filedByNode, gapDrafts, gaps, skipBounties, typesByKey]);
+
+  /** publishNow reads the plan a frame after the sheet closed; a ref, not a
+   *  dependency, so the publish callback does not change on every keystroke. */
+  const planRef = useRef<BountyPlanItem[]>(plan);
+  planRef.current = plan;
+
+  const patchGapDraft = useCallback((nodeId: string, patch: Partial<GapDraft>) => {
+    setGapDrafts((current) => ({
+      ...current,
+      [nodeId]: { ...DEFAULT_GAP_DRAFT, ...current[nodeId], ...patch },
+    }));
+  }, []);
+
+  /** The bounties read, invalidated after filing so the tree paints the pills. */
+  const refreshBounties = bounties?.refresh;
+
+  /**
+   * File the asks, one at a time, and report what happened.
+   *
+   * SEQUENTIAL, not concurrent. This is a handful of inserts on a table with a
+   * unique index on the gap, and running them in a row means a failure is
+   * attributable to one gap by name — which is the whole content of the
+   * sentence a creator reads afterwards. Concurrency here would buy a few
+   * hundred milliseconds on a screen the creator has already been told is done.
+   *
+   * NOTHING IN HERE TOUCHES THE BUILD. It cannot fail the publish, because the
+   * publish has already happened and its row is already live; see the header.
+   */
+  const fileBounties = useCallback(
+    async (items: BountyPlanItem[]) => {
+      if (items.length === 0) return;
+
+      setFiling(true);
+      setAttempted(items.length);
+      const failed: BountyPlanItem[] = [];
+      let landed = 0;
+
+      for (const item of items) {
+        try {
+          await createBountyForGap({
+            buildId: build.id,
+            nodeId: item.nodeId,
+            rewardGbp: item.rewardGbp,
+            closesAt: item.closesAt,
+          });
+          landed += 1;
+        } catch {
+          // Rolled up into one sentence rather than surfaced one at a time: a
+          // creator who has just published does not need three toasts, and the
+          // message they do need is the same in every case.
+          failed.push(item);
+        }
+      }
+
+      setFiledCount((current) => current + landed);
+      setFailedItems(failed);
+      setFiling(false);
+      // Even a partial round changed the board, so the tree is re-read either
+      // way — the pills that did land should appear.
+      if (refreshBounties) await refreshBounties().catch(() => {});
+    },
+    [build.id, refreshBounties]
+  );
 
   /** The spec is the column, not the hook: a draft with a parent is a rebuild
    *  whether or not its source is still readable. */
@@ -270,11 +427,19 @@ export function PublishControl({
     // takes rebuild.ts's publish path. An ordinary draft passes nothing and
     // takes the path it always has.
     void (isRebuild ? onPublish(noteRef.current) : onPublish())
-      .then((row) => setConfirmation(row))
+      .then((row) => {
+        // The confirmation FIRST, and then the bounties. The build is live at
+        // this line and the creator is told so at this line; what follows can
+        // fail without any of that becoming untrue. See the header.
+        setConfirmation(row);
+        setFiledCount(0);
+        setFailedItems([]);
+        void fileBounties(planRef.current);
+      })
       .catch(() => {
         /* surfaced through publishError, on the control itself */
       });
-  }, [isRebuild, onPublish]);
+  }, [fileBounties, isRebuild, onPublish]);
 
   /**
    * The publish path, exactly as it was: the review pass if there is something
@@ -391,16 +556,34 @@ export function PublishControl({
             isPublishing={isPublishing}
             publishError={publishError}
             credit={credit}
+            // Both sections can apply at once: a rebuild is allowed to leave a
+            // hole in what it rebuilt. Undefined when neither does, so a plain
+            // draft passes the sheet exactly what it passed before NS-P51.
             sections={
-              isRebuild ? (
-                <RebuildSection
-                  lines={rebuild?.lines ?? NO_LINES}
-                  // A diff, rather than an empty one. See RebuildSection.
-                  diffed={Boolean(rebuild?.changes)}
-                  note={note}
-                  onNoteChange={setNote}
-                  credit={credit}
-                />
+              isRebuild || gaps.length > 0 ? (
+                <>
+                  {isRebuild ? (
+                    <RebuildSection
+                      lines={rebuild?.lines ?? NO_LINES}
+                      // A diff, rather than an empty one. See RebuildSection.
+                      diffed={Boolean(rebuild?.changes)}
+                      note={note}
+                      onNoteChange={setNote}
+                      credit={credit}
+                    />
+                  ) : null}
+                  {gaps.length > 0 ? (
+                    <BountySection
+                      gaps={gaps}
+                      typesByKey={typesByKey}
+                      filedByNode={filedByNode}
+                      drafts={gapDrafts}
+                      onDraftChange={patchGapDraft}
+                      skip={skipBounties}
+                      onSkipChange={setSkipBounties}
+                    />
+                  ) : null}
+                </>
               ) : undefined
             }
             onFocusRequirement={onFocusRequirement}
@@ -427,6 +610,15 @@ export function PublishControl({
           build={confirmation}
           completeness={completeness}
           onClose={() => setConfirmation(null)}
+          bounties={
+            <BountyOutcome
+              filed={filedCount}
+              failedTitles={failedItems.map((item) => item.title)}
+              attempted={attempted}
+              busy={filing}
+              onRetry={() => void fileBounties(failedItems)}
+            />
+          }
         />
       ) : null}
     </>
@@ -445,10 +637,20 @@ function PublishConfirmation({
   build,
   completeness,
   onClose,
+  bounties,
 }: {
   build: Build;
   completeness: Completeness | null;
   onClose: () => void;
+  /**
+   * What became of the asks this publish was carrying (NS-P51).
+   *
+   * Rendered between the link and the gallery line, because that is the order
+   * the news matters in: it is live, here is where it is, here is what else
+   * happened, here is what would put it in the gallery. Renders nothing when
+   * there were no bounties to file, which is most publishes.
+   */
+  bounties?: ReactNode;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -576,6 +778,8 @@ function PublishConfirmation({
             {copied ? "Copied" : "Copy link"}
           </button>
         </div>
+
+        {bounties}
 
         <GalleryLine
           inGalleryNow={inGalleryNow}

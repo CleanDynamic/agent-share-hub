@@ -44,7 +44,7 @@
 //     with the gap it described.
 
 import type { Json } from "@/integrations/supabase/types";
-import type { NodePayload } from "./types";
+import type { NodePayload, NodeTree } from "./types";
 
 /**
  * The reserved payload key a gap's problem statement is written to.
@@ -80,4 +80,26 @@ export function gapProblem(payload: Json | null | undefined): string {
 export function gapProblemPatch(text: string): NodePayload {
   const trimmed = text.trim();
   return { [GAP_PROBLEM_KEY]: trimmed === "" ? null : text };
+}
+
+/**
+ * Every PLACED node flagged as a gap, depth first — the order the record reads
+ * in, and the order the publish sheet lists them in.
+ *
+ * PLACED ONLY, because the tray is not part of the record. A node nobody has
+ * put anywhere is not a hole in a build, and a bounty filed against one would
+ * ask a stranger to solve something no reader can see. The bounty layer agrees
+ * from its own side: acceptSolution substitutes the answer into the tree and
+ * writes a milestone into the sequence, neither of which a tray node has.
+ */
+export function collectGaps(tree: readonly NodeTree[]): NodeTree[] {
+  const out: NodeTree[] = [];
+  const walk = (nodes: readonly NodeTree[]) => {
+    for (const node of nodes) {
+      if (node.is_gap) out.push(node);
+      if (node.children?.length) walk(node.children);
+    }
+  };
+  walk(tree);
+  return out;
 }
