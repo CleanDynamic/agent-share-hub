@@ -20,6 +20,7 @@
 // changes, so changing a filter costs exactly one request.
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Bounty } from "@/lib/bounty/types";
 import { SHAPE_RULES, type MissingItem, type RequirementKey } from "./signals";
 import {
   buildLayerError,
@@ -205,6 +206,14 @@ const MEDIA_PER_BUILD = 12;
 const GALLERY_MEDIA_KINDS = ["image", "video"] as const;
 
 /**
+ * The pill says "bounty", not "bounties", and it takes the largest reward it
+ * can see. Four rows per build is more than enough to find that and cheap
+ * enough to be free; a build with more open asks than this has a page of its
+ * own to show them on.
+ */
+const BOUNTIES_PER_BUILD = 4;
+
+/**
  * The header columns a card reads. Explicit, because `*` on this table would
  * put monetisation and cost columns on the wire for every card that never
  * shows them.
@@ -233,20 +242,54 @@ const GALLERY_MEDIA_COLUMNS =
   "id, node_id, bucket, path, kind, width, height, poster_path";
 
 /**
+ * The bounty columns a card's pill reads (NS-P52).
+ *
+ * Three, because that is all a pill is: whether there is an open ask, and what
+ * it pays. The gap it names, its deadline and its me-too count are the build
+ * page's business — a card that carried them would put four columns per bounty
+ * on the wire for a badge eight characters wide.
+ */
+const GALLERY_BOUNTY_COLUMNS = "id, reward_gbp, status";
+
+/**
  * The select string, embeds and all.
  *
  * The !hint on build_nodes is required rather than decorative: builds carries
  * hero_node_id, so there are TWO foreign keys between builds and build_nodes
  * and PostgREST refuses an ambiguous embed. The hint names the one that means
  * "the nodes of this build".
+ *
+ * THE BOUNTY EMBED IS THE PILL, AND IT IS ONE QUERY (NS-P52). It rides in on
+ * the request the cards already make, filtered to open rows by the
+ * `bounties.status` clause in listGallery — so a grid of twenty-four cards
+ * costs the same one request whether none of them carries an ask or all of
+ * them do. `inner` is the same embed with the join made inner, which is what
+ * turns "show me the pill" into "show me only the builds that have one"; it is
+ * a second string rather than a flag because PostgREST reads the modifier out
+ * of the select and there is nothing to toggle at runtime.
  */
-const GALLERY_SELECT = `${GALLERY_BUILD_COLUMNS}, build_nodes!build_nodes_build_id_fkey(${GALLERY_NODE_COLUMNS}), build_media!build_media_build_id_fkey(${GALLERY_MEDIA_COLUMNS})`;
+function gallerySelect(openBountiesOnly: boolean): string {
+  const bounties = openBountiesOnly
+    ? `bounties!bounties_build_id_fkey!inner(${GALLERY_BOUNTY_COLUMNS})`
+    : `bounties!bounties_build_id_fkey(${GALLERY_BOUNTY_COLUMNS})`;
+  return `${GALLERY_BUILD_COLUMNS}, build_nodes!build_nodes_build_id_fkey(${GALLERY_NODE_COLUMNS}), build_media!build_media_build_id_fkey(${GALLERY_MEDIA_COLUMNS}), ${bounties}`;
+}
 
 /** A card's node: the embedded columns, nothing more. */
 export type GalleryNode = Pick<
   BuildNode,
   "id" | "type" | "title" | "payload" | "position" | "is_gap"
 >;
+
+/**
+ * A card's bounty row: is there an open ask on this build, and what does it pay.
+ *
+ * `status` is on it even though every row that arrives is open, because the
+ * filter that makes that true lives in the query and a shape that depended on
+ * a caller remembering to apply it would be a shape that lies the first time
+ * somebody forgets.
+ */
+export type GalleryBounty = Pick<Bounty, "id" | "reward_gbp" | "status">;
 
 /** A card's media row. Satisfies MediaRef, so mediaUrl takes it as it stands. */
 export type GalleryMedia = Pick<
@@ -291,6 +334,17 @@ export interface GalleryBuild
   > {
   nodes: GalleryNode[];
   media: GalleryMedia[];
+  /**
+   * The open bounties on this build, when the caller's query asked for them.
+   *
+   * OPTIONAL, and the difference matters: an empty array means "asked, and
+   * there are none", while absent means "nobody asked" — which is the honest
+   * answer for a build assembled from a feed row that carried no bounty
+   * columns. A card renders the pill for the first case and nothing for the
+   * second, rather than announcing that a build has no ask on the strength of
+   * a question that was never put.
+   */
+  bounties?: GalleryBounty[];
 }
 
 export interface GalleryFilters {
@@ -298,6 +352,14 @@ export interface GalleryFilters {
   madeFor?: string[];
   /** Tools from made_with. Several are an OR. */
   madeWith?: string[];
+  /**
+   * Only builds carrying an open bounty (NS-P52).
+   *
+   * An AND with the other two, like they are with each other: made for
+   * lawyers, made with Claude, and asking for help. Additive — omitted or
+   * false is the gallery exactly as it was.
+   */
+  openBounties?: boolean;
 }
 
 export interface ListGalleryOptions extends GalleryFilters {
@@ -338,9 +400,11 @@ export async function listGallery(
   const limit = Math.max(1, Math.min(options.limit ?? GALLERY_PAGE_SIZE, 60));
   const offset = Math.max(0, options.offset ?? 0);
 
+  const openBounties = options.openBounties === true;
+
   let query = supabase
     .from("builds")
-    .select(GALLERY_SELECT, { count: "exact" })
+    .select(gallerySelect(openBounties), { count: "exact" })
     // Never drafts. The RLS policy would hand a creator their own back.
     .in("status", ["published", "gallery"])
     .or(galleryPredicate())
@@ -348,7 +412,11 @@ export async function listGallery(
     // and leave the parent alone — a build with no prompt node still gets a
     // card, with an empty nodes array.
     .in("build_nodes.type", [...GALLERY_NODE_TYPES])
-    .in("build_media.kind", [...GALLERY_MEDIA_KINDS]);
+    .in("build_media.kind", [...GALLERY_MEDIA_KINDS])
+    // The same rule with the opposite consequence when the embed is inner: a
+    // build whose only bounty is solved keeps its card in the unfiltered
+    // gallery and loses it under the filter, which is what the filter means.
+    .eq("bounties.status", "open");
 
   const madeFor = cleanList(options.madeFor);
   if (madeFor.length > 0) query = query.overlaps("made_for", madeFor);
@@ -367,6 +435,7 @@ export async function listGallery(
     })
     .limit(NODES_PER_BUILD, { referencedTable: "build_nodes" })
     .limit(MEDIA_PER_BUILD, { referencedTable: "build_media" })
+    .limit(BOUNTIES_PER_BUILD, { referencedTable: "bounties" })
     .range(offset, offset + limit - 1);
 
   if (error) throw buildLayerError("listGallery", error);
@@ -392,17 +461,20 @@ function galleryPredicate(): string {
 
 /** The row as PostgREST returns it: embeds keyed by table name. */
 interface GalleryRow
-  extends Omit<GalleryBuild, "nodes" | "media"> {
+  extends Omit<GalleryBuild, "nodes" | "media" | "bounties"> {
   build_nodes: GalleryNode[] | null;
   build_media: GalleryMedia[] | null;
+  bounties: GalleryBounty[] | null;
 }
 
 function toGalleryBuild(row: GalleryRow): GalleryBuild {
-  const { build_nodes, build_media, ...header } = row;
+  const { build_nodes, build_media, bounties, ...header } = row;
   return {
     ...header,
     nodes: build_nodes ?? [],
     media: build_media ?? [],
+    // Always an array here, never absent: this query asked. See GalleryBuild.
+    bounties: bounties ?? [],
   };
 }
 
@@ -452,6 +524,41 @@ export async function getGalleryFacets(): Promise<GalleryFacets> {
     roles: Array.isArray(payload.roles) ? payload.roles : [],
     tools: Array.isArray(payload.tools) ? payload.tools : [],
   };
+}
+
+/**
+ * How many gallery builds carry an open bounty (NS-P52).
+ *
+ * ONE HEAD REQUEST, no rows. `head: true` asks PostgREST for the count and
+ * nothing else, so the facet chip costs a count over the same predicate the
+ * grid uses rather than a page of cards nobody rendered.
+ *
+ * EXACT, against this project's usual preference for estimates, and for the
+ * reason NS-P50's bounty counts gave: an estimate comes from the planner's row
+ * statistics, which are wrong by design for a filter this narrow — "gallery
+ * builds with an open ask" is a handful of rows out of a table-wide estimate —
+ * and a chip reading 4 above a grid of 7 is a bug report.
+ *
+ * Returns 0 rather than throwing when the count cannot be read: the chip is an
+ * offer, and a gallery that failed to load because a badge could not be
+ * numbered would be the wrong trade.
+ */
+export async function countOpenBountyBuilds(): Promise<number> {
+  const { count, error } = await supabase
+    .from("builds")
+    .select(`id, bounties!bounties_build_id_fkey!inner(id)`, {
+      count: "exact",
+      head: true,
+    })
+    .in("status", ["published", "gallery"])
+    .or(galleryPredicate())
+    .eq("bounties.status", "open");
+
+  if (error) {
+    console.warn("[countOpenBountyBuilds] count unavailable", error);
+    return 0;
+  }
+  return count ?? 0;
 }
 
 // =============================================================================

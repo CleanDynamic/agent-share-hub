@@ -34,6 +34,7 @@ import { Link } from "react-router-dom";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   GALLERY_PAGE_SIZE,
+  countOpenBountyBuilds,
   getGalleryFacets,
   listGallery,
   type GalleryBuild,
@@ -45,6 +46,7 @@ import { rebuildCreditLine } from "@/components/build/rebuildCredit";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import {
   FONT_STACK,
+  GAP_RED,
   HAIRLINE,
   ORANGE,
   TEAL,
@@ -65,6 +67,8 @@ const FACETS_STALE_MS = 5 * 60 * 1000;
 export default function Gallery() {
   const [madeFor, setMadeFor] = useState<string[]>([]);
   const [madeWith, setMadeWith] = useState<string[]>([]);
+  /** The third filter (NS-P52): only builds asking for help. */
+  const [openBounties, setOpenBounties] = useState(false);
   const [page, setPage] = useState(0);
 
   const offset = page * GALLERY_PAGE_SIZE;
@@ -72,8 +76,15 @@ export default function Gallery() {
   const builds = useQuery<GalleryPage>({
     // The filters are IN THE KEY, which is what makes a filter change one
     // request rather than a client-side pass over everything already loaded.
-    queryKey: ["gallery", { madeFor, madeWith, offset }],
-    queryFn: () => listGallery({ madeFor, madeWith, offset, limit: GALLERY_PAGE_SIZE }),
+    queryKey: ["gallery", { madeFor, madeWith, openBounties, offset }],
+    queryFn: () =>
+      listGallery({
+        madeFor,
+        madeWith,
+        openBounties,
+        offset,
+        limit: GALLERY_PAGE_SIZE,
+      }),
     // The previous page stays on screen while the next one loads, so changing
     // a filter does not blank the grid and drop the reader's scroll position.
     placeholderData: keepPreviousData,
@@ -82,6 +93,22 @@ export default function Gallery() {
   const facets = useQuery({
     queryKey: ["gallery-facets"],
     queryFn: getGalleryFacets,
+    staleTime: FACETS_STALE_MS,
+  });
+
+  /**
+   * How many gallery builds carry an open ask.
+   *
+   * Its own query rather than a fourth key on gallery_facets: that function
+   * counts values inside two array columns and knows nothing about bounties,
+   * and one head request costs less than teaching it. Cached beside the facets
+   * for the same reason they are — the options change far more slowly than the
+   * builds they describe — so toggling this filter still costs exactly one
+   * request.
+   */
+  const bountyCount = useQuery({
+    queryKey: ["gallery-bounty-count"],
+    queryFn: countOpenBountyBuilds,
     staleTime: FACETS_STALE_MS,
   });
 
@@ -106,7 +133,7 @@ export default function Gallery() {
     setPage(0);
   };
 
-  const filtered = madeFor.length > 0 || madeWith.length > 0;
+  const filtered = madeFor.length > 0 || madeWith.length > 0 || openBounties;
 
   return (
     <div
@@ -181,6 +208,16 @@ export default function Gallery() {
             emptyText="No tools named yet."
             onToggle={(value) => toggle(value, madeWith, setMadeWith)}
           />
+          <div style={{ height: 1, background: HAIRLINE }} />
+          <BountyFacet
+            active={openBounties}
+            count={bountyCount.data ?? 0}
+            loading={bountyCount.isLoading}
+            onToggle={() => {
+              setOpenBounties((current) => !current);
+              setPage(0);
+            }}
+          />
           {filtered ? (
             <div>
               <button
@@ -188,6 +225,7 @@ export default function Gallery() {
                 onClick={() => {
                   setMadeFor([]);
                   setMadeWith([]);
+                  setOpenBounties(false);
                   setPage(0);
                 }}
                 style={{
@@ -311,6 +349,78 @@ function FacetRow({
             );
           })
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * "Open bounties", as one chip on a row of its own.
+ *
+ * NOT A FACET ROW LIKE THE OTHER TWO, because it has one option rather than
+ * many: made_for and made_with offer whatever creators have written down, and
+ * this offers a yes. Red, because it is the same fact the card pill and the
+ * build page's gap panel are about, and a reader who has learnt what red means
+ * here should not have to learn it again there.
+ *
+ * The count is the number of BUILDS carrying an open ask, not the number of
+ * asks: it is the size of the grid this chip produces, which is the number a
+ * reader is deciding about.
+ */
+function BountyFacet({
+  active,
+  count,
+  loading,
+  onToggle,
+}: {
+  active: boolean;
+  count: number;
+  loading: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+      <span
+        style={{
+          ...labelText,
+          textTransform: "uppercase",
+          color: TEXT_MUTED,
+          minWidth: 78,
+          paddingTop: 5,
+        }}
+      >
+        Unsolved
+      </span>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          data-testid="facet-bounties"
+          aria-pressed={active}
+          onClick={onToggle}
+          style={{
+            fontFamily: "inherit",
+            fontSize: 12,
+            fontWeight: 500,
+            letterSpacing: "0.04em",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            height: 28,
+            padding: "0 10px",
+            borderRadius: 100,
+            cursor: "pointer",
+            color: active ? GAP_RED : TEXT_SECONDARY,
+            background: active ? hexToRgba(GAP_RED, 0.12) : "rgba(255,255,255,0.025)",
+            border: `1px solid ${active ? hexToRgba(GAP_RED, 0.4) : "rgba(255,255,255,0.06)"}`,
+          }}
+        >
+          Open bounties
+          {loading ? null : (
+            <span style={{ color: TEXT_MUTED, fontVariantNumeric: "tabular-nums" }}>
+              {count}
+            </span>
+          )}
+        </button>
       </div>
     </div>
   );

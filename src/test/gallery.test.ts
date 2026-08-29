@@ -65,6 +65,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 import {
   GALLERY_PAGE_SIZE,
   GALLERY_THRESHOLD,
+  countOpenBountyBuilds,
   getGalleryFacets,
   inGallery,
   listGallery,
@@ -273,5 +274,95 @@ describe("the facets", () => {
   it("returns empty lists rather than undefined when the function returns nothing", async () => {
     rpc.mockResolvedValue({ data: null, error: null });
     await expect(getGalleryFacets()).resolves.toEqual({ roles: [], tools: [] });
+  });
+});
+
+// =============================================================================
+// The open-bounty facet (NS-P52)
+// =============================================================================
+// The claim being tested is "one query, no N+1": the pill's data rides in on
+// the request the cards already make, and the filter is a join rather than a
+// second round trip through listOpenBounties' ids. Both are visible in the
+// select string and in the number of `from` calls, which is what this stub
+// counts.
+
+describe("the open-bounty facet", () => {
+  beforeEach(() => {
+    calls = [];
+    response = { data: [], error: null, count: 0 };
+    rpc.mockReset();
+  });
+
+  it("embeds the open bounties on the card's own request, and asks for nothing else", async () => {
+    await listGallery();
+
+    // ONE request. A pill resolved per card would be twenty-five.
+    expect(call("from")).toHaveLength(1);
+
+    const columns = call("select")[0].args[0] as string;
+    expect(columns).toContain("bounties!bounties_build_id_fkey(");
+    // Three columns, not the row: the deadline and the me-too count belong to
+    // the build page.
+    expect(columns).toContain("id, reward_gbp, status");
+    expect(columns).not.toContain("me_too_count");
+    // Unfiltered, the embed is OUTER: a build with no ask still gets a card.
+    expect(columns).not.toContain("!inner");
+
+    // Only open asks reach a pill, and the embedded rows are capped.
+    const status = call("eq").find((entry) => entry.args[0] === "bounties.status");
+    expect(status?.args[1]).toBe("open");
+    expect(call("limit").map((entry) => entry.args[1])).toContainEqual({
+      referencedTable: "bounties",
+    });
+  });
+
+  it("makes the join inner when the filter is on, and still one query", async () => {
+    await listGallery({ openBounties: true });
+
+    expect(call("from")).toHaveLength(1);
+    const columns = call("select")[0].args[0] as string;
+    expect(columns).toContain("bounties!bounties_build_id_fkey!inner(");
+
+    // The gallery's own membership rules are untouched by the filter: it
+    // narrows the set, it does not replace it.
+    const statuses = call("in").find((entry) => entry.args[0] === "status");
+    expect(statuses?.args[1]).toEqual(["published", "gallery"]);
+    expect(firstArg("or")).toContain("status.eq.gallery");
+  });
+
+  it("hands the bounty rows to the card, and an empty list to a build with none", async () => {
+    response = {
+      data: [
+        { id: "b1", slug: "one", bounties: [{ id: "bo1", reward_gbp: 120, status: "open" }] },
+        { id: "b2", slug: "two", bounties: null },
+      ],
+      error: null,
+      count: 2,
+    };
+
+    const page = await listGallery();
+    expect(page.builds[0].bounties).toEqual([
+      { id: "bo1", reward_gbp: 120, status: "open" },
+    ]);
+    // Asked, and there are none — which is not the same as "nobody asked".
+    expect(page.builds[1].bounties).toEqual([]);
+    expect(page.builds[0]).not.toHaveProperty("bounties.0.build_id");
+  });
+
+  it("counts the chip's number in one head request over the same predicate", async () => {
+    response = { data: [], error: null, count: 7 };
+    await expect(countOpenBountyBuilds()).resolves.toBe(7);
+
+    expect(call("from")).toHaveLength(1);
+    const [columns, options] = call("select")[0].args as [string, Record<string, unknown>];
+    expect(columns).toContain("bounties!bounties_build_id_fkey!inner(");
+    // head: no rows on the wire, just the number.
+    expect(options).toEqual({ count: "exact", head: true });
+    expect(firstArg("or")).toContain("status.eq.gallery");
+  });
+
+  it("answers zero rather than throwing when the count cannot be read", async () => {
+    response = { data: null as never, error: { message: "nope" }, count: null };
+    await expect(countOpenBountyBuilds()).resolves.toBe(0);
   });
 });
