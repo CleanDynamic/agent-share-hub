@@ -15,7 +15,12 @@ export function useBountyDiscussionUpdates(
           event: "*",
           schema: "public",
           table: "bounty_discussion_comments",
-          filter: `bounty_id=eq.${bountyId}`,
+          // NS-P47 shim (removed in NS-P50): bountyId is a content_items id and
+          // bounty_discussion_comments.bounty_id is a public.bounties id. A
+          // postgres_changes filter is one column comparison evaluated by the
+          // replication stream and cannot join, so the live thread reads the
+          // shim column like every other legacy read does.
+          filter: `legacy_bounty_item_id=eq.${bountyId}`,
         },
         callback,
       )

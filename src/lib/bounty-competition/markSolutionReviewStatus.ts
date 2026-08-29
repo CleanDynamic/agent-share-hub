@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveBountyRowId } from "@/lib/bounty-solver/resolveBountyRowId";
 
 type ReviewState = "shortlisted" | "rejected" | "noted";
 
@@ -21,11 +22,16 @@ export async function markSolutionReviewStatus({
   status,
   notes,
 }: MarkArgs): Promise<void> {
+  // NS-P47 shim (removed in NS-P50). bounty_author_review.bounty_id is a
+  // public.bounties id. The conflict target is (solution_id, author_id) and is
+  // unaffected; the column being written is not.
+  const bountyRowId = await resolveBountyRowId(bountyId);
+
   const { error } = await (supabase as any)
     .from("bounty_author_review")
     .upsert(
       {
-        bounty_id: bountyId,
+        bounty_id: bountyRowId,
         solution_id: solutionId,
         author_id: authorId,
         state: status,

@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/lib/notifications/createNotification";
+import { resolveBountyRowId } from "@/lib/bounty-solver/resolveBountyRowId";
 
 interface ExtendArgs {
   bountyId: string;
@@ -26,10 +27,14 @@ export async function extendBountyDeadline({
 
   const previousDeadline = (bounty as any).bounty_deadline as string | null;
 
+  // NS-P47 shim (removed in NS-P50). bounty_deadline_extensions.bounty_id is a
+  // public.bounties id; the route carries the content_items id.
+  const bountyRowId = await resolveBountyRowId(bountyId);
+
   const { error: insErr } = await (supabase as any)
     .from("bounty_deadline_extensions")
     .insert({
-      bounty_id: bountyId,
+      bounty_id: bountyRowId,
       extended_by: extenderUserId,
       previous_deadline: previousDeadline,
       new_deadline: newDeadline,
@@ -55,7 +60,7 @@ export async function extendBountyDeadline({
         (supabase as any)
           .from("bounty_discussion_comments")
           .select("author_id")
-          .eq("bounty_id", bountyId),
+          .eq("legacy_bounty_item_id", bountyId), // NS-P47 shim (removed in NS-P50)
       ]);
       const recipients = new Set<string>([
         ...((solvers ?? []) as any[]).map((s) => s.solver_id),

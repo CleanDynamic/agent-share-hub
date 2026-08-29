@@ -26,15 +26,15 @@ export async function getBountyAnalytics(
       (supabase as any)
         .from("bounty_discussion_comments")
         .select("id, author_id, created_at")
-        .eq("bounty_id", bountyId),
+        .eq("legacy_bounty_item_id", bountyId), // NS-P47 shim (removed in NS-P50)
       (supabase as any)
         .from("bounty_deadline_extensions")
         .select("id, extended_by, new_deadline, created_at")
-        .eq("bounty_id", bountyId),
+        .eq("legacy_bounty_item_id", bountyId), // NS-P47 shim (removed in NS-P50)
       (supabase as any)
         .from("bounty_author_review")
         .select("solution_id, state")
-        .eq("bounty_id", bountyId)
+        .eq("legacy_bounty_item_id", bountyId) // NS-P47 shim (removed in NS-P50)
         .eq("author_id", viewerId),
     ]);
 

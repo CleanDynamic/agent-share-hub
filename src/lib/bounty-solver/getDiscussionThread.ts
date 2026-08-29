@@ -22,7 +22,11 @@ export async function getDiscussionThread(args: {
   const { data: rows, error } = await (supabase as any)
     .from("bounty_discussion_comments")
     .select("*")
-    .eq("bounty_id", bountyId)
+    // NS-P47 shim (removed in NS-P50). bountyId is the content_items id in the
+    // legacy bounty page's route; bounty_discussion_comments.bounty_id is a
+    // public.bounties id. The shim column carries the old id and is derived by
+    // the database from bounties.legacy_item_id on every write.
+    .eq("legacy_bounty_item_id", bountyId)
     .order("created_at", { ascending: true });
   if (error) throw error;
   const flat = (rows ?? []) as any[];
@@ -52,7 +56,7 @@ export async function getDiscussionThread(args: {
         ? (supabase as any)
             .from("bounty_comment_last_read")
             .select("last_read_at")
-            .eq("bounty_id", bountyId)
+            .eq("legacy_bounty_item_id", bountyId) // NS-P47 shim (removed in NS-P50)
             .eq("user_id", viewerId)
             .maybeSingle()
         : Promise.resolve({ data: null }),

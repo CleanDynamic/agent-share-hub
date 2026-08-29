@@ -341,6 +341,105 @@ moved. Once the new path writes acceptance rows for bounties on unpublished
 builds, that policy publishes them. Tightening it is a behaviour change on a
 live surface and belongs with the prompt that gives it rows.
 
+## The NS-P47 repoint — four map tables, four shim columns, one dual-write
+
+**Added** NS-P47 (29 Aug 2026). **Kept until NS-P56 signs off.**
+
+Nothing is frozen here either. `supabase/migrations/20260829120000_repoint_bounty_satellites.sql`
+repeats the NS-P46 recipe on the four remaining generation-2 satellites that
+foreign-keyed `content_items` directly, through the same `legacy_item_id`
+mapping:
+
+| Table | `bounty_id` before | `bounty_id` after |
+| --- | --- | --- |
+| `bounty_discussion_comments` | `content_items(id)` CASCADE | `bounties(id)` CASCADE |
+| `bounty_comment_last_read` | `content_items(id)` CASCADE | `bounties(id)` CASCADE |
+| `bounty_deadline_extensions` | `content_items(id)` CASCADE | `bounties(id)` CASCADE |
+| `bounty_author_review` | `content_items(id)` CASCADE | `bounties(id)` CASCADE |
+
+Every delete action is preserved. `content_items → bounties` is itself CASCADE,
+so deleting a legacy content item still empties the whole satellite set — the
+path is one hop longer and the outcome identical.
+
+| Object | Kind | Why it stays |
+| --- | --- | --- |
+| `public.ns_p47_migration_map_bounty_discussion_comments` | table | One row per repointed comment: its id, and the `content_items` id its `bounty_id` held before. RLS on, no policy — operator access only. |
+| `public.ns_p47_migration_map_bounty_deadline_extensions` | table | The same, keyed on `id`. |
+| `public.ns_p47_migration_map_bounty_author_review` | table | The same, keyed on `id`. |
+| `public.ns_p47_migration_map_bounty_comment_last_read` | table | The same, keyed on `(old_bounty_id, user_id)` — that table has no surrogate key and its primary key is the pair being rewritten. |
+| `legacy_bounty_item_id` on all four | columns | The shim the live legacy read path runs on. Derived by NS-P46's `set_legacy_bounty_item_id()`, never written by a client. |
+
+### Two tables named by the prompt that were NOT repointed
+
+`bounty_comment_reactions` is **indirect**: its only foreign key is
+`comment_id → bounty_discussion_comments(id)`. It holds no `content_items` id,
+no policy on it names `content_items`, and no client query against it carries a
+bounty id. There was nothing in it to repoint. The migration asserts this in
+preflight rather than assuming it.
+
+`bounty_me_too` is **generation 1**, and the rule recorded above — *"Generation-1
+tables are not repointed and not dropped"* — forbids NS-P45–P49 from adding a
+foreign key to it. It is also not on the database: it answers PGRST205, which is
+why its one caller writes `.from("bounty_me_too" as any)` and why it is absent
+from `src/integrations/supabase/types.ts`. Its `content_id` still keys
+`content_items` and NS-P47 did not touch it.
+
+### The me-too counter is now a dual-write, and that is deliberate
+
+Where generation 1 exists, `update_bounty_me_too_count()` maintains **both**
+counters from the same me-too write: `content_items.bounty_me_too_count`
+exactly as before, and `bounties.me_too_count` in addition, resolved through
+`bounties.legacy_item_id`. No column changed and no constraint was added to
+`bounty_me_too`; only the function body did.
+
+Both are recomputed from the same `COUNT(*)` rather than incremented, so they
+cannot drift apart. The legacy counter is the one `BountyCard.tsx` and the
+me-too sorts in `Browse.tsx` and `Discover.legacy.tsx` read, and it is **not**
+retired here — **NS-P54 retires it**, and until then a me-too moves two numbers
+on purpose. The rewrite also pins `search_path` on what was a `SECURITY DEFINER`
+function without one.
+
+On the live project this whole section is a no-op that says so in a `NOTICE`.
+
+### Why the shim columns exist
+
+The same reason NS-P46's do, plus one that is specific to this set: the live
+thread subscribes with a `postgres_changes` filter, which is a single column
+comparison evaluated by the replication stream. It cannot join, so either the
+old id is on the row or the legacy thread stops updating live.
+
+**NS-P50 removes them.** `grep -rn "NS-P47 shim" src/` is the complete list.
+When the last call site is rewired onto `bounties` directly, the four columns
+and their four triggers go with them — and once NS-P46's two go too,
+`set_legacy_bounty_item_id()` goes with the last of the six.
+
+### Reversing the repoint
+
+Section 2 of the migration carries the four steps in order. The order matters:
+the derivation triggers reject the rollback UPDATE if they are still attached
+when it runs, and the `bounty_comment_last_read` step joins back through the
+mapping because its map is keyed on the old pair.
+
+### What is still live, and must stay live
+
+- The legacy bounty thread: rendering, posting, reacting, marking read; the
+  author's deadline extensions, triage notes and analytics. Proven under real
+  RLS by `supabase/tests/ns-p47-repoint-bounty-satellites.sql` (checks 6 and 7)
+  and at the data layer by
+  `src/lib/bounty-solver/legacyDiscussionShim.test.ts`.
+- Every generation-1 read, unchanged. NS-P47 froze nothing.
+
+### One thing NS-P50 has to decide
+
+`bounty_comment_reactions` carries `"Public view comment reactions"` with
+`USING (true)` and does not join the comment, so a reaction on a comment nobody
+can read is itself readable. That was true before NS-P47 and is true after it —
+rewriting it here would have been a behaviour change on a live surface in a
+migration that moves foreign keys. It is a real gap and belongs with the prompt
+that rewires these tables.
+
+---
+
 ---
 
 ## What remains in the database
