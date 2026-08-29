@@ -29,30 +29,38 @@ async function authoredZone({
 }: ZoneArgs): Promise<ZoneContentResult> {
   // Special filter: surface accepted bounty solutions for this user.
   if (filter === "solution") {
+    // NS-P50. solution_acceptance_log.bounty_id points at public.bounties, and
+    // the shim column this used to embed content_items through is gone. The
+    // embed now hangs off the real foreign key — the bounty — and the legacy
+    // item comes back nested one level further down. A solution accepted on a
+    // BUILD bounty has no content_items row at all and links to the build.
     const { data, error } = await (supabase as any)
       .from("solution_acceptance_log")
       .select(
-        // NS-P46 shim (removed in NS-P50): bounty_id points at public.bounties
-        // now, so the content_items embed goes through the shim column's
-        // foreign key instead.
-        "id, accepted_at, slot_kind, legacy_bounty_item_id, solution_id, content_items!solution_acceptance_log_legacy_bounty_item_id_fkey(id, title, slug, post_type)"
+        "id, accepted_at, slot_kind, solution_id, bounties!solution_acceptance_log_bounty_id_fkey(id, content_items(id, title, slug, post_type), builds(id, slug, title))"
       )
       .eq("solver_id", userId)
       .order("accepted_at", { ascending: false })
       .range(offset, offset + limit);
     if (error) throw error;
-    const items: ZoneItem[] = (data ?? []).map((r: any) => ({
-      id: `solution:${r.id}`,
-      kind: "solution",
-      title: r.content_items?.title
-        ? `Solution accepted on “${r.content_items.title}”`
-        : "Solution accepted",
-      subtitle: `${r.slot_kind} slot`,
-      href: r.content_items?.slug
-        ? `/content/${r.content_items.slug}#solution-${r.solution_id}`
-        : `/content/${r.legacy_bounty_item_id}#solution-${r.solution_id}`,
-      occurredAt: r.accepted_at,
-    }));
+    const items: ZoneItem[] = (data ?? []).map((r: any) => {
+      const item = r.bounties?.content_items ?? null;
+      const build = r.bounties?.builds ?? null;
+      const title = item?.title ?? build?.title ?? null;
+      const href = item
+        ? `/content/${item.slug ?? item.id}#solution-${r.solution_id}`
+        : build?.slug
+          ? `/b2/${build.slug}#solution-${r.solution_id}`
+          : `#solution-${r.solution_id}`;
+      return {
+        id: `solution:${r.id}`,
+        kind: "solution",
+        title: title ? `Solution accepted on “${title}”` : "Solution accepted",
+        subtitle: `${r.slot_kind} slot`,
+        href,
+        occurredAt: r.accepted_at,
+      };
+    });
     return pack(items, limit);
   }
 

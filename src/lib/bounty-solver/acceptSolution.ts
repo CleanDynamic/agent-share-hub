@@ -1,12 +1,20 @@
 import { supabase } from "@/integrations/supabase/client";
+import { legacyItemForBounty } from "@/lib/bounty/resolveLegacy";
 import { createNotification } from "@/lib/notifications/createNotification";
 import { recomputeMetadata } from "@/lib/metadata/recomputeMetadata";
 import type { Solution } from "./types";
 
 /**
- * Accept a solution. Performs the multi-step merge sequentially in the
- * client (no SECURITY DEFINER RPC yet); each step is best-effort but logged
- * loudly on failure. Idempotency: if the slot is already accepted, throws.
+ * Accept a solution on a LEGACY content_items bounty: the stage_grids merge.
+ *
+ * Performs the multi-step merge sequentially in the client; each step is
+ * best-effort but logged loudly on failure. Idempotency: if the slot is already
+ * accepted, throws.
+ *
+ * A bounty that lives on a build is accepted by acceptSolution in
+ * src/lib/bounty/, which substitutes the payload into the gap node inside one
+ * transaction. There is no stage_grids blob to merge into here for such a
+ * bounty, so this refuses it rather than half-applying.
  */
 export async function acceptSolution(args: {
   solutionId: string;
@@ -23,15 +31,15 @@ export async function acceptSolution(args: {
   if (sErr) throw sErr;
   const solution = sol as Solution;
 
-  // NS-P46 shim (removed in NS-P50). solution.bounty_id is a public.bounties id
-  // now; everything below that reads or writes content_items — the stage_grids
-  // merge, the solved counters, the notification target, the metadata
-  // recompute — needs the legacy id instead. This function IS the legacy
-  // acceptance path: a bounty that lives on a build has no legacy item and no
-  // stage_grids to merge into, and belongs to NS-P50's rewrite, not here.
-  const legacyBountyItemId = solution.legacy_bounty_item_id;
+  // NS-P50. solution.bounty_id is a public.bounties id; everything below that
+  // reads or writes content_items — the stage_grids merge, the solved counters,
+  // the notification target, the metadata recompute — needs the legacy id its
+  // header names.
+  const legacyBountyItemId = await legacyItemForBounty(solution.bounty_id);
   if (!legacyBountyItemId) {
-    throw new Error("This solution is not on a legacy bounty; acceptance for build bounties arrives in NS-P50");
+    throw new Error(
+      "This solution is on a build bounty; accept it with acceptSolution from @/lib/bounty",
+    );
   }
 
   const { data: bounty, error: bErr } = await (supabase as any)

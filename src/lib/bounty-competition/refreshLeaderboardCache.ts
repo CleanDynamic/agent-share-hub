@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 import { notifyBountySolverOvertaken } from "@/lib/notifications/triggers";
 
 interface SolverAgg {
@@ -19,10 +20,16 @@ interface SolverAgg {
 export async function refreshLeaderboardCache(
   bountyId: string,
 ): Promise<void> {
+  // NS-P50: the aggregation reads solutions, which keys on public.bounties.
+  // solver_leaderboard_cache is NOT repointed — its own bounty_id is still the
+  // content_items id every caller of this module carries, and NS-P46 through
+  // NS-P48 left that table alone — so `bountyId` is used unchanged below.
+  const bountyRowId = await resolveBountyByLegacyItem(bountyId);
+
   const { data: rows, error } = await (supabase as any)
     .from("solutions")
     .select("solver_id, vote_count, status, submitted_at")
-    .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
+    .eq("bounty_id", bountyRowId)
     .in("status", ["submitted", "accepted"]);
   if (error) throw error;
 

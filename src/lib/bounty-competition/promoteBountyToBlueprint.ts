@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 import { notifyBountyPromotedToBlueprint } from "@/lib/notifications/triggers";
 
 /**
@@ -96,10 +97,13 @@ export async function promoteBountyToBlueprint(
     collaboratorRoster.set(c.collaborator_id, prior || !!c.is_primary_author);
   }
 
+  // NS-P50: solutions.bounty_id is a public.bounties id; this function is
+  // routed on the content_items one.
+  const bountyRowId = await resolveBountyByLegacyItem(bountyId);
   const { data: acceptedSolvers } = await (supabase as any)
     .from("solutions")
     .select("solver_id")
-    .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
+    .eq("bounty_id", bountyRowId)
     .eq("status", "accepted");
   for (const s of (acceptedSolvers ?? []) as any[]) {
     if (!s?.solver_id) continue;

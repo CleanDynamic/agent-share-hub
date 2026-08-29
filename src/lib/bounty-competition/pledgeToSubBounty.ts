@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 import { createLegacyBountyHeader } from "./createLegacyBountyHeader";
 import { notifyMetaBountySubSpawned } from "@/lib/notifications/triggers";
 
@@ -31,18 +32,18 @@ export async function pledgeToSubBounty({
   if (mErr) throw mErr;
   if (!(meta as any).bounty_is_meta) throw new Error("Not a meta-bounty");
 
-  // NS-P48 shim (removed in NS-P50). `metaBountyId` is a content_items id;
-  // since NS-P48 meta_bounty_id holds a public.bounties id, so the read filters
-  // legacy_meta_item_id — the value the database derives from
-  // bounties.legacy_item_id on every write. `spawned_bounty_id` is read for
-  // truthiness only ("has this one spawned yet"), which the repoint does not
-  // change, so it stays on the real column.
+  // NS-P50. `metaBountyId` is a content_items id; meta_bounty_sub_definitions
+  // .meta_bounty_id has been a public.bounties id since NS-P48, so the route's
+  // id is resolved to the header it names. `spawned_bounty_id` is read for
+  // truthiness only ("has this one spawned yet"), which the repoint did not
+  // change.
+  const metaRowId = await resolveBountyByLegacyItem(metaBountyId);
   const { data: subs, error: subErr } = await (supabase as any)
     .from("meta_bounty_sub_definitions")
     .select(
       "id, title, description, target_amount, spawn_threshold_pct, spawned_bounty_id, position, meta_bounty_id",
     )
-    .eq("legacy_meta_item_id", metaBountyId)
+    .eq("meta_bounty_id", metaRowId)
     .order("position", { ascending: true });
   if (subErr) throw subErr;
   const sub = ((subs ?? []) as any[])[subBountyIndex];

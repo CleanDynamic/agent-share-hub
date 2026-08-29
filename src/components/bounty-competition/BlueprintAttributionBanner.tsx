@@ -2,6 +2,7 @@ import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 
 interface BlueprintAttributionBannerProps {
   bountyId: string;
@@ -45,10 +46,13 @@ export function BlueprintAttributionBanner({
         .maybeSingle();
       if (!src || (src as any).post_type !== "bounty") return null;
 
+      // NS-P50: solutions.bounty_id is a public.bounties id; this banner is
+      // handed the content_items id of the bounty a blueprint came from.
+      const bountyRowId = await resolveBountyByLegacyItem(bountyId);
       const { count } = await (supabase as any)
         .from("solutions")
         .select("solver_id", { count: "exact", head: true })
-        .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
+        .eq("bounty_id", bountyRowId)
         .eq("status", "accepted");
 
       return {

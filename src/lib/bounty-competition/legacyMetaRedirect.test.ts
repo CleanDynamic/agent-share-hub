@@ -1,26 +1,21 @@
 // Tier 3 — the legacy meta-bounty surfaces still find their sub-definitions
-// after the repoint (NS-P48).
+// with the shims gone (NS-P50).
 //
-// WHAT CHANGED UNDERNEATH THIS DATA LAYER. Until NS-P48,
+// WHAT CHANGED UNDERNEATH THIS DATA LAYER, TWICE. Until NS-P48,
 // meta_bounty_sub_definitions.meta_bounty_id held the content_items id that a
 // legacy meta-bounty page carries in its route and that the home strip and the
 // discover expansion both work in, so every query here could filter on it
-// directly. It now holds a public.bounties id, and the content_items id lives
-// in legacy_meta_item_id, which the database derives from
-// bounties.legacy_item_id on every write. spawned_bounty_id moved the same way
-// and has legacy_spawned_item_id beside it. Each read that starts from a
-// content_items id was moved onto those columns and flagged `// NS-P48 shim`;
-// each WRITE resolves or creates the header first, because an insert has to
-// supply the real thing. NS-P50 removes both columns when it rewires these
-// callers onto bounties directly.
+// directly. NS-P48 moved it and spawned_bounty_id onto public.bounties and kept
+// the reads working through derived legacy_meta_item_id and
+// legacy_spawned_item_id columns. NS-P50 dropped both: every read resolves the
+// header first and filters meta_bounty_id, and every id handed back to a caller
+// that routes on /content/:id is mapped back through bounties.legacy_item_id.
 //
-// WHAT THIS FILE ASSERTS, AND WHY IT ASSERTS ON THE QUERY. A shim is exactly
-// the kind of change no rendered output can distinguish: a strip filtered on
-// the wrong column returns nothing, which looks identical to a meta-bounty
-// nobody has broken into sub-bounties yet. So these tests read the query that
-// was built. If one of them fails after NS-P50, that is the point — the shim it
-// names is the thing NS-P50 is removing, and the test should be removed with
-// it.
+// WHAT THIS FILE ASSERTS, AND WHY IT ASSERTS ON THE QUERY. A redirect is
+// exactly the kind of change no rendered output can distinguish: a strip
+// filtered on the wrong column returns nothing, which looks identical to a
+// meta-bounty nobody has broken into sub-bounties yet. So these tests read the
+// query that was built.
 //
 // WHY NOT A BROWSER SPEC. The same reason NS-P46 and NS-P47 gave:
 // public.bounties answers PGRST205 against the project in supabase/config.toml,
@@ -28,10 +23,9 @@
 // be about the old shape. The browser half lives in
 // e2e/tier3/legacy-meta-bounty.spec.ts, which states its price of entry and
 // skips until the migration is applied. The database half — anon reading a
-// legacy meta's sub-definitions through the shim under RLS, the author writing
-// on their own, a third party refused, and the freeze holding — is proven for
-// real in supabase/tests/ns-p48-repoint-meta-sub-definitions.sql, checks 5
-// and 6.
+// legacy meta's sub-definitions under RLS, the author writing on their own, a
+// third party refused, and the freeze holding — is proven for real in
+// supabase/tests/ns-p48-repoint-meta-sub-definitions.sql, checks 5 and 6.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -92,6 +86,7 @@ vi.mock("@/lib/notifications/triggers", () => ({
   notifyMetaBountySubSpawned: vi.fn(() => Promise.resolve()),
 }));
 
+import { clearBountyResolutionCache } from "@/lib/bounty/resolveLegacy";
 import { getMetaBountyState } from "./getMetaBountyState";
 import { pledgeToSubBounty } from "./pledgeToSubBounty";
 import { createMetaBounty } from "./createMetaBounty";
@@ -99,7 +94,7 @@ import { createMetaBounty } from "./createMetaBounty";
 /**
  * The id in the route of a legacy meta-bounty page, and the id the home strip
  * and the discover query both work in: a content_items row. This is the only id
- * these callers have, and the whole reason the shim columns exist.
+ * these callers have, and the whole reason the resolve exists.
  */
 const LEGACY_META_ID = "c0ffee00-0000-4000-8000-0000000000a1";
 /** The public.bounties row NS-P45's backfill wrote for it. */
@@ -115,11 +110,14 @@ const SUB = {
   description: "Verify every citation resolves",
   target_amount: 120,
   spawn_threshold_pct: 100,
-  legacy_spawned_item_id: LEGACY_SPAWNED_ID,
   spawned_bounty_id: SPAWNED_HEADER_ID,
   meta_bounty_id: META_HEADER_ID,
   position: 0,
 };
+
+/** The two header rows the resolve reads, in whichever direction it is asked. */
+const META_HEADER = { id: META_HEADER_ID, legacy_item_id: LEGACY_META_ID };
+const SPAWNED_HEADER = { id: SPAWNED_HEADER_ID, legacy_item_id: LEGACY_SPAWNED_ID };
 
 function queriesFor(table: string): Query[] {
   return db.queries.filter((q) => q.table === table);
@@ -150,44 +148,57 @@ function updatePayload(query: Query | undefined): Record<string, unknown> {
 beforeEach(() => {
   db.queries = [];
   db.next = {};
+  // The resolve memoises for the life of the session, which is the point of it
+  // and would otherwise leak one test's mapping into the next.
+  clearBountyResolutionCache();
 });
 
-describe("NS-P48 — the legacy meta-bounty page reads through the shim", () => {
-  it("filters sub-definitions on legacy_meta_item_id, never on meta_bounty_id", async () => {
+describe("NS-P50 — the legacy meta-bounty page reads through bounties", () => {
+  it("resolves the header, then filters sub-definitions on meta_bounty_id", async () => {
     db.next.content_items = [
       { data: { id: LEGACY_META_ID, title: "Meta", bounty_is_meta: true }, error: null },
     ];
+    db.next.bounties = [{ data: META_HEADER, error: null }, { data: [SPAWNED_HEADER], error: null }];
     db.next.meta_bounty_sub_definitions = [{ data: [SUB], error: null }];
     db.next.meta_bounty_pledges = [{ data: [], error: null }];
 
     const state = await getMetaBountyState(LEGACY_META_ID);
     expect(state.subBounties).toHaveLength(1);
 
-    const subs = queriesFor("meta_bounty_sub_definitions")[0];
-    expect(eqOn(subs, "legacy_meta_item_id")).toEqual([
-      "legacy_meta_item_id",
+    expect(eqOn(queriesFor("bounties")[0], "legacy_item_id")).toEqual([
+      "legacy_item_id",
       LEGACY_META_ID,
     ]);
-    // The old filter would return nothing at all: a content_items id cannot
-    // match a bounties id, so an un-migrated caller renders a meta-bounty with
-    // no sub-bounties rather than an error.
-    expect(eqColumns(subs)).not.toContain("meta_bounty_id");
+
+    const subs = queriesFor("meta_bounty_sub_definitions")[0];
+    expect(eqOn(subs, "meta_bounty_id")).toEqual(["meta_bounty_id", META_HEADER_ID]);
+    // The route's id in that filter matches nothing at all: a content_items id
+    // cannot match a bounties id, so a caller that skipped the resolve renders
+    // a meta-bounty with no sub-bounties rather than an error.
+    expect(eqOn(subs, "meta_bounty_id")).not.toEqual(["meta_bounty_id", LEGACY_META_ID]);
+    expect(eqColumns(subs)).not.toContain("legacy_meta_item_id");
   });
 
-  it("returns a content_items id as spawnedBountyId, because its caller routes on it", async () => {
+  it("maps spawnedBountyId back to a content_items id, because its caller routes on it", async () => {
     db.next.content_items = [
       { data: { id: LEGACY_META_ID, title: "Meta", bounty_is_meta: true }, error: null },
     ];
+    db.next.bounties = [{ data: META_HEADER, error: null }, { data: [SPAWNED_HEADER], error: null }];
     db.next.meta_bounty_sub_definitions = [{ data: [SUB], error: null }];
     db.next.meta_bounty_pledges = [{ data: [], error: null }];
 
     const state = await getMetaBountyState(LEGACY_META_ID);
 
     // MetaBountyBody navigates to `/content/${sub.spawnedBountyId}`. A bounties
-    // id there is a 404 on a bounty that exists — the quiet kind of wrong.
+    // id there is a 404 on a bounty that exists — the quiet kind of wrong. The
+    // reverse resolve is what NS-P50 replaced legacy_spawned_item_id with, and
+    // it runs once for every spawn on the page.
     expect(state.subBounties[0].spawnedBountyId).toBe(LEGACY_SPAWNED_ID);
     expect(state.subBounties[0].spawnedBountyId).not.toBe(SPAWNED_HEADER_ID);
     expect(selectList(queriesFor("meta_bounty_sub_definitions")[0])).toContain(
+      "spawned_bounty_id",
+    );
+    expect(selectList(queriesFor("meta_bounty_sub_definitions")[0])).not.toContain(
       "legacy_spawned_item_id",
     );
   });
@@ -196,6 +207,7 @@ describe("NS-P48 — the legacy meta-bounty page reads through the shim", () => 
     db.next.content_items = [
       { data: { id: LEGACY_META_ID, title: "Meta", bounty_is_meta: true }, error: null },
     ];
+    db.next.bounties = [{ data: META_HEADER, error: null }, { data: [SPAWNED_HEADER], error: null }];
     db.next.meta_bounty_sub_definitions = [{ data: [SUB], error: null }];
     db.next.meta_bounty_pledges = [{ data: [], error: null }];
 
@@ -209,13 +221,14 @@ describe("NS-P48 — the legacy meta-bounty page reads through the shim", () => 
   });
 });
 
-describe("NS-P48 — the discover free-text expansion reads the shim", () => {
-  it("selects legacy_meta_item_id, because its rows are OR-included into a content_items id filter", async () => {
+describe("NS-P50 — the discover free-text expansion maps its matches back", () => {
+  it("selects meta_bounty_id and returns the content_items ids those headers name", async () => {
     const { queryBlueprints } = await import("@/lib/discover/queryBlueprints");
 
     db.next.meta_bounty_sub_definitions = [
-      { data: [{ legacy_meta_item_id: LEGACY_META_ID }], error: null },
+      { data: [{ meta_bounty_id: META_HEADER_ID }], error: null },
     ];
+    db.next.bounties = [{ data: [META_HEADER], error: null }];
     db.next.content_items = [
       { data: [], error: null },
       { data: [], error: null, count: 0 },
@@ -224,15 +237,28 @@ describe("NS-P48 — the discover free-text expansion reads the shim", () => {
     await queryBlueprints({ query: "citation", postType: "bounty" });
 
     const expansion = queriesFor("meta_bounty_sub_definitions")[0];
-    expect(selectList(expansion)).toBe("legacy_meta_item_id");
-    // Selecting meta_bounty_id would hand the caller bounties ids, which match
-    // no content_items row — the search would quietly stop matching sub-bounty
-    // titles rather than fail.
-    expect(selectList(expansion)).not.toContain("meta_bounty_id");
+    expect(selectList(expansion)).toBe("meta_bounty_id");
+
+    // The caller OR-includes what comes back into a content_items id filter, so
+    // handing it bounties ids would match no content_items row — the search
+    // would quietly stop matching sub-bounty titles rather than fail. The
+    // reverse resolve is what turns them back.
+    const mapping = queriesFor("bounties")[0];
+    expect(mapping.ops.find((o) => o.method === "in")?.args).toEqual([
+      "id",
+      [META_HEADER_ID],
+    ]);
+    // The rows query OR-includes them as `id.in.(...)`, alongside its own
+    // free-text predicate. The id in that list has to be a content_items one.
+    const idFilters = queriesFor("content_items")[0].ops
+      .filter((o) => o.method === "or")
+      .map((o) => String(o.args[0] ?? ""))
+      .filter((f) => f.startsWith("id.in."));
+    expect(idFilters).toEqual([`id.in.(${LEGACY_META_ID})`]);
   });
 });
 
-describe("NS-P48 — the writes supply a bounties id, because an insert cannot use the shim", () => {
+describe("NS-P50 — the writes supply a bounties id, as they always have", () => {
   it("createMetaBounty files its sub-definitions against a header it creates, not against the content item", async () => {
     db.next.content_items = [{ data: { id: LEGACY_META_ID }, error: null }];
     db.next.bounties = [{ data: { id: META_HEADER_ID }, error: null }];
@@ -273,14 +299,18 @@ describe("NS-P48 — the writes supply a bounties id, because an insert cannot u
       { data: { id: LEGACY_SPAWNED_ID }, error: null },
     ];
     db.next.meta_bounty_sub_definitions = [
-      { data: [{ ...SUB, spawned_bounty_id: null, legacy_spawned_item_id: null }], error: null },
+      { data: [{ ...SUB, spawned_bounty_id: null }], error: null },
       { data: null, error: null },
     ];
     db.next.meta_bounty_pledges = [
       { data: { id: "9e0d0000-0000-4000-8000-000000000001" }, error: null },
       { data: [{ amount: 120, pledger_id: AUTHOR_ID }], error: null },
     ];
-    db.next.bounties = [{ data: { id: SPAWNED_HEADER_ID }, error: null }];
+    db.next.bounties = [
+      // the resolve of the meta the pledge names, then the spawned header's insert
+      { data: META_HEADER, error: null },
+      { data: { id: SPAWNED_HEADER_ID }, error: null },
+    ];
 
     await pledgeToSubBounty({
       metaBountyId: LEGACY_META_ID,
@@ -289,12 +319,12 @@ describe("NS-P48 — the writes supply a bounties id, because an insert cannot u
       amount: 120,
     });
 
-    // The sub-definitions are found through the shim...
-    expect(eqOn(queriesFor("meta_bounty_sub_definitions")[0], "legacy_meta_item_id"))
-      .toEqual(["legacy_meta_item_id", LEGACY_META_ID]);
+    // The sub-definitions are found through the resolved header...
+    expect(eqOn(queriesFor("meta_bounty_sub_definitions")[0], "meta_bounty_id"))
+      .toEqual(["meta_bounty_id", META_HEADER_ID]);
 
     // ...the spawned bounty gets a header carrying the pledged total...
-    expect(insertPayload(queriesFor("bounties")[0])[0]).toMatchObject({
+    expect(insertPayload(queriesFor("bounties")[1])[0]).toMatchObject({
       legacy_item_id: LEGACY_SPAWNED_ID,
       author_id: AUTHOR_ID,
       reward_gbp: 120,

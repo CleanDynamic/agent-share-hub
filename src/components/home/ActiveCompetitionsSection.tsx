@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveBountiesByLegacyItems } from "@/lib/bounty/resolveLegacy";
 import { FeedCard, type FeedPost } from "@/components/feed-card";
 import {
   MetaBountyCard,
@@ -96,16 +97,22 @@ async function fetchSubBounties(
   metaIds: string[],
 ): Promise<Map<string, MetaBountyCardModel["subBounties"]>> {
   if (metaIds.length === 0) return new Map();
-  // NS-P48 shim (removed in NS-P50). `metaIds` are content_items ids — this
-  // strip reads content_items — and since NS-P48 meta_bounty_id holds a
-  // public.bounties id. legacy_meta_item_id is the old value, derived by the
-  // database from bounties.legacy_item_id on every write.
+  // NS-P50. `metaIds` are content_items ids — this strip reads content_items —
+  // and meta_bounty_sub_definitions.meta_bounty_id has been a public.bounties id
+  // since NS-P48. One batched resolve for the whole strip, then the sub-
+  // definitions are grouped back onto the content_items ids the caller's map is
+  // keyed on. meta_bounty_pledges is NOT repointed and still takes metaIds.
+  const headerIds = await resolveBountiesByLegacyItems(metaIds);
+  const legacyByHeader = new Map<string, string>();
+  for (const [legacyId, headerId] of headerIds) legacyByHeader.set(headerId, legacyId);
+  if (legacyByHeader.size === 0) return new Map();
+
   const { data } = await (supabase as any)
     .from("meta_bounty_sub_definitions")
     .select(
-      "id, legacy_meta_item_id, title, target_amount, spawned_bounty_id, position",
+      "id, meta_bounty_id, title, target_amount, spawned_bounty_id, position",
     )
-    .in("legacy_meta_item_id", metaIds)
+    .in("meta_bounty_id", [...legacyByHeader.keys()])
     .order("position", { ascending: true });
 
   const { data: pledges } = await (supabase as any)
@@ -122,9 +129,11 @@ async function fetchSubBounties(
 
   const out = new Map<string, MetaBountyCardModel["subBounties"]>();
   for (const sub of (data ?? []) as any[]) {
-    // NS-P48 shim (removed in NS-P50). Grouped by the legacy id, because the
-    // caller's map is keyed on content_items ids.
-    const list = out.get(sub.legacy_meta_item_id) ?? [];
+    // Grouped by the legacy id, because the caller's map is keyed on
+    // content_items ids.
+    const legacyMetaId = legacyByHeader.get(sub.meta_bounty_id);
+    if (!legacyMetaId) continue;
+    const list = out.get(legacyMetaId) ?? [];
     list.push({
       id: sub.id,
       title: sub.title,
@@ -132,7 +141,7 @@ async function fetchSubBounties(
       pledged: pledgedBySub.get(sub.id) ?? 0,
       status: sub.spawned_bounty_id ? "spawned" : "funding",
     });
-    out.set(sub.legacy_meta_item_id, list);
+    out.set(legacyMetaId, list);
   }
   return out;
 }

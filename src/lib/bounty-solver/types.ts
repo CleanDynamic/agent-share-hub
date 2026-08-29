@@ -1,10 +1,11 @@
 // Shared types for the bounty solver data layer.
 
 // 'stage' and 'block' are the two kinds of slot a LEGACY content_items bounty
-// has, and this data layer only ever reads legacy bounties. NS-P46 added a
-// third kind, 'node', to solutions.slot_kind for bounties that live on a build;
-// it is deliberately absent here until NS-P50 writes the client path for it,
-// because every consumer of this union today is typed to the legacy pair.
+// has, and this data layer only ever reads legacy bounties. The third kind,
+// 'node', belongs to a bounty that lives on a build and is typed in
+// src/lib/bounty/types.ts, where the code that writes it lives. It stays out of
+// this union on purpose: every consumer of this one renders a stage_grids slot,
+// and widening it here would make each of them claim to handle a node.
 export type SlotKind = "stage" | "block";
 export type SolutionStatus = "draft" | "submitted" | "accepted" | "withdrawn";
 export type VoteKind = "upvote" | "i_would_implement";
@@ -21,15 +22,10 @@ export interface Solution {
   id: string;
   /**
    * A public.bounties id since NS-P46 — NOT the content_items id in a legacy
-   * bounty page's route. Read `legacy_bounty_item_id` for that.
+   * bounty page's route. `legacyItemForBounty` in src/lib/bounty/resolveLegacy
+   * maps it back; NS-P50 dropped the derived column that used to carry it.
    */
   bounty_id: string;
-  /**
-   * NS-P46 shim (removed in NS-P50). The content_items id this solution's
-   * bounty was filed against, derived by the database from bounties.
-   * legacy_item_id. NULL for a bounty that lives on a build.
-   */
-  legacy_bounty_item_id: string | null;
   slot_kind: SlotKind;
   slot_id: string;
   solver_id: string;

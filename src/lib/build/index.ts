@@ -135,9 +135,11 @@ export {
   BuildFileExtractError,
   buildFileParsed,
   buildFileRefused,
+  coerceField,
   extractEnvelope,
   parseBuildFile,
   scanForSecrets,
+  splitPayload,
   type BuildFileCost,
   type BuildFileCounts,
   type BuildFileError,
@@ -151,7 +153,9 @@ export {
   type BuildFileResult,
   type BuildFileSuccess,
   type BuildFileWarningCode,
+  type FieldWarnings,
   type SecretKind,
+  type SplitPayload,
   type SecretWarning,
 } from "./buildfile";
 export {

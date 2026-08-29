@@ -5405,6 +5405,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_bounty_solution: {
+        Args: { p_bounty_id: string; p_solution_id: string }
+        Returns: Json
+      }
       award_xp: {
         Args: {
           _amount: number

@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { resolveBountyRowId } from "./resolveBountyRowId";
+import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 
 export async function markBountyDiscussionRead(args: {
   bountyId: string;
@@ -7,10 +7,10 @@ export async function markBountyDiscussionRead(args: {
 }): Promise<void> {
   const { bountyId, userId } = args;
 
-  // NS-P47 shim (removed in NS-P50). The primary key of this table is
-  // (bounty_id, user_id) and bounty_id is now a public.bounties id, so both the
-  // row and the conflict target need the resolved header id.
-  const bountyRowId = await resolveBountyRowId(bountyId);
+  // NS-P50. The primary key of this table is (bounty_id, user_id) and bounty_id
+  // is a public.bounties id, so both the row and the conflict target need the
+  // resolved header id.
+  const bountyRowId = await resolveBountyByLegacyItem(bountyId);
 
   await (supabase as any)
     .from("bounty_comment_last_read")

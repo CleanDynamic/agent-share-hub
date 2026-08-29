@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { legacyItemForBounty } from "@/lib/bounty/resolveLegacy";
 import type { Solution } from "./types";
 
 /**
@@ -20,9 +21,10 @@ export async function forkSolution(args: {
   if (error) throw error;
   const solution = sol as Solution;
 
-  // NS-P46 shim (removed in NS-P50): solution.bounty_id is a public.bounties id,
-  // so the title comes from the legacy content item it was filed against.
-  const legacyBountyItemId = solution.legacy_bounty_item_id;
+  // NS-P50: solution.bounty_id is a public.bounties id, so the title comes from
+  // the legacy content item its header names. A solution on a build bounty has
+  // no such item and forks under the fallback title, exactly as before.
+  const legacyBountyItemId = await legacyItemForBounty(solution.bounty_id);
   const { data: bounty } = legacyBountyItemId
     ? await (supabase as any)
         .from("content_items")
