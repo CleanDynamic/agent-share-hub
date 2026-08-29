@@ -233,6 +233,47 @@ describe("live — a bounty draft already in progress still opens its editor", (
   });
 });
 
+// NS-P54 commit 2. Both helpers wrote an APPROVED content_items row —
+// createMetaBounty a meta-bounty, promoteBountyToBlueprint a clone of a solved
+// one — and both are frozen at their first statement. The claim is that they
+// REFUSE rather than fail: no query of any kind is built, so there is no
+// half-written row and no orphaned header behind the error.
+describe("frozen — the superseded bounty-competition helpers", () => {
+  it("createMetaBounty throws BOUNTY_RETIRED and writes nothing", async () => {
+    const { createMetaBounty } = await import(
+      "@/lib/bounty-competition/createMetaBounty"
+    );
+
+    await expect(
+      createMetaBounty({
+        authorId: "creator-1",
+        title: "One umbrella, four holes",
+        subBountyDefinitions: [{ title: "Citation checker", targetAmount: 120 }],
+      })
+    ).rejects.toMatchObject({
+      name: "LegacyBountyValidationError",
+      code: "BOUNTY_RETIRED",
+      message: BOUNTY_RETIRED_MESSAGE,
+    });
+
+    expect(db.inserts).toEqual([]);
+  });
+
+  it("promoteBountyToBlueprint throws BOUNTY_RETIRED and writes nothing", async () => {
+    const { promoteBountyToBlueprint } = await import(
+      "@/lib/bounty-competition/promoteBountyToBlueprint"
+    );
+
+    await expect(promoteBountyToBlueprint("bounty-1")).rejects.toMatchObject({
+      name: "LegacyBountyValidationError",
+      code: "BOUNTY_RETIRED",
+      message: BOUNTY_RETIRED_MESSAGE,
+    });
+
+    expect(db.inserts).toEqual([]);
+  });
+});
+
 describe("retired affordance — the upload picker's Bounty card", () => {
   it("lands on /compose/new rather than the legacy bounty editor", async () => {
     function Opener() {

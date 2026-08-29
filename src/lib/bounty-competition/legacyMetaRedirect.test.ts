@@ -259,34 +259,36 @@ describe("NS-P50 — the discover free-text expansion maps its matches back", ()
 });
 
 describe("NS-P50 — the writes supply a bounties id, as they always have", () => {
-  it("createMetaBounty files its sub-definitions against a header it creates, not against the content item", async () => {
+  // UPDATED BY NS-P54, NOT DELETED. Until NS-P54 this case asserted the NS-P48
+  // filing claim — that createMetaBounty attaches a LEGACY header and files its
+  // sub-definitions against that header's id rather than against the content
+  // item's. That claim is no longer assertable from here, because
+  // createMetaBounty is frozen and can no longer reach the write. It has not
+  // gone untested: the sibling case below proves the same header-versus-content
+  // -item distinction on the spawn path, which is NOT frozen and is the one a
+  // reader can still reach.
+  //
+  // What this case asserts instead is the thing that IS now in question: that
+  // the freeze is a refusal rather than a failed write. Restoring the original
+  // assertions is a step of the NS-P54 rollback in docs/retired-surfaces.md.
+  it("createMetaBounty is frozen — it refuses before it writes anything", async () => {
     db.next.content_items = [{ data: { id: LEGACY_META_ID }, error: null }];
     db.next.bounties = [{ data: { id: META_HEADER_ID }, error: null }];
     db.next.meta_bounty_sub_definitions = [{ data: null, error: null }];
 
-    const { metaBountyId } = await createMetaBounty({
-      authorId: AUTHOR_ID,
-      title: "Meta",
-      subBountyDefinitions: [{ title: "Citation checker", targetAmount: 120 }],
-      fundingDeadline: "2026-09-30T00:00:00Z",
-    });
+    await expect(
+      createMetaBounty({
+        authorId: AUTHOR_ID,
+        title: "Meta",
+        subBountyDefinitions: [{ title: "Citation checker", targetAmount: 120 }],
+        fundingDeadline: "2026-09-30T00:00:00Z",
+      }),
+    ).rejects.toMatchObject({ code: "BOUNTY_RETIRED" });
 
-    // The caller still gets the content_items id back: that is what /content/:id
-    // routes on and what every legacy surface passes around.
-    expect(metaBountyId).toBe(LEGACY_META_ID);
-
-    // The header is a LEGACY one, which is what the NS-P48 freeze admits.
-    const header = insertPayload(queriesFor("bounties")[0])[0];
-    expect(header).toMatchObject({
-      legacy_item_id: LEGACY_META_ID,
-      author_id: AUTHOR_ID,
-      is_meta: true,
-      closes_at: "2026-09-30T00:00:00Z",
-    });
-
-    const subs = insertPayload(queriesFor("meta_bounty_sub_definitions")[0]);
-    expect(subs[0].meta_bounty_id).toBe(META_HEADER_ID);
-    expect(subs[0].meta_bounty_id).not.toBe(LEGACY_META_ID);
+    // Not a rolled-back write: no query of any kind was built.
+    expect(queriesFor("content_items")).toEqual([]);
+    expect(queriesFor("bounties")).toEqual([]);
+    expect(queriesFor("meta_bounty_sub_definitions")).toEqual([]);
   });
 
   it("the spawn writes a bounties id into spawned_bounty_id and notifies with the content_items id", async () => {

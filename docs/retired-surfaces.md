@@ -656,6 +656,59 @@ gap was never filled.
 
 ---
 
+## `content_items.bounty_health_score` — unmaintained, and always was
+
+**Recorded** NS-P54 (29 Aug 2026). Nothing is frozen here and nothing changed.
+This is on the page because three live surfaces read this column, all three
+behave as though every bounty were unhealthy, and the cause is not a bug in any
+of them: **nothing has ever written it.**
+
+`supabase/migrations/20260504084620_bb398253-4045-4962-a742-191dc1992943.sql`
+adds it as a nullable `FLOAT` with no default, and indexes it:
+
+```sql
+ADD COLUMN IF NOT EXISTS bounty_health_score FLOAT,
+CREATE INDEX IF NOT EXISTS idx_content_items_bounty_health
+  ON public.content_items(bounty_health_score DESC) WHERE post_type = 'bounty';
+```
+
+There is no trigger, no database function, no edge function and no client write
+against it anywhere in the tree — a grep over `supabase/` returns that `ALTER`
+and that `CREATE INDEX` and nothing else, and a grep over `src/` returns reads
+only. It is a column somebody meant to compute later.
+
+### The measurement
+
+Measured 29 Aug 2026 against the project in `supabase/config.toml`, read-only
+through the publishable (anon) key, the same way the NS-P44 audit was run.
+
+| Probe | Answer |
+| --- | --- |
+| `select=bounty_health_score` | 200 — **the column exists.** The May 2026 competition migration was applied, unlike the March generation-1 one |
+| `bounty_health_score=not.is.null`, `count=exact` | **0** of 76 readable rows |
+| `bounty_status=not.is.null`, `count=exact` | 3 — the three bounties, for contrast: a column on the same table that IS written |
+
+The sibling columns from that same migration — `bounty_total_submissions`,
+`bounty_active_solvers`, `bounty_is_meta`, `bounty_meta_parent_id` — all answer
+200 as well, which is what puts "never computed" beyond "never deployed".
+
+### What that means for the three surfaces that read it
+
+| Reader | What it does with the column | What actually happens |
+| --- | --- | --- |
+| `src/components/home/ActiveCompetitionsSection.tsx` | `.order("bounty_health_score", { ascending: false, nullsFirst: false })` | Every value is NULL, so the ordering is a no-op and the strip's order is whatever Postgres returns |
+| `src/lib/discover/queryBlueprints.ts` | the health facet — `high` is `>= 0.7`, `medium` is `>= 0.4 AND < 0.7`, `low` is `< 0.4` | NULL satisfies none of the three comparisons, so **every one of the three filters returns zero rows**. Picking any health value empties the list |
+| `src/lib/bounty-competition/getBountyCompetitionState.ts` | returns it as `healthScore` | Always `null` |
+
+### Why it is being recorded rather than fixed or dropped
+
+Computing it is a product decision — what makes a bounty healthy, and on what
+cadence — and it is not NS-P54's to take. Dropping it is a column drop, which
+this series does not do; it goes with `content_items` under
+[Dropping any of this](#dropping-any-of-this). The discover facet is the one
+with a user-visible cost, and it is worth its own prompt: an empty result for
+every choice is worse than no filter at all.
+
 ---
 
 ## What remains in the database

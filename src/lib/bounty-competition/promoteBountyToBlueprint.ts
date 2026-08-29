@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { assertLegacyBountyCreateEnabled } from "@/lib/bounty-legacy/flags";
 import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 import { notifyBountyPromotedToBlueprint } from "@/lib/notifications/triggers";
 
@@ -8,10 +9,44 @@ import { notifyBountyPromotedToBlueprint } from "@/lib/notifications/triggers";
  * - Copies content fields, stage_grids, article_body
  * - Duplicates content_blocks and content_collaborators
  * - New blueprint references the original via fork_of_content_id
+ *
+ * FROZEN BY NS-P54. Calling this throws BOUNTY_RETIRED.
+ *
+ * WHY IT IS IN THIS FREEZE AT ALL, when what it creates is a blueprint rather
+ * than a bounty. Because the shape it creates it in is the retired one: an
+ * APPROVED `content_items` row, with cloned `content_blocks` and
+ * `content_collaborators` beside it. A build's answer to "this bounty produced
+ * something publishable" is the accepted solution substituted into the gap node
+ * (NS-P53) and the credit line on the build page, not a second document.
+ *
+ * ITS AFFORDANCE WAS ALREADY UNREACHABLE, and the freeze is what makes that
+ * permanent rather than incidental. The one call site is
+ * `handleConfirmPromote` in src/pages/ContentDetail.tsx, behind a dialog that
+ * `handlePromoteToBlueprint` only opens when `post.bounty_status === 'solved'`.
+ * `content_items.bounty_status` is a generation-1 column that answers 42703 on
+ * the project this repository points at — the NS-P44 audit in
+ * docs/retired-surfaces.md measured it — so the comparison is against
+ * `undefined`, the guard's toast always fires and the dialog never opens.
+ *
+ * That call site already catches and toasts, so on a database where the column
+ * does exist the freeze surfaces as "Promotion failed — Bounties are now part
+ * of publishing a build…" rather than as an unhandled rejection. No UI change
+ * was needed for it and none was made.
+ *
+ * WHAT IS NOT FROZEN. Everything the bounty manage panel does to a solution
+ * that already exists — `markSolutionReviewStatus`, `getBountyAnalytics`,
+ * `extendBountyDeadline`, `refreshLeaderboardCache` and the leaderboard page
+ * they feed. A legacy bounty is retired as a thing to CREATE FROM, not as a
+ * thing to run.
+ *
+ * The body below is left whole. Deleting it is NS-P55's; unfreezing it is one
+ * flag in src/lib/bounty-legacy/flags.ts.
  */
 export async function promoteBountyToBlueprint(
   bountyId: string,
 ): Promise<{ newBlueprintId: string }> {
+  assertLegacyBountyCreateEnabled();
+
   const { data: src, error } = await (supabase as any)
     .from("content_items")
     .select("*")
