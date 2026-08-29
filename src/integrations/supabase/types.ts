@@ -325,6 +325,7 @@ export type Database = {
           bounty_id: string
           created_at: string
           id: string
+          legacy_bounty_item_id: string | null
           private_note: string | null
           solution_id: string
           state: string
@@ -335,6 +336,7 @@ export type Database = {
           bounty_id: string
           created_at?: string
           id?: string
+          legacy_bounty_item_id?: string | null
           private_note?: string | null
           solution_id: string
           state: string
@@ -345,6 +347,7 @@ export type Database = {
           bounty_id?: string
           created_at?: string
           id?: string
+          legacy_bounty_item_id?: string | null
           private_note?: string | null
           solution_id?: string
           state?: string
@@ -352,10 +355,17 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "bounty_author_review_legacy_bounty_item_id_fkey"
+            columns: ["legacy_bounty_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bounty_author_review_bounty_id_fkey"
             columns: ["bounty_id"]
             isOneToOne: false
-            referencedRelation: "content_items"
+            referencedRelation: "bounties"
             referencedColumns: ["id"]
           },
         ]
@@ -364,24 +374,34 @@ export type Database = {
         Row: {
           bounty_id: string
           last_read_at: string
+          legacy_bounty_item_id: string | null
           user_id: string
         }
         Insert: {
           bounty_id: string
           last_read_at?: string
+          legacy_bounty_item_id?: string | null
           user_id: string
         }
         Update: {
           bounty_id?: string
           last_read_at?: string
+          legacy_bounty_item_id?: string | null
           user_id?: string
         }
         Relationships: [
           {
+            foreignKeyName: "bounty_comment_last_read_legacy_bounty_item_id_fkey"
+            columns: ["legacy_bounty_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bounty_comment_last_read_bounty_id_fkey"
             columns: ["bounty_id"]
             isOneToOne: false
-            referencedRelation: "content_items"
+            referencedRelation: "bounties"
             referencedColumns: ["id"]
           },
         ]
@@ -421,6 +441,7 @@ export type Database = {
           created_at: string
           extended_by: string
           id: string
+          legacy_bounty_item_id: string | null
           new_deadline: string
           previous_deadline: string | null
           reason: string | null
@@ -430,6 +451,7 @@ export type Database = {
           created_at?: string
           extended_by: string
           id?: string
+          legacy_bounty_item_id?: string | null
           new_deadline: string
           previous_deadline?: string | null
           reason?: string | null
@@ -439,16 +461,24 @@ export type Database = {
           created_at?: string
           extended_by?: string
           id?: string
+          legacy_bounty_item_id?: string | null
           new_deadline?: string
           previous_deadline?: string | null
           reason?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "bounty_deadline_extensions_legacy_bounty_item_id_fkey"
+            columns: ["legacy_bounty_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bounty_deadline_extensions_bounty_id_fkey"
             columns: ["bounty_id"]
             isOneToOne: false
-            referencedRelation: "content_items"
+            referencedRelation: "bounties"
             referencedColumns: ["id"]
           },
         ]
@@ -460,6 +490,7 @@ export type Database = {
           bounty_id: string
           created_at: string
           id: string
+          legacy_bounty_item_id: string | null
           parent_comment_id: string | null
           tagged_bounty_author: boolean
           updated_at: string
@@ -470,6 +501,7 @@ export type Database = {
           bounty_id: string
           created_at?: string
           id?: string
+          legacy_bounty_item_id?: string | null
           parent_comment_id?: string | null
           tagged_bounty_author?: boolean
           updated_at?: string
@@ -480,16 +512,24 @@ export type Database = {
           bounty_id?: string
           created_at?: string
           id?: string
+          legacy_bounty_item_id?: string | null
           parent_comment_id?: string | null
           tagged_bounty_author?: boolean
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "bounty_discussion_comments_legacy_bounty_item_id_fkey"
+            columns: ["legacy_bounty_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bounty_discussion_comments_bounty_id_fkey"
             columns: ["bounty_id"]
             isOneToOne: false
-            referencedRelation: "content_items"
+            referencedRelation: "bounties"
             referencedColumns: ["id"]
           },
           {

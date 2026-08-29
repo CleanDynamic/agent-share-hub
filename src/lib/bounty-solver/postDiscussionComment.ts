@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/lib/notifications/createNotification";
 import { extractMentions } from "@/lib/mentions";
+import { resolveBountyRowId } from "./resolveBountyRowId";
 
 export async function postDiscussionComment(args: {
   bountyId: string;
@@ -11,10 +12,16 @@ export async function postDiscussionComment(args: {
 }) {
   const { bountyId, parentCommentId = null, body, taggedBountyAuthor = false, authorId } = args;
 
+  // NS-P47 shim (removed in NS-P50). bountyId is the content_items id in the
+  // legacy bounty page's route; bounty_discussion_comments.bounty_id is a
+  // public.bounties id, so the header row is resolved before the insert. The
+  // shim column is derived by the database and must not be sent.
+  const bountyRowId = await resolveBountyRowId(bountyId);
+
   const { data, error } = await (supabase as any)
     .from("bounty_discussion_comments")
     .insert({
-      bounty_id: bountyId,
+      bounty_id: bountyRowId,
       parent_comment_id: parentCommentId,
       author_id: authorId,
       body,

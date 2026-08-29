@@ -12,6 +12,8 @@ export { postDiscussionComment } from "./postDiscussionComment";
 export { reactToComment } from "./reactToComment";
 export { markBountyDiscussionRead } from "./markBountyDiscussionRead";
 export { getProvenance } from "./getProvenance";
+// NS-P47 shim (removed in NS-P50)
+export { resolveBountyRowId } from "./resolveBountyRowId";
 export {
   useBountyDiscussionUpdates,
   useBountySolutionUpdates,
