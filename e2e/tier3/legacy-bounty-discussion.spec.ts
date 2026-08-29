@@ -1,12 +1,14 @@
 // Tier 3 — the browser half of "a legacy bounty thread still renders, and a
-// reaction still posts, through the shim" (NS-P47).
+// reaction still posts, with the shims gone" (NS-P50).
 //
 // WHERE THE ACCEPTANCE IS ACTUALLY PROVEN, AND WHY THIS FILE IS THE THIRD PLACE
-// RATHER THAN THE FIRST. NS-P47 moves bounty_id off content_items and onto
+// RATHER THAN THE FIRST. NS-P47 moved bounty_id off content_items and onto
 // public.bounties for bounty_discussion_comments, bounty_comment_last_read,
-// bounty_deadline_extensions and bounty_author_review, and keeps the legacy
-// page working through a legacy_bounty_item_id shim on each. That claim is
-// answered in two places that can answer it today:
+// bounty_deadline_extensions and bounty_author_review, and kept the legacy page
+// working through a derived legacy_bounty_item_id on each. NS-P50 dropped all
+// four: the page resolves its route id against bounties.legacy_item_id once and
+// filters bounty_id everywhere. That claim is answered in two places that can
+// answer it today:
 //
 //   * supabase/tests/ns-p47-repoint-bounty-satellites.sql — check 6 reads a
 //     thread as anon through the shim, proves a comment on an UNAPPROVED
@@ -17,12 +19,13 @@
 //     prove: a policy that leaks renders identically to one that does not.
 //     Check 8 is the me-too dual-write, on both counters.
 //
-//   * src/lib/bounty-solver/legacyDiscussionShim.test.ts — every read the page
-//     runs names legacy_bounty_item_id and not bounty_id, every write resolves
-//     the bounties header first, and the realtime filter moved with them.
+//   * src/lib/bounty-solver/legacyDiscussionRedirect.test.ts — every read and
+//     write the page runs resolves the header once and then names bounty_id,
+//     and the realtime filter moved with them.
 //
 // WHAT IS LEFT FOR A BROWSER is the join between the two: that the page as
-// shipped asks PostgREST for the shimmed column and paints what comes back.
+// shipped resolves the header, asks PostgREST for the real column and paints
+// what comes back.
 // This spec asserts exactly that, and it skips by default, because the project
 // in supabase/config.toml cannot answer it — public.bounties answers PGRST205
 // there, so NS-P45 through NS-P47 are not applied and every comment in that
@@ -64,6 +67,8 @@ const LEGACY_BOUNTY_URL = process.env.E2E_LEGACY_BOUNTY_URL ?? "";
 const DISCUSSION_REQUEST = /\/rest\/v1\/bounty_discussion_comments\?/;
 /** And against the read-mark table, which the thread reads for its unread dots. */
 const LAST_READ_REQUEST = /\/rest\/v1\/bounty_comment_last_read\?/;
+/** And the resolve that turns the route's content_items id into a bounties id. */
+const BOUNTIES_REQUEST = /\/rest\/v1\/bounties\?/;
 
 test.describe("a legacy bounty thread after the repoint", () => {
   test.skip(
@@ -71,9 +76,10 @@ test.describe("a legacy bounty thread after the repoint", () => {
     "No repointed bounty page to point at: public.bounties answers PGRST205 on the project in supabase/config.toml, so NS-P45 through NS-P47 are not applied there. Set E2E_LEGACY_BOUNTY_URL to a bounty page on a project that has them.",
   );
 
-  test("asks for its discussion by the shim column, and renders it", async ({ page }) => {
+  test("resolves its bounty header, asks for its discussion by bounty_id, and renders it", async ({ page }) => {
     const discussionQueries: string[] = [];
     const lastReadQueries: string[] = [];
+    const bountyQueries: string[] = [];
     page.on("request", (request) => {
       const url = request.url();
       if (DISCUSSION_REQUEST.test(url)) {
@@ -81,6 +87,9 @@ test.describe("a legacy bounty thread after the repoint", () => {
       }
       if (LAST_READ_REQUEST.test(url)) {
         lastReadQueries.push(new URL(url).search);
+      }
+      if (BOUNTIES_REQUEST.test(url)) {
+        bountyQueries.push(new URL(url).search);
       }
     });
 
@@ -92,17 +101,24 @@ test.describe("a legacy bounty thread after the repoint", () => {
       "the page made no request for the discussion at all",
     ).toBeGreaterThan(0);
 
-    // The shim, as it appears on the wire. A page rewired early — or a shim
-    // removed before NS-P50 — shows up here and nowhere else.
+    // The resolve, as it appears on the wire: one lookup against the mapping
+    // NS-P45 backfilled, memoised for the rest of the session.
+    expect(
+      bountyQueries.some((search) => search.includes("legacy_item_id=eq.")),
+      "the page never resolved its bounties header",
+    ).toBe(true);
+
+    // Every thread read names the real column. The shim NS-P50 dropped must not
+    // reappear, and the route's own id in bounty_id would match nothing.
     for (const search of discussionQueries) {
-      expect(search).toContain("legacy_bounty_item_id=eq.");
-      expect(search).not.toContain("bounty_id=eq.");
+      expect(search).toContain("bounty_id=eq.");
+      expect(search).not.toContain("legacy_bounty_item_id");
     }
     // The read mark is filtered the same way, when the viewer is signed in
     // enough for the page to ask for one at all.
     for (const search of lastReadQueries) {
-      expect(search).toContain("legacy_bounty_item_id=eq.");
-      expect(search).not.toContain("bounty_id=eq.");
+      expect(search).toContain("bounty_id=eq.");
+      expect(search).not.toContain("legacy_bounty_item_id");
     }
 
     // And the answer is painted. An empty thread is the exact symptom of a

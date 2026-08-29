@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 import type { ActivityEvent, BountyAnalytics } from "./types";
 
 export async function getBountyAnalytics(
@@ -15,6 +16,10 @@ export async function getBountyAnalytics(
     throw new Error("Only the bounty author can view analytics");
   }
 
+  // NS-P50: all four tables key on public.bounties, and this function is routed
+  // on the content_items id. One resolve, four reads.
+  const bountyRowId = await resolveBountyByLegacyItem(bountyId);
+
   const [{ data: solutions }, { data: comments }, { data: extensions }, { data: reviews }] =
     await Promise.all([
       (supabase as any)
@@ -22,19 +27,19 @@ export async function getBountyAnalytics(
         .select(
           "id, solver_id, vote_count, status, submitted_at, accepted_at, slot_kind, slot_id, created_at",
         )
-        .eq("legacy_bounty_item_id", bountyId), // NS-P46 shim (removed in NS-P50)
+        .eq("bounty_id", bountyRowId),
       (supabase as any)
         .from("bounty_discussion_comments")
         .select("id, author_id, created_at")
-        .eq("legacy_bounty_item_id", bountyId), // NS-P47 shim (removed in NS-P50)
+        .eq("bounty_id", bountyRowId),
       (supabase as any)
         .from("bounty_deadline_extensions")
         .select("id, extended_by, new_deadline, created_at")
-        .eq("legacy_bounty_item_id", bountyId), // NS-P47 shim (removed in NS-P50)
+        .eq("bounty_id", bountyRowId),
       (supabase as any)
         .from("bounty_author_review")
         .select("solution_id, state")
-        .eq("legacy_bounty_item_id", bountyId) // NS-P47 shim (removed in NS-P50)
+        .eq("bounty_id", bountyRowId)
         .eq("author_id", viewerId),
     ]);
 

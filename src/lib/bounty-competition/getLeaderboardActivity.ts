@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 import type { ActivityEvent } from "@/components/bounty-competition/SolverLeaderboard";
 
 function timeAgo(iso: string): string {
@@ -21,10 +22,14 @@ export async function getLeaderboardActivity(
   bountyId: string,
   limit = 10,
 ): Promise<ActivityEvent[]> {
+  // NS-P50: solutions.bounty_id is a public.bounties id; the caller has the
+  // content_items one.
+  const bountyRowId = await resolveBountyByLegacyItem(bountyId);
+
   const { data: solutions } = await (supabase as any)
     .from("solutions")
     .select("id, solver_id, slot_id, status, submitted_at, accepted_at, vote_count, created_at")
-    .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
+    .eq("bounty_id", bountyRowId)
     .order("created_at", { ascending: false })
     .limit(limit * 2);
 

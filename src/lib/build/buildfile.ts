@@ -506,7 +506,22 @@ interface Context {
   nodes: ProposedNode[];
 }
 
-function warn(context: Context, code: BuildFileWarningCode, message: string): void {
+/**
+ * The only part of a parse Context that the field dialect itself needs.
+ *
+ * coerceField and splitPayload are the whole of this file's knowledge of the
+ * six-type dialect, and NS-P50 needs that knowledge outside a Build File parse:
+ * a bounty solution is a payload for one node type and has to be checked
+ * against the same schema by the same rules. They take this narrower shape so
+ * a caller with no session, no registry and no proposal can still run them.
+ * A full Context satisfies it structurally, so nothing inside this file
+ * changed hands.
+ */
+export interface FieldWarnings {
+  warnings: ParseWarning[];
+}
+
+function warn(context: FieldWarnings, code: BuildFileWarningCode, message: string): void {
   context.warnings.push({ code, message });
 }
 
@@ -545,10 +560,10 @@ function asNoteValue(value: unknown): string {
  * about instead. A parser that guessed here would be deciding what a creator
  * meant, and it has strictly less information than the creator does.
  */
-function coerceField(
+export function coerceField(
   value: unknown,
   field: FieldDef,
-  context: Context,
+  context: FieldWarnings,
   where: string
 ): unknown {
   if (value === null || value === undefined) return null;
@@ -642,16 +657,16 @@ function coerceField(
   }
 }
 
-interface SplitPayload {
+export interface SplitPayload {
   payload: Record<string, unknown>;
   /** "key: value" lines for everything the schema did not declare. */
   extras: string[];
 }
 
-function splitPayload(
+export function splitPayload(
   raw: unknown,
   fields: FieldDef[],
-  context: Context,
+  context: FieldWarnings,
   where: string
 ): SplitPayload {
   const source = isRecord(raw) ? raw : {};

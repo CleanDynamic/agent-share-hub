@@ -1,4 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  resolveBountyByLegacyItem,
+  resolveLegacyItemsByBounty,
+} from "@/lib/bounty/resolveLegacy";
 import type { MetaState, SubBountyState } from "./types";
 
 export async function getMetaBountyState(
@@ -16,17 +20,20 @@ export async function getMetaBountyState(
     throw new Error("Not a meta-bounty");
   }
 
+  // NS-P50. `metaBountyId` is the content_items id /content/:id routes on;
+  // meta_bounty_sub_definitions.meta_bounty_id has been a public.bounties id
+  // since NS-P48. meta_bounty_pledges was NOT repointed — its meta_bounty_id is
+  // still the content_items id — so the two reads below take different ids on
+  // purpose.
+  const metaRowId = await resolveBountyByLegacyItem(metaBountyId);
+
   const [{ data: subs }, { data: pledges }] = await Promise.all([
-    // NS-P48 shim (removed in NS-P50). `metaBountyId` is the content_items id
-    // /content/:id routes on; since NS-P48 meta_bounty_id holds a
-    // public.bounties id, so the filter and the spawn pointer both come off the
-    // legacy columns the database derives from bounties.legacy_item_id.
     (supabase as any)
       .from("meta_bounty_sub_definitions")
       .select(
-        "id, title, description, target_amount, spawn_threshold_pct, legacy_spawned_item_id, position",
+        "id, title, description, target_amount, spawn_threshold_pct, spawned_bounty_id, position",
       )
-      .eq("legacy_meta_item_id", metaBountyId)
+      .eq("meta_bounty_id", metaRowId)
       .order("position", { ascending: true }),
     (supabase as any)
       .from("meta_bounty_pledges")
@@ -34,6 +41,16 @@ export async function getMetaBountyState(
       .eq("meta_bounty_id", metaBountyId)
       .neq("status", "refunded"),
   ]);
+
+  // spawned_bounty_id is a public.bounties id too, and MetaBountyBody navigates
+  // to /content/:id with what this returns, so each one is mapped back to the
+  // content_items id its header names. One read for the whole page's spawns.
+  const spawnedIds = ((subs ?? []) as any[])
+    .map((s) => s.spawned_bounty_id)
+    .filter(Boolean) as string[];
+  const spawnedLegacyIds = spawnedIds.length
+    ? await resolveLegacyItemsByBounty(spawnedIds)
+    : new Map<string, string | null>();
 
   const subBounties: SubBountyState[] = ((subs ?? []) as any[]).map((s) => {
     const matching = ((pledges ?? []) as any[]).filter(
@@ -52,9 +69,9 @@ export async function getMetaBountyState(
       spawnThresholdPct: Number(s.spawn_threshold_pct),
       pledgedAmount,
       pledgerCount,
-      // NS-P48 shim (removed in NS-P50). MetaBountyBody navigates to
-      // /content/:id with this, so it has to stay a content_items id.
-      spawnedBountyId: s.legacy_spawned_item_id ?? null,
+      spawnedBountyId: s.spawned_bounty_id
+        ? (spawnedLegacyIds.get(s.spawned_bounty_id) ?? null)
+        : null,
       position: s.position ?? 0,
     };
   });

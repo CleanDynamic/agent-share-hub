@@ -1,31 +1,31 @@
-// Tier 3 — the legacy bounty page still finds its solutions after the repoint
-// (NS-P46).
+// Tier 3 — the legacy bounty page still finds its solutions with the shim gone
+// (NS-P50).
 //
-// WHAT CHANGED UNDERNEATH THIS DATA LAYER. Until NS-P46, solutions.bounty_id
-// held the content_items id that a legacy bounty page carries in its route, so
-// every query here could filter on it directly. It now holds a public.bounties
-// id, and the content_items id lives in solutions.legacy_bounty_item_id, which
-// the database derives from bounties.legacy_item_id on every write. Each read
-// that starts from a route param was moved to that column and flagged
-// `// NS-P46 shim`; NS-P50 removes them when it rewires these callers onto
-// bounties directly.
+// WHAT THIS FILE WAS, AND WHY IT IS STILL HERE. It was legacyBountyShim.test.ts
+// and it asserted the opposite of what it asserts now: that every read named
+// solutions.legacy_bounty_item_id, the derived column NS-P46 added so a page
+// routed on a content_items id could keep working after the repoint. NS-P50
+// dropped that column and rewired the callers onto public.bounties, so the
+// assertions moved with them. The QUESTION did not change — does the legacy
+// bounty page still find its own solutions? — and that is why this is a rewrite
+// rather than a deletion.
 //
-// WHAT THIS FILE ASSERTS, AND WHY IT ASSERTS ON THE QUERY. A shim is exactly
-// the kind of change that no rendered output can distinguish: a listing that
-// filters on the wrong column returns nothing, which looks identical to a
-// bounty nobody has solved yet. So these tests read the query that was built.
-// If one of them fails after NS-P50, that is the point — the shim it names is
-// the thing NS-P50 is removing, and the test should be removed with it.
+// WHY IT ASSERTS ON THE QUERY. A redirect is exactly the kind of change no
+// rendered output can distinguish: a listing that filters on the wrong column
+// returns nothing, which looks identical to a bounty nobody has solved yet. So
+// these tests read the query that was built. The one extra round trip the
+// redirect costs is asserted too — once per session, not once per read — because
+// a resolve that stopped being memoised would show up as latency on a page
+// nobody is watching and nowhere else.
 //
-// WHY NOT A BROWSER SPEC. The same reason NS-P44 gave, re-measured on 28 Aug
-// 2026 against the project in supabase/config.toml: public.bounties answers
-// PGRST205 there, so no page in that database has been repointed and a browser
-// assertion would be about the old shape. The browser half of the acceptance
-// lives in e2e/tier3/legacy-bounty-solutions.spec.ts, which states its price of
-// entry and skips until the migration is applied. The database half — anon
-// listing a bounty's solutions through the shim and a signed-in reader voting
-// on one, under RLS — is proven for real in
-// supabase/tests/ns-p46-repoint-solutions.sql, check 6.
+// WHY NOT A BROWSER SPEC. The same reason NS-P46 gave, unchanged: public.
+// bounties answers PGRST205 on the project in supabase/config.toml, so no page
+// in that database has been repointed and a browser assertion would be about
+// the old shape. The browser half lives in
+// e2e/tier3/legacy-bounty-solutions.spec.ts, which states its price of entry
+// and skips until the migrations are applied. The database half — anon listing
+// a bounty's solutions and a signed-in reader voting on one, under real RLS —
+// is proven in supabase/tests/ns-p46-repoint-solutions.sql, check 6.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -108,6 +108,7 @@ vi.mock("@/lib/metadata/recomputeMetadata", () => ({
   recomputeMetadata: vi.fn(() => Promise.resolve()),
 }));
 
+import { clearBountyResolutionCache } from "@/lib/bounty/resolveLegacy";
 import { acceptSolution } from "./acceptSolution";
 import { createSolutionDraft } from "./createSolutionDraft";
 import { getProvenance } from "./getProvenance";
@@ -116,7 +117,7 @@ import { voteOnSolution } from "./voteOnSolution";
 
 /**
  * The id in the route of a legacy bounty page: a content_items row. This is the
- * only id these callers have, and the whole reason the shim column exists.
+ * only id these callers have, and the whole reason the resolve exists.
  */
 const LEGACY_ITEM_ID = "c0ffee00-0000-4000-8000-000000000001";
 /** The public.bounties row NS-P45's backfill wrote for it. */
@@ -125,7 +126,6 @@ const BOUNTY_ROW_ID = "b0b0b0b0-0000-4000-8000-000000000001";
 const SOLUTION = {
   id: "50100000-0000-4000-8000-000000000001",
   bounty_id: BOUNTY_ROW_ID,
-  legacy_bounty_item_id: LEGACY_ITEM_ID,
   slot_kind: "stage" as const,
   slot_id: "51070000-0000-4000-8000-000000000001",
   solver_id: "50fe0000-0000-4000-8000-000000000001",
@@ -139,6 +139,9 @@ const SOLUTION = {
   created_at: "2026-08-20T09:00:00Z",
   updated_at: "2026-08-20T10:00:00Z",
 };
+
+/** The header row the resolve reads, in both directions. */
+const HEADER = { id: BOUNTY_ROW_ID, legacy_item_id: LEGACY_ITEM_ID };
 
 /** Every query built against `table`, in the order it was built. */
 function queriesFor(table: string): Query[] {
@@ -161,10 +164,14 @@ beforeEach(() => {
   db.queries = [];
   db.next = {};
   db.channels = [];
+  // The resolve memoises for the life of the session, which is the point of it
+  // and would otherwise leak one test's mapping into the next.
+  clearBountyResolutionCache();
 });
 
-describe("NS-P46 — the legacy bounty page lists its solutions through the shim", () => {
-  it("filters solutions on legacy_bounty_item_id, never on bounty_id", async () => {
+describe("NS-P50 — the legacy bounty page lists its solutions through bounties", () => {
+  it("resolves the header, then filters solutions on bounty_id", async () => {
+    db.next.bounties = [{ data: HEADER, error: null }];
     db.next.solutions = [{ data: [SOLUTION], error: null }];
     db.next.profiles = [{ data: [], error: null }];
     db.next.solution_votes = [{ data: [], error: null }];
@@ -172,19 +179,24 @@ describe("NS-P46 — the legacy bounty page lists its solutions through the shim
 
     const { solutions } = await getSolutions({ bountyId: LEGACY_ITEM_ID });
 
-    const listing = queriesFor("solutions")[0];
-    expect(eqOn(listing, "legacy_bounty_item_id")).toEqual([
-      "legacy_bounty_item_id",
+    // The mapping NS-P45 backfilled, read from the column it lives on.
+    expect(eqOn(queriesFor("bounties")[0], "legacy_item_id")).toEqual([
+      "legacy_item_id",
       LEGACY_ITEM_ID,
     ]);
-    // The old filter would return nothing at all: a content_items id cannot
-    // match a bounties id. A listing that still names bounty_id is the exact
-    // shape of the bug this shim exists to prevent.
-    expect(eqColumns(listing)).not.toContain("bounty_id");
+
+    const listing = queriesFor("solutions")[0];
+    expect(eqOn(listing, "bounty_id")).toEqual(["bounty_id", BOUNTY_ROW_ID]);
+    // Filtering on the route's id would return nothing at all: a content_items
+    // id cannot match a bounties id, and an empty list is indistinguishable
+    // from a bounty nobody has solved.
+    expect(eqOn(listing, "bounty_id")).not.toEqual(["bounty_id", LEGACY_ITEM_ID]);
+    expect(eqColumns(listing)).not.toContain("legacy_bounty_item_id");
     expect(solutions).toHaveLength(1);
   });
 
-  it("reads the acceptance log through the shim too", async () => {
+  it("reads the acceptance log on bounty_id too", async () => {
+    db.next.bounties = [{ data: HEADER, error: null }];
     db.next.content_items = [{ data: { id: LEGACY_ITEM_ID, creator_id: "a" }, error: null }];
     db.next.profiles = [{ data: [], error: null }];
     db.next.solution_acceptance_log = [{ data: [], error: null }];
@@ -192,37 +204,53 @@ describe("NS-P46 — the legacy bounty page lists its solutions through the shim
     await getProvenance(LEGACY_ITEM_ID);
 
     const log = queriesFor("solution_acceptance_log")[0];
-    expect(eqOn(log, "legacy_bounty_item_id")).toEqual([
-      "legacy_bounty_item_id",
-      LEGACY_ITEM_ID,
-    ]);
-    expect(eqColumns(log)).not.toContain("bounty_id");
+    expect(eqOn(log, "bounty_id")).toEqual(["bounty_id", BOUNTY_ROW_ID]);
+    expect(eqColumns(log)).not.toContain("legacy_bounty_item_id");
   });
 
-  it("subscribes to live solution updates on the shim column", async () => {
-    // The realtime filter is a string, not a builder, so it is the one shim
-    // that no query recorder would catch. Left on bounty_id it matches nothing
-    // and the page simply stops updating — silently.
+  it("resolves once per session, however many reads run", async () => {
+    // The redirect costs one extra round trip. It costs it ONCE: the mapping is
+    // immutable — one header per legacy item, enforced by
+    // idx_bounties_legacy_item_unique — so a page that lists solutions and then
+    // reads its provenance must not pay for it twice.
+    db.next.bounties = [{ data: HEADER, error: null }];
+    db.next.solutions = [{ data: [], error: null }];
+    db.next.content_items = [{ data: { id: LEGACY_ITEM_ID, creator_id: "a" }, error: null }];
+    db.next.solution_acceptance_log = [{ data: [], error: null }];
+
+    await getSolutions({ bountyId: LEGACY_ITEM_ID });
+    await getProvenance(LEGACY_ITEM_ID);
+
+    expect(queriesFor("bounties")).toHaveLength(1);
+  });
+
+  it("subscribes to live solution updates on bounty_id", async () => {
+    // The realtime filter is a string, not a builder, so it is the one redirect
+    // no query recorder would catch. A postgres_changes filter cannot join,
+    // which is why the hook resolves before it opens the channel; left on the
+    // route's id it matches nothing and the page stops updating — silently.
+    db.next.bounties = [{ data: HEADER, error: null }];
+
     const { useBountySolutionUpdates } = await import("./realtime");
-    const { renderHook } = await import("@testing-library/react");
+    const { renderHook, waitFor } = await import("@testing-library/react");
 
     renderHook(() => useBountySolutionUpdates(LEGACY_ITEM_ID, () => {}));
 
-    expect(db.channels).toHaveLength(1);
+    await waitFor(() => expect(db.channels).toHaveLength(1));
     expect(db.channels[0].config).toMatchObject({
       table: "solutions",
-      filter: `legacy_bounty_item_id=eq.${LEGACY_ITEM_ID}`,
+      filter: `bounty_id=eq.${BOUNTY_ROW_ID}`,
     });
   });
 });
 
-describe("NS-P46 — writes go to the bounties id, reads to the legacy one", () => {
-  it("resolves the bounties header and inserts its id, not the route's", async () => {
+describe("NS-P50 — reads and writes both name the bounties id", () => {
+  it("resolves the header once and uses it for the lookup and the insert", async () => {
+    db.next.bounties = [{ data: HEADER, error: null }];
     db.next.solutions = [
       { data: null, error: null }, // no existing draft
       { data: { ...SOLUTION, status: "draft" }, error: null }, // the insert's returning row
     ];
-    db.next.bounties = [{ data: { id: BOUNTY_ROW_ID }, error: null }];
 
     await createSolutionDraft({
       bountyId: LEGACY_ITEM_ID,
@@ -231,19 +259,19 @@ describe("NS-P46 — writes go to the bounties id, reads to the legacy one", () 
       solverId: SOLUTION.solver_id,
     });
 
-    // The existing-draft lookup reads the shim column.
-    expect(eqColumns(queriesFor("solutions")[0])).toContain("legacy_bounty_item_id");
-
-    // The header is found by the mapping NS-P45 wrote.
-    expect(eqOn(queriesFor("bounties")[0], "legacy_item_id")).toEqual([
-      "legacy_item_id",
-      LEGACY_ITEM_ID,
+    // One resolve, two uses. Before NS-P50 the lookup read the shim column and
+    // only the insert resolved, so this is the assertion that the pair now
+    // agrees on one id.
+    expect(queriesFor("bounties")).toHaveLength(1);
+    expect(eqOn(queriesFor("solutions")[0], "bounty_id")).toEqual([
+      "bounty_id",
+      BOUNTY_ROW_ID,
     ]);
 
     // And the row written names the bounty, not the content item. Writing the
-    // content_items id here would now be rejected by the foreign key — this
-    // asserts the client sends the right thing rather than relying on the
-    // database to reject the wrong one.
+    // content_items id here would be rejected by the foreign key — this asserts
+    // the client sends the right thing rather than relying on the database to
+    // reject the wrong one.
     const insert = queriesFor("solutions")[1].ops.find((o) => o.method === "insert");
     expect(insert?.args[0]).toMatchObject({ bounty_id: BOUNTY_ROW_ID });
     expect(insert?.args[0]).not.toMatchObject({ bounty_id: LEGACY_ITEM_ID });
@@ -253,8 +281,8 @@ describe("NS-P46 — writes go to the bounties id, reads to the legacy one", () 
     // The NS-P45 backfill wrote one header per legacy bounty, so this cannot
     // happen for anything published before it. It can happen for a bounty
     // created afterwards by a path that does not write one — and a silent
-    // no-op there would lose the solver's work.
-    db.next.solutions = [{ data: null, error: null }];
+    // no-op there would lose the solver's work. Since NS-P50 the refusal comes
+    // before the read as well as before the write.
     db.next.bounties = [{ data: null, error: null }];
 
     await expect(
@@ -265,6 +293,8 @@ describe("NS-P46 — writes go to the bounties id, reads to the legacy one", () 
         solverId: SOLUTION.solver_id,
       }),
     ).rejects.toThrow(/no bounties record/i);
+
+    expect(queriesFor("solutions")).toHaveLength(0);
   });
 
   it("accepts a solution against the legacy content item, and logs the bounty", async () => {
@@ -273,6 +303,9 @@ describe("NS-P46 — writes go to the bounties id, reads to the legacy one", () 
       { data: null, error: null }, // 2. nothing accepted on this slot yet
       { data: [], error: null }, // 3a. the status update
     ];
+    // The reverse resolve: the solution carries a bounties id, and the legacy
+    // merge below needs the content_items id its header names.
+    db.next.bounties = [{ data: HEADER, error: null }];
     db.next.content_items = [
       {
         data: {
@@ -296,6 +329,9 @@ describe("NS-P46 — writes go to the bounties id, reads to the legacy one", () 
       accepterId: "acc00000-0000-4000-8000-000000000001",
     });
 
+    // The header is looked up by its own id, which is what the solution holds.
+    expect(eqOn(queriesFor("bounties")[0], "id")).toEqual(["id", BOUNTY_ROW_ID]);
+
     // Both content_items touches use the legacy id: the bounty read that
     // authorises the accept, and the stage_grids write that merges the answer
     // back into the blueprint.
@@ -303,8 +339,8 @@ describe("NS-P46 — writes go to the bounties id, reads to the legacy one", () 
       expect(eqOn(q, "id")).toEqual(["id", LEGACY_ITEM_ID]);
     }
 
-    // The acceptance log is NOT shimmed: its bounty_id column points at
-    // public.bounties now, which is exactly what solution.bounty_id holds.
+    // The acceptance log takes the bounties id, which is exactly what
+    // solution.bounty_id holds.
     const logged = queriesFor("solution_acceptance_log")[0].ops.find(
       (o) => o.method === "insert",
     );
@@ -315,15 +351,20 @@ describe("NS-P46 — writes go to the bounties id, reads to the legacy one", () 
   });
 
   it("will not accept a build-backed solution down the legacy path", async () => {
-    // A bounty that lives on a build has no legacy_bounty_item_id and no
-    // stage_grids to merge into. Left unguarded, this function would read
-    // content_items with a null id, fail the author check, and — worse on the
-    // day NS-P50 lands — could merge an answer into whatever row it did find.
-    db.next.solutions = [{ data: { ...SOLUTION, legacy_bounty_item_id: null }, error: null }];
+    // A bounty that lives on a build has no legacy item and no stage_grids to
+    // merge into. Left unguarded, this function would read content_items with a
+    // null id, fail the author check, and could merge an answer into whatever
+    // row it did find. The header says which kind of bounty it is; before
+    // NS-P50 a derived column on the solution said it.
+    db.next.solutions = [{ data: SOLUTION, error: null }];
+    db.next.bounties = [{ data: { id: BOUNTY_ROW_ID, legacy_item_id: null }, error: null }];
 
     await expect(
-      acceptSolution({ solutionId: SOLUTION.id, accepterId: "acc00000-0000-4000-8000-000000000001" }),
-    ).rejects.toThrow(/not on a legacy bounty/i);
+      acceptSolution({
+        solutionId: SOLUTION.id,
+        accepterId: "acc00000-0000-4000-8000-000000000001",
+      }),
+    ).rejects.toThrow(/build bounty/i);
 
     // Nothing was written on the way to that throw.
     expect(queriesFor("content_items")).toHaveLength(0);
@@ -331,12 +372,13 @@ describe("NS-P46 — writes go to the bounties id, reads to the legacy one", () 
   });
 });
 
-describe("NS-P46 — voting is untouched by the repoint", () => {
+describe("NS-P50 — voting is untouched by the redirect", () => {
   it("votes by solution id and needs no bounty id at all", async () => {
-    // solution_votes foreign-keys solutions(id), which NS-P46 does not move, so
-    // this path should not have changed. Asserted rather than assumed: it is
-    // the second half of the live acceptance, and a vote that started needing a
-    // bounty id would be a sign the repoint had leaked into it.
+    // solution_votes foreign-keys solutions(id), which NS-P46 did not move and
+    // NS-P50 does not either, so this path should not have changed. Asserted
+    // rather than assumed: it is the second half of the live acceptance, and a
+    // vote that started needing a bounty id would be a sign the redirect had
+    // leaked into it.
     db.next.solution_votes = [
       { data: null, error: null }, // not voted yet
       { data: [], error: null }, // the insert
@@ -350,6 +392,7 @@ describe("NS-P46 — voting is untouched by the repoint", () => {
     });
 
     expect(result).toEqual({ voted: true, newCount: 2 });
+    expect(queriesFor("bounties")).toHaveLength(0);
     for (const q of [...queriesFor("solution_votes"), ...queriesFor("solutions")]) {
       expect(eqColumns(q)).not.toContain("bounty_id");
       expect(eqColumns(q)).not.toContain("legacy_bounty_item_id");

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 import type { SolverProfile } from "./types";
 
 export interface ProvenanceEntry {
@@ -29,10 +30,14 @@ export async function getProvenance(bountyId: string): Promise<{
     bountyAuthor = (a as SolverProfile) ?? null;
   }
 
+  // NS-P50: solution_acceptance_log.bounty_id is a public.bounties id, and the
+  // panel is routed on the content_items one.
+  const bountyRowId = await resolveBountyByLegacyItem(bountyId);
+
   const { data: log } = await (supabase as any)
     .from("solution_acceptance_log")
     .select("solver_id, slot_kind, slot_id, accepted_at")
-    .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
+    .eq("bounty_id", bountyRowId)
     .order("accepted_at", { ascending: true });
 
   const rows = (log ?? []) as any[];

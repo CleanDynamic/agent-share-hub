@@ -1,11 +1,12 @@
 // Tier 3 — the browser half of "a legacy bounty page still lists its solutions
-// and accepts a vote, through the shim" (NS-P46).
+// and accepts a vote, with the shim gone" (NS-P50).
 //
 // WHERE THE ACCEPTANCE IS ACTUALLY PROVEN, AND WHY THIS FILE IS THE THIRD PLACE
-// RATHER THAN THE FIRST. NS-P46 moves solutions.bounty_id off content_items and
-// onto public.bounties, and keeps the legacy page working through
-// solutions.legacy_bounty_item_id. That claim is answered in two places that
-// can answer it today:
+// RATHER THAN THE FIRST. NS-P46 moved solutions.bounty_id off content_items and
+// onto public.bounties, and kept the legacy page working through a derived
+// solutions.legacy_bounty_item_id. NS-P50 dropped that column: the page now
+// resolves its route id against bounties.legacy_item_id and filters bounty_id.
+// That claim is answered in two places that can answer it today:
 //
 //   * supabase/tests/ns-p46-repoint-solutions.sql, check 6 — anon lists an
 //     approved legacy bounty's solutions through the shim column, sees its
@@ -14,12 +15,13 @@
 //     is the half a browser cannot prove: a policy that leaks would render
 //     identically to one that does not.
 //
-//   * src/lib/bounty-solver/legacyBountyShim.test.ts — every read the page runs
-//     names legacy_bounty_item_id and not bounty_id, the draft insert resolves
-//     the bounties header first, and the realtime filter moved with them.
+//   * src/lib/bounty-solver/legacyBountyRedirect.test.ts — every read the page
+//     runs resolves the header once and then names bounty_id, and the realtime
+//     filter moved with them.
 //
 // WHAT IS LEFT FOR A BROWSER is the join between the two: that the page as
-// shipped asks PostgREST for the shimmed column and paints what comes back.
+// shipped resolves the header, asks PostgREST for the real column and paints
+// what comes back.
 // This spec asserts exactly that, and it skips by default, because the project
 // in supabase/config.toml cannot answer it — measured 28 Aug 2026 through the
 // anon key: public.bounties answers PGRST205 ("could not find the table in the
@@ -30,10 +32,10 @@
 // that is not checking.
 //
 // TO RUN IT, point E2E_LEGACY_BOUNTY_URL at a bounty page on a project where
-// both migrations are applied and the bounty has at least one submitted
-// solution. The request assertion then becomes the real thing: if a shim is
-// dropped before NS-P50 rewires its caller, the query string it names goes
-// missing and this fails.
+// the migrations are applied and the bounty has at least one submitted
+// solution. The request assertion then becomes the real thing: a page that
+// filters solutions on the route's own id matches nothing, and an empty
+// solutions list is indistinguishable from a bounty nobody has answered.
 //
 // Selectors are roles and accessible names. Nothing here selects on a class:
 // see the selector rules in the e2e skill.
@@ -48,6 +50,8 @@ const LEGACY_BOUNTY_URL = process.env.E2E_LEGACY_BOUNTY_URL ?? "";
 
 /** The PostgREST reads the page makes against the repointed tables. */
 const SOLUTIONS_REQUEST = /\/rest\/v1\/solutions\?/;
+/** And the resolve that turns the route's content_items id into a bounties id. */
+const BOUNTIES_REQUEST = /\/rest\/v1\/bounties\?/;
 
 test.describe("a legacy bounty page after the repoint", () => {
   test.skip(
@@ -55,11 +59,15 @@ test.describe("a legacy bounty page after the repoint", () => {
     "No repointed bounty page to point at: public.bounties answers PGRST205 on the project in supabase/config.toml, so NS-P45 and NS-P46 are not applied there. Set E2E_LEGACY_BOUNTY_URL to a bounty page on a project that has them.",
   );
 
-  test("asks for its solutions by the shim column, and renders them", async ({ page }) => {
+  test("resolves its bounty header, asks for its solutions by bounty_id, and renders them", async ({ page }) => {
     const solutionQueries: string[] = [];
+    const bountyQueries: string[] = [];
     page.on("request", (request) => {
       if (SOLUTIONS_REQUEST.test(request.url())) {
         solutionQueries.push(new URL(request.url()).search);
+      }
+      if (BOUNTIES_REQUEST.test(request.url())) {
+        bountyQueries.push(new URL(request.url()).search);
       }
     });
 
@@ -71,11 +79,19 @@ test.describe("a legacy bounty page after the repoint", () => {
       "the page made no request for solutions at all",
     ).toBeGreaterThan(0);
 
-    // The shim, as it appears on the wire. A page rewired early —
-    // or a shim removed before NS-P50 — shows up here and nowhere else.
+    // The resolve, as it appears on the wire: one lookup against the mapping
+    // NS-P45 backfilled, memoised for the rest of the session.
+    expect(
+      bountyQueries.some((search) => search.includes("legacy_item_id=eq.")),
+      "the page never resolved its bounties header",
+    ).toBe(true);
+
+    // And every solutions read names the real column. The shim NS-P50 dropped
+    // must not reappear, and the route's own id in bounty_id would match
+    // nothing at all.
     for (const search of solutionQueries) {
-      expect(search).toContain("legacy_bounty_item_id=eq.");
-      expect(search).not.toContain("bounty_id=eq.");
+      expect(search).toContain("bounty_id=eq.");
+      expect(search).not.toContain("legacy_bounty_item_id");
     }
 
     // And the answer is painted. An empty solutions list is the exact symptom

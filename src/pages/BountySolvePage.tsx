@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { SeoHead } from "@/components/SeoHead";
@@ -92,10 +93,14 @@ export default function BountySolvePage() {
   const { data: solutionCount = 0 } = useQuery({
     queryKey: ["bounty_slot_solution_count", bounty?.id, slotId],
     queryFn: async () => {
+      // NS-P50: solutions.bounty_id is a public.bounties id and this page is
+      // routed on the content_items slug, so the header is resolved first. The
+      // resolve is memoised for the session and the page has already made it.
+      const bountyRowId = await resolveBountyByLegacyItem(bounty!.id);
       const { count } = await (supabase as any)
         .from("solutions")
-        .select("*", { count: "exact", head: true })
-        .eq("legacy_bounty_item_id", bounty!.id) // NS-P46 shim (removed in NS-P50)
+        .select("id", { count: "exact", head: true })
+        .eq("bounty_id", bountyRowId)
         .eq("slot_id", slotId!)
         .in("status", ["submitted", "accepted"]);
       return count ?? 0;

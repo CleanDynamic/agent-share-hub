@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 import type {
   BountyCommentReactionSummary,
   DiscussionFilter,
@@ -19,14 +20,15 @@ export async function getDiscussionThread(args: {
 }> {
   const { bountyId, filter = "all", sort = "newest", viewerId } = args;
 
+  // NS-P50. `bountyId` is the content_items id in the legacy bounty page's
+  // route; every table read below keys on public.bounties. One resolve, reused
+  // by the thread read, the read mark and the accepted-solver lookup.
+  const bountyRowId = await resolveBountyByLegacyItem(bountyId);
+
   const { data: rows, error } = await (supabase as any)
     .from("bounty_discussion_comments")
     .select("*")
-    // NS-P47 shim (removed in NS-P50). bountyId is the content_items id in the
-    // legacy bounty page's route; bounty_discussion_comments.bounty_id is a
-    // public.bounties id. The shim column carries the old id and is derived by
-    // the database from bounties.legacy_item_id on every write.
-    .eq("legacy_bounty_item_id", bountyId)
+    .eq("bounty_id", bountyRowId)
     .order("created_at", { ascending: true });
   if (error) throw error;
   const flat = (rows ?? []) as any[];
@@ -56,14 +58,17 @@ export async function getDiscussionThread(args: {
         ? (supabase as any)
             .from("bounty_comment_last_read")
             .select("last_read_at")
-            .eq("legacy_bounty_item_id", bountyId) // NS-P47 shim (removed in NS-P50)
+            .eq("bounty_id", bountyRowId)
             .eq("user_id", viewerId)
             .maybeSingle()
         : Promise.resolve({ data: null }),
+      // This one named bounty_id already and was handed the content_items id,
+      // so it has matched nothing since NS-P46 and every comment has rendered
+      // without its "accepted solver" mark. The resolve is what fixes it.
       (supabase as any)
         .from("solutions")
         .select("solver_id")
-        .eq("bounty_id", bountyId)
+        .eq("bounty_id", bountyRowId)
         .eq("status", "accepted"),
     ]);
 

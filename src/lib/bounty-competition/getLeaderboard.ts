@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 import type { LeaderboardEntry, LeaderboardSort } from "./types";
 import { refreshLeaderboardCache } from "./refreshLeaderboardCache";
 
@@ -63,6 +64,11 @@ export async function getLeaderboard({
   const userIds = entries.map((r) => r.user_id);
   if (userIds.length === 0) return [];
 
+  // NS-P50: solutions.bounty_id is a public.bounties id, and this module is
+  // routed on the content_items one. solver_leaderboard_cache above is NOT
+  // repointed and keeps taking the legacy id.
+  const bountyRowId = await resolveBountyByLegacyItem(bountyId);
+
   const [{ data: profiles }, { data: drafts }] = await Promise.all([
     (supabase as any)
       .from("profiles")
@@ -71,7 +77,7 @@ export async function getLeaderboard({
     (supabase as any)
       .from("solutions")
       .select("solver_id")
-      .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
+      .eq("bounty_id", bountyRowId)
       .eq("status", "draft")
       .in("solver_id", userIds),
   ]);

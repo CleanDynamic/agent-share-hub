@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveLegacyItemsByBounty } from "@/lib/bounty/resolveLegacy";
 import type { FeedPost } from "@/components/feed-card";
 
 export interface QueryBlueprintsParams {
@@ -233,19 +234,25 @@ async function expandBountySearchIds(
   if (params.postType && params.postType !== "bounty") return [];
 
   const safe = q.split("%").join("").split(",").join(" ");
-  // NS-P48 shim (removed in NS-P50). The caller OR-includes these ids into a
-  // content_items id filter, and since NS-P48 meta_bounty_id holds a
-  // public.bounties id. legacy_meta_item_id is the content_items id it held
-  // before, derived by the database from bounties.legacy_item_id.
+  // NS-P50. meta_bounty_id has been a public.bounties id since NS-P48, and the
+  // caller OR-includes what this returns into a content_items id filter, so the
+  // matched headers are mapped back to the content_items ids they name. Two
+  // round trips instead of one, and the second is an indexed lookup on at most
+  // 200 ids.
   const { data } = await (supabase as any)
     .from("meta_bounty_sub_definitions")
-    .select("legacy_meta_item_id")
+    .select("meta_bounty_id")
     .or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
     .limit(200);
+
+  const bountyIds = Array.from(
+    new Set(((data ?? []) as any[]).map((r) => r.meta_bounty_id).filter(Boolean)),
+  ) as string[];
+  if (bountyIds.length === 0) return [];
+
+  const legacyIds = await resolveLegacyItemsByBounty(bountyIds);
   return Array.from(
-    new Set(
-      ((data ?? []) as any[]).map((r) => r.legacy_meta_item_id).filter(Boolean),
-    ),
+    new Set([...legacyIds.values()].filter(Boolean) as string[]),
   );
 }
 

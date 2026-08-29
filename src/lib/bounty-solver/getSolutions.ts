@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { resolveBountyByLegacyItem } from "@/lib/bounty/resolveLegacy";
 import type { Solution, SolutionWithMeta, SolutionsSort, SolverProfile } from "./types";
 
 export async function getSolutions(args: {
@@ -9,10 +10,14 @@ export async function getSolutions(args: {
 }): Promise<{ solutions: SolutionWithMeta[]; total: number }> {
   const { bountyId, slotId = "all", sort = "most_votes", viewerId } = args;
 
+  // NS-P50: the route's content_items id, resolved to the bounties id that
+  // solutions.bounty_id actually holds.
+  const bountyRowId = await resolveBountyByLegacyItem(bountyId);
+
   let q = (supabase as any)
     .from("solutions")
     .select("*")
-    .eq("legacy_bounty_item_id", bountyId) // NS-P46 shim (removed in NS-P50)
+    .eq("bounty_id", bountyRowId)
     .in("status", ["submitted", "accepted"]);
   if (slotId && slotId !== "all") q = q.eq("slot_id", slotId);
   if (sort === "mine" && viewerId) q = q.eq("solver_id", viewerId);

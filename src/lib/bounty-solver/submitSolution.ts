@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { legacyItemForBounty } from "@/lib/bounty/resolveLegacy";
 import { createNotification } from "@/lib/notifications/createNotification";
 import type { Solution } from "./types";
 
@@ -34,11 +35,12 @@ export async function submitSolution(solutionId: string): Promise<Solution> {
   // Bounty author + solver count bump (best-effort; non-blocking).
   void (async () => {
     try {
-      // NS-P46 shim (removed in NS-P50): sol.bounty_id is a public.bounties id,
-      // so the bounty's content_items row is found through the legacy id. A
-      // build-backed bounty has none; its author is notified by NS-P50's path,
-      // and the solver's counter below still runs either way.
-      const legacyBountyItemId = sol.legacy_bounty_item_id;
+      // NS-P50: sol.bounty_id is a public.bounties id, so the bounty's
+      // content_items row is found by resolving the header's legacy_item_id. A
+      // bounty on a build has none — that path notifies from
+      // src/lib/bounty/solutions.ts — and the solver's counter below still runs
+      // either way.
+      const legacyBountyItemId = await legacyItemForBounty(sol.bounty_id);
       const { data: bounty } = legacyBountyItemId
         ? await (supabase as any)
             .from("content_items")
