@@ -121,7 +121,7 @@ const App = () => (
                 <Route path="/upload" element={<LegacyUploadRoute><UploadTypeSelector /></LegacyUploadRoute>} />
                 <Route path="/upload/blueprint" element={<LegacyUploadRoute><Upload /></LegacyUploadRoute>} />
                 <Route path="/upload/blog" element={<LegacyUploadRoute><BlogUpload /></LegacyUploadRoute>} />
-                <Route path="/upload/bounty" element={<LegacyUploadRoute><BountyUploadShell /></LegacyUploadRoute>} />
+                <Route path="/upload/bounty" element={<LegacyUploadRoute bounty><BountyUploadShell /></LegacyUploadRoute>} />
                 <Route path="/about" element={<About />} />
                 <Route path="/api-docs" element={<ApiDocs />} />
                 <Route path="/content/:id" element={<ContentDetail />} />
@@ -162,7 +162,14 @@ const App = () => (
                 <Route path="/messages/:threadId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/my-uploads" element={<ProtectedRoute requireCreator><MyUploads /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute requireCreator><Analytics /></ProtectedRoute>} />
-                <Route path="/bounty/new" element={<ProtectedRoute><BountyUpload /></ProtectedRoute>} />
+                {/* NS-P54. The standalone bounty form, retired the same way
+                    the previous publishing tool was: the route stays
+                    registered so a bookmark is not a 404, the notice above it
+                    says where bounties live now, and the submit is frozen
+                    behind src/lib/bounty-legacy/flags.ts. ProtectedRoute stays
+                    outermost — a signed-out visitor still meets the login
+                    redirect, not a notice over one. */}
+                <Route path="/bounty/new" element={<ProtectedRoute><LegacyUploadRoute bounty><BountyUpload /></LegacyUploadRoute></ProtectedRoute>} />
               </Route>
               <Route path="/b2/:slug" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><BuildPage /></Suspense>} />
               <Route path="/gallery" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><Gallery /></Suspense>} />

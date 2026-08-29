@@ -16,6 +16,15 @@ interface SolverAgg {
  *
  * Ranking: vote_total DESC, then acceptance_count DESC,
  *          then submission_count DESC, then earliest submission.
+ *
+ * DELIBERATELY OUTSIDE THE NS-P54 FREEZE, and this comment is the reason,
+ * because the file sits between two that were frozen and the next reader will
+ * ask. NS-P54 freezes legacy bounty CREATION — `createMetaBounty` and
+ * `promoteBountyToBlueprint` in this same directory. This function creates no
+ * bounty. It recomputes a ranking over solutions that already exist, and
+ * /b/:id/leaderboard is a legacy READ page that NS-P54 is told to leave alone.
+ * Freezing it would leave that page rendering stale ranks after every vote,
+ * with nothing on screen to say why.
  */
 export async function refreshLeaderboardCache(
   bountyId: string,

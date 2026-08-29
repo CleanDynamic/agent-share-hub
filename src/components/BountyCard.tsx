@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Eye, MessageSquare } from "lucide-react";
 import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { timeAgo, formatNum, difficultyColor } from "@/components/FeedItem";
+import { useLegacyMeTooCount } from "@/lib/bounty/legacyMeToo";
 
 /* ── Helpers ────────────────────────────────────────────────── */
 
@@ -32,7 +33,18 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
   const sc = bountyStatusColor(status);
   const tipGbp = (item as any).bounty_tip_gbp as number | null;
   const gap = (item as any).bounty_gap as string | null;
-  const meTooCount = (item as any).bounty_me_too_count ?? 0;
+  // NS-P54. content_items.bounty_me_too_count stopped moving when the migration
+  // dropped that leg of the counter trigger, so it is now the FALLBACK — the
+  // value the column froze at — and the live number comes from
+  // bounties.me_too_count, resolved through bounties.legacy_item_id. The hook
+  // renders the frozen value first and never blocks this card on the lookup.
+  //
+  // On the project this repository points at the column does not exist at all
+  // (42703, measured by the NS-P44 audit), so this fallback is 0 there and the
+  // "N have this" line has never rendered; the hook is what will make it render
+  // once the header table is applied.
+  const frozenMeTooCount = (item as any).bounty_me_too_count ?? 0;
+  const meTooCount = useLegacyMeTooCount(item.id as string, frozenMeTooCount);
   const responsesCount = (item as any)._response_count ?? 0;
   const initials = (profile?.display_name || profile?.username || "?").slice(0, 2).toUpperCase();
   const state = navState ?? { from: context === "browse" ? "browse" : "feed" };

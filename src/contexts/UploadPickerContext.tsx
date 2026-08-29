@@ -18,13 +18,23 @@ export function useUploadPicker() {
   return ctx;
 }
 
-// Blueprint is the one the build workspace replaces. Blog and bounty are not
-// replaced by that rebuild and keep their existing editors — merging bounties
-// into the gap node type is a product decision nobody has made.
+// Blueprint is the one the build workspace replaces. Blog keeps its existing
+// editor.
+//
+// NS-P54: bounty joins blueprint. The product decision NS-P25 said nobody had
+// made was made across NS-P45–NS-P53 — a bounty IS a gap node on a build now,
+// marked unsolved in the composer and priced at publish — so the Bounty card
+// in the picker opens the composer rather than the legacy bounty editor. The
+// card's label and promise are unchanged; only where it lands moved.
+//
+// meta-bounty is NOT repointed here. It is NS-P49's surface, it has no
+// reachable creation path today (`/upload?type=meta-bounty` re-opens this
+// picker), and the one library helper behind it is frozen rather than
+// rewired — see src/lib/bounty-legacy/flags.ts.
 const ROUTE_FOR_TYPE: Record<UploadContentType, string> = {
   blueprint: "/compose/new",
   blog: "/upload/blog",
-  bounty: "/upload/bounty",
+  bounty: "/compose/new",
   "meta-bounty": "/upload?type=meta-bounty",
 };
 

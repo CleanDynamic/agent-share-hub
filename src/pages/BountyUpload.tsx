@@ -1,8 +1,23 @@
+// /bounty/new — the standalone bounty form. RETIRED BY NS-P54.
+//
+// The route is still registered and this page still renders, wrapped in
+// LegacyUploadRoute so the notice above it says where bounties live now. What
+// stopped is the write: handleSubmit asks assertLegacyBountyCreateEnabled()
+// before it touches anything, and while the flag is false that throws
+// BOUNTY_RETIRED. The insert below is left whole and unreachable rather than
+// deleted — deleting it is NS-P55's, and a gate that is one statement is a
+// rollback that is one flag.
+//
+// Nothing is lost by freezing this one rather than letting it finish, the way
+// /upload/blueprint is allowed to finish: every field on this form lives in
+// React state for the length of one visit. There is no draft here to strand.
+
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { WorksWithPicker } from '@/components/WorksWithPicker'
+import { assertLegacyBountyCreateEnabled } from '@/lib/bounty-legacy/flags'
 
 const BOUNTY_NEEDS = [
   { value: 'Prompt File', label: 'A Prompt',
@@ -34,9 +49,21 @@ export default function BountyUpload() {
   const [tools, setTools] = useState<string[]>([]) // ai_tools
   const [deadline, setDeadline] = useState(30) // bounty_deadline_days
   const [submitting, setSubmitting] = useState(false)
+  const [retired, setRetired] = useState(false)
 
   const handleSubmit = async () => {
     if (!user) return
+
+    // The gate, first, before any state is read and before any row is touched.
+    // The thrown BOUNTY_RETIRED message is the machine-readable one; the panel
+    // below says the same thing in the words this page needs.
+    try {
+      assertLegacyBountyCreateEnabled()
+    } catch {
+      setRetired(true)
+      return
+    }
+
     setSubmitting(true)
 
     const { data, error } = await supabase
@@ -315,6 +342,34 @@ export default function BountyUpload() {
             }} />
           ))}
         </div>
+
+        {/* NS-P54. The notice at the top of the route already says where
+            bounties live now, but this form scrolls and the button is sticky,
+            so by step 3 that notice is usually off screen. Its own words, not a
+            repeat of the notice's. Shown only after a submit is attempted —
+            nothing is offered that then fails silently. */}
+        {retired && (
+          <div
+            data-visual-slot="legacy-bounty-retired"
+            data-testid="legacy-bounty-retired"
+            style={{
+              marginBottom: 10,
+              padding: '10px 12px',
+              borderRadius: 10,
+              background: 'rgba(232,87,26,0.06)',
+              border: '1px solid rgba(232,87,26,0.22)',
+              fontSize: 12,
+              fontWeight: 300,
+              lineHeight: 1.5,
+              color: 'rgba(255,255,255,0.60)',
+            }}
+          >
+            This form no longer posts bounties.{' '}
+            <Link to="/compose/new" style={{ color: '#E8571A', fontWeight: 500 }}>
+              Open the build workspace →
+            </Link>
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 8 }}>
           {step > 1 && (

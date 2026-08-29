@@ -519,7 +519,11 @@ const Home = () => {
 
   const onEmptyCTAClick = () => {
     if (activeTab === "foryou" || activeTab === "following") navigate("/discover");
-    else if (activeTab === "bounties") openUploadTypePicker("bounty");
+    // NS-P54. "Post a bounty" from the empty bounties tab used to open the
+    // picker in bounty mode, whose two cards were the retired bounty editor and
+    // the meta-bounty dead end. The promise is the same and the destination is
+    // now the composer: a bounty is a part of a build marked unsolved.
+    else if (activeTab === "bounties") navigate("/compose/new");
   };
 
   // Sign-in nudge when guest hits a logged-in-only tab
