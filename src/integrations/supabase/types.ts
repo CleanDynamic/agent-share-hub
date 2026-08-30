@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -225,100 +225,6 @@ export type Database = {
           },
         ]
       }
-      bounties: {
-        Row: {
-          accepted_solution_id: string | null
-          author_id: string
-          build_id: string | null
-          closes_at: string | null
-          created_at: string
-          gap_node_id: string | null
-          id: string
-          is_meta: boolean
-          legacy_item_id: string | null
-          me_too_count: number
-          meta_parent_id: string | null
-          reward_gbp: number | null
-          solved_at: string | null
-          status: string
-        }
-        Insert: {
-          accepted_solution_id?: string | null
-          author_id: string
-          build_id?: string | null
-          closes_at?: string | null
-          created_at?: string
-          gap_node_id?: string | null
-          id?: string
-          is_meta?: boolean
-          legacy_item_id?: string | null
-          me_too_count?: number
-          meta_parent_id?: string | null
-          reward_gbp?: number | null
-          solved_at?: string | null
-          status?: string
-        }
-        Update: {
-          accepted_solution_id?: string | null
-          author_id?: string
-          build_id?: string | null
-          closes_at?: string | null
-          created_at?: string
-          gap_node_id?: string | null
-          id?: string
-          is_meta?: boolean
-          legacy_item_id?: string | null
-          me_too_count?: number
-          meta_parent_id?: string | null
-          reward_gbp?: number | null
-          solved_at?: string | null
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bounties_accepted_solution_id_fkey"
-            columns: ["accepted_solution_id"]
-            isOneToOne: false
-            referencedRelation: "solutions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bounties_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bounties_build_id_fkey"
-            columns: ["build_id"]
-            isOneToOne: false
-            referencedRelation: "builds"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bounties_gap_node_id_fkey"
-            columns: ["gap_node_id"]
-            isOneToOne: false
-            referencedRelation: "build_nodes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bounties_legacy_item_id_fkey"
-            columns: ["legacy_item_id"]
-            isOneToOne: false
-            referencedRelation: "content_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bounties_meta_parent_id_fkey"
-            columns: ["meta_parent_id"]
-            isOneToOne: false
-            referencedRelation: "bounties"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       bounty_author_review: {
         Row: {
           author_id: string
@@ -355,7 +261,7 @@ export type Database = {
             foreignKeyName: "bounty_author_review_bounty_id_fkey"
             columns: ["bounty_id"]
             isOneToOne: false
-            referencedRelation: "bounties"
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
         ]
@@ -381,7 +287,7 @@ export type Database = {
             foreignKeyName: "bounty_comment_last_read_bounty_id_fkey"
             columns: ["bounty_id"]
             isOneToOne: false
-            referencedRelation: "bounties"
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
         ]
@@ -448,7 +354,7 @@ export type Database = {
             foreignKeyName: "bounty_deadline_extensions_bounty_id_fkey"
             columns: ["bounty_id"]
             isOneToOne: false
-            referencedRelation: "bounties"
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
         ]
@@ -489,7 +395,7 @@ export type Database = {
             foreignKeyName: "bounty_discussion_comments_bounty_id_fkey"
             columns: ["bounty_id"]
             isOneToOne: false
-            referencedRelation: "bounties"
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
           {
@@ -804,7 +710,6 @@ export type Database = {
       builds: {
         Row: {
           completeness: number | null
-          cover_media_id: string | null
           cost_monthly: number | null
           cost_setup: number | null
           created_at: string
@@ -824,17 +729,12 @@ export type Database = {
           parent_build_id: string | null
           price_gbp: number | null
           published_at: string | null
-          rebuild_count: number
-          rebuild_note: string | null
           repo_url: string | null
           reproduction_count: number
           root_build_id: string | null
           shape: string
           slug: string
-          solves_node_id: string | null
           source_content_item_id: string | null
-          source_handle_at_fork: string | null
-          source_title_at_fork: string | null
           status: string
           time_to_first_result: number | null
           title: string
@@ -842,7 +742,6 @@ export type Database = {
         }
         Insert: {
           completeness?: number | null
-          cover_media_id?: string | null
           cost_monthly?: number | null
           cost_setup?: number | null
           created_at?: string
@@ -862,17 +761,12 @@ export type Database = {
           parent_build_id?: string | null
           price_gbp?: number | null
           published_at?: string | null
-          rebuild_count?: number
-          rebuild_note?: string | null
           repo_url?: string | null
           reproduction_count?: number
           root_build_id?: string | null
           shape?: string
           slug: string
-          solves_node_id?: string | null
           source_content_item_id?: string | null
-          source_handle_at_fork?: string | null
-          source_title_at_fork?: string | null
           status?: string
           time_to_first_result?: number | null
           title: string
@@ -880,7 +774,6 @@ export type Database = {
         }
         Update: {
           completeness?: number | null
-          cover_media_id?: string | null
           cost_monthly?: number | null
           cost_setup?: number | null
           created_at?: string
@@ -900,30 +793,18 @@ export type Database = {
           parent_build_id?: string | null
           price_gbp?: number | null
           published_at?: string | null
-          rebuild_count?: number
-          rebuild_note?: string | null
           repo_url?: string | null
           reproduction_count?: number
           root_build_id?: string | null
           shape?: string
           slug?: string
-          solves_node_id?: string | null
           source_content_item_id?: string | null
-          source_handle_at_fork?: string | null
-          source_title_at_fork?: string | null
           status?: string
           time_to_first_result?: number | null
           title?: string
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "builds_cover_media_id_fkey"
-            columns: ["cover_media_id"]
-            isOneToOne: false
-            referencedRelation: "build_media"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "builds_creator_id_fkey"
             columns: ["creator_id"]
@@ -964,13 +845,6 @@ export type Database = {
             columns: ["root_build_id"]
             isOneToOne: false
             referencedRelation: "builds"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "builds_solves_node_id_fkey"
-            columns: ["solves_node_id"]
-            isOneToOne: false
-            referencedRelation: "build_nodes"
             referencedColumns: ["id"]
           },
           {
@@ -3441,14 +3315,14 @@ export type Database = {
             foreignKeyName: "meta_bounty_sub_definitions_meta_bounty_id_fkey"
             columns: ["meta_bounty_id"]
             isOneToOne: false
-            referencedRelation: "bounties"
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "meta_bounty_sub_definitions_spawned_bounty_id_fkey"
             columns: ["spawned_bounty_id"]
             isOneToOne: false
-            referencedRelation: "bounties"
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
         ]
@@ -3607,54 +3481,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      ns_p46_migration_map_acceptance_log: {
-        Row: {
-          id: string
-          old_bounty_id: string
-        }
-        Insert: {
-          id: string
-          old_bounty_id: string
-        }
-        Update: {
-          id?: string
-          old_bounty_id?: string
-        }
-        Relationships: []
-      }
-      ns_p46_migration_map_solutions: {
-        Row: {
-          id: string
-          old_bounty_id: string
-        }
-        Insert: {
-          id: string
-          old_bounty_id: string
-        }
-        Update: {
-          id?: string
-          old_bounty_id?: string
-        }
-        Relationships: []
-      }
-      ns_p48_migration_map_meta_subs: {
-        Row: {
-          id: string
-          old_meta_bounty_id: string
-          old_spawned_bounty_id: string | null
-        }
-        Insert: {
-          id: string
-          old_meta_bounty_id: string
-          old_spawned_bounty_id?: string | null
-        }
-        Update: {
-          id?: string
-          old_meta_bounty_id?: string
-          old_spawned_bounty_id?: string | null
-        }
-        Relationships: []
       }
       perks: {
         Row: {
@@ -4574,7 +4400,7 @@ export type Database = {
             foreignKeyName: "solution_acceptance_log_bounty_id_fkey"
             columns: ["bounty_id"]
             isOneToOne: false
-            referencedRelation: "bounties"
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
           {
@@ -4673,7 +4499,6 @@ export type Database = {
           id: string
           slot_id: string
           slot_kind: string
-          solution_build_id: string | null
           solver_id: string
           solver_note: string | null
           status: string
@@ -4690,7 +4515,6 @@ export type Database = {
           id?: string
           slot_id: string
           slot_kind: string
-          solution_build_id?: string | null
           solver_id: string
           solver_note?: string | null
           status?: string
@@ -4707,7 +4531,6 @@ export type Database = {
           id?: string
           slot_id?: string
           slot_kind?: string
-          solution_build_id?: string | null
           solver_id?: string
           solver_note?: string | null
           status?: string
@@ -4720,14 +4543,7 @@ export type Database = {
             foreignKeyName: "solutions_bounty_id_fkey"
             columns: ["bounty_id"]
             isOneToOne: false
-            referencedRelation: "bounties"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "solutions_solution_build_id_fkey"
-            columns: ["solution_build_id"]
-            isOneToOne: false
-            referencedRelation: "builds"
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
         ]
@@ -5335,14 +5151,6 @@ export type Database = {
       }
     }
     Functions: {
-      accept_bounty_solution: {
-        Args: {
-          p_bounty_id: string
-          p_solution_id: string
-          p_solved_node_id?: string
-        }
-        Returns: Json
-      }
       award_xp: {
         Args: {
           _amount: number
