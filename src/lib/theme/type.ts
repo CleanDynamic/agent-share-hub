@@ -140,7 +140,22 @@ export const label = {
   letterSpacing: "0.01em",
 } as const satisfies CSSProperties;
 
-/** The scale, by role. `type.body`, `type.sectionHead`, and so on. */
+/**
+ * The scale, by role. `type.body`, `type.sectionHead`, and so on.
+ *
+ * IMPORTING THIS INTO A FILE THAT ALREADY SAYS `type`. Two cases, both of
+ * which the compiler catches and the bundler does not:
+ *
+ *   - the file declares its own `type` (a prop, a local), which shadows this
+ *     one, so `type.cardTitle` reads a property off that value instead;
+ *   - the file uses inline type-import modifiers (`import { type Foo }`),
+ *     which a value binding called `type` makes ambiguous, and the imported
+ *     types silently stop resolving.
+ *
+ * In either case import the roles by name — `import { cardTitle }`, or
+ * `data as dataText` where the bare name would collide — rather than the
+ * object. Every role below is exported individually for exactly this.
+ */
 export const type = {
   eyebrow,
   body,

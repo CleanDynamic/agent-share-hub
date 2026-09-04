@@ -50,6 +50,7 @@ import {
   focusControl,
 } from "@/components/compose/fields";
 import { EventNodeLink, type NodeLinkOption } from "./EventNodeLink";
+import { tabular, type } from "@/lib/theme/type";
 
 // --- kinds -------------------------------------------------------------------
 
@@ -305,13 +306,12 @@ function EventRowBase({
       <span
         aria-hidden="true"
         style={{
-          ...labelText,
+          ...type.data,
+          ...tabular,
           minWidth: 26,
           textAlign: "right",
           marginTop: 3,
-          fontSize: 11,
           color: TEXT_MUTED,
-          fontVariantNumeric: "tabular-nums",
           flexShrink: 0,
         }}
       >
