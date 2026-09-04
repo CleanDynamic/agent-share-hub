@@ -190,7 +190,7 @@ export function AutoDetectedCard({
         />
         <p
           className="text-[12px]"
-          style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
+          style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Figtree, sans-serif" }}
         >
           Nothing detected yet — add some content in the editor first.
         </p>

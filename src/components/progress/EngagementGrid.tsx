@@ -40,7 +40,7 @@ export function EngagementGrid({ counters }: EngagementGridProps) {
             }}
           >
             <Icon size={14} color="rgba(255,255,255,0.45)" />
-            <div style={{ fontSize: 18, fontWeight: 600, color: "rgba(255,255,255,0.92)", fontFamily: "Inter, sans-serif" }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: "rgba(255,255,255,0.92)", fontFamily: "Figtree, sans-serif" }}>
               {v.toLocaleString()}
             </div>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", letterSpacing: "0.04em", textTransform: "uppercase" }}>

@@ -8,6 +8,7 @@ import type { CanvasBlock, BlockArrow }
   from '@/lib/canvas-types';
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
 import { getNextRow } from '@/lib/canvas-utils';
+import { type } from "@/lib/theme/type";
 
 const SCALE_OPTIONS = [1, 2, 3, 5, 10] as const;
 type ScaleValue = (typeof SCALE_OPTIONS)[number];
@@ -147,10 +148,8 @@ export function TemplateLibrary({
         }}>
           <div>
             <div style={{
-              fontSize: 15, fontWeight: 700,
               color: 'rgba(255,255,255,0.88)',
-              fontFamily:
-                "'Playfair Display', Georgia, serif",
+              ...type.cardTitle,
             }}>
               Templates
             </div>
@@ -197,7 +196,7 @@ export function TemplateLibrary({
                   ? 600 : 400,
                 whiteSpace: 'nowrap',
                 transition: 'color 0.15s',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
               }}
             >
               {cat === 'all' ? 'All'
@@ -239,11 +238,9 @@ export function TemplateLibrary({
                 }}
               >
                 <div style={{
-                  fontSize: 13, fontWeight: 700,
                   color: 'rgba(255,255,255,0.88)',
                   marginBottom: 4,
-                  fontFamily:
-                    "'Playfair Display', Georgia, serif",
+                  ...type.cardTitle,
                 }}>
                   {template.label}
                 </div>

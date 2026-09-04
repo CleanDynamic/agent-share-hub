@@ -146,7 +146,7 @@ export function ThreadReferencePicker({
             <AtSign className="h-3.5 w-3.5 text-white/60" />
             <span
               className="text-[11px] font-semibold text-white/80"
-              style={{ fontFamily: "Inter, sans-serif" }}
+              style={{ fontFamily: "Figtree, sans-serif" }}
             >
               Share content
             </span>
@@ -169,7 +169,7 @@ export function ThreadReferencePicker({
                 "flex-1 flex items-center justify-center gap-1 relative transition-colors text-[11px]",
                 activeType === type ? "text-white" : "text-white/50 hover:text-white/70"
               )}
-              style={{ fontFamily: "Inter, sans-serif", fontWeight: 500 }}
+              style={{ fontFamily: "Figtree, sans-serif", fontWeight: 500 }}
             >
               <span>{typeConfig[type].label}</span>
               <span className="text-white/40">{counts[type]}</span>
@@ -194,7 +194,7 @@ export function ThreadReferencePicker({
             onKeyDown={handleKeyDown}
             placeholder={typeConfig[activeType].placeholder}
             className="flex-1 bg-transparent outline-none text-[12px] text-white/85 placeholder:text-white/35"
-            style={{ fontFamily: "Inter, sans-serif" }}
+            style={{ fontFamily: "Figtree, sans-serif" }}
           />
         </div>
 
@@ -207,7 +207,7 @@ export function ThreadReferencePicker({
           ) : results.length === 0 ? (
             <div
               className="px-3 py-6 text-center text-[11px] text-white/40"
-              style={{ fontFamily: "Inter, sans-serif" }}
+              style={{ fontFamily: "Figtree, sans-serif" }}
             >
               No results found
             </div>
@@ -239,14 +239,14 @@ export function ThreadReferencePicker({
                 <div className="flex-1 min-w-0">
                   <div
                     className="text-[12px] text-white/90 truncate"
-                    style={{ fontFamily: "Inter, sans-serif", fontWeight: 500 }}
+                    style={{ fontFamily: "Figtree, sans-serif", fontWeight: 500 }}
                   >
                     {item.name}
                   </div>
                   {item.subtitle && (
                     <div
                       className="text-[10px] text-white/45 truncate"
-                      style={{ fontFamily: "Inter, sans-serif" }}
+                      style={{ fontFamily: "Figtree, sans-serif" }}
                     >
                       {item.subtitle}
                     </div>
@@ -263,7 +263,7 @@ export function ThreadReferencePicker({
         {/* Footer */}
         <div
           className="flex items-center gap-3 px-3 h-7 border-t border-white/5 text-[10px] text-white/40"
-          style={{ fontFamily: "Inter, sans-serif" }}
+          style={{ fontFamily: "Figtree, sans-serif" }}
         >
           <span>↑↓ navigate</span>
           <span>↵ select</span>

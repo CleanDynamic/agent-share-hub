@@ -43,7 +43,7 @@ export const tokens = {
     muted: "rgba(255,255,255,0.42)",
   },
   font: {
-    sans: "var(--font-inter), 'Inter', system-ui, sans-serif",
+    sans: "var(--font-inter), 'Figtree', system-ui, sans-serif",
     mono: "var(--font-jetbrains-mono), 'JetBrains Mono', ui-monospace, monospace",
   },
 } as const

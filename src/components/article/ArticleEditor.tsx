@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react';
+import { BODONI, FIGTREE } from "@/lib/theme/type";
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import ImageExtension from '@tiptap/extension-image';
@@ -466,7 +467,6 @@ export function ArticleEditor({
     return () => window.removeEventListener('keydown', handler);
   }, [triggerAddComment]);
 
-
   const slashItems = useMemo(() => {
     const items = getSlashCommandItems(slashQuery);
     if (!isBlog) return items;
@@ -761,7 +761,7 @@ export function ArticleEditor({
           box-sizing: border-box;
         }
         .tiptap-article .ProseMirror {
-          font-family: 'Inter', sans-serif;
+          font-family: 'Figtree', sans-serif;
           font-size: ${isBlog ? 16 : 15}px;
           line-height: ${isBlog ? 1.85 : 1.5};
           color: hsl(var(--foreground) / 0.92);
@@ -779,7 +779,7 @@ export function ArticleEditor({
           background: hsl(18 79% 54% / 0.2);
         }
         .tiptap-article h1 {
-          font-family: ${isBlog ? "'Playfair Display', Georgia, serif" : "'Inter', sans-serif"};
+          font-family: ${isBlog ? BODONI : FIGTREE};
           font-size: ${isBlog ? 28 : 28}px;
           font-weight: 700;
           color: hsl(var(--foreground) / 0.95);
@@ -787,7 +787,7 @@ export function ArticleEditor({
           line-height: 1.3;
         }
         .tiptap-article h2 {
-          font-family: ${isBlog ? "'Playfair Display', Georgia, serif" : "'Inter', sans-serif"};
+          font-family: ${isBlog ? BODONI : FIGTREE};
           font-size: 22px;
           font-weight: 600;
           color: hsl(var(--foreground) / 0.92);
@@ -795,7 +795,7 @@ export function ArticleEditor({
           line-height: 1.35;
         }
         .tiptap-article h3 {
-          font-family: 'Inter', sans-serif;
+          font-family: 'Figtree', sans-serif;
           font-size: 18px;
           font-weight: 600;
           color: hsl(var(--foreground) / 0.9);
@@ -811,7 +811,7 @@ export function ArticleEditor({
           color: hsl(var(--foreground) / 0.65);
           font-style: italic;
           font-size: ${isBlog ? 17 : 'inherit'};
-          font-family: ${isBlog ? "'Inter', sans-serif" : 'inherit'};
+          font-family: ${isBlog ? FIGTREE : 'inherit'};
           margin: 18px 0;
         }
         .tiptap-article pre {
@@ -861,7 +861,7 @@ export function ArticleEditor({
           pointer-events: none;
           height: 0;
           font-style: italic;
-          font-family: 'Inter', sans-serif;
+          font-family: 'Figtree', sans-serif;
           font-size: 15px;
           font-weight: 400;
         }
@@ -1012,7 +1012,7 @@ export function ArticleEditor({
           <Target size={14} color="#F59E0B" strokeWidth={1.8} />
           <span style={{
             flex: 1,
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             fontWeight: 400,
             color: 'rgba(255,255,255,0.55)',
@@ -1023,7 +1023,7 @@ export function ArticleEditor({
             <span
               title="Items currently marked as missing"
               style={{
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 fontSize: 11,
                 fontWeight: 500,
                 color: '#F59E0B',
@@ -1037,7 +1037,7 @@ export function ArticleEditor({
           ) : (
             <span
               style={{
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 fontSize: 11,
                 fontWeight: 500,
                 color: 'rgba(255,255,255,0.45)',
@@ -1059,7 +1059,7 @@ export function ArticleEditor({
               border: 'none',
               padding: 0,
               cursor: 'pointer',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 11,
               fontWeight: 500,
               color: 'rgba(245,158,11,0.85)',
@@ -1107,7 +1107,7 @@ export function ArticleEditor({
                 maxWidth: 520,
                 pointerEvents: 'none',
                 textAlign: 'center',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 fontSize: 13,
                 fontWeight: 400,
                 color: 'rgba(255,255,255,0.40)',
@@ -1193,7 +1193,7 @@ export function ArticleEditor({
                   border: '0.5px solid hsl(18 79% 54% / 0.35)',
                   background: 'hsl(18 79% 54% / 0.10)',
                   color: 'hsl(var(--foreground) / 0.92)',
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'Figtree, sans-serif',
                   fontSize: 12,
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -1218,7 +1218,7 @@ export function ArticleEditor({
                 border: '0.5px solid hsl(var(--foreground) / 0.1)',
                 background: 'transparent',
                 color: 'hsl(var(--foreground) / 0.62)',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 fontSize: 12,
                 fontWeight: 500,
                 cursor: saving ? 'not-allowed' : 'pointer',
@@ -1245,7 +1245,7 @@ export function ArticleEditor({
                 background: 'hsl(var(--secondary) / 0.14)',
                 color: 'hsl(var(--foreground) / 0.96)',
                 boxShadow: '0 8px 24px hsl(var(--secondary) / 0.12)',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: (publishing || bountyPublishBlocked) ? 'not-allowed' : 'pointer',
@@ -1308,7 +1308,7 @@ export function ArticleEditor({
               padding: '24px 26px',
               maxWidth: 420, width: '90%',
               boxShadow: '0 20px 60px rgba(0,0,0,0.60)',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
             }}
           >
             <h3 style={{
@@ -1348,7 +1348,7 @@ export function ArticleEditor({
                 background: 'rgba(255, 255, 255, 0.12)',
                 border: '1px solid rgba(255,255,255,0.12)',
                 color: 'rgba(255,255,255,0.92)',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 fontSize: 13,
                 outline: 'none',
                 marginBottom: 18,
@@ -1365,7 +1365,7 @@ export function ArticleEditor({
                   border: '1px solid rgba(255,255,255,0.12)',
                   color: 'rgba(255,255,255,0.65)',
                   cursor: 'pointer',
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'Figtree, sans-serif',
                 }}
               >
                 Cancel
@@ -1382,7 +1382,7 @@ export function ArticleEditor({
                   color: '#fff',
                   cursor: saving ? 'not-allowed' : 'pointer',
                   opacity: saving ? 0.65 : 1,
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'Figtree, sans-serif',
                 }}
               >
                 {saving ? 'Saving…' : 'Save Draft'}

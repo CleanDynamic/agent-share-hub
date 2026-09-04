@@ -219,7 +219,7 @@ function AuthoredCard({
       <ItemOverflowMenu options={menuOptions} />
       <div
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "10px",
           fontWeight: 600,
           letterSpacing: "0.08em",
@@ -232,7 +232,7 @@ function AuthoredCard({
       </div>
       <div
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "14px",
           fontWeight: 600,
           color: "rgba(255,255,255,0.92)",
@@ -244,7 +244,7 @@ function AuthoredCard({
       {item.subtitle && (
         <div
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "12px",
             color: "rgba(255,255,255,0.55)",
             display: "-webkit-box",
@@ -259,7 +259,7 @@ function AuthoredCard({
       {views !== undefined && (
         <div
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "11px",
             color: "rgba(255,255,255,0.45)",
             marginTop: "auto",
@@ -301,7 +301,7 @@ function CuratedCard({
       <ItemOverflowMenu options={menuOptions} />
       <div
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "10px",
           fontWeight: 600,
           letterSpacing: "0.08em",
@@ -313,7 +313,7 @@ function CuratedCard({
       </div>
       <div
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "14px",
           fontWeight: 600,
           color: "rgba(255,255,255,0.92)",
@@ -325,7 +325,7 @@ function CuratedCard({
       {item.subtitle && (
         <div
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "12px",
             color: "rgba(255,255,255,0.55)",
           }}
@@ -357,7 +357,7 @@ function NetworkCard({ item, onClick }: { item: ZoneItem; onClick: () => void })
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "13px",
             fontWeight: 600,
             color: "rgba(255,255,255,0.92)",
@@ -370,7 +370,7 @@ function NetworkCard({ item, onClick }: { item: ZoneItem; onClick: () => void })
         </div>
         <div
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "11px",
             color: "rgba(255,255,255,0.45)",
             textTransform: "capitalize",
@@ -401,7 +401,7 @@ function ActivityRow({ item, onClick }: { item: ZoneItem; onClick: () => void })
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "13px",
             color: "rgba(255,255,255,0.85)",
             lineHeight: 1.4,
@@ -412,7 +412,7 @@ function ActivityRow({ item, onClick }: { item: ZoneItem; onClick: () => void })
         {item.subtitle && (
           <div
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "11px",
               color: "rgba(255,255,255,0.45)",
               marginTop: "2px",
@@ -424,7 +424,7 @@ function ActivityRow({ item, onClick }: { item: ZoneItem; onClick: () => void })
       </div>
       <div
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "11px",
           color: "rgba(255,255,255,0.40)",
           flexShrink: 0,
@@ -470,7 +470,7 @@ function EmptyState({
       style={{
         padding: "48px 16px",
         textAlign: "center",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
       }}
     >
       <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.55)" }}>{s.message}</div>
@@ -709,7 +709,7 @@ export function ProfileContentZones({
                     border: "0.5px solid rgba(46,196,182,0.40)",
                     background: "rgba(46,196,182,0.08)",
                     color: "rgba(46,196,182,0.90)",
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: "pointer",
@@ -827,7 +827,7 @@ export function ProfileContentZones({
             >
               <span
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: "13px",
                   fontWeight: 600,
                   color: isActive ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.55)",
@@ -837,7 +837,7 @@ export function ProfileContentZones({
               </span>
               <span
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: "10px",
                   color: isActive ? ACCENT : "rgba(255,255,255,0.40)",
                   marginTop: "2px",
@@ -876,7 +876,7 @@ export function ProfileContentZones({
                     ? "0.5px solid rgba(232,87,26,0.40)"
                     : "0.5px solid rgba(255,255,255,0.08)",
                   background: isActive ? "rgba(232,87,26,0.10)" : "transparent",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: "11px",
                   fontWeight: 500,
                   color: isActive ? ACCENT : "rgba(255,255,255,0.65)",
@@ -902,7 +902,7 @@ export function ProfileContentZones({
                 background: "transparent",
                 border: "0.5px solid rgba(255,255,255,0.08)",
                 borderRadius: "4px",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "11px",
                 color: "rgba(255,255,255,0.65)",
                 cursor: "pointer",

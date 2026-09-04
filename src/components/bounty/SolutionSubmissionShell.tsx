@@ -87,14 +87,14 @@ export function SolutionSubmissionShell({
         <Target size={14} style={{ color: "#F59E0B", flexShrink: 0 }} />
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-1 truncate">
-            <span style={{ fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#F59E0B" }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#F59E0B" }}>
               Solving:
             </span>
-            <span className="truncate" style={{ fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.92)" }}>
+            <span className="truncate" style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.92)" }}>
               {bounty.title}
             </span>
           </div>
-          <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.55)" }}>
+          <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.55)" }}>
             {slotLabel} · Open · {bountyMeta.solutionCount} solution{bountyMeta.solutionCount !== 1 ? "s" : ""} submitted
           </span>
         </div>
@@ -102,7 +102,7 @@ export function SolutionSubmissionShell({
           href={`/b/${bounty.slug}`}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 500, color: "#F59E0B", textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}
+          style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 500, color: "#F59E0B", textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}
         >
           View full bounty →
         </a>
@@ -125,7 +125,7 @@ export function SolutionSubmissionShell({
         >
           <div className="flex items-center cursor-pointer" onClick={onToggleAcceptance} style={{ gap: 8 }}>
             <CheckCircle size={12} style={{ color: "#F59E0B", flexShrink: 0 }} />
-            <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#F59E0B", flex: 1 }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#F59E0B", flex: 1 }}>
               Acceptance criteria
             </span>
             {isAcceptanceExpanded ? (
@@ -136,17 +136,17 @@ export function SolutionSubmissionShell({
           </div>
 
           {!isAcceptanceExpanded && (
-            <p className="truncate" style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,0.65)", marginTop: 6, marginBottom: 0 }}>
+            <p className="truncate" style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,0.65)", marginTop: 6, marginBottom: 0 }}>
               {criteriaPreview}
             </p>
           )}
 
           {isAcceptanceExpanded && (
             <>
-              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, marginTop: 12, marginBottom: 12 }}>
+              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, marginTop: 12, marginBottom: 12 }}>
                 {bountyMeta.acceptanceCriteria}
               </p>
-              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.55)", margin: 0 }}>
+              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.55)", margin: 0 }}>
                 Reward: ${bountyMeta.rewardAmount} {bountyMeta.rewardCurrency} · Deadline {bountyMeta.deadline}
               </p>
             </>
@@ -155,7 +155,7 @@ export function SolutionSubmissionShell({
 
         {/* TITLE */}
         <div style={{ height: 32, padding: "0 0 8px 0" }}>
-          <h2 style={{ fontFamily: "Inter, sans-serif", fontSize: 18, fontWeight: 600, color: "rgba(255,255,255,0.92)", margin: 0 }}>
+          <h2 style={{ fontFamily: "Figtree, sans-serif", fontSize: 18, fontWeight: 600, color: "rgba(255,255,255,0.92)", margin: 0 }}>
             {solutionTitle}
           </h2>
         </div>
@@ -176,14 +176,14 @@ export function SolutionSubmissionShell({
               background: "transparent",
               border: "none",
               outline: "none",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               fontWeight: 400,
               fontStyle: "italic",
               color: "rgba(255,255,255,0.85)",
             }}
           />
-          <div className="flex justify-end" style={{ fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.40)", marginTop: 4 }}>
+          <div className="flex justify-end" style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.40)", marginTop: 4 }}>
             {solverNote.length} / 500
           </div>
         </div>
@@ -199,7 +199,7 @@ export function SolutionSubmissionShell({
         >
           {children ?? (
             <div className="flex items-center justify-center" style={{ height: 380 }}>
-              <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontStyle: "italic", color: "rgba(255,255,255,0.40)" }}>
+              <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontStyle: "italic", color: "rgba(255,255,255,0.40)" }}>
                 Editor mounts here in solve mode
               </span>
             </div>
@@ -222,13 +222,13 @@ export function SolutionSubmissionShell({
           <div className="flex items-center gap-3">
             <button
               onClick={onSaveDraft}
-              style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "0.5px solid rgba(255,255,255,0.10)", background: "transparent", color: "rgba(255,255,255,0.85)", cursor: "pointer" }}
+              style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "0.5px solid rgba(255,255,255,0.10)", background: "transparent", color: "rgba(255,255,255,0.85)", cursor: "pointer" }}
             >
               Save draft
             </button>
             <button
               onClick={() => setShowDiscardModal(true)}
-              style={{ fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 500, color: "rgba(239,68,68,0.65)", background: "transparent", border: "none", cursor: "pointer" }}
+              style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 500, color: "rgba(239,68,68,0.65)", background: "transparent", border: "none", cursor: "pointer" }}
             >
               Discard
             </button>
@@ -238,7 +238,7 @@ export function SolutionSubmissionShell({
             onClick={onSubmit}
             disabled={!canSubmit || isSubmitting}
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 12,
               fontWeight: 600,
               padding: "8px 18px",
@@ -259,16 +259,16 @@ export function SolutionSubmissionShell({
       {showDiscardModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.70)" }}>
           <div style={{ width: 380, background: "rgba(22,22,30,1)", borderRadius: 12, border: "0.5px solid rgba(255,255,255,0.10)", padding: 24 }}>
-            <h3 style={{ fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.92)", margin: "0 0 8px 0" }}>
+            <h3 style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.92)", margin: "0 0 8px 0" }}>
               Discard solution draft?
             </h3>
-            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.55)", margin: "0 0 20px 0" }}>
+            <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.55)", margin: "0 0 20px 0" }}>
               Your draft will be permanently deleted.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowDiscardModal(false)}
-                style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "0.5px solid rgba(255,255,255,0.10)", background: "transparent", color: "rgba(255,255,255,0.85)", cursor: "pointer" }}
+                style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "0.5px solid rgba(255,255,255,0.10)", background: "transparent", color: "rgba(255,255,255,0.85)", cursor: "pointer" }}
               >
                 Cancel
               </button>
@@ -277,7 +277,7 @@ export function SolutionSubmissionShell({
                   setShowDiscardModal(false);
                   onDiscard();
                 }}
-                style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "none", background: "rgba(239,68,68,0.85)", color: "#ffffff", cursor: "pointer" }}
+                style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "none", background: "rgba(239,68,68,0.85)", color: "#ffffff", cursor: "pointer" }}
               >
                 Discard
               </button>

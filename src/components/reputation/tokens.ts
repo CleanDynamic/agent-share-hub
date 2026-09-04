@@ -40,6 +40,6 @@ export const tokens = {
 } as const
 
 export const fontSans =
-  "var(--font-inter), 'Inter Fallback', system-ui, sans-serif"
+  "'Figtree', system-ui, sans-serif"
 export const fontMono =
   "var(--font-jetbrains-mono), 'JetBrains Mono Fallback', monospace"

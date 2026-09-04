@@ -46,7 +46,7 @@ export const tokens = {
 
   // Fonts
   fontSans:
-    "'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+    "'Figtree', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
   fontMono: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
 } as const
 

@@ -35,7 +35,7 @@ export function PasswordStrengthMeter({ strength }: PasswordStrengthMeterProps) 
       </div>
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "11px",
           fontWeight: 500,
           color: config.color,

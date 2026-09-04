@@ -97,7 +97,7 @@ const styles = {
   },
   headerIcon: { color: "#2EC4B6", width: 14, height: 14 },
   headerTitle: {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 14,
     fontWeight: 600,
     color: "rgba(255,255,255,0.92)",
@@ -142,12 +142,12 @@ const styles = {
   tabContent: { display: "flex", alignItems: "center", gap: 5 },
   tabIcon: { width: 12, height: 12 },
   tabLabel: {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 12,
     fontWeight: 500,
   },
   tabCount: {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 9,
     fontWeight: 400,
     color: "rgba(255,255,255,0.30)",
@@ -172,7 +172,7 @@ const styles = {
     background: "none",
     border: "none",
     outline: "none",
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 13,
     fontWeight: 400,
     color: "rgba(255,255,255,0.92)",
@@ -215,7 +215,7 @@ const styles = {
     gap: 1,
   },
   resultTitle: {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 12,
     fontWeight: 500,
     color: "rgba(255,255,255,0.85)",
@@ -224,7 +224,7 @@ const styles = {
     textOverflow: "ellipsis",
   },
   resultSubtitle: {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 11,
     fontWeight: 400,
     color: "rgba(255,255,255,0.45)",
@@ -239,7 +239,7 @@ const styles = {
     flexShrink: 0,
   },
   typePill: {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 9,
     fontWeight: 500,
     color: "rgba(255,255,255,0.55)",
@@ -257,7 +257,7 @@ const styles = {
     flexShrink: 0,
   },
   statsText: {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 10,
     fontWeight: 400,
     color: "rgba(255,255,255,0.40)",
@@ -270,7 +270,7 @@ const styles = {
     flexShrink: 0,
   },
   blockTypeLabel: {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 9,
     fontWeight: 600,
     textTransform: "uppercase" as const,
@@ -287,13 +287,13 @@ const styles = {
   },
   emptyIcon: { width: 48, height: 48, color: "rgba(255,255,255,0.20)" },
   emptyTitle: {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 13,
     fontWeight: 500,
     color: "rgba(255,255,255,0.60)",
   },
   emptyDescription: {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 12,
     fontWeight: 400,
     color: "rgba(255,255,255,0.35)",
@@ -308,7 +308,7 @@ const styles = {
     borderTop: "0.5px solid rgba(255,255,255,0.10)",
   },
   footerText: {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 11,
     fontWeight: 400,
     color: "rgba(255,255,255,0.40)",

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MentionInput } from "@/components/MentionInput";
+import { FIGTREE, type } from "@/lib/theme/type";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -1000,7 +1001,7 @@ const PromptBlockEditor = ({ block, update, index }: {
           border: '1px solid rgba(255, 255, 255, 0.14)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
           color: 'rgba(255,255,255,0.60)', outline: 'none',
-          resize: 'vertical', fontFamily: 'Inter, sans-serif',
+          resize: 'vertical', fontFamily: 'Figtree, sans-serif',
           lineHeight: 1.6, boxSizing: 'border-box',
         }} />
     </div>
@@ -1323,7 +1324,7 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
                   border: '1px solid rgba(255, 255, 255, 0.14)',
                   borderRadius: 6, padding: '6px 8px', fontSize: 12,
                   color: 'rgba(255,255,255,0.70)', outline: 'none',
-                  resize: 'vertical', fontFamily: 'Inter, sans-serif',
+                  resize: 'vertical', fontFamily: 'Figtree, sans-serif',
                   boxSizing: 'border-box',
                 }} />
 
@@ -1458,7 +1459,7 @@ const CodeBlockEditor = ({ block, update, index }: {
           border: '1px solid rgba(255, 255, 255, 0.14)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
           color: 'rgba(255,255,255,0.70)', outline: 'none',
-          resize: 'vertical', fontFamily: 'Inter',
+          resize: 'vertical', fontFamily: 'Figtree',
           boxSizing: 'border-box',
         }} />
 
@@ -1495,7 +1496,7 @@ const ResultBlockEditor = ({ block, update, index }: {
         border: '1px solid rgba(239,68,68,0.15)',
         borderRadius: 8, padding: '8px 10px', fontSize: 13,
         color: 'rgba(255,255,255,0.80)', outline: 'none',
-        resize: 'vertical', fontFamily: 'Inter',
+        resize: 'vertical', fontFamily: 'Figtree',
         boxSizing: 'border-box',
       }} />
 
@@ -1510,7 +1511,7 @@ const ResultBlockEditor = ({ block, update, index }: {
           border: '1px solid rgba(34,197,94,0.15)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
           color: 'rgba(255,255,255,0.85)', outline: 'none',
-          resize: 'vertical', fontFamily: 'Inter',
+          resize: 'vertical', fontFamily: 'Figtree',
           boxSizing: 'border-box',
         }} />
       <button type="button"
@@ -1534,7 +1535,7 @@ const ResultBlockEditor = ({ block, update, index }: {
         border: '1px solid rgba(255, 255, 255, 0.14)',
         borderRadius: 8, padding: '7px 10px', fontSize: 13,
         color: 'rgba(255,255,255,0.70)', outline: 'none',
-        resize: 'vertical', fontFamily: 'Inter',
+        resize: 'vertical', fontFamily: 'Figtree',
         boxSizing: 'border-box',
       }} />
 
@@ -1618,7 +1619,7 @@ const ComparisonBlockEditor = ({ block, update, index }: {
           color: type === 'code' ? '#A5F3FC' : 'rgba(255,255,255,0.80)',
           outline: 'none', resize: 'vertical',
           fontFamily: type === 'code' || type === 'prompt'
-            ? 'Courier New, monospace' : 'Inter',
+            ? 'Courier New, monospace' : FIGTREE,
           boxSizing: 'border-box',
         }} />
     </div>
@@ -1671,7 +1672,7 @@ const ComparisonBlockEditor = ({ block, update, index }: {
           border: '1px solid rgba(255, 255, 255, 0.14)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
           color: 'rgba(255,255,255,0.70)', outline: 'none',
-          resize: 'vertical', fontFamily: 'Inter',
+          resize: 'vertical', fontFamily: 'Figtree',
           boxSizing: 'border-box',
         }} />
     </div>
@@ -1739,7 +1740,7 @@ const ResourceBlockEditor = ({ block, update, index }: {
           border: '1px solid rgba(255, 255, 255, 0.14)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
           color: 'rgba(255,255,255,0.70)', outline: 'none',
-          resize: 'vertical', fontFamily: 'Inter',
+          resize: 'vertical', fontFamily: 'Figtree',
           boxSizing: 'border-box',
         }} />
 
@@ -2149,7 +2150,7 @@ const TutorialStepEditor = ({ block, update, index }: {
           borderBottom: '1px solid rgba(255,255,255,0.07)',
           fontSize: 14, color: 'rgba(255,255,255,0.70)',
           outline: 'none', resize: 'none', padding: '4px 0',
-          fontFamily: 'Inter, sans-serif', lineHeight: 1.65,
+          fontFamily: 'Figtree, sans-serif', lineHeight: 1.65,
           boxSizing: 'border-box',
         }}
       />
@@ -2176,9 +2177,8 @@ const SectionHeadingEditor = ({
         background: 'transparent',
         border: 'none',
         borderBottom: '2px solid rgba(139,69,19,0.35)',
-        fontSize: 18,
-        fontWeight: 700,
-        fontFamily: "'Playfair Display', Georgia, serif",
+
+        ...type.cardTitle,
         color: 'rgba(255,255,255,0.90)',
         outline: 'none',
         padding: '4px 0',
@@ -2264,8 +2264,7 @@ const GroupBlockEditor = ({
           style={{
             flex: 1,
             background: 'transparent', border: 'none',
-            fontSize: 13, fontWeight: 600,
-            fontFamily: "'Playfair Display', Georgia, serif",
+            ...type.cardTitle,
             color: 'rgba(255,255,255,0.80)', outline: 'none',
           }}
         />

@@ -26,7 +26,6 @@ interface StageGridFrameProps {
   onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-
 export function StageGridFrame({
   stageNumber,
   stageName,
@@ -144,7 +143,7 @@ export function StageGridFrame({
               borderRadius: '50%',
               background: 'rgba(232,87,26,0.18)',
               color: '#E8571A',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 10,
               fontWeight: 600,
               lineHeight: 1,
@@ -162,7 +161,7 @@ export function StageGridFrame({
               onKeyDown={handleKeyDown}
               placeholder="Untitled stage"
               className="flex-1 bg-transparent text-[13px] font-medium text-white/85 outline-none border-b border-white/20 py-0.5 pointer-events-auto placeholder:italic placeholder:text-white/30"
-              style={{ fontFamily: 'Inter, sans-serif' }}
+              style={{ fontFamily: 'Figtree, sans-serif' }}
             />
           ) : (
             <button
@@ -170,7 +169,7 @@ export function StageGridFrame({
               onClick={() => setIsEditing(true)}
               className="flex-1 text-left truncate transition-colors pointer-events-auto hover:text-white"
               style={{
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 fontSize: 13,
                 fontWeight: stageName ? 600 : 500,
                 fontStyle: stageName ? 'normal' : 'italic',
@@ -185,7 +184,7 @@ export function StageGridFrame({
           <span
             className="flex-shrink-0 pointer-events-none"
             style={{
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 10,
               color: 'rgba(255,255,255,0.45)',
             }}

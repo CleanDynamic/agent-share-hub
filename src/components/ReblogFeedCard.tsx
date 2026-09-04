@@ -1,3 +1,5 @@
+import { type } from "@/lib/theme/type";
+
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -200,7 +202,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
               fontSize: 14, lineHeight: 1.65,
               color: 'rgba(255,255,255,0.70)',
               margin: '8px 0 0 0',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
             }}>
               {post.description}
             </p>
@@ -298,10 +300,9 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
 
             {/* Original title */}
             <div style={{
-              fontSize: 14, fontWeight: 700,
               color: 'rgba(255,255,255,0.85)',
-              lineHeight: 1.3, marginBottom: 4,
-              fontFamily: "'Playfair Display', Georgia, serif",
+               marginBottom: 4,
+              ...type.cardTitle,
               overflow: 'hidden',
               display: '-webkit-box',
               WebkitLineClamp: 2,

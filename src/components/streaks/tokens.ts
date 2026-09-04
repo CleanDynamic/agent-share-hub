@@ -32,7 +32,7 @@ export const RADIUS = {
 } as const
 
 export const FONT = {
-  sans: "Inter, ui-sans-serif, system-ui, sans-serif",
+  sans: "Figtree, ui-sans-serif, system-ui, sans-serif",
   mono: "'JetBrains Mono', ui-monospace, SFMono-Regular, monospace",
 } as const
 

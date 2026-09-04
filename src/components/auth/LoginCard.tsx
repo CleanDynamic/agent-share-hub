@@ -71,7 +71,7 @@ export function LoginCard({
             border: "none",
             padding: 0,
             marginBottom: "16px",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "13px",
             fontWeight: 500,
             color: "rgba(255, 255, 255, 0.55)",
@@ -126,7 +126,7 @@ export function LoginCard({
                   background: "none",
                   border: "none",
                   padding: 0,
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: "12px",
                   fontWeight: 500,
                   color: "#E8571A",
@@ -144,7 +144,7 @@ export function LoginCard({
           <p
             style={{
               marginTop: "14px",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 400,
               color: "#ef4444",
@@ -169,7 +169,7 @@ export function LoginCard({
         style={{
           marginTop: "20px",
           textAlign: "center",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
           fontWeight: 400,
           color: "rgba(255, 255, 255, 0.55)",

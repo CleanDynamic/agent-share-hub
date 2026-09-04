@@ -56,6 +56,7 @@ import {
   pageHeadingText,
   titleText,
 } from "@/components/build/tokens";
+import { measure } from "@/lib/theme/type";
 
 /** Served from public/buildfile/. Both are plain Markdown, ~5 kB and ~2 kB. */
 const EXTRACTOR_URL = "/buildfile/NEOSCALE_EXTRACTOR.md";
@@ -427,7 +428,7 @@ export default function ImportPage() {
               <h1 style={{ ...pageHeadingText, margin: 0 }}>
                 Post a build without writing it up.
               </h1>
-              <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+              <p style={{ ...bodyText, ...measure, margin: 0, color: TEXT_SECONDARY }}>
                 The chat where you built the thing already knows what you did.
                 Give it the document below and it writes your build up for you —
                 the prompts you sent, the settings you landed on, what worked and
@@ -459,7 +460,7 @@ export default function ImportPage() {
             }}
           >
             <Step ordinal={1} title="Copy the Extractor">
-              <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+              <p style={{ ...bodyText, ...measure, margin: 0, color: TEXT_SECONDARY }}>
                 Paste it into the chat where you built your thing — ChatGPT,
                 Claude, Lovable, Cursor, any of them.
               </p>
@@ -483,7 +484,7 @@ export default function ImportPage() {
                 />
               </div>
               {extractor.failed ? (
-                <p style={{ ...bodyText, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
+                <p style={{ ...bodyText, ...measure, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
                   The document could not be loaded. The download link still serves
                   it, and Copy will try again.
                 </p>
@@ -491,7 +492,7 @@ export default function ImportPage() {
             </Step>
 
             <Step ordinal={2} title="Save what it gives you">
-              <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+              <p style={{ ...bodyText, ...measure, margin: 0, color: TEXT_SECONDARY }}>
                 The AI writes your build up as one file. Save it as a .md or .json
                 file.
               </p>
@@ -502,7 +503,7 @@ export default function ImportPage() {
                 isDragging={drop.isDragging}
                 onFile={(file) => void drop.acceptFile(file)}
               />
-              <p style={{ ...bodyText, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
+              <p style={{ ...bodyText, ...measure, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
                 You see what it found before anything is saved, and nothing is
                 published until you say so.
               </p>
@@ -547,7 +548,7 @@ export default function ImportPage() {
 
             {compilerOpen ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+                <p style={{ ...bodyText, ...measure, margin: 0, color: TEXT_SECONDARY }}>
                   Paste the Compiler plus every Build File into one chat; it merges
                   them into one.
                 </p>
@@ -567,7 +568,7 @@ export default function ImportPage() {
                   <DownloadLink href={COMPILER_URL} filename={COMPILER_FILENAME} />
                 </div>
                 {compiler.failed ? (
-                  <p style={{ ...bodyText, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
+                  <p style={{ ...bodyText, ...measure, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
                     The document could not be loaded. The download link still
                     serves it, and Copy will try again.
                   </p>

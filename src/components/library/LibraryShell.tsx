@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { CollectionCard, type CollectionMenuAction } from "./CollectionCard";
 import type { CollectionPreview, SavedItem } from "@/lib/library/types";
+import { type } from "@/lib/theme/type";
 
 export type ViewMode = "collections" | "all";
 export type TypeFilter =
@@ -131,7 +132,7 @@ export function LibraryShell({
                   color: "#E8571A",
                   borderRadius: 8,
                   padding: "8px 14px",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: "pointer",
@@ -170,7 +171,6 @@ export function LibraryShell({
         </>
       )}
 
-
       {/* Filter strip — collections */}
       {activeView === "collections" && hasCollections && (
         <div
@@ -205,7 +205,7 @@ export function LibraryShell({
                 border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: 6,
                 padding: "0 28px 0 32px",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 12,
                 color: "rgba(255,255,255,0.9)",
                 outline: "none",
@@ -251,7 +251,7 @@ export function LibraryShell({
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 11,
                 color: "rgba(255,255,255,0.45)",
                 textTransform: "uppercase",
@@ -268,7 +268,7 @@ export function LibraryShell({
                   key={f.value}
                   onClick={() => onTypeFilterChange(f.value)}
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 11,
                     fontWeight: 500,
                     padding: "4px 10px",
@@ -354,7 +354,7 @@ function TabButton({
         border: "none",
         cursor: "pointer",
         color: isActive ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.55)",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 13,
         fontWeight: 500,
       }}
@@ -409,7 +409,7 @@ function SortDropdown({
           border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: 6,
           padding: "6px 28px 6px 10px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 12,
           color: "rgba(255,255,255,0.7)",
           cursor: "pointer",
@@ -568,7 +568,7 @@ function SavedItemCard({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 10,
           fontWeight: 700,
           textTransform: "uppercase",
@@ -581,7 +581,7 @@ function SavedItemCard({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 13,
             fontWeight: 500,
             color: "rgba(255,255,255,0.92)",
@@ -598,7 +598,7 @@ function SavedItemCard({
             gap: 6,
             flexWrap: "wrap",
             marginTop: 3,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             color: "rgba(255,255,255,0.5)",
           }}
@@ -631,7 +631,7 @@ function SavedItemCard({
             padding: "6px 10px",
             cursor: "pointer",
             color: "rgba(255,255,255,0.85)",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             display: "inline-flex",
             alignItems: "center",
@@ -697,8 +697,8 @@ function EmptyState({
       </div>
       <h2
         style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: 20,
+          ...type.cardTitle,
+
           color: "rgba(255,255,255,0.92)",
           margin: 0,
         }}
@@ -707,7 +707,7 @@ function EmptyState({
       </h2>
       <p
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 13,
           margin: "8px 0 0",
           maxWidth: 420,
@@ -725,7 +725,7 @@ function EmptyState({
             color: "#E8571A",
             borderRadius: 8,
             padding: "8px 14px",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 13,
             fontWeight: 500,
             cursor: "pointer",

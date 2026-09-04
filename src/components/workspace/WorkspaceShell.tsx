@@ -402,7 +402,7 @@ function NavTool() {
                 border: 'none',
                 background: 'transparent',
                 color: 'rgba(255,255,255,0.75)',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 fontSize: 13,
                 cursor: 'pointer',
                 textAlign: 'left',

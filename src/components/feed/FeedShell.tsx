@@ -114,7 +114,7 @@ function UserAvatar({ avatarUrl, initials }: { avatarUrl?: string; initials: str
         color: "#fff",
         fontSize: 12,
         fontWeight: 600,
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
       }}
     >
       {avatarUrl ? (
@@ -157,7 +157,7 @@ function ComposeStrip({
           border: "none",
           padding: 0,
           cursor: "pointer",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
         }}
       >
         Share something…
@@ -174,7 +174,7 @@ function ComposeStrip({
           fontSize: 12,
           fontWeight: 600,
           cursor: "pointer",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
         }}
       >
         <PlusCircle className="h-3.5 w-3.5" />
@@ -205,7 +205,7 @@ function ActiveCompetitionsStrip({
               fontWeight: 600,
               color: "rgba(255,255,255,0.85)",
               letterSpacing: "0.04em",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
             }}
           >
             Active competitions
@@ -240,7 +240,7 @@ function ActiveCompetitionsStrip({
               background: "rgba(232,87,26,0.06)",
               border: "1px solid rgba(232,87,26,0.25)",
               cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
             }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -344,7 +344,7 @@ function FeedTabBar({
               textAlign: "center",
               whiteSpace: "nowrap",
               padding: "10px 4px",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               fontWeight: 500,
               color: activeTab === tab.key ? "#E8571A" : "rgba(255,255,255,0.55)",
@@ -382,7 +382,7 @@ function FeedTabBar({
               fontWeight: 700,
               letterSpacing: "0.1em",
               color: "rgba(232,87,26,0.85)",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               whiteSpace: "nowrap",
             }}
           >
@@ -421,7 +421,7 @@ function NewPostsPill({
         fontWeight: 600,
         boxShadow: "0 6px 20px rgba(232,87,26,0.4)",
         cursor: "pointer",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
       }}
     >
       <ChevronUp className="h-3.5 w-3.5" />
@@ -528,7 +528,7 @@ export function FeedEmptyState({
       </div>
       <div
         style={{
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: "'Figtree', sans-serif",
           fontSize: 18,
           fontWeight: 600,
           color: "rgba(255,255,255,0.92)",
@@ -539,7 +539,7 @@ export function FeedEmptyState({
       </div>
       <p
         style={{
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: "'Figtree', sans-serif",
           fontSize: 13,
           fontWeight: 400,
           lineHeight: 1.55,
@@ -563,7 +563,7 @@ export function FeedEmptyState({
             fontSize: 13,
             fontWeight: 600,
             cursor: "pointer",
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: "'Figtree', sans-serif",
           }}
         >
           {e.cta}

@@ -25,6 +25,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { notifyEngagement } from "@/lib/notifications";
 import { toast } from "sonner";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { BODONI, type } from "@/lib/theme/type";
 
 const lowlight = createLowlight(common);
 
@@ -201,7 +202,7 @@ export function BlogView({ item }: BlogViewProps) {
                 <span
                   style={{
                     color: "rgba(255,255,255,0.55)",
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 12,
                     fontWeight: 600,
                   }}
@@ -213,7 +214,7 @@ export function BlogView({ item }: BlogViewProps) {
             <div className="flex flex-col items-start leading-tight">
               <span
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   fontWeight: 500,
                   color: "rgba(255,255,255,0.92)",
@@ -223,7 +224,7 @@ export function BlogView({ item }: BlogViewProps) {
               </span>
               <span
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 11,
                   fontWeight: 400,
                   color: "rgba(255,255,255,0.45)",
@@ -243,10 +244,8 @@ export function BlogView({ item }: BlogViewProps) {
         {/* Title */}
         <h1
           style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 36,
-            fontWeight: 700,
-            lineHeight: 1.15,
+            ...type.sectionHead,
+
             color: "rgba(255,255,255,0.96)",
             margin: 0,
           }}
@@ -258,7 +257,7 @@ export function BlogView({ item }: BlogViewProps) {
         {item.subtitle && (
           <p
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 18,
               fontStyle: "italic",
               fontWeight: 400,
@@ -288,7 +287,7 @@ export function BlogView({ item }: BlogViewProps) {
                   background: "rgba(46,196,182,0.08)",
                   border: "0.5px solid rgba(46,196,182,0.20)",
                   color: "rgba(46,196,182,0.95)",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 11,
                   fontWeight: 500,
                 }}
@@ -356,7 +355,7 @@ export function BlogView({ item }: BlogViewProps) {
                 <span
                   style={{
                     color: "rgba(255,255,255,0.55)",
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 18,
                     fontWeight: 600,
                   }}
@@ -373,7 +372,7 @@ export function BlogView({ item }: BlogViewProps) {
                   border: 0,
                   padding: 0,
                   cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 14,
                   fontWeight: 600,
                   color: "rgba(255,255,255,0.92)",
@@ -384,7 +383,7 @@ export function BlogView({ item }: BlogViewProps) {
               {authorHandle && (
                 <span
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 12,
                     fontWeight: 400,
                     color: "rgba(255,255,255,0.45)",
@@ -397,7 +396,7 @@ export function BlogView({ item }: BlogViewProps) {
               {creator.bio && (
                 <p
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 13,
                     fontWeight: 400,
                     color: "rgba(255,255,255,0.65)",
@@ -420,7 +419,7 @@ export function BlogView({ item }: BlogViewProps) {
       {/* Blog body styles — match the editor's writing surface. */}
       <style>{`
         .blog-view-prose .ProseMirror {
-          font-family: Inter, sans-serif;
+          font-family: Figtree, sans-serif;
           font-size: 16px;
           line-height: 1.85;
           color: rgba(255,255,255,0.86);
@@ -429,7 +428,7 @@ export function BlogView({ item }: BlogViewProps) {
         .blog-view-prose .ProseMirror > * + * { margin-top: 1.1em; }
         .blog-view-prose .ProseMirror h1,
         .blog-view-prose .ProseMirror h2 {
-          font-family: 'Playfair Display', serif;
+          font-family: ${BODONI};
           font-weight: 700;
           color: rgba(255,255,255,0.94);
           line-height: 1.25;
@@ -437,7 +436,7 @@ export function BlogView({ item }: BlogViewProps) {
         .blog-view-prose .ProseMirror h1 { font-size: 28px; margin-top: 1.6em; }
         .blog-view-prose .ProseMirror h2 { font-size: 22px; margin-top: 1.4em; }
         .blog-view-prose .ProseMirror h3 {
-          font-family: Inter, sans-serif;
+          font-family: Figtree, sans-serif;
           font-size: 16px;
           font-weight: 600;
           color: rgba(255,255,255,0.92);
@@ -507,7 +506,7 @@ function EngagementButton({
           ? "0.5px solid rgba(232,87,26,0.40)"
           : "0.5px solid rgba(255,255,255,0.08)",
         color: active ? "#E8571A" : "rgba(255,255,255,0.75)",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 12,
         fontWeight: 500,
         cursor: "pointer",

@@ -50,7 +50,7 @@ function CompetitionTag({
         display: "inline-flex",
         alignItems: "center",
         gap: 4,
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 10,
         fontWeight: 600,
         textTransform: "uppercase",
@@ -90,7 +90,7 @@ function StatCell({
     <div className="flex flex-col gap-1">
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "10px",
           fontWeight: 600,
           textTransform: "uppercase",
@@ -102,7 +102,7 @@ function StatCell({
       </span>
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "22px",
           fontWeight: 700,
           color: "rgba(255,255,255,0.95)",
@@ -112,7 +112,7 @@ function StatCell({
       </span>
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "11px",
           fontWeight: 400,
           color: "rgba(255,255,255,0.40)",
@@ -139,7 +139,7 @@ function BlockTypeBar({
     <div>
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "10px",
           fontWeight: 600,
           textTransform: "uppercase",
@@ -174,7 +174,7 @@ function BlockTypeBar({
                 style={{
                   backgroundColor: "rgba(0,0,0,0.9)",
                   borderRadius: "4px",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: "11px",
                   fontWeight: 500,
                   color: "rgba(255,255,255,0.90)",
@@ -200,7 +200,7 @@ function BlockTypeBar({
             />
             <span
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "10px",
                 fontWeight: 500,
                 color: "rgba(255,255,255,0.60)",
@@ -210,7 +210,7 @@ function BlockTypeBar({
             </span>
             <span
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "10px",
                 fontWeight: 400,
                 color: "rgba(255,255,255,0.35)",

@@ -326,7 +326,7 @@ export function MessagesThreadList({
       >
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "18px",
             fontWeight: 700,
             color: "rgba(255,255,255,0.95)",
@@ -361,7 +361,7 @@ export function MessagesThreadList({
           onClick={() => onTabChange("primary")}
           className="flex flex-1 items-center justify-center gap-1.5"
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "12px",
             fontWeight: 500,
             color:
@@ -381,7 +381,7 @@ export function MessagesThreadList({
           onClick={() => onTabChange("requests")}
           className="flex flex-1 items-center justify-center gap-1.5"
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "12px",
             fontWeight: 500,
             color:
@@ -435,7 +435,7 @@ export function MessagesThreadList({
             placeholder="Search conversations..."
             className="flex-1 bg-transparent outline-none placeholder:text-white/40"
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 400,
               color: "rgba(255,255,255,0.85)",
@@ -456,7 +456,7 @@ export function MessagesThreadList({
                 />
                 <span
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: "13px",
                     fontWeight: 500,
                     color: "rgba(255,255,255,0.70)",
@@ -466,7 +466,7 @@ export function MessagesThreadList({
                 </span>
                 <span
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: "12px",
                     fontWeight: 400,
                     color: "rgba(255,255,255,0.40)",
@@ -478,7 +478,7 @@ export function MessagesThreadList({
             ) : (
               <span
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: "12px",
                   fontWeight: 400,
                   color: "rgba(255,255,255,0.50)",

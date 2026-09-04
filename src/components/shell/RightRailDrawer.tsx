@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { X, Search, ChevronRight } from "lucide-react";
 import { useRightRailData } from "@/hooks/useRightRailData";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { type } from "@/lib/theme/type";
 
 export interface RightRailDrawerProps {
   isOpen: boolean;
@@ -87,7 +88,7 @@ export function RightRailDrawer({ isOpen, onClose, onNavigate }: RightRailDrawer
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 20px 12px" }}>
-          <h2 style={{ margin: 0, fontFamily: "Playfair Display, serif", fontSize: 20, fontWeight: 600, color: "#fff" }}>
+          <h2 style={{ margin: 0, ...type.cardTitle,   color: "#fff" }}>
             Explore
           </h2>
           <button
@@ -122,7 +123,7 @@ export function RightRailDrawer({ isOpen, onClose, onNavigate }: RightRailDrawer
               placeholder="Search across NeoScale"
               style={{
                 flex: 1, background: "transparent", border: "none", outline: "none",
-                fontFamily: "Inter, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.95)",
+                fontFamily: "Figtree, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.95)",
               }}
             />
           </div>
@@ -198,10 +199,10 @@ export function RightRailDrawer({ isOpen, onClose, onNavigate }: RightRailDrawer
 }
 
 const rowTitle: React.CSSProperties = {
-  fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.92)",
+  fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.92)",
 };
 const rowSub: React.CSSProperties = {
-  fontFamily: "Inter, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.50)", marginTop: 2,
+  fontFamily: "Figtree, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.50)", marginTop: 2,
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -209,7 +210,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     <section style={{ marginBottom: 20 }}>
       <div
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 10, fontWeight: 700, letterSpacing: "0.12em",
           textTransform: "uppercase", color: "rgba(255,255,255,0.35)",
           marginBottom: 10,

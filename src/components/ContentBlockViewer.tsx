@@ -9,6 +9,9 @@ import { MentionText } from "@/components/MentionText";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Download, Loader2, Eye, MessageCircle, ChevronRight, ClipboardList, Github, Cloud, ExternalLink } from "lucide-react";
+// A local `type` binding in this file shadows the scale object, so the
+// roles are imported by name.
+import { cardTitle } from "@/lib/theme/type";
 
 // ─── Block icons ────────────────────────────────────────────
 
@@ -55,7 +58,7 @@ function CopyButton({
         color: copied
           ? '#22C55E' : 'rgba(255,255,255,0.45)',
         fontWeight: 600,
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Figtree, sans-serif',
         transition: 'all 0.15s',
         zIndex: 5,
       }}
@@ -329,7 +332,7 @@ export function RenderBlockContent({
       lineHeight: 1.75,
       whiteSpace: 'pre-wrap',
       margin: 0,
-      fontFamily: 'Inter, sans-serif',
+      fontFamily: 'Figtree, sans-serif',
     };
 
     if (isLong) {
@@ -340,13 +343,11 @@ export function RenderBlockContent({
             if (p.startsWith("# ") || (formatting?.type === "heading" && i === 0))
               return (
                 <h3 key={i} style={{
-                  fontFamily: "'Playfair Display', Georgia, serif",
-                  fontSize: isBlogContent ? 20 : 18,
-                  fontWeight: 700,
+                  ...cardTitle,
+
                   color: 'rgba(255,255,255,0.92)',
                   marginTop: 16,
                   marginBottom: 10,
-                  lineHeight: 1.3,
                 }}>{p.replace(/^#\s*/, "")}</h3>
               );
             return (
@@ -442,7 +443,7 @@ export function RenderBlockContent({
       }}>
         <button
           onClick={handleCopy}
-          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)', color: copied ? '#22C55E' : 'rgba(255,255,255,0.50)', cursor: 'pointer', fontFamily: 'Inter' }}
+          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)', color: copied ? '#22C55E' : 'rgba(255,255,255,0.50)', cursor: 'pointer', fontFamily: 'Figtree' }}
         >
           {copied ? 'Copied!' : 'Copy'}
         </button>
@@ -482,7 +483,7 @@ export function RenderBlockContent({
         )}
         <button
           onClick={handleCopy}
-          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)', color: copied ? '#22C55E' : 'rgba(255,255,255,0.50)', cursor: 'pointer', fontFamily: 'Inter' }}
+          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)', color: copied ? '#22C55E' : 'rgba(255,255,255,0.50)', cursor: 'pointer', fontFamily: 'Figtree' }}
         >
           {copied ? 'Copied!' : 'Copy'}
         </button>
@@ -922,7 +923,7 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
           <span style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
             letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
-            fontFamily: 'Inter',
+            fontFamily: 'Figtree',
           }}>
             Install
           </span>{' '}
@@ -1318,7 +1319,7 @@ function renderTypedViewer(block: BlockRow): React.JSX.Element | null {
             <p style={{
               fontSize: 14, lineHeight: 1.70,
               color: 'rgba(255,255,255,0.72)',
-              margin: 0, fontFamily: 'Inter, sans-serif',
+              margin: 0, fontFamily: 'Figtree, sans-serif',
             }}>
               {tutorialText}
             </p>
@@ -1510,12 +1511,10 @@ export function ContentBlockViewer({
                     marginBottom: 14,
                   }} />
                   <h2 style={{
-                    fontFamily: "'Playfair Display', Georgia, serif",
-                    fontSize: 20,
-                    fontWeight: 700,
+                    ...cardTitle,
+
                     color: 'rgba(255,255,255,0.92)',
                     margin: 0,
-                    lineHeight: 1.25,
                   }}>
                     {block.text_content}
                   </h2>
@@ -1628,12 +1627,10 @@ export function ContentBlockViewer({
                           {block.subheading ? (
                             /* Custom title — Playfair heading */
                             <h3 style={{
-                              fontFamily: "'Playfair Display', Georgia, serif",
-                              fontSize: 18,
-                              fontWeight: 700,
+                              ...cardTitle,
+
                               color: 'rgba(255,255,255,0.92)',
                               margin: '0 0 14px 0',
-                              lineHeight: 1.3,
                             }}>
                               {block.subheading}
                             </h3>
@@ -1647,7 +1644,7 @@ export function ContentBlockViewer({
                                 fontWeight: 600,
                                 color: 'rgba(255,255,255,0.45)',
                                 marginBottom: 12,
-                                fontFamily: 'Inter, sans-serif',
+                                fontFamily: 'Figtree, sans-serif',
                               }}>
                                 {getBlockType(effectiveType).label}
                               </div>
@@ -1768,10 +1765,10 @@ export function ContentBlockViewer({
                       ▤ Group
                     </div>
                     <h3 style={{
-                      fontFamily: "'Playfair Display', Georgia, serif",
-                      fontSize: 16, fontWeight: 700,
+                      ...cardTitle,
+
                       color: 'rgba(255,255,255,0.88)',
-                      margin: 0, lineHeight: 1.3,
+                      margin: 0,
                     }}>
                       {item.title}
                     </h3>

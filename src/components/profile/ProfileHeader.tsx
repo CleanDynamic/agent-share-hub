@@ -13,6 +13,7 @@ import {
 import type { ProfileLevel, ProfileSummary } from "@/lib/profile/types";
 import LevelRing from "@/components/profile-game/LevelRing";
 import CreatorMarkChip, { type CreatorMark } from "@/components/profile-game/CreatorMarkChip";
+import { type } from "@/lib/theme/type";
 
 interface ProfileHeaderProps {
   profile: ProfileSummary;
@@ -67,7 +68,7 @@ function LevelBadge({ level }: { level: ProfileLevel }) {
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider ${className}`}
-      style={{ fontFamily: "Inter, sans-serif" }}
+      style={{ fontFamily: "Figtree, sans-serif" }}
     >
       {label}
     </span>
@@ -170,7 +171,7 @@ export function ProfileHeader({
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1
                     className="text-xl sm:text-2xl font-semibold text-foreground truncate"
-                    style={{ fontFamily: "Playfair Display, serif" }}
+                    style={{ ...type.cardTitle,}}
                   >
                     {profile.displayName}
                   </h1>
@@ -182,7 +183,7 @@ export function ProfileHeader({
                     <span
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
                       style={{
-                        fontFamily: "Inter, sans-serif",
+                        fontFamily: "Figtree, sans-serif",
                         backgroundColor: "hsl(var(--accent) / 0.15)",
                         color: "hsl(var(--accent-foreground))",
                       }}
@@ -195,7 +196,7 @@ export function ProfileHeader({
                 </div>
                 <p
                   className="text-sm text-muted-foreground"
-                  style={{ fontFamily: "Inter, sans-serif" }}
+                  style={{ fontFamily: "Figtree, sans-serif" }}
                 >
                   @{profile.handle}
                 </p>
@@ -221,7 +222,7 @@ export function ProfileHeader({
                   type="button"
                   onClick={onEditProfile}
                   className={`${ghostBtn} px-3 py-1.5 text-xs font-medium`}
-                  style={{ fontFamily: "Inter, sans-serif" }}
+                  style={{ fontFamily: "Figtree, sans-serif" }}
                 >
                   Edit profile
                 </button>
@@ -244,7 +245,7 @@ export function ProfileHeader({
                     onMouseLeave={() => setFollowHover(false)}
                     className="px-4 py-1.5 rounded-md text-xs font-semibold transition-colors"
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       background: followHover
                         ? "hsl(var(--destructive) / 0.15)"
                         : "hsl(var(--accent) / 0.10)",
@@ -260,7 +261,7 @@ export function ProfileHeader({
                     type="button"
                     onClick={onFollow}
                     className="px-4 py-1.5 rounded-md text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-                    style={{ fontFamily: "Inter, sans-serif" }}
+                    style={{ fontFamily: "Figtree, sans-serif" }}
                   >
                     Follow
                   </button>
@@ -269,7 +270,7 @@ export function ProfileHeader({
                   type="button"
                   onClick={onMessage}
                   className={`${ghostBtn} px-3 py-1.5 text-xs font-medium`}
-                  style={{ fontFamily: "Inter, sans-serif" }}
+                  style={{ fontFamily: "Figtree, sans-serif" }}
                 >
                   <MessageCircle size={14} />
                   Message
@@ -292,7 +293,7 @@ export function ProfileHeader({
                           setMenuOpen(false);
                         }}
                         className="w-full text-left px-3 py-2 text-[13px] text-foreground/75 hover:bg-white/5"
-                        style={{ fontFamily: "Inter, sans-serif" }}
+                        style={{ fontFamily: "Figtree, sans-serif" }}
                       >
                         Block user
                       </button>
@@ -303,7 +304,7 @@ export function ProfileHeader({
                           setMenuOpen(false);
                         }}
                         className="w-full text-left px-3 py-2 text-[13px] text-foreground/75 hover:bg-white/5"
-                        style={{ fontFamily: "Inter, sans-serif" }}
+                        style={{ fontFamily: "Figtree, sans-serif" }}
                       >
                         Report user
                       </button>
@@ -314,7 +315,7 @@ export function ProfileHeader({
                           setMenuOpen(false);
                         }}
                         className="w-full text-left px-3 py-2 text-[13px] text-foreground/75 hover:bg-white/5"
-                        style={{ fontFamily: "Inter, sans-serif" }}
+                        style={{ fontFamily: "Figtree, sans-serif" }}
                       >
                         Copy profile link
                       </button>
@@ -332,13 +333,13 @@ export function ProfileHeader({
             {profile.derivedBio && (
               <div className="flex items-start gap-2 text-sm text-foreground/80">
                 <Sparkles size={14} className="mt-0.5 text-primary shrink-0" />
-                <span style={{ fontFamily: "Inter, sans-serif" }}>{profile.derivedBio}</span>
+                <span style={{ fontFamily: "Figtree, sans-serif" }}>{profile.derivedBio}</span>
               </div>
             )}
             {profile.customBio && (
               <p
                 className="text-sm text-foreground/85 whitespace-pre-wrap"
-                style={{ fontFamily: "Inter, sans-serif" }}
+                style={{ fontFamily: "Figtree, sans-serif" }}
               >
                 {profile.customBio}
               </p>
@@ -349,7 +350,7 @@ export function ProfileHeader({
         {/* Meta Row */}
         <div
           className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground"
-          style={{ fontFamily: "Inter, sans-serif" }}
+          style={{ fontFamily: "Figtree, sans-serif" }}
         >
           <span className="inline-flex items-center gap-1">
             <Calendar size={12} />
@@ -383,7 +384,7 @@ export function ProfileHeader({
         {/* Stats Strip */}
         <div
           className="mt-4 pt-4 border-t border-white/5 flex flex-wrap items-center gap-x-5 gap-y-2"
-          style={{ fontFamily: "Inter, sans-serif" }}
+          style={{ fontFamily: "Figtree, sans-serif" }}
         >
           {(
             [
@@ -440,7 +441,7 @@ function AvatarInner({
   return (
     <div
       className="w-full h-full flex items-center justify-center text-3xl font-semibold text-foreground/70 bg-gradient-to-br from-primary/30 to-accent/30"
-      style={{ fontFamily: "Playfair Display, serif" }}
+      style={{ ...type.sectionHead,}}
     >
       {initials}
     </div>

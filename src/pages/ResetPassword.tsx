@@ -232,7 +232,7 @@ export default function ResetPassword() {
             <h2
               style={{
                 marginTop: "20px",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "16px",
                 fontWeight: 600,
                 color: "rgba(255, 255, 255, 0.92)",
@@ -243,7 +243,7 @@ export default function ResetPassword() {
             <p
               style={{
                 marginTop: "6px",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "13px",
                 color: "rgba(255, 255, 255, 0.60)",
               }}
@@ -341,7 +341,7 @@ function SentConfirmation({ email, onBackToSignIn }: SentConfirmationProps) {
       <h2
         style={{
           margin: 0,
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "18px",
           fontWeight: 700,
           color: "rgba(255, 255, 255, 0.95)",
@@ -352,7 +352,7 @@ function SentConfirmation({ email, onBackToSignIn }: SentConfirmationProps) {
       <p
         style={{
           marginTop: "8px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "13px",
           fontWeight: 400,
           lineHeight: 1.55,
@@ -371,7 +371,7 @@ function SentConfirmation({ email, onBackToSignIn }: SentConfirmationProps) {
           background: "none",
           border: "none",
           padding: 0,
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "13px",
           fontWeight: 500,
           color: "#E8571A",
@@ -403,7 +403,7 @@ function ResetLinkError({ onRequestNew, onBackToSignIn }: ResetLinkErrorProps) {
       <h2
         style={{
           marginTop: "20px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "18px",
           fontWeight: 700,
           color: "rgba(255, 255, 255, 0.95)",
@@ -414,7 +414,7 @@ function ResetLinkError({ onRequestNew, onBackToSignIn }: ResetLinkErrorProps) {
       <p
         style={{
           marginTop: "8px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "13px",
           fontWeight: 400,
           lineHeight: 1.55,
@@ -434,7 +434,7 @@ function ResetLinkError({ onRequestNew, onBackToSignIn }: ResetLinkErrorProps) {
           borderRadius: "10px",
           background: "linear-gradient(135deg, #E8571A 0%, #C44514 100%)",
           border: "none",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "14px",
           fontWeight: 600,
           color: "#FFFFFF",
@@ -451,7 +451,7 @@ function ResetLinkError({ onRequestNew, onBackToSignIn }: ResetLinkErrorProps) {
           background: "none",
           border: "none",
           padding: 0,
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "13px",
           fontWeight: 500,
           color: "#E8571A",

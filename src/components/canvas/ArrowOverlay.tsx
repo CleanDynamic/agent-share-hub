@@ -327,7 +327,7 @@ export function ArrowOverlay({
                   textAnchor="middle"
                   fontSize={9}
                   fontWeight={700}
-                  fontFamily="Inter, sans-serif"
+                  fontFamily="'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
                   fill={arrow.color ?? meta.color}
                   letterSpacing={0.5}
                 >
@@ -472,7 +472,7 @@ export function ArrowOverlay({
                   background: 'rgba(255,255,255,0.08)',
                   color: '#fff',
                   fontSize: 11,
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'Figtree, sans-serif',
                   border: '1px solid rgba(255,255,255,0.10)',
                   borderRadius: 6,
                   padding: '6px 8px',

@@ -39,7 +39,7 @@ export function MissingStageBadge({
       <Puzzle size={32} style={{ color: 'rgba(245,158,11,0.85)' }} strokeWidth={1.5} />
       <span
         style={{
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           fontSize: 14,
           fontWeight: 600,
           color: 'rgba(255,255,255,0.85)',
@@ -50,7 +50,7 @@ export function MissingStageBadge({
       <p
         className="text-center"
         style={{
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           fontSize: 12,
           fontWeight: 400,
           color: 'rgba(255,255,255,0.55)',
@@ -63,7 +63,7 @@ export function MissingStageBadge({
       </p>
       <span
         style={{
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           fontSize: 10,
           fontWeight: 600,
           letterSpacing: '0.06em',

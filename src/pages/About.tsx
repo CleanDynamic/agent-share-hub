@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { SeoHead } from "@/components/SeoHead";
+import { measure } from "@/lib/theme/type";
 
 const About = () => {
   return (
@@ -16,19 +17,19 @@ const About = () => {
         <div className="space-y-6">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">About NeoScale AI</h1>
 
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className="text-sm text-muted-foreground leading-relaxed" style={measure}>
             NeoScale AI is the community hub for people who want to use AI — not just talk about it.
             Like Football Manager tactics forums, we let experts share the AI setups they have already
             built so that anyone — technical or not — can download and use them immediately.
           </p>
 
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className="text-sm text-muted-foreground leading-relaxed" style={measure}>
             Everything on the platform is AI-agnostic. Whether you use ChatGPT, Gemini, Claude,
             Grok, or something else entirely, the content here is built to work with your tools.
             Every item is reviewed before it goes live. No junk, no untested prompts.
           </p>
 
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className="text-sm text-muted-foreground leading-relaxed" style={measure}>
             The platform is free to browse and download. Creators who invest time building
             high-quality content have five ways to earn from it: donations, subscriptions, direct
             sales, personalised commissions, and a share of ad revenue as the platform grows.
@@ -60,7 +61,7 @@ const About = () => {
         {/* For Creators */}
         <div className="border-t border-border pt-10 space-y-4">
           <h2 className="text-lg font-semibold text-foreground">For Creators</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className="text-sm text-muted-foreground leading-relaxed" style={measure}>
             Want to share your work and earn from it? The Upload page is open
             to everyone. We review every submission before it goes live. Quality over quantity, always.
           </p>

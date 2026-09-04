@@ -103,7 +103,7 @@ function Avatar({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 12,
           fontWeight: 600,
           flexShrink: 0,
@@ -401,7 +401,7 @@ export function NotificationCard({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 13,
             fontWeight: 500,
             color: "rgba(255,255,255,0.92)",
@@ -416,7 +416,7 @@ export function NotificationCard({
           <div
             style={{
               marginTop: 4,
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 12,
               color: "rgba(255,255,255,0.55)",
               lineHeight: 1.5,
@@ -433,7 +433,7 @@ export function NotificationCard({
         <div
           style={{
             marginTop: 6,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             color: "rgba(255,255,255,0.40)",
           }}
@@ -465,7 +465,7 @@ export function NotificationCard({
               ? "0.5px solid rgba(232,87,26,0.40)"
               : "0.5px solid rgba(255,255,255,0.10)",
             color: isFollowBack ? "#E8571A" : "rgba(255,255,255,0.85)",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             fontWeight: 600,
             padding: "4px 9px",
@@ -521,7 +521,7 @@ export function NotificationGroupHeader({ label }: { label: string }) {
         marginTop: 14,
         marginBottom: 6,
         paddingLeft: 4,
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 11,
         fontWeight: 600,
         textTransform: "uppercase",

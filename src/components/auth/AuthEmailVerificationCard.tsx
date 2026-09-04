@@ -46,7 +46,7 @@ export function AuthEmailVerificationCard({
       <h2
         style={{
           marginTop: "20px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "18px",
           fontWeight: 700,
           color: "rgba(255, 255, 255, 0.95)",
@@ -58,7 +58,7 @@ export function AuthEmailVerificationCard({
       <p
         style={{
           marginTop: "8px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "13px",
           fontWeight: 400,
           lineHeight: 1.55,
@@ -81,7 +81,7 @@ export function AuthEmailVerificationCard({
       >
         <p
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "12px",
             fontWeight: 400,
             color: "rgba(255, 255, 255, 0.45)",
@@ -95,7 +95,7 @@ export function AuthEmailVerificationCard({
           <p
             style={{
               marginTop: "8px",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "13px",
               fontWeight: 500,
               color: "#22C55E",
@@ -108,7 +108,7 @@ export function AuthEmailVerificationCard({
           <p
             style={{
               marginTop: "8px",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "13px",
               fontWeight: 500,
               color: "rgba(255, 255, 255, 0.45)",
@@ -126,7 +126,7 @@ export function AuthEmailVerificationCard({
               background: "none",
               border: "none",
               padding: 0,
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "13px",
               fontWeight: 500,
               color: resendState === "sending" ? "rgba(232, 87, 26, 0.5)" : "#E8571A",
@@ -145,7 +145,7 @@ export function AuthEmailVerificationCard({
       <p
         style={{
           marginTop: "16px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
           fontWeight: 400,
           color: "rgba(255, 255, 255, 0.45)",
@@ -158,7 +158,7 @@ export function AuthEmailVerificationCard({
             background: "none",
             border: "none",
             padding: 0,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "12px",
             fontWeight: 400,
             color: "#E8571A",

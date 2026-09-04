@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getPrimaryTypeLabel } from '@/lib/content-types';
 import { ChevronRight } from 'lucide-react';
+import { type } from "@/lib/theme/type";
 
 // ─── Evidence types ──────────────────────────────
 export type EvidenceMediaType = 'photos' | 'video' | 'written';
@@ -47,7 +48,7 @@ function CollapsibleSection({
           color: 'rgba(255,255,255,0.45)', fontSize: 12,
           fontWeight: 500,
           letterSpacing: '0.04em',
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           textTransform: 'none' as const,
         }}
       >
@@ -161,10 +162,10 @@ export function CanvasHeader({
             </div>
           )}
         </div>
-        <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.95)', margin: '0 0 12px 0', lineHeight: 1.25, letterSpacing: '-0.3px' }}>
+        <h1 style={{ ...type.cardTitle,   color: 'rgba(255,255,255,0.95)', margin: '0 0 12px 0',  }}>
           {title || 'Untitled'}
         </h1>
-        <p style={{ fontSize: 14, fontWeight: 400, color: 'rgba(255,255,255,0.62)', lineHeight: 1.70, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+        <p style={{ fontSize: 14, fontWeight: 400, color: 'rgba(255,255,255,0.62)', lineHeight: 1.70, margin: 0, fontFamily: 'Figtree, sans-serif' }}>
           {description}
         </p>
       </div>
@@ -255,7 +256,7 @@ export function CanvasHeader({
           maxLength={120}
           style={{
             width: '100%',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             fontSize: 15, fontWeight: 400,
             color: 'rgba(255,255,255,0.90)',
             background: 'rgba(255,255,255,0.02)',
@@ -297,12 +298,12 @@ export function CanvasHeader({
             resize: 'none',
             padding: '12px 16px',
             minHeight: 60,
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             boxSizing: 'border-box' as const,
             transition: 'border-color 200ms',
           }}
         />
-        <div style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.25)', textAlign: 'right', fontFamily: 'Inter, sans-serif', marginTop: 4 }}>
+        <div style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.25)', textAlign: 'right', fontFamily: 'Figtree, sans-serif', marginTop: 4 }}>
           {description.length} / 500
         </div>
       </CollapsibleSection>
@@ -362,7 +363,7 @@ function EvidenceEditor({
               background: mediaType === t.value ? 'rgba(232,87,26,0.10)' : 'transparent',
               border: `1px solid ${mediaType === t.value ? 'rgba(232,87,26,0.3)' : 'rgba(255,255,255,0.08)'}`,
               color: mediaType === t.value ? '#E8571A' : 'rgba(255,255,255,0.45)',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               transition: 'all 200ms',
             }}
           >
@@ -467,7 +468,7 @@ function EvidenceEditor({
           lineHeight: 1.60, background: 'transparent',
           border: 'none', outline: 'none',
           resize: 'none', padding: 0,
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           boxSizing: 'border-box',
         }}
       />

@@ -1,6 +1,7 @@
 import type { CanvasBlock, CanvasStage } from '@/lib/canvas-types';
 import { ContentBlockViewer } from '@/components/ContentBlockViewer';
 import { BlockViewerInCanvas } from './BlockViewerInCanvas';
+import { type } from "@/lib/theme/type";
 
 interface StageTimelineProps {
   stages: CanvasStage[];
@@ -25,10 +26,9 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
           }}>
             {block.subheading && (
               <div style={{
-                fontSize: 14, fontWeight: 600,
                 color: 'rgba(255,255,255,0.85)',
                 marginBottom: 10,
-                fontFamily: "'Playfair Display', Georgia, serif",
+                ...type.cardTitle,
               }}>
                 {block.subheading}
               </div>
@@ -100,9 +100,8 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
                 )}
               </div>
               <h3 style={{
-                fontSize: 18, fontWeight: 700,
                 color: 'rgba(255,255,255,0.90)',
-                fontFamily: "'Playfair Display', Georgia, serif",
+                ...type.cardTitle,
                 margin: '6px 0 0',
               }}>
                 {stage.title}

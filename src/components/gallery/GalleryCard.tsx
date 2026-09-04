@@ -31,6 +31,14 @@ import {
   hexToRgba,
   labelText,
 } from "@/components/build/tokens";
+// Roles by name, not the `type` object: this file uses inline `type X`
+// import modifiers, which a value binding called `type` makes ambiguous.
+import {
+  DM_MONO,
+  data as dataText,
+  eyebrow as eyebrowText,
+  tabular,
+} from "@/lib/theme/type";
 import {
   freshnessLabel,
   isStale,
@@ -130,10 +138,9 @@ export function GalleryCard({ build, srcByPath, credit }: GalleryCardProps) {
           </h3>
           <p
             style={{
+              ...dataText,
+              ...tabular,
               margin: 0,
-              fontSize: 12,
-              fontWeight: 300,
-              lineHeight: 1.4,
               color: stale ? TEXT_MUTED : TEXT_SECONDARY,
             }}
           >
@@ -165,9 +172,8 @@ export function GalleryCard({ build, srcByPath, credit }: GalleryCardProps) {
           data-testid="gallery-card-credit"
           title={credit}
           style={{
-            ...labelText,
+            ...dataText,
             margin: 0,
-            fontSize: 11,
             color: TEXT_MUTED,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -196,8 +202,8 @@ export function GalleryCard({ build, srcByPath, credit }: GalleryCardProps) {
             <span
               data-testid="gallery-card-bounty"
               style={{
-                ...labelText,
-                fontSize: 10.5,
+                ...dataText,
+                ...tabular,
                 color: GAP_RED,
                 padding: "1px 6px",
                 borderRadius: 4,
@@ -210,8 +216,7 @@ export function GalleryCard({ build, srcByPath, credit }: GalleryCardProps) {
           {promoted ? (
             <span
               style={{
-                ...labelText,
-                fontSize: 10.5,
+                ...eyebrowText,
                 color: TEAL,
                 padding: "1px 6px",
                 borderRadius: 4,
@@ -222,7 +227,7 @@ export function GalleryCard({ build, srcByPath, credit }: GalleryCardProps) {
             </span>
           ) : null}
           {(build.made_for ?? []).slice(0, 3).map((role) => (
-            <span key={role} style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>
+            <span key={role} style={{ ...dataText, color: TEXT_MUTED }}>
               {role}
             </span>
           ))}
@@ -289,12 +294,13 @@ function ReproductionFigure({ count, stale }: { count: number; stale: boolean })
     >
       <span
         style={{
+          fontFamily: DM_MONO,
           fontSize: 26,
-          fontWeight: 700,
+          fontWeight: 500,
           lineHeight: 1,
           letterSpacing: "-0.02em",
           color: colour,
-          fontVariantNumeric: "tabular-nums",
+          ...tabular,
         }}
       >
         {count}
@@ -338,8 +344,8 @@ function RebuildFigure({ count }: { count: number }) {
         display: "flex",
         alignItems: "center",
         gap: 4,
-        ...labelText,
-        fontSize: 10.5,
+        ...dataText,
+        ...tabular,
         color: TEXT_MUTED,
       }}
     >

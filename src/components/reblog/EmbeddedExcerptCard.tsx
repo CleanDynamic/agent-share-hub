@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronUp, FileX } from "lucide-react";
+import { type } from "@/lib/theme/type";
 
 export interface Excerpt {
   text: string;
@@ -177,10 +178,9 @@ export function EmbeddedExcerptCard({
       >
         <div
           style={{
-            fontFamily: "'Playfair Display', serif",
+            ...type.cardTitle,
             fontStyle: "italic",
-            fontSize: 15,
-            lineHeight: 1.55,
+
             color: "rgba(255,255,255,0.92)",
             whiteSpace: "pre-wrap",
           }}

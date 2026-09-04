@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from
   '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { type } from "@/lib/theme/type";
 
 interface Version {
   id: string;
@@ -93,10 +94,8 @@ export function VersionHistory({
           justifyContent: 'space-between',
         }}>
           <div style={{
-            fontSize: 14, fontWeight: 700,
             color: 'rgba(255,255,255,0.85)',
-            fontFamily:
-              "'Playfair Display', Georgia, serif",
+            ...type.cardTitle,
           }}>
             Version History
           </div>
@@ -129,7 +128,7 @@ export function VersionHistory({
                   '1px solid rgba(255,255,255,0.10)',
                 borderRadius: 6, fontSize: 12,
                 color: '#fff', outline: 'none',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
               }}
             />
             <button
@@ -142,7 +141,7 @@ export function VersionHistory({
                 color: '#fff', fontSize: 12,
                 fontWeight: 700, cursor: 'pointer',
                 opacity: saving ? 0.6 : 1,
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
               }}
             >
               {saving ? '…' : 'Save'}
@@ -240,7 +239,7 @@ export function VersionHistory({
                       color: '#8B4513',
                       fontSize: 11, fontWeight: 700,
                       cursor: 'pointer',
-                      fontFamily: 'Inter, sans-serif',
+                      fontFamily: 'Figtree, sans-serif',
                     }}
                   >
                     Restore this version

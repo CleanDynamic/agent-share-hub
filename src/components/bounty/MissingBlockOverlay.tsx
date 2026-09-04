@@ -44,7 +44,7 @@ export function MissingBlockOverlay({
       <Puzzle size={18} style={{ color: 'rgba(245,158,11,0.85)' }} strokeWidth={1.5} />
       <span
         style={{
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           fontSize: 11,
           fontWeight: 600,
           color: 'rgba(255,255,255,0.75)',
@@ -56,7 +56,7 @@ export function MissingBlockOverlay({
         <p
           className="text-center"
           style={{
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             fontSize: 10,
             fontWeight: 400,
             color: 'rgba(255,255,255,0.45)',
@@ -69,7 +69,7 @@ export function MissingBlockOverlay({
       ) : null}
       <span
         style={{
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           fontSize: 9,
           fontWeight: 500,
           color: 'rgba(245,158,11,0.85)',

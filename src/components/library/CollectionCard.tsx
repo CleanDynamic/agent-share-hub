@@ -214,7 +214,7 @@ function CoverTile({ item }: { item: CoverItem }) {
                 bottom: 4,
                 right: 4,
                 fontSize: 8,
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 color: "rgba(255,255,255,0.55)",
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
@@ -260,7 +260,7 @@ function CoverComposition({ items }: { items: CoverItem[] }) {
         }}
       >
         <FileStack size={28} />
-        <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11 }}>
+        <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11 }}>
           Empty
         </span>
       </div>
@@ -421,7 +421,7 @@ export function CollectionCard({
           />
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 14,
               fontWeight: 600,
               color: "rgba(255,255,255,0.95)",
@@ -438,7 +438,7 @@ export function CollectionCard({
             display: "flex",
             alignItems: "center",
             gap: 6,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             color: "rgba(255,255,255,0.5)",
           }}

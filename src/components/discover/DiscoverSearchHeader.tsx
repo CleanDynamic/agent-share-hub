@@ -75,7 +75,6 @@ export function DiscoverSearchHeader({
   return (
     <div className="w-full flex flex-col gap-0">
 
-
       {/* ROW 2 — Search mode tabs */}
       <div className="flex items-end gap-0" style={{ height: 40 }}>
         {tabs.map((tab) => {
@@ -99,7 +98,7 @@ export function DiscoverSearchHeader({
                 style={{
                   gap: 6,
                   color: isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.45)',
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'Figtree, sans-serif',
                   fontSize: 13,
                   fontWeight: 500,
                   transition: 'color 0.15s',
@@ -116,7 +115,7 @@ export function DiscoverSearchHeader({
               </div>
               <span
                 style={{
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'Figtree, sans-serif',
                   fontSize: 10,
                   fontWeight: 400,
                   color: 'rgba(255,255,255,0.30)',
@@ -154,7 +153,7 @@ export function DiscoverSearchHeader({
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 14,
               fontWeight: 400,
               color: 'rgba(255,255,255,0.85)',
@@ -171,7 +170,7 @@ export function DiscoverSearchHeader({
           />
           <span
             style={{
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 10,
               fontWeight: 500,
               color: 'rgba(255,255,255,0.30)',
@@ -201,7 +200,7 @@ export function DiscoverSearchHeader({
           <SlidersHorizontal size={14} style={{ color: 'rgba(255,255,255,0.75)' }} />
           <span
             style={{
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 13,
               fontWeight: 500,
               color: 'rgba(255,255,255,0.75)',
@@ -217,7 +216,7 @@ export function DiscoverSearchHeader({
                 borderRadius: '50%',
                 background: 'rgba(232,87,26,0.20)',
                 color: '#E8571A',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 fontSize: 10,
                 fontWeight: 600,
                 display: 'flex',
@@ -239,7 +238,7 @@ export function DiscoverSearchHeader({
               key={filter.key}
               className="flex items-center"
               style={{
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 fontSize: 11,
                 fontWeight: 500,
                 padding: '3px 8px',
@@ -270,7 +269,7 @@ export function DiscoverSearchHeader({
             <button
               onClick={onClearFilters}
               style={{
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 fontSize: 11,
                 fontWeight: 500,
                 color: 'rgba(255,255,255,0.50)',
@@ -292,7 +291,7 @@ export function DiscoverSearchHeader({
       <div className="flex items-center justify-between" style={{ height: 32, marginTop: 12 }}>
         <span
           style={{
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             fontWeight: 400,
             color: 'rgba(255,255,255,0.55)',
@@ -306,7 +305,7 @@ export function DiscoverSearchHeader({
             onClick={() => setSortOpen(!sortOpen)}
             className="flex items-center"
             style={{
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 12,
               fontWeight: 500,
               color: 'rgba(255,255,255,0.75)',
@@ -347,7 +346,7 @@ export function DiscoverSearchHeader({
                     display: 'block',
                     width: '100%',
                     textAlign: 'left',
-                    fontFamily: 'Inter, sans-serif',
+                    fontFamily: 'Figtree, sans-serif',
                     fontSize: 12,
                     fontWeight: option === sort ? 600 : 400,
                     color: option === sort ? '#E8571A' : 'rgba(255,255,255,0.75)',

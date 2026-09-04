@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import ActionXpHint from "@/components/ambient/ActionXpHint";
 
-
 interface Post {
   id: string;
   postType: string;
@@ -124,7 +123,7 @@ function ActionButton({
       {count !== undefined && (
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 12,
             fontWeight: 500,
             color: textColor,
@@ -136,7 +135,7 @@ function ActionButton({
       {label && (
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 12,
             fontWeight: 500,
             color: textColor,

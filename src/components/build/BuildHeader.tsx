@@ -18,12 +18,14 @@ import {
   ORANGE,
   TEAL,
   TEXT_MUTED,
+  TEXT_PRIMARY,
   TEXT_SECONDARY,
   bodyText,
   cardGlass,
   labelText,
   pageHeadingText,
 } from "./tokens";
+import { tabular, type } from "@/lib/theme/type";
 
 interface BuildHeaderProps {
   build: Build;
@@ -137,10 +139,10 @@ function Chip({ text, colour }: { text: string; colour: string }) {
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase" }}>
+      <span style={{ ...type.eyebrow, color: TEXT_MUTED }}>
         {label}
       </span>
-      <span style={{ ...bodyText, fontWeight: 400 }}>{children}</span>
+      <span style={{ ...type.data, ...tabular, color: TEXT_PRIMARY }}>{children}</span>
     </div>
   );
 }
@@ -345,11 +347,11 @@ export function BuildHeader({
 
         {reproduction ?? (
           <div data-visual-slot="build-reproduction" style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase" }}>
+            <span style={{ ...type.eyebrow, color: TEXT_MUTED }}>
               Reproduction
             </span>
             {confirmed ? (
-              <span style={{ ...bodyText, fontWeight: 400 }}>
+              <span style={{ ...type.data, ...tabular, color: TEXT_PRIMARY }}>
                 reproduced {build.reproduction_count}{" "}
                 {build.reproduction_count === 1 ? "time" : "times"}
                 {build.last_confirmed_at
@@ -357,7 +359,7 @@ export function BuildHeader({
                   : null}
               </span>
             ) : (
-              <span style={{ ...bodyText, fontWeight: 400, color: TEXT_MUTED }}>
+              <span style={{ ...type.data, color: TEXT_MUTED }}>
                 not yet confirmed by anyone
               </span>
             )}

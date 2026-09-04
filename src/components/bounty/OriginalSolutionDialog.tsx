@@ -69,7 +69,7 @@ export function OriginalSolutionDialog({
         >
           <div
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               fontWeight: 600,
               color: "rgba(255,255,255,0.85)",
@@ -111,7 +111,7 @@ function Pane({ title, json }: { title: string; json: string }) {
       <div
         style={{
           padding: "8px 12px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 11,
           fontWeight: 600,
           color: "rgba(46,196,182,0.85)",

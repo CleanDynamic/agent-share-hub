@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { insertNotification } from "@/lib/notifications";
+import { type } from "@/lib/theme/type";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -112,9 +113,9 @@ function ReblogComposePanel({
           style={{
             width: '100%', background: 'transparent',
             border: 'none', outline: 'none',
-            fontSize: 15, color: 'rgba(255,255,255,0.88)',
-            lineHeight: 1.65, resize: 'none',
-            fontFamily: "'Playfair Display', Georgia, serif",
+             color: 'rgba(255,255,255,0.88)',
+             resize: 'none',
+            ...type.cardTitle,
             boxSizing: 'border-box',
             marginBottom: 8,
           }}
@@ -158,7 +159,7 @@ function ReblogComposePanel({
                   border: 'none', outline: 'none',
                   fontSize: 14, color: 'rgba(255,255,255,0.72)',
                   lineHeight: 1.65, resize: 'none',
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'Figtree, sans-serif',
                   boxSizing: 'border-box',
                 }}
               />
@@ -229,7 +230,7 @@ function ReblogComposePanel({
                 padding: '10px 12px', fontSize: 13,
                 color: 'rgba(255,255,255,0.70)',
                 lineHeight: 1.65, resize: 'none',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 boxSizing: 'border-box',
               }}
             />
@@ -311,7 +312,7 @@ function ReblogComposePanel({
                     border: 'none', outline: 'none',
                     fontSize: 13, color: 'rgba(255,255,255,0.70)',
                     resize: 'none', lineHeight: 1.6,
-                    fontFamily: 'Inter, sans-serif',
+                    fontFamily: 'Figtree, sans-serif',
                     boxSizing: 'border-box',
                   }}
                 />
@@ -400,10 +401,10 @@ function OriginalPostPanel({
         {/* Title */}
         {original?.title && (
           <h3 style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: 16, fontWeight: 700,
+            ...type.cardTitle,
+
             color: 'rgba(255,255,255,0.88)',
-            margin: '0 0 10px 0', lineHeight: 1.3,
+            margin: '0 0 10px 0',
           }}>
             {original.title}
           </h3>

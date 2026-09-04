@@ -58,6 +58,7 @@ import {
   panelGlass,
   titleText,
 } from "./tokens";
+import { measure } from "@/lib/theme/type";
 
 interface ConvertLoad {
   plan: ConversionPlan;
@@ -356,7 +357,7 @@ export default function ConvertPrompt() {
       <Section title="Worth knowing">
         <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
           {plan.notes.map((note) => (
-            <li key={note} style={{ ...bodyText, color: TEXT_SECONDARY }}>
+            <li key={note} style={{ ...bodyText, ...measure, color: TEXT_SECONDARY }}>
               {note}
             </li>
           ))}

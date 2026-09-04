@@ -76,7 +76,7 @@ const s = {
     minHeight: "297mm",
     background: "#ffffff",
     color: "#000",
-    fontFamily: "'Inter', -apple-system, sans-serif",
+    fontFamily: "'Figtree', -apple-system, sans-serif",
     padding: "20mm",
     boxSizing: "border-box" as const,
   },

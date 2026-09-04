@@ -97,7 +97,7 @@ export function BlueprintAttributionBanner({
         background: "rgba(46,196,182,0.08)",
         border: "1px solid rgba(46,196,182,0.25)",
         textDecoration: "none",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 11,
         fontWeight: 500,
         color: "#2EC4B6",

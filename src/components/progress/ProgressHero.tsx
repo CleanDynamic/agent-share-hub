@@ -4,7 +4,6 @@ import LevelRing from "./xp-kit/level-ring";
 import XpBar from "./xp-kit/xp-bar";
 import CreatorMarkChip from "./xp-kit/creator-mark-chip";
 
-
 export interface ProgressHeroMark {
   id: string;
   name: string;
@@ -57,7 +56,7 @@ export function ProgressHero({
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
         <div
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 18,
             fontWeight: 600,
             color: "rgba(255,255,255,0.95)",

@@ -19,7 +19,7 @@ export const HAIRLINE = "rgba(255,255,255,0.07)";
 export const GAP_RED = "#EF4444";
 
 export const FONT_STACK =
-  "'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
+  "'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 /** Fallback when a node's type is missing from the registry. */
 export const CATEGORY_COLOUR: Record<string, string> = {

@@ -2,6 +2,7 @@ import { ArrowUpRight, LayoutGrid } from "lucide-react";
 import { ShareTrigger } from "@/components/share/ShareTrigger";
 import { useShareMenu, virtualAnchorFromPoint } from "@/components/share/ShareMenuProvider";
 import { CollectionBookmarkButton } from "@/components/library/CollectionBookmarkButton";
+import { type } from "@/lib/theme/type";
 
 const BLOCK_TYPE_COLORS: Record<string, string> = {
   prompt: "#2EC4B6",
@@ -267,9 +268,9 @@ export function StageResultCard({ stage, parent, author, onClick }: StageResultC
 
       {/* Title (Playfair) */}
       <h3 style={{
-        fontFamily: "'Playfair Display', Georgia, serif",
-        fontSize: 15, fontWeight: 500, color: "rgba(255,255,255,0.90)",
-        lineHeight: 1.35, marginTop: 10, marginBottom: 0,
+        ...type.cardTitle,
+          color: "rgba(255,255,255,0.90)",
+         marginTop: 10, marginBottom: 0,
       }}>
         {stageName}
       </h3>

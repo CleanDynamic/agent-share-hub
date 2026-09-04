@@ -184,7 +184,7 @@ export function ResultsCarouselEditor({
             border: "none",
             borderRadius: 6,
             cursor: "pointer",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 13,
             fontWeight: 500,
             color: "rgba(255,255,255,0.85)",
@@ -244,7 +244,7 @@ export function ResultsCarouselEditor({
             display: "flex",
             alignItems: "center",
             gap: 6,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 12,
             fontWeight: 500,
             letterSpacing: "0.04em",
@@ -278,7 +278,7 @@ export function ResultsCarouselEditor({
                 border: "none",
                 borderRadius: "6px 0 0 6px",
                 cursor: isAtCapacity ? "not-allowed" : "pointer",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 12,
                 fontWeight: 500,
                 color: isAtCapacity ? "rgba(255,255,255,0.30)" : "rgba(255,255,255,0.85)",
@@ -337,7 +337,7 @@ export function ResultsCarouselEditor({
           <Images size={28} color="rgba(255,255,255,0.30)" />
           <div
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               color: "rgba(255,255,255,0.50)",
             }}
@@ -365,7 +365,7 @@ export function ResultsCarouselEditor({
                   border: "0.5px solid rgba(255,255,255,0.10)",
                   borderRadius: 6,
                   cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   fontWeight: 500,
                   color: "rgba(255,255,255,0.85)",
@@ -461,7 +461,7 @@ export function ResultsCarouselEditor({
                           border: "none",
                           outline: "none",
                           resize: "none",
-                          fontFamily: "Inter, sans-serif",
+                          fontFamily: "Figtree, sans-serif",
                           fontSize: 16,
                           fontWeight: 400,
                           fontStyle: activeSlide.text ? "normal" : "italic",
@@ -494,7 +494,7 @@ export function ResultsCarouselEditor({
                         border: "none",
                         borderRadius: 6,
                         cursor: "pointer",
-                        fontFamily: "Inter, sans-serif",
+                        fontFamily: "Figtree, sans-serif",
                         fontSize: 12,
                         fontWeight: 500,
                         color: "white",
@@ -582,7 +582,7 @@ export function ResultsCarouselEditor({
                   background: "transparent",
                   border: "none",
                   outline: "none",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 13,
                   fontWeight: 400,
                   fontStyle: "italic",
@@ -593,7 +593,7 @@ export function ResultsCarouselEditor({
               />
               <span
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 10,
                   color: "rgba(255,255,255,0.30)",
                   whiteSpace: "nowrap",
@@ -717,7 +717,7 @@ export function ResultsCarouselEditor({
                   >
                     <span
                       style={{
-                        fontFamily: "Inter, sans-serif",
+                        fontFamily: "Figtree, sans-serif",
                         fontSize: 9,
                         fontWeight: 500,
                         color: "rgba(255,255,255,0.85)",

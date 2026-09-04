@@ -1,8 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;500;600;700;800&display=swap');
-/* Playfair Display is used by page components (blog titles, profile headers).
-   Loaded here globally — previously it was only loaded by NeoScaleShell's
-   injected CSS, which the flat shell replaces. */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+/* BG-P03. Inter and Playfair Display are retired. The three faces that
+   replace them — Figtree, Bodoni Moda, DM Mono — are loaded from <link> tags
+   in index.html rather than from an @import here, because an @import cannot
+   start until this stylesheet has been fetched and parsed, which puts the
+   font request one serial hop further from the document. The preconnects live
+   there too. src/lib/theme/type.ts is how components spend them. */
 
 @tailwind base;
 @tailwind components;
@@ -143,10 +144,14 @@
   }
 }
 
+/* BG-P03. This rule sits outside @layer base, so it wins over the body block
+   there — the face has to be retired in both places or Inter keeps rendering.
+   Size, weight and line-height are deliberately left to the layered rule;
+   only the family is restated here. */
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -225,21 +230,37 @@ body {
     @apply border-border;
   }
 
+  /* BG-P03. The one place a global type change is correct: every surface
+     inherits from here, so the body face and size are set once rather than
+     re-declared per component.
+
+     13px/300 Inter became 16px/400 Figtree. The old size was below the
+     readable floor and the old weight below the 400 floor the theme sets for
+     anything under 18px — a hairline weight at 13px is the failure this
+     change exists to remove. Expect dense screens to read looser than before;
+     that is the intended cost, and it is NOT to be compensated for by
+     touching padding or margin anywhere. Report tight boxes instead.
+
+     `background-color` and `color` now read the theme tokens, so the body
+     ground follows <html data-theme> like every other surface rather than
+     holding the legacy dark hex. Structural properties here are unchanged. */
   body {
-    background-color: #25252F;
+    background-color: var(--bg);
     min-height: 100vh;
     color: var(--text);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    font-size: 13px;
-    font-weight: 300;
-    line-height: 1.6;
+    font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
   }
 
+  /* BG-P03. DM Mono leads the data face's stack; JetBrains Mono stays behind
+     it as the fallback this codebase already assumed. */
   code, pre {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
   }
 
   /* Prevent iOS auto-zoom on input focus */

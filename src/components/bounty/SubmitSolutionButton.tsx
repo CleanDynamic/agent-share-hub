@@ -42,7 +42,7 @@ export function SubmitSolutionButton({
           navigate(`/b/${ctx.bountySlug}/solve/${slotId}?kind=${slotKind}`);
         }}
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: isStage ? 11 : 10,
           fontWeight: 600,
           color: "#FFFFFF",
@@ -59,7 +59,7 @@ export function SubmitSolutionButton({
       {count > 0 && (
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 9,
             fontWeight: 500,
             color: "rgba(245,158,11,0.75)",

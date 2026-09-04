@@ -164,7 +164,7 @@ function ToolbarButton({
           color: 'hsl(var(--foreground) / 0.92)',
           borderRadius: 8,
           padding: '6px 8px',
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -205,7 +205,7 @@ function DropdownItem({
         display: 'flex',
         alignItems: 'center',
         padding: '0 8px',
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Figtree, sans-serif',
         fontSize: 12,
         cursor: 'pointer',
         textAlign: 'left',
@@ -252,7 +252,7 @@ function ToolbarDropdown({
     transition: 'all 120ms ease-out',
     fontSize: 13,
     fontWeight: 400,
-    fontFamily: 'Inter, sans-serif',
+    fontFamily: 'Figtree, sans-serif',
     border: 'none',
     background: 'transparent',
     ...(isHovered ? styles.iconButtonHover : styles.iconButton),
@@ -308,7 +308,7 @@ function ToolbarDropdown({
           color: 'hsl(var(--foreground) / 0.92)',
           borderRadius: 8,
           padding: '6px 8px',
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -366,7 +366,7 @@ function ColorSwatch({ color, label, shortcut, onClick }: ColorSwatchProps) {
           color: 'hsl(var(--foreground) / 0.92)',
           borderRadius: 8,
           padding: '6px 8px',
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -478,7 +478,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
           border: '1px solid hsl(var(--foreground) / 0.08)',
           borderRadius: 10,
           boxShadow: '0 8px 24px hsl(240 10% 2% / 0.5)',
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           color: 'hsl(var(--foreground) / 0.9)',
         }}
       >
@@ -564,7 +564,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
             background: 'transparent',
             color: 'hsl(var(--foreground) / 0.7)',
             fontSize: 11,
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             cursor: 'pointer',
             marginBottom: 6,
             textAlign: 'left',
@@ -601,7 +601,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
               color: 'hsl(var(--foreground) / 0.9)',
               padding: '0 8px',
               fontSize: 11,
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               outline: 'none',
             }}
           />
@@ -616,7 +616,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
               background: 'hsl(var(--foreground) / 0.06)',
               color: 'hsl(var(--foreground) / 0.9)',
               fontSize: 11,
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               cursor: 'pointer',
             }}
           >
@@ -982,7 +982,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                   background: 'hsl(240 20% 8% / 0.98)',
                   border: '1px solid hsl(var(--foreground) / 0.08)',
                   borderRadius: 10,
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'Figtree, sans-serif',
                   color: 'hsl(var(--foreground) / 0.9)',
                 }}
               >
@@ -1007,7 +1007,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                 <button
                   type="button"
                   onClick={insertImage}
-                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.06)', color: 'hsl(var(--foreground) / 0.9)', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.06)', color: 'hsl(var(--foreground) / 0.9)', fontSize: 12, fontFamily: 'Figtree, sans-serif', cursor: 'pointer' }}
                 >
                   Insert
                 </button>
@@ -1037,7 +1037,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                   background: 'hsl(240 20% 8% / 0.98)',
                   border: '1px solid hsl(var(--foreground) / 0.08)',
                   borderRadius: 10,
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'Figtree, sans-serif',
                   color: 'hsl(var(--foreground) / 0.9)',
                 }}
               >
@@ -1055,7 +1055,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                 <button
                   type="button"
                   onClick={insertVideo}
-                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.06)', color: 'hsl(var(--foreground) / 0.9)', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.06)', color: 'hsl(var(--foreground) / 0.9)', fontSize: 12, fontFamily: 'Figtree, sans-serif', cursor: 'pointer' }}
                 >
                   Insert
                 </button>

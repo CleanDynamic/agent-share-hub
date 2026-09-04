@@ -20,7 +20,7 @@
   background: none; border: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   transition: color 0.15s;
   width: 100%;
   text-align: left;
@@ -29,7 +29,7 @@
 
 /* ── Section label (trending, categories etc) ── */
 .ns-section-label {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;

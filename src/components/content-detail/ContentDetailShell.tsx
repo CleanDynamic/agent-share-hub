@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { BODONI, FIGTREE } from "@/lib/theme/type";
 import {
   ArrowLeft,
   MoreHorizontal,
@@ -124,7 +125,7 @@ function PostTypePill({
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 11,
           fontWeight: 700,
           letterSpacing: 1,
@@ -143,7 +144,7 @@ function PostTypePill({
       {postType === "bounty" && bountyMeta?.isSolved && (
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 10,
             fontWeight: 700,
             color: "#2EC4B6",
@@ -159,7 +160,7 @@ function PostTypePill({
       {postType === "bounty" && !bountyMeta?.isSolved && bountyMeta && (
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             color: "rgba(255,255,255,0.55)",
           }}
@@ -209,7 +210,7 @@ function RelatedPostCard({ post }: { post: RelatedPostCardData }) {
       <div style={{ padding: 12 }}>
         <div
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 10,
             fontWeight: 700,
             letterSpacing: 1,
@@ -222,7 +223,7 @@ function RelatedPostCard({ post }: { post: RelatedPostCardData }) {
         </div>
         <div
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 13,
             fontWeight: 600,
             color: "rgba(255,255,255,0.88)",
@@ -241,7 +242,7 @@ function RelatedPostCard({ post }: { post: RelatedPostCardData }) {
             display: "flex",
             alignItems: "center",
             gap: 6,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             color: "rgba(255,255,255,0.45)",
           }}
@@ -325,10 +326,14 @@ export function ContentDetailShell({
   };
 
   const isBlog = post.postType === "blog";
-  const titleFont = isBlog ? "Playfair Display, serif" : "Inter, sans-serif";
+  // BG-P03. A blog title takes the display face, everything else the body
+  // face. This is for the h1 only: the sticky header renders the same string
+  // at 13px, which is below the display floor, so that site takes FIGTREE
+  // directly rather than reading this.
+  const titleFont = isBlog ? BODONI : FIGTREE;
   const descStyle: React.CSSProperties = isBlog
-    ? { fontStyle: "italic", fontFamily: "Inter, sans-serif" }
-    : { fontFamily: "Inter, sans-serif" };
+    ? { fontStyle: "italic", fontFamily: FIGTREE }
+    : { fontFamily: FIGTREE };
 
   return (
     <div
@@ -366,7 +371,7 @@ export function ContentDetailShell({
             border: "none",
             color: "rgba(255,255,255,0.65)",
             fontSize: 13,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             cursor: "pointer",
           }}
         >
@@ -377,7 +382,7 @@ export function ContentDetailShell({
           style={{
             flex: 1,
             textAlign: "center",
-            fontFamily: titleFont,
+            fontFamily: FIGTREE,
             fontSize: 13,
             fontWeight: 600,
             color: "rgba(255,255,255,0.85)",
@@ -432,7 +437,7 @@ export function ContentDetailShell({
         {headerSlot}
         <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
           <PostTypePill postType={post.postType} bountyMeta={post.bountyMeta} />
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.40)", fontFamily: "Inter, sans-serif" }}>
+          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.40)", fontFamily: "Figtree, sans-serif" }}>
             {formatRelativeTime(post.publishedAt)}
           </span>
         </div>
@@ -494,7 +499,7 @@ export function ContentDetailShell({
                   cursor: "pointer",
                   padding: 0,
                   marginTop: 4,
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 13,
                   fontWeight: 500,
                   color: TYPE_COLOR[post.postType],
@@ -537,12 +542,12 @@ export function ContentDetailShell({
             />
             <div style={{ textAlign: "left" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.90)" }}>
+                <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.90)" }}>
                   {author.displayName}
                 </span>
                 {author.isVerified && <BadgeCheck size={14} color="#2EC4B6" />}
               </div>
-              <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
+              <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
                 @{author.handle}
               </span>
             </div>
@@ -551,7 +556,7 @@ export function ContentDetailShell({
             <button
               onClick={handleFollow}
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 12,
                 fontWeight: 500,
                 color: isFollowing ? "rgba(255,255,255,0.60)" : "#E8571A",
@@ -575,7 +580,7 @@ export function ContentDetailShell({
               alignItems: "center",
               gap: 6,
               marginBottom: 16,
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 12,
               color: "rgba(255,255,255,0.50)",
               fontStyle: "italic",
@@ -596,7 +601,7 @@ export function ContentDetailShell({
             paddingTop: 16,
             paddingBottom: 24,
             borderTop: "1px solid rgba(255,255,255,0.05)",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 12,
             color: "rgba(255,255,255,0.55)",
           }}
@@ -671,7 +676,7 @@ export function ContentDetailShell({
               />
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.92)" }}>
+                  <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.92)" }}>
                     {author.displayName}
                   </span>
                   {author.isVerified && <BadgeCheck size={14} color="#2EC4B6" />}
@@ -701,7 +706,7 @@ export function ContentDetailShell({
                   handleFollow();
                 }}
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   fontWeight: 500,
                   color: isFollowing ? "rgba(255,255,255,0.60)" : "#E8571A",
@@ -737,10 +742,10 @@ export function ContentDetailShell({
       {relatedPosts.length > 0 && (
         <div style={{ maxWidth: 960, margin: "32px auto 0", padding: "0 24px" }}>
           <div style={{ marginBottom: 16 }}>
-            <h3 style={{ fontFamily: "Inter, sans-serif", fontSize: 16, fontWeight: 600, color: "rgba(255,255,255,0.88)", margin: 0 }}>
+            <h3 style={{ fontFamily: "Figtree, sans-serif", fontSize: 16, fontWeight: 600, color: "rgba(255,255,255,0.88)", margin: 0 }}>
               Related {post.postType === "bounty" ? "bounties" : post.postType === "blog" ? "blogs" : "blueprints"}
             </h3>
-            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.45)", margin: "4px 0 0" }}>
+            <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.45)", margin: "4px 0 0" }}>
               From similar topics or referencing this content
             </p>
           </div>
@@ -762,10 +767,10 @@ export function ContentDetailShell({
       <div style={{ maxWidth: 960, margin: "48px auto 0", padding: "32px 24px 64px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 16 }}>
           <div>
-            <div style={{ fontFamily: "Inter, sans-serif", fontSize: 16, fontWeight: 600, color: "rgba(255,255,255,0.88)" }}>
+            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16, fontWeight: 600, color: "rgba(255,255,255,0.88)" }}>
               Want to publish on NeoScale?
             </div>
-            <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.50)" }}>
+            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.50)" }}>
               Share your blueprints, blogs, and bounties with the community.
             </div>
           </div>
@@ -775,7 +780,7 @@ export function ContentDetailShell({
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               fontWeight: 600,
               color: "#E8571A",
@@ -786,7 +791,7 @@ export function ContentDetailShell({
             <ChevronRight size={14} />
           </a>
         </div>
-        <div style={{ display: "flex", gap: 16, fontFamily: "Inter, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.40)" }}>
+        <div style={{ display: "flex", gap: 16, fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.40)" }}>
           <button style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: 0 }}>
             Report this post
           </button>

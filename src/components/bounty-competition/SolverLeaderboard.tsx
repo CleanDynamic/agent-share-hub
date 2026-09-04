@@ -79,12 +79,12 @@ function RankIndicator({ rank }: { rank: number }) {
     return (
       <div style={{ position: "relative", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Hexagon size={28} strokeWidth={1.5} style={{ position: "absolute", inset: 0, color: c.border, fill: c.bg }} />
-        <span style={{ position: "relative", fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 700, color: c.text }}>{rank}</span>
+        <span style={{ position: "relative", fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 700, color: c.text }}>{rank}</span>
       </div>
     );
   }
   return (
-    <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.45)", width: 28, textAlign: "center" }}>
+    <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.45)", width: 28, textAlign: "center" }}>
       #{rank}
     </span>
   );
@@ -102,7 +102,7 @@ function TrustedSolverBadge() {
         background: "rgba(46,196,182,0.12)",
         border: "1px solid rgba(46,196,182,0.30)",
         color: "#2EC4B6",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 9,
         fontWeight: 600,
         letterSpacing: "0.04em",
@@ -183,21 +183,21 @@ function ContributorRow({
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.92)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.92)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {contributor.user.displayName}
           </span>
           {contributor.user.isTrustedSolver && <TrustedSolverBadge />}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "Inter, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "Figtree, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
           <span>@{contributor.user.handle}</span>
         </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
-        <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
+        <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
           {contributor.voteCount} votes
         </span>
-        <span style={{ fontFamily: "Inter, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.45)" }}>
+        <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.45)" }}>
           {contributor.submissionCount} solution{contributor.submissionCount !== 1 ? "s" : ""}
         </span>
       </div>
@@ -209,7 +209,7 @@ function EmptyState({ onCTA }: { onCTA: () => void }) {
   return (
     <div style={{ padding: "32px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
       <Trophy size={28} color="rgba(245,158,11,0.45)" />
-      <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
+      <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
         No solutions submitted yet
       </span>
       <button
@@ -220,7 +220,7 @@ function EmptyState({ onCTA }: { onCTA: () => void }) {
           border: "1px solid rgba(245,158,11,0.35)",
           background: "transparent",
           color: "#F59E0B",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 11,
           fontWeight: 600,
           cursor: "pointer",
@@ -268,7 +268,7 @@ function ActivityItem({ event }: { event: ActivityEvent }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: "4px 0" }}>
       <span style={{ marginTop: 2 }}>{icon}</span>
-      <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>
+      <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>
         {message} · {event.timeAgo}
       </span>
     </div>
@@ -313,7 +313,7 @@ export function SolverLeaderboard({
         <div style={headerStyle}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Trophy size={14} color="#F59E0B" />
-            <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)", letterSpacing: "0.02em" }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)", letterSpacing: "0.02em" }}>
               Top contributors
             </span>
             {isLive && (
@@ -333,7 +333,7 @@ export function SolverLeaderboard({
                   background: "transparent",
                   border: "1px solid rgba(255,255,255,0.08)",
                   color: "rgba(255,255,255,0.65)",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 11,
                   cursor: "pointer",
                 }}
@@ -372,7 +372,7 @@ export function SolverLeaderboard({
         {/* Activity feed */}
         {recentActivity.length > 0 && (
           <div style={{ padding: "12px 16px", borderTop: "0.5px solid rgba(255, 255, 255, 0.14)" }}>
-            <div style={{ fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.40)", marginBottom: 8 }}>
+            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.40)", marginBottom: 8 }}>
               Activity feed
             </div>
             {recentActivity.slice(0, 5).map((ev) => (
@@ -392,7 +392,7 @@ export function SolverLeaderboard({
               background: "transparent",
               border: "none",
               color: "rgba(46,196,182,0.85)",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 12,
               fontWeight: 500,
               cursor: "pointer",
@@ -415,7 +415,7 @@ export function SolverLeaderboard({
       <div style={headerStyle}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Trophy size={14} color="#F59E0B" />
-          <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
+          <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
             Top contributors
           </span>
           {isLive && (
@@ -431,7 +431,7 @@ export function SolverLeaderboard({
             background: "transparent",
             border: "none",
             color: "rgba(46,196,182,0.85)",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             fontWeight: 500,
             cursor: "pointer",

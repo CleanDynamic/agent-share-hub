@@ -422,7 +422,7 @@ export function PublishMetadataForm({
             color: "rgba(255,255,255,0.65)",
             fontSize: "13px",
             fontWeight: 500,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
           }}
         >
           <ArrowLeft size={14} />
@@ -435,7 +435,7 @@ export function PublishMetadataForm({
             color: "rgba(255,255,255,0.92)",
             fontSize: "18px",
             fontWeight: 600,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
           }}
         >
           {headerTitle}
@@ -449,7 +449,7 @@ export function PublishMetadataForm({
             fontSize: "11px",
             fontWeight: 500,
             letterSpacing: "0.04em",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
           }}
         >
           {theme.label}
@@ -477,7 +477,7 @@ export function PublishMetadataForm({
             border: "1px solid rgba(255,255,255,0.1)",
             color: "rgba(255,255,255,0.8)",
             fontSize: "12px",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
           }}
         >
           Fill required fields to publish ({validation.requiredFieldsCompleted} of{" "}
@@ -510,7 +510,7 @@ export function PublishMetadataForm({
                       : "0.5px solid rgba(255,255,255,0.08)",
                     color: "rgba(255,255,255,0.92)",
                     fontSize: "14px",
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                   }}
                 />
                 <div className="flex justify-between">
@@ -520,7 +520,7 @@ export function PublishMetadataForm({
                         ? "rgba(239,68,68,0.85)"
                         : "rgba(255,255,255,0.40)",
                       fontSize: "11px",
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                     }}
                   >
                     {validation.errors.useCase
@@ -531,7 +531,7 @@ export function PublishMetadataForm({
                     style={{
                       color: "rgba(255,255,255,0.30)",
                       fontSize: "11px",
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                     }}
                   >
                     {state.useCase.length}/140
@@ -607,7 +607,7 @@ export function PublishMetadataForm({
                 style={{
                   color: "rgba(239,68,68,0.85)",
                   fontSize: "11px",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                 }}
               >
                 {validation.errors.tags}
@@ -636,7 +636,7 @@ export function PublishMetadataForm({
                       border: "0.5px solid rgba(255,255,255,0.08)",
                       color: "rgba(255,255,255,0.92)",
                       fontSize: "14px",
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                     }}
                   />
                 </FieldGroup>
@@ -652,7 +652,7 @@ export function PublishMetadataForm({
                       border: "0.5px solid rgba(255,255,255,0.08)",
                       color: "rgba(255,255,255,0.92)",
                       fontSize: "14px",
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                     }}
                   />
                 </FieldGroup>
@@ -693,7 +693,7 @@ export function PublishMetadataForm({
                 id="bounty-missing-line"
                 className="mt-3 flex items-center gap-2"
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   fontWeight: 500,
                   color: missingItemCount === 0 ? "rgba(239,68,68,0.85)" : "#F59E0B",
@@ -774,7 +774,7 @@ export function PublishMetadataForm({
                     style={{
                       color: "rgba(255,255,255,0.40)",
                       fontSize: "14px",
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                     }}
                   >
                     /
@@ -797,7 +797,7 @@ export function PublishMetadataForm({
                         : "0.5px solid rgba(255,255,255,0.08)",
                       color: "rgba(255,255,255,0.92)",
                       fontSize: "14px",
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                     }}
                   />
 
@@ -815,7 +815,7 @@ export function PublishMetadataForm({
                   style={{
                     color: "rgba(255,255,255,0.40)",
                     fontSize: "11px",
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                   }}
                 >
                   {slugPreview}
@@ -843,7 +843,7 @@ export function PublishMetadataForm({
               color: "rgba(255,255,255,0.65)",
               fontSize: "13px",
               fontWeight: 500,
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               border: "0.5px solid rgba(255,255,255,0.08)",
             }}
           >
@@ -856,7 +856,7 @@ export function PublishMetadataForm({
               color: "rgba(255,255,255,0.65)",
               fontSize: "13px",
               fontWeight: 500,
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               border: "0.5px solid rgba(255,255,255,0.08)",
             }}
           >
@@ -874,7 +874,7 @@ export function PublishMetadataForm({
               color: "white",
               fontSize: "13px",
               fontWeight: 600,
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               opacity: canPublish && !isPublishing ? 1 : 0.4,
               cursor: canPublish && !isPublishing ? "pointer" : "not-allowed",
             }}
@@ -890,7 +890,7 @@ export function PublishMetadataForm({
                 border: "1px solid rgba(255,255,255,0.1)",
                 color: "rgba(255,255,255,0.8)",
                 fontSize: "12px",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
               }}
             >
               {slugBlockingPublish
@@ -1104,7 +1104,7 @@ function FieldGroup({
           color: "rgba(255,255,255,0.65)",
           fontSize: "12px",
           fontWeight: 500,
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
         }}
       >
         {label}
@@ -1115,7 +1115,7 @@ function FieldGroup({
           style={{
             color: "rgba(239,68,68,0.85)",
             fontSize: "11px",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
           }}
         >
           {error}
@@ -1144,7 +1144,7 @@ function SlugBadge({
             color: "rgba(255,255,255,0.55)",
             fontSize: "11px",
             fontWeight: 500,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
           }}
         >
           Checking…
@@ -1165,7 +1165,7 @@ function SlugBadge({
             color: "#F59E0B",
             fontSize: "11px",
             fontWeight: 500,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
           }}
         >
           Taken
@@ -1185,7 +1185,7 @@ function SlugBadge({
           color: "#2EC4B6",
           fontSize: "11px",
           fontWeight: 500,
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
         }}
       >
         Available
@@ -1228,7 +1228,7 @@ function Section({
             color: "rgba(255,255,255,0.55)",
             fontSize: "11px",
             fontWeight: 600,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
           }}
           aria-label={`Section ${number}: ${title}`}
         >
@@ -1240,7 +1240,7 @@ function Section({
             color: "rgba(255,255,255,0.92)",
             fontSize: "14px",
             fontWeight: 600,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             margin: 0,
           }}
         >
@@ -1256,7 +1256,7 @@ function Section({
               fontWeight: 600,
               textTransform: "uppercase",
               letterSpacing: "0.08em",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
             }}
           >
             Required
@@ -1277,7 +1277,7 @@ function Section({
                 border: "1px solid rgba(255,255,255,0.1)",
                 color: "rgba(255,255,255,0.8)",
                 fontSize: "12px",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 maxWidth: "280px",
                 whiteSpace: "normal",
               }}
@@ -1321,7 +1321,7 @@ function ChipButton({
         color: active ? accent : "rgba(255,255,255,0.70)",
         fontSize: "12px",
         fontWeight: 500,
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
       }}
     >
       {Icon && (

@@ -38,7 +38,7 @@ export function ProfileWelcomeCoachmark({ visible }: ProfileWelcomeCoachmarkProp
         border: "0.5px solid rgba(46,196,182,0.20)",
         borderRadius: "8px",
         marginBottom: "16px",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: "13px",
         fontWeight: 500,
         color: "rgba(46,196,182,0.85)",

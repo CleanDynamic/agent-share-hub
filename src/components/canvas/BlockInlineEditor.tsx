@@ -15,6 +15,7 @@ import {
   emptyBlock,
 } from '@/components/ContentBlockBuilder';
 import { resolveVideoSources } from './MediaPopup';
+import { type } from "@/lib/theme/type";
 
 interface BlockInlineEditorProps {
   block: CanvasBlock;
@@ -73,7 +74,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
             fontSize: 13,
             color: 'rgba(255,255,255,0.85)',
             padding: '8px 10px',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             boxSizing: 'border-box',
           }}
         />
@@ -99,7 +100,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
           style={{
             fontSize: 12,
             color: 'rgba(255,255,255,0.60)',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
           }}
         />
         {block.videoFileName && (
@@ -132,7 +133,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
           <div style={{
             fontSize: 10, color: 'rgba(255,255,255,0.45)',
             padding: '4px 8px',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
           }}>
             {resolved.kind === 'youtube' ? 'YouTube' : 'Video'} thumbnail
           </div>
@@ -165,7 +166,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
             fontSize: 13,
             color: 'rgba(255,255,255,0.85)',
             padding: '8px 10px',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             boxSizing: 'border-box',
           }}
         />
@@ -189,8 +190,8 @@ export function BlockInlineEditor({ block, onChange }: BlockInlineEditorProps) {
           placeholder="Block title (optional)..."
           style={{
             width: '100%',
-            fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: 16, fontWeight: 600,
+            ...type.cardTitle,
+
             color: 'rgba(255,255,255,0.88)',
             background: 'transparent',
             border: 'none', outline: 'none',
@@ -239,7 +240,7 @@ export function BlockInlineEditor({ block, onChange }: BlockInlineEditorProps) {
             fontSize: 13, fontStyle: 'italic',
             color: 'rgba(255,255,255,0.80)',
             lineHeight: 1.6, resize: 'vertical',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             minHeight: 100, padding: 10,
             boxSizing: 'border-box',
           }}
@@ -271,7 +272,7 @@ export function BlockInlineEditor({ block, onChange }: BlockInlineEditorProps) {
             borderRadius: 6, outline: 'none', fontSize: 14,
             color: 'rgba(255,255,255,0.70)',
             lineHeight: 1.65, resize: 'vertical',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             minHeight: 100, padding: 10,
             boxSizing: 'border-box',
           }}

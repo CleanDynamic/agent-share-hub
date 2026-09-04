@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { type } from "@/lib/theme/type";
 
 export type ItemKind = "blueprint" | "blog" | "bounty" | "stage" | "block";
 
@@ -176,7 +177,7 @@ function ItemCard({
         <span
           style={{
             display: "inline-block",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 10,
             fontWeight: 600,
             textTransform: "uppercase",
@@ -192,7 +193,7 @@ function ItemCard({
         </span>
         <div
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 13,
             fontWeight: 600,
             color: "rgba(255,255,255,0.95)",
@@ -208,7 +209,7 @@ function ItemCard({
         {item.description && (
           <div
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 11,
               color: "rgba(255,255,255,0.55)",
               marginTop: 4,
@@ -370,7 +371,7 @@ function FilterChip({
     <button
       onClick={onClick}
       style={{
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 11,
         fontWeight: 500,
         padding: "4px 10px",
@@ -429,8 +430,8 @@ function EmptyState({ isOwn }: { isOwn: boolean }) {
       </div>
       <h2
         style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: 20,
+          ...type.cardTitle,
+
           color: "rgba(255,255,255,0.92)",
           margin: 0,
         }}
@@ -439,7 +440,7 @@ function EmptyState({ isOwn }: { isOwn: boolean }) {
       </h2>
       <p
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 13,
           margin: "8px 0 0",
           maxWidth: 420,
@@ -546,7 +547,7 @@ export function CollectionDetailPage({
               background: "transparent",
               border: "none",
               cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 12,
               color: "rgba(255,255,255,0.55)",
               padding: 0,
@@ -601,12 +602,10 @@ export function CollectionDetailPage({
             />
             <h1
               style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: 28,
-                fontWeight: 600,
+                ...type.sectionHead,
+
                 color: "rgba(255,255,255,0.95)",
                 margin: 0,
-                lineHeight: 1.1,
               }}
             >
               {collection.name}
@@ -619,7 +618,7 @@ export function CollectionDetailPage({
                 padding: "3px 8px",
                 borderRadius: 999,
                 background: "rgba(255,255,255,0.05)",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 11,
                 color: "rgba(255,255,255,0.6)",
               }}
@@ -632,7 +631,7 @@ export function CollectionDetailPage({
           {collection.description && (
             <p
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 13,
                 color: "rgba(255,255,255,0.7)",
                 margin: 0,
@@ -645,7 +644,7 @@ export function CollectionDetailPage({
 
           <div
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 11,
               color: "rgba(255,255,255,0.45)",
             }}
@@ -704,7 +703,7 @@ export function CollectionDetailPage({
                 border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: 6,
                 padding: "6px 10px",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 12,
                 color: "rgba(255,255,255,0.7)",
                 cursor: "pointer",

@@ -60,7 +60,7 @@ export function BountyByline({
           <div style={{ textAlign: "left" }}>
             <div
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 14,
                 fontWeight: 600,
                 color: "rgba(255,255,255,0.90)",
@@ -70,7 +70,7 @@ export function BountyByline({
             </div>
             <div
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 12,
                 color: "rgba(255,255,255,0.45)",
               }}
@@ -92,7 +92,7 @@ export function BountyByline({
               background: "rgba(46,196,182,0.10)",
               border: "0.5px solid rgba(46,196,182,0.25)",
               color: "#2EC4B6",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 11,
               fontWeight: 600,
               cursor: "pointer",
@@ -131,7 +131,7 @@ export function BountyByline({
                 <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 4 }}>
                   <span
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       fontWeight: 600,
                       color: "rgba(255,255,255,0.85)",
@@ -141,7 +141,7 @@ export function BountyByline({
                   </span>
                   <span
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 11,
                       color: "rgba(255,255,255,0.45)",
                     }}
@@ -155,7 +155,7 @@ export function BountyByline({
               </div>
               <span
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 10,
                   fontWeight: 400,
                   color: "rgba(46,196,182,0.70)",
@@ -173,7 +173,7 @@ export function BountyByline({
           <button
             onClick={onViewProvenance}
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 11,
               fontWeight: 500,
               color: "#2EC4B6",

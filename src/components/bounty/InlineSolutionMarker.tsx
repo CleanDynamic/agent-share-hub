@@ -50,7 +50,7 @@ export function InlineSolutionMarker({
             <UserCheck size={12} color="#2EC4B6" />
             <span
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 11,
                 fontWeight: 500,
                 color: "rgba(255,255,255,0.75)",
@@ -65,7 +65,7 @@ export function InlineSolutionMarker({
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 10,
                 color: "rgba(255,255,255,0.40)",
               }}
@@ -75,7 +75,7 @@ export function InlineSolutionMarker({
             <button
               onClick={onViewOriginal}
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 10,
                 fontWeight: 500,
                 color: "#2EC4B6",
@@ -148,7 +148,7 @@ export function InlineSolutionMarker({
               <UserCheck size={11} color="#2EC4B6" />
               <span
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 11,
                   fontWeight: 600,
                   color: "rgba(255,255,255,0.85)",
@@ -160,7 +160,7 @@ export function InlineSolutionMarker({
             <button
               onClick={onViewOriginal}
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 10,
                 fontWeight: 500,
                 color: "#2EC4B6",

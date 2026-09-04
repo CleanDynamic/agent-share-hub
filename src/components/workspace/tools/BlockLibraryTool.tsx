@@ -130,7 +130,7 @@ export function BlockLibraryTool({
             border: 'none',
             outline: 'none',
             color: 'rgba(255,255,255,0.85)',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             fontWeight: 400,
           }}
@@ -164,7 +164,7 @@ export function BlockLibraryTool({
                 border: 'none',
                 background: active ? 'rgba(232,87,26,0.12)' : 'rgba(255, 255, 255, 0.12)',
                 color: active ? '#E8571A' : 'rgba(255,255,255,0.55)',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 fontSize: 10,
                 fontWeight: 500,
                 cursor: 'pointer',
@@ -207,7 +207,7 @@ export function BlockLibraryTool({
               padding: '20px 8px',
               textAlign: 'center',
               color: 'rgba(255,255,255,0.35)',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 11,
             }}
           >
@@ -224,7 +224,7 @@ export function BlockLibraryTool({
           padding: '6px 10px',
           borderTop: PANEL_DIVIDER,
           color: 'rgba(255,255,255,0.30)',
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           fontSize: 10,
           fontWeight: 400,
           display: 'flex',
@@ -296,7 +296,7 @@ function BlockCard({ block, onClick, onDragStart, onDoubleClick }: BlockCardProp
         />
         <span
           style={{
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             fontSize: 11,
             fontWeight: 500,
             color: 'rgba(255,255,255,0.85)',
@@ -310,7 +310,7 @@ function BlockCard({ block, onClick, onDragStart, onDoubleClick }: BlockCardProp
       </div>
       <div
         style={{
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           fontSize: 10,
           fontWeight: 400,
           color: 'rgba(255,255,255,0.40)',

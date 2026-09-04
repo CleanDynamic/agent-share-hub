@@ -29,7 +29,7 @@ export function EmptyProgressState() {
       >
         <Sparkles size={20} />
       </div>
-      <div style={{ fontFamily: "Inter, sans-serif", fontSize: 16, fontWeight: 600, color: "rgba(255,255,255,0.92)" }}>
+      <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16, fontWeight: 600, color: "rgba(255,255,255,0.92)" }}>
         Your story starts here
       </div>
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", maxWidth: 360 }}>

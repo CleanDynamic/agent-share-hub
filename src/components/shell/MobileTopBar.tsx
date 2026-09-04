@@ -35,7 +35,7 @@ const BRAND_ORANGE = "#E8571A";
 
 const TITLE_STYLE: React.CSSProperties = {
   color: "#FFFFFF",
-  fontFamily: "Inter, sans-serif",
+  fontFamily: "Figtree, sans-serif",
   fontSize: 16,
   fontWeight: 600,
 };
@@ -62,7 +62,7 @@ export function MobileTopBar({
           <span
             style={{
               color: BRAND_ORANGE,
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 16,
               fontWeight: 700,
               letterSpacing: "0.04em",

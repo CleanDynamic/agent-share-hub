@@ -109,7 +109,7 @@ export function BlockRefNode({ node }: ReactNodeViewProps) {
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 4,
           padding: '1px 8px',
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           fontSize: 12,
           fontWeight: 500,
           lineHeight: 1.4,

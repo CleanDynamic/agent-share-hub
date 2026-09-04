@@ -31,7 +31,7 @@ export function AuthButton({
         background: "linear-gradient(135deg, #E8571A 0%, #C44514 100%)",
         borderRadius: "10px",
         border: "none",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: "14px",
         fontWeight: 600,
         color: "white",

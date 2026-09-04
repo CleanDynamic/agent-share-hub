@@ -94,7 +94,7 @@ function BarItem({
       </span>
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 10,
           fontWeight: 500,
           color: active ? ACTIVE : INACTIVE,

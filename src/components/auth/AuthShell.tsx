@@ -33,7 +33,7 @@ export function AuthShell({ children }: AuthShellProps) {
         >
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "24px",
               fontWeight: 700,
               color: "#E8571A",
@@ -44,7 +44,7 @@ export function AuthShell({ children }: AuthShellProps) {
           </span>
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "13px",
               fontWeight: 400,
               color: "rgba(255, 255, 255, 0.55)",

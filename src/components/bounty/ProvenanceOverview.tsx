@@ -47,7 +47,7 @@ export function ProvenanceOverview({
           <Users size={14} color="#2EC4B6" />
           <h3
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               fontWeight: 600,
               color: "rgba(255,255,255,0.85)",
@@ -63,7 +63,7 @@ export function ProvenanceOverview({
             display: "inline-flex",
             alignItems: "center",
             gap: 4,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             color: "rgba(46,196,182,0.85)",
             background: "none",
@@ -102,7 +102,7 @@ export function ProvenanceOverview({
             <div style={{ minWidth: 0 }}>
               <div
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   fontWeight: 600,
                   color: "rgba(255,255,255,0.85)",
@@ -112,7 +112,7 @@ export function ProvenanceOverview({
               </div>
               <div
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 11,
                   color: "rgba(255,255,255,0.45)",
                 }}
@@ -122,7 +122,7 @@ export function ProvenanceOverview({
               <div
                 style={{
                   marginTop: 4,
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 10,
                   color: "#F59E0B",
                   fontWeight: 600,
@@ -133,7 +133,7 @@ export function ProvenanceOverview({
               <div
                 style={{
                   marginTop: 2,
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 10,
                   color: "rgba(255,255,255,0.40)",
                 }}
@@ -174,7 +174,7 @@ export function ProvenanceOverview({
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <span
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       fontWeight: 600,
                       color: "rgba(255,255,255,0.85)",
@@ -186,7 +186,7 @@ export function ProvenanceOverview({
                 </div>
                 <div
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 11,
                     color: "rgba(255,255,255,0.45)",
                   }}
@@ -196,7 +196,7 @@ export function ProvenanceOverview({
                 <div
                   style={{
                     marginTop: 4,
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 10,
                     color: "#2EC4B6",
                     fontWeight: 600,
@@ -207,7 +207,7 @@ export function ProvenanceOverview({
                 <div
                   style={{
                     marginTop: 2,
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 10,
                     color: "rgba(255,255,255,0.40)",
                   }}
@@ -225,7 +225,7 @@ export function ProvenanceOverview({
           marginTop: 12,
           paddingTop: 12,
           borderTop: "0.5px solid rgba(255, 255, 255, 0.14)",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 10,
           color: "rgba(255,255,255,0.40)",
           fontStyle: "italic",
