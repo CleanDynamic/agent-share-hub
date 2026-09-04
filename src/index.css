@@ -16,6 +16,12 @@
   --border-hover: rgba(255,255,255,0.12);
   --text: rgba(255,255,255,0.85);
   --text-muted: rgba(255,255,255,0.40);
+  /* BG-P02. The legacy dark paint's text colour, held under its own name.
+     --text now belongs to the buildgallery theme blocks below and flips
+     to #1B2026 on Exhibition; the surfaces still carrying the old dark
+     paint read this instead until their prompt repaints them. Delete each
+     reference as its surface is repainted, then delete this. */
+  --legacy-text: rgba(255,255,255,0.85);
   --orange: #8B4513;
   --teal: #1F7A6D;
   --radius-card: 14px;
@@ -107,28 +113,6 @@
   --cat-agents: #A78BFA;
   --cat-breakage: #F26D6D;
   --cat-media: #F472B6;
-}
-
-/* ── Legacy hold-back — DELETE IN BG-P02 ──────────────────────────────────────
-   --bg and --text were already live token names carrying the old dark palette:
-   body reads both, the input rule reads --text, and FollowButton and
-   RightPanelExplore read --text inline. Handing them Exhibition's values while
-   the rest of the app is still painted dark would put near-black text on a dark
-   ground, so until a data-theme attribute exists the two are held at exactly
-   the values they have today and the site renders identically.
-
-   This block only applies when no theme is chosen, so the moment BG-P02 sets
-   data-theme every one of those surfaces picks up the real token. Nothing else
-   is held back: --bg itself resolves to Exhibition on :root as specified, and
-   only body's own background declaration is pinned.
-   ─────────────────────────────────────────────────────────────────────────── */
-
-:root:not([data-theme]) {
-  --text: rgba(255,255,255,0.85);
-}
-
-:root:not([data-theme]) body {
-  background: #25252F;
 }
 
 body {
@@ -280,7 +264,7 @@ input, textarea, select {
   background: rgba(255,255,255,0.05) !important;
   border: 1px solid rgba(255,255,255,0.10) !important;
   border-radius: 10px;
-  color: var(--text) !important;
+  color: var(--legacy-text) !important;
   outline: none;
   transition: border-color 0.15s ease;
 }
