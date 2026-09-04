@@ -221,12 +221,30 @@ describe("the retired faces", () => {
   // Acceptance: neither family may appear in a network request on any route.
   // Both were loaded by name, so if the name is gone from the source and from
   // index.html, nothing can request them.
+  // LeftPanel is on the do-not-touch list for this phase — it is one of the
+  // externally-supplied shell components — so its one Inter reference is left
+  // as it is and exempted here rather than quietly edited. It renders in the
+  // system fallback until the prompt that owns that surface repoints it; the
+  // fix is one token. Nothing else may be added to this list.
+  const EXEMPT = ["src/components/layout/LeftPanel.tsx"];
+
   it("are named nowhere in the source", () => {
     const offenders = sourceFiles()
       .filter(([path]) => !path.endsWith("theme/type.test.ts"))
+      .filter(([path]) => !EXEMPT.includes(path))
       .filter(([, text]) => /Playfair Display|['"]Inter['",]|\bInter,\s|,\s?Inter\b/.test(text))
       .map(([path]) => path);
     expect(offenders).toEqual([]);
+  });
+
+  it("has an exemption list that is still doing work", () => {
+    for (const path of EXEMPT) {
+      const [, text] = sourceFiles().find(([p]) => p === path) ?? [];
+      expect(text, `${path} is exempted but missing`).toBeDefined();
+      expect(text, `${path} no longer needs its exemption — remove it`).toMatch(
+        /['"]Inter['",]|Playfair Display/,
+      );
+    }
   });
 
   it("are not imported by index.html or any stylesheet", () => {

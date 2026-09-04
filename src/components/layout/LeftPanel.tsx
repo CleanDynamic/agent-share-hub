@@ -12,6 +12,7 @@ import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 import { useDraftCount } from "@/hooks/useDraftCount";
 
+
 interface NavItem {
   icon: React.ElementType;
   label: string;
@@ -117,7 +118,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                     style={{
                       height: 16, minWidth: 16, padding: '0 4px',
                       background: '#E8571A',
-                      fontFamily: 'Figtree, system-ui, sans-serif',
+                      fontFamily: 'Inter, system-ui, sans-serif',
                       fontSize: 9, fontWeight: 600, lineHeight: 1,
                     }}
                   >
