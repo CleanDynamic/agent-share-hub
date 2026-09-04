@@ -115,6 +115,34 @@
   --cat-media: #F472B6;
 }
 
+/* ── The theme cross-fade (BG-P02) ────────────────────────────────────────────
+   ThemeProvider puts data-theme-changing on the root element for exactly the
+   180ms of a switch, so the transition exists only while the theme is being
+   swapped: not on first paint, and not during ordinary interaction.
+
+   Colour properties only, named individually — never `all`, and never a layout
+   property. The !important is what makes the swap coherent: for those 180ms
+   every element crosses over on one duration instead of each firing whatever
+   transition it happens to carry, which is what makes a theme flip smear.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root[data-theme-changing] *,
+:root[data-theme-changing] *::before,
+:root[data-theme-changing] *::after {
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme-changing] *,
+  :root[data-theme-changing] *::before,
+  :root[data-theme-changing] *::after {
+    transition: none !important;
+  }
+}
+
 body {
   background: var(--bg);
   color: var(--text);

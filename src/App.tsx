@@ -7,6 +7,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { PresenceProvider } from "@/components/PresenceProvider";
 import { ShareMenuProvider } from "@/components/share/ShareMenuProvider";
 import { ReblogComposeProvider } from "@/contexts/ReblogComposeContext";
@@ -97,6 +98,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ThemeProvider>
           <AuthProvider>
             <PresenceProvider />
             <ConnectionBanner />
@@ -184,6 +186,7 @@ const App = () => (
             </ReblogComposeProvider>
             </ShareMenuProvider>
           </AuthProvider>
+          </ThemeProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
