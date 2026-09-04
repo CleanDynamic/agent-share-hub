@@ -122,7 +122,7 @@ export function FollowButton({ creatorId, onCountChange }: FollowButtonProps) {
           background: 'rgba(255,255,255,0.05)',
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius-btn)',
-          color: 'var(--text)',
+          color: 'var(--legacy-text)',
         }}
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
@@ -148,7 +148,7 @@ export function FollowButton({ creatorId, onCountChange }: FollowButtonProps) {
         background: 'rgba(255,255,255,0.05)',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius-btn)',
-        color: 'var(--text)',
+        color: 'var(--legacy-text)',
       }}
       onClick={handleClick}
       disabled={acting}

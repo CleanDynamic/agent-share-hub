@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 /* ────────────────────────────────────────────────
    AppShell frame tests.
@@ -69,6 +70,7 @@ const { AppShell } = await import("@/components/AppShell");
 
 function renderAt(path: string) {
   return render(
+    <ThemeProvider>
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route element={<AppShell />}>
@@ -83,7 +85,8 @@ function renderAt(path: string) {
           <Route path="/analytics" element={<div data-testid="page">analytics page</div>} />
         </Route>
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
+    </ThemeProvider>,
   );
 }
 
@@ -215,5 +218,41 @@ describe("AppShell mobile mode", () => {
     renderAt("/");
     expect(screen.queryByTestId("mobile-top-bar")).not.toBeInTheDocument();
     expect(screen.queryByTestId("mobile-bottom-nav")).not.toBeInTheDocument();
+  });
+});
+
+/* ── BG-P02 — the theme toggle's mount point ── */
+describe("theme toggle", () => {
+  const toggle = () => screen.queryByRole("radiogroup", { name: "Theme" });
+
+  it("sits in the left rail's user area, above the user block", () => {
+    signIn();
+    renderAt("/");
+    const rail = document.querySelector(".fs-left");
+    expect(rail).not.toBeNull();
+    expect(rail!.contains(toggle()!)).toBe(true);
+
+    // The frame's order: nav list, then the beforeUserSlot, then the user block.
+    const userSection = rail!.querySelector(".fs-user-section")!;
+    expect(toggle()!.compareDocumentPosition(userSection))
+      .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it("is offered to signed-out visitors too — the theme is not an account setting", () => {
+    renderAt("/");
+    expect(toggle()).not.toBeNull();
+  });
+
+  it("offers all three choices, with the current one checked", () => {
+    renderAt("/");
+    expect(within(toggle()!).getAllByRole("radio").map((r) => r.textContent))
+      .toEqual(["Exhibition", "Dusk", "System"]);
+    expect(within(toggle()!).getByRole("radio", { checked: true })).toHaveTextContent("Exhibition");
+  });
+
+  it("is absent where the frame hides the left rail", () => {
+    breakpoint = "mobile";
+    renderAt("/");
+    expect(toggle()).toBeNull();
   });
 });
