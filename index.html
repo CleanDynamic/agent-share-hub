@@ -7,6 +7,11 @@
     <meta name="description" content="Download AI assistants, blueprints and workflows. Works with ChatGPT, Claude, Gemini and any AI tool. Free to browse. Built by experts. Usable by anyone.">
     <meta name="author" content="NeoScale AI" />
 
+    <!-- BG-P02 theme boot: sets <html data-theme> before the bundle, so nobody
+         sees a flash of the other room. Mirrors src/contexts/ThemeContext.tsx —
+         same bg-theme key, same Exhibition fallback. Change one, change both. -->
+    <script>try{var t=localStorage.getItem("bg-theme");if(t=="system")t=matchMedia("(prefers-color-scheme:dark)").matches?"dusk":"exhibition";document.documentElement.dataset.theme=t=="dusk"?"dusk":"exhibition"}catch(e){document.documentElement.dataset.theme="exhibition"}</script>
+
     
     
     <meta property="og:type" content="website" />
