@@ -27,6 +27,110 @@
   --divider: rgba(255, 255, 255, 0.14);
 }
 
+/* ── buildgallery.ai theme tokens (BG-P01) ────────────────────────────────────
+   Two themes, one set of semantic token names. Values are generated from
+   src/lib/theme/semantics.ts — change them there and mirror the change here;
+   src/lib/theme/tokens.ts is how components read them.
+
+   The bare :root block duplicates Exhibition so a document with no data-theme
+   attribute still renders correctly. It intentionally redeclares --bg and
+   --text from the legacy block above, which is what BG-P29 will finish
+   migrating.
+
+   No component reads these yet. BG-P02 adds the switch that sets data-theme.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root,
+:root[data-theme="exhibition"] {
+  --bg: #E4E6E8;
+  --recess: #D3D7DB;
+  --text: #1B2026;
+  --text2: #565E66;
+  --line: #C6CBD1;
+
+  --glass: rgba(255,255,255,.55);
+  --glass-2: rgba(255,255,255,.34);
+  --glass-border: rgba(255,255,255,.80);
+  --glass-hi: rgba(255,255,255,.95);
+
+  --action: #9E4B2C;
+  --on-action: #F7F8F9;
+  --evidence: #0F6E63;
+  --evidence-fill: #BFE3DC;
+  --lit: #D9A441;
+  --on-lit: #1B2026;
+
+  --porthole: #4E565E;
+  --chrome-hi: #FFFFFF;
+  --chrome-lo: #99A2AA;
+
+  --cat-instruction: #9C3E12;
+  --cat-configuration: #0F6B31;
+  --cat-data: #1D4ED8;
+  --cat-artefact: #8F4309;
+  --cat-evidence: #0E635C;
+  --cat-narrative: #565B63;
+  --cat-agents: #6D28D9;
+  --cat-breakage: #B91C1C;
+  --cat-media: #BE185D;
+}
+
+:root[data-theme="dusk"] {
+  --bg: #1F1B2B;
+  --recess: #372F4A;
+  --text: #EEEAF4;
+  --text2: #B3ABC6;
+  --line: #4B4362;
+
+  --glass: rgba(72,63,104,.42);
+  --glass-2: rgba(72,63,104,.26);
+  --glass-border: rgba(238,234,244,.14);
+  --glass-hi: rgba(238,234,244,.22);
+
+  --action: #D98C6B;
+  --on-action: #241B1A;
+  --evidence: #86BDD3;
+  --evidence-fill: rgba(134,189,211,.16);
+  --lit: #D9A441;
+  --on-lit: #241B1A;
+
+  --porthole: #141020;
+  --chrome-hi: #CBC6E4;
+  --chrome-lo: #5C5480;
+
+  --cat-instruction: #F0865A;
+  --cat-configuration: #5CCB7C;
+  --cat-data: #6AA1FF;
+  --cat-artefact: #F5B83D;
+  --cat-evidence: #86BDD3;
+  --cat-narrative: #A8A6A3;
+  --cat-agents: #A78BFA;
+  --cat-breakage: #F26D6D;
+  --cat-media: #F472B6;
+}
+
+/* ── Legacy hold-back — DELETE IN BG-P02 ──────────────────────────────────────
+   --bg and --text were already live token names carrying the old dark palette:
+   body reads both, the input rule reads --text, and FollowButton and
+   RightPanelExplore read --text inline. Handing them Exhibition's values while
+   the rest of the app is still painted dark would put near-black text on a dark
+   ground, so until a data-theme attribute exists the two are held at exactly
+   the values they have today and the site renders identically.
+
+   This block only applies when no theme is chosen, so the moment BG-P02 sets
+   data-theme every one of those surfaces picks up the real token. Nothing else
+   is held back: --bg itself resolves to Exhibition on :root as specified, and
+   only body's own background declaration is pinned.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root:not([data-theme]) {
+  --text: rgba(255,255,255,0.85);
+}
+
+:root:not([data-theme]) body {
+  background: #25252F;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
