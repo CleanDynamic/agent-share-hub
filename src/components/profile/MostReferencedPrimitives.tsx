@@ -198,7 +198,7 @@ function PrimitiveCard({
           />
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "9px",
               fontWeight: 600,
               letterSpacing: "0.08em",
@@ -221,7 +221,7 @@ function PrimitiveCard({
           <Quote size={10} style={{ color: "rgba(245,158,11,0.85)" }} />
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "11px",
               fontWeight: 600,
               color: "rgba(245,158,11,0.85)",
@@ -234,7 +234,7 @@ function PrimitiveCard({
 
       <div
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "13px",
           fontWeight: 600,
           color: hasName ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.50)",
@@ -272,7 +272,7 @@ function PrimitiveCard({
         ) : (
           <div
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "10px",
               fontWeight: 400,
               color: "rgba(255,255,255,0.55)",
@@ -292,7 +292,7 @@ function PrimitiveCard({
         style={{
           height: "16px",
           marginTop: "auto",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "10px",
           fontWeight: 400,
           color: "rgba(255,255,255,0.40)",
@@ -347,7 +347,7 @@ export function MostReferencedPrimitives({
         <Star size={14} style={{ color: "#F59E0B", flexShrink: 0 }} />
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "13px",
             fontWeight: 600,
             color: "rgba(255,255,255,0.85)",
@@ -358,7 +358,7 @@ export function MostReferencedPrimitives({
         </span>
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "11px",
             fontWeight: 400,
             color: "rgba(255,255,255,0.45)",
@@ -372,7 +372,7 @@ export function MostReferencedPrimitives({
           <button
             onClick={onViewAllClick}
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "11px",
               fontWeight: 500,
               color: "rgba(46,196,182,0.85)",

@@ -212,7 +212,7 @@ export function MetaBountyCreationFlow({
             <div>
               <h2
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 20,
                   fontWeight: 700,
                   color: "rgba(255,255,255,0.95)",
@@ -223,7 +223,7 @@ export function MetaBountyCreationFlow({
               </h2>
               <p
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 13,
                   color: "rgba(255,255,255,0.6)",
                   margin: "0 0 20px 0",
@@ -238,7 +238,7 @@ export function MetaBountyCreationFlow({
               <div style={{ marginBottom: 16 }}>
                 <label
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 12,
                     fontWeight: 500,
                     color: "rgba(255,255,255,0.7)",
@@ -259,7 +259,7 @@ export function MetaBountyCreationFlow({
                     background: "rgba(255, 255, 255, 0.12)",
                     border: "1px solid rgba(255,255,255,0.1)",
                     borderRadius: 8,
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 14,
                     color: "rgba(255,255,255,0.9)",
                     outline: "none",
@@ -270,7 +270,7 @@ export function MetaBountyCreationFlow({
               <div style={{ marginBottom: 16 }}>
                 <label
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 12,
                     fontWeight: 500,
                     color: "rgba(255,255,255,0.7)",
@@ -293,7 +293,7 @@ export function MetaBountyCreationFlow({
                     background: "rgba(255, 255, 255, 0.12)",
                     border: "1px solid rgba(255,255,255,0.1)",
                     borderRadius: 8,
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 14,
                     color: "rgba(255,255,255,0.9)",
                     outline: "none",
@@ -306,7 +306,7 @@ export function MetaBountyCreationFlow({
               <div>
                 <label
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 12,
                     fontWeight: 500,
                     color: "rgba(255,255,255,0.7)",
@@ -334,7 +334,7 @@ export function MetaBountyCreationFlow({
                               : "rgba(255,255,255,0.1)"
                           }`,
                           borderRadius: 100,
-                          fontFamily: "Inter, sans-serif",
+                          fontFamily: "Figtree, sans-serif",
                           fontSize: 12,
                           fontWeight: 500,
                           color: isSelected
@@ -357,7 +357,7 @@ export function MetaBountyCreationFlow({
             <div>
               <h2
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 20,
                   fontWeight: 700,
                   color: "rgba(255,255,255,0.95)",
@@ -368,7 +368,7 @@ export function MetaBountyCreationFlow({
               </h2>
               <p
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 13,
                   color: "rgba(255,255,255,0.6)",
                   margin: "0 0 20px 0",
@@ -399,7 +399,7 @@ export function MetaBountyCreationFlow({
                     >
                       <span
                         style={{
-                          fontFamily: "Inter, sans-serif",
+                          fontFamily: "Figtree, sans-serif",
                           fontSize: 11,
                           fontWeight: 600,
                           color: "rgba(255,255,255,0.5)",
@@ -446,7 +446,7 @@ export function MetaBountyCreationFlow({
                         background: "rgba(255, 255, 255, 0.12)",
                         border: "1px solid rgba(255,255,255,0.1)",
                         borderRadius: 6,
-                        fontFamily: "Inter, sans-serif",
+                        fontFamily: "Figtree, sans-serif",
                         fontSize: 13,
                         color: "rgba(255,255,255,0.9)",
                         outline: "none",
@@ -469,7 +469,7 @@ export function MetaBountyCreationFlow({
                         background: "rgba(255, 255, 255, 0.12)",
                         border: "1px solid rgba(255,255,255,0.1)",
                         borderRadius: 6,
-                        fontFamily: "Inter, sans-serif",
+                        fontFamily: "Figtree, sans-serif",
                         fontSize: 13,
                         color: "rgba(255,255,255,0.9)",
                         outline: "none",
@@ -479,7 +479,7 @@ export function MetaBountyCreationFlow({
                     />
                     <div
                       style={{
-                        fontFamily: "Inter, sans-serif",
+                        fontFamily: "Figtree, sans-serif",
                         fontSize: 10,
                         color: "rgba(255,255,255,0.4)",
                         textAlign: "right",
@@ -506,7 +506,7 @@ export function MetaBountyCreationFlow({
                             background: "rgba(255, 255, 255, 0.12)",
                             border: "1px solid rgba(255,255,255,0.1)",
                             borderRadius: 6,
-                            fontFamily: "Inter, sans-serif",
+                            fontFamily: "Figtree, sans-serif",
                             fontSize: 13,
                             color: "rgba(255,255,255,0.9)",
                             outline: "none",
@@ -526,7 +526,7 @@ export function MetaBountyCreationFlow({
                           background: "rgba(255, 255, 255, 0.12)",
                           border: "1px solid rgba(255,255,255,0.1)",
                           borderRadius: 6,
-                          fontFamily: "Inter, sans-serif",
+                          fontFamily: "Figtree, sans-serif",
                           fontSize: 13,
                           color: "rgba(255,255,255,0.9)",
                           outline: "none",
@@ -553,7 +553,7 @@ export function MetaBountyCreationFlow({
                       background: "rgba(255,255,255,0.02)",
                       border: "1px dashed rgba(255,255,255,0.15)",
                       borderRadius: 8,
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 13,
                       fontWeight: 500,
                       color: "rgba(255,255,255,0.6)",
@@ -573,7 +573,7 @@ export function MetaBountyCreationFlow({
             <div>
               <h2
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 20,
                   fontWeight: 700,
                   color: "rgba(255,255,255,0.95)",
@@ -584,7 +584,7 @@ export function MetaBountyCreationFlow({
               </h2>
               <p
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 13,
                   color: "rgba(255,255,255,0.6)",
                   margin: "0 0 20px 0",
@@ -597,7 +597,7 @@ export function MetaBountyCreationFlow({
                 <div>
                   <label
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       fontWeight: 500,
                       color: "rgba(255,255,255,0.7)",
@@ -620,7 +620,7 @@ export function MetaBountyCreationFlow({
                       background: "rgba(255, 255, 255, 0.12)",
                       border: "1px solid rgba(255,255,255,0.1)",
                       borderRadius: 8,
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
                       color: "rgba(255,255,255,0.9)",
                       outline: "none",
@@ -631,7 +631,7 @@ export function MetaBountyCreationFlow({
                 <div>
                   <label
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       fontWeight: 500,
                       color: "rgba(255,255,255,0.7)",
@@ -661,7 +661,7 @@ export function MetaBountyCreationFlow({
                       background: "rgba(255, 255, 255, 0.12)",
                       border: "1px solid rgba(255,255,255,0.1)",
                       borderRadius: 8,
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
                       color: "rgba(255,255,255,0.9)",
                       outline: "none",
@@ -672,7 +672,7 @@ export function MetaBountyCreationFlow({
                 <div>
                   <label
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       fontWeight: 500,
                       color: "rgba(255,255,255,0.7)",
@@ -699,7 +699,7 @@ export function MetaBountyCreationFlow({
                       background: "rgba(255, 255, 255, 0.12)",
                       border: "1px solid rgba(255,255,255,0.1)",
                       borderRadius: 8,
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
                       color: "rgba(255,255,255,0.9)",
                       outline: "none",
@@ -717,7 +717,7 @@ export function MetaBountyCreationFlow({
                 >
                   <label
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 13,
                       fontWeight: 500,
                       color: "rgba(255,255,255,0.8)",
@@ -763,7 +763,7 @@ export function MetaBountyCreationFlow({
                 <div>
                   <label
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       fontWeight: 500,
                       color: "rgba(255,255,255,0.7)",
@@ -785,7 +785,7 @@ export function MetaBountyCreationFlow({
                       background: "rgba(255, 255, 255, 0.12)",
                       border: "1px solid rgba(255,255,255,0.1)",
                       borderRadius: 8,
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
                       color: "rgba(255,255,255,0.9)",
                       outline: "none",
@@ -802,7 +802,7 @@ export function MetaBountyCreationFlow({
             <div>
               <h2
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 20,
                   fontWeight: 700,
                   color: "rgba(255,255,255,0.95)",
@@ -813,7 +813,7 @@ export function MetaBountyCreationFlow({
               </h2>
               <p
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 13,
                   color: "rgba(255,255,255,0.6)",
                   margin: "0 0 20px 0",
@@ -833,7 +833,7 @@ export function MetaBountyCreationFlow({
                 >
                   <h3
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
                       fontWeight: 600,
                       color: "rgba(255,255,255,0.9)",
@@ -844,7 +844,7 @@ export function MetaBountyCreationFlow({
                   </h3>
                   <p
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       color: "rgba(255,255,255,0.6)",
                       margin: 0,
@@ -869,7 +869,7 @@ export function MetaBountyCreationFlow({
                             padding: "3px 8px",
                             background: "rgba(249,115,22,0.15)",
                             borderRadius: 4,
-                            fontFamily: "Inter, sans-serif",
+                            fontFamily: "Figtree, sans-serif",
                             fontSize: 10,
                             fontWeight: 500,
                             color: "#F97316",
@@ -892,7 +892,7 @@ export function MetaBountyCreationFlow({
                 >
                   <div
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 11,
                       fontWeight: 600,
                       color: "rgba(255,255,255,0.5)",
@@ -917,7 +917,7 @@ export function MetaBountyCreationFlow({
                       >
                         <span
                           style={{
-                            fontFamily: "Inter, sans-serif",
+                            fontFamily: "Figtree, sans-serif",
                             fontSize: 13,
                             color: "rgba(255,255,255,0.8)",
                           }}
@@ -926,7 +926,7 @@ export function MetaBountyCreationFlow({
                         </span>
                         <span
                           style={{
-                            fontFamily: "Inter, sans-serif",
+                            fontFamily: "Figtree, sans-serif",
                             fontSize: 12,
                             fontWeight: 500,
                             color: "rgba(255,255,255,0.6)",
@@ -949,7 +949,7 @@ export function MetaBountyCreationFlow({
                   >
                     <span
                       style={{
-                        fontFamily: "Inter, sans-serif",
+                        fontFamily: "Figtree, sans-serif",
                         fontSize: 13,
                         fontWeight: 600,
                         color: "rgba(255,255,255,0.9)",
@@ -959,7 +959,7 @@ export function MetaBountyCreationFlow({
                     </span>
                     <span
                       style={{
-                        fontFamily: "Inter, sans-serif",
+                        fontFamily: "Figtree, sans-serif",
                         fontSize: 16,
                         fontWeight: 700,
                         color: "#F97316",
@@ -980,7 +980,7 @@ export function MetaBountyCreationFlow({
                 >
                   <div
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 11,
                       fontWeight: 600,
                       color: "rgba(255,255,255,0.5)",
@@ -1001,7 +1001,7 @@ export function MetaBountyCreationFlow({
                     <div>
                       <div
                         style={{
-                          fontFamily: "Inter, sans-serif",
+                          fontFamily: "Figtree, sans-serif",
                           fontSize: 10,
                           color: "rgba(255,255,255,0.5)",
                           marginBottom: 2,
@@ -1011,7 +1011,7 @@ export function MetaBountyCreationFlow({
                       </div>
                       <div
                         style={{
-                          fontFamily: "Inter, sans-serif",
+                          fontFamily: "Figtree, sans-serif",
                           fontSize: 13,
                           color: "rgba(255,255,255,0.9)",
                         }}
@@ -1022,7 +1022,7 @@ export function MetaBountyCreationFlow({
                     <div>
                       <div
                         style={{
-                          fontFamily: "Inter, sans-serif",
+                          fontFamily: "Figtree, sans-serif",
                           fontSize: 10,
                           color: "rgba(255,255,255,0.5)",
                           marginBottom: 2,
@@ -1032,7 +1032,7 @@ export function MetaBountyCreationFlow({
                       </div>
                       <div
                         style={{
-                          fontFamily: "Inter, sans-serif",
+                          fontFamily: "Figtree, sans-serif",
                           fontSize: 13,
                           color: "rgba(255,255,255,0.9)",
                         }}
@@ -1043,7 +1043,7 @@ export function MetaBountyCreationFlow({
                     <div>
                       <div
                         style={{
-                          fontFamily: "Inter, sans-serif",
+                          fontFamily: "Figtree, sans-serif",
                           fontSize: 10,
                           color: "rgba(255,255,255,0.5)",
                           marginBottom: 2,
@@ -1053,7 +1053,7 @@ export function MetaBountyCreationFlow({
                       </div>
                       <div
                         style={{
-                          fontFamily: "Inter, sans-serif",
+                          fontFamily: "Figtree, sans-serif",
                           fontSize: 13,
                           color: "rgba(255,255,255,0.9)",
                         }}
@@ -1066,7 +1066,7 @@ export function MetaBountyCreationFlow({
                     <div>
                       <div
                         style={{
-                          fontFamily: "Inter, sans-serif",
+                          fontFamily: "Figtree, sans-serif",
                           fontSize: 10,
                           color: "rgba(255,255,255,0.5)",
                           marginBottom: 2,
@@ -1076,7 +1076,7 @@ export function MetaBountyCreationFlow({
                       </div>
                       <div
                         style={{
-                          fontFamily: "Inter, sans-serif",
+                          fontFamily: "Figtree, sans-serif",
                           fontSize: 13,
                           color: "rgba(255,255,255,0.9)",
                         }}
@@ -1113,7 +1113,7 @@ export function MetaBountyCreationFlow({
               background: "transparent",
               border: "1px solid rgba(255,255,255,0.15)",
               borderRadius: 8,
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               fontWeight: 500,
               color:
@@ -1137,7 +1137,7 @@ export function MetaBountyCreationFlow({
                   : "linear-gradient(135deg, #F97316 0%, #EA580C 100%)",
                 border: "none",
                 borderRadius: 8,
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 13,
                 fontWeight: 600,
                 color: "white",
@@ -1157,7 +1157,7 @@ export function MetaBountyCreationFlow({
                   : "linear-gradient(135deg, #F97316 0%, #EA580C 100%)",
                 border: "none",
                 borderRadius: 8,
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 14,
                 fontWeight: 600,
                 color: "white",

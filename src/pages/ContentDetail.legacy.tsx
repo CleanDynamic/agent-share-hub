@@ -101,6 +101,7 @@ import { GEN1_BOUNTY_RESPONSES_ENABLED } from "@/lib/bounty-gen1/flags";
 import { insertNotification } from "@/lib/notifications";
 import { ReblogDetailView } from "@/components/ReblogDetailView";
 import { ReblogCard } from "@/components/ReblogCard";
+import { type } from "@/lib/theme/type";
 
 function difficultyColor(level: string) {
   switch (level) {
@@ -1014,13 +1015,11 @@ const ContentDetail = () => {
 
         {/* 3. Title */}
         <h1 style={{
-          fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: 22,
-          fontWeight: 700,
+          ...type.cardTitle,
+
           color: 'rgba(255,255,255,0.95)',
-          lineHeight: 1.25,
+
           margin: '10px 0 8px 0',
-          letterSpacing: '-0.3px',
         }}>
           {item.title}
         </h1>
@@ -1077,7 +1076,7 @@ const ContentDetail = () => {
             color: 'rgba(255,255,255,0.65)',
             lineHeight: 1.75,
             margin: '0 0 18px 0',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
           }}>
             {item.description}
           </p>
@@ -1375,7 +1374,6 @@ const ContentDetail = () => {
           </div>
         </div>
 
-
         {/* 8b. Model specs for local AI Tools */}
         {item.content_type === "AI Tools (LLMs)" && (item as any).tool_subtype === "local" && (
           <div className="mb-3 space-y-2">
@@ -1411,11 +1409,8 @@ const ContentDetail = () => {
           </div>
         )}
 
-
-
         {/* Dependencies */}
         <DependencyDisplay contentId={item.id} />
-
 
         {/* Subscriber gate */}
         {isSub && !subscriberUnlocked && creator && (
@@ -1760,10 +1755,8 @@ const ContentDetail = () => {
           </>
         )}
 
-
         </div>
         {/* ── END MAIN CONTENT ── */}
-
 
       </div>
       {/* ── END TWO-COLUMN LAYOUT ── */}

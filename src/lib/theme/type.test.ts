@@ -43,6 +43,24 @@ function sourceFiles(dir = SRC): Array<[string, string]> {
   });
 }
 
+/** Start of the CSS rule containing `pos`, skipping `${` interpolation opens. */
+function ruleStart(text: string, pos: number): number {
+  for (let i = pos; i > 0; i--) {
+    if (text[i] === "{" && text[i - 1] !== "$") return i;
+  }
+  return -1;
+}
+
+/** End of the block opened at `open`, counting nested braces. */
+function ruleEnd(text: string, open: number): number {
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) return i;
+  }
+  return text.length;
+}
+
 describe("the display floor: Bodoni Moda never below 20px", () => {
   it("holds across the shipped scale", () => {
     expect(assertFloors()).toEqual([]);
@@ -199,6 +217,42 @@ describe("the scale", () => {
   });
 });
 
+describe("the retired faces", () => {
+  // Acceptance: neither family may appear in a network request on any route.
+  // Both were loaded by name, so if the name is gone from the source and from
+  // index.html, nothing can request them.
+  it("are named nowhere in the source", () => {
+    const offenders = sourceFiles()
+      .filter(([path]) => !path.endsWith("theme/type.test.ts"))
+      .filter(([, text]) => /Playfair Display|['"]Inter['",]|\bInter,\s|,\s?Inter\b/.test(text))
+      .map(([path]) => path);
+    expect(offenders).toEqual([]);
+  });
+
+  it("are not imported by index.html or any stylesheet", () => {
+    const shipped = [
+      readFileSync(join(process.cwd(), "index.html"), "utf8"),
+      readFileSync(join(process.cwd(), "src/index.css"), "utf8"),
+      readFileSync(join(process.cwd(), "src/styles/shared-ns.css"), "utf8"),
+      readFileSync(join(process.cwd(), "src/components/shell/flat-shell.css"), "utf8"),
+    ].join("\n");
+    // A Google Fonts request names the family in the URL; the comments left
+    // behind mention the retired names in prose, so match the request shape.
+    expect(shipped).not.toMatch(/family=Inter/);
+    expect(shipped).not.toMatch(/family=Playfair/);
+    expect(shipped).not.toMatch(/font-family:[^;]*\bInter\b/);
+    expect(shipped).not.toMatch(/font-family:[^;]*Playfair/);
+  });
+
+  it("leaves all three replacements requested exactly once", () => {
+    const html = readFileSync(join(process.cwd(), "index.html"), "utf8");
+    for (const family of ["Bodoni+Moda", "DM+Mono", "Figtree"]) {
+      expect(html, `${family} should be requested`).toContain(family);
+    }
+    expect(html.match(/fonts\.googleapis\.com\/css2/g) ?? []).toHaveLength(1);
+  });
+});
+
 describe("every Bodoni instance comes from the scale", () => {
   // This is what makes the floor test cover the whole product rather than one
   // module. The scale is floor-checked above; if nothing else in src/ names
@@ -209,6 +263,50 @@ describe("every Bodoni instance comes from the scale", () => {
       .filter(([, text]) => text.includes("Bodoni Moda"))
       .map(([path]) => path);
     expect(offenders).toEqual([]);
+  });
+
+  it("clears the floor at every site that interpolates the stack into CSS", () => {
+    // Five of the six BODONI references sit in a CSS template literal, where
+    // the size is written by hand rather than coming from a role. Each one's
+    // enclosing rule is checked directly.
+    const sites: string[] = [];
+    for (const [path, text] of sourceFiles()) {
+      if (path.endsWith("theme/type.ts") || path.endsWith("theme/type.test.ts")) continue;
+      for (const m of text.matchAll(/BODONI/g)) {
+        const open = ruleStart(text, m.index);
+        if (open === -1) continue;
+        const rule = text.slice(open, ruleEnd(text, open));
+        for (const size of rule.matchAll(/font-size:\s*(\d+)px/g)) {
+          sites.push(`${path}: ${size[1]}px`);
+          expect(
+            Number(size[1]),
+            `${path} renders Bodoni at ${size[1]}px`,
+          ).toBeGreaterThanOrEqual(DISPLAY_MIN_PX);
+        }
+      }
+    }
+    // Guard against the sweep silently finding nothing to check.
+    expect(sites.length).toBeGreaterThan(0);
+  });
+
+  it("clears the floor at the one site that picks the stack in JS", () => {
+    // ContentDetailShell chooses between the display and body face at runtime.
+    // The same title string renders twice: once in the sticky header at 13px,
+    // which must NOT take the display face, and once as the h1 at 32-36px.
+    const text = readFileSync(
+      join(process.cwd(), "src/components/content-detail/ContentDetailShell.tsx"),
+      "utf8",
+    );
+    expect(text).toMatch(/const titleFont = isBlog \? BODONI : FIGTREE;/);
+    // The 13px site takes the body face directly, not titleFont.
+    expect(text).toMatch(/fontFamily: FIGTREE,\s*\n\s*fontSize: 13,/);
+    // Every site that does read titleFont is at or above the floor.
+    for (const m of text.matchAll(/fontFamily: titleFont,\s*\n\s*fontSize: ([^,\n]+),/g)) {
+      const smallest = Math.min(
+        ...[...m[1].matchAll(/(\d+)/g)].map((d) => Number(d[1])),
+      );
+      expect(smallest, `titleFont used at ${m[1]}`).toBeGreaterThanOrEqual(DISPLAY_MIN_PX);
+    }
   });
 
   it("is only ever spread from a role that clears the floor", () => {

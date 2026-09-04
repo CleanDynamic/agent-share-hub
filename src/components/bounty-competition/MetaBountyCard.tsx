@@ -59,7 +59,7 @@ export function MetaBountyCard({
           right: "16px",
           background: "rgba(124, 58, 237, 0.14)",
           color: "#7C3AED",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "9px",
           fontWeight: 600,
           letterSpacing: "0.06em",
@@ -84,7 +84,7 @@ export function MetaBountyCard({
           />
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "10px",
               fontWeight: 600,
               letterSpacing: "0.08em",
@@ -97,7 +97,7 @@ export function MetaBountyCard({
         </div>
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "11px",
             fontWeight: 400,
             color: "rgba(255, 255, 255, 0.5)",
@@ -111,7 +111,7 @@ export function MetaBountyCard({
 
       <h3
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "16px",
           fontWeight: 700,
           color: "rgba(255, 255, 255, 0.95)",
@@ -128,7 +128,7 @@ export function MetaBountyCard({
 
       <p
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
           fontWeight: 400,
           color: "rgba(255, 255, 255, 0.65)",
@@ -161,7 +161,7 @@ export function MetaBountyCard({
               >
                 <span
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: "11px",
                     fontWeight: 500,
                     color: "rgba(255, 255, 255, 0.8)",
@@ -171,7 +171,7 @@ export function MetaBountyCard({
                 </span>
                 <span
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: "10px",
                     fontWeight: 400,
                     color: "rgba(255, 255, 255, 0.5)",
@@ -220,7 +220,7 @@ export function MetaBountyCard({
           style={{
             background: "linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)",
             color: "white",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "11px",
             fontWeight: 600,
             padding: "8px 16px",
@@ -239,7 +239,7 @@ export function MetaBountyCard({
           style={{
             background: "transparent",
             color: "rgba(255, 255, 255, 0.7)",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "11px",
             fontWeight: 500,
             padding: "8px 12px",

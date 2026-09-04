@@ -41,7 +41,7 @@ export function AuthCheckbox({ checked, onChange, label, id }: AuthCheckboxProps
       </div>
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
           fontWeight: 400,
           color: "rgba(255, 255, 255, 0.70)",

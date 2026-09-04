@@ -1,3 +1,5 @@
+import { type } from "@/lib/theme/type";
+
 import { useState, useRef, useEffect } from "react"
 import { useNavigate } from 'react-router-dom'
 import { Heart, Repeat2, MoreHorizontal } from "lucide-react"
@@ -13,7 +15,6 @@ import ActionXpHint from "@/components/ambient/ActionXpHint"
 import { AvatarLevelRing } from "@/components/profile-game/AvatarLevelRing"
 import AttributionChip from "@/components/remix/AttributionChip"
 import { useLineageParent } from "@/lib/remix/hooks"
-
 
 const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
   prompt: { bg: "rgba(139, 69, 19, 0.15)", color: "#8B4513", border: "rgba(139, 69, 19, 0.3)" },
@@ -144,8 +145,6 @@ export function FeedCard({ post }: { post: FeedPost }) {
   const { openReblog } = useReblogCompose()
   const [saved, setSaved] = useState(false)
   const { data: lineageParent } = useLineageParent(post.id)
-
-
 
   const [copied, setCopied] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -350,9 +349,9 @@ export function FeedCard({ post }: { post: FeedPost }) {
 
       {/* Title */}
       <h3 style={{
-        fontFamily: "'Playfair Display', Georgia, serif",
-        fontSize: 15, fontWeight: 500, color: "rgba(255,255,255,0.90)",
-        lineHeight: 1.35, marginTop: 10, marginBottom: 0,
+        ...type.cardTitle,
+          color: "rgba(255,255,255,0.90)",
+         marginTop: 10, marginBottom: 0,
       }}>
         {post.title}
       </h3>
@@ -674,7 +673,6 @@ export function FeedCard({ post }: { post: FeedPost }) {
         </button>
         </ActionXpHint>
 
-
         {/* Comment */}
         <button
           style={{
@@ -782,7 +780,6 @@ export function FeedCard({ post }: { post: FeedPost }) {
           </svg>
         </button>
         </ActionXpHint>
-
 
         {/* Share */}
         <button

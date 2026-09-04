@@ -52,7 +52,7 @@ function PostTypePill({ postType }: { postType: EmbeddedOriginalCardPost["postTy
   return (
     <span
       style={{
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: "9px",
         fontWeight: 600,
         letterSpacing: "0.06em",
@@ -103,7 +103,7 @@ function MetaRow({
       style={{
         marginTop: "6px",
         height: "16px",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: "10px",
         fontWeight: 400,
         color: "rgba(255, 255, 255, 0.45)",
@@ -201,7 +201,7 @@ export function EmbeddedOriginalCard({
             />
             <span
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "12px",
                 fontWeight: 600,
                 color: "rgba(255, 255, 255, 0.85)",
@@ -214,7 +214,7 @@ export function EmbeddedOriginalCard({
             </span>
             <span
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "11px",
                 fontWeight: 400,
                 color: "rgba(255, 255, 255, 0.45)",
@@ -231,7 +231,7 @@ export function EmbeddedOriginalCard({
           <div
             style={{
               marginTop: "6px",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: titleSize,
               fontWeight: 600,
               color: "rgba(255, 255, 255, 0.95)",
@@ -250,7 +250,7 @@ export function EmbeddedOriginalCard({
             <div
               style={{
                 marginTop: "2px",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "11px",
                 fontWeight: 400,
                 color: "rgba(255, 255, 255, 0.65)",

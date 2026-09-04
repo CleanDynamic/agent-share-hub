@@ -191,7 +191,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
             <Settings size={14} style={{ color: "rgba(255,255,255,0.6)" }} />
             <span
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "13px",
                 fontWeight: 600,
                 color: "rgba(255,255,255,0.92)",
@@ -214,7 +214,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
             <Lock size={28} style={{ color: "rgba(255,255,255,0.4)" }} />
             <span
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "14px",
                 fontWeight: 600,
                 color: "rgba(255,255,255,0.85)",
@@ -224,7 +224,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
             </span>
             <span
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "12px",
                 color: "rgba(255,255,255,0.55)",
               }}
@@ -245,7 +245,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
               >
                 <span
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: "11px",
                     fontWeight: 500,
                     color: "#F59E0B",
@@ -258,7 +258,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
                   onClick={() => setActiveTab("submissions")}
                   className="transition-opacity hover:opacity-80"
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: "11px",
                     fontWeight: 500,
                     color: "#F59E0B",
@@ -292,7 +292,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
                     <Icon size={13} />
                     <span
                       style={{
-                        fontFamily: "Inter, sans-serif",
+                        fontFamily: "Figtree, sans-serif",
                         fontSize: "12px",
                         fontWeight: isActive ? 600 : 500,
                       }}
@@ -387,7 +387,7 @@ function StatCell({
     >
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "20px",
           fontWeight: 700,
           color: "rgba(255,255,255,0.95)",
@@ -412,7 +412,7 @@ function StatCell({
       )}
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "11px",
           fontWeight: 500,
           color: "rgba(255,255,255,0.7)",
@@ -422,7 +422,7 @@ function StatCell({
       </span>
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "10px",
           fontWeight: 400,
           color: "rgba(255,255,255,0.45)",
@@ -508,7 +508,7 @@ function OverviewTab({
                     <span
                       className="truncate"
                       style={{
-                        fontFamily: "Inter, sans-serif",
+                        fontFamily: "Figtree, sans-serif",
                         fontSize: "12px",
                         fontWeight: 500,
                         color: "rgba(255,255,255,0.9)",
@@ -518,7 +518,7 @@ function OverviewTab({
                     </span>
                     <span
                       style={{
-                        fontFamily: "Inter, sans-serif",
+                        fontFamily: "Figtree, sans-serif",
                         fontSize: "11px",
                         color: "rgba(255,255,255,0.5)",
                       }}
@@ -552,7 +552,7 @@ function OverviewTab({
                   <Avatar src={u.avatar} alt={u.handle} />
                   <span
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: "12px",
                       fontWeight: 500,
                       color: "rgba(255,255,255,0.9)",
@@ -562,7 +562,7 @@ function OverviewTab({
                   </span>
                   <span
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: "11px",
                       color: "rgba(255,255,255,0.5)",
                     }}
@@ -593,7 +593,7 @@ function OverviewTab({
                 onClick={onShowMore}
                 className="self-start mt-2 transition-opacity hover:opacity-80"
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: "11px",
                   fontWeight: 500,
                   color: "#3B82F6",
@@ -624,7 +624,7 @@ function ActivityRow({ event }: { event: ManageActivityEvent }) {
       <span
         className="flex-1 truncate"
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
           color: "rgba(255,255,255,0.78)",
         }}
@@ -633,7 +633,7 @@ function ActivityRow({ event }: { event: ManageActivityEvent }) {
       </span>
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "10px",
           color: "rgba(255,255,255,0.4)",
         }}
@@ -685,7 +685,7 @@ function SubmissionsTab({
         </span>
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "11px",
             color: "rgba(255,255,255,0.6)",
           }}
@@ -705,7 +705,7 @@ function SubmissionsTab({
               <SlotTypeIcon type={slot.slotType} />
               <span
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: "12px",
                   fontWeight: 600,
                   color: "rgba(255,255,255,0.85)",
@@ -715,7 +715,7 @@ function SubmissionsTab({
               </span>
               <span
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: "11px",
                   color: "rgba(255,255,255,0.45)",
                 }}
@@ -796,7 +796,7 @@ function SubmissionRow({
           <span
             className="truncate"
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 500,
               color: "rgba(255,255,255,0.9)",
@@ -807,7 +807,7 @@ function SubmissionRow({
           <div className="flex items-center gap-2">
             <span
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "11px",
                 color: "rgba(255,255,255,0.5)",
               }}
@@ -819,7 +819,7 @@ function SubmissionRow({
               style={{
                 backgroundColor: colors.bg,
                 color: colors.text,
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "10px",
                 fontWeight: 600,
                 textTransform: "capitalize",
@@ -838,7 +838,7 @@ function SubmissionRow({
             className="rounded px-2 py-1 transition-colors hover:opacity-90"
             style={{
               backgroundColor: "rgba(34,197,94,0.18)",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "11px",
               fontWeight: 600,
               color: "#22C55E",
@@ -930,7 +930,7 @@ function OverflowItem({
       />
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
           fontWeight: 500,
           color: destructive ? "#EF4444" : "rgba(255,255,255,0.85)",
@@ -984,7 +984,7 @@ function SettingsTab({
         >
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "13px",
               fontWeight: 600,
               color: "rgba(255,255,255,0.92)",
@@ -994,7 +994,7 @@ function SettingsTab({
           </span>
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "10px",
               color: "rgba(255,255,255,0.4)",
             }}
@@ -1013,7 +1013,7 @@ function SettingsTab({
           >
             <span
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "12px",
                 color: "rgba(255,255,255,0.8)",
               }}
@@ -1039,7 +1039,7 @@ function SettingsTab({
                   }}
                   className="px-3 py-2 text-left transition-colors hover:bg-white/10"
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: "12px",
                     color: "rgba(255,255,255,0.8)",
                   }}
@@ -1060,7 +1060,7 @@ function SettingsTab({
           className="w-full resize-none rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-white/20"
           style={{
             backgroundColor: "rgba(255, 255, 255, 0.14)",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "12px",
             color: "rgba(255,255,255,0.85)",
           }}
@@ -1071,7 +1071,7 @@ function SettingsTab({
         <div className="flex items-center justify-between">
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               color: "rgba(255,255,255,0.6)",
             }}
@@ -1096,7 +1096,7 @@ function SettingsTab({
                 <Play size={12} style={{ color: "#22C55E" }} />
                 <span
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: "11px",
                     fontWeight: 500,
                     color: "#22C55E",
@@ -1110,7 +1110,7 @@ function SettingsTab({
                 <Pause size={12} style={{ color: "#F59E0B" }} />
                 <span
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: "11px",
                     fontWeight: 500,
                     color: "#F59E0B",
@@ -1137,7 +1137,7 @@ function SettingsTab({
           <Sparkles size={14} style={{ color: "#22C55E" }} />
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 500,
               color: "#22C55E",
@@ -1157,7 +1157,7 @@ function SettingsTab({
           <AlertTriangle size={14} style={{ color: "#EF4444" }} />
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 500,
               color: "#EF4444",
@@ -1176,7 +1176,7 @@ function SettingsTab({
         >
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 500,
               color: "#EF4444",
@@ -1190,7 +1190,7 @@ function SettingsTab({
               className="flex-1 rounded-lg py-2 transition-colors hover:bg-white/10"
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.14)",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "11px",
                 fontWeight: 500,
                 color: "rgba(255,255,255,0.7)",
@@ -1203,7 +1203,7 @@ function SettingsTab({
               className="flex-1 rounded-lg py-2 transition-colors hover:opacity-90"
               style={{
                 backgroundColor: "#EF4444",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "11px",
                 fontWeight: 500,
                 color: "white",
@@ -1229,7 +1229,7 @@ function SettingsField({
     <div className="flex flex-col gap-2">
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "11px",
           fontWeight: 600,
           letterSpacing: "0.04em",
@@ -1255,7 +1255,7 @@ function Section({
     <div className="flex flex-col gap-2">
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
           fontWeight: 600,
           color: "rgba(255,255,255,0.85)",
@@ -1276,7 +1276,7 @@ function EmptyState({ text }: { text: string }) {
     >
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
           color: "rgba(255,255,255,0.4)",
         }}
@@ -1299,7 +1299,7 @@ function GhostButton({
       onClick={onClick}
       className="flex items-center rounded px-2 py-1 transition-colors hover:bg-white/10"
       style={{
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: "11px",
         fontWeight: 500,
         color: "rgba(255,255,255,0.7)",
@@ -1323,7 +1323,7 @@ function Avatar({ src, alt }: { src: string; alt: string }) {
       ) : (
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "11px",
             fontWeight: 600,
             color: "rgba(255,255,255,0.7)",

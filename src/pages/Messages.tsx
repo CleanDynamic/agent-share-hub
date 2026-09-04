@@ -370,7 +370,6 @@ export default function MessagesPage() {
     else navigate(`/content/${pinned.id}`);
   }, [activeThreadInfo, navigate]);
 
-
   // Map ThreadSummary → list-item shape expected by MessagesThreadList
   const threadItems = useMemo(() => {
     const items = (tabData?.threads ?? []) as ThreadSummary[];
@@ -490,7 +489,7 @@ export default function MessagesPage() {
                     placeholder="Search in conversation..."
                     className="flex-1 bg-transparent outline-none placeholder:text-white/40"
                     style={{
-                      fontFamily: "Inter, sans-serif",
+                      fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       color: "rgba(255,255,255,0.85)",
                     }}
@@ -525,10 +524,10 @@ export default function MessagesPage() {
               >
                 <MessageSquare size={28} style={{ color: "rgba(255,255,255,0.40)" }} />
               </div>
-              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
+              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
                 Select a conversation
               </p>
-              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.50)", maxWidth: 280 }}>
+              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.50)", maxWidth: 280 }}>
                 Pick a thread from the list, or start a new one.
               </p>
               <button
@@ -550,7 +549,6 @@ export default function MessagesPage() {
         </div>
         </div>
       </div>
-
 
       {/* Settings drawer */}
       <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>

@@ -36,7 +36,7 @@ export const tokens = {
   glass: "blur(28px) saturate(160%)",
 
   // Type
-  fontSans: "'Inter', var(--font-geist-sans), system-ui, sans-serif",
+  fontSans: "'Figtree', system-ui, sans-serif",
   fontMono: "'JetBrains Mono', var(--font-geist-mono), monospace",
 } as const
 

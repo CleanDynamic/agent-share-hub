@@ -10,6 +10,7 @@ import {
   type ActivityEvent,
 } from "@/components/bounty-competition/SolverLeaderboard";
 import { SeoHead } from "@/components/SeoHead";
+import { type } from "@/lib/theme/type";
 
 const SORT_TO_API: Record<string, "votes" | "submissions" | "acceptances" | "rank"> = {
   votes: "votes",
@@ -110,7 +111,7 @@ export default function BountyLeaderboardPage() {
             background: "transparent",
             border: "none",
             color: "rgba(46,196,182,0.85)",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 12,
             cursor: "pointer",
             padding: 0,
@@ -119,11 +120,11 @@ export default function BountyLeaderboardPage() {
           ← Back to bounty
         </button>
       </div>
-      <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, color: "rgba(255,255,255,0.95)", margin: "0 0 16px" }}>
+      <h1 style={{ ...type.sectionHead,  color: "rgba(255,255,255,0.95)", margin: "0 0 16px" }}>
         Leaderboard — {bountyTitle}
       </h1>
       {loading && contributors.length === 0 ? (
-        <div style={{ color: "rgba(255,255,255,0.5)", fontFamily: "Inter, sans-serif" }}>Loading…</div>
+        <div style={{ color: "rgba(255,255,255,0.5)", fontFamily: "Figtree, sans-serif" }}>Loading…</div>
       ) : (
         content
       )}

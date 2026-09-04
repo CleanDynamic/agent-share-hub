@@ -71,7 +71,7 @@ export function CompactUploadHeader({
         {/* Type chip row */}
         <div className="flex items-center gap-2" style={{ height: "24px" }}>
           <span style={{
-            fontFamily: "Inter, sans-serif", fontSize: "11px", fontWeight: 600,
+            fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 600,
             letterSpacing: "0.06em", color: typeStyle.color, background: typeStyle.bg,
             padding: "3px 10px", borderRadius: "100px",
           }}>
@@ -79,7 +79,7 @@ export function CompactUploadHeader({
           </span>
           {mode && (
             <span style={{
-              fontFamily: "Inter, sans-serif", fontSize: "11px",
+              fontFamily: "Figtree, sans-serif", fontSize: "11px",
               fontWeight: 500, color: "rgba(255,255,255,0.40)",
             }}>{mode}</span>
           )}
@@ -99,7 +99,6 @@ export function CompactUploadHeader({
           />
         </UploadSectionToggle>
 
-
         {/* Title + description toggle */}
         <UploadSectionToggle
           label="Title & description"
@@ -117,13 +116,13 @@ export function CompactUploadHeader({
               height: "44px", padding: "8px 12px",
               background: "transparent", border: "none",
               borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
-              fontFamily: "Inter, sans-serif", fontSize: "22px",
+              fontFamily: "Figtree, sans-serif", fontSize: "22px",
               fontWeight: 700, color: "rgba(255,255,255,0.95)",
             }}
           />
           <style>{`
             .compact-upload-title::placeholder {
-              font-family: Inter, sans-serif; font-size: 22px;
+              font-family: Figtree, sans-serif; font-size: 22px;
               font-weight: 500; color: rgba(255,255,255,0.20);
             }
           `}</style>
@@ -143,18 +142,18 @@ export function CompactUploadHeader({
                 minHeight: "40px", maxHeight: "80px",
                 padding: "8px 12px", paddingBottom: "20px",
                 background: "transparent", border: "none",
-                fontFamily: "Inter, sans-serif", fontSize: "13px",
+                fontFamily: "Figtree, sans-serif", fontSize: "13px",
                 fontWeight: 400, color: "rgba(255,255,255,0.85)",
               }}
             />
             <style>{`
               .compact-upload-desc::placeholder {
-                font-family: Inter, sans-serif; font-size: 13px;
+                font-family: Figtree, sans-serif; font-size: 13px;
                 font-weight: 400; color: rgba(255,255,255,0.30);
               }
             `}</style>
             <span className="absolute bottom-1 right-3" style={{
-              fontFamily: "Inter, sans-serif", fontSize: "10px",
+              fontFamily: "Figtree, sans-serif", fontSize: "10px",
               fontWeight: 400, color: "rgba(255,255,255,0.30)",
             }}>
               {description.length} / {maxDescriptionLength}
@@ -197,21 +196,21 @@ export function CompactUploadHeader({
         >
           <div className="flex items-center gap-2 cursor-pointer" onClick={scrollToTop}>
             <span style={{
-              fontFamily: "Inter, sans-serif", fontSize: "9px", fontWeight: 600,
+              fontFamily: "Figtree, sans-serif", fontSize: "9px", fontWeight: 600,
               letterSpacing: "0.06em", color: typeStyle.color, background: typeStyle.bg,
               padding: "2px 8px", borderRadius: "100px",
             }}>
               {typeStyle.label}
             </span>
             <span className="truncate max-w-[400px]" style={{
-              fontFamily: "Inter, sans-serif", fontSize: "12px",
+              fontFamily: "Figtree, sans-serif", fontSize: "12px",
               fontWeight: 500, color: "rgba(255,255,255,0.85)",
             }}>
               {title || "Untitled"}
             </span>
           </div>
           <button onClick={scrollToTop} className="outline-none" style={{
-            fontFamily: "Inter, sans-serif", fontSize: "11px", fontWeight: 500,
+            fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 500,
             color: "rgba(46,196,182,0.85)", background: "transparent",
             border: "none", cursor: "pointer",
           }}>

@@ -31,7 +31,7 @@ const inputStyle: React.CSSProperties = {
   padding: '0 8px',
   fontSize: 12,
   outline: 'none',
-  fontFamily: 'Inter, sans-serif',
+  fontFamily: 'Figtree, sans-serif',
 };
 
 interface IconBtnProps {
@@ -106,7 +106,7 @@ function TextBtn({
         color: 'hsl(var(--foreground) / 0.9)',
         fontSize: 11,
         fontWeight: 500,
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Figtree, sans-serif',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.4 : 1,
       }}
@@ -260,7 +260,7 @@ export function FindReplaceBar({
         display: 'flex',
         flexDirection: 'column',
         gap: 4,
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Figtree, sans-serif',
       }}
     >
       {/* Find row */}

@@ -82,7 +82,6 @@ export function CoverImageField({
     setReframeDragging(false);
   }, [value, draftFocal, onChange]);
 
-
   const openPicker = useCallback(() => {
     if (uploading) return;
     inputRef.current?.click();
@@ -300,7 +299,7 @@ export function CoverImageField({
             <ImagePlus size={32} color="rgba(255,255,255,0.45)" />
             <div
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "13px",
                 fontWeight: 400,
                 color: "rgba(255,255,255,0.55)",
@@ -315,7 +314,7 @@ export function CoverImageField({
                 openPicker();
               }}
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: "12px",
                 fontWeight: 500,
                 color: "rgba(255,255,255,0.85)",
@@ -403,7 +402,7 @@ export function CoverImageField({
                 type="button"
                 onClick={cancelReframe}
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: "12px",
                   fontWeight: 500,
                   color: "rgba(255,255,255,0.85)",
@@ -420,7 +419,7 @@ export function CoverImageField({
                 type="button"
                 onClick={saveReframe}
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: "12px",
                   fontWeight: 600,
                   color: "#FFFFFF",
@@ -468,13 +467,12 @@ export function CoverImageField({
         )}
       </div>
 
-
       {error && (
         <div
           role="alert"
           style={{
             marginTop: "6px",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "12px",
             fontWeight: 500,
             color: "#F87171",

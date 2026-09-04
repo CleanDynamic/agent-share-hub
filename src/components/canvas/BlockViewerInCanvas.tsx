@@ -7,6 +7,7 @@ import type { CanvasBlock } from '@/lib/canvas-types';
 import { RenderBlockContent }
   from '@/components/ContentBlockViewer';
 import { MediaPopup, resolveVideoSources } from './MediaPopup';
+import { type } from "@/lib/theme/type";
 
 interface BlockViewerInCanvasProps {
   block: CanvasBlock;
@@ -48,10 +49,10 @@ export function BlockViewerInCanvas({
       <div style={{ position: 'relative', height: '100%' }}>
         {block.subheading && (
           <h3 style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: 16, fontWeight: 700,
+            ...type.cardTitle,
+
             color: 'rgba(255,255,255,0.90)',
-            margin: '0 0 10px 0', lineHeight: 1.3,
+            margin: '0 0 10px 0',
           }}>
             {block.subheading}
           </h3>
@@ -118,10 +119,10 @@ export function BlockViewerInCanvas({
       <div style={{ position: 'relative', height: '100%' }}>
         {block.subheading && (
           <h3 style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: 16, fontWeight: 700,
+            ...type.cardTitle,
+
             color: 'rgba(255,255,255,0.90)',
-            margin: '0 0 10px 0', lineHeight: 1.3,
+            margin: '0 0 10px 0',
           }}>
             {block.subheading}
           </h3>
@@ -174,7 +175,7 @@ export function BlockViewerInCanvas({
                 width: '100%', height: '100%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: 'rgba(255,255,255,0.45)',
-                fontSize: 11, fontFamily: 'Inter, sans-serif',
+                fontSize: 11, fontFamily: 'Figtree, sans-serif',
               }}>
                 Video
               </div>
@@ -266,11 +267,10 @@ export function BlockViewerInCanvas({
       {/* Subheading */}
       {block.subheading && (
         <h3 style={{
-          fontFamily:
-            "'Playfair Display', Georgia, serif",
-          fontSize: 16, fontWeight: 700,
+          ...type.cardTitle,
+
           color: 'rgba(255,255,255,0.90)',
-          margin: '0 0 12px 0', lineHeight: 1.3,
+          margin: '0 0 12px 0',
         }}>
           {block.subheading}
         </h3>
@@ -296,7 +296,7 @@ export function BlockViewerInCanvas({
               ? '#22C55E'
               : 'rgba(255,255,255,0.45)',
             cursor: 'pointer',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             fontWeight: 600,
             transition: 'all 0.15s',
             zIndex: 2,
@@ -316,11 +316,10 @@ export function BlockViewerInCanvas({
           paddingRight: 52, // space for copy btn
         }}>
           <pre style={{
-            fontFamily:
-              "'Playfair Display', Georgia, serif",
-            fontSize: 14,
+            ...type.cardTitle,
+
             color: 'rgba(255,255,255,0.82)',
-            lineHeight: 1.75, whiteSpace: 'pre-wrap',
+             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word', margin: 0,
           }}>
             {block.textContent}
@@ -390,7 +389,7 @@ export function BlockViewerInCanvas({
           fontSize: 15, fontWeight: 400,
           color: 'rgba(255,255,255,0.72)',
           lineHeight: 1.75, margin: 0,
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           paddingRight: 52,
         }}>
           {block.textContent}

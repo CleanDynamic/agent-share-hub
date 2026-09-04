@@ -780,7 +780,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
         <span className="flex-1 h-[0.5px]" style={{ backgroundColor: "rgba(46,196,182,0.30)" }} />
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 9,
             fontWeight: 600,
             letterSpacing: "0.08em",
@@ -852,7 +852,6 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
         </div>
       );
     }
-
 
     const bubbleContent = () => {
       switch (msg.message_type) {

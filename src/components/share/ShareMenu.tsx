@@ -74,14 +74,14 @@ const iconStyle: React.CSSProperties = {
   flexShrink: 0,
 };
 const labelStyle: React.CSSProperties = {
-  fontFamily: "Inter, sans-serif",
+  fontFamily: "Figtree, sans-serif",
   fontSize: 13,
   fontWeight: 500,
   color: "rgba(255,255,255,0.92)",
   flex: 1,
 };
 const hintStyle: React.CSSProperties = {
-  fontFamily: "Inter, sans-serif",
+  fontFamily: "Figtree, sans-serif",
   fontSize: 10,
   fontWeight: 500,
   color: "rgba(255,255,255,0.30)",
@@ -93,7 +93,7 @@ const searchInputStyle: React.CSSProperties = {
   border: "0.5px solid rgba(255,255,255,0.10)",
   borderRadius: 6,
   padding: "0 10px 0 32px",
-  fontFamily: "Inter, sans-serif",
+  fontFamily: "Figtree, sans-serif",
   fontSize: 12,
   color: "rgba(255,255,255,0.92)",
   outline: "none",
@@ -369,7 +369,7 @@ const ShareMenu: React.FC<ShareMenuProps> = ({
       </button>
       <span
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 11,
           fontWeight: 600,
           textTransform: "uppercase",

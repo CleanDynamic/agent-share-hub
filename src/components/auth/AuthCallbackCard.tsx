@@ -33,7 +33,7 @@ export function AuthCallbackCard({
           <h2
             style={{
               marginTop: "20px",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "16px",
               fontWeight: 600,
               color: "rgba(255, 255, 255, 0.92)",
@@ -44,7 +44,7 @@ export function AuthCallbackCard({
           <p
             style={{
               marginTop: "6px",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "13px",
               fontWeight: 400,
               color: "rgba(255, 255, 255, 0.60)",
@@ -85,7 +85,7 @@ export function AuthCallbackCard({
           <h2
             style={{
               marginTop: "20px",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "16px",
               fontWeight: 600,
               color: "rgba(255, 255, 255, 0.92)",
@@ -96,7 +96,7 @@ export function AuthCallbackCard({
           <p
             style={{
               marginTop: "6px",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "13px",
               fontWeight: 400,
               color: "rgba(255, 255, 255, 0.60)",
@@ -113,7 +113,7 @@ export function AuthCallbackCard({
               borderRadius: "10px",
               backgroundColor: "#E8571A",
               border: "none",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "14px",
               fontWeight: 600,
               color: "#FFFFFF",

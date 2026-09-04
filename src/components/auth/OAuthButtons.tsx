@@ -53,7 +53,7 @@ export function OAuthButtons({ onOAuthClick, loadingProvider }: OAuthButtonsProp
     gap: "10px",
     cursor: "pointer",
     transition: "background 180ms, border-color 180ms, transform 100ms",
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: "13px",
     fontWeight: 600,
     color: "rgba(255, 255, 255, 0.92)",

@@ -5,6 +5,7 @@ import type { CanvasBlock as CanvasBlockType, CanvasStage, BlockPosition } from 
 import { BlockEditModal } from './BlockEditModal';
 import { BlockViewerInCanvas } from './BlockViewerInCanvas';
 import { ExecutionPanel } from './ExecutionPanel';
+import { type } from "@/lib/theme/type";
 
 const BLOCK_TYPE_LABELS: Record<string, string> = {
   prompt: 'Prompt', code: 'Code', text: 'Text', long_text: 'Long Text',
@@ -292,7 +293,7 @@ export function CanvasBlock({
               fontSize: 12,
               color: 'rgba(255,255,255,0.65)',
               lineHeight: 1.5,
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
             }}
@@ -608,7 +609,7 @@ export function CanvasBlock({
 
             <div style={{ padding: 12, overflowY: 'auto', maxHeight: '100%', boxSizing: 'border-box' }}>
               {block.type === 'section_heading' ? (
-                <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.90)', margin: 0 }}>
+                <h2 style={{ ...type.cardTitle,   color: 'rgba(255,255,255,0.90)', margin: 0 }}>
                   {block.textContent}
                 </h2>
               ) : (

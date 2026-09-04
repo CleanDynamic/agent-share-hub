@@ -44,7 +44,7 @@ function Avatar({ comment }: { comment: DocumentComment }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Figtree, sans-serif',
         fontSize: 11,
         fontWeight: 600,
       }}
@@ -100,7 +100,7 @@ export function CommentThreadCard({
         WebkitBackdropFilter: 'blur(18px)',
         zIndex: 9999,
         overflow: 'hidden',
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Figtree, sans-serif',
       }}
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -252,7 +252,7 @@ export function CommentThreadCard({
             border: '0.5px solid hsl(var(--foreground) / 0.08)',
             borderRadius: 6,
             color: 'hsl(var(--foreground) / 0.92)',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             padding: '6px 8px',
             outline: 'none',

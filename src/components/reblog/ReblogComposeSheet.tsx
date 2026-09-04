@@ -102,7 +102,7 @@ function Avatar({
       {showInitials ? (
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: size * 0.42,
             fontWeight: 600,
             color: "rgba(255,255,255,0.75)",
@@ -162,7 +162,7 @@ function PostButton({
         background: "linear-gradient(135deg, #16A34A 0%, #15803D 100%)",
         opacity: disabled ? 0.4 : 1,
         cursor: disabled ? "not-allowed" : "pointer",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 13,
         fontWeight: 600,
         color: "#fff",
@@ -204,7 +204,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
         />
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 12,
             fontWeight: 600,
             color: "rgba(255,255,255,0.85)",
@@ -214,7 +214,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
         </span>
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             fontWeight: 400,
             color: "rgba(255,255,255,0.45)",
@@ -225,7 +225,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
 
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 9,
             fontWeight: 600,
             letterSpacing: "0.06em",
@@ -246,7 +246,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
           <div className="flex items-center gap-2">
             <span
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 10,
                 fontWeight: 400,
                 color: "rgba(255,255,255,0.40)",
@@ -269,7 +269,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
         ) : (
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 10,
               fontWeight: 400,
               color: "rgba(255,255,255,0.40)",
@@ -282,7 +282,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
 
       <p
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 13,
           fontWeight: 600,
           color: "rgba(255,255,255,0.92)",
@@ -301,7 +301,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
       {post.description && (
         <p
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             fontWeight: 400,
             color: "rgba(255,255,255,0.65)",
@@ -577,7 +577,7 @@ function Header({
       <button
         onClick={onClose}
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 13,
           fontWeight: 500,
           color: "rgba(255,255,255,0.65)",
@@ -598,7 +598,7 @@ function Header({
         />
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 14,
             fontWeight: 600,
             color: "rgba(255,255,255,0.95)",
@@ -654,7 +654,7 @@ function ComposeBody({
         />
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 13,
             fontWeight: 600,
             color: "rgba(255,255,255,0.92)",
@@ -664,7 +664,7 @@ function ComposeBody({
         </span>
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 12,
             fontWeight: 400,
             color: "rgba(255,255,255,0.45)",
@@ -686,7 +686,7 @@ function ComposeBody({
           placeholder={excerptContext ? "Add your take on this quote…" : "Add your take…"}
           rows={3}
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 14,
             fontWeight: 400,
             color: "rgba(255,255,255,0.92)",
@@ -715,7 +715,7 @@ function ComposeBody({
         <div
           style={{
             textAlign: "right",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             fontWeight: 500,
             color: counterColour,
@@ -732,7 +732,7 @@ function ComposeBody({
             onClick={onAttachImage}
             className="flex items-center gap-1.5"
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 12,
               fontWeight: 500,
               color: "rgba(255,255,255,0.55)",
@@ -757,7 +757,7 @@ function ComposeBody({
             onClick={onAttachVideo}
             className="flex items-center gap-1.5"
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 12,
               fontWeight: 500,
               color: "rgba(255,255,255,0.55)",
@@ -898,7 +898,7 @@ function ActionBar({
         <Globe size={12} style={{ color: "rgba(255,255,255,0.45)" }} />
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             fontWeight: 500,
             color: "rgba(255,255,255,0.45)",

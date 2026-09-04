@@ -121,7 +121,7 @@ function EmptyAll() {
         maxWidth: 360,
         margin: "0 auto",
         color: "rgba(255,255,255,0.55)",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
       }}
     >
       <EmptyStateBadge icon={<Bell size={20} />} color="#2EC4B6" />
@@ -144,7 +144,7 @@ function EmptyUnread() {
         maxWidth: 360,
         margin: "0 auto",
         color: "rgba(255,255,255,0.65)",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
       }}
     >
       <EmptyStateBadge icon={<CheckCircle size={20} />} color="#2EC4B6" />
@@ -336,7 +336,6 @@ export default function NotificationsPage() {
 
   const showEmpty = !loading && items.length === 0;
 
-
   return (
     <div style={{ padding: "0 0 32px" }}>
       <SeoHead title="Notifications" description="Your latest activity and mentions." path="/notifications" />
@@ -357,7 +356,6 @@ export default function NotificationsPage() {
       />
 
       <div style={{ padding: "0 20px" }}>
-
 
       {/* List */}
       {loading ? (

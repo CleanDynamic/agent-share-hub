@@ -687,7 +687,6 @@ export default function ContentDetail() {
     [post?.id, shellPost, user?.id, toast]
   );
 
-
   // ─── Comment drawer state ───
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerAnchor, setDrawerAnchor] = useState<{
@@ -1468,14 +1467,11 @@ export default function ContentDetail() {
     return () => window.clearTimeout(t);
   }, [isBounty, solutionsData]);
 
-
   const handleEdit = useCallback(() => {
     if (!post) return;
     const t = NORMALIZE_TYPE((post as any).post_type);
     navigate(`/upload/${t}?draft=${post.id}`);
   }, [navigate, post]);
-
-
 
   if (isLoading) {
     return (
@@ -1596,7 +1592,6 @@ export default function ContentDetail() {
       </div>
     );
   }
-
 
   // Build SolverInfo[] for byline + provenance overview
   const solversInfo: SolverInfo[] = useMemo(() => {
@@ -2353,7 +2348,6 @@ export default function ContentDetail() {
   );
 }
 
-
 function SpawnedFromMetaBanner({ parentId }: { parentId: string }) {
   const navigate = useNavigate();
   const { data } = useQuery({
@@ -2378,7 +2372,7 @@ function SpawnedFromMetaBanner({ parentId }: { parentId: string }) {
         borderRadius: 8,
         padding: "8px 12px",
         marginBottom: 16,
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 12,
         color: "rgba(255,255,255,0.75)",
         cursor: "pointer",
@@ -2448,7 +2442,6 @@ function RemixLineageRow({
     </div>
   );
 }
-
 
 function relativeShort(iso: string): string {
   try {

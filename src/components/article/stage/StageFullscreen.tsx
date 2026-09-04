@@ -103,7 +103,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
         border: '0.5px solid rgba(255, 255, 255, 0.14)',
         borderRadius: 6,
         color: 'rgba(255,255,255,0.75)',
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Figtree, sans-serif',
         fontSize: 12,
         fontWeight: 500,
         cursor: 'pointer',
@@ -165,7 +165,7 @@ function BottomBar({ showMiniMap, onToggleMiniMap }: BottomBarProps) {
         style={{
           minWidth: 36,
           textAlign: 'center',
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           fontSize: 11,
           fontWeight: 500,
           color: 'rgba(255,255,255,0.70)',

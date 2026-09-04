@@ -67,7 +67,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <span
       style={{
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Figtree, sans-serif',
         fontSize: 10,
         fontWeight: 600,
         textTransform: 'uppercase',
@@ -96,7 +96,7 @@ function Chip({
       onClick={onClick}
       className="flex items-center"
       style={{
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Figtree, sans-serif',
         fontSize: 11,
         fontWeight: 500,
         padding: '3px 8px',
@@ -174,7 +174,7 @@ function TagInput({
             key={tag}
             className="flex items-center"
             style={{
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 11,
               fontWeight: 500,
               padding: '2px 6px',
@@ -216,7 +216,7 @@ function TagInput({
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 12,
               color: 'rgba(255,255,255,0.85)',
             }}
@@ -248,7 +248,7 @@ function TagInput({
                 display: 'block',
                 width: '100%',
                 textAlign: 'left',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Figtree, sans-serif',
                 fontSize: 12,
                 color: 'rgba(255,255,255,0.75)',
                 background: 'transparent',
@@ -318,7 +318,7 @@ function ExpandableChipList({
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 11,
               color: 'rgba(255,255,255,0.85)',
             }}
@@ -336,7 +336,7 @@ function ExpandableChipList({
             onClick={() => setExpanded(true)}
             className="flex items-center"
             style={{
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 11,
               fontWeight: 500,
               color: 'rgba(255,255,255,0.50)',
@@ -358,7 +358,7 @@ function ExpandableChipList({
             }}
             className="flex items-center"
             style={{
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 11,
               fontWeight: 500,
               color: 'rgba(255,255,255,0.50)',
@@ -462,7 +462,7 @@ export function DiscoverFilterSheet({
         >
           <span
             style={{
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 14,
               fontWeight: 600,
               color: 'rgba(255,255,255,0.92)',
@@ -501,7 +501,7 @@ export function DiscoverFilterSheet({
                 </div>
                 <span
                   style={{
-                    fontFamily: 'Inter, sans-serif',
+                    fontFamily: 'Figtree, sans-serif',
                     fontSize: 10,
                     color: 'rgba(255,255,255,0.35)',
                     marginTop: 2,
@@ -547,7 +547,7 @@ export function DiscoverFilterSheet({
               </div>
               <span
                 style={{
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'Figtree, sans-serif',
                   fontSize: 10,
                   color: 'rgba(255,255,255,0.35)',
                   marginTop: 2,
@@ -731,7 +731,7 @@ export function DiscoverFilterSheet({
           <button
             onClick={onReset}
             style={{
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 13,
               fontWeight: 500,
               color: 'rgba(255,255,255,0.60)',
@@ -747,7 +747,7 @@ export function DiscoverFilterSheet({
           <button
             onClick={onApply}
             style={{
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
               fontSize: 13,
               fontWeight: 600,
               color: 'white',

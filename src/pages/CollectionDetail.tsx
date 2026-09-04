@@ -54,6 +54,7 @@ import type {
   CollectionItemKind,
   SavedItem,
 } from "@/lib/library/types";
+import { type } from "@/lib/theme/type";
 
 const TYPE_TO_KIND: Record<TypeFilter, CollectionItemKind | "all"> = {
   all: "all",
@@ -337,13 +338,13 @@ export default function CollectionDetailRoute() {
           padding: 64,
           textAlign: "center",
           color: "rgba(255,255,255,0.6)",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
         }}
       >
         <h1
           style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 24,
+            ...type.cardTitle,
+
             color: "rgba(255,255,255,0.95)",
             marginBottom: 8,
           }}
@@ -393,7 +394,7 @@ export default function CollectionDetailRoute() {
               display: "flex",
               alignItems: "center",
               gap: 10,
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               color: "rgba(255,255,255,0.85)",
             }}

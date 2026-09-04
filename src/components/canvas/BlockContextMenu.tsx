@@ -50,7 +50,7 @@ export function BlockContextMenu({
     justifyContent: 'space-between',
     gap: 12,
     borderRadius: 5,
-    fontFamily: 'Inter, sans-serif',
+    fontFamily: 'Figtree, sans-serif',
     whiteSpace: 'nowrap',
   };
 

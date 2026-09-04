@@ -22,7 +22,7 @@ export function MetaBountyBody({ meta, viewerId, onPledged }: Props) {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <h2
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 16,
           fontWeight: 700,
           color: "rgba(255,255,255,0.92)",
@@ -98,7 +98,7 @@ function SubBountyRow({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 10,
               fontWeight: 600,
               letterSpacing: "0.05em",
@@ -125,7 +125,7 @@ function SubBountyRow({
           </div>
           <h3
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 14,
               fontWeight: 600,
               color: "rgba(255,255,255,0.92)",
@@ -137,7 +137,7 @@ function SubBountyRow({
           {sub.description && (
             <p
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 12,
                 color: "rgba(255,255,255,0.55)",
                 margin: 0,
@@ -157,7 +157,7 @@ function SubBountyRow({
               border: "1px solid rgba(34,197,94,0.3)",
               borderRadius: 8,
               padding: "8px 14px",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
@@ -178,7 +178,7 @@ function SubBountyRow({
               border: "none",
               borderRadius: 8,
               padding: "8px 16px",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
@@ -195,7 +195,7 @@ function SubBountyRow({
           style={{
             display: "flex",
             justifyContent: "space-between",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             color: "rgba(255,255,255,0.6)",
             marginBottom: 4,
@@ -324,7 +324,7 @@ function PledgeModal({
         >
           <h3
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 16,
               fontWeight: 700,
               color: "rgba(255,255,255,0.95)",
@@ -351,7 +351,7 @@ function PledgeModal({
         <div style={{ marginBottom: 14 }}>
           <label
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 11,
               fontWeight: 600,
               color: "rgba(255,255,255,0.6)",
@@ -373,7 +373,7 @@ function PledgeModal({
                 background: "rgba(255, 255, 255, 0.12)",
                 border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: 8,
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 14,
                 color: "rgba(255,255,255,0.9)",
                 outline: "none",
@@ -388,7 +388,7 @@ function PledgeModal({
                 background: "rgba(255, 255, 255, 0.12)",
                 border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: 8,
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 14,
                 color: "rgba(255,255,255,0.9)",
                 outline: "none",
@@ -408,7 +408,7 @@ function PledgeModal({
             display: "flex",
             alignItems: "center",
             gap: 8,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 13,
             color: "rgba(255,255,255,0.75)",
             marginBottom: 20,
@@ -435,7 +435,7 @@ function PledgeModal({
             color: "white",
             border: "none",
             borderRadius: 8,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 14,
             fontWeight: 600,
             cursor: submitting ? "not-allowed" : "pointer",

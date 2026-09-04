@@ -281,7 +281,7 @@ export function UploadTypePicker({
           <h2
             id="upload-picker-title"
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "16px",
               fontWeight: 600,
               color: "rgba(255, 255, 255, 0.95)",
@@ -332,7 +332,7 @@ export function UploadTypePicker({
         >
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 400,
               color: "rgba(255, 255, 255, 0.50)",
@@ -343,7 +343,7 @@ export function UploadTypePicker({
           <a
             href="/docs/content-types"
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 500,
               color: "#E8571A",
@@ -408,7 +408,7 @@ function OptionCard({
       <div
         style={{
           marginTop: "10px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: isDesktop ? "14px" : "13px",
           fontWeight: 600,
           color: "rgba(255, 255, 255, 0.95)",
@@ -421,7 +421,7 @@ function OptionCard({
       <div
         style={{
           marginTop: "4px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
           fontWeight: 400,
           lineHeight: 1.45,

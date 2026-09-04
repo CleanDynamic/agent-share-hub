@@ -75,7 +75,7 @@ export function MatchBanner({ targetUserId, viewerId, isOwnProfile }: MatchBanne
         background: "rgba(46,196,182,0.06)",
         border: "0.5px solid rgba(46,196,182,0.20)",
         color: "rgba(46,196,182,0.90)",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: "13px",
         fontWeight: 500,
       }}

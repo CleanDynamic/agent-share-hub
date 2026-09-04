@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Target, ArrowRight, AlertCircle } from "lucide-react";
+import { type } from "@/lib/theme/type";
 
 function relativeOpenedLabel(iso: string | null | undefined): string {
   if (!iso) return "Opened";
@@ -136,7 +137,7 @@ function BlockTypeChips({ types }: { types: { type: string; color: string }[] })
           style={{
             backgroundColor: `${t.color}22`,
             color: t.color,
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
           }}
         >
           {t.type}
@@ -250,7 +251,7 @@ export function ContentShareBubble({
     return (
       <div
         className="text-[10px] mt-1 text-right"
-        style={{ color: c.color, fontFamily: "Inter, sans-serif" }}
+        style={{ color: c.color, fontFamily: "Figtree, sans-serif" }}
       >
         {c.text}
       </div>
@@ -266,7 +267,7 @@ export function ContentShareBubble({
             backgroundColor: bubbleBg,
             borderRadius,
             color: "rgba(255,255,255,0.55)",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 12,
           }}
         >
@@ -303,7 +304,7 @@ export function ContentShareBubble({
               style={{
                 backgroundColor: "rgba(46,196,182,0.18)",
                 color: "rgba(46,196,182,0.95)",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 letterSpacing: "0.04em",
               }}
             >
@@ -311,21 +312,21 @@ export function ContentShareBubble({
             </span>
             <span
               className="text-[11px] truncate"
-              style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
+              style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Figtree, sans-serif" }}
             >
               by @{bp.author}
             </span>
           </div>
           <p
             className="text-[14px] font-semibold leading-snug line-clamp-2"
-            style={{ color: "rgba(255,255,255,0.95)", fontFamily: "Playfair Display, serif" }}
+            style={{ color: "rgba(255,255,255,0.95)", ...type.cardTitle,}}
           >
             {bp.title}
           </p>
           {bp.useCase && (
             <div
               className="flex items-start gap-1.5 text-[11px] leading-snug"
-              style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Inter, sans-serif" }}
+              style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Figtree, sans-serif" }}
             >
               <Target className="h-3 w-3 mt-0.5 shrink-0" />
               <span className="line-clamp-2">{bp.useCase}</span>
@@ -334,7 +335,7 @@ export function ContentShareBubble({
           {bp.blockTypes.length > 0 && <BlockTypeChips types={bp.blockTypes} />}
           <div
             className="text-[10px] pt-1"
-            style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}
+            style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Figtree, sans-serif" }}
           >
             {bp.stageCount} stages · {bp.blockCount} blocks · {bp.readTime}
           </div>
@@ -353,7 +354,7 @@ export function ContentShareBubble({
             style={{
               backgroundColor: "rgba(168,85,247,0.18)",
               color: "rgba(168,85,247,0.95)",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               letterSpacing: "0.04em",
             }}
           >
@@ -361,14 +362,14 @@ export function ContentShareBubble({
           </span>
           <span
             className="text-[11px] truncate"
-            style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
+            style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Figtree, sans-serif" }}
           >
             from {s.blueprintTitle}
           </span>
         </div>
         <p
           className="text-[14px] font-semibold leading-snug"
-          style={{ color: "rgba(255,255,255,0.95)", fontFamily: "Playfair Display, serif" }}
+          style={{ color: "rgba(255,255,255,0.95)", ...type.cardTitle,}}
         >
           {s.name}
         </p>
@@ -380,7 +381,7 @@ export function ContentShareBubble({
         </div>
         <div
           className="text-[10px]"
-          style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}
+          style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Figtree, sans-serif" }}
         >
           {s.blockCount} blocks · {s.connectionCount} connections
         </div>
@@ -400,7 +401,7 @@ export function ContentShareBubble({
             style={{
               backgroundColor: `${typeColor}22`,
               color: typeColor,
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               letterSpacing: "0.04em",
             }}
           >
@@ -408,14 +409,14 @@ export function ContentShareBubble({
           </span>
           <span
             className="text-[11px] truncate"
-            style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
+            style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Figtree, sans-serif" }}
           >
             from {b.stageName} in {b.blueprintTitle}
           </span>
         </div>
         <p
           className="text-[14px] font-semibold leading-snug"
-          style={{ color: "rgba(255,255,255,0.95)", fontFamily: "Playfair Display, serif" }}
+          style={{ color: "rgba(255,255,255,0.95)", ...type.cardTitle,}}
         >
           {b.name}
         </p>
@@ -448,7 +449,7 @@ export function ContentShareBubble({
         {b.referenceCount && b.referenceCount > 0 ? (
           <div
             className="text-[10px]"
-            style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}
+            style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Figtree, sans-serif" }}
           >
             Used {b.referenceCount}× in other blueprints
           </div>
@@ -483,7 +484,7 @@ export function ContentShareBubble({
             className="px-3 pt-2.5 pb-1 text-[13px] leading-snug whitespace-pre-wrap break-words"
             style={{
               color: "rgba(255,255,255,0.85)",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
             }}
           >
             {senderNote}

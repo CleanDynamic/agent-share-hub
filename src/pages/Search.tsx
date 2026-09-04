@@ -1,3 +1,5 @@
+import { type } from "@/lib/theme/type";
+
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -192,7 +194,7 @@ export default function Search() {
               flex: 1, background: 'transparent',
               border: 'none', outline: 'none',
               fontSize: 14, color: '#fff',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
             }}
           />
           {inputVal && (
@@ -256,8 +258,7 @@ export default function Search() {
         }}>
           <div style={{ fontSize: 32 }}>🔍</div>
           <div style={{
-            fontSize: 15, fontFamily:
-              "'Playfair Display', Georgia, serif",
+             ...type.cardTitle,
           }}>
             Search NeoScale
           </div>
@@ -422,12 +423,10 @@ export default function Search() {
                   }
                 >
                   <div style={{
-                    fontSize: 14, fontWeight: 600,
                     color: 'rgba(255,255,255,0.85)',
                     marginBottom: 4,
-                    fontFamily:
-                      "'Playfair Display', Georgia, serif",
-                    lineHeight: 1.3,
+                    ...type.cardTitle,
+
                     overflow: 'hidden',
                     display: '-webkit-box',
                     WebkitLineClamp: 2,

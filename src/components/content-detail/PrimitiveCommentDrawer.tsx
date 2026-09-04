@@ -142,7 +142,7 @@ function AnchorIndicator({
     background: "rgba(255, 255, 255, 0.14)",
   };
   const textStyle: React.CSSProperties = {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 11,
     fontWeight: 500,
     color: "rgba(255,255,255,0.85)",
@@ -307,7 +307,7 @@ function RolePill({ role }: { role: "author" | "trusted_solver" }) {
   return (
     <span
       style={{
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 9,
         fontWeight: 600,
         background: c.bg,
@@ -344,7 +344,7 @@ function ReactionButton({
         background: "rgba(255, 255, 255, 0.12)",
         border: "1px solid rgba(255, 255, 255, 0.14)",
         color: "rgba(255,255,255,0.65)",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 11,
         cursor: "pointer",
       }}
@@ -428,17 +428,17 @@ function CommentCard({
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
               {comment.author.displayName}
             </span>
-            <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
               @{comment.author.handle}
             </span>
             {comment.author.role && <RolePill role={comment.author.role} />}
           </div>
           <p
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 12,
               color: "rgba(255,255,255,0.78)",
               lineHeight: 1.5,
@@ -464,7 +464,7 @@ function CommentCard({
               <button
                 onClick={() => setShowReplyInput(!showReplyInput)}
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 11,
                   fontWeight: 500,
                   color: "rgba(46,196,182,0.85)",
@@ -477,7 +477,7 @@ function CommentCard({
                 Reply
               </button>
             )}
-            <span style={{ fontFamily: "Inter, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.40)" }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.40)" }}>
               {formatTimestamp(comment.timestamp)}
             </span>
             <button
@@ -508,7 +508,7 @@ function CommentCard({
                   border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: 6,
                   color: "rgba(255,255,255,0.9)",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   resize: "vertical",
                   outline: "none",
@@ -521,7 +521,7 @@ function CommentCard({
                 <button
                   onClick={() => setShowReplyInput(false)}
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 11,
                     fontWeight: 500,
                     color: "rgba(255,255,255,0.5)",
@@ -536,7 +536,7 @@ function CommentCard({
                 <button
                   onClick={submitReply}
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: 11,
                     fontWeight: 500,
                     color: "#fff",
@@ -570,7 +570,7 @@ function CommentCard({
             <button
               onClick={() => setShowAllReplies(true)}
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 11,
                 fontWeight: 500,
                 color: "rgba(46,196,182,0.85)",
@@ -602,10 +602,10 @@ function EmptyState({ anchorType }: { anchorType: AnchorType }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 24px", textAlign: "center" }}>
       <MessageCircleOff size={48} style={{ color: "rgba(255,255,255,0.20)", marginBottom: 16 }} />
-      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.5)", margin: "0 0 4px" }}>
+      <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.5)", margin: "0 0 4px" }}>
         No comments yet on this {labels[anchorType]}
       </p>
-      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.35)", margin: 0 }}>
+      <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.35)", margin: 0 }}>
         Be the first to comment
       </p>
     </div>
@@ -670,7 +670,7 @@ function Composer({
           border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: 6,
           color: "rgba(255,255,255,0.9)",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 13,
           lineHeight: 1.5,
           resize: "vertical",
@@ -686,7 +686,7 @@ function Composer({
           onClick={submit}
           disabled={!text.trim()}
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 12,
             fontWeight: 500,
             color: "#fff",
@@ -722,7 +722,7 @@ function SortDropdown({
       <button
         onClick={() => setOpen(!open)}
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 11,
           fontWeight: 500,
           color: "rgba(255,255,255,0.5)",
@@ -764,7 +764,7 @@ function SortDropdown({
                 display: "block",
                 width: "100%",
                 textAlign: "left",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 11,
                 fontWeight: value === opt ? 500 : 400,
                 color: value === opt ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.6)",
@@ -791,7 +791,7 @@ const menuItemStyle: React.CSSProperties = {
   display: "block",
   width: "100%",
   textAlign: "left",
-  fontFamily: "Inter, sans-serif",
+  fontFamily: "Figtree, sans-serif",
   fontSize: 12,
   color: "rgba(255,255,255,0.85)",
   background: "transparent",

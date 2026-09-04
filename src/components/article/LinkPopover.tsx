@@ -113,7 +113,7 @@ export function LinkPopover({ editor, open, onOpenChange }: LinkPopoverProps) {
           boxShadow: '0 8px 24px hsl(240 10% 2% / 0.5)',
           padding: 10,
           width: 300,
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           color: 'hsl(var(--foreground) / 0.9)',
         }}
         {...getFloatingProps()}

@@ -158,7 +158,7 @@ export default function VerifyEmail() {
         <h2
           style={{
             marginTop: "20px",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "16px",
             fontWeight: 600,
             color: "rgba(255, 255, 255, 0.92)",
@@ -169,7 +169,7 @@ export default function VerifyEmail() {
         <p
           style={{
             marginTop: "6px",
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: "13px",
             color: "rgba(255, 255, 255, 0.60)",
           }}

@@ -1,3 +1,5 @@
+import { type } from "@/lib/theme/type";
+
 // /bounty/new — the standalone bounty form. RETIRED BY NS-P54.
 //
 // The route is still registered and this page still renders, wrapped in
@@ -98,8 +100,8 @@ export default function BountyUpload() {
 
         {/* Header */}
         <div style={{
-          fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: 20, fontWeight: 700, color: '#fff',
+          ...type.cardTitle,
+            color: '#fff',
           marginBottom: 4,
         }}>
           Post a Bounty
@@ -132,7 +134,7 @@ export default function BountyUpload() {
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 10, padding: '12px 14px',
                 fontSize: 14, color: '#fff', outline: 'none',
-                resize: 'vertical', fontFamily: 'Inter, sans-serif',
+                resize: 'vertical', fontFamily: 'Figtree, sans-serif',
                 lineHeight: 1.6, boxSizing: 'border-box',
               }}
             />
@@ -198,7 +200,7 @@ export default function BountyUpload() {
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 10, padding: '12px 14px',
                 fontSize: 14, color: '#fff', outline: 'none',
-                resize: 'vertical', fontFamily: 'Inter, sans-serif',
+                resize: 'vertical', fontFamily: 'Figtree, sans-serif',
                 lineHeight: 1.6, boxSizing: 'border-box',
               }}
             />
@@ -219,7 +221,7 @@ export default function BountyUpload() {
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 10, padding: '12px 14px',
                 fontSize: 14, color: '#fff', outline: 'none',
-                resize: 'vertical', fontFamily: 'Inter, sans-serif',
+                resize: 'vertical', fontFamily: 'Figtree, sans-serif',
                 lineHeight: 1.6, boxSizing: 'border-box',
               }}
             />
@@ -264,7 +266,7 @@ export default function BountyUpload() {
                   borderRadius: 10, padding: '14px 14px 14px 32px',
                   fontSize: 22, fontWeight: 700, color: '#F59E0B',
                   outline: 'none', boxSizing: 'border-box',
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'Figtree, sans-serif',
                 }}
               />
             </div>
@@ -381,7 +383,7 @@ export default function BountyUpload() {
                 background: 'rgba(255,255,255,0.05)',
                 border: '1px solid rgba(255,255,255,0.10)',
                 color: 'rgba(255,255,255,0.65)',
-                fontSize: 13, cursor: 'pointer', fontFamily: 'Inter',
+                fontSize: 13, cursor: 'pointer', fontFamily: 'Figtree',
               }}
             >
               ← Back
@@ -403,7 +405,7 @@ export default function BountyUpload() {
               background: 'linear-gradient(135deg, #F59E0B, #D97706)',
               border: 'none', color: '#fff',
               fontSize: 13, fontWeight: 700, cursor: 'pointer',
-              fontFamily: 'Inter', opacity: submitting ? 0.6 : 1,
+              fontFamily: 'Figtree', opacity: submitting ? 0.6 : 1,
             }}
           >
             {submitting ? 'Posting...'

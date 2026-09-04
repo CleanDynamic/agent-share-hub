@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { type } from "@/lib/theme/type";
 
 interface ExecutionPanelProps {
   block: any; // CanvasBlock or BlockRow
@@ -218,12 +219,10 @@ export function ExecutionPanel({
           Prompt
         </div>
         <pre style={{
-          fontSize: 12,
           color: 'rgba(255,255,255,0.55)',
-          lineHeight: 1.6, whiteSpace: 'pre-wrap',
+          whiteSpace: 'pre-wrap',
           margin: 0,
-          fontFamily:
-            "'Playfair Display', Georgia, serif",
+          ...type.data,
         }}>
           {promptText.substring(0, 300)}
           {promptText.length > 300 ? '\u2026' : ''}
@@ -276,7 +275,7 @@ export function ExecutionPanel({
               lineHeight: 1.70,
               whiteSpace: 'pre-wrap',
               margin: 0,
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'Figtree, sans-serif',
             }}>
               {output}
             </pre>

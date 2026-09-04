@@ -54,7 +54,7 @@ export const trackMeta: Record<
 }
 
 export const mono = "var(--font-geist-mono), ui-monospace, monospace"
-export const sans = "var(--font-geist-sans), Inter, system-ui, sans-serif"
+export const sans = "'Figtree', system-ui, sans-serif"
 
 export function fmt(n: number): string {
   return n.toLocaleString("en-US")

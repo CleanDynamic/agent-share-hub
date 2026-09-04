@@ -280,7 +280,7 @@ export function SlashCommandMenu({
         borderRadius: 12,
         boxShadow: '0 12px 32px hsl(240 10% 2% / 0.6)',
         overflow: 'hidden',
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Figtree, sans-serif',
         zIndex: 100,
       }}
     >
@@ -307,7 +307,7 @@ export function SlashCommandMenu({
             color: 'hsl(var(--foreground) / 0.9)',
             fontSize: 13,
             fontWeight: 500,
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
           }}
         />
       </div>

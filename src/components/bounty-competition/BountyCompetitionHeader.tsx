@@ -16,6 +16,9 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
+// A local `type` binding in this file shadows the scale object, so the
+// roles are imported by name.
+import { sectionHead } from "@/lib/theme/type";
 
 type BountyStatus = "open" | "closed" | "solved" | "partially_solved";
 type RewardType = "cash" | "token" | "kudos" | "none";
@@ -122,7 +125,7 @@ function CounterPill({ icon, text }: { icon: React.ReactNode; text: string }) {
         borderRadius: 999,
         background: "rgba(255, 255, 255, 0.12)",
         border: "1px solid rgba(255,255,255,0.08)",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 12,
         color: "rgba(255,255,255,0.75)",
       }}
@@ -143,11 +146,10 @@ function RewardDisplay({
   currency?: string;
 }) {
   const baseStyle: React.CSSProperties = {
-    fontFamily: "'Playfair Display', serif",
-    fontSize: 28,
-    fontWeight: 700,
+    ...sectionHead,
+
     color: "#F59E0B",
-    lineHeight: 1.1,
+
   };
   switch (type) {
     case "cash":
@@ -206,7 +208,7 @@ export function BountyCompetitionHeader({
   };
 
   const labelStyle: React.CSSProperties = {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 11,
     fontWeight: 600,
     letterSpacing: "0.08em",
@@ -224,7 +226,7 @@ export function BountyCompetitionHeader({
     border: "1px solid rgba(245,158,11,0.4)",
     background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
     color: "#25252F",
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 14,
     fontWeight: 600,
     cursor: "pointer",
@@ -239,7 +241,7 @@ export function BountyCompetitionHeader({
     border: "1px solid rgba(255,255,255,0.12)",
     background: "rgba(255,255,255,0.03)",
     color: "rgba(255,255,255,0.85)",
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: 13,
     fontWeight: 500,
     cursor: "pointer",
@@ -252,11 +254,11 @@ export function BountyCompetitionHeader({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <Trophy size={16} color="#F59E0B" />
-            <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#F59E0B" }}>BOUNTY</span>
-            <span style={{ padding: "3px 8px", borderRadius: 6, background: statusConfig.bg, color: statusConfig.color, fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em" }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#F59E0B" }}>BOUNTY</span>
+            <span style={{ padding: "3px 8px", borderRadius: 6, background: statusConfig.bg, color: statusConfig.color, fontFamily: "Figtree, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em" }}>
               {statusConfig.label}
             </span>
-            <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.4)" }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.4)" }}>
               BOUNTY #{bounty.sequentialId}
             </span>
           </div>
@@ -268,7 +270,7 @@ export function BountyCompetitionHeader({
         </div>
 
         {/* TITLE */}
-        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: "rgba(255,255,255,0.96)", lineHeight: 1.2, margin: "0 0 12px 0" }}>
+        <h1 style={{ ...sectionHead,   color: "rgba(255,255,255,0.96)",  margin: "0 0 12px 0" }}>
           {bounty.title}
         </h1>
 
@@ -276,7 +278,7 @@ export function BountyCompetitionHeader({
         <div style={{ marginBottom: 20 }}>
           <div
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 14,
               lineHeight: 1.6,
               color: "rgba(255,255,255,0.72)",
@@ -291,7 +293,7 @@ export function BountyCompetitionHeader({
             <button
               onClick={() => setIsDescriptionExpanded((v) => !v)}
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 13,
                 fontWeight: 500,
                 color: "#F59E0B",
@@ -317,7 +319,7 @@ export function BountyCompetitionHeader({
             <div style={labelStyle}>Deadline</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Clock size={16} color={deadlineState.color as string} />
-              <span style={{ fontFamily: "Inter, sans-serif", fontSize: 16, fontWeight: 600, color: deadlineState.color as string }}>
+              <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 16, fontWeight: 600, color: deadlineState.color as string }}>
                 {formatTimeRemaining(bounty.deadline)}
               </span>
             </div>
@@ -388,11 +390,11 @@ export function BountyCompetitionHeader({
                 <div style={{ width: `${slotProgress}%`, height: "100%", background: "linear-gradient(90deg, #2EC4B6, #06B6D4)", transition: "width 0.6s ease-out" }} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
+                <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
                   {bounty.slotsSolved} of {bounty.slotsTotal} slots solved
                 </span>
                 {estimatedDaysToComplete !== null && (
-                  <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
+                  <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
                     ~{estimatedDaysToComplete} day{estimatedDaysToComplete !== 1 ? "s" : ""} at current pace
                   </span>
                 )}
@@ -400,12 +402,12 @@ export function BountyCompetitionHeader({
             </>
           )}
           {bounty.status === "closed" && (
-            <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
+            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
               Closed without resolution. {bounty.slotsTotal - bounty.slotsSolved} of {bounty.slotsTotal} slots remained unsolved.
             </div>
           )}
           {bounty.status === "solved" && bounty.solvedAt && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "Inter, sans-serif", fontSize: 13, color: "#2EC4B6" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "Figtree, sans-serif", fontSize: 13, color: "#2EC4B6" }}>
               <Award size={14} />
               Solved on {bounty.solvedAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} by {bounty.slotsSolved} contributor{bounty.slotsSolved !== 1 ? "s" : ""}
             </div>

@@ -327,7 +327,7 @@ function BlockSolveEditor({ slot, payload, onChange }: SolverEditorProps) {
 
   return (
     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+      <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
         Block type: {blockType}
       </div>
       <input
@@ -401,12 +401,12 @@ function StageSolveEditor({ payload, onChange }: SolverEditorProps) {
 
   return (
     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+      <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
         Stage solution — add blocks in order
       </div>
 
       {blocks.length === 0 && (
-        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontStyle: "italic", color: "rgba(255,255,255,0.40)", padding: "16px 0" }}>
+        <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontStyle: "italic", color: "rgba(255,255,255,0.40)", padding: "16px 0" }}>
           No blocks yet. Click "Add block" to begin building this stage.
         </div>
       )}
@@ -425,7 +425,7 @@ function StageSolveEditor({ payload, onChange }: SolverEditorProps) {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
               Block {i + 1}
             </span>
             <select
@@ -466,7 +466,7 @@ function StageSolveEditor({ payload, onChange }: SolverEditorProps) {
         onClick={addBlock}
         style={{
           alignSelf: "flex-start",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 12,
           fontWeight: 600,
           padding: "6px 14px",
@@ -490,7 +490,7 @@ const inputStyle: React.CSSProperties = {
   border: "0.5px solid rgba(255,255,255,0.10)",
   background: "rgba(255,255,255,0.03)",
   color: "rgba(255,255,255,0.90)",
-  fontFamily: "Inter, sans-serif",
+  fontFamily: "Figtree, sans-serif",
   fontSize: 13,
   outline: "none",
 };
@@ -503,14 +503,14 @@ const textareaStyle: React.CSSProperties = {
   border: "0.5px solid rgba(255,255,255,0.10)",
   background: "rgba(255,255,255,0.03)",
   color: "rgba(255,255,255,0.90)",
-  fontFamily: "Inter, sans-serif",
+  fontFamily: "Figtree, sans-serif",
   fontSize: 13,
   outline: "none",
   resize: "vertical",
 };
 
 const miniBtn: React.CSSProperties = {
-  fontFamily: "Inter, sans-serif",
+  fontFamily: "Figtree, sans-serif",
   fontSize: 11,
   padding: "4px 8px",
   borderRadius: 4,

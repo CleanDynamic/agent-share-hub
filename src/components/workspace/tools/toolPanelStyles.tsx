@@ -8,7 +8,7 @@ export const PANEL_INPUT_BORDER = '0.5px solid hsl(var(--foreground) / 0.08)';
 export const PANEL_INPUT_RADIUS = 6;
 
 export const SECTION_LABEL_STYLE: CSSProperties = {
-  fontFamily: 'Inter, sans-serif',
+  fontFamily: 'Figtree, sans-serif',
   fontSize: 10,
   fontWeight: 600,
   textTransform: 'uppercase',
@@ -17,7 +17,7 @@ export const SECTION_LABEL_STYLE: CSSProperties = {
 };
 
 export const TOOL_HEADER_TITLE_STYLE: CSSProperties = {
-  fontFamily: 'Inter, sans-serif',
+  fontFamily: 'Figtree, sans-serif',
   fontSize: 12,
   fontWeight: 600,
   color: 'hsl(var(--foreground) / 0.85)',
@@ -54,7 +54,7 @@ export function EmptyPanelState({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <div
           style={{
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             fontWeight: 500,
             color: 'hsl(var(--foreground) / 0.86)',
@@ -64,7 +64,7 @@ export function EmptyPanelState({
         </div>
         <div
           style={{
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             fontSize: 11,
             fontWeight: 400,
             lineHeight: 1.45,

@@ -39,7 +39,7 @@ export function AuthInput({
   const inputType = showPasswordToggle ? (showPassword ? "text" : "password") : type;
 
   const labelStyle = {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: "11px",
     fontWeight: 600,
     letterSpacing: "0.04em",
@@ -66,7 +66,7 @@ export function AuthInput({
       : "0.5px solid rgba(255, 255, 255, 0.14)",
     borderRadius: "10px",
     padding: showPasswordToggle || validation ? "0 44px 0 14px" : "0 14px",
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: "14px",
     fontWeight: 400,
     color: "rgba(255, 255, 255, 0.92)",
@@ -77,7 +77,7 @@ export function AuthInput({
   const placeholderStyle = `
     .auth-input::placeholder {
       color: rgba(255, 255, 255, 0.40);
-      font-family: Inter, sans-serif;
+      font-family: Figtree, sans-serif;
       font-size: 14px;
       font-weight: 400;
     }
@@ -91,7 +91,7 @@ export function AuthInput({
   };
 
   const helperStyle = {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: "11px",
     fontWeight: 400,
     fontStyle: "italic" as const,
@@ -100,7 +100,7 @@ export function AuthInput({
   };
 
   const validationMessageStyle = {
-    fontFamily: "Inter, sans-serif",
+    fontFamily: "Figtree, sans-serif",
     fontSize: "11px",
     fontWeight: 400,
     marginTop: "6px",

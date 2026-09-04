@@ -43,7 +43,7 @@ export function ResetPasswordConfirmCard({
       <h2
         style={{
           margin: 0,
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "18px",
           fontWeight: 700,
           color: "rgba(255, 255, 255, 0.95)",
@@ -55,7 +55,7 @@ export function ResetPasswordConfirmCard({
         style={{
           marginTop: "8px",
           marginBottom: "20px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "13px",
           fontWeight: 400,
           lineHeight: 1.55,
@@ -94,7 +94,7 @@ export function ResetPasswordConfirmCard({
               <p
                 style={{
                   marginTop: "6px",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: "11px",
                   fontWeight: 400,
                   color: "#ef4444",
@@ -110,7 +110,7 @@ export function ResetPasswordConfirmCard({
           <p
             style={{
               marginTop: "14px",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 400,
               color: "#ef4444",

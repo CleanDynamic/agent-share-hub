@@ -27,14 +27,14 @@ const rowStyle: React.CSSProperties = {
 };
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: 'Inter, sans-serif',
+  fontFamily: 'Figtree, sans-serif',
   fontSize: 12,
   fontWeight: 500,
   color: 'hsl(var(--foreground) / 0.85)',
 };
 
 const helperStyle: React.CSSProperties = {
-  fontFamily: 'Inter, sans-serif',
+  fontFamily: 'Figtree, sans-serif',
   fontSize: 11,
   fontWeight: 400,
   color: 'hsl(var(--foreground) / 0.45)',
@@ -48,7 +48,7 @@ const textareaStyle: React.CSSProperties = {
   background: PANEL_INPUT_BACKGROUND,
   border: PANEL_INPUT_BORDER,
   borderRadius: PANEL_INPUT_RADIUS,
-  fontFamily: 'Inter, sans-serif',
+  fontFamily: 'Figtree, sans-serif',
   fontSize: 12,
   color: 'hsl(var(--foreground) / 0.9)',
   resize: 'vertical',

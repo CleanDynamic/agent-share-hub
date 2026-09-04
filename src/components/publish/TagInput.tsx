@@ -139,7 +139,7 @@ export function TagInput({
                 color: isFlashing ? "rgb(248,113,113)" : "#E8571A",
                 fontSize: "12px",
                 fontWeight: 500,
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
               }}
             >
               {tag}
@@ -177,7 +177,7 @@ export function TagInput({
             "placeholder:text-[rgba(255,255,255,0.30)]",
             "disabled:cursor-not-allowed",
           )}
-          style={{ fontFamily: "Inter, sans-serif" }}
+          style={{ fontFamily: "Figtree, sans-serif" }}
         />
       </div>
 
@@ -207,7 +207,7 @@ export function TagInput({
                     ? "bg-[rgba(232,87,26,0.06)] border-l-2 border-l-[#E8571A]"
                     : "hover:bg-[rgba(255, 255, 255, 0.14)] border-l-2 border-l-transparent",
                 )}
-                style={{ fontFamily: "Inter, sans-serif" }}
+                style={{ fontFamily: "Figtree, sans-serif" }}
               >
                 <span className="flex items-center gap-1.5">
                   <span style={{ color: "rgba(255,255,255,0.30)", fontSize: "12px" }}>#</span>
@@ -232,7 +232,7 @@ export function TagInput({
                 "bg-[rgba(232,87,26,0.06)] border-l-2 border-l-[#E8571A]",
                 "hover:bg-[rgba(255, 255, 255, 0.14)]",
               )}
-              style={{ fontFamily: "Inter, sans-serif" }}
+              style={{ fontFamily: "Figtree, sans-serif" }}
             >
               <span style={{ color: "rgba(255,255,255,0.65)", fontSize: "12px" }}>
                 Press Enter to add{" "}

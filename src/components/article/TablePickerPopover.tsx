@@ -39,7 +39,7 @@ export function TablePickerPopover({ editor, trigger }: TablePickerPopoverProps)
           border: '1px solid hsl(var(--foreground) / 0.08)',
           borderRadius: 10,
           boxShadow: '0 8px 24px hsl(240 10% 2% / 0.5)',
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'Figtree, sans-serif',
           color: 'hsl(var(--foreground) / 0.9)',
         }}
       >
@@ -105,7 +105,7 @@ export function TablePickerPopover({ editor, trigger }: TablePickerPopoverProps)
             background: 'hsl(var(--foreground) / 0.06)',
             color: 'hsl(var(--foreground) / 0.9)',
             fontSize: 11,
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             cursor: hover.r > 0 ? 'pointer' : 'not-allowed',
             opacity: hover.r > 0 ? 1 : 0.5,
           }}

@@ -9,6 +9,7 @@ import {
   Plus,
   ShieldCheck,
 } from "lucide-react";
+import { type } from "@/lib/theme/type";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 export interface CommentAuthor {
@@ -128,7 +129,7 @@ function Dropdown<T extends string>({
         style={{
           background: "rgba(255, 255, 255, 0.12)",
           border: "0.5px solid rgba(255,255,255,0.08)",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
         }}
       >
         {selected?.label}
@@ -148,7 +149,7 @@ function Dropdown<T extends string>({
               }}
               className="block w-full text-left px-3 py-2 text-xs hover:bg-white/5"
               style={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 color:
                   opt.value === value
                     ? "rgba(46,196,182,1)"
@@ -196,7 +197,7 @@ function Composer({
         style={{
           background: "rgba(255,255,255,0.03)",
           border: "0.5px solid rgba(255,255,255,0.08)",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
         }}
       >
         Ask a question or start a discussion…
@@ -219,7 +220,7 @@ function Composer({
         placeholder="Write your message..."
         className="resize-none outline-none bg-transparent text-foreground/90"
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 14,
           minHeight: 80,
         }}
@@ -234,7 +235,7 @@ function Composer({
           />
           <span
             className="text-[11px] text-muted-foreground"
-            style={{ fontFamily: "Inter, sans-serif" }}
+            style={{ fontFamily: "Figtree, sans-serif" }}
           >
             Tag bounty author
           </span>
@@ -247,7 +248,7 @@ function Composer({
               onToggle();
             }}
             className="text-xs text-muted-foreground hover:text-foreground"
-            style={{ fontFamily: "Inter, sans-serif" }}
+            style={{ fontFamily: "Figtree, sans-serif" }}
           >
             Cancel
           </button>
@@ -258,7 +259,7 @@ function Composer({
             className="px-4 py-1.5 rounded-md text-xs font-semibold text-black disabled:opacity-40"
             style={{
               background: "#F59E0B",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
             }}
           >
             Post
@@ -307,7 +308,7 @@ function ReactionPill({
       <span
         className="text-[11px]"
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           color: hasReacted ? "rgba(46,196,182,1)" : "rgba(255,255,255,0.55)",
         }}
       >
@@ -329,7 +330,7 @@ function RolePill({ role }: { role: "author" | "solver" }) {
       style={{
         background: cfg.bg,
         color: cfg.color,
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
       }}
     >
       {cfg.text}
@@ -350,7 +351,7 @@ function InlineReferenceChip({ reference }: { reference: InlineReference }) {
       style={{
         background: `${c}15`,
         border: `0.5px solid ${c}30`,
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 11,
       }}
     >
@@ -444,7 +445,7 @@ function CommentCard({
                 <span
                   className="text-white"
                   style={{
-                    fontFamily: "Inter, sans-serif",
+                    fontFamily: "Figtree, sans-serif",
                     fontSize: avatarSize * 0.4,
                     fontWeight: 600,
                   }}
@@ -455,13 +456,13 @@ function CommentCard({
             </div>
             <span
               className="text-[12px] font-medium text-foreground/90 truncate"
-              style={{ fontFamily: "Inter, sans-serif" }}
+              style={{ fontFamily: "Figtree, sans-serif" }}
             >
               {comment.author.displayName}
             </span>
             <span
               className="text-[11px] text-muted-foreground truncate"
-              style={{ fontFamily: "Inter, sans-serif" }}
+              style={{ fontFamily: "Figtree, sans-serif" }}
             >
               @{comment.author.handle}
             </span>
@@ -474,7 +475,7 @@ function CommentCard({
           <div className="flex items-center gap-2 shrink-0">
             <span
               className="text-[11px] text-muted-foreground"
-              style={{ fontFamily: "Inter, sans-serif" }}
+              style={{ fontFamily: "Figtree, sans-serif" }}
             >
               {formatRelativeTime(comment.timestamp)}
             </span>
@@ -490,7 +491,7 @@ function CommentCard({
 
         <div
           className="text-[13px] text-foreground/85 whitespace-pre-wrap leading-relaxed"
-          style={{ fontFamily: "Inter, sans-serif" }}
+          style={{ fontFamily: "Figtree, sans-serif" }}
         >
           {comment.content}
           {comment.inlineReferences?.map((r, i) => (
@@ -544,7 +545,7 @@ function CommentCard({
             type="button"
             onClick={() => setShowReplyInput((v) => !v)}
             className="text-[11px] font-medium px-2 py-1 rounded hover:bg-white/5"
-            style={{ color: "rgba(46,196,182,0.85)", fontFamily: "Inter, sans-serif" }}
+            style={{ color: "rgba(46,196,182,0.85)", fontFamily: "Figtree, sans-serif" }}
           >
             Reply
           </button>
@@ -561,7 +562,7 @@ function CommentCard({
               style={{
                 background: "rgba(255, 255, 255, 0.12)",
                 border: "0.5px solid rgba(255,255,255,0.08)",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -575,7 +576,7 @@ function CommentCard({
               onClick={handleReply}
               disabled={!replyText.trim()}
               className="px-3 py-2 rounded-md text-[11px] font-semibold text-black disabled:opacity-40"
-              style={{ background: "#F59E0B", fontFamily: "Inter, sans-serif" }}
+              style={{ background: "#F59E0B", fontFamily: "Figtree, sans-serif" }}
             >
               Reply
             </button>
@@ -608,13 +609,13 @@ function EmptyState() {
       <MessageSquare className="w-6 h-6 mx-auto text-muted-foreground mb-3" />
       <div
         className="text-sm font-medium text-foreground/85 mb-1"
-        style={{ fontFamily: "Inter, sans-serif" }}
+        style={{ fontFamily: "Figtree, sans-serif" }}
       >
         Start the discussion
       </div>
       <div
         className="text-xs text-muted-foreground"
-        style={{ fontFamily: "Inter, sans-serif" }}
+        style={{ fontFamily: "Figtree, sans-serif" }}
       >
         Be the first to ask a question, share an approach, or brainstorm with the
         community.
@@ -660,14 +661,14 @@ export function BountyDiscussionForum({
         <div>
           <h2
             className="flex items-center gap-2 text-lg font-semibold text-foreground"
-            style={{ fontFamily: "Playfair Display, serif" }}
+            style={{ ...type.cardTitle,}}
           >
             <MessageSquare className="w-5 h-5" color="#2EC4B6" />
             Discussion
           </h2>
           <p
             className="text-xs text-muted-foreground mt-1"
-            style={{ fontFamily: "Inter, sans-serif" }}
+            style={{ fontFamily: "Figtree, sans-serif" }}
           >
             {stats.messages} {stats.messages === 1 ? "message" : "messages"} ·{" "}
             {stats.participants.size} active{" "}

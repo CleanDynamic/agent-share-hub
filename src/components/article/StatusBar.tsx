@@ -60,7 +60,7 @@ const itemButtonStyle = {
   border: 'none',
   background: 'transparent',
   color: 'rgba(255,255,255,0.65)',
-  fontFamily: 'Inter, sans-serif',
+  fontFamily: 'Figtree, sans-serif',
   fontSize: 11,
   fontWeight: 500,
   cursor: 'pointer',

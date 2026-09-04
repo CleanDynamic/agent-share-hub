@@ -92,7 +92,7 @@ export function BountyDetailsCard({
           <Target size={14} color="#F59E0B" strokeWidth={1.8} />
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               fontWeight: 600,
               color: "rgba(255,255,255,0.92)",
@@ -179,7 +179,7 @@ export function BountyDetailsCard({
                     : "0.5px solid rgba(255,255,255,0.08)",
                   borderRadius: 6,
                   padding: "0 12px",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 14,
                   fontWeight: 500,
                   color: "rgba(255,255,255,0.92)",
@@ -210,7 +210,7 @@ export function BountyDetailsCard({
                     : "0.5px solid rgba(255,255,255,0.08)",
                   borderRadius: 6,
                   padding: "0 12px",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 14,
                   fontWeight: 500,
                   color: "rgba(255,255,255,0.92)",
@@ -247,7 +247,7 @@ export function BountyDetailsCard({
                     : "0.5px solid rgba(255,255,255,0.08)",
                   borderRadius: 6,
                   padding: "0 12px",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Figtree, sans-serif",
                   fontSize: 14,
                   fontWeight: 500,
                   color: "rgba(255,255,255,0.92)",
@@ -286,7 +286,7 @@ export function BountyDetailsCard({
                 border: "0.5px solid rgba(255,255,255,0.08)",
                 borderRadius: 6,
                 padding: "0 12px",
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "Figtree, sans-serif",
                 fontSize: 14,
                 fontWeight: 500,
                 color: value.deadline
@@ -351,7 +351,7 @@ export function BountyDetailsCard({
                 : "0.5px solid rgba(255,255,255,0.08)",
               borderRadius: 6,
               padding: 12,
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 14,
               fontWeight: 500,
               color: "rgba(255,255,255,0.92)",
@@ -368,7 +368,7 @@ export function BountyDetailsCard({
           )}
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 11,
               fontWeight: 400,
               color: "rgba(255,255,255,0.40)",
@@ -394,7 +394,7 @@ export function BountyDetailsCard({
           />
           <span
             style={{
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: 11,
               fontWeight: 500,
               color: "rgba(255,255,255,0.70)",
@@ -405,7 +405,7 @@ export function BountyDetailsCard({
         </div>
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 10,
             fontWeight: 400,
             color: "rgba(255,255,255,0.30)",
@@ -434,7 +434,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <span
       style={{
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 10,
         fontWeight: 600,
         textTransform: "uppercase",
@@ -464,7 +464,7 @@ function HelperText({
   return (
     <span
       style={{
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 11,
         fontWeight: 400,
         color,
@@ -496,7 +496,7 @@ function Chip({
           : "0.5px solid rgba(255,255,255,0.08)",
         borderRadius: 6,
         background: active ? "rgba(245,158,11,0.10)" : "transparent",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 12,
         fontWeight: 500,
         color: active ? "#F59E0B" : "rgba(255,255,255,0.70)",
@@ -526,7 +526,7 @@ function QuickPickChip({
         border: "0.5px solid rgba(255,255,255,0.08)",
         borderRadius: 6,
         background: "transparent",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "Figtree, sans-serif",
         fontSize: 11,
         fontWeight: 500,
         color: "rgba(255,255,255,0.50)",

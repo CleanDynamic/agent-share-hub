@@ -57,7 +57,7 @@ export function MetaBountyHeader({ meta }: Props) {
         <Layers size={16} color="#7C3AED" />
         <span
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: "0.1em",
@@ -70,7 +70,7 @@ export function MetaBountyHeader({ meta }: Props) {
 
       <h1
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 24,
           fontWeight: 700,
           color: "rgba(255,255,255,0.95)",
@@ -83,7 +83,7 @@ export function MetaBountyHeader({ meta }: Props) {
       {meta.description && (
         <p
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "Figtree, sans-serif",
             fontSize: 13,
             color: "rgba(255,255,255,0.65)",
             margin: "0 0 16px 0",
@@ -147,7 +147,7 @@ function Stat({
           display: "flex",
           alignItems: "center",
           gap: 4,
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: 10,
           fontWeight: 600,
           letterSpacing: "0.05em",
@@ -161,7 +161,7 @@ function Stat({
       </div>
       <div
         style={{
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: accent ? 18 : 14,
           fontWeight: accent ? 700 : 600,
           color: accent ? "#7C3AED" : "rgba(255,255,255,0.9)",

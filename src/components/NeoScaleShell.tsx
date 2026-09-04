@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { BODONI, FIGTREE } from "@/lib/theme/type";
 import Home from "@/pages/Home";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
@@ -54,7 +55,10 @@ import { FeedTabs } from "@/components/feed-tabs";
    CSS — injected into document.head on mount
 ──────────────────────────────────────────────── */
 const NEOSCALE_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@400;500;600;700&display=swap');
+/* BG-P03. This shell used to @import the two retired families here, a second
+   font request independent of the one in index.css — dropping that import
+   alone would have left this one still fetching them. The three faces that
+   replace them load once, from index.html, so nothing is imported here. */
 
 .ns-middle-front *,
 .ns-middle-front ::before,
@@ -75,8 +79,8 @@ const NEOSCALE_CSS = `
   --mp-surface: rgba(255,255,255,0.03);
   --mp-orange: #8B4513;
   --mp-teal: #1F7A6D;
-  --mp-font: 'Playfair Display', Georgia, serif;
-  font-family: 'Inter', sans-serif;
+  --mp-font: ${BODONI};
+  font-family: ${FIGTREE};
   color: rgba(255,255,255,0.85);
 }
 
@@ -92,13 +96,12 @@ const NEOSCALE_CSS = `
     radial-gradient(ellipse 70% 60% at 50% 80%, rgba(46,196,182,0.04) 0%, transparent 70%),
     #25252F;
   background-size: 20px 20px, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Figtree', sans-serif;
   overflow: hidden;
   position: fixed;
   inset: 0;
   z-index: 10;
 }
-
 
 .ns-scale-wrapper {
   display: flex;
@@ -136,7 +139,6 @@ const NEOSCALE_CSS = `
   position: relative;
   z-index: 1;
 }
-
 
 /* ── Left panel ── */
 .ns-left-panel {
@@ -372,7 +374,7 @@ const NEOSCALE_CSS = `
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 .ns-page-title {
-  font-family: 'Playfair Display', serif;
+  font-family: ${BODONI};
   font-size: 22px;
   font-weight: 700;
   color: rgba(255,255,255,0.90);
@@ -381,7 +383,7 @@ const NEOSCALE_CSS = `
 .ns-page-subtitle {
   font-size: 13px;
   color: rgba(255,255,255,0.40);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Figtree', sans-serif;
 }
 .ns-page-body {
   flex: 1;
@@ -405,7 +407,7 @@ const NEOSCALE_CSS = `
   padding: 0;
   box-sizing: border-box;
   color: rgba(255,255,255,0.85);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Figtree', sans-serif;
 }
 .ns-outlet-wrap::-webkit-scrollbar { width: 3px; }
 .ns-outlet-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
@@ -418,7 +420,7 @@ const NEOSCALE_CSS = `
   border-radius: 12px;
   padding: 10px 16px;
   color: rgba(255,255,255,0.85);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 14px;
   outline: none;
   transition: border-color 0.15s;
@@ -450,7 +452,7 @@ const NEOSCALE_CSS = `
   color: #fff;
   padding: 10px 24px;
   border-radius: 9999px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 13px;
   font-weight: 700;
   border: none;
@@ -467,7 +469,7 @@ const NEOSCALE_CSS = `
   color: rgba(255,255,255,0.65);
   padding: 8px 20px;
   border-radius: 9999px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Figtree', sans-serif;
   font-size: 12px;
   font-weight: 600;
   border: 1px solid rgba(255,255,255,0.10);
@@ -489,7 +491,7 @@ const NEOSCALE_CSS = `
 .ns-page-body .text-foreground,
 .ns-page-body [class*="text-foreground"] {
   color: rgba(255,255,255,0.85) !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Figtree', sans-serif !important;
 }
 .ns-page-body .text-muted-foreground,
 .ns-page-body [class*="text-muted-foreground"] {
@@ -1012,7 +1014,7 @@ export function NeoScaleShell() {
   const location   = useLocation();
   const navigate   = useNavigate();
   const { openUploadTypePicker } = useUploadPicker();
-  
+
   const flipperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const leftRef    = useRef<HTMLDivElement>(null);
@@ -1285,7 +1287,6 @@ export function NeoScaleShell() {
     requestAnimationFrame(() => setPulsing(true));
     setTimeout(() => setPulsing(false), 600);
   }
-
 
   /* ── Responsive scale ──
      The .ns-app-container is transform-scaled (desktop) or `zoom`-scaled
@@ -1572,7 +1573,6 @@ export function NeoScaleShell() {
   /* ── Back face content router ── */
   function renderBackFaceContent() {
     const path = location.pathname;
-    
 
     if (path === '/') {
       // Front face is the home feed — render nothing in back face
@@ -1683,7 +1683,6 @@ export function NeoScaleShell() {
 
             {/* User section at bottom */}
             <div className="ns-user-section" style={{ position: "relative" }}>
-
 
               {isLoggedIn ? (
                 <>
@@ -2025,7 +2024,6 @@ export function NeoScaleShell() {
           </div>
           </LiquidGlassPanel>
           )}
-
 
         </div>
       </div>

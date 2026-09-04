@@ -160,7 +160,7 @@ export function SignupCard({
           <p
             style={{
               marginTop: "14px",
-              fontFamily: "Inter, sans-serif",
+              fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 400,
               color: "#ef4444",
@@ -185,7 +185,7 @@ export function SignupCard({
         style={{
           marginTop: "20px",
           textAlign: "center",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
           fontWeight: 400,
           color: "rgba(255, 255, 255, 0.55)",

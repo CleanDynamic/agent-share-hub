@@ -50,6 +50,7 @@ import RemixSettingsRow from "@/components/remix/RemixSettingsRow";
 import RemixComposerBanner from "@/components/remix/RemixComposerBanner";
 import { useLineageParent } from "@/lib/remix/hooks";
 import { coverImageFromRow, resultsFromJson, type CoverImage, type ResultBlock } from "@/types/blueprintMedia";
+import { type } from "@/lib/theme/type";
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -1377,7 +1378,6 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         } as any);
       }
 
-
       // Fire-and-forget metadata recompute now that all blocks are written.
       scheduleRecompute(contentId);
 
@@ -1409,7 +1409,6 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
       </div>
     );
   }
-
 
   if (draftLoading) {
     return (
@@ -1744,10 +1743,8 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   What are you sharing?
                 </div>
                 <div style={{
-                  fontSize: 22, fontWeight: 700,
-                  fontFamily: "'Playfair Display', Georgia, serif",
+                  ...type.cardTitle,
                   color: 'rgba(255,255,255,0.88)',
-                  lineHeight: 1.2,
                 }}>
                   Start a post
                 </div>
@@ -1791,10 +1788,8 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     }}
                   >
                     <div style={{
-                      fontSize: 18,
-                      fontWeight: 700,
                       color: card.accent,
-                      fontFamily: "'Playfair Display', Georgia, serif",
+                      ...type.cardTitle,
                       marginBottom: 8,
                     }}>
                       {card.title}
@@ -1831,7 +1826,6 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
 
         {/* ─── Canvas body — shown after type is chosen ─── */}
         {!showTypeChooser && (<div style={{ flex: 1, overflowY: 'auto' as const, padding: '20px 24px 0 24px', minHeight: 0 }}>
-
 
         {uploadType === "blog" ? (
         <Form {...form}>
@@ -1901,7 +1895,6 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 </label>
               )}
             </div>
-
 
             {/* Blog: Content blocks — only Text and Long Text */}
             <ContentBlockBuilder blocks={contentBlocks} onChange={setContentBlocks} contentType="Blog" />
@@ -2451,16 +2444,16 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     maxLength={200}
                     style={{
                       width: '100%',
-                      fontFamily: "'Playfair Display', Georgia, serif",
-                      fontSize: 22, fontWeight: 700,
+                      ...type.cardTitle,
+
                       color: 'rgba(255,255,255,0.95)',
                       background: 'transparent',
                       border: 'none',
                       borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                       outline: 'none',
                       padding: '4px 0 10px 0',
-                      marginBottom: 16, lineHeight: 1.25,
-                      letterSpacing: '-0.3px',
+                      marginBottom: 16,
+
                       boxSizing: 'border-box' as const,
                     }}
                     onFocus={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)')}
@@ -2487,7 +2480,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       border: 'none', outline: 'none',
                       resize: 'none' as const, padding: 0,
                       marginBottom: 6,
-                      fontFamily: 'Inter, sans-serif',
+                      fontFamily: 'Figtree, sans-serif',
                       boxSizing: 'border-box' as const,
                     }}
                   />
@@ -2612,7 +2605,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       borderRadius: 8, padding: '12px 14px',
                       fontSize: 14, color: 'rgba(255,255,255,0.72)',
                       outline: 'none', resize: 'vertical' as const,
-                      fontFamily: 'Inter, sans-serif',
+                      fontFamily: 'Figtree, sans-serif',
                       lineHeight: 1.65, boxSizing: 'border-box' as const,
                     }}
                   />
@@ -3012,7 +3005,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       background: 'rgba(255,255,255,0.05)',
                       border: '1px solid rgba(255,255,255,0.10)',
                       color: 'rgba(255,255,255,0.55)',
-                      fontFamily: 'Inter',
+                      fontFamily: 'Figtree',
                     }}
                   >
                     Save draft
@@ -3027,7 +3020,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       background: submitting
                         ? 'rgba(139,69,19,0.40)' : '#8B4513',
                       border: 'none', color: '#fff',
-                      fontFamily: 'Inter',
+                      fontFamily: 'Figtree',
                     }}
                   >
                     {submitting ? 'Publishing…' : 'Publish'}

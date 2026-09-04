@@ -36,7 +36,7 @@ export function AuthEmailSuccessCard({ onContinue }: AuthEmailSuccessCardProps) 
       <h2
         style={{
           marginTop: "20px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "18px",
           fontWeight: 700,
           color: "rgba(255, 255, 255, 0.95)",
@@ -48,7 +48,7 @@ export function AuthEmailSuccessCard({ onContinue }: AuthEmailSuccessCardProps) 
       <p
         style={{
           marginTop: "8px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "13px",
           fontWeight: 400,
           lineHeight: 1.55,
@@ -67,7 +67,7 @@ export function AuthEmailSuccessCard({ onContinue }: AuthEmailSuccessCardProps) 
           borderRadius: "10px",
           backgroundColor: "#E8571A",
           border: "none",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "14px",
           fontWeight: 600,
           color: "#FFFFFF",

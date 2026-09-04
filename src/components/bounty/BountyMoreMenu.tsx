@@ -73,7 +73,7 @@ export function BountyMoreMenu({
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             fontWeight: 500,
             color: isMissing ? '#F59E0B' : 'rgba(255,255,255,0.75)',

@@ -1,3 +1,5 @@
+import { type } from "@/lib/theme/type";
+
 interface DiscussionComposeProps {
   form: any;
   threads: string[];
@@ -35,9 +37,8 @@ export function DiscussionCompose({
           fontSize: 18, lineHeight: 1,
         }}>💬</span>
         <span style={{
-          fontSize: 13, fontWeight: 700,
           color: 'rgba(255,255,255,0.70)',
-          fontFamily: "'Playfair Display', Georgia, serif",
+          ...type.cardTitle,
         }}>
           Start a Discussion
         </span>
@@ -78,11 +79,11 @@ export function DiscussionCompose({
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
-                fontSize: 15,
+
                 color: 'rgba(255,255,255,0.88)',
-                lineHeight: 1.65,
+
                 resize: 'none',
-                fontFamily: "'Playfair Display', Georgia, serif",
+                ...type.cardTitle,
                 minHeight: 80,
                 overflow: 'hidden',
                 boxSizing: 'border-box',
@@ -136,7 +137,7 @@ export function DiscussionCompose({
                   fontSize: 14,
                   color: 'rgba(255,255,255,0.75)',
                   lineHeight: 1.65, resize: 'none',
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'Figtree, sans-serif',
                   minHeight: 60, overflow: 'hidden',
                   boxSizing: 'border-box',
                 }}
@@ -178,7 +179,7 @@ export function DiscussionCompose({
               fontSize: 13, color: 'rgba(59,130,246,0.60)',
               background: 'none', border: 'none',
               cursor: 'pointer', padding: '4px 0',
-              fontFamily: 'Inter',
+              fontFamily: 'Figtree',
             }}
           >
             + Add to thread
@@ -218,7 +219,7 @@ export function DiscussionCompose({
             fontSize: 13, fontWeight: 700,
             cursor: mainText.trim() && !isOverLimit
               ? 'pointer' : 'default',
-            fontFamily: 'Inter',
+            fontFamily: 'Figtree',
             transition: 'background 0.15s',
           }}
         >

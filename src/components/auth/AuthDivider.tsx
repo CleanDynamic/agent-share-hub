@@ -21,7 +21,7 @@ export function AuthDivider({ text }: AuthDividerProps) {
           position: "relative",
           background: "rgba(52, 52, 66, 1)",
           padding: "0 12px",
-          fontFamily: "Inter, sans-serif",
+          fontFamily: "Figtree, sans-serif",
           fontSize: "11px",
           fontWeight: 500,
           letterSpacing: "0.04em",

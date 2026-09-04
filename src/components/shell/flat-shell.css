@@ -13,7 +13,7 @@
   min-height: 100dvh;
   display: flex;
   justify-content: center;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: rgba(255, 255, 255, 0.85);
 }
 
@@ -108,7 +108,7 @@
 .fs-page-body .text-foreground,
 .fs-page-body [class*="text-foreground"] {
   color: rgba(255,255,255,0.85) !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
 }
 .fs-page-body .text-muted-foreground,
 .fs-page-body [class*="text-muted-foreground"] {
