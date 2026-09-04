@@ -42,6 +42,7 @@ import {
   labelText,
   titleText,
 } from "./tokens";
+import { measure } from "@/lib/theme/type";
 
 /** One accent per layer: the doing layer takes the instruction colour. */
 const LAYER_COLOUR: Record<Layer, string> = {
@@ -140,7 +141,7 @@ function StepCard({
           ) : null}
 
           {step.body ? (
-            <p style={{ ...bodyText, margin: 0, whiteSpace: "pre-wrap", color: TEXT_PRIMARY }}>
+            <p style={{ ...bodyText, ...measure, margin: 0, whiteSpace: "pre-wrap", color: TEXT_PRIMARY }}>
               {step.body}
             </p>
           ) : null}
@@ -182,7 +183,7 @@ export function LayerView({ layer, resolveNode, onOpenNode }: LayerViewProps) {
     >
       <Attribution colour={colour} />
 
-      <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+      <p style={{ ...bodyText, ...measure, margin: 0, color: TEXT_SECONDARY }}>
         {LAYER_BLURB[layer.layer]}
       </p>
 

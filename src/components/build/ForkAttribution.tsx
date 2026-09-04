@@ -69,6 +69,7 @@ import {
   hexToRgba,
   labelText,
 } from "./tokens";
+import { measure } from "@/lib/theme/type";
 
 /** Lineage does not change while a reader is on the page. */
 const STALE_TIME = 300_000;
@@ -282,6 +283,7 @@ function RebuildBanner({
           data-testid="rebuild-banner-note"
           style={{
             ...bodyText,
+            ...measure,
             margin: 0,
             paddingLeft: 10,
             borderLeft: `2px solid ${HAIRLINE}`,
