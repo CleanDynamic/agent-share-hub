@@ -27,6 +27,7 @@ import { MobileBottomNav, type MobileRoute } from "@/components/shell/MobileBott
 import { ProfileDrawer, type DrawerRoute } from "@/components/shell/ProfileDrawer";
 import { RightRailDrawer } from "@/components/shell/RightRailDrawer";
 import NavProgressChip from "@/components/ambient/NavProgressChip";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 /* ────────────────────────────────────────────────
    AppShell — the wired container around FlatShell.
@@ -246,11 +247,23 @@ export function AppShell() {
         hideLeftRail={uploadEditorSmall}
         forceRightRail={uploadEditorSmall}
         beforeUserSlot={
-          isLoggedIn ? (
+          /* The left rail's user area, immediately above the user block.
+             BG-P02 mounts the theme toggle here rather than adjacent: it is the
+             frame's existing slot for chrome that belongs to the visitor rather
+             than to the page, and using it needs no change to FlatShell.
+
+             The slot now renders for signed-out visitors too — the theme is
+             not an account setting. The progress chip keeps its own condition. */
+          <>
+            {isLoggedIn && (
+              <div style={{ padding: "0 12px 10px" }}>
+                <NavProgressChipMount onClick={() => navigate("/analytics")} />
+              </div>
+            )}
             <div style={{ padding: "0 12px 10px" }}>
-              <NavProgressChipMount onClick={() => navigate("/analytics")} />
+              <ThemeToggle />
             </div>
-          ) : null
+          </>
         }
       >
         {/* Single outlet: every route, including "/", renders here. The home
