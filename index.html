@@ -7,6 +7,31 @@
     <meta name="description" content="Download AI assistants, blueprints and workflows. Works with ChatGPT, Claude, Gemini and any AI tool. Free to browse. Built by experts. Usable by anyone.">
     <meta name="author" content="NeoScale AI" />
 
+    <!-- BG-P03 typefaces. Figtree (body/UI), Bodoni Moda (display), DM Mono
+         (data). They live here rather than as an @import in src/index.css so
+         the request starts with the document instead of waiting on the CSS
+         bundle to parse — an @import is a serial hop before paint. The
+         preconnects warm both hosts (the css2 response is served from
+         googleapis, the woff2 files from gstatic) so the font fetch does not
+         pay for DNS + TLS twice.
+
+         Weights are the three the type scale emits, and no more: Figtree
+         400..500..600, Bodoni Moda 400..500 roman plus a 400 italic, DM Mono
+         400 and 500. Ranges where the family is variable, discrete weights
+         where it is not, so Google serves one file per family instead of one
+         per weight. Latin only — the product is English and nothing in the
+         repo renders another script; the browser picks the subset it needs
+         from the unicode-range rules either way.
+
+         The faces are read through src/lib/theme/type.ts. Change the scale
+         there and the weights here together. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400..500;1,400&family=DM+Mono:wght@400;500&family=Figtree:wght@400..600&display=swap"
+    />
+
     <!-- BG-P02 theme boot: sets <html data-theme> before the bundle, so nobody
          sees a flash of the other room. Mirrors src/contexts/ThemeContext.tsx —
          same bg-theme key, same Exhibition fallback. Change one, change both. -->
