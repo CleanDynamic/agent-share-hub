@@ -16,6 +16,20 @@
 // `porthole`, `chrome-hi` and `chrome-lo` are retained from the dropped shape
 // language because media wells and hairline highlights still need them. Do not
 // invent decorative uses for them.
+//
+// THE CATEGORY BLOCK (BG-P05). Nine hues, a tenth fallback, and a chip fill for
+// each of the ten. `cat-*-fill` is the measured background a chip may put its
+// own hue on — see the note in `primitives.ts` for how the ten were measured,
+// and `category.ts` for the resolver that is the only sanctioned way to spend
+// them. Two of the twenty are written as `var()` rather than as a value:
+//
+//   cat-fallback       →  var(--text2)    a category the registry does not know
+//   cat-fallback-fill  →  var(--recess)   and the ground that pairs with it
+//
+// An alias, not a copy, so the fallback cannot drift from the secondary text it
+// is meant to be. `--recess` is reused rather than a twenty-first value struck,
+// because text2-on-recess already measures 4.55:1 on Exhibition and 5.73:1 on
+// Dusk — the skill's order is reuse a legal pairing first, and this is one.
 
 import {
   amber,
@@ -70,6 +84,17 @@ export const TOKEN_NAMES = [
   "cat-agents",
   "cat-breakage",
   "cat-media",
+  "cat-fallback",
+  "cat-instruction-fill",
+  "cat-configuration-fill",
+  "cat-data-fill",
+  "cat-artefact-fill",
+  "cat-evidence-fill",
+  "cat-narrative-fill",
+  "cat-agents-fill",
+  "cat-breakage-fill",
+  "cat-media-fill",
+  "cat-fallback-fill",
 ] as const;
 
 export type TokenName = (typeof TOKEN_NAMES)[number];
@@ -108,6 +133,18 @@ export const exhibition: Record<TokenName, string> = {
   "cat-agents": violet[700],
   "cat-breakage": red[700],
   "cat-media": magenta[700],
+  "cat-fallback": "var(--text2)",
+
+  "cat-instruction-fill": rust[50],
+  "cat-configuration-fill": green[50],
+  "cat-data-fill": blue[50],
+  "cat-artefact-fill": ochre[50],
+  "cat-evidence-fill": teal[300],
+  "cat-narrative-fill": stone[50],
+  "cat-agents-fill": violet[50],
+  "cat-breakage-fill": red[50],
+  "cat-media-fill": magenta[50],
+  "cat-fallback-fill": "var(--recess)",
 };
 
 /** Dusk — dark. Lavender stone at dusk, lit by a violet-to-salmon horizon. */
@@ -143,6 +180,18 @@ export const dusk: Record<TokenName, string> = {
   "cat-agents": violet[400],
   "cat-breakage": red[400],
   "cat-media": magenta[400],
+  "cat-fallback": "var(--text2)",
+
+  "cat-instruction-fill": rust[900],
+  "cat-configuration-fill": green[900],
+  "cat-data-fill": blue[900],
+  "cat-artefact-fill": ochre[900],
+  "cat-evidence-fill": sky[900],
+  "cat-narrative-fill": stone[900],
+  "cat-agents-fill": violet[900],
+  "cat-breakage-fill": red[900],
+  "cat-media-fill": magenta[900],
+  "cat-fallback-fill": "var(--recess)",
 };
 
 export const themes: Record<ThemeName, Record<TokenName, string>> = {

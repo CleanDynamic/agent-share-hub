@@ -86,16 +86,18 @@ export const amber = {
   500: "#D9A441",
 } as const;
 
-/** Teal — Exhibition's evidence, and its fill. */
+/** Teal — Exhibition's evidence, and its fill. `300` is the chip fill (BG-P05). */
 export const teal = {
   200: "#BFE3DC",
+  300: "#C2D1D2",
   600: "#0F6E63",
   700: "#0E635C",
 } as const;
 
-/** Pale blue — Dusk's evidence. */
+/** Pale blue — Dusk's evidence. `900` is the chip fill (BG-P05). */
 export const sky = {
   400: "#86BDD3",
+  900: "#343B4D",
 } as const;
 
 /** Dusk's evidence fill, struck from `sky.400`. */
@@ -114,20 +116,31 @@ export const skyAlpha = {
 // primary action) are close but deliberately distinct: one encodes a part
 // category, the other encodes interactivity, and better-colors is explicit that
 // one colour carries one meaning.
+//
+// THE `50` AND `900` STEPS ARE CHIP FILLS, AND THEY ARE MEASURED (BG-P05). Each
+// is its own ramp's category hue laid over the theme's ground at a low alpha
+// and then flattened: `50` is the Exhibition step over `#E4E6E8`, `900` the Dusk
+// step over `#1F1B2B`. The alpha is the largest on a 0.01 ladder capped at 0.20
+// at which the hue still clears 4.5:1 on the result — the hue never moves to
+// make a fill legal, only the alpha does, and where a hue sits close to its
+// floor on the ground (Exhibition's magenta, at 4.83:1) the alpha that survives
+// is small and the fill is nearly the ground. The composite is stored rather
+// than the alpha so the pairing measures the same on glass as it does on the
+// ground; `src/lib/theme/category.test.ts` recomputes every one of them.
 
 /** instruction */
-export const rust = { 400: "#F0865A", 700: "#9C3E12" } as const;
+export const rust = { 50: "#DBD2CE", 400: "#F0865A", 700: "#9C3E12", 900: "#493034" } as const;
 /** configuration */
-export const green = { 400: "#5CCB7C", 700: "#0F6B31" } as const;
+export const green = { 50: "#CDD8D4", 400: "#5CCB7C", 700: "#0F6B31", 900: "#2B3E3B" } as const;
 /** data */
-export const blue = { 400: "#6AA1FF", 700: "#1D4ED8" } as const;
+export const blue = { 50: "#CCD4E6", 400: "#6AA1FF", 700: "#1D4ED8", 900: "#2E3655" } as const;
 /** artefact */
-export const ochre = { 400: "#F5B83D", 700: "#8F4309" } as const;
+export const ochre = { 50: "#D7CEC7", 400: "#F5B83D", 700: "#8F4309", 900: "#4A3A2F" } as const;
 /** narrative */
-export const stone = { 400: "#A8A6A3", 600: "#565B63" } as const;
+export const stone = { 50: "#D0D3D5", 400: "#A8A6A3", 600: "#565B63", 900: "#3A3743" } as const;
 /** agents */
-export const violet = { 400: "#A78BFA", 700: "#6D28D9" } as const;
+export const violet = { 50: "#D2CAE6", 400: "#A78BFA", 700: "#6D28D9", 900: "#372F50" } as const;
 /** breakage / gap */
-export const red = { 400: "#F26D6D", 700: "#B91C1C" } as const;
+export const red = { 50: "#E1D6D8", 400: "#F26D6D", 700: "#B91C1C", 900: "#412836" } as const;
 /** media */
-export const magenta = { 400: "#F472B6", 700: "#BE185D" } as const;
+export const magenta = { 50: "#E2DEE2", 400: "#F472B6", 700: "#BE185D", 900: "#4A2C47" } as const;

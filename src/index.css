@@ -80,6 +80,18 @@
   --cat-agents: #6D28D9;
   --cat-breakage: #B91C1C;
   --cat-media: #BE185D;
+  --cat-fallback: var(--text2);
+
+  --cat-instruction-fill: #DBD2CE;
+  --cat-configuration-fill: #CDD8D4;
+  --cat-data-fill: #CCD4E6;
+  --cat-artefact-fill: #D7CEC7;
+  --cat-evidence-fill: #C2D1D2;
+  --cat-narrative-fill: #D0D3D5;
+  --cat-agents-fill: #D2CAE6;
+  --cat-breakage-fill: #E1D6D8;
+  --cat-media-fill: #E2DEE2;
+  --cat-fallback-fill: var(--recess);
 }
 
 :root[data-theme="dusk"] {
@@ -114,6 +126,18 @@
   --cat-agents: #A78BFA;
   --cat-breakage: #F26D6D;
   --cat-media: #F472B6;
+  --cat-fallback: var(--text2);
+
+  --cat-instruction-fill: #493034;
+  --cat-configuration-fill: #2B3E3B;
+  --cat-data-fill: #2E3655;
+  --cat-artefact-fill: #4A3A2F;
+  --cat-evidence-fill: #343B4D;
+  --cat-narrative-fill: #3A3743;
+  --cat-agents-fill: #372F50;
+  --cat-breakage-fill: #412836;
+  --cat-media-fill: #4A2C47;
+  --cat-fallback-fill: var(--recess);
 }
 
 /* ── The theme cross-fade (BG-P02) ────────────────────────────────────────────
