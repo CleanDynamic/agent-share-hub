@@ -92,6 +92,18 @@
   --cat-breakage-fill: #E1D6D8;
   --cat-media-fill: #E2DEE2;
   --cat-fallback-fill: var(--recess);
+
+  /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
+     component reads every root token from one place. src/lib/theme/radius.ts is
+     how components spend them. --r-full is for circular things ONLY; the legacy
+     --radius-btn/--radius-badge above are the pill rule this replaces, and
+     BG-P07 repoints their consumers. */
+  --r-chip: 8px;
+  --r-media: 10px;
+  --r-control: 12px;
+  --r-card: 14px;
+  --r-panel: 16px;
+  --r-full: 999px;
 }
 
 :root[data-theme="dusk"] {
@@ -138,6 +150,18 @@
   --cat-breakage-fill: #412836;
   --cat-media-fill: #4A2C47;
   --cat-fallback-fill: var(--recess);
+
+  /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
+     component reads every root token from one place. src/lib/theme/radius.ts is
+     how components spend them. --r-full is for circular things ONLY; the legacy
+     --radius-btn/--radius-badge above are the pill rule this replaces, and
+     BG-P07 repoints their consumers. */
+  --r-chip: 8px;
+  --r-media: 10px;
+  --r-control: 12px;
+  --r-card: 14px;
+  --r-panel: 16px;
+  --r-full: 999px;
 }
 
 /* ── The theme cross-fade (BG-P02) ────────────────────────────────────────────
