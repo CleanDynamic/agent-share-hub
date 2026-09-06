@@ -104,6 +104,13 @@
   --r-card: 14px;
   --r-panel: 16px;
   --r-full: 999px;
+
+  /* BG-P04 — elevation. Exhibition's depth is a true shadow: the luminous grey
+     room has a light source, so a surface above the page casts. Struck from
+     --text rather than from black, so the shadow belongs to the room. `flat`
+     needs no token — it is no shadow plus a --line hairline. */
+  --elev-raised: 0 1px 2px rgba(27,32,38,.08), 0 6px 16px rgba(27,32,38,.10);
+  --elev-overlay: 0 2px 6px rgba(27,32,38,.12), 0 24px 56px rgba(27,32,38,.20);
 }
 
 :root[data-theme="dusk"] {
@@ -162,6 +169,13 @@
   --r-card: 14px;
   --r-panel: 16px;
   --r-full: 999px;
+
+  /* BG-P04 — elevation. On a dark ground a shadow alone barely reads, so each
+     level pairs a deeper shadow with an inset --glass-hi top hairline: the
+     surface's own edge catching the horizon. The hairline says "above", the
+     shadow says "how far". */
+  --elev-raised: inset 0 1px 0 var(--glass-hi), 0 2px 4px rgba(0,0,0,.36), 0 10px 24px rgba(0,0,0,.44);
+  --elev-overlay: inset 0 1px 0 var(--glass-hi), 0 4px 10px rgba(0,0,0,.48), 0 32px 72px rgba(0,0,0,.62);
 }
 
 /* ── The theme cross-fade (BG-P02) ────────────────────────────────────────────

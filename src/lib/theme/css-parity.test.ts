@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { TOKEN_NAMES, exhibition, dusk } from "./semantics";
 import { RADIUS, RADIUS_NAMES } from "./radius";
+import { ELEVATION_TOKENS, duskElevation, exhibitionElevation } from "./elevation";
 
 const css = readFileSync("src/index.css", "utf-8");
 const block = (sel: string) => {
@@ -30,7 +31,7 @@ const parse = (sel: string) => {
 };
 
 /** Every custom property a theme block is expected to declare. */
-const DECLARED = [...TOKEN_NAMES, ...RADIUS_NAMES].sort();
+const DECLARED = [...TOKEN_NAMES, ...RADIUS_NAMES, ...ELEVATION_TOKENS].sort();
 
 describe("index.css mirrors semantics.ts", () => {
   it("exhibition (bare :root and [data-theme=exhibition])", () => {
@@ -59,5 +60,25 @@ describe("index.css mirrors radius.ts", () => {
     const light = parse(':root,\n:root[data-theme="exhibition"]');
     const dark = parse(':root[data-theme="dusk"]');
     for (const n of RADIUS_NAMES) expect([n, dark[n]]).toEqual([n, light[n]]);
+  });
+});
+
+describe("index.css mirrors elevation.ts", () => {
+  it("exhibition declares both shadows", () => {
+    const got = parse(':root,\n:root[data-theme="exhibition"]');
+    for (const n of ELEVATION_TOKENS) expect([n, got[n]]).toEqual([n, exhibitionElevation[n]]);
+  });
+
+  it("dusk declares both shadows", () => {
+    const got = parse(':root[data-theme="dusk"]');
+    for (const n of ELEVATION_TOKENS) expect([n, got[n]]).toEqual([n, duskElevation[n]]);
+  });
+
+  it("declares a DIFFERENT shadow in each block", () => {
+    // The point of putting these in the theme blocks at all: a shadow on a
+    // light ground and a shadow on a dark ground are not the same object.
+    const light = parse(':root,\n:root[data-theme="exhibition"]');
+    const dark = parse(':root[data-theme="dusk"]');
+    for (const n of ELEVATION_TOKENS) expect(dark[n]).not.toBe(light[n]);
   });
 });
