@@ -201,8 +201,15 @@ describe("BuildPage", () => {
     expect(container.innerHTML).not.toContain("Triage view, second draft");
     expect(container.innerHTML).not.toContain("Cost note, unfinished");
 
+    // BG-P05: the gap edge is 3px of --cat-breakage, written as longhands. The
+    // width and style are asserted here; the hue is not, because jsdom's
+    // cssstyle drops a `var()` from a colour property, so `borderLeftColor`
+    // reads empty in this environment however the component sets it. That the
+    // token IS the breakage hue, in both themes, is asserted in
+    // src/lib/theme/category.test.ts, and that it renders is covered by e2e.
     const gap = container.querySelector('[data-node-id="n3"]') as HTMLElement;
-    expect(gap.style.borderLeft).toBe("3px solid #EF4444");
+    expect(gap.style.borderLeftWidth).toBe("3px");
+    expect(gap.style.borderLeftStyle).toBe("solid");
   });
 
   it("switches to the run view, which shows only the copyable nodes", async () => {

@@ -1,9 +1,12 @@
 // Add a node, grouped by the six categories.
 //
 // The list is read from the node_types rows on the loaded record — never a
-// hardcoded list. A type added, renamed, recoloured or retired in the registry
-// changes this menu with no code change, which is the whole point of having a
-// registry.
+// hardcoded list. A type added, renamed or retired in the registry changes this
+// menu with no code change, which is the whole point of having a registry.
+//
+// BG-P05: its COLOUR no longer comes from the registry. Every dot and every
+// category line is `categoryColour(category)`, so the six groups are six hues
+// and two types in one group cannot be two colours.
 
 import { useMemo } from "react";
 import type { CSSProperties } from "react";
@@ -17,14 +20,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { NodeType } from "@/lib/build";
 import {
-  CATEGORY_COLOUR,
   HAIRLINE,
   TEXT_MUTED,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
-  hexToRgba,
   labelText,
 } from "@/components/build/tokens";
+import { categoryColour, categoryFill } from "@/lib/theme/category";
 
 /** The six categories, in the order the registry defines them. A category the
  *  registry grows beyond these still renders, after them. */
@@ -119,13 +121,17 @@ export function AddNodeMenu({ nodeTypes, onAdd, disabled, levelLabel }: AddNodeM
                 ...labelText,
                 textTransform: "uppercase",
                 fontSize: 10,
-                color: CATEGORY_COLOUR[category] ?? TEXT_SECONDARY,
+                color: categoryColour(category),
               }}
             >
               {categoryLabel(category)}
             </DropdownMenuLabel>
             {types.map((type) => {
-              const colour = type.colour ?? CATEGORY_COLOUR[category] ?? TEXT_SECONDARY;
+              // BG-P05: the dot is the group's category in one of the nine hues.
+              // `node_types.colour` is no longer read — two types in one category
+              // are one colour, which is what makes the group heading mean
+              // anything.
+              const fill = categoryFill(category);
               return (
                 <DropdownMenuItem
                   key={type.key}
@@ -138,8 +144,8 @@ export function AddNodeMenu({ nodeTypes, onAdd, disabled, levelLabel }: AddNodeM
                       width: 6,
                       height: 6,
                       borderRadius: 100,
-                      background: colour,
-                      boxShadow: `0 0 0 3px ${hexToRgba(colour, 0.15)}`,
+                      background: fill.color,
+                      boxShadow: `0 0 0 3px ${fill.background}`,
                       flexShrink: 0,
                     }}
                   />
@@ -155,7 +161,7 @@ export function AddNodeMenu({ nodeTypes, onAdd, disabled, levelLabel }: AddNodeM
                         fontWeight: 400,
                         letterSpacing: "0.04em",
                         textTransform: "uppercase",
-                        color: colour,
+                        color: fill.color,
                       }}
                     >
                       {categoryLabel(category)}

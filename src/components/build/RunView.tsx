@@ -7,8 +7,10 @@
 //
 //   copyable types   become numbered steps. The registry decides which — a
 //                    type is a step because node_types.copyable says so, never
-//                    because this file lists it. Recolour or flip a type in
-//                    the registry and this tab follows with no code change.
+//                    because this file lists it. Flip a type in the registry and
+//                    this tab follows with no code change. Its COLOUR does not
+//                    come from the registry any more — BG-P05 moved that to the
+//                    node's category, resolved through the theme.
 //   prerequisites    become an unnumbered checklist at the top, because "have
 //                    a Google account" is not step one of anything.
 //
@@ -26,7 +28,6 @@ import type { Build, BuildNode, NodeTree, NodeType } from "@/lib/build";
 import { getNodeCopyText } from "./renderers";
 import { MonoBlock } from "./renderers/shared";
 import {
-  CATEGORY_COLOUR,
   HAIRLINE,
   ORANGE,
   TEAL,
@@ -38,6 +39,7 @@ import {
   labelText,
   titleText,
 } from "./tokens";
+import { categoryFill } from "@/lib/theme/category";
 
 interface RunViewProps {
   tree: NodeTree[];
@@ -231,10 +233,9 @@ function Checklist({ prerequisites }: { prerequisites: Prerequisite[] }) {
 }
 
 function StepCard({ step, number }: { step: Step; number: number }) {
-  const colour =
-    step.nodeType?.colour ??
-    CATEGORY_COLOUR[step.nodeType?.category ?? step.node.type] ??
-    CATEGORY_COLOUR.narrative;
+  // BG-P05: the step number takes its colour from the step's category, not from
+  // `node_types.colour` — the registry stores a colour, and the theme decides one.
+  const fill = categoryFill(step.nodeType?.category ?? step.node.type);
 
   return (
     <li style={{ listStyle: "none" }}>
@@ -259,8 +260,8 @@ function StepCard({ step, number }: { step: Step; number: number }) {
               fontSize: 12,
               fontWeight: 600,
               letterSpacing: 0,
-              color: colour,
-              background: hexToRgba(colour, 0.15),
+              color: fill.color,
+              background: fill.background,
             }}
           >
             {number}

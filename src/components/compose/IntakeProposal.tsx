@@ -34,7 +34,6 @@ import type {
 } from "@/lib/build/intake";
 import type { SecretWarning } from "@/lib/build/buildfile";
 import {
-  CATEGORY_COLOUR,
   GAP_RED,
   HAIRLINE,
   ORANGE,
@@ -49,6 +48,7 @@ import {
   pageHeadingText,
   titleText,
 } from "@/components/build/tokens";
+import { categoryFill } from "@/lib/theme/category";
 
 /** Long enough to recognise the item, short enough to stay on one line. */
 const SUMMARY_LIMIT = 96;
@@ -98,7 +98,9 @@ function plural(count: number, [one, many]: [string, string]): string {
 
 function TypePill({ typeKey }: { typeKey: string }) {
   const known = PARSER_TYPES[typeKey];
-  const colour = CATEGORY_COLOUR[known?.category ?? ""] ?? TEXT_SECONDARY;
+  // BG-P05: a type the parser learned but this map has not is the fallback
+  // rather than an invented hue, and it still renders under its own key.
+  const fill = categoryFill(known?.category ?? "");
 
   return (
     <span
@@ -109,8 +111,8 @@ function TypePill({ typeKey }: { typeKey: string }) {
         padding: "2px 7px",
         borderRadius: 100,
         whiteSpace: "nowrap",
-        background: hexToRgba(colour, 0.15),
-        color: colour,
+        background: fill.background,
+        color: fill.color,
       }}
     >
       {known?.label ?? typeKey}

@@ -32,7 +32,6 @@ import type { NodeTree, NodeType } from "@/lib/build";
 import type { Bounty } from "@/lib/bounty";
 import type { NodeTreatment } from "@/hooks/useRebuildDiff";
 import {
-  CATEGORY_COLOUR,
   GAP_RED,
   ORANGE,
   TEAL,
@@ -42,6 +41,7 @@ import {
   hexToRgba,
   labelText,
 } from "@/components/build/tokens";
+import { categoryFill } from "@/lib/theme/category";
 import { descendantIds, insideDropId, type NodeDrag } from "./useNodeDrag";
 
 /** Matches the active nav treatment used across the application. */
@@ -164,8 +164,11 @@ function Grip() {
 }
 
 export function TypePill({ nodeType, typeKey }: { nodeType?: NodeType; typeKey: string }) {
-  const colour =
-    nodeType?.colour ?? CATEGORY_COLOUR[nodeType?.category ?? typeKey] ?? CATEGORY_COLOUR.narrative;
+  // BG-P05: the pill is the node's CATEGORY in one of the nine hues, not
+  // `node_types.colour`. Falls back to the type key so a node whose registry row
+  // has not loaded still resolves — and to --cat-fallback when neither is one
+  // of the nine.
+  const fill = categoryFill(nodeType?.category ?? typeKey);
   return (
     <span
       style={{
@@ -174,8 +177,8 @@ export function TypePill({ nodeType, typeKey }: { nodeType?: NodeType; typeKey: 
         fontSize: 11,
         padding: "1px 8px",
         borderRadius: 100,
-        background: hexToRgba(colour, 0.15),
-        color: colour,
+        background: fill.background,
+        color: fill.color,
         whiteSpace: "nowrap",
       }}
     >
