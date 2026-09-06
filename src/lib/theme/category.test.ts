@@ -11,6 +11,7 @@
 // one — fails here instead of shipping a chip nobody can read.
 
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   CATEGORIES,
   categoryColour,
@@ -265,5 +266,37 @@ describe("the spellings that are one of the nine under another name", () => {
     // recoloured red because the part is unsolved. The red belongs to the
     // dashed edge, which resolves the same way.
     expect(categoryColour("gap")).toBe(categoryColour("breakage"));
+  });
+});
+
+/* ── the legacy badges are gone ───────────────────────────────────────────── */
+
+describe("the retired badge colours", () => {
+  const css = readFileSync("src/index.css", "utf-8");
+
+  it("no .ns-badge- colour rule remains in index.css", () => {
+    const rules = css.match(/^\.ns-badge-[a-z-]+\s*\{[^}]*\}/gm) ?? [];
+    expect(rules, `index.css still carries: ${rules.join(" ")}`).toEqual([]);
+  });
+
+  it("the .ns-badge base class is kept, and carries no colour", () => {
+    const base = /\.ns-badge\s*\{([^}]*)\}/.exec(css);
+    expect(base, ".ns-badge base class was removed; it carries layout").not.toBeNull();
+    expect(base?.[1]).not.toMatch(/(background|color)\s*:/);
+  });
+
+  it("no .ns-badge- colour rule remains anywhere in src", () => {
+    // The difficulty four were duplicated into the shell's own stylesheet and
+    // into NeoScaleShell's inline <style>. Deleting them from index.css alone
+    // would have left the old hues rendering from the copies.
+    const others = [
+      "src/components/shell/right-rail-explore.css",
+      "src/components/NeoScaleShell.tsx",
+    ];
+    for (const path of others) {
+      expect(readFileSync(path, "utf-8"), `${path} still carries an .ns-badge- rule`).not.toMatch(
+        /\.ns-badge-[a-z-]+\s*\{/,
+      );
+    }
   });
 });

@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Eye, Download, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { displayContentType, TYPE_COLORS } from "@/lib/content-types";
+import { DIFFICULTY_LABEL_CLASS, TYPE_COLORS, displayContentType } from "@/lib/content-types";
 
 /** Accent colours per type for placeholder thumbnails */
 const TYPE_ACCENT: Record<string, string> = {
@@ -16,11 +16,13 @@ const TYPE_ACCENT: Record<string, string> = {
   "AI Tools (LLMs)": "#A78BFA",
 };
 
+// BG-P05. Difficulty is not a part category and carries no colour: one
+// uncoloured mono label, defined once in @/lib/content-types.
 const DIFFICULTY_STYLES: Record<string, string> = {
-  Beginner: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
-  Intermediate: "bg-amber-500/15 text-amber-400 border-amber-500/25",
-  Advanced: "bg-red-500/15 text-red-400 border-red-500/25",
-  Any: "bg-zinc-500/15 text-zinc-400 border-zinc-500/25",
+  Beginner: DIFFICULTY_LABEL_CLASS,
+  Intermediate: DIFFICULTY_LABEL_CLASS,
+  Advanced: DIFFICULTY_LABEL_CLASS,
+  Any: DIFFICULTY_LABEL_CLASS,
 };
 
 export function formatCount(n: number): string {

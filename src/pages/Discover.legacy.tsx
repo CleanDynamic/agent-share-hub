@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { ORDERED_CONTENT_TYPES, SLUG_TO_TYPE, displayContentType, TOPICS, resolvePostType, POST_TYPES } from "@/lib/content-types";
+import { DIFFICULTY_LABEL_CLASS, ORDERED_CONTENT_TYPES, POST_TYPES, SLUG_TO_TYPE, TOPICS, displayContentType, resolvePostType } from "@/lib/content-types";
 
 const ALL = "all";
 const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
@@ -143,11 +143,15 @@ function FilterPill({ active, onClick, children }: { active: boolean; onClick: (
 
 // ─── Learning Paths sub-tab ──────────────────────────────────
 
+// BG-P05. Difficulty is not a part category and carries no colour: one
+// uncoloured mono label, defined once in @/lib/content-types.
+// A difficulty RANGE is still a difficulty, so the four ranges lost their
+// colours with the four levels.
 const DIFF_COLORS: Record<string, string> = {
-  "Beginner only": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  "Beginner to Intermediate": "bg-secondary/15 text-secondary border-secondary/30",
-  "Intermediate to Advanced": "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  "Beginner to Advanced": "bg-primary/15 text-primary border-primary/30",
+  "Beginner only": DIFFICULTY_LABEL_CLASS,
+  "Beginner to Intermediate": DIFFICULTY_LABEL_CLASS,
+  "Intermediate to Advanced": DIFFICULTY_LABEL_CLASS,
+  "Beginner to Advanced": DIFFICULTY_LABEL_CLASS,
 };
 
 // ─── Main component ─────────────────────────────────────────

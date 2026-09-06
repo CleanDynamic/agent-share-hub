@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Pencil, Eye, User, Calendar, Download, X, Loader2 } from "lucide-react";
-import { displayContentType, TYPE_COLORS } from "@/lib/content-types";
+import { DIFFICULTY_LABEL_CLASS, TYPE_COLORS, displayContentType } from "@/lib/content-types";
 import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { formatDistanceToNow } from "date-fns";
 
@@ -23,13 +23,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 
-function difficultyColor(level: string) {
-  switch (level) {
-    case "Beginner": return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
-    case "Intermediate": return "bg-amber-500/15 text-amber-400 border-amber-500/30";
-    case "Advanced": return "bg-red-500/15 text-red-400 border-red-500/30";
-    default: return "bg-muted text-muted-foreground border-border";
-  }
+// BG-P05. Difficulty is not a part category and carries no colour: one
+// uncoloured mono label, defined once in @/lib/content-types.
+function difficultyColor(_level?: string) {
+  return DIFFICULTY_LABEL_CLASS;
 }
 
 // Inline edit drawer for a section

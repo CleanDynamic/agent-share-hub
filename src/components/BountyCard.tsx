@@ -3,7 +3,7 @@ import { BookmarkButton } from "@/components/BookmarkButton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Eye, MessageSquare } from "lucide-react";
-import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
+import { TYPE_COLORS, TYPE_COLOR_FALLBACK, displayContentType } from "@/lib/content-types";
 import { timeAgo, formatNum, difficultyColor } from "@/components/FeedItem";
 import { useLegacyMeTooCount } from "@/lib/bounty/legacyMeToo";
 
@@ -110,7 +110,7 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
 
         {/* ROW 2 — Badges */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <Badge variant="outline" className={`text-[9px] font-bold uppercase tracking-widest ${TYPE_COLORS["Failure Library"]}`}>
+          <Badge variant="outline" className={`text-[9px] font-bold uppercase tracking-widest ${TYPE_COLOR_FALLBACK}`}>
             {displayContentType(item.content_type)}
           </Badge>
           {item.difficulty && item.difficulty !== "Any" && (

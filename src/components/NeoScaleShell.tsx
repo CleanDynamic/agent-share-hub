@@ -738,10 +738,9 @@ const NEOSCALE_CSS = `
   display: inline-block; padding: 2px 7px;
   border-radius: 4px; font-size: 9px; font-weight: 600; letter-spacing: 0.3px;
 }
-.ns-badge-beginner { background: rgba(46,204,113,0.12); color: #2ecc71; }
-.ns-badge-intermediate { background: rgba(243,156,18,0.12); color: #f39c12; }
-.ns-badge-advanced { background: rgba(231,76,60,0.12); color: #e74c3c; }
-.ns-badge-any { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.40); }
+/* BG-P05: the four difficulty colour rules that stood here are retired.
+   .ns-trending-badge above keeps the shape; the label's colour now comes from
+   DIFFICULTY_LABEL_CLASS in @/lib/content-types. */
 
 /* ── Right panel sections ── */
 .ns-section-title {
@@ -885,13 +884,12 @@ function routeToNav(pathname: string): string {
 /* ────────────────────────────────────────────────
    Difficulty badge helper
 ──────────────────────────────────────────────── */
-function diffBadgeClass(difficulty?: string): string {
-  if (!difficulty) return "ns-badge-any";
-  const d = difficulty.toLowerCase();
-  if (d === "beginner") return "ns-badge-beginner";
-  if (d === "intermediate") return "ns-badge-intermediate";
-  if (d === "advanced") return "ns-badge-advanced";
-  return "ns-badge-any";
+// BG-P05. The four `.ns-badge-*` difficulty classes are retired: difficulty is
+// not a part category and carries no colour. The trending badge keeps its shape
+// (.ns-trending-badge is layout) and loses its fill — one uncoloured mono label,
+// defined once in @/lib/content-types.
+function diffBadgeClass(_difficulty?: string): string {
+  return DIFFICULTY_LABEL_CLASS;
 }
 
 /* ────────────────────────────────────────────────

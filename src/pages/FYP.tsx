@@ -11,7 +11,7 @@ import { Download, Star, StarHalf, Loader2, Users } from "lucide-react";
 
 const PAGE_SIZE = 50;
 
-import { TYPE_COLORS } from "@/lib/content-types";
+import { TYPE_COLORS, TYPE_COLOR_FALLBACK } from "@/lib/content-types";
 
 function roundedStars(avg: number, count: number): number {
   if (count === 0) return 0;
@@ -275,7 +275,7 @@ export default function FYPPage() {
                   <div className="flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <Badge variant="outline" className={`text-[9px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
+                        <Badge variant="outline" className={`text-[9px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLOR_FALLBACK}`}>
                           {item.content_type}
                         </Badge>
                       </div>

@@ -189,20 +189,16 @@ body {
   border: 1px solid;
 }
 
-/* Badge colour rules — dark pastels */
-.ns-badge-prompt     { background: rgba(139,69,19,0.15);    border-color: rgba(139,69,19,0.30);    color: #B87A4A; }
-.ns-badge-agent      { background: rgba(31,122,109,0.15);   border-color: rgba(31,122,109,0.30);   color: #3A9E8F; }
-.ns-badge-tutorial   { background: rgba(31,122,109,0.15);   border-color: rgba(31,122,109,0.30);   color: #1F7A6D; }
-.ns-badge-workflow   { background: rgba(100,100,100,0.10);  border-color: rgba(100,100,100,0.20);  color: #888; }
-.ns-badge-eval       { background: rgba(122,48,80,0.15);    border-color: rgba(122,48,80,0.30);    color: #A8567A; }
-.ns-badge-stack      { background: rgba(168,58,58,0.12);    border-color: rgba(168,58,58,0.25);    color: #C47070; }
-.ns-badge-failure    { background: rgba(75,85,99,0.12);     border-color: rgba(75,85,99,0.25);     color: #9ca3af; }
-.ns-badge-blog       { background: rgba(139,69,19,0.12);    border-color: rgba(139,69,19,0.25);    color: #8B4513; }
-.ns-badge-bounty     { background: rgba(168,58,58,0.12);    border-color: rgba(168,58,58,0.25);    color: #C47070; }
-.ns-badge-beginner   { background: rgba(255, 255, 255, 0.12);  border-color: rgba(255,255,255,0.08);  color: rgba(255,255,255,0.45); }
-.ns-badge-intermediate { background: rgba(31,122,109,0.15); border-color: rgba(31,122,109,0.30);   color: #3A9E8F; }
-.ns-badge-advanced   { background: rgba(139,69,19,0.15);    border-color: rgba(139,69,19,0.30);    color: #B87A4A; }
-.ns-badge-any        { background: rgba(255, 255, 255, 0.12);  border-color: rgba(255,255,255,0.08);  color: rgba(255,255,255,0.45); }
+/* BG-P05. The thirteen `.ns-badge-*` colour rules that stood here — nine
+   content-type hues and four difficulty hues — are retired. A content type
+   resolves into the nine through LEGACY_BADGE_CATEGORY in
+   src/lib/content-types.ts, which spends the `--cat-*` tokens above; difficulty
+   is not a part category and carries no colour at all.
+
+   `.ns-badge` above stays. Every declaration in it is layout — display,
+   padding, font-size, radius, border width — and removing it would move the
+   badges still wearing it. Its `border: 1px solid` names no colour, so the
+   border follows whatever `color` the consumer sets, which is now a token. */
 
 @keyframes silverShift {
   0%   { background-position: 0% 50%; }
