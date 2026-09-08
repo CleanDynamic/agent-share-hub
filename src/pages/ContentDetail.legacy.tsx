@@ -48,7 +48,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { TYPE_COLORS, displayContentType, resolvePostType, getPrimaryTypeLabel } from "@/lib/content-types";
+import { DIFFICULTY_LABEL_CLASS, TYPE_COLORS, displayContentType, getPrimaryTypeLabel, resolvePostType } from "@/lib/content-types";
 
 const POST_TYPE_DISPLAY = {
   build: {
@@ -103,13 +103,10 @@ import { ReblogDetailView } from "@/components/ReblogDetailView";
 import { ReblogCard } from "@/components/ReblogCard";
 import { type } from "@/lib/theme/type";
 
-function difficultyColor(level: string) {
-  switch (level) {
-    case "Beginner": return "bg-surface-container-highest/40 text-slate-400 border-white/8";
-    case "Intermediate": return "bg-primary-container/20 text-primary border-primary/20";
-    case "Advanced": return "bg-secondary-container/18 text-secondary-fixed-dim border-secondary-container/25";
-    default: return "bg-surface-container-highest/50 text-tertiary border-white/10";
-  }
+// BG-P05. Difficulty is not a part category and carries no colour: one
+// uncoloured mono label, defined once in @/lib/content-types.
+function difficultyColor(_level?: string) {
+  return DIFFICULTY_LABEL_CLASS;
 }
 
 function formatDate(dateStr: string) {

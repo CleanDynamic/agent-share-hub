@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { FollowButton } from "@/components/FollowButton";
-import { displayContentType } from "@/lib/content-types";
+import { DIFFICULTY_LABEL_CLASS, displayContentType } from "@/lib/content-types";
 import "./right-rail-explore.css";
 
 /* ────────────────────────────────────────────────
@@ -30,13 +30,12 @@ const TILE_HOVER_COLORS = [
 const randomTileColor = () =>
   TILE_HOVER_COLORS[Math.floor(Math.random() * TILE_HOVER_COLORS.length)];
 
-function diffBadgeClass(difficulty?: string): string {
-  if (!difficulty) return "ns-badge-any";
-  const d = difficulty.toLowerCase();
-  if (d === "beginner") return "ns-badge-beginner";
-  if (d === "intermediate") return "ns-badge-intermediate";
-  if (d === "advanced") return "ns-badge-advanced";
-  return "ns-badge-any";
+// BG-P05. The four `.ns-badge-*` difficulty classes are retired: difficulty is
+// not a part category and carries no colour. The trending badge keeps its shape
+// (.ns-trending-badge is layout) and loses its fill — one uncoloured mono label,
+// defined once in @/lib/content-types.
+function diffBadgeClass(_difficulty?: string): string {
+  return DIFFICULTY_LABEL_CLASS;
 }
 
 export function RightRailExplore() {

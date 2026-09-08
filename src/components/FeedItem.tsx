@@ -4,7 +4,7 @@ import { BookmarkButton } from "@/components/BookmarkButton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Download, Eye, Star, StarHalf, MessageSquare, FolderOpen, ChevronDown, ChevronUp, Send as SendIcon, Repeat2 } from "lucide-react";
-import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
+import { DIFFICULTY_LABEL_CLASS, TYPE_COLORS, TYPE_COLOR_FALLBACK, displayContentType } from "@/lib/content-types";
 import { FeedItemExpanded } from "@/components/FeedItemExpanded";
 import { ShareToDMModal } from "@/components/dm/ShareToDMModal";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,13 +19,11 @@ import { useToast } from "@/hooks/use-toast";
 
 export { TYPE_COLORS };
 
-export function difficultyColor(level: string) {
-  switch (level) {
-    case "Beginner": return "bg-[#353439]/40 text-slate-400 border-white/8";
-    case "Intermediate": return "bg-[#55e0d2]/10 text-[#55e0d2] border-[#55e0d2]/25";
-    case "Advanced": return "bg-[#cb4300]/15 text-[#ffb59c] border-[#cb4300]/25";
-    default: return "bg-[#353439]/20 text-slate-500 border-white/5";
-  }
+// BG-P05. Difficulty is not a part category and carries no colour: one
+// uncoloured mono label, defined once in @/lib/content-types.
+// The level is still the badge's text; only the colour is gone.
+export function difficultyColor(_level?: string) {
+  return DIFFICULTY_LABEL_CLASS;
 }
 
 export function roundedStars(avg: number, count: number): number {
@@ -292,7 +290,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
 
       {/* LINE 2 — Badges + project indicator */}
       <div className="flex items-center flex-wrap" style={{ gap: 6, marginTop: 10 }}>
-        <Badge variant="outline" className={`text-[9px] font-bold uppercase tracking-widest ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
+        <Badge variant="outline" className={`text-[9px] font-bold uppercase tracking-widest ${TYPE_COLORS[item.content_type] ?? TYPE_COLOR_FALLBACK}`}>
           {displayContentType(item.content_type)}
         </Badge>
         {item.difficulty && item.difficulty.toLowerCase() !== "any" && (

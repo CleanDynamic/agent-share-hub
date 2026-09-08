@@ -15,19 +15,36 @@
 // the node fallback keeps.
 
 import type { FieldDef, BuildEvent, NodePayload } from "@/lib/build";
-import { CATEGORY_COLOUR, GAP_RED, TEAL } from "./tokens";
+import { categoryColour, categoryFill, type CategoryFill } from "@/lib/theme/category";
 
-/** Event kind -> the colour it borrows. Kinds are a fixed CHECK constraint. */
-export const KIND_COLOUR: Record<string, string> = {
-  prompt: CATEGORY_COLOUR.instruction,
-  milestone: TEAL,
-  breakage: GAP_RED,
-  deploy: CATEGORY_COLOUR.artefact,
-  note: CATEGORY_COLOUR.narrative,
+/**
+ * Event kind -> the part category it borrows its colour from. Kinds are a fixed
+ * CHECK constraint, and every one of the five reads as one of the nine.
+ *
+ * BG-P05: this maps to a CATEGORY, not to a colour. An event is not a part, so
+ * it has no category of its own — but a deploy is the same kind of claim as an
+ * artefact and a breakage is the same kind of claim as a gap, so borrowing the
+ * category keeps the two vocabularies from drifting apart. A kind this build
+ * does not know falls to narrative, as it always did.
+ */
+export const KIND_CATEGORY: Record<string, string> = {
+  prompt: "instruction",
+  milestone: "evidence",
+  breakage: "breakage",
+  deploy: "artefact",
+  note: "narrative",
 };
 
+const kindCategory = (kind: string | null | undefined): string =>
+  KIND_CATEGORY[kind ?? ""] ?? "narrative";
+
 export function kindColour(kind: string | null | undefined): string {
-  return KIND_COLOUR[kind ?? ""] ?? CATEGORY_COLOUR.narrative;
+  return categoryColour(kindCategory(kind));
+}
+
+/** The same colour with the measured ground that goes under it. */
+export function kindFill(kind: string | null | undefined): CategoryFill {
+  return categoryFill(kindCategory(kind));
 }
 
 /**

@@ -24,8 +24,8 @@
 // Tailwind's generated utilities win over hand-written classes at build time.
 
 import type { CSSProperties, ReactElement } from "react";
+import { categoryColour, categoryFill } from "@/lib/theme/category";
 import {
-  CATEGORY_COLOUR,
   TEAL,
   TEXT_MUTED,
   TEXT_PRIMARY,
@@ -65,6 +65,10 @@ const bodyFrame: CSSProperties = {
   background: "rgba(255,255,255,0.02)",
   border: "1px solid rgba(255,255,255,0.05)",
 };
+
+/** The measured media pair, for the tag on a chosen variant. */
+const MEDIA_FILL = categoryFill("media");
+
 
 // =============================================================================
 // App
@@ -143,7 +147,9 @@ export function PromptCardBody({ build, srcByPath }: CardBodyProps) {
         flexDirection: "column",
         gap: 8,
         padding: "14px 16px",
-        borderLeft: `2px solid ${CATEGORY_COLOUR.instruction}`,
+        borderLeftWidth: 2,
+        borderLeftStyle: "solid",
+        borderLeftColor: categoryColour("instruction"),
       }}
     >
       <p
@@ -172,9 +178,11 @@ export function PromptCardBody({ build, srcByPath }: CardBodyProps) {
               ? "no variables"
               : `${variables} variable${variables === 1 ? "" : "s"}`
           }
-          colour={CATEGORY_COLOUR.instruction}
+          category="instruction"
         />
-        {model ? <Chip text={model} colour={TEXT_SECONDARY} /> : null}
+        {/* A model name is not a part category, so it takes the fallback pair
+            rather than borrowing a hue that means something else. */}
+        {model ? <Chip text={model} category="" /> : null}
       </div>
     </div>
   );
@@ -221,7 +229,9 @@ export function StudyCardBody({ build, srcByPath }: CardBodyProps) {
         flexDirection: "column",
         gap: 6,
         padding: "12px 14px",
-        borderLeft: `2px solid ${CATEGORY_COLOUR.evidence}`,
+        borderLeftWidth: 2,
+        borderLeftStyle: "solid",
+        borderLeftColor: categoryColour("evidence"),
       }}
     >
       {columns.length > 0 ? (
@@ -282,12 +292,13 @@ export function StudyCardBody({ build, srcByPath }: CardBodyProps) {
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexShrink: 0 }}>
-        {winner ? <Chip text={`${winner} won`} colour={TEAL} /> : null}
-        {sampleSize !== null ? (
-          <Chip text={`n = ${sampleSize}`} colour={TEXT_SECONDARY} />
-        ) : null}
+        {/* The winner is an evidence claim and takes the evidence hue. The
+            other two are counts about the table rather than claims from it, so
+            they take the fallback pair rather than borrowing a category. */}
+        {winner ? <Chip text={`${winner} won`} category="evidence" /> : null}
+        {sampleSize !== null ? <Chip text={`n = ${sampleSize}`} category="" /> : null}
         {rows.length > shown.length ? (
-          <Chip text={`+${rows.length - shown.length} more`} colour={TEXT_MUTED} />
+          <Chip text={`+${rows.length - shown.length} more`} category="" />
         ) : null}
       </div>
     </div>
@@ -353,8 +364,11 @@ export function MediaCardBody({ build, srcByPath }: CardBodyProps) {
                 letterSpacing: "0.06em",
                 padding: "2px 6px",
                 borderRadius: 5,
-                background: hexToRgba(CATEGORY_COLOUR.media, 0.85),
-                color: "rgba(255,255,255,0.95)",
+                // BG-P05: was magenta at 85% with white on it — 2.65:1 on Dusk,
+                // and unmeasurable once the hue is a var(). The measured media
+                // pair reads on either theme and over the thumbnail behind it,
+                // because the fill is opaque.
+                ...MEDIA_FILL,
               }}
             >
               KEPT
@@ -422,7 +436,9 @@ function evidenceWords(build: GalleryBuild): ReactElement | null {
           justifyContent: "center",
           gap: 10,
           padding: "14px 16px",
-          borderLeft: `2px solid ${CATEGORY_COLOUR.evidence}`,
+          borderLeftWidth: 2,
+          borderLeftStyle: "solid",
+          borderLeftColor: categoryColour("evidence"),
         }}
       >
         <p
@@ -442,7 +458,7 @@ function evidenceWords(build: GalleryBuild): ReactElement | null {
         </p>
         {figure ? (
           <div style={{ display: "flex" }}>
-            <Chip text={figure} colour={CATEGORY_COLOUR.evidence} />
+            <Chip text={figure} category="evidence" />
           </div>
         ) : null}
       </div>
@@ -615,7 +631,17 @@ const columnHeaderText: CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-function Chip({ text, colour }: { text: string; colour: string }) {
+/**
+ * A chip, in one category's measured pair.
+ *
+ * BG-P05: it takes a CATEGORY rather than a colour. The background used to be
+ * struck here as a 10% alpha of whatever hex was passed in, which cannot work
+ * once the colour is a `var()` and was never measured when it was a hex. The
+ * hairline is the hue itself — a border carries state, so its floor is 3.0:1,
+ * and every one of the nine clears 4.83:1 on the ground.
+ */
+function Chip({ text, category }: { text: string; category: string }) {
+  const fill = categoryFill(category);
   return (
     <span
       style={{
@@ -624,9 +650,11 @@ function Chip({ text, colour }: { text: string; colour: string }) {
         letterSpacing: "0.04em",
         padding: "2px 7px",
         borderRadius: 5,
-        color: colour,
-        background: hexToRgba(colour, 0.1),
-        border: `1px solid ${hexToRgba(colour, 0.22)}`,
+        color: fill.color,
+        background: fill.background,
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: fill.color,
         whiteSpace: "nowrap",
         maxWidth: "100%",
         overflow: "hidden",

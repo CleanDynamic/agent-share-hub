@@ -45,6 +45,7 @@ import {
   eventPayload,
   eventTime,
   kindColour,
+  kindFill,
 } from "./eventDisplay";
 import {
   HAIRLINE,
@@ -188,14 +189,14 @@ const controlStyle: CSSProperties = {
 };
 
 function KindPill({ kind }: { kind: string | null }) {
-  const colour = kindColour(kind);
+  const fill = kindFill(kind);
   return (
     <span
       style={{
         ...labelText,
         fontSize: 10,
-        color: colour,
-        background: hexToRgba(colour, 0.15),
+        color: fill.color,
+        background: fill.background,
         padding: "2px 7px",
         borderRadius: 5,
         textTransform: "uppercase",
@@ -588,11 +589,12 @@ export function Replay({
                     border: "none",
                     borderRadius: 3,
                     cursor: "pointer",
-                    background: active
-                      ? colour
-                      : reached
-                        ? hexToRgba(colour, 0.45)
-                        : "rgba(255,255,255,0.10)",
+                    background: reached ? colour : "rgba(255,255,255,0.10)",
+                    // BG-P05: `colour` is a var() now, so the played-but-not-
+                    // current tick can no longer be struck as a 45% alpha of it.
+                    // Opacity on the tick itself gets the same three steps out of
+                    // one colour, and is a visual property, not a layout one.
+                    opacity: reached && !active ? 0.45 : 1,
                     transition: "height 120ms ease, background 120ms ease",
                   }}
                 />

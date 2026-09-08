@@ -21,7 +21,20 @@ export const GAP_RED = "#EF4444";
 export const FONT_STACK =
   "'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
-/** Fallback when a node's type is missing from the registry. */
+/**
+ * @deprecated BG-P05. SUPERSEDED BY `categoryColour` IN src/lib/theme/category.ts.
+ *
+ * Every one of these hexes has been repointed at a `--cat-*` token, and every
+ * consumer that read this map — or read `node_types.colour`, which holds the
+ * same values — now calls `categoryColour(row.category)` instead. The stored
+ * column and this map are both left in place: the column because a migration is
+ * out of scope here, this map because deleting it is a separate change from
+ * ceasing to read it. Neither is the source of a colour any more.
+ *
+ * Nothing new may read this. Add a category to `CATEGORIES` in
+ * `src/lib/theme/category.ts` — or let it fall to `--cat-fallback`, which is
+ * what the nine-hue system does with a meaning it has no hue for.
+ */
 export const CATEGORY_COLOUR: Record<string, string> = {
   instruction: ORANGE,
   configuration: "#22C55E",

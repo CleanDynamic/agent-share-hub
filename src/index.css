@@ -80,6 +80,37 @@
   --cat-agents: #6D28D9;
   --cat-breakage: #B91C1C;
   --cat-media: #BE185D;
+  --cat-fallback: var(--text2);
+
+  --cat-instruction-fill: #DBD2CE;
+  --cat-configuration-fill: #CDD8D4;
+  --cat-data-fill: #CCD4E6;
+  --cat-artefact-fill: #D7CEC7;
+  --cat-evidence-fill: #C2D1D2;
+  --cat-narrative-fill: #D0D3D5;
+  --cat-agents-fill: #D2CAE6;
+  --cat-breakage-fill: #E1D6D8;
+  --cat-media-fill: #E2DEE2;
+  --cat-fallback-fill: var(--recess);
+
+  /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
+     component reads every root token from one place. src/lib/theme/radius.ts is
+     how components spend them. --r-full is for circular things ONLY; the legacy
+     --radius-btn/--radius-badge above are the pill rule this replaces, and
+     BG-P07 repoints their consumers. */
+  --r-chip: 8px;
+  --r-media: 10px;
+  --r-control: 12px;
+  --r-card: 14px;
+  --r-panel: 16px;
+  --r-full: 999px;
+
+  /* BG-P04 — elevation. Exhibition's depth is a true shadow: the luminous grey
+     room has a light source, so a surface above the page casts. Struck from
+     --text rather than from black, so the shadow belongs to the room. `flat`
+     needs no token — it is no shadow plus a --line hairline. */
+  --elev-raised: 0 1px 2px rgba(27,32,38,.08), 0 6px 16px rgba(27,32,38,.10);
+  --elev-overlay: 0 2px 6px rgba(27,32,38,.12), 0 24px 56px rgba(27,32,38,.20);
 }
 
 :root[data-theme="dusk"] {
@@ -114,6 +145,37 @@
   --cat-agents: #A78BFA;
   --cat-breakage: #F26D6D;
   --cat-media: #F472B6;
+  --cat-fallback: var(--text2);
+
+  --cat-instruction-fill: #493034;
+  --cat-configuration-fill: #2B3E3B;
+  --cat-data-fill: #2E3655;
+  --cat-artefact-fill: #4A3A2F;
+  --cat-evidence-fill: #343B4D;
+  --cat-narrative-fill: #3A3743;
+  --cat-agents-fill: #372F50;
+  --cat-breakage-fill: #412836;
+  --cat-media-fill: #4A2C47;
+  --cat-fallback-fill: var(--recess);
+
+  /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
+     component reads every root token from one place. src/lib/theme/radius.ts is
+     how components spend them. --r-full is for circular things ONLY; the legacy
+     --radius-btn/--radius-badge above are the pill rule this replaces, and
+     BG-P07 repoints their consumers. */
+  --r-chip: 8px;
+  --r-media: 10px;
+  --r-control: 12px;
+  --r-card: 14px;
+  --r-panel: 16px;
+  --r-full: 999px;
+
+  /* BG-P04 — elevation. On a dark ground a shadow alone barely reads, so each
+     level pairs a deeper shadow with an inset --glass-hi top hairline: the
+     surface's own edge catching the horizon. The hairline says "above", the
+     shadow says "how far". */
+  --elev-raised: inset 0 1px 0 var(--glass-hi), 0 2px 4px rgba(0,0,0,.36), 0 10px 24px rgba(0,0,0,.44);
+  --elev-overlay: inset 0 1px 0 var(--glass-hi), 0 4px 10px rgba(0,0,0,.48), 0 32px 72px rgba(0,0,0,.62);
 }
 
 /* ── The theme cross-fade (BG-P02) ────────────────────────────────────────────
@@ -165,20 +227,16 @@ body {
   border: 1px solid;
 }
 
-/* Badge colour rules — dark pastels */
-.ns-badge-prompt     { background: rgba(139,69,19,0.15);    border-color: rgba(139,69,19,0.30);    color: #B87A4A; }
-.ns-badge-agent      { background: rgba(31,122,109,0.15);   border-color: rgba(31,122,109,0.30);   color: #3A9E8F; }
-.ns-badge-tutorial   { background: rgba(31,122,109,0.15);   border-color: rgba(31,122,109,0.30);   color: #1F7A6D; }
-.ns-badge-workflow   { background: rgba(100,100,100,0.10);  border-color: rgba(100,100,100,0.20);  color: #888; }
-.ns-badge-eval       { background: rgba(122,48,80,0.15);    border-color: rgba(122,48,80,0.30);    color: #A8567A; }
-.ns-badge-stack      { background: rgba(168,58,58,0.12);    border-color: rgba(168,58,58,0.25);    color: #C47070; }
-.ns-badge-failure    { background: rgba(75,85,99,0.12);     border-color: rgba(75,85,99,0.25);     color: #9ca3af; }
-.ns-badge-blog       { background: rgba(139,69,19,0.12);    border-color: rgba(139,69,19,0.25);    color: #8B4513; }
-.ns-badge-bounty     { background: rgba(168,58,58,0.12);    border-color: rgba(168,58,58,0.25);    color: #C47070; }
-.ns-badge-beginner   { background: rgba(255, 255, 255, 0.12);  border-color: rgba(255,255,255,0.08);  color: rgba(255,255,255,0.45); }
-.ns-badge-intermediate { background: rgba(31,122,109,0.15); border-color: rgba(31,122,109,0.30);   color: #3A9E8F; }
-.ns-badge-advanced   { background: rgba(139,69,19,0.15);    border-color: rgba(139,69,19,0.30);    color: #B87A4A; }
-.ns-badge-any        { background: rgba(255, 255, 255, 0.12);  border-color: rgba(255,255,255,0.08);  color: rgba(255,255,255,0.45); }
+/* BG-P05. The thirteen `.ns-badge-*` colour rules that stood here — nine
+   content-type hues and four difficulty hues — are retired. A content type
+   resolves into the nine through LEGACY_BADGE_CATEGORY in
+   src/lib/content-types.ts, which spends the `--cat-*` tokens above; difficulty
+   is not a part category and carries no colour at all.
+
+   `.ns-badge` above stays. Every declaration in it is layout — display,
+   padding, font-size, radius, border width — and removing it would move the
+   badges still wearing it. Its `border: 1px solid` names no colour, so the
+   border follows whatever `color` the consumer sets, which is now a token. */
 
 @keyframes silverShift {
   0%   { background-position: 0% 50%; }

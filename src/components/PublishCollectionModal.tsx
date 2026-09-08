@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
+import { TYPE_COLORS, TYPE_COLOR_FALLBACK, displayContentType } from "@/lib/content-types";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -182,7 +182,7 @@ function PublishForm({
         <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-card/40 divide-y divide-border">
           {validItems.slice(0, 20).map((item) => {
             const ci = item.content_items!;
-            const typeColor = TYPE_COLORS[ci.content_type] ?? TYPE_COLORS["Failure Library"];
+            const typeColor = TYPE_COLORS[ci.content_type] ?? TYPE_COLOR_FALLBACK;
             return (
               <div key={item.id} className="flex items-center gap-2 px-3 py-2">
                 <Badge variant="outline" className={`text-[9px] font-medium shrink-0 ${typeColor}`}>

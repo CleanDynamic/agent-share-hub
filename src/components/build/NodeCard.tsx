@@ -1,5 +1,8 @@
-// One node, as a card. The pill colour comes from the node's registry row, so
-// a type added or recoloured in node_types shows up here with no code change.
+// One node, as a card. The pill colour comes from the node's CATEGORY, resolved
+// through src/lib/theme/category.ts, so a type added to node_types shows up here
+// with no code change and in one of the nine hues. BG-P05: `node_types.colour`
+// is no longer read — a type recoloured in the registry does NOT recolour this
+// pill, because a part's colour is what category it is, not a per-row choice.
 //
 // The card owns two things the renderers do not: the type pill, and the copy
 // control. Copy is here rather than in each renderer so that every copyable
@@ -16,8 +19,6 @@ import {
   type ResolveNode,
 } from "./renderers";
 import {
-  CATEGORY_COLOUR,
-  GAP_RED,
   HAIRLINE,
   TEAL,
   TEXT_SECONDARY,
@@ -27,6 +28,7 @@ import {
   labelText,
   titleText,
 } from "./tokens";
+import { categoryColour, categoryFill } from "@/lib/theme/category";
 
 interface NodeCardProps {
   node: BuildNode;
@@ -99,10 +101,7 @@ export function NodeCard({
   resolveMedia,
   footer,
 }: NodeCardProps) {
-  const colour =
-    nodeType?.colour ??
-    CATEGORY_COLOUR[nodeType?.category ?? node.type] ??
-    CATEGORY_COLOUR.narrative;
+  const fill = categoryFill(nodeType?.category ?? node.type);
 
   const surface: CSSProperties = {
     ...cardGlass,
@@ -111,8 +110,17 @@ export function NodeCard({
     flexDirection: "column",
     gap: 10,
     // A gap is the one thing on this page that is allowed to shout.
+      // Longhands rather than the `border-left` shorthand: a shorthand whose
+      // colour is a `var()` is valid CSS but jsdom's cssstyle drops the whole
+      // declaration, so the edge's width and style would vanish from every unit
+      // test that renders this. Split, the geometry survives the test
+      // environment and the colour is the token in the browser.
     ...(node.is_gap
-      ? { borderLeft: `3px solid ${GAP_RED}` }
+      ? {
+          borderLeftWidth: 3,
+          borderLeftStyle: "solid" as const,
+          borderLeftColor: categoryColour("breakage"),
+        }
       : {}),
   };
 
@@ -132,8 +140,8 @@ export function NodeCard({
         <span
           style={{
             ...labelText,
-            color: colour,
-            background: hexToRgba(colour, 0.15),
+            color: fill.color,
+            background: fill.background,
             padding: "2px 8px",
             borderRadius: 6,
             textTransform: "uppercase",
@@ -143,7 +151,7 @@ export function NodeCard({
           {nodeType?.label ?? node.type}
         </span>
         {node.is_gap ? (
-          <span style={{ ...labelText, color: GAP_RED, fontSize: 11 }}>
+          <span style={{ ...labelText, color: categoryColour("breakage"), fontSize: 11 }}>
             unsolved
           </span>
         ) : null}

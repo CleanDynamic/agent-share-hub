@@ -43,7 +43,6 @@ import {
   type NodeType,
 } from "@/lib/build";
 import {
-  CATEGORY_COLOUR,
   FONT_STACK,
   HAIRLINE,
   TEAL,
@@ -58,6 +57,7 @@ import {
   panelGlass,
   titleText,
 } from "./tokens";
+import { categoryFill } from "@/lib/theme/category";
 import { measure } from "@/lib/theme/type";
 
 interface ConvertLoad {
@@ -122,7 +122,9 @@ function Plain({ to, children }: { to: string; children: React.ReactNode }) {
 /** One line of the preview: what this block becomes, and what it is called. */
 function PlanRow({ node, nodeTypes }: { node: NodePlan; nodeTypes: NodeType[] }) {
   const type = nodeTypes.find((candidate) => candidate.key === node.type);
-  const colour = type?.colour ?? CATEGORY_COLOUR[type?.category ?? ""] ?? TEXT_SECONDARY;
+  // BG-P05: the category decides the hue. A type the registry has not loaded
+  // yet, or one whose category this build does not know, gets --cat-fallback.
+  const fill = categoryFill(type?.category ?? "");
 
   return (
     <li style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 0" }}>
@@ -130,8 +132,8 @@ function PlanRow({ node, nodeTypes }: { node: NodePlan; nodeTypes: NodeType[] })
         <span
           style={{
             ...labelText,
-            color: colour,
-            background: hexToRgba(colour, 0.15),
+            color: fill.color,
+            background: fill.background,
             padding: "2px 8px",
             borderRadius: 6,
             textTransform: "uppercase",

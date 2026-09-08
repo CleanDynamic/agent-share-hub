@@ -25,6 +25,7 @@ import {
   labelText,
   pageHeadingText,
 } from "./tokens";
+import { categoryColour } from "@/lib/theme/category";
 import { tabular, type } from "@/lib/theme/type";
 
 interface BuildHeaderProps {
@@ -379,7 +380,11 @@ export function BuildHeader({
               const requirement = payloadString(node, "requirement");
               return (
                 <li key={node.id} style={{ ...bodyText, display: "flex", gap: 8 }}>
-                  <span style={{ color: typesByKey.get(node.type)?.colour ?? TEXT_MUTED }}>—</span>
+                  {/* BG-P05: the dash is the prerequisite's category, resolved
+                      through the theme, not the registry row's stored colour. */}
+                  <span style={{ color: categoryColour(typesByKey.get(node.type)?.category ?? "") }}>
+                    —
+                  </span>
                   <span>
                     {node.title}
                     {requirement ? (

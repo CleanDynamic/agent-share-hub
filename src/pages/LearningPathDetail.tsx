@@ -11,12 +11,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Users, Clock, CheckCircle2, ExternalLink } from "lucide-react";
+import { DIFFICULTY_LABEL_CLASS } from "@/lib/content-types";
 
+// BG-P05. Difficulty is not a part category and carries no colour: one
+// uncoloured mono label, defined once in @/lib/content-types.
+// A difficulty RANGE is still a difficulty, so the four ranges lost their
+// colours with the four levels.
 const DIFF_COLORS: Record<string, string> = {
-  "Beginner only": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  "Beginner to Intermediate": "bg-secondary/15 text-secondary border-secondary/30",
-  "Intermediate to Advanced": "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  "Beginner to Advanced": "bg-primary/15 text-primary border-primary/30",
+  "Beginner only": DIFFICULTY_LABEL_CLASS,
+  "Beginner to Intermediate": DIFFICULTY_LABEL_CLASS,
+  "Intermediate to Advanced": DIFFICULTY_LABEL_CLASS,
+  "Beginner to Advanced": DIFFICULTY_LABEL_CLASS,
 };
 
 export default function LearningPathDetail() {

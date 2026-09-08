@@ -169,10 +169,9 @@
   display: inline-block; padding: 2px 7px;
   border-radius: 4px; font-size: 9px; font-weight: 600; letter-spacing: 0.3px;
 }
-.ns-badge-beginner { background: rgba(46,204,113,0.12); color: #2ecc71; }
-.ns-badge-intermediate { background: rgba(243,156,18,0.12); color: #f39c12; }
-.ns-badge-advanced { background: rgba(231,76,60,0.12); color: #e74c3c; }
-.ns-badge-any { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.40); }
+/* BG-P05: the four difficulty colour rules that stood here are retired.
+   .ns-trending-badge above keeps the shape; the label's colour now comes from
+   DIFFICULTY_LABEL_CLASS in @/lib/content-types. */
 
 /* ── Right panel sections ── */
 .ns-section-title {

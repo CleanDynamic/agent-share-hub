@@ -188,13 +188,34 @@ export const DIFFICULTIES = [
 
 export type Difficulty = typeof DIFFICULTIES[number];
 
+/**
+ * BG-P05. DIFFICULTY CARRIES NO COLOUR.
+ *
+ * Difficulty is not a part category. The nine hues encode what a piece of a
+ * build IS, and a green Beginner badge next to a green configuration chip says
+ * the two are related when they are not — so the four difficulty colours are
+ * retired outright rather than folded into the nine.
+ *
+ * What replaces them is one class, used everywhere a difficulty is shown: mono,
+ * `--text2`, no fill and no border. It reads as the piece of metadata it is.
+ * Every local `difficultyColor`, `DIFF_COLORS` and `DIFFICULTY_STYLES` in this
+ * codebase now returns this; there is one definition and no second copy.
+ *
+ * The mono face is named inline rather than through `font-mono`, because the
+ * Tailwind config still points that utility at the system stack and repointing
+ * it would restyle 30-odd unrelated surfaces.
+ */
+export const DIFFICULTY_LABEL_CLASS =
+  "[font-family:'DM_Mono',ui-monospace,monospace] bg-transparent text-[var(--text2)] border-transparent";
+
+/** @deprecated BG-P05. Every level is the same uncoloured label now. */
 export const DIFFICULTY_COLORS: Record<string, {
   color: string; bg: string; border: string;
 }> = {
-  'Beginner':     { color: '#22C55E', bg: 'rgba(22,163,74,0.12)',  border: 'rgba(22,163,74,0.30)'  },
-  'Intermediate': { color: '#F59E0B', bg: 'rgba(217,119,6,0.12)',  border: 'rgba(217,119,6,0.30)'  },
-  'Advanced':     { color: '#EF4444', bg: 'rgba(220,38,38,0.12)',  border: 'rgba(220,38,38,0.30)'  },
-  'Any':          { color: '#9CA3AF', bg: 'rgba(75,85,99,0.12)',   border: 'rgba(75,85,99,0.30)'   },
+  'Beginner':     { color: 'var(--text2)', bg: 'transparent', border: 'transparent' },
+  'Intermediate': { color: 'var(--text2)', bg: 'transparent', border: 'transparent' },
+  'Advanced':     { color: 'var(--text2)', bg: 'transparent', border: 'transparent' },
+  'Any':          { color: 'var(--text2)', bg: 'transparent', border: 'transparent' },
 };
 
 // ─── LEGACY EXPORTS (used by 27+ files) ───
@@ -230,20 +251,93 @@ export const BOUNTY_CONTENT_TYPES = [
   'Challenge',
 ] as const;
 
+/**
+ * BG-P05. THE MAPPING TABLE: each legacy content-type label, resolved into one
+ * of the nine part categories. This is the record of the decision; `TYPE_COLORS`
+ * below is only its rendering, and `content-types.test.ts` asserts the two
+ * agree.
+ *
+ * Each was decided by what the label MEANS, not by which hue it used to carry:
+ *
+ *   Prompt File             instruction    a prompt is the instruction itself
+ *   Agent Blueprint         agents         the agent hue exists for exactly this
+ *   AI Agent Install Guide  configuration  standing an agent up is configuring it
+ *   Model Config Guide      configuration  named in the brief
+ *   Integration Guide       configuration  `integration` is a configuration row
+ *                                          in node_types; this is the same thing
+ *                                          written as prose
+ *   Workflow Template       configuration  named in the brief — a template is a
+ *                                          wiring you copy, not an instruction
+ *   Evaluation Framework    evidence       named in the brief
+ *   Agent Stack             configuration  `stack` is a configuration row in
+ *                                          node_types, for the same reason
+ *   AI Tools (LLMs)         configuration  `tool_definition` is a configuration
+ *                                          row; a post about a tool is the same
+ *                                          subject as the tool's own node
+ *   Failure Library         breakage       named in the brief
+ *   Blog                    narrative      named in the brief
+ *   Open Question           breakage       named in the brief — an open question
+ *                                          is a gap someone has written down
+ *   Challenge               instruction    named in the brief
+ *
+ * Nothing here lands on `data`, `artefact` or `media`: the legacy vocabulary
+ * described kinds of WRITING about builds, and those three describe parts of a
+ * build. That is the shape of the mismatch, not an omission. Nothing needed the
+ * fallback either — every one of the thirteen means something one of the nine
+ * already names.
+ *
+ * A label this table does not carry — an older row, a newer one — is
+ * `TYPE_COLOR_FALLBACK`, never an invented hue.
+ */
+export const LEGACY_BADGE_CATEGORY: Record<string, string> = {
+  'Prompt File':            'instruction',
+  'Agent Blueprint':        'agents',
+  'AI Agent Install Guide': 'configuration',
+  'Model Config Guide':     'configuration',
+  'Integration Guide':      'configuration',
+  'Workflow Template':      'configuration',
+  'Evaluation Framework':   'evidence',
+  'Agent Stack':            'configuration',
+  'AI Tools (LLMs)':        'configuration',
+  'Failure Library':        'breakage',
+  'Blog':                   'narrative',
+  'Open Question':          'breakage',
+  'Challenge':              'instruction',
+};
+
+/**
+ * A content type nothing above names. `--cat-fallback` on `--cat-fallback-fill`
+ * — the same pair `categoryFill("")` returns, spelled as Tailwind classes.
+ *
+ * Eight call sites used to reach for the "Failure Library" entry as their
+ * default, which was grey in the old palette and is breakage red in the new
+ * one. They point here instead.
+ */
+export const TYPE_COLOR_FALLBACK =
+  'bg-[var(--cat-fallback-fill)] text-[var(--cat-fallback)] border-[var(--cat-fallback)]';
+
+/**
+ * The mapping table above, as the Tailwind classes a badge wears.
+ *
+ * Written out literally rather than generated from `LEGACY_BADGE_CATEGORY`,
+ * because Tailwind generates a utility only for a class string it can find by
+ * scanning the source — a class assembled at runtime produces no CSS. The test
+ * is what keeps the two in step.
+ */
 export const TYPE_COLORS: Record<string, string> = {
-  'Prompt File':           'bg-[#8B4513]/15 text-[#8B4513] border-[#8B4513]/30',
-  'Agent Blueprint':       'bg-[#7C3AED]/15 text-[#7C3AED] border-[#7C3AED]/30',
-  'AI Agent Install Guide':'bg-[#7C3AED]/15 text-[#7C3AED] border-[#7C3AED]/30',
-  'Workflow Template':     'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30',
-  'Agent Stack':           'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30',
-  'Model Config Guide':    'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30',
-  'Integration Guide':     'bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30',
-  'Evaluation Framework':  'bg-[#EC4899]/15 text-[#EC4899] border-[#EC4899]/30',
-  'Failure Library':       'bg-[#9CA3AF]/15 text-[#9CA3AF] border-[#9CA3AF]/30',
-  'Blog':                  'bg-[#F472B6]/15 text-[#F472B6] border-[#F472B6]/30',
-  'AI Tools (LLMs)':       'bg-[#A78BFA]/15 text-[#A78BFA] border-[#A78BFA]/30',
-  'Open Question':         'bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30',
-  'Challenge':             'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30',
+  'Prompt File':           'bg-[var(--cat-instruction-fill)] text-[var(--cat-instruction)] border-[var(--cat-instruction)]',
+  'Agent Blueprint':       'bg-[var(--cat-agents-fill)] text-[var(--cat-agents)] border-[var(--cat-agents)]',
+  'AI Agent Install Guide':'bg-[var(--cat-configuration-fill)] text-[var(--cat-configuration)] border-[var(--cat-configuration)]',
+  'Workflow Template':     'bg-[var(--cat-configuration-fill)] text-[var(--cat-configuration)] border-[var(--cat-configuration)]',
+  'Agent Stack':           'bg-[var(--cat-configuration-fill)] text-[var(--cat-configuration)] border-[var(--cat-configuration)]',
+  'Model Config Guide':    'bg-[var(--cat-configuration-fill)] text-[var(--cat-configuration)] border-[var(--cat-configuration)]',
+  'Integration Guide':     'bg-[var(--cat-configuration-fill)] text-[var(--cat-configuration)] border-[var(--cat-configuration)]',
+  'Evaluation Framework':  'bg-[var(--cat-evidence-fill)] text-[var(--cat-evidence)] border-[var(--cat-evidence)]',
+  'Failure Library':       'bg-[var(--cat-breakage-fill)] text-[var(--cat-breakage)] border-[var(--cat-breakage)]',
+  'Blog':                  'bg-[var(--cat-narrative-fill)] text-[var(--cat-narrative)] border-[var(--cat-narrative)]',
+  'AI Tools (LLMs)':       'bg-[var(--cat-configuration-fill)] text-[var(--cat-configuration)] border-[var(--cat-configuration)]',
+  'Open Question':         'bg-[var(--cat-breakage-fill)] text-[var(--cat-breakage)] border-[var(--cat-breakage)]',
+  'Challenge':             'bg-[var(--cat-instruction-fill)] text-[var(--cat-instruction)] border-[var(--cat-instruction)]',
 };
 
 const DISPLAY_LABELS: Record<string, string> = {

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download, Lock, Loader2, Eye, Star, StarHalf, GitFork, Link2, Clock, ExternalLink } from "lucide-react";
-import { TYPE_COLORS as SHARED_TYPE_COLORS, displayContentType } from "@/lib/content-types";
+import { DIFFICULTY_LABEL_CLASS, TYPE_COLORS as SHARED_TYPE_COLORS, TYPE_COLOR_FALLBACK, displayContentType } from "@/lib/content-types";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CompatibilityBadge } from "@/components/CompatibilityBadge";
 import { formatDistanceToNow } from "date-fns";
@@ -76,17 +76,10 @@ function MiniStars({ value }: { value: number }) {
 
 const TYPE_COLORS = SHARED_TYPE_COLORS;
 
-function difficultyColor(level: string) {
-  switch (level) {
-    case "Beginner":
-      return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
-    case "Intermediate":
-      return "bg-amber-500/15 text-amber-400 border-amber-500/30";
-    case "Advanced":
-      return "bg-red-500/15 text-red-400 border-red-500/30";
-    default:
-      return "bg-muted text-muted-foreground border-border";
-  }
+// BG-P05. Difficulty is not a part category and carries no colour: one
+// uncoloured mono label, defined once in @/lib/content-types.
+function difficultyColor(_level?: string) {
+  return DIFFICULTY_LABEL_CLASS;
 }
 
 export function ContentCard({
@@ -227,7 +220,7 @@ export function ContentCard({
         <div className="flex items-start justify-between mb-3 pr-6">
           <Badge
             variant="outline"
-            className={`text-[10px] font-medium ${TYPE_COLORS[content_type] ?? TYPE_COLORS["Failure Library"]}`}
+            className={`text-[10px] font-medium ${TYPE_COLORS[content_type] ?? TYPE_COLOR_FALLBACK}`}
           >
             {displayContentType(content_type)}
           </Badge>

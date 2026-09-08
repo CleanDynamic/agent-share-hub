@@ -26,7 +26,7 @@ import { ChangelogTab } from "@/components/ChangelogTab";
 import { TipsTab } from "@/components/TipsTab";
 import { Eye, Download, MessageSquare, Repeat2, ExternalLink, ArrowLeft } from "lucide-react";
 import { timeAgo, formatNum, difficultyColor } from "@/components/FeedItem";
-import { TYPE_COLORS, displayContentType } from "@/lib/content-types";
+import { TYPE_COLORS, TYPE_COLOR_FALLBACK, displayContentType } from "@/lib/content-types";
 import { ReblogComposer, type ReblogComposerOriginal } from "@/components/ReblogComposer";
 import { REBLOG_COMPOSE_ENABLED } from "@/lib/reblog/flags";
 
@@ -53,7 +53,7 @@ function QuotedPostCardLarge({ originalId }: { originalId: string }) {
 
   const origProfile = original.profiles as any;
   const typeColor = original.content_type
-    ? (TYPE_COLORS[original.content_type] ?? TYPE_COLORS["Failure Library"])
+    ? (TYPE_COLORS[original.content_type] ?? TYPE_COLOR_FALLBACK)
     : "bg-muted text-muted-foreground";
 
   return (
@@ -262,7 +262,7 @@ export function ReblogDetailView({ item }: ReblogDetailViewProps) {
               ↺ {postCategory.charAt(0).toUpperCase() + postCategory.slice(1)}
             </Badge>
             {item.content_type && item.content_type !== "Blog" && (
-              <Badge variant="outline" className={`text-[9px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLORS["Failure Library"]}`}>
+              <Badge variant="outline" className={`text-[9px] font-medium ${TYPE_COLORS[item.content_type] ?? TYPE_COLOR_FALLBACK}`}>
                 {displayContentType(item.content_type)}
               </Badge>
             )}
