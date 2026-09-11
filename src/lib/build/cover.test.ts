@@ -45,6 +45,12 @@ function media(id: string, overrides: Partial<BuildMedia> = {}): BuildMedia {
     height: 800,
     duration: null,
     poster_path: null,
+    // post_position is deliberately absent: a row that is not in the post has
+    // no position, and several cases below turn on undefined reading as "no
+    // set" rather than as position 0. post_text IS present as null, because
+    // postEntriesOf distinguishes "this entry has no words" (null) from a
+    // caller that never selected the column.
+    post_text: null,
     caption: null,
     filename: null,
     metadata: null,
@@ -388,18 +394,24 @@ describe("setCover", () => {
 const rpcState = vi.hoisted(() => ({
   calls: [] as Array<{ method: string; args: unknown[] }>,
   response: { data: [] as unknown, error: null as unknown },
+  // Responses for calls that run more than one query. setPostMediaText reads
+  // the set and then writes one row, and those two want different answers; an
+  // empty queue falls back to `response`, so every single-query case is
+  // unaffected.
+  queue: [] as unknown[],
 }));
 
 vi.mock("@/integrations/supabase/client", () => {
   const chain: Record<string, unknown> = {};
-  for (const method of ["from", "select", "eq", "not", "order", "limit", "rpc"]) {
+  for (const method of ["from", "select", "eq", "not", "order", "limit", "rpc", "update", "single"]) {
     chain[method] = (...args: unknown[]) => {
       rpcState.calls.push({ method, args });
       return chain;
     };
   }
   // PostgREST builders are thenable, not promises; awaiting one runs the query.
-  chain.then = (resolve: (value: unknown) => unknown) => resolve(rpcState.response);
+  chain.then = (resolve: (value: unknown) => unknown) =>
+    resolve(rpcState.queue.length > 0 ? rpcState.queue.shift() : rpcState.response);
   return { supabase: chain };
 });
 
@@ -409,12 +421,15 @@ import {
   ASSUMED_ASPECT,
   MAX_POST_MEDIA,
   POST_MEDIA_COLUMNS,
+  POST_TEXT_MAX,
   PostMediaError,
   addPostMedia,
   aspectOf,
   getPostMedia,
+  postEntriesOf,
   removePostMedia,
   setPostMedia,
+  setPostMediaText,
 } from "@/lib/build/cover";
 
 /** The args of the first call to `method`, or undefined if it was never made. */
@@ -429,7 +444,15 @@ function allArgsOf(method: string): unknown[][] {
 
 function resetSupabase(data: unknown = [], error: unknown = null) {
   rpcState.calls.length = 0;
+  rpcState.queue.length = 0;
   rpcState.response = { data, error };
+}
+
+/** Answer each query of a multi-query call in turn. Clears any earlier queue. */
+function queueSupabase(...responses: Array<{ data: unknown; error?: unknown }>) {
+  rpcState.calls.length = 0;
+  rpcState.queue.length = 0;
+  rpcState.queue.push(...responses.map((r) => ({ data: r.data, error: r.error ?? null })));
 }
 
 /** A row as the set returns it: media() plus a position. */
@@ -755,5 +778,357 @@ describe("aspectOf", () => {
     // how the composer starts framing a picture differently to the card.
     expect(ASPECT_CAP_MIN).toBe(0.75);
     expect(ASPECT_CAP_MAX).toBe(2.0);
+  });
+});
+
+// =============================================================================
+// Text on every entry of the post (BG-P07c)
+// =============================================================================
+// THE SAME SPLIT AS ABOVE, and for the same reason. A vitest double cannot
+// prove a CHECK. What it CAN prove is everything that is a fact about
+// TypeScript: the refusals setPostMediaText makes before it reaches the wire,
+// the exact call it makes when it does, and the whole of postEntriesOf, which
+// queries nothing at all.
+//
+// The two claims that are facts about Postgres — that a row LEAVING the set
+// loses its text, and that a row merely MOVING keeps it — are checks 6 and 7 of
+// supabase/tests/bg-p07c-post-text.sql, run against a real database. They are
+// there rather than here because both are the behaviour of
+// set_build_post_media(), and a fake that implemented that behaviour would only
+// prove the fake. What this file owns is the instruction the data layer sends:
+// removePostMedia leaving the id out of the array IS what tells the function to
+// clear that row's text, and setPostMedia sending the survivors in order IS
+// what tells it to carry the rest of the text along.
+
+/** A row that is in the post, at `position`, saying `text`. */
+function entry(id: string, position: number, text: string | null = null) {
+  return media(id, { post_position: position, post_text: text });
+}
+
+describe("setPostMediaText: the refusals it makes before the wire", () => {
+  it("rejects text over 280 characters with the named error", async () => {
+    resetSupabase([entry("m-a", 0)]);
+
+    await expect(
+      setPostMediaText(BUILD_ID, "m-a", "x".repeat(POST_TEXT_MAX + 1))
+    ).rejects.toBeInstanceOf(PostMediaError);
+  });
+
+  it("names the code text_too_long, and says how many were given", async () => {
+    resetSupabase([entry("m-a", 0)]);
+
+    await expect(
+      setPostMediaText(BUILD_ID, "m-a", "x".repeat(400))
+    ).rejects.toMatchObject({ name: "PostMediaError", code: "text_too_long" });
+  });
+
+  it("refuses without reading anything, because length needs no round trip", async () => {
+    resetSupabase([entry("m-a", 0)]);
+    await expect(setPostMediaText(BUILD_ID, "m-a", "x".repeat(281))).rejects.toThrow();
+
+    expect(allArgsOf("update")).toHaveLength(0);
+    expect(allArgsOf("from")).toHaveLength(0);
+  });
+
+  it("accepts exactly 280, so the cap is 280 and not 279", async () => {
+    queueSupabase({ data: [entry("m-a", 0)] }, { data: entry("m-a", 0, "x".repeat(280)) });
+
+    await expect(
+      setPostMediaText(BUILD_ID, "m-a", "x".repeat(POST_TEXT_MAX))
+    ).resolves.toMatchObject({ id: "m-a" });
+  });
+
+  it("counts CHARACTERS, not UTF-16 units, as char_length() does", async () => {
+    // "🛠".length is 2, so a .length check would refuse 141 of these — while
+    // Postgres, which counts code points, would happily store 280. The two must
+    // agree or the composer refuses text the database would have taken.
+    const emoji = "🛠".repeat(280);
+    expect(emoji.length).toBeGreaterThan(POST_TEXT_MAX);
+
+    queueSupabase({ data: [entry("m-a", 0)] }, { data: entry("m-a", 0, emoji) });
+    await expect(setPostMediaText(BUILD_ID, "m-a", emoji)).resolves.toBeTruthy();
+
+    // And 281 of them is still one too many.
+    resetSupabase([entry("m-a", 0)]);
+    await expect(setPostMediaText(BUILD_ID, "m-a", emoji + "🛠")).rejects.toMatchObject({
+      code: "text_too_long",
+    });
+  });
+
+  it("rejects text on a row OUTSIDE the set with the named error", async () => {
+    // The CHECK would refuse this anyway — post_text requires post_position IS
+    // NOT NULL — but "that picture is not in the post" is a sentence a composer
+    // can show, and a constraint violation string is not.
+    resetSupabase([entry("m-a", 0), entry("m-b", 1)]);
+
+    await expect(setPostMediaText(BUILD_ID, "m-loose", "words")).rejects.toMatchObject({
+      name: "PostMediaError",
+      code: "not_in_post",
+    });
+  });
+
+  it("does not attempt the write when the row is not in the set", async () => {
+    resetSupabase([entry("m-a", 0)]);
+    await expect(setPostMediaText(BUILD_ID, "m-loose", "words")).rejects.toThrow();
+
+    expect(allArgsOf("update")).toHaveLength(0);
+  });
+
+  it("refuses an empty set for any row at all, which is the same rule", async () => {
+    resetSupabase([]);
+    await expect(setPostMediaText(BUILD_ID, "m-a", "words")).rejects.toMatchObject({
+      code: "not_in_post",
+    });
+  });
+});
+
+describe("setPostMediaText: the write it makes", () => {
+  it("writes post_text on the one named row, pinned to the build", async () => {
+    queueSupabase({ data: [entry("m-a", 0)] }, { data: entry("m-a", 0, "It drew the graph.") });
+
+    await setPostMediaText(BUILD_ID, "m-a", "It drew the graph.");
+
+    expect(argsOf("update")).toEqual([{ post_text: "It drew the graph." }]);
+    // Both keys: the membership read proves the row is on this build, and
+    // pinning the write to both means a foreign id could not be written even if
+    // that read were ever wrong.
+    expect(allArgsOf("eq")).toEqual(
+      expect.arrayContaining([
+        ["id", "m-a"],
+        ["build_id", BUILD_ID],
+      ])
+    );
+    expect(argsOf("single")).toEqual([]);
+  });
+
+  it("names the columns it reads back rather than taking `*`", async () => {
+    queueSupabase({ data: [entry("m-a", 0)] }, { data: entry("m-a", 0, "hi") });
+    await setPostMediaText(BUILD_ID, "m-a", "hi");
+
+    const selects = allArgsOf("select");
+    expect(selects[selects.length - 1]).toEqual([POST_MEDIA_COLUMNS]);
+    expect(POST_MEDIA_COLUMNS).toContain("post_text");
+    expect(POST_MEDIA_COLUMNS).not.toContain("*");
+  });
+
+  it("TRIMS, so leading and trailing space never reaches the column", async () => {
+    queueSupabase({ data: [entry("m-a", 0)] }, { data: entry("m-a", 0, "spaced") });
+    await setPostMediaText(BUILD_ID, "m-a", "   spaced   ");
+
+    expect(argsOf("update")).toEqual([{ post_text: "spaced" }]);
+  });
+
+  it("measures length AFTER trimming, so trailing space is not a refusal", async () => {
+    // 280 characters plus spaces is 280 characters of text. Refusing it would
+    // be refusing something the database would accept, because the value that
+    // reaches the CHECK is the trimmed one.
+    queueSupabase({ data: [entry("m-a", 0)] }, { data: entry("m-a", 0, "x".repeat(280)) });
+
+    await expect(
+      setPostMediaText(BUILD_ID, "m-a", `   ${"x".repeat(280)}   `)
+    ).resolves.toBeTruthy();
+    expect(argsOf("update")).toEqual([{ post_text: "x".repeat(280) }]);
+  });
+
+  it("normalises null, empty and whitespace-only to ONE cleared state", async () => {
+    // Empty string and null render identically, so letting both into the column
+    // would be storing two states that mean the same thing.
+    for (const input of [null, "", "   ", "\n\t "]) {
+      queueSupabase({ data: [entry("m-a", 0)] }, { data: entry("m-a", 0, null) });
+      await setPostMediaText(BUILD_ID, "m-a", input);
+      expect(argsOf("update"), JSON.stringify(input)).toEqual([{ post_text: null }]);
+    }
+  });
+
+  it("throws through buildLayerError when the database refuses", async () => {
+    queueSupabase(
+      { data: [entry("m-a", 0)] },
+      { data: null, error: { message: "violates check constraint" } }
+    );
+
+    await expect(setPostMediaText(BUILD_ID, "m-a", "hi")).rejects.toThrow(
+      "setPostMediaText failed: violates check constraint"
+    );
+  });
+});
+
+describe("removePostMedia: the departing row's text", () => {
+  it("leaves the removed id out of the set, which is what clears its text", async () => {
+    // set_build_post_media() clears position AND post_text for every row not in
+    // the array it is given, in one statement. So the instruction this side
+    // owns is the array — and the id being absent from it IS the clear.
+    // supabase/tests/bg-p07c-post-text.sql check 6 proves the other half.
+    resetSupabase([entry("m-a", 0, "first"), entry("m-b", 1, "second"), entry("m-c", 2, "third")]);
+    await removePostMedia(BUILD_ID, "m-b");
+
+    const [, args] = argsOf("rpc") as [string, { p_media_ids: string[] }];
+    expect(args.p_media_ids).toEqual(["m-a", "m-c"]);
+    expect(args.p_media_ids).not.toContain("m-b");
+  });
+
+  it("sends no separate write to null the text, because that would not be atomic", async () => {
+    // Nulling post_text from here first would cost a round trip AND introduce a
+    // failure the function cannot have: if that write landed and the reorder
+    // then failed, the creator would keep the picture and silently lose the
+    // caption. One transaction, or neither.
+    resetSupabase([entry("m-a", 0, "first"), entry("m-b", 1, "second")]);
+    await removePostMedia(BUILD_ID, "m-b");
+
+    expect(allArgsOf("update")).toHaveLength(0);
+  });
+
+  it("carries the SURVIVORS' text along by sending them in order", async () => {
+    // Reordering keeps each row's text because the text is on the ROW, not on
+    // the position: the function hands every surviving id its own words back
+    // after assigning the new slots.
+    resetSupabase([entry("m-a", 0, "first"), entry("m-b", 1, "second"), entry("m-c", 2, "third")]);
+    await removePostMedia(BUILD_ID, "m-a");
+
+    const [, args] = argsOf("rpc") as [string, { p_media_ids: string[] }];
+    expect(args.p_media_ids).toEqual(["m-b", "m-c"]);
+  });
+});
+
+describe("setPostMedia: reordering and text", () => {
+  it("sends only ids, so a reorder cannot restate — or lose — any text", async () => {
+    // The payload carries no text at all. That is the point: text lives on the
+    // row, so moving a row moves its words with it and there is nothing for a
+    // reorder to get wrong.
+    resetSupabase([]);
+    await setPostMedia(BUILD_ID, ["m-c", "m-a", "m-b"]);
+
+    const [, args] = argsOf("rpc") as [string, Record<string, unknown>];
+    expect(Object.keys(args).sort()).toEqual(["p_build_id", "p_media_ids"]);
+    expect(args.p_media_ids).toEqual(["m-c", "m-a", "m-b"]);
+  });
+});
+
+// --- the resolver ------------------------------------------------------------
+
+describe("postEntriesOf", () => {
+  const DESCRIPTION = "Turns a week of scattered notes into one publishable build.";
+  const build = (outcome: string | null = DESCRIPTION) => ({ outcome });
+
+  it("supplies the DESCRIPTION at position 0 when post_text is null", () => {
+    // The first entry's text IS the build's one-sentence description — the
+    // composer's "What does it do?" — and it is not duplicated into the column
+    // to make that true. This is the rule the whole resolver exists for.
+    const entries = postEntriesOf(build(), [entry("m-a", 0), entry("m-b", 1, "and then this")]);
+
+    expect(entries[0].text).toBe(DESCRIPTION);
+  });
+
+  it("PREFERS post_text at position 0 when the creator has set one", () => {
+    // The fallback is a default, not a lock: a creator who wants the first
+    // picture introduced differently from the way the build is described says
+    // so, and that wins.
+    const entries = postEntriesOf(build(), [entry("m-a", 0, "Here is the thing itself.")]);
+
+    expect(entries[0].text).toBe("Here is the thing itself.");
+    expect(entries[0].text).not.toBe(DESCRIPTION);
+  });
+
+  it("gives null text for a later position with none", () => {
+    // The description belongs to entry 0 alone. Entry 2 having no words is not
+    // a hole to fill — it is a picture the creator let stand on its own.
+    const entries = postEntriesOf(build(), [
+      entry("m-a", 0),
+      entry("m-b", 1, "a caption"),
+      entry("m-c", 2),
+    ]);
+
+    expect(entries[1].text).toBe("a caption");
+    expect(entries[2].text).toBeNull();
+  });
+
+  it("never lets the description leak onto a later entry", () => {
+    const entries = postEntriesOf(build(), [entry("m-a", 0), entry("m-b", 1), entry("m-c", 2)]);
+
+    expect(entries[0].text).toBe(DESCRIPTION);
+    expect(entries.slice(1).every((e) => e.text === null)).toBe(true);
+  });
+
+  it("returns entries in POSITION ORDER regardless of the input order", () => {
+    // getPostMedia returns them ordered, but a card that concatenated two reads,
+    // or held a stale list, would otherwise render a post in an order its
+    // creator never chose.
+    const entries = postEntriesOf(build(), [
+      entry("m-third", 2, "third"),
+      entry("m-first", 0, "first"),
+      entry("m-fourth", 3, "fourth"),
+      entry("m-second", 1, "second"),
+    ]);
+
+    expect(entries.map((e) => e.media.id)).toEqual([
+      "m-first",
+      "m-second",
+      "m-third",
+      "m-fourth",
+    ]);
+    expect(entries.map((e) => e.position)).toEqual([0, 1, 2, 3]);
+    expect(entries.map((e) => e.text)).toEqual(["first", "second", "third", "fourth"]);
+  });
+
+  it("applies the position-0 rule to the row AT position 0, not the first given", () => {
+    // The two come apart exactly when the caller's order is wrong, which is the
+    // case the sort exists for.
+    const entries = postEntriesOf(build(), [entry("m-b", 1), entry("m-a", 0)]);
+
+    expect(entries[0].media.id).toBe("m-a");
+    expect(entries[0].text).toBe(DESCRIPTION);
+    expect(entries[1].text).toBeNull();
+  });
+
+  it("DROPS rows that are not in the post", () => {
+    // A caller may hand over a whole media list — the pictures hanging off
+    // nodes included — and get back only the thread.
+    const entries = postEntriesOf(build(), [
+      media("m-loose"),
+      entry("m-a", 0),
+      media("m-also-loose", { node_id: "n-1" }),
+      entry("m-b", 1),
+    ]);
+
+    expect(entries.map((e) => e.media.id)).toEqual(["m-a", "m-b"]);
+  });
+
+  it("returns an empty array for a build with no set, which is the normal case", () => {
+    expect(postEntriesOf(build(), [media("m-loose")])).toEqual([]);
+    expect(postEntriesOf(build(), [])).toEqual([]);
+  });
+
+  it("does not disturb the array it was handed", () => {
+    const rows = [entry("m-c", 2), entry("m-a", 0), entry("m-b", 1)];
+    postEntriesOf(build(), rows);
+
+    expect(rows.map((r) => r.id)).toEqual(["m-c", "m-a", "m-b"]);
+  });
+
+  it("carries the whole media row through, so a card needs no second lookup", () => {
+    const [first] = postEntriesOf(build(), [entry("m-a", 0)]);
+
+    expect(first.media.id).toBe("m-a");
+    expect(first.media.width).toBe(1200);
+    expect(aspectOf(first.media).ratio).toBeCloseTo(1.5, 10);
+  });
+
+  it("gives position 0 a null text when the build has no description either", () => {
+    // A draft nobody has described yet. The entry renders as a picture with no
+    // words, which is a designed state and not an error.
+    expect(postEntriesOf(build(null), [entry("m-a", 0)])[0].text).toBeNull();
+  });
+
+  it("tolerates a missing build the way resolveCover does", () => {
+    expect(postEntriesOf(null, [entry("m-a", 0)])[0].text).toBeNull();
+    expect(postEntriesOf(undefined, [entry("m-a", 0, "its own words")])[0].text).toBe(
+      "its own words"
+    );
+  });
+
+  it("queries nothing at all", () => {
+    resetSupabase([]);
+    postEntriesOf(build(), [entry("m-a", 0), entry("m-b", 1)]);
+
+    expect(rpcState.calls).toHaveLength(0);
   });
 });
