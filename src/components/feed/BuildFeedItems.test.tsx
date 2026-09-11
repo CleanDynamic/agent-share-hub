@@ -99,7 +99,7 @@ describe("a bounty in the feed", () => {
     // The card the gallery draws, not a second design for the same build.
     expect(item).toHaveTextContent("Inbox triage agent");
     expect(within(item).getByTestId("gallery-card-bounty")).toHaveTextContent(
-      "bounty · £120"
+      "1 part unsolved · £120"
     );
   });
 
@@ -118,7 +118,9 @@ describe("a bounty in the feed", () => {
     // for one that has none — an unpriced ask is still a real bounty.
     expect(item).toHaveTextContent("part of this build is unsolved");
     expect(within(item).queryByTestId("feed-bounty-reward")).toBeNull();
-    expect(within(item).getByTestId("gallery-card-bounty")).toHaveTextContent("bounty");
+    expect(within(item).getByTestId("gallery-card-bounty")).toHaveTextContent(
+      "1 part unsolved"
+    );
   });
 
   it("leaves an ordinary build card saying nothing about bounties", () => {

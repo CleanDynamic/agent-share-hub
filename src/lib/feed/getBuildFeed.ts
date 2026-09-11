@@ -308,12 +308,21 @@ function coverRows(row: BuildFeedRow): GalleryMedia[] {
       bucket: row.cover_bucket,
       path: row.cover_path,
       kind: row.cover_kind ?? "image",
-      // The card scales its picture into a fixed 168px body with object-fit,
-      // so the image's own dimensions are never read. Null is honest here;
-      // a guess would not be.
+      // The card scales its picture into the fixed 168px body with object-fit,
+      // so the image's own dimensions are never read there. Null is honest
+      // here; a guess would not be. BG-P09's feed layout DOES read them, and
+      // the honest consequence is that a feed card falls back to the fixed slot
+      // — which is the layout the Builds tab still uses. BG-P18 switches it, and
+      // that is the prompt that has to widen this query to the post's rows.
       width: null,
       height: null,
       poster_path: row.cover_poster_path,
+      duration: null,
+      // Not a post entry: one cover row is not the creator's arrangement, and
+      // claiming position 0 for it would make postEntriesOf report a
+      // single-entry thread the creator never composed.
+      post_position: null,
+      post_text: null,
     },
   ];
 }

@@ -516,3 +516,47 @@ input[type="search"] { border-radius: var(--r-control); }
     animation: none !important;
   }
 }
+
+/* ── The card's hover shadow (BG-P09) ─────────────────────────────────────────
+   A PSEUDO-ELEMENT, BECAUSE THE THEME FORBIDS ANIMATING `box-shadow`. A shadow
+   that changes has to change on a pseudo-element whose OPACITY is animated:
+   `box-shadow` is not a compositable property, so transitioning it repaints the
+   card on every frame of every hover, twenty-four cards to a grid.
+
+   THIS IS THE ONE THING THE CARD CANNOT DO INLINE. BG-P09 styles inline and adds
+   no CSS classes; a pseudo-element has no inline form at all, so the rule is
+   keyed on the `data-visual-slot` attribute the card already carries — an
+   attribute selector on existing markup rather than a new class to hang styling
+   on. The shadow itself is the theme's own `--elev-raised`, per theme, so the
+   light room's shadow and the dark room's are not the same object.
+
+   GATED ON A FINE POINTER. A touch reader has no hover, and a `:hover` rule that
+   reaches them leaves a card stuck in a lifted state after a tap. The transform
+   and the border colour are carried inline by the same gate in JavaScript; this
+   is the half of the effect that cannot be.
+
+   `inset: 0` and `z-index: -1` put it exactly behind the card, and
+   `pointer-events: none` keeps it out of the way of the link it sits under. */
+@media (hover: hover) and (pointer: fine) {
+  [data-visual-slot="gallery-card"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: var(--r-card);
+    box-shadow: var(--elev-raised);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms cubic-bezier(.2,.6,.35,1);
+  }
+
+  [data-visual-slot="gallery-card"]:hover::after {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-visual-slot="gallery-card"]::after {
+    transition: none;
+  }
+}

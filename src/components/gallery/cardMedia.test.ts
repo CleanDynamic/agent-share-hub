@@ -38,6 +38,11 @@ function media(over: Partial<GalleryMedia> = {}): GalleryMedia {
     width: 1600,
     height: 900,
     poster_path: null,
+    duration: null,
+    // Not in the creator's post by default: a fixture that claimed position 0
+    // would put every test's build on the thread path.
+    post_position: null,
+    post_text: null,
     ...over,
   };
 }
