@@ -26,8 +26,24 @@
   --orange: #8B4513;
   --teal: #1F7A6D;
   --radius-card: 14px;
-  --radius-btn: 100px;
-  --radius-badge: 100px;
+  /* BG-P07. The pill rule is gone, and so is every consumer of these two names
+     that this prompt is allowed to edit. They survive only because three
+     consumers live in files it is not: LeftPanel.tsx and RightPanelExplore.tsx
+     are externally-supplied visual shells (`neoscale-ui` RULE 3), and the
+     buttons inside them are the reserved primary and secondary button
+     surfaces — two reasons each to leave them alone.
+
+     Repointing the VALUE retires the pill on those surfaces anyway, without
+     editing a file this prompt must not touch. A `var()` declared in a later
+     :root block resolves fine: custom properties are substituted at
+     computed-value time, after the cascade has collected every declaration on
+     the element, so the ordering here is irrelevant.
+
+     Delete both names when the prompt that owns the rails repoints its three
+     call sites at `--r-control`. src/lib/theme/radius.test.ts holds them to
+     this, and names the exempt files. */
+  --radius-btn: var(--r-control);
+  --radius-badge: var(--r-chip);
   --input-bg: rgba(255,255,255,0.05);
   --input-border: rgba(255,255,255,0.10);
   --input-focus-border: rgba(255,255,255,0.20);
@@ -367,19 +383,51 @@ body {
   mask-image: linear-gradient(to bottom, black 20%, transparent 90%);
 }
 
+/* BG-P07 — the global field rule, repointed in place at the theme tokens.
+   Repointing an existing stylesheet's colour declarations is the one thing this
+   project's styling rules allow a stylesheet to keep doing; adding a new class
+   is not, which is why this rule is edited rather than replaced.
+
+   THE RULE ITSELF HAS TO STAY. It is what paints the raw <input> elements
+   scattered across the app that never go through ui/input.tsx, and its
+   !important is what stops Tailwind's utilities repainting them.
+
+   THE BORDER COLOUR LOST ITS !important ON PURPOSE. Width and style stay
+   locked, so no raw field changes size, but the COLOUR has to be overridable
+   from a style attribute or ui/input.tsx could never show a focused or an
+   invalid field — an !important shorthand here outranks inline styles and would
+   pin every field in the app to the resting colour for ever. That is also why
+   the shorthand is split into longhands: `border: 1px solid X !important` sets
+   all three, and there is no way to exempt one of them.
+
+   The 10px radius and the 24px search capsule are now --r-control. The radius
+   scale is the whole shape vocabulary in this system, and 24px on a 40px-tall
+   field was the pill rule this series removed. */
 input, textarea, select {
-  background: rgba(255,255,255,0.05) !important;
-  border: 1px solid rgba(255,255,255,0.10) !important;
-  border-radius: 10px;
-  color: var(--legacy-text) !important;
+  background: var(--recess) !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-color: var(--line);
+  border-radius: var(--r-control);
+  color: var(--text) !important;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color 150ms ease;
 }
-input:focus, textarea:focus {
-  border-color: rgba(139,69,19,0.45) !important;
-  box-shadow: 0 0 0 3px rgba(139,69,19,0.08) !important;
+
+/* BG-P07. :focus-visible rather than :focus — a mouse click on a field should
+   not leave a ring behind; a Tab onto it must. The ring is the shared
+   definition from src/lib/theme/focus.ts, spelled out here because a stylesheet
+   cannot import it, so a raw <input> and a ui/input.tsx field mark focus
+   identically. `box-shadow: none` is what retires Tailwind's ring utility,
+   which draws as a shadow and would otherwise stack underneath the outline. */
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  border-color: var(--action);
+  outline: 2px solid var(--lit);
+  outline-offset: 2px;
+  box-shadow: none !important;
 }
-input[type="search"] { border-radius: 24px; }
+
+input[type="search"] { border-radius: var(--r-control); }
 
 /* Publish-page focus ring — accessible keyboard focus */
 .publish-focus:focus-visible {

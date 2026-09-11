@@ -57,10 +57,14 @@ describe("the radius scale", () => {
     }
   });
 
-  it("leaves the legacy pill tokens alone — BG-P07 repoints their consumers", () => {
-    // --radius-btn and --radius-badge are still 100px in the legacy :root block
-    // and still have live consumers. Retiring them here would restyle running
-    // buttons from a prompt that is meant to change nothing on screen.
+  it("never adopts the legacy pill tokens as steps of the scale", () => {
+    // BG-P07 repointed --radius-btn and --radius-badge at --r-control and
+    // --r-chip, so the pill is gone from the running app. The two NAMES still
+    // exist in the legacy :root block because three consumers of them sit in
+    // files that prompt was not allowed to edit; see the exemption below.
+    // Neither is a step of this scale and neither may become one — a fourth
+    // name for a radius the scale already has is how a six-step vocabulary
+    // turns back into sixteen.
     expect(RADIUS_NAMES).not.toContain("radius-btn" as RadiusName);
     expect(RADIUS_NAMES).not.toContain("radius-badge" as RadiusName);
   });

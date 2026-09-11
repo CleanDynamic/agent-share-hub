@@ -121,7 +121,7 @@ export function FollowButton({ creatorId, onCountChange }: FollowButtonProps) {
         style={{
           background: 'rgba(255,255,255,0.05)',
           border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-btn)',
+          borderRadius: 'var(--r-control)',
           color: 'var(--legacy-text)',
         }}
         onMouseEnter={() => setHovering(true)}
@@ -147,7 +147,7 @@ export function FollowButton({ creatorId, onCountChange }: FollowButtonProps) {
       style={{
         background: 'rgba(255,255,255,0.05)',
         border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-btn)',
+        borderRadius: 'var(--r-control)',
         color: 'var(--legacy-text)',
       }}
       onClick={handleClick}
