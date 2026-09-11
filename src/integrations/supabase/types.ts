@@ -530,6 +530,7 @@ export type Database = {
           mime: string | null
           node_id: string | null
           path: string
+          post_position: number | null
           poster_path: string | null
           width: number | null
         }
@@ -548,6 +549,7 @@ export type Database = {
           mime?: string | null
           node_id?: string | null
           path: string
+          post_position?: number | null
           poster_path?: string | null
           width?: number | null
         }
@@ -566,6 +568,7 @@ export type Database = {
           mime?: string | null
           node_id?: string | null
           path?: string
+          post_position?: number | null
           poster_path?: string | null
           width?: number | null
         }
@@ -5217,6 +5220,10 @@ export type Database = {
           similarity: number
           title: string
         }[]
+      }
+      set_build_post_media: {
+        Args: { p_build_id: string; p_media_ids: string[] }
+        Returns: Database["public"]["Tables"]["build_media"]["Row"][]
       }
       set_user_track: { Args: { _track: string }; Returns: undefined }
       soft_delete_primitive_comment: {
