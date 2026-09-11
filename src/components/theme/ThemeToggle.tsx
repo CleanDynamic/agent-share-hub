@@ -1,23 +1,35 @@
 import { useRef, useState, type KeyboardEvent } from "react";
 import { useTheme, type ThemeChoice } from "@/contexts/ThemeContext";
-import { t } from "@/lib/theme/tokens";
+import { themeToggleGroupStyle, themeToggleSegmentStyle } from "@/lib/theme/controls";
 
-/* ────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────────────────────
    ThemeToggle — the control that flips the room.
 
-   Deliberately plain: tokens for colour, no layout opinions, no radius from the
-   scale. BG-P07 styles it properly. What is here is what accessibility
-   requires and nothing more.
+   BG-P02 shipped this deliberately plain, with a note that BG-P07 would style
+   it properly. This is that: three segments in one `--r-control` group on
+   `--recess`, with the current segment filled `--action` and labelled
+   `--on-action` — the same measured pair the primary button uses.
 
-   An ARIA radio group of buttons rather than native radio inputs, because
+   AN ARIA RADIO GROUP OF BUTTONS rather than native radio inputs, because
    index.css forces a background, border and font-size onto every `input` in the
-   app with !important, which a native radio cannot escape.
+   app with !important, which a native radio cannot escape. That is still true
+   after BG-P07 repointed that rule at the tokens.
 
-   The group paints its own --bg ground. That is not decoration: it is what
-   makes the colour contract's measured pairings hold. The rails around it still
-   carry the legacy dark paint, and --text2 on that ground is not a measured
-   pairing; --text2 on --bg is (5.26 Exhibition, 7.65 Dusk).
-──────────────────────────────────────────────── */
+   THE GROUP PAINTS ITS OWN GROUND, and that is not decoration. The rails this
+   sits in still carry the legacy dark paint, and `--text2` on that paint is not
+   a pairing anyone measured; `--text2` on `--recess` is (4.55 Exhibition, 5.73
+   Dusk). Painting the ground is what makes the colour contract hold here.
+
+   THE FOCUS RING IS NOW THE SHARED ONE, which is the question BG-P02 left open.
+   It wrote the ring in `--text` because `--lit` measures 1.80:1 on Exhibition's
+   ground, under the 3.0:1 floor for UI state. The resolution is in `focus.ts`
+   and is about the OFFSET rather than the colour: `outline-offset: 2px` leaves a
+   2px band of `--bg` between the control and the ring, so the ring is read
+   against two edges rather than against the ground alone. That band is part of
+   the ring's definition, not a taste, and it is why one definition can be used
+   everywhere. A second ring here would be a second thing for a keyboard user to
+   learn, for no gain.
+   ──────────────────────────────────────────────────────────────────────────── */
 
 const OPTIONS: readonly { value: ThemeChoice; label: string }[] = [
   { value: "exhibition", label: "Exhibition" },
@@ -28,6 +40,7 @@ const OPTIONS: readonly { value: ThemeChoice; label: string }[] = [
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [keyboardFocus, setKeyboardFocus] = useState<ThemeChoice | null>(null);
+  const [hovered, setHovered] = useState<ThemeChoice | null>(null);
   const buttons = useRef(new Map<ThemeChoice, HTMLButtonElement | null>());
 
   /* Roving tabindex: the group is one tab stop and the arrows move within it,
@@ -55,11 +68,17 @@ export function ThemeToggle() {
       role="radiogroup"
       aria-label="Theme"
       onKeyDown={onKeyDown}
+      /* NO PADDING HERE, AND THAT IS NOT AN OVERSIGHT. `display` and `gap` are
+         BG-P02's and are left exactly as they were; a `padding: 2` would have
+         inset the active segment neatly from the group's border, but padding is
+         structural and this prompt restyles rather than relayouts. The active
+         segment therefore meets the group's hairline directly. If that reads
+         tight, the fix is a padding change and belongs to the prompt that owns
+         this surface's layout — reported, not quietly taken. */
       style={{
         display: "flex",
         gap: 2,
-        background: t.bg,
-        border: `1px solid ${t.line}`,
+        ...themeToggleGroupStyle,
       }}
     >
       {OPTIONS.map((option) => {
@@ -75,6 +94,8 @@ export function ThemeToggle() {
             aria-checked={selected}
             tabIndex={selected ? 0 : -1}
             onClick={() => setTheme(option.value)}
+            onMouseEnter={() => setHovered(option.value)}
+            onMouseLeave={() => setHovered(null)}
             onFocus={(event) => {
               // Keyboard focus only — a click should not leave a ring behind.
               let visible = true;
@@ -88,17 +109,12 @@ export function ThemeToggle() {
             onBlur={() => setKeyboardFocus(null)}
             style={{
               padding: "4px 8px",
-              font: "inherit",
-              cursor: "pointer",
-              background: selected ? t.recess : "transparent",
-              color: selected ? t.text : t.text2,
               border: "none",
-              /* The spec's ring is 2px --lit, but BG-P01 measured --lit at
-                 1.80:1 on Exhibition's ground — below the 3.0:1 UI floor, and
-                 recorded as such in contrast.test.ts. --text carries the ring
-                 until BG-P07 settles the definition system-wide. */
-              outline: keyboardFocus === option.value ? `2px solid ${t.text}` : "none",
-              outlineOffset: 2,
+              ...themeToggleSegmentStyle({
+                selected,
+                hovered: hovered === option.value,
+                focusVisible: keyboardFocus === option.value,
+              }),
             }}
           >
             {option.label}
