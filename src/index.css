@@ -112,8 +112,8 @@
   /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
      component reads every root token from one place. src/lib/theme/radius.ts is
      how components spend them. --r-full is for circular things ONLY; the legacy
-     --radius-btn/--radius-badge above are the pill rule this replaces, and
-     BG-P07 repoints their consumers. */
+     --radius-btn/--radius-badge above were the pill rule this replaces, and
+     BG-P07 repointed them at --r-control and --r-chip. */
   --r-chip: 8px;
   --r-media: 10px;
   --r-control: 12px;
@@ -177,8 +177,8 @@
   /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
      component reads every root token from one place. src/lib/theme/radius.ts is
      how components spend them. --r-full is for circular things ONLY; the legacy
-     --radius-btn/--radius-badge above are the pill rule this replaces, and
-     BG-P07 repoints their consumers. */
+     --radius-btn/--radius-badge above were the pill rule this replaces, and
+     BG-P07 repointed them at --r-control and --r-chip. */
   --r-chip: 8px;
   --r-media: 10px;
   --r-control: 12px;
@@ -233,13 +233,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Badge base — content, not decoration */
+/* Badge base — content, not decoration.
+   BG-P07. The radius is repointed from --radius-badge at --r-chip, which is the
+   last consumer of that name this prompt is allowed to edit. Every declaration
+   around it is layout — display, padding, font-size, border width — and is left
+   alone: removing any of them would move the badges still wearing this class. */
 .ns-badge {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
   font-size: 9px;
-  border-radius: var(--radius-badge);
+  border-radius: var(--r-chip);
   border: 1px solid;
 }
 
