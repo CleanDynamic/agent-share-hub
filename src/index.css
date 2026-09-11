@@ -76,6 +76,12 @@
   --glass-border: rgba(255,255,255,.80);
   --glass-hi: rgba(255,255,255,.95);
 
+  /* BG-P09 — the card's two layers. The frame is one step DARKER than the
+     thread box inset in it, and that step is what groups the post inside the
+     record. Only the frame is blurred. */
+  --card-frame: rgba(255,255,255,.42);
+  --card-thread: rgba(255,255,255,.55);
+
   --action: #9E4B2C;
   --on-action: #F7F8F9;
   --evidence: #0F6E63;
@@ -117,6 +123,7 @@
   --r-chip: 8px;
   --r-media: 10px;
   --r-control: 12px;
+  --r-thread: 12px;
   --r-card: 14px;
   --r-panel: 16px;
   --r-full: 999px;
@@ -140,6 +147,11 @@
   --glass-2: rgba(72,63,104,.26);
   --glass-border: rgba(238,234,244,.14);
   --glass-hi: rgba(238,234,244,.22);
+
+  /* BG-P09 — the card's two layers. Struck from the stone for the frame and
+     from the room's light for the box, so the box is lighter here too. */
+  --card-frame: rgba(72,63,104,.42);
+  --card-thread: rgba(238,234,244,.06);
 
   --action: #D98C6B;
   --on-action: #241B1A;
@@ -182,6 +194,7 @@
   --r-chip: 8px;
   --r-media: 10px;
   --r-control: 12px;
+  --r-thread: 12px;
   --r-card: 14px;
   --r-panel: 16px;
   --r-full: 999px;

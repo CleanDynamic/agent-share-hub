@@ -17,6 +17,20 @@
 // language because media wells and hairline highlights still need them. Do not
 // invent decorative uses for them.
 //
+// THE CARD PAIR (BG-P09). `card-frame` and `card-thread` are the two layers of a
+// build card and they are a PAIR rather than two independent surfaces: the frame
+// is the record, the thread box inset in it is the post, and the whole structure
+// is carried by the tonal STEP between them (law-of-common-region — get the step
+// wrong and the grouping vanishes). So neither is a general-purpose surface and
+// neither is `--glass` by another name:
+//
+//   Exhibition  frame .42 white, thread .55 white — the box is LIGHTER.
+//   Dusk        frame .42 stone, thread .06 room light — the box is LIGHTER.
+//
+// The direction is the same in both rooms even though the values are struck from
+// different primitives, which is what makes the card read as one object in both.
+// Only the frame is blurred; see the never-nest rule in buildgallery-theme.
+//
 // THE CATEGORY BLOCK (BG-P05). Nine hues, a tenth fallback, and a chip fill for
 // each of the ten. `cat-*-fill` is the measured background a chip may put its
 // own hue on — see the note in `primitives.ts` for how the ten were measured,
@@ -66,6 +80,8 @@ export const TOKEN_NAMES = [
   "glass-2",
   "glass-border",
   "glass-hi",
+  "card-frame",
+  "card-thread",
   "action",
   "on-action",
   "evidence",
@@ -113,6 +129,9 @@ export const exhibition: Record<TokenName, string> = {
   "glass-border": greyAlpha["0/80"],
   "glass-hi": greyAlpha["0/95"],
 
+  "card-frame": greyAlpha["0/42"],
+  "card-thread": greyAlpha["0/55"],
+
   action: clay[700],
   "on-action": grey[25],
   evidence: teal[600],
@@ -159,6 +178,9 @@ export const dusk: Record<TokenName, string> = {
   "glass-2": lavenderAlpha["650/26"],
   "glass-border": lavenderAlpha["50/14"],
   "glass-hi": lavenderAlpha["50/22"],
+
+  "card-frame": lavenderAlpha["650/42"],
+  "card-thread": lavenderAlpha["50/06"],
 
   action: clay[400],
   "on-action": clay[950],

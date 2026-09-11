@@ -104,6 +104,9 @@ const CONTRACT: Pairing[] = [
   { theme: "exhibition", label: "evidence/bg", fg: "evidence", bg: "bg", spec: 4.89, floor: TEXT_FLOOR },
   { theme: "exhibition", label: "text/evidence-fill", fg: "text", bg: "evidence-fill", spec: 11.89, floor: TEXT_FLOOR },
   { theme: "exhibition", label: "text/lit", fg: "text", bg: "lit", spec: 7.29, floor: TEXT_FLOOR },
+  // BG-P09 — the card's two layers, measured here rather than published by the
+  // skill, so `spec` IS the measurement this prompt reports.
+  { theme: "exhibition", label: "text/card-frame", fg: "text", bg: "card-frame", spec: 14.47, floor: TEXT_FLOOR },
   // Dusk
   { theme: "dusk", label: "text/bg", fg: "text", bg: "bg", spec: 14.17, floor: TEXT_FLOOR },
   { theme: "dusk", label: "text/glass", fg: "text", bg: "glass", spec: 12.04, measured: 11.48, floor: TEXT_FLOOR },
@@ -113,6 +116,7 @@ const CONTRACT: Pairing[] = [
   { theme: "dusk", label: "on-action/action", fg: "on-action", bg: "action", spec: 6.35, floor: TEXT_FLOOR },
   { theme: "dusk", label: "evidence/bg", fg: "evidence", bg: "bg", spec: 8.19, floor: TEXT_FLOOR },
   { theme: "dusk", label: "lit/bg", fg: "lit", bg: "bg", spec: 7.47, floor: UI_FLOOR },
+  { theme: "dusk", label: "text/card-frame", fg: "text", bg: "card-frame", spec: 11.48, floor: TEXT_FLOOR },
 ];
 
 const CATEGORIES: TokenName[] = [
@@ -153,6 +157,77 @@ describe("the colour contract", () => {
   )("$theme $token clears $floor:1 on the ground", ({ theme, token, floor }) => {
     const actual = round(contrast(ground(theme, token), ground(theme, "bg")));
     expect(actual, `${theme} ${token} is ${actual}:1 on --bg`).toBeGreaterThanOrEqual(floor);
+  });
+});
+
+/* ── the card's two layers (BG-P09) ───────────────────────────────────────── */
+//
+// A build card stacks THREE translucencies, and body text sits on the last of
+// them: the room's ground, the frame over it, and the thread box over that. No
+// pairing in the published contract describes that composite, so it is measured
+// here — a card whose text failed the floor because the box lightened the frame
+// under it would fail invisibly, since every layer clears the floor on its own.
+//
+// COMPOSITED IN ORDER, not averaged. `--card-thread` is translucent over
+// `--card-frame`, which is translucent over `--bg`, so the ground each layer
+// gets is the one the layer beneath it produced. The `backdrop-filter` on the
+// frame is NOT modelled: it blurs what is behind the card rather than tinting
+// it, and on a flat page ground a blur of a flat colour is that colour. Where a
+// card sits over patterned content the blur mixes in the pattern — that is the
+// same unmodelled case the four glass divergences above record, and the reason
+// the floors here are cleared with room to spare rather than exactly.
+
+describe("the card's frame and thread box", () => {
+  const COMPOSITE = {
+    exhibition: { text: 15.54, text2: 6.24 },
+    dusk: { text: 9.68, text2: 5.22 },
+  } as const;
+
+  /** The colour body text actually lands on: thread over frame over bg. */
+  const composite = (theme: ThemeKey) =>
+    over(THEMES[theme]["card-thread"], over(THEMES[theme]["card-frame"], THEMES[theme].bg));
+
+  it.each(["exhibition", "dusk"] as const)(
+    "%s puts --text on frame+thread above the body floor",
+    (theme) => {
+      const actual = round(contrast(THEMES[theme].text, composite(theme)));
+      expect(actual).toBe(COMPOSITE[theme].text);
+      expect(actual, `${theme} text/frame+thread is ${actual}:1`).toBeGreaterThanOrEqual(TEXT_FLOOR);
+    },
+  );
+
+  it.each(["exhibition", "dusk"] as const)(
+    "%s puts --text2 on frame+thread above the body floor too",
+    (theme) => {
+      // The control row's "Show thread · 3 more" is --text2 on this composite,
+      // so it is the same measurement rather than a different surface.
+      const actual = round(contrast(THEMES[theme].text2, composite(theme)));
+      expect(actual).toBe(COMPOSITE[theme].text2);
+      expect(actual, `${theme} text2/frame+thread is ${actual}:1`).toBeGreaterThanOrEqual(TEXT_FLOOR);
+    },
+  );
+
+  it("lightens the frame in BOTH rooms, so the card reads as one object", () => {
+    // The STEP is the structure (law-of-common-region). Its DIRECTION has to be
+    // the same in both themes or the card is two different objects, which is why
+    // Dusk's box is struck from the room's light rather than from the stone.
+    for (const theme of ["exhibition", "dusk"] as const) {
+      const frame = over(THEMES[theme]["card-frame"], THEMES[theme].bg);
+      const step = luminance(composite(theme)) - luminance(frame);
+      expect(step, `${theme}'s thread box is not lighter than its frame`).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps the step visible without making the box a second card", () => {
+    // Measured as the contrast between the two layers. Below about 1.05 the
+    // box disappears; a big step would read as a nested card rather than as an
+    // inset. Both rooms land inside that window.
+    for (const theme of ["exhibition", "dusk"] as const) {
+      const frame = over(THEMES[theme]["card-frame"], THEMES[theme].bg);
+      const ratio = contrast(composite(theme), frame);
+      expect(ratio, `${theme}'s step is ${round(ratio)}:1`).toBeGreaterThan(1.04);
+      expect(ratio, `${theme}'s step is ${round(ratio)}:1`).toBeLessThan(1.6);
+    }
   });
 });
 
