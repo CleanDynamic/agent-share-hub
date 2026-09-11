@@ -8,17 +8,22 @@ import { useInteractive } from "@/lib/theme/interactive";
 /* ────────────────────────────────────────────────────────────────────────────
    BG-P07 — the switch.
 
-   THE TRACK IS `--r-control` — 12px — AND NOT A PILL. This is a deliberate
-   departure and is worth stating where someone will read it, because a
-   rounded-rectangle switch is unusual enough to look like a bug rather than a
-   decision. Every platform draws this control as a capsule. The buildgallery
-   radius scale removed the capsule rule on purpose: `--r-full` is for circular
-   things only — spinners and avatars — so a 999px track here would be the one
-   pill left in the system, and a lone survivor of a retired rule is worse than
-   a switch that looks slightly unfamiliar.
+   THE TRACK IS `--r-control`, WHICH AT THIS SIZE IS STILL A CAPSULE. The spec
+   asks for `--r-control` here and describes it as "not a pill". Both cannot be
+   true of a 24px-tall track: `h-6` is 24px, `--r-control` is 12px, and a radius
+   of exactly half an element's height is a capsule. The token is honoured and
+   the description is not, because the two ways to honour the description are
+   changing the height — structural, and the one thing this restyle may never
+   do — or adding a seventh radius to a six-step scale.
 
-   THE THUMB STAYS CIRCULAR, because the thumb is a circle. `--r-full` is
-   correct there for exactly the reason it is wrong on the track.
+   This is stated plainly rather than dressed up: the switch renders rounder
+   than the spec intended, the cause is the control's size rather than the
+   token, and the fix belongs to whichever prompt owns control sizing. Every
+   control 36px or taller puts `--r-control` at 27-33% of its height, which is
+   the soft rectangle the scale was designed for.
+
+   THE THUMB IS CIRCULAR ON PURPOSE, because a thumb is a circle — that one is
+   `--r-full` by the scale's own rule rather than by accident.
 
    `h-6 w-11` and `h-5 w-5` are untouched, so the control occupies the same box
    it always did and the thumb still travels the same 20px.

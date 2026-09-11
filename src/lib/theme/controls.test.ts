@@ -38,11 +38,14 @@ import { RADIUS } from "./radius";
 
 const VARIANTS: ButtonVariant[] = ["default", "destructive", "outline", "secondary", "ghost", "link"];
 
-describe("nothing in the kit is a pill", () => {
+describe("every control carries the radius step the scale assigns it", () => {
   // The radius scale's one misuse is reaching for --r-full on something that is
   // not a circle. These are the controls the prompt named; each is checked
   // against the step it is supposed to carry rather than merely "not 999px",
   // so a control that drifts to the wrong rectangular step fails too.
+  //
+  // Carrying the right TOKEN is not the same as rendering the right SHAPE. See
+  // the block at the bottom of this file for the two controls where it isn't.
   it("gives buttons --r-control", () => {
     for (const variant of VARIANTS) {
       if (variant === "link") continue; // text, not a box
@@ -213,6 +216,15 @@ describe("the variant to token mapping", () => {
     expect(buttonStyle("link").background).toBe("transparent");
   });
 
+  it("underlines the link variant AT REST, not only on hover", () => {
+    // A link distinguished from surrounding text by colour alone fails WCAG
+    // 1.4.1, and a touch user never gets hover at all — so the affordance has
+    // to be there before anyone interacts. Hover thickens it, and that is the
+    // only thing hover is allowed to add here.
+    expect(buttonStyle("link").textDecoration).toBe("underline");
+    expect(buttonStyle("link", { hovered: true }).textDecorationThickness).toBe("2px");
+  });
+
   it("spends tokens and never a literal colour", () => {
     for (const variant of VARIANTS) {
       const style = buttonStyle(variant, { hovered: true, focusVisible: true });
@@ -299,5 +311,67 @@ describe("the scrim", () => {
 
   it("is not an elevation, so it cannot be spread by mistake for one", () => {
     expect(scrimStyle.boxShadow).toBeUndefined();
+  });
+});
+
+
+describe("where the radius tokens do not produce the shape the spec describes", () => {
+  /* A radius is only soft RELATIVE TO the box it is on. `--r-control` is 12px
+     whether the element is 44px tall or 24px, and at 24px it is half the height
+     — which is a capsule, the exact shape the scale exists to retire.
+
+     Two controls in the kit are small enough for this to bite. Neither is fixed
+     here: the fix is a bigger box, which is a structural change to an existing
+     control and the one thing this restyle may never make, and the alternative
+     is a seventh step in a six-step scale. So the arithmetic is pinned instead,
+     with the sizes written out, so that the day someone changes a height this
+     test says whether the problem went away.
+
+     THIS BLOCK IS NOT A TODO TO DELETE. If a control's box grows past the
+     threshold, update the size here and the expectation flips on its own. */
+  const px = (token: string) => parseInt(RADIUS[token as keyof typeof RADIUS], 10);
+
+  /** A radius at or past half the smaller dimension fully rounds that axis. */
+  const fullyRounds = (radius: number, smallerSide: number) => radius * 2 >= smallerSide;
+
+  const CONTROLS = [
+    // [name, smaller dimension in px, the token it carries, Tailwind class]
+    ["button, sm", 36, "r-control", "h-9"],
+    ["button, default", 40, "r-control", "h-10"],
+    ["button, lg", 44, "r-control", "h-11"],
+    ["input", 40, "r-control", "h-10"],
+    ["select trigger", 40, "r-control", "h-10"],
+    ["tabs list", 40, "r-control", "h-10"],
+    ["switch track", 24, "r-control", "h-6"],
+    ["checkbox", 16, "r-chip", "h-4 w-4"],
+  ] as const;
+
+  it("lands as a soft rectangle on every control 36px or larger", () => {
+    for (const [name, size, token] of CONTROLS) {
+      if (size < 36) continue;
+      expect(fullyRounds(px(token), size), `${name} should not be fully rounded`).toBe(false);
+    }
+  });
+
+  it("KNOWN: the switch track renders as a capsule despite --r-control", () => {
+    // h-6 is 24px and --r-control is 12px, so the spec's "not a pill" and the
+    // spec's token cannot both be honoured. The token is.
+    expect(px("r-control") * 2).toBe(24);
+    expect(fullyRounds(px("r-control"), 24)).toBe(true);
+  });
+
+  it("KNOWN: the checkbox renders as a circle despite --r-chip", () => {
+    // h-4 w-4 is 16px and --r-chip is 8px, so a checkbox is the same shape as a
+    // radio and only the tick distinguishes them. Round means pick one and
+    // square means pick any; losing that is a real affordance defect, and the
+    // fix is a bigger box rather than a smaller radius.
+    expect(px("r-chip") * 2).toBe(16);
+    expect(fullyRounds(px("r-chip"), 16)).toBe(true);
+  });
+
+  it("shows the same token reads correctly on the box it was sized for", () => {
+    // --r-chip was sized for a chip, roughly 24px tall, where it is a third of
+    // the height. The token is not the problem; the 16px box is.
+    expect(fullyRounds(px("r-chip"), 24)).toBe(false);
   });
 });

@@ -151,7 +151,7 @@ export const FOCUS_RING_CLASS =
      secondary   → SECONDARY.  --glass fill, --line border, --text label.
      outline     → SECONDARY, lighter. --glass-2 fill, --line border.
      ghost       → TERTIARY.   --text2 label, no fill until hover.
-     link        → TERTIARY as text. --action label, underline on hover.
+     link        → TERTIARY as text. --action label, underlined at rest.
 
    WHY DESTRUCTIVE TAKES --on-action AND NOT A HARDCODED WHITE. Both tokens flip
    together, and they flip in opposite directions, which is exactly what the
@@ -204,7 +204,18 @@ function buttonPaint(variant: ButtonVariant): CSSProperties {
     case "ghost":
       return { background: "transparent", color: t.text2, borderColor: "transparent" };
     case "link":
-      return { background: "transparent", color: t.action, borderColor: "transparent" };
+      /* THE UNDERLINE IS AT REST, NOT ONLY ON HOVER. A link distinguished from
+         the text around it by colour alone fails WCAG 1.4.1, and hover is not
+         available to a touch user at all — so the affordance has to be visible
+         before anyone interacts. Hover thickens it rather than introducing it. */
+      return {
+        background: "transparent",
+        color: t.action,
+        borderColor: "transparent",
+        textDecoration: "underline",
+        textUnderlineOffset: "4px",
+        textDecorationThickness: "1px",
+      };
     case "default":
     default:
       return { background: t.action, color: t.onAction, borderColor: "transparent" };
@@ -219,7 +230,7 @@ function buttonHover(variant: ButtonVariant): CSSProperties {
          that is what stops it reading as a label rather than a control. */
       return { background: t.glass2, color: t.text };
     case "link":
-      return { textDecoration: "underline", textUnderlineOffset: "4px" };
+      return { textDecorationThickness: "2px" };
     case "secondary":
       return { background: t.glassHi, borderColor: t.text2 };
     case "outline":
@@ -449,15 +460,30 @@ export const TAB_TRIGGER_CLASS =
    ─────────────────────────────────────────────────────────────────────────── */
 
 /**
- * The switch track at `--r-control` — 12px, NOT a pill.
+ * The switch track at `--r-control`, which is what the spec asks for — and
+ * which, at this control's size, still renders as a capsule. Read on before
+ * "fixing" either half of that.
  *
- * THIS IS A DELIBERATE DEPARTURE and worth saying out loud, because a
- * rounded-rectangle switch is unusual enough to look like a mistake. Every
- * platform draws this control as a capsule, and every instinct says to follow.
- * The buildgallery radius scale removed the capsule rule on purpose: `--r-full`
- * is for circles only — spinners and avatars — and a 999px track here would be
- * the one pill left in the system, which is worse than a switch that looks
- * slightly unfamiliar. The THUMB stays circular, because it is a circle.
+ * THE ARITHMETIC. The track is `h-6`, 24px tall. `--r-control` is 12px. A
+ * border-radius of exactly half an element's height IS a capsule, so the token
+ * the spec prescribes for "not a pill" produces a pill here. The two
+ * instructions are in direct conflict at this size and cannot both be honoured.
+ *
+ * WHY THE TOKEN WINS ANYWAY. The alternatives are worse. Changing the height is
+ * a structural change to an existing control, which is the one thing this
+ * restyle may never do. Introducing a smaller radius means a seventh step in a
+ * scale whose whole value is that it has six. Between rendering one control
+ * rounder than intended and breaking either of those rules, the render loses.
+ *
+ * WHERE THE TOKENS LAND AS INTENDED. Every control 36px or taller — every
+ * button size, the input, the select, the tabs list — puts `--r-control` at
+ * 27-33% of its height, which is the soft rectangle the scale was designed to
+ * produce. Only the two smallest controls in the kit, this track and the
+ * checkbox, are small enough for the token to reach half their dimension.
+ *
+ * The real fix is a size change and belongs to whichever prompt owns control
+ * sizing; `controls.test.ts` pins the arithmetic so it cannot be quietly
+ * forgotten. The THUMB is circular on purpose, because a thumb is a circle.
  */
 export function switchTrackStyle(state: ControlState = {}): CSSProperties {
   const { focusVisible, disabled } = state;
@@ -495,7 +521,26 @@ export function switchThumbStyle(): CSSProperties {
 export const SWITCH_THUMB_CLASS =
   "bg-[color:var(--text2)] data-[state=checked]:bg-[color:var(--on-action)]";
 
-/** The checkbox box at `--r-chip` — the scale's smallest step, as specified. */
+/**
+ * The checkbox at `--r-chip`, as specified — and, at 16px square, fully round.
+ *
+ * SAME CONFLICT AS THE SWITCH TRACK, and a worse consequence. The box is `h-4
+ * w-4`, 16px, and `--r-chip` is 8px: a radius of half the side is a circle. So
+ * a checkbox in this kit is the same SHAPE as a radio, and only the tick
+ * distinguishes it from the dot.
+ *
+ * That matters more here than on the switch, because the square-versus-round
+ * distinction is load-bearing: round means pick one, square means pick any, and
+ * it is one of the oldest conventions in the interface. Losing it is a genuine
+ * affordance defect and is reported as one rather than papered over.
+ *
+ * It is not fixed here for the same two reasons as the switch: a 16px box is
+ * structural and not this restyle's to change, and a smaller radius would be a
+ * seventh step in a six-step scale. On a chip — 24px tall, which is what
+ * `--r-chip` was sized for — the same token is 33% of the height and reads as
+ * the soft corner it was meant to be. The fix is to make the box bigger, not to
+ * make the radius smaller, and that belongs to the prompt that owns sizing.
+ */
 export function checkboxStyle(state: ControlState = {}): CSSProperties {
   const { focusVisible, disabled } = state;
 

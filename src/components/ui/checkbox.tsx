@@ -9,10 +9,21 @@ import { useInteractive } from "@/lib/theme/interactive";
 /* ────────────────────────────────────────────────────────────────────────────
    BG-P07 — the checkbox.
 
-   `--r-chip` — 8px, the scale's smallest step. A checkbox is the same size and
-   the same kind of object as a chip, so it takes the same corner; at 16px
-   square, 8px is soft without rounding away the square-ness that tells a reader
-   this is a multiple-choice control rather than a radio.
+   `--r-chip` — 8px — ON A 16px BOX, WHICH MAKES IT A CIRCLE. The spec assigns
+   `--r-chip` to checkboxes and that is what is applied, but `h-4 w-4` is 16px
+   and a radius of half the side fully rounds it. The practical consequence is
+   that a checkbox here is the same SHAPE as a radio, and only the tick tells
+   them apart.
+
+   THAT IS A REAL AFFORDANCE DEFECT AND IS REPORTED AS ONE. Round means pick
+   one and square means pick any — one of the oldest conventions in the
+   interface, and the same convention radio-group.tsx relies on. It is not
+   fixed here because both fixes are forbidden: a bigger box is a structural
+   change to an existing control, and a smaller radius is a seventh step in a
+   scale whose value is that it has six. On a chip, 24px tall and what
+   `--r-chip` was sized for, the same token is 33% of the height and reads as
+   the soft corner it was meant to be. The fix is a bigger box, and it belongs
+   to the prompt that owns sizing.
 
    `h-4 w-4` and the 1px border are untouched. The tick is `--on-action` on the
    `--action` fill, which is the same measured pair the primary button uses.

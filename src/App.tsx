@@ -86,6 +86,18 @@ const ImportPage = lazy(() => import("./pages/ImportPage"));
 // the affordance belongs on the creator's post page, and ContentDetail is on
 // the existing content path, which this rebuild does not edit.
 const ConvertPrompt = lazy(() => import("./components/build/ConvertPrompt"));
+
+/* BG-P07 — /dev/kit, the control-kit review page.
+
+   GUARDED SO IT NEVER SHIPS. Vite replaces `import.meta.env.DEV` with the
+   literal `false` in a production build, which makes this a `false ? … : null`
+   whose live branch Rollup then eliminates — taking the dynamic import with it,
+   so no chunk for the page is emitted at all. A route merely left unreachable
+   would still ship the code; this does not.
+
+   It is lazy for the same reason every heavy route here is, and it is linked
+   from nowhere. BG-P30's audit and the prompts after it reach it by URL. */
+const Kit = import.meta.env.DEV ? lazy(() => import("./pages/dev/Kit")) : null;
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -180,6 +192,16 @@ const App = () => (
               <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><Compose /></Suspense>} />
               <Route path="/rebuild/:slug" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><RebuildRoute /></Suspense>} />
               <Route path="/convert/:contentItemId" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><ConvertPrompt /></Suspense>} />
+              {Kit && (
+                <Route
+                  path="/dev/kit"
+                  element={
+                    <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
+                      <Kit />
+                    </Suspense>
+                  }
+                />
+              )}
               <Route path="*" element={<NotFound />} />
             </Routes>
             </UploadPickerProvider>
