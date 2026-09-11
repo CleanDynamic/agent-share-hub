@@ -4,6 +4,30 @@ import { X } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { FOCUS_RING_CLASS, scrimStyle, sheetPanelStyle } from "@/lib/theme/controls";
+
+/* ────────────────────────────────────────────────────────────────────────────
+   BG-P07 — the sheet. `elevation.overlay` and the scrim, as for the dialog;
+   see dialog.tsx for the note on why the scrim is the page's and carries no
+   blur of its own.
+
+   THE PANEL IS GLASS AND WHATEVER IS PUT INSIDE IT IS NOT. Same assertion, same
+   reason: nesting blurred surfaces is what made the previous shell slow, and
+   nothing in this kit except a portalled panel carries a backdrop-filter.
+
+   TWO THINGS ARE DIFFERENT FROM THE DIALOG, BOTH FORCED BY THE ANCHORING, and
+   both handled in `sheetPanelStyle`:
+
+   The border. A sheet already carries exactly one — `border-l` on a right
+   sheet, `border-t` on a bottom one — which is the only edge of it that is on
+   screen. So only the border's COLOUR is taken; spreading a four-sided border
+   would put 1px on three edges that had none.
+
+   The radius. --r-panel is applied to the INNER corners only. Rounding the two
+   corners flush against the viewport edge would leave the page visible through
+   them: a rounded corner needs something behind it, and at the edge of the
+   screen there is nothing.
+   ──────────────────────────────────────────────────────────────────────────── */
 
 const Sheet = SheetPrimitive.Root;
 
@@ -16,10 +40,11 @@ const SheetPortal = SheetPrimitive.Portal;
 const SheetOverlay = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <SheetPrimitive.Overlay
+    style={{ ...scrimStyle, ...style }}
     className={cn(
-      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
@@ -29,7 +54,7 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  "fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
+  "fixed z-50 gap-4 p-6 transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
   {
     variants: {
       side: {
@@ -52,12 +77,23 @@ interface SheetContentProps
     VariantProps<typeof sheetVariants> {}
 
 const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
-  ({ side = "right", className, children, ...props }, ref) => (
+  ({ side = "right", className, children, style, ...props }, ref) => (
     <SheetPortal>
       <SheetOverlay />
-      <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
+      <SheetPrimitive.Content
+        ref={ref}
+        className={cn(sheetVariants({ side }), className)}
+        style={{ ...sheetPanelStyle(side), ...style }}
+        {...props}
+      >
         {children}
-        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-secondary hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+        <SheetPrimitive.Close
+          className={cn(
+            "absolute right-4 top-4 opacity-70 transition-opacity hover:opacity-100 disabled:pointer-events-none",
+            FOCUS_RING_CLASS,
+          )}
+          style={{ color: "var(--text2)", borderRadius: "var(--r-chip)" }}
+        >
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </SheetPrimitive.Close>
@@ -81,7 +117,12 @@ const SheetTitle = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Title>
 >(({ className, ...props }, ref) => (
-  <SheetPrimitive.Title ref={ref} className={cn("text-lg font-semibold text-foreground", className)} {...props} />
+  <SheetPrimitive.Title
+    ref={ref}
+    style={{ color: "var(--text)" }}
+    className={cn("text-lg font-semibold", className)}
+    {...props}
+  />
 ));
 SheetTitle.displayName = SheetPrimitive.Title.displayName;
 
@@ -89,7 +130,12 @@ const SheetDescription = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Description>
 >(({ className, ...props }, ref) => (
-  <SheetPrimitive.Description ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
+  <SheetPrimitive.Description
+    ref={ref}
+    style={{ color: "var(--text2)" }}
+    className={cn("text-sm", className)}
+    {...props}
+  />
 ));
 SheetDescription.displayName = SheetPrimitive.Description.displayName;
 

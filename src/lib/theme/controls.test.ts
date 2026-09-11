@@ -23,7 +23,9 @@ import {
   menuPanelStyle,
   PRIMARY_VARIANTS,
   radioStyle,
+  scrimStyle,
   SECONDARY_VARIANTS,
+  sheetPanelStyle,
   switchThumbStyle,
   switchTrackStyle,
   tabTriggerStyle,
@@ -249,5 +251,53 @@ describe("category chips", () => {
     // The border carries selection precisely so the fill can keep carrying the
     // category. A filled chip therefore has no border colour of its own.
     expect(chipStyle("category", { category: "agents" }).borderColor).toBe("transparent");
+  });
+});
+
+describe("the sheet is anchored, and its style knows it", () => {
+  // Both of these are forced by the anchoring rather than chosen, so they are
+  // the two things most likely to be "tidied" back into the dialog's treatment
+  // by someone who has not hit the consequences.
+  it("rounds only the corners that have something behind them", () => {
+    const right = sheetPanelStyle("right");
+    expect(right.borderTopLeftRadius).toBe("var(--r-panel)");
+    expect(right.borderBottomLeftRadius).toBe("var(--r-panel)");
+    // The two corners flush against the viewport edge stay square: a rounded
+    // corner needs something behind it, and at the screen edge there is nothing.
+    expect(right.borderTopRightRadius).toBeUndefined();
+    expect(right.borderBottomRightRadius).toBeUndefined();
+
+    const bottom = sheetPanelStyle("bottom");
+    expect(bottom.borderTopLeftRadius).toBe("var(--r-panel)");
+    expect(bottom.borderTopRightRadius).toBe("var(--r-panel)");
+    expect(bottom.borderBottomLeftRadius).toBeUndefined();
+  });
+
+  it("never sets a four-sided border on a panel that carries exactly one", () => {
+    for (const side of ["top", "bottom", "left", "right"] as const) {
+      const style = sheetPanelStyle(side);
+      expect(style.borderWidth, side).toBeUndefined();
+      expect(style.borderStyle, side).toBeUndefined();
+      // The colour is still ours — it is the width that belongs to the layout.
+      expect(style.borderColor, side).toBe("var(--glass-border)");
+    }
+  });
+
+  it("carries the overlay elevation and the blur, like the dialog", () => {
+    expect(sheetPanelStyle("right").boxShadow).toBe(dialogPanelStyle.boxShadow);
+    expect(sheetPanelStyle("right").backdropFilter).toBe(GLASS_BLUR);
+  });
+});
+
+describe("the scrim", () => {
+  it("dims and does not blur", () => {
+    // It covers the whole viewport; blurring a full-screen layer is the single
+    // most expensive thing this system could do.
+    expect(scrimStyle.backdropFilter).toBeUndefined();
+    expect(scrimStyle.background).toContain("var(--porthole)");
+  });
+
+  it("is not an elevation, so it cannot be spread by mistake for one", () => {
+    expect(scrimStyle.boxShadow).toBeUndefined();
   });
 });

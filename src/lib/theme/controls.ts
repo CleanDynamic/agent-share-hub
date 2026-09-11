@@ -638,6 +638,44 @@ export const dialogPanelStyle: CSSProperties = {
 };
 
 /**
+ * A sheet: the same overlay surface as a dialog, anchored to one viewport edge.
+ *
+ * TWO DIFFERENCES FROM `dialogPanelStyle`, BOTH FORCED BY THE ANCHORING.
+ *
+ * It sets no `borderWidth` or `borderStyle`. A sheet already carries exactly
+ * one border from its side variant — `border-l` on a right sheet, `border-t` on
+ * a bottom one — which is the only edge of it that is on screen. Spreading a
+ * four-sided border would put 1px on three edges that had none, on a
+ * fixed-position full-height element. Only the COLOUR is taken here.
+ *
+ * And the radius is applied to the INNER corners only. `--r-panel` on all four
+ * would round the two corners flush against the viewport edge, leaving the page
+ * visible through them — a rounded corner needs something behind it, and at the
+ * edge of the screen there is nothing.
+ */
+export function sheetPanelStyle(side: "top" | "bottom" | "left" | "right"): CSSProperties {
+  const radius = r.panel;
+  const corners: CSSProperties =
+    side === "right"
+      ? { borderTopLeftRadius: radius, borderBottomLeftRadius: radius }
+      : side === "left"
+        ? { borderTopRightRadius: radius, borderBottomRightRadius: radius }
+        : side === "top"
+          ? { borderBottomLeftRadius: radius, borderBottomRightRadius: radius }
+          : { borderTopLeftRadius: radius, borderTopRightRadius: radius };
+
+  return {
+    background: t.glass,
+    backdropFilter: GLASS_BLUR,
+    WebkitBackdropFilter: GLASS_BLUR,
+    borderColor: t.glassBorder,
+    color: t.text,
+    ...corners,
+    ...elevation.overlay,
+  };
+}
+
+/**
  * The scrim behind a dialog or a sheet.
  *
  * Struck from `--porthole` — the darkest surface token in each theme — rather
