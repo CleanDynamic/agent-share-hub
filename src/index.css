@@ -471,3 +471,35 @@ input[type="search"] { border-radius: var(--r-control); }
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+/* ── BG-P07 — the control kit's two animations ────────────────────────────────
+   Keyframes are the one thing an inline style cannot express, so they live here
+   and are referenced by name from an inline `animation` — the same sanctioned
+   exception the intake sweep and the sequence spinner above already use. This
+   adds one keyframe; the spinner reuses `sequenceSpin`, which already exists.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* The skeleton's highlight, swept left to right across a --recess ground.
+   The gradient is 200% of the element's width, so moving the background one
+   full width carries the highlight from one edge to the other. Only
+   `background-position` moves: nothing here changes a layout property. */
+@keyframes bgShimmer {
+  from { background-position: 100% 0; }
+  to   { background-position: -100% 0; }
+}
+
+/* BG-P07. The theme requires prefers-reduced-motion to be honoured in CSS AND
+   in JavaScript-driven animation. src/lib/theme/controls.ts drops the animation
+   from the style object, which covers every render; this covers the gap that
+   leaves — a visitor who changes the setting while a skeleton is already on
+   screen, where nothing would re-render to notice.
+
+   Scoped to a data attribute the kit sets rather than to `*`, deliberately. A
+   global reduced-motion reset would reach every animation in the application,
+   including Radix's mount and unmount transitions, and that is a far larger
+   change than this prompt is making. */
+@media (prefers-reduced-motion: reduce) {
+  [data-bg-animated] {
+    animation: none !important;
+  }
+}
