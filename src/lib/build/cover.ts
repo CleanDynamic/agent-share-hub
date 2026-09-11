@@ -268,12 +268,28 @@ export async function setCover(
 export const MAX_POST_MEDIA = 4;
 
 /**
- * build_media's columns plus the one this feature adds.
+ * The longest an entry's text may be: 280 characters, the length of a tweet.
+ *
+ * Exported so the composer (BG-P23) counts against the same number the database
+ * enforces. A second copy of 280 in a character counter is how an input starts
+ * accepting a sentence the CHECK then refuses, and the creator loses the text
+ * they just typed to an error they cannot act on.
+ *
+ * CHARACTERS, NOT UTF-16 UNITS. The constraint is char_length(post_text) <= 280,
+ * which counts code points, so an emoji costs one of a creator's 280 rather than
+ * the two that `"🛠".length` reports. Everything here measures the same way —
+ * see the spread in setPostMediaText — so a refusal on this side and a refusal
+ * in Postgres always agree about what fits.
+ */
+export const POST_TEXT_MAX = 280;
+
+/**
+ * build_media's columns plus the two this feature adds.
  *
  * Named rather than `*` — and built from MEDIA_COLUMNS rather than restating
  * it, so a column added to the media module cannot go missing here.
  */
-export const POST_MEDIA_COLUMNS = `${MEDIA_COLUMNS}, post_position`;
+export const POST_MEDIA_COLUMNS = `${MEDIA_COLUMNS}, post_position, post_text`;
 
 /** Why a post-media write was refused, for a caller that must tell them apart. */
 export type PostMediaErrorCode =
@@ -282,7 +298,11 @@ export type PostMediaErrorCode =
   /** The set is already full, so there is no free position to append at. */
   | "full"
   /** The same media id appeared twice, which would claim one slot twice. */
-  | "duplicate";
+  | "duplicate"
+  /** The text was longer than POST_TEXT_MAX characters. */
+  | "text_too_long"
+  /** Text was written to a row that is not one of the post's entries. */
+  | "not_in_post";
 
 /**
  * A refusal that is about the SET's rules, not about the request failing.
@@ -430,6 +450,21 @@ export async function addPostMedia(
  * Not in the set is a no-op, and deliberately not an error: removing something
  * twice — a double click, a retried request — should leave the set as the
  * caller wanted it rather than failing the second time.
+ *
+ * THE REMOVED ROW'S TEXT GOES WITH IT, and there is no extra call here to do
+ * that. set_build_post_media() clears the position and the post_text of every
+ * row leaving the set in the same statement, and hands back only the text of
+ * rows that are still in it — so the departing picture's words are gone by the
+ * time this resolves, atomically, and the post_text CHECK is never presented
+ * with a row that has text and no position.
+ *
+ * It is done there rather than here ON PURPOSE. Nulling the text from this side
+ * first would take an extra round trip AND introduce a failure this cannot
+ * have: if that write landed and the reorder then failed, the creator would be
+ * left with the picture still in their post and the caption they wrote silently
+ * gone. Inside the function it is one transaction — both, or neither.
+ * supabase/tests/bg-p07c-post-text.sql check 6 is that behaviour against a real
+ * database, which is the only place it can honestly be proved.
  */
 export async function removePostMedia(
   buildId: string,
@@ -442,6 +477,163 @@ export async function removePostMedia(
     buildId,
     current.filter((row) => row.id !== mediaId).map((row) => row.id)
   );
+}
+
+/**
+ * Write the text that sits above one of the post's pictures.
+ *
+ * ONE ROW, ONE COLUMN. Unlike setPostMedia, this changes nothing about the set
+ * or its order, so it does not need the whole-set function and does not take
+ * the whole set: an edit to the words under picture three should not rewrite
+ * picture one's position.
+ *
+ * Passing null — or a string that is only whitespace — CLEARS the text. Empty
+ * string and null render identically, so they are normalised to one state here
+ * rather than being allowed to become two indistinguishable ones in the table.
+ * At position 0 clearing does not leave the entry blank: postEntriesOf falls
+ * back to the build's description, which is where that entry's text comes from
+ * until a creator overrides it.
+ *
+ * BOTH REFUSALS ARE ALSO DATABASE CONSTRAINTS, and are checked here so the
+ * caller gets a sentence it can show rather than a PostgREST error string:
+ *
+ *   text_too_long  the CHECK caps post_text at POST_TEXT_MAX characters.
+ *                  Measured by code point, as char_length measures it — see
+ *                  the note on POST_TEXT_MAX — so this never accepts something
+ *                  Postgres would then refuse, nor refuses something it allows.
+ *   not_in_post    the CHECK also requires post_position IS NOT NULL: text
+ *                  belongs to an ENTRY of the post, not to any picture on the
+ *                  build. The read that establishes this is the same read the
+ *                  composer has already done, and it is what turns an opaque
+ *                  constraint violation into "that picture is not in the post".
+ *
+ * The length check runs BEFORE the read, because it needs no round trip to know
+ * the answer.
+ */
+export async function setPostMediaText(
+  buildId: string,
+  mediaId: string,
+  text: string | null
+): Promise<BuildMedia> {
+  const trimmed = text?.trim() || null;
+
+  // Spread, not .length: iterating a string yields code points, so an emoji
+  // counts one here exactly as it counts one in char_length().
+  const characters = trimmed === null ? 0 : [...trimmed].length;
+
+  if (characters > POST_TEXT_MAX) {
+    throw new PostMediaError(
+      "text_too_long",
+      `an entry's text is at most ${POST_TEXT_MAX} characters — ${characters} were given`
+    );
+  }
+
+  const current = await getPostMedia(buildId);
+  if (!current.some((row) => row.id === mediaId)) {
+    throw new PostMediaError(
+      "not_in_post",
+      "only a picture that is part of the post can carry text — add it to the post first"
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("build_media")
+    .update({ post_text: trimmed })
+    // build_id as well as id: the membership read above already proves this row
+    // is on this build, and pinning the write to both means a mediaId from
+    // somewhere else could not be written even if that read were ever wrong.
+    .eq("id", mediaId)
+    .eq("build_id", buildId)
+    .select(POST_MEDIA_COLUMNS)
+    .single();
+
+  if (error) throw buildLayerError("setPostMediaText", error);
+  return data as BuildMedia;
+}
+
+// --- the thread ---------------------------------------------------------------
+
+/**
+ * The media fields the thread resolver reads.
+ *
+ * Both columns are REQUIRED here, unlike CoverMedia where post_position is
+ * optional. The difference is deliberate: resolveCover has to keep working for
+ * the gallery's narrow embed, which never asked about the set, and falling
+ * through is a correct answer there. A caller asking for the THREAD is asking
+ * about the set by definition, so a row that did not select these columns is a
+ * caller bug — and a type error at the call site is a much better way to find
+ * out than a thread that silently renders as empty. Select POST_MEDIA_COLUMNS.
+ */
+export type PostEntryMedia = Pick<BuildMedia, "id" | "post_position" | "post_text">;
+
+/**
+ * The build fields the thread resolver reads. Any build row satisfies this.
+ *
+ * `outcome` IS THE DESCRIPTION. The composer asks "What does it do? One
+ * sentence, your words." and patches builds.outcome; the input is labelled
+ * "Description" for the creator because "outcome" is a word about the record,
+ * not a question about their work. There is no builds.description column in
+ * this schema — see src/components/compose/CoverStrip.tsx for the save path.
+ */
+export type PostTextSource = Pick<Build, "outcome">;
+
+/** One entry of the post: a picture, the words above it, and its place. */
+export interface PostEntry<M extends PostEntryMedia = BuildMedia> {
+  /** The picture this entry shows. */
+  media: M;
+  /** The words above it, or null when this entry has none. */
+  text: string | null;
+  /** Its place in the post, 0 to 3. */
+  position: number;
+}
+
+/**
+ * The post, as a card renders it: entries in order, each with its own text.
+ *
+ * THE ONE PLACE THE DESCRIPTION RULE LIVES. The first entry's text IS the
+ * build's one-sentence description — exactly as a tweet's text sits above its
+ * image — and it is NOT duplicated into post_text to make that true. Position 0
+ * reads builds.outcome unless the creator has overridden it; every later entry
+ * carries its own words or none. Every surface that draws the thread (BG-P09's
+ * card, BG-P23's composer preview, the build page) goes through this function,
+ * so no surface gets to reinvent the rule and none of them can drift apart.
+ *
+ * An overriding post_text at position 0 WINS, which is what makes the fallback a
+ * default rather than a lock: a creator who wants the picture introduced
+ * differently from the way the build is described can say so, and BG-P23 writes
+ * that through setPostMediaText.
+ *
+ * PURE, AND IT QUERIES NOTHING — the same discipline as resolveCover above. Its
+ * caller has the build row and the media list already, and a resolver that
+ * fetched would turn a grid of cards back into a query per card.
+ *
+ * Rows with no position are dropped rather than being given one: they are
+ * pictures hanging off a node, not entries of the post, so a caller may hand
+ * over a whole media list and get back only the thread. And the result is sorted
+ * by position rather than trusting the caller's order — getPostMedia returns
+ * them ordered, but a card that concatenated two reads, or held a stale list,
+ * would otherwise render a creator's post in an order they never chose.
+ */
+export function postEntriesOf<M extends PostEntryMedia>(
+  build: PostTextSource | null | undefined,
+  media: readonly M[]
+): PostEntry<M>[] {
+  const placed = media.filter(
+    (row): row is M & { post_position: number } => typeof row.post_position === "number"
+  );
+
+  // filter() already returned a new array, so sorting it does not disturb the
+  // list the caller handed over.
+  placed.sort((a, b) => a.post_position - b.post_position);
+
+  return placed.map((row) => ({
+    media: row,
+    position: row.post_position,
+    text:
+      row.post_position === 0
+        ? row.post_text ?? build?.outcome ?? null
+        : row.post_text,
+  }));
 }
 
 // --- the aspect maths --------------------------------------------------------
