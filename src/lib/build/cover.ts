@@ -26,8 +26,10 @@
 // that turns a grid of cards back into a query per card. That discipline is
 // what the rest of src/lib/build/ is built on and this file does not break it.
 
+import { supabase } from "@/integrations/supabase/client";
 import { updateBuild } from "./builds";
-import type { Build, BuildMedia, BuildNode } from "./types";
+import { MEDIA_COLUMNS } from "./media";
+import { buildLayerError, type Build, type BuildMedia, type BuildNode } from "./types";
 
 /**
  * The node types in the registry's `evidence` category.
@@ -74,8 +76,17 @@ export type CoverNode = Pick<BuildNode, "id" | "type" | "payload" | "is_gap"> & 
 /**
  * The media fields the chain reads. Any build_media row satisfies this, as
  * does the gallery's narrower embedded row.
+ *
+ * post_position is OPTIONAL, and that is load-bearing rather than lax. The
+ * gallery embeds a narrow column list that does not include it (BG-P09 changes
+ * that; this prompt changes no component), so requiring it would break every
+ * existing caller the moment the chain learned to read it. Absent simply means
+ * "this caller did not ask about the set", which the chain treats identically
+ * to "this build has no set" — it falls through to the links that were already
+ * there and returns exactly what it returns today.
  */
-export type CoverMedia = Pick<BuildMedia, "id" | "node_id">;
+export type CoverMedia = Pick<BuildMedia, "id" | "node_id"> &
+  Partial<Pick<BuildMedia, "post_position">>;
 
 /**
  * The media id a node points at, or null.
@@ -152,6 +163,16 @@ function byId<M extends CoverMedia>(media: readonly M[], id: string | null): M |
  * SET NULL — but a caller can be holding a build row read before the delete,
  * and a card that renders nothing because of a race is worse than one that
  * shows the next-best thing.
+ *
+ * BG-P07b PUT A STEP IN FRONT: the post's set, whose first entry is what the
+ * creator most recently said this post leads with. It changes no answer today,
+ * on purpose. builds.cover_media_id is maintained as a MIRROR of that same
+ * position-0 row by a database trigger, so for any build with a set the two
+ * steps name the same media, and for any build without one the set is empty and
+ * step 1 answers as it always has. The step earns its place when a caller
+ * starts selecting post_position: it reads the set from rows it already has in
+ * hand rather than from a column that is a copy, and it is the link that keeps
+ * working if the mirror is ever retired.
  */
 export function resolveCover<M extends CoverMedia>(
   build: CoverSource | null | undefined,
@@ -160,7 +181,13 @@ export function resolveCover<M extends CoverMedia>(
 ): M | null {
   if (!build) return null;
 
-  // 1. The creator's explicit choice.
+  // 0. The post's set, first entry. Only rows whose caller selected
+  //    post_position can match; see the note on CoverMedia.
+  const first = media.find((row) => row.post_position === 0);
+  if (first) return first;
+
+  // 1. The creator's explicit choice — and, for a build with a set, the mirror
+  //    of the row step 0 just looked for.
   const chosen = byId(media, build.cover_media_id);
   if (chosen) return chosen;
 
@@ -216,4 +243,289 @@ export async function setCover(
   mediaId: string | null
 ): Promise<Build> {
   return updateBuild(buildId, { cover_media_id: mediaId });
+}
+
+// =============================================================================
+// The post's ordered cover set (BG-P07b)
+// =============================================================================
+// Everything above this line answers "which ONE picture stands for this build".
+// Everything below answers the question that replaces it: "which pictures, in
+// which order, does this post lead with". A post shows up to four, at their own
+// aspect ratios, arranged by the creator.
+//
+// WHY THIS LIVES IN cover.ts AND NOT A NEW MODULE
+// The set and the single cover are one subject, not two. builds.cover_media_id
+// is now a MIRROR of the set's first entry — maintained by a database trigger,
+// documented in 20260911120000_build_post_media.sql — and resolveCover reads
+// both. Splitting them across two files would put an invariant on one side of a
+// module boundary and the code that depends on it on the other, which is how
+// the gallery, the build page and the compose surface ended up with three
+// different answers to the cover question before NS-P27 collapsed them here.
+//
+// THE SET IS THE SOURCE OF TRUTH. cover_media_id is derived. Write to the set.
+
+/** Four. The card's media block has four arrangements and no fifth. */
+export const MAX_POST_MEDIA = 4;
+
+/**
+ * build_media's columns plus the one this feature adds.
+ *
+ * Named rather than `*` — and built from MEDIA_COLUMNS rather than restating
+ * it, so a column added to the media module cannot go missing here.
+ */
+export const POST_MEDIA_COLUMNS = `${MEDIA_COLUMNS}, post_position`;
+
+/** Why a post-media write was refused, for a caller that must tell them apart. */
+export type PostMediaErrorCode =
+  /** More than MAX_POST_MEDIA were offered at once. */
+  | "too_many"
+  /** The set is already full, so there is no free position to append at. */
+  | "full"
+  /** The same media id appeared twice, which would claim one slot twice. */
+  | "duplicate";
+
+/**
+ * A refusal that is about the SET's rules, not about the request failing.
+ *
+ * Separate from buildLayerError because the composer (BG-P23) has to react
+ * differently: "full" is a sentence to show next to a disabled button, while a
+ * network failure is a retry. Discriminating on a message string is how that
+ * distinction rots, so the code is a field.
+ */
+export class PostMediaError extends Error {
+  readonly code: PostMediaErrorCode;
+
+  constructor(code: PostMediaErrorCode, message: string) {
+    super(message);
+    this.name = "PostMediaError";
+    this.code = code;
+  }
+}
+
+/**
+ * The post's pictures, in the creator's order.
+ *
+ * Empty is the normal answer, not a failure: only builds whose creator has
+ * arranged a set have one, and every other build renders from resolveCover's
+ * existing chain exactly as it did before this column existed.
+ *
+ * The .limit is MAX_POST_MEDIA rather than a round number because that IS the
+ * ceiling — the partial unique index and the 0..3 CHECK make more than four
+ * rows unrepresentable, so a fifth row coming back would be a corrupted table
+ * and truncating it is the right response.
+ */
+export async function getPostMedia(buildId: string): Promise<BuildMedia[]> {
+  const { data, error } = await supabase
+    .from("build_media")
+    .select(POST_MEDIA_COLUMNS)
+    .eq("build_id", buildId)
+    .not("post_position", "is", null)
+    .order("post_position", { ascending: true })
+    .limit(MAX_POST_MEDIA);
+
+  if (error) throw buildLayerError("getPostMedia", error);
+  return (data ?? []) as BuildMedia[];
+}
+
+/**
+ * Replace the whole set, in one round trip, positions taken from array order.
+ *
+ * THE WHOLE SET AT ONCE, NEVER ONE SLOT AT A TIME. Two reasons, and both are
+ * about states that must not be reachable:
+ *
+ *   The partial unique index on (build_id, post_position) cannot be deferred —
+ *   a partial unique index is an index, not a constraint, and only constraints
+ *   defer. So a reorder must never hold two rows in one slot even for an
+ *   instant, which rules out "move A to 1, then move B to 0" as separate
+ *   statements. set_build_post_media() clears every position before assigning
+ *   any, which is collision-free by construction.
+ *
+ *   Replacing a set is a clear and an assign. Split across two round trips, a
+ *   failure between them leaves the build with no pictures AND no cover — the
+ *   creator's arrangement lost because a request timed out. Inside the function
+ *   it is one transaction: all of it lands or none of it does.
+ *
+ * Passing an empty array is not an error. It is how a creator says "no set",
+ * which returns the build to resolveCover's original chain and clears the
+ * mirror with it.
+ *
+ * RLS is NOT bypassed. The function is SECURITY INVOKER, so build_media's own
+ * UPDATE policy decides whether this caller may rearrange this build — a media
+ * id the caller cannot write is a row that did not match, and the function
+ * raises rather than silently writing a shorter set.
+ */
+export async function setPostMedia(
+  buildId: string,
+  mediaIds: readonly string[]
+): Promise<BuildMedia[]> {
+  const ids = [...mediaIds];
+
+  if (ids.length > MAX_POST_MEDIA) {
+    throw new PostMediaError(
+      "too_many",
+      `a post shows at most ${MAX_POST_MEDIA} pictures — ${ids.length} were given`
+    );
+  }
+
+  // Checked here as well as in the database because the caller can be told
+  // WHICH rule it broke, and because a duplicate is a composer bug worth
+  // failing on before it reaches the wire.
+  if (new Set(ids).size !== ids.length) {
+    throw new PostMediaError(
+      "duplicate",
+      "the same media cannot hold two positions in one post"
+    );
+  }
+
+  const { data, error } = await supabase
+    .rpc("set_build_post_media", { p_build_id: buildId, p_media_ids: ids })
+    .select(POST_MEDIA_COLUMNS)
+    .limit(MAX_POST_MEDIA);
+
+  if (error) throw buildLayerError("setPostMedia", error);
+  return (data ?? []) as unknown as BuildMedia[];
+}
+
+/**
+ * Append one picture at the next free position.
+ *
+ * Reads the set first, which is unavoidable: "the next free position" is a
+ * fact about the current set, and computing it in the database would mean a
+ * second function whose only difference from the first is where the array came
+ * from. The read also produces the "full" refusal, which is the answer the
+ * composer actually needs.
+ *
+ * Already in the set is a no-op rather than an error. Dropping a picture onto
+ * a slot it already occupies is not a mistake worth a message, and appending it
+ * again would be the duplicate the database refuses anyway.
+ */
+export async function addPostMedia(
+  buildId: string,
+  mediaId: string
+): Promise<BuildMedia[]> {
+  const current = await getPostMedia(buildId);
+  if (current.some((row) => row.id === mediaId)) return current;
+
+  if (current.length >= MAX_POST_MEDIA) {
+    throw new PostMediaError(
+      "full",
+      `this post already shows ${MAX_POST_MEDIA} pictures — remove one first`
+    );
+  }
+
+  return setPostMedia(buildId, [...current.map((row) => row.id), mediaId]);
+}
+
+/**
+ * Take one picture out of the set, closing the gap behind it.
+ *
+ * Positions stay DENSE: removing the middle of three leaves 0 and 1, not 0 and
+ * 2. That is not tidiness — BG-P09's media block selects its arrangement by
+ * counting the set, and a hole would make a three-picture post index a slot
+ * that has nothing in it.
+ *
+ * The gap closes for free because setPostMedia assigns positions from array
+ * order, so filtering the id out of the current order IS the renumbering.
+ *
+ * Not in the set is a no-op, and deliberately not an error: removing something
+ * twice — a double click, a retried request — should leave the set as the
+ * caller wanted it rather than failing the second time.
+ */
+export async function removePostMedia(
+  buildId: string,
+  mediaId: string
+): Promise<BuildMedia[]> {
+  const current = await getPostMedia(buildId);
+  if (!current.some((row) => row.id === mediaId)) return current;
+
+  return setPostMedia(
+    buildId,
+    current.filter((row) => row.id !== mediaId).map((row) => row.id)
+  );
+}
+
+// --- the aspect maths --------------------------------------------------------
+//
+// Three surfaces need this and they must agree: the card's media block (BG-P09),
+// the composer's arrangement preview (BG-P23), and the build page. If each did
+// its own clamping, a picture would be framed one way in the composer and
+// another way on the card, and the creator would be arranging something other
+// than what readers see.
+
+/**
+ * The tallest a picture is allowed to be: 3:4 portrait.
+ *
+ * Below this a single picture would push everything under it off the screen on
+ * a phone, so a taller one is shown cropped to 3:4 rather than at its own
+ * ratio.
+ */
+export const ASPECT_CAP_MIN = 0.75;
+
+/**
+ * The widest: 2:1.
+ *
+ * A panorama at its true ratio becomes a letterbox a few pixels tall inside a
+ * card column, which shows nothing. Cropping to 2:1 shows the middle of it.
+ */
+export const ASPECT_CAP_MAX = 2.0;
+
+/**
+ * What a picture with no stored dimensions is assumed to be: 3:2 landscape.
+ *
+ * Not a cap — a default. It sits inside the capped range on purpose, so an
+ * assumed ratio is never reported as cropped.
+ */
+export const ASSUMED_ASPECT = 1.5;
+
+export interface Aspect {
+  /** The media's true width / height, or ASSUMED_ASPECT if it has none. */
+  ratio: number;
+  /** `ratio` clamped to [ASPECT_CAP_MIN, ASPECT_CAP_MAX]. Frame with this. */
+  capped: number;
+  /** Whether the clamp bit — i.e. whether rendering at `capped` crops. */
+  cropped: boolean;
+}
+
+/**
+ * What shape to frame a picture at.
+ *
+ * `ratio` is the truth, `capped` is what to render, and `cropped` says whether
+ * those differ — a caller that wants to mark a cropped picture, or offer a
+ * "show whole image" affordance, reads the third field rather than comparing
+ * the first two in floating point.
+ *
+ * MISSING DIMENSIONS DO NOT THROW AND DO NOT RETURN NaN. width and height are
+ * populated by a browser-side probe at upload (see probeFile in media.ts) and
+ * that probe is tolerant by design: a decoder that is absent, or a format the
+ * browser will not decode, leaves both columns null rather than costing the
+ * creator their upload. Those rows exist, they render, and the honest thing to
+ * do with one is assume landscape and carry on — a card that threw on an
+ * undescribed image would take the whole gallery down with it.
+ *
+ * A ratio is also treated as missing when it is zero, negative or not finite,
+ * which covers a stored 0 as well as a null and means no caller can be handed
+ * a number it cannot divide by.
+ */
+export function aspectOf(
+  media: Partial<Pick<BuildMedia, "width" | "height">> | null | undefined
+): Aspect {
+  const width = media?.width ?? null;
+  const height = media?.height ?? null;
+
+  const usable =
+    typeof width === "number" &&
+    typeof height === "number" &&
+    Number.isFinite(width) &&
+    Number.isFinite(height) &&
+    width > 0 &&
+    height > 0;
+
+  if (!usable) {
+    return { ratio: ASSUMED_ASPECT, capped: ASSUMED_ASPECT, cropped: false };
+  }
+
+  const ratio = width / height;
+  const capped = Math.min(ASPECT_CAP_MAX, Math.max(ASPECT_CAP_MIN, ratio));
+
+  return { ratio, capped, cropped: capped !== ratio };
 }
