@@ -363,3 +363,397 @@ describe("setCover", () => {
     });
   });
 });
+
+// =============================================================================
+// The post's ordered cover set (BG-P07b)
+// =============================================================================
+// WHAT IS PROVED HERE AND WHAT IS PROVED IN POSTGRES — read this before adding
+// a case, because putting one in the wrong file makes it worthless.
+//
+// A vitest double cannot prove a CHECK, a partial unique index, a trigger or a
+// policy. Asserting that "setting position 0 updates cover_media_id" against a
+// fake that implements the mirror itself would only prove the fake, which is
+// the most expensive kind of passing test. So the mirror, the constraints, the
+// gap-closing at the row level and the RLS refusal are asserted against a real
+// database by supabase/tests/bg-p07b-post-media.sql — nine checks, run and
+// passing against a PostgreSQL 16.13 head-state built from this repository's
+// own migrations, and confirmed to FAIL on check 1 before the migration.
+//
+// What belongs here is everything that is a fact about TypeScript: the pure
+// maths of aspectOf, resolveCover's ordering, and — for each accessor — the
+// exact call the data layer makes, which is the half of the mirror contract
+// this side owns. setPostMedia sending the array in the creator's order IS
+// "position 0 is the first entry"; the trigger turns that into cover_media_id.
+
+const rpcState = vi.hoisted(() => ({
+  calls: [] as Array<{ method: string; args: unknown[] }>,
+  response: { data: [] as unknown, error: null as unknown },
+}));
+
+vi.mock("@/integrations/supabase/client", () => {
+  const chain: Record<string, unknown> = {};
+  for (const method of ["from", "select", "eq", "not", "order", "limit", "rpc"]) {
+    chain[method] = (...args: unknown[]) => {
+      rpcState.calls.push({ method, args });
+      return chain;
+    };
+  }
+  // PostgREST builders are thenable, not promises; awaiting one runs the query.
+  chain.then = (resolve: (value: unknown) => unknown) => resolve(rpcState.response);
+  return { supabase: chain };
+});
+
+import {
+  ASPECT_CAP_MAX,
+  ASPECT_CAP_MIN,
+  ASSUMED_ASPECT,
+  MAX_POST_MEDIA,
+  POST_MEDIA_COLUMNS,
+  PostMediaError,
+  addPostMedia,
+  aspectOf,
+  getPostMedia,
+  removePostMedia,
+  setPostMedia,
+} from "@/lib/build/cover";
+
+/** The args of the first call to `method`, or undefined if it was never made. */
+function argsOf(method: string): unknown[] | undefined {
+  return rpcState.calls.find((call) => call.method === method)?.args;
+}
+
+/** Every call to `method`, in order. */
+function allArgsOf(method: string): unknown[][] {
+  return rpcState.calls.filter((call) => call.method === method).map((call) => call.args);
+}
+
+function resetSupabase(data: unknown = [], error: unknown = null) {
+  rpcState.calls.length = 0;
+  rpcState.response = { data, error };
+}
+
+/** A row as the set returns it: media() plus a position. */
+function placed(id: string, position: number, overrides: Partial<BuildMedia> = {}) {
+  return media(id, { post_position: position, ...overrides });
+}
+
+// --- resolveCover, with the set in front of it -------------------------------
+
+describe("resolveCover: link 0, the post's set", () => {
+  it("prefers the position-0 row over everything below it", () => {
+    const rows = [
+      media("m-cover"),
+      placed("m-first", 0),
+      placed("m-second", 1),
+    ];
+    const tree = [node("n-hero", "screenshot", { payload: { media_id: "m-hero" } as Json })];
+
+    expect(
+      resolveCover(header({ cover_media_id: "m-cover", hero_node_id: "n-hero" }), tree, rows)?.id
+    ).toBe("m-first");
+  });
+
+  it("takes position 0 specifically, not merely the first row carrying a position", () => {
+    // The list arrives ordered by the query, but a caller that concatenated two
+    // pages, or held rows from a stale read, could hand them over in any order.
+    const rows = [placed("m-third", 2), placed("m-second", 1), placed("m-first", 0)];
+    expect(resolveCover(header(), [], rows)?.id).toBe("m-first");
+  });
+
+  it("falls back to the existing chain when the set is EMPTY", () => {
+    // The whole reason nothing on the running site moves: no build has a set
+    // yet, so every card resolves exactly as it did before this prompt.
+    const rows = [media("m-cover"), media("m-evidence", { node_id: "n-shot" })];
+    const tree = [node("n-shot", "screenshot")];
+
+    expect(resolveCover(header({ cover_media_id: "m-cover" }), tree, rows)?.id).toBe("m-cover");
+    expect(resolveCover(header(), tree, rows)?.id).toBe("m-evidence");
+  });
+
+  it("falls back when the caller did not SELECT post_position at all", () => {
+    // The gallery's embed does not name the column, so its rows carry
+    // undefined. Undefined must read as "no set", never as position 0 — the
+    // former falls through, the latter would put an arbitrary row on the card.
+    const rows = [
+      { id: "m-a", node_id: null },
+      { id: "m-cover", node_id: null },
+    ];
+
+    expect(resolveCover(header({ cover_media_id: "m-cover" }), [], rows)?.id).toBe("m-cover");
+  });
+
+  it("still returns null for a build with no set, no cover, no hero and no evidence", () => {
+    expect(resolveCover(header(), [node("n-prompt", "prompt")], [media("m-orphan")])).toBeNull();
+  });
+});
+
+// --- the accessors -----------------------------------------------------------
+
+describe("getPostMedia", () => {
+  beforeEach(() => resetSupabase([]));
+
+  it("asks for the set by position, named columns, capped at four", async () => {
+    await getPostMedia(BUILD_ID);
+
+    expect(argsOf("from")).toEqual(["build_media"]);
+    expect(argsOf("select")).toEqual([POST_MEDIA_COLUMNS]);
+    expect(argsOf("eq")).toEqual(["build_id", BUILD_ID]);
+    expect(argsOf("not")).toEqual(["post_position", "is", null]);
+    expect(argsOf("order")).toEqual(["post_position", { ascending: true }]);
+    expect(argsOf("limit")).toEqual([MAX_POST_MEDIA]);
+  });
+
+  it("names post_position on top of the media module's own column list", () => {
+    // Built from MEDIA_COLUMNS rather than restated, so a column added there
+    // cannot go missing here. And never `*` — see the review rules.
+    expect(POST_MEDIA_COLUMNS).toContain("post_position");
+    expect(POST_MEDIA_COLUMNS).toContain("width");
+    expect(POST_MEDIA_COLUMNS).toContain("height");
+    expect(POST_MEDIA_COLUMNS).not.toContain("*");
+  });
+
+  it("answers an empty set with an empty array, which is the normal case", async () => {
+    resetSupabase(null);
+    await expect(getPostMedia(BUILD_ID)).resolves.toEqual([]);
+  });
+
+  it("throws through buildLayerError when the query fails", async () => {
+    resetSupabase(null, { message: "boom" });
+    await expect(getPostMedia(BUILD_ID)).rejects.toThrow("getPostMedia failed: boom");
+  });
+});
+
+describe("setPostMedia", () => {
+  beforeEach(() => resetSupabase([]));
+
+  it("sends the whole set in ONE call, in the creator's order", async () => {
+    await setPostMedia(BUILD_ID, ["m-a", "m-b", "m-c"]);
+
+    expect(allArgsOf("rpc")).toHaveLength(1);
+    expect(argsOf("rpc")).toEqual([
+      "set_build_post_media",
+      { p_build_id: BUILD_ID, p_media_ids: ["m-a", "m-b", "m-c"] },
+    ]);
+  });
+
+  it("puts the intended cover FIRST, which is the mirror's half of the contract", async () => {
+    // The trigger turns "first entry" into builds.cover_media_id. Proving the
+    // trigger is supabase/tests/bg-p07b-post-media.sql check 3; proving the
+    // array reaches it in the right order is this side's job.
+    await setPostMedia(BUILD_ID, ["m-cover", "m-b"]);
+
+    const [, args] = argsOf("rpc") as [string, { p_media_ids: string[] }];
+    expect(args.p_media_ids[0]).toBe("m-cover");
+  });
+
+  it("clears the set — and with it the mirror — by sending an empty array", async () => {
+    await setPostMedia(BUILD_ID, []);
+
+    const [, args] = argsOf("rpc") as [string, { p_media_ids: string[] }];
+    expect(args.p_media_ids).toEqual([]);
+  });
+
+  it("rejects a FIFTH before it reaches the wire, with a named error", async () => {
+    await expect(
+      setPostMedia(BUILD_ID, ["m-a", "m-b", "m-c", "m-d", "m-e"])
+    ).rejects.toBeInstanceOf(PostMediaError);
+
+    await expect(
+      setPostMedia(BUILD_ID, ["m-a", "m-b", "m-c", "m-d", "m-e"])
+    ).rejects.toMatchObject({ name: "PostMediaError", code: "too_many" });
+
+    expect(allArgsOf("rpc")).toHaveLength(0);
+  });
+
+  it("accepts exactly four, so the limit is four and not three", async () => {
+    await expect(
+      setPostMedia(BUILD_ID, ["m-a", "m-b", "m-c", "m-d"])
+    ).resolves.toEqual([]);
+    expect(allArgsOf("rpc")).toHaveLength(1);
+  });
+
+  it("rejects the same media twice, which would claim one slot twice", async () => {
+    await expect(setPostMedia(BUILD_ID, ["m-a", "m-a"])).rejects.toMatchObject({
+      code: "duplicate",
+    });
+    expect(allArgsOf("rpc")).toHaveLength(0);
+  });
+
+  it("names the columns it reads back rather than taking the function's row type", async () => {
+    await setPostMedia(BUILD_ID, ["m-a"]);
+    expect(argsOf("select")).toEqual([POST_MEDIA_COLUMNS]);
+    expect(argsOf("limit")).toEqual([MAX_POST_MEDIA]);
+  });
+
+  it("does not mutate the array it was handed", async () => {
+    const ids = ["m-a", "m-b"];
+    await setPostMedia(BUILD_ID, ids);
+    expect(ids).toEqual(["m-a", "m-b"]);
+  });
+
+  it("throws through buildLayerError when the database refuses", async () => {
+    resetSupabase(null, { message: "post_media_not_on_build: 1 of 1" });
+    await expect(setPostMedia(BUILD_ID, ["m-x"])).rejects.toThrow(
+      "setPostMedia failed: post_media_not_on_build: 1 of 1"
+    );
+  });
+});
+
+describe("addPostMedia", () => {
+  it("appends at the end of the current order", async () => {
+    resetSupabase([placed("m-a", 0), placed("m-b", 1)]);
+    await addPostMedia(BUILD_ID, "m-c");
+
+    const [, args] = argsOf("rpc") as [string, { p_media_ids: string[] }];
+    expect(args.p_media_ids).toEqual(["m-a", "m-b", "m-c"]);
+  });
+
+  it("appends into slot 0 on a build with no set, which sets the cover", async () => {
+    resetSupabase([]);
+    await addPostMedia(BUILD_ID, "m-first");
+
+    const [, args] = argsOf("rpc") as [string, { p_media_ids: string[] }];
+    expect(args.p_media_ids).toEqual(["m-first"]);
+  });
+
+  it("refuses a fifth with the FULL code, which reads differently to too_many", async () => {
+    // The composer shows this next to a disabled button; too_many is a bug in
+    // the caller. Discriminating on a message string is how that rots.
+    resetSupabase([placed("m-a", 0), placed("m-b", 1), placed("m-c", 2), placed("m-d", 3)]);
+
+    await expect(addPostMedia(BUILD_ID, "m-e")).rejects.toMatchObject({
+      name: "PostMediaError",
+      code: "full",
+    });
+    expect(allArgsOf("rpc")).toHaveLength(0);
+  });
+
+  it("is a no-op for a picture already in the set", async () => {
+    resetSupabase([placed("m-a", 0), placed("m-b", 1)]);
+    const result = await addPostMedia(BUILD_ID, "m-b");
+
+    expect(allArgsOf("rpc")).toHaveLength(0);
+    expect(result.map((row) => row.id)).toEqual(["m-a", "m-b"]);
+  });
+});
+
+describe("removePostMedia", () => {
+  it("CLOSES THE GAP when the middle one goes", async () => {
+    resetSupabase([placed("m-a", 0), placed("m-b", 1), placed("m-c", 2)]);
+    await removePostMedia(BUILD_ID, "m-b");
+
+    // Positions come from array index, so the survivors land on 0 and 1 — there
+    // is no way to express a hole through this call.
+    const [, args] = argsOf("rpc") as [string, { p_media_ids: string[] }];
+    expect(args.p_media_ids).toEqual(["m-a", "m-c"]);
+  });
+
+  it("promotes the second picture when the FIRST goes, moving the cover with it", async () => {
+    resetSupabase([placed("m-a", 0), placed("m-b", 1)]);
+    await removePostMedia(BUILD_ID, "m-a");
+
+    const [, args] = argsOf("rpc") as [string, { p_media_ids: string[] }];
+    expect(args.p_media_ids).toEqual(["m-b"]);
+  });
+
+  it("empties the set when the last one goes", async () => {
+    resetSupabase([placed("m-only", 0)]);
+    await removePostMedia(BUILD_ID, "m-only");
+
+    const [, args] = argsOf("rpc") as [string, { p_media_ids: string[] }];
+    expect(args.p_media_ids).toEqual([]);
+  });
+
+  it("is a no-op for a picture that was never in the set", async () => {
+    // A double click, or a retried request. The second attempt should leave the
+    // set where the caller wanted it rather than failing.
+    resetSupabase([placed("m-a", 0)]);
+    const result = await removePostMedia(BUILD_ID, "m-gone");
+
+    expect(allArgsOf("rpc")).toHaveLength(0);
+    expect(result.map((row) => row.id)).toEqual(["m-a"]);
+  });
+});
+
+// --- the aspect maths --------------------------------------------------------
+
+describe("aspectOf", () => {
+  it("caps a 5:1 panorama to 2.0 and says it cropped", () => {
+    expect(aspectOf({ width: 5000, height: 1000 })).toEqual({
+      ratio: 5,
+      capped: ASPECT_CAP_MAX,
+      cropped: true,
+    });
+  });
+
+  it("caps a 1:3 tall shot to 0.75 and says it cropped", () => {
+    const { ratio, capped, cropped } = aspectOf({ width: 1000, height: 3000 });
+    expect(ratio).toBeCloseTo(1 / 3, 10);
+    expect(capped).toBe(ASPECT_CAP_MIN);
+    expect(cropped).toBe(true);
+  });
+
+  it("passes a 16:9 through untouched", () => {
+    const { ratio, capped, cropped } = aspectOf({ width: 1920, height: 1080 });
+    expect(ratio).toBeCloseTo(16 / 9, 10);
+    expect(capped).toBe(ratio);
+    expect(cropped).toBe(false);
+  });
+
+  it("survives a row with null dimensions by assuming landscape", () => {
+    // probeFile in media.ts is tolerant by design — a decoder that is absent
+    // leaves both columns null rather than costing the creator their upload.
+    // A card that threw on one of those rows would take the gallery down.
+    expect(aspectOf({ width: null, height: null })).toEqual({
+      ratio: ASSUMED_ASPECT,
+      capped: ASSUMED_ASPECT,
+      cropped: false,
+    });
+  });
+
+  it("treats a missing row, a half-measured row and a zero the same way", () => {
+    for (const input of [
+      null,
+      undefined,
+      {},
+      { width: 1200, height: null },
+      { width: null, height: 800 },
+      { width: 0, height: 800 },
+      { width: 1200, height: 0 },
+      { width: -1200, height: 800 },
+    ]) {
+      expect(aspectOf(input), JSON.stringify(input)).toEqual({
+        ratio: ASSUMED_ASPECT,
+        capped: ASSUMED_ASPECT,
+        cropped: false,
+      });
+    }
+  });
+
+  it("does not report an assumed ratio as cropped, because the default sits inside the caps", () => {
+    expect(ASSUMED_ASPECT).toBeGreaterThanOrEqual(ASPECT_CAP_MIN);
+    expect(ASSUMED_ASPECT).toBeLessThanOrEqual(ASPECT_CAP_MAX);
+  });
+
+  it("holds the boundaries themselves without calling them cropped", () => {
+    // Exactly 3:4 and exactly 2:1 are inside the range, not outside it.
+    expect(aspectOf({ width: 300, height: 400 })).toEqual({
+      ratio: ASPECT_CAP_MIN,
+      capped: ASPECT_CAP_MIN,
+      cropped: false,
+    });
+    expect(aspectOf({ width: 2000, height: 1000 })).toEqual({
+      ratio: ASPECT_CAP_MAX,
+      capped: ASPECT_CAP_MAX,
+      cropped: false,
+    });
+  });
+
+  it("exports the caps so no surface hardcodes them", () => {
+    // Three surfaces need the same maths: the card's media block (BG-P09), the
+    // composer's preview (BG-P23) and the build page. A second copy of 0.75 is
+    // how the composer starts framing a picture differently to the card.
+    expect(ASPECT_CAP_MIN).toBe(0.75);
+    expect(ASPECT_CAP_MAX).toBe(2.0);
+  });
+});

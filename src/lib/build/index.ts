@@ -57,13 +57,26 @@ export {
   type UploadMediaInput,
 } from "./media";
 export {
+  ASPECT_CAP_MAX,
+  ASPECT_CAP_MIN,
+  ASSUMED_ASPECT,
   EVIDENCE_NODE_TYPES,
+  MAX_POST_MEDIA,
+  POST_MEDIA_COLUMNS,
+  PostMediaError,
+  addPostMedia,
+  aspectOf,
+  getPostMedia,
   nodeMediaId,
+  removePostMedia,
   resolveCover,
   setCover,
+  setPostMedia,
+  type Aspect,
   type CoverMedia,
   type CoverNode,
   type CoverSource,
+  type PostMediaErrorCode,
 } from "./cover";
 export { GAP_PROBLEM_KEY, collectGaps, gapProblem, gapProblemPatch } from "./gaps";
 export {
