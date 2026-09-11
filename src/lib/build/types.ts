@@ -13,6 +13,13 @@ import type {
 
 // --- row types ---------------------------------------------------------------
 
+/**
+ * Re-exported so `@/lib/build` is one import for a row type and the Json its
+ * payload columns are typed as. cover.test.ts has imported it from here since
+ * NS-P27; without the re-export that import resolves to nothing.
+ */
+export type { Json };
+
 export type Build = Tables<"builds">;
 export type BuildNode = Tables<"build_nodes">;
 export type BuildEvent = Tables<"build_events">;
