@@ -125,6 +125,23 @@ export interface ControlState {
 export const ring = (focusVisible: boolean | undefined): CSSProperties =>
   focusVisible ? { ...focusRing } : {};
 
+/**
+ * The same ring, as Tailwind utilities, for elements that track no other state.
+ *
+ * WHEN TO USE WHICH. A control that already re-renders on hover — every button,
+ * field, chip, tab and toggle in this kit — gets the ring from `ring()` above,
+ * because the state it needs is being tracked anyway and the ring rides along
+ * for free. A focusable element with NO hover behaviour, such as a tab panel,
+ * would have to grow a `useState` and re-render its whole subtree purely to
+ * draw an outline; those take this instead.
+ *
+ * The two are held to the same values by `controls.test.ts`, so this cannot
+ * drift into a second ring — which is the thing `focus.ts` exists to prevent.
+ */
+export const FOCUS_RING_CLASS =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 " +
+  "focus-visible:outline-[color:var(--lit)]";
+
 /* ── Buttons ──────────────────────────────────────────────────────────────────
    Four treatments, mapped onto the six shadcn variant names so that no consumer
    has to change a single prop:
@@ -387,29 +404,49 @@ export const tabsListStyle: CSSProperties = {
 };
 
 /**
- * A tab.
+ * A tab — the parts that do not depend on which tab is current.
  *
- * The active tab is marked by an `--action` underline rather than by a filled
- * pill: the row is a set of labels with one of them current, and a fill would
- * make the current one read as a button while its neighbours read as text.
+ * See `TAB_TRIGGER_CLASS` for the active state and the note on why it is not
+ * here.
  */
-export function tabTriggerStyle(state: ControlState & { active?: boolean } = {}): CSSProperties {
-  const { active, hovered, focusVisible, disabled } = state;
-  const live = !disabled;
+export function tabTriggerStyle(state: ControlState = {}): CSSProperties {
+  const { focusVisible, disabled } = state;
 
   return {
-    background: active ? t.glass : "transparent",
-    color: active ? t.text : t.text2,
     borderRadius: r.chip,
-    boxShadow: active ? `inset 0 -2px 0 0 ${t.action}` : undefined,
     transition: uiTransition(),
     cursor: disabled ? "not-allowed" : "pointer",
-    ...(live && hovered && !active ? { color: t.text } : {}),
-    ...ring(live && focusVisible),
+    ...ring(!disabled && focusVisible),
   };
 }
 
-/* ── Switch, checkbox, radio ──────────────────────────────────────────────── */
+/**
+ * The active tab, marked by an `--action` underline rather than by a filled
+ * pill: the row is a set of labels with one of them current, and a fill would
+ * make the current one read as a button while its neighbours read as text.
+ *
+ * The underline is an INSET BOX-SHADOW, not a border. A border would add 2px to
+ * the trigger and shift every tab in the row the moment one became active —
+ * a layout change, which this restyle is not allowed to make.
+ */
+export const TAB_TRIGGER_CLASS =
+  "text-[color:var(--text2)] hover:text-[color:var(--text)] " +
+  "data-[state=active]:bg-[color:var(--glass)] data-[state=active]:text-[color:var(--text)] " +
+  "data-[state=active]:shadow-[inset_0_-2px_0_0_var(--action)]";
+
+/* ── Switch, checkbox, radio ──────────────────────────────────────────────────
+   WHY THE CHECKED COLOURS ARE CLASSES AND THE REST IS INLINE. Radix publishes
+   checked-ness as `data-state="checked"` on the element, and these controls are
+   used uncontrolled as often as controlled, so a style object simply cannot
+   know. Re-deriving the state in React would mean shadowing Radix's own source
+   of truth and getting the uncontrolled case wrong.
+
+   So every property that CHANGES with checked-ness lives in the class constant
+   and every property that does not lives in the style object — split on that
+   line exactly, so the two mechanisms never own the same property. Anything
+   inline would win over the class and silently pin the control to one state,
+   which is the failure this split exists to prevent.
+   ─────────────────────────────────────────────────────────────────────────── */
 
 /**
  * The switch track at `--r-control` — 12px, NOT a pill.
@@ -422,27 +459,32 @@ export function tabTriggerStyle(state: ControlState & { active?: boolean } = {})
  * the one pill left in the system, which is worse than a switch that looks
  * slightly unfamiliar. The THUMB stays circular, because it is a circle.
  */
-export function switchTrackStyle(state: ControlState & { checked?: boolean } = {}): CSSProperties {
-  const { checked, hovered, focusVisible, disabled } = state;
-  const live = !disabled;
+export function switchTrackStyle(state: ControlState = {}): CSSProperties {
+  const { focusVisible, disabled } = state;
 
+  /* NO `borderWidth` HERE, DELIBERATELY. The track keeps the `border-2` it has
+     always had, because that 2px is load-bearing geometry, not decoration:
+     w-11 is 44px, two 2px borders leave a 40px inner track, and the thumb is
+     20px travelling exactly 20px to sit flush at each end. Narrowing the border
+     to 1px would widen the inner track to 42px and leave the thumb 2px short of
+     the right edge — a visible misalignment produced by a purely visual change,
+     which is the kind of thing this restyle must not do. Only the border's
+     COLOUR is ours; its width belongs to the layout. */
   return {
-    background: checked ? t.action : t.recess,
-    borderColor: checked ? t.action : t.line,
-    borderWidth: 1,
-    borderStyle: "solid",
     borderRadius: r.control,
     transition: uiTransition(),
     cursor: disabled ? "not-allowed" : "pointer",
-    ...(live && hovered && !checked ? { borderColor: t.text2 } : {}),
-    ...ring(live && focusVisible),
+    ...ring(!disabled && focusVisible),
   };
 }
 
+export const SWITCH_TRACK_CLASS =
+  "bg-[color:var(--recess)] border-[color:var(--line)] hover:border-[color:var(--text2)] " +
+  "data-[state=checked]:bg-[color:var(--action)] data-[state=checked]:border-[color:var(--action)]";
+
 /** The thumb. Circular — `--r-full` is correct here and almost nowhere else. */
-export function switchThumbStyle(checked: boolean): CSSProperties {
+export function switchThumbStyle(): CSSProperties {
   return {
-    background: checked ? t.onAction : t.text2,
     borderRadius: r.full,
     transition: prefersReducedMotion()
       ? "none"
@@ -450,50 +492,55 @@ export function switchThumbStyle(checked: boolean): CSSProperties {
   };
 }
 
+export const SWITCH_THUMB_CLASS =
+  "bg-[color:var(--text2)] data-[state=checked]:bg-[color:var(--on-action)]";
+
 /** The checkbox box at `--r-chip` — the scale's smallest step, as specified. */
-export function checkboxStyle(state: ControlState & { checked?: boolean } = {}): CSSProperties {
-  const { checked, hovered, focusVisible, disabled } = state;
-  const live = !disabled;
+export function checkboxStyle(state: ControlState = {}): CSSProperties {
+  const { focusVisible, disabled } = state;
 
   return {
-    background: checked ? t.action : t.recess,
-    color: checked ? t.onAction : "transparent",
-    borderColor: checked ? t.action : t.line,
     borderWidth: 1,
     borderStyle: "solid",
     borderRadius: r.chip,
     transition: uiTransition(),
     cursor: disabled ? "not-allowed" : "pointer",
-    ...(live && hovered && !checked ? { borderColor: t.text2 } : {}),
-    ...ring(live && focusVisible),
+    ...ring(!disabled && focusVisible),
   };
 }
+
+export const CHECKBOX_CLASS =
+  "bg-[color:var(--recess)] border-[color:var(--line)] hover:border-[color:var(--text2)] " +
+  "data-[state=checked]:bg-[color:var(--action)] data-[state=checked]:border-[color:var(--action)] " +
+  "data-[state=checked]:text-[color:var(--on-action)] " +
+  "data-[state=indeterminate]:bg-[color:var(--action)] data-[state=indeterminate]:border-[color:var(--action)] " +
+  "data-[state=indeterminate]:text-[color:var(--on-action)]";
 
 /**
  * The radio, which IS circular and therefore IS `--r-full`.
  *
  * The shape is the affordance here: a round control is single-choice and a
- * square one is multiple-choice, and that convention is older and better known
- * than this theme. Squaring it to satisfy "nothing is a pill" would trade a
- * real signal for a cosmetic consistency.
+ * square one is multiple-choice, and that convention is older and far better
+ * known than this theme. Squaring it to satisfy "nothing is a pill" would trade
+ * a real signal for a cosmetic consistency, so the radius scale's own rule —
+ * `--r-full` is for circular things — is what applies, and a radio is one.
  */
-export function radioStyle(state: ControlState & { checked?: boolean } = {}): CSSProperties {
-  const { checked, hovered, focusVisible, disabled } = state;
-  const live = !disabled;
+export function radioStyle(state: ControlState = {}): CSSProperties {
+  const { focusVisible, disabled } = state;
 
   return {
-    background: t.recess,
-    color: t.action,
-    borderColor: checked ? t.action : t.line,
     borderWidth: 1,
     borderStyle: "solid",
     borderRadius: r.full,
     transition: uiTransition(),
     cursor: disabled ? "not-allowed" : "pointer",
-    ...(live && hovered && !checked ? { borderColor: t.text2 } : {}),
-    ...ring(live && focusVisible),
+    ...ring(!disabled && focusVisible),
   };
 }
+
+export const RADIO_CLASS =
+  "bg-[color:var(--recess)] border-[color:var(--line)] hover:border-[color:var(--text2)] " +
+  "text-[color:var(--action)] data-[state=checked]:border-[color:var(--action)]";
 
 /* ── Overlays ─────────────────────────────────────────────────────────────────
    Menus, popovers, tooltips, dialogs and sheets.
