@@ -68,10 +68,16 @@ export function ThemeToggle() {
       role="radiogroup"
       aria-label="Theme"
       onKeyDown={onKeyDown}
+      /* NO PADDING HERE, AND THAT IS NOT AN OVERSIGHT. `display` and `gap` are
+         BG-P02's and are left exactly as they were; a `padding: 2` would have
+         inset the active segment neatly from the group's border, but padding is
+         structural and this prompt restyles rather than relayouts. The active
+         segment therefore meets the group's hairline directly. If that reads
+         tight, the fix is a padding change and belongs to the prompt that owns
+         this surface's layout — reported, not quietly taken. */
       style={{
         display: "flex",
         gap: 2,
-        padding: 2,
         ...themeToggleGroupStyle,
       }}
     >

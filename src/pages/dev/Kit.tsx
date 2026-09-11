@@ -254,7 +254,7 @@ export default function Kit() {
       </Section>
 
       <Section title="Tabs">
-        <Tabs defaultValue="one" style={{ width: "100%" }}>
+        <Tabs defaultValue="one">
           <TabsList>
             <TabsTrigger value="one">First</TabsTrigger>
             <TabsTrigger value="two">Second</TabsTrigger>
