@@ -531,6 +531,7 @@ export type Database = {
           node_id: string | null
           path: string
           post_position: number | null
+          post_text: string | null
           poster_path: string | null
           width: number | null
         }
@@ -550,6 +551,7 @@ export type Database = {
           node_id?: string | null
           path: string
           post_position?: number | null
+          post_text?: string | null
           poster_path?: string | null
           width?: number | null
         }
@@ -569,6 +571,7 @@ export type Database = {
           node_id?: string | null
           path?: string
           post_position?: number | null
+          post_text?: string | null
           poster_path?: string | null
           width?: number | null
         }
