@@ -98,6 +98,24 @@ const ConvertPrompt = lazy(() => import("./components/build/ConvertPrompt"));
    It is lazy for the same reason every heavy route here is, and it is linked
    from nowhere. BG-P30's audit and the prompts after it reach it by URL. */
 const Kit = import.meta.env.DEV ? lazy(() => import("./pages/dev/Kit")) : null;
+
+/* BG-P14 — /dev/wide, the wide-layout demo.
+
+   GUARDED THE SAME WAY AND FOR THE SAME REASON as /dev/kit above: Vite
+   replaces `import.meta.env.DEV` with the literal `false` in a production
+   build, Rollup eliminates the dead branch, and no chunk for the page is
+   emitted at all.
+
+   REGISTERED INSIDE <Layout />, UNLIKE /dev/kit, because the thing it exists
+   to show is the frame around the page. It is the only route that renders
+   wide: the wide-route table (src/components/shell/wideRoutes.ts) carries
+   these two paths under the same DEV guard and is otherwise empty, so no real
+   route's layout changed in BG-P14.
+
+   TWO PATHS, ONE PAGE. `/dev/wide/rail` is the same component with the right
+   rail requested; the page's rail control navigates between them, which
+   exercises the route table rather than a demo-only prop. */
+const WideDemo = import.meta.env.DEV ? lazy(() => import("./pages/dev/WideDemo")) : null;
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -184,6 +202,26 @@ const App = () => (
                     outermost — a signed-out visitor still meets the login
                     redirect, not a notice over one. */}
                 <Route path="/bounty/new" element={<ProtectedRoute><LegacyUploadRoute bounty><BountyUpload /></LegacyUploadRoute></ProtectedRoute>} />
+                {WideDemo && (
+                  <Route
+                    path="/dev/wide"
+                    element={
+                      <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
+                        <WideDemo />
+                      </Suspense>
+                    }
+                  />
+                )}
+                {WideDemo && (
+                  <Route
+                    path="/dev/wide/rail"
+                    element={
+                      <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
+                        <WideDemo />
+                      </Suspense>
+                    }
+                  />
+                )}
               </Route>
               <Route path="/b2/:slug" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><BuildPage /></Suspense>} />
               <Route path="/gallery" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><Gallery /></Suspense>} />
