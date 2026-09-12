@@ -276,15 +276,6 @@ export interface PublishSheetProps {
    */
   sections?: ReactNode;
   /**
-   * The rebuild credit, if this draft has one — handed straight to the card.
-   *
-   * The sheet does not compose it and does not decide when it applies: this is
-   * the SAME prop the gallery card takes, carrying the same string, so the
-   * preview and the post cannot show a reader two different credits. See
-   * rebuildCredit.ts. Absent on an ordinary draft, and absent renders nothing.
-   */
-  credit?: string | null;
-  /**
    * A checklist row that is neither the description nor the cover, handed back
    * to the workspace to resolve — it is the only thing that can select a node
    * or open the panel a header field is edited in. Optional: without it those
@@ -304,7 +295,6 @@ export function PublishSheet({
   isPublishing,
   publishError,
   sections,
-  credit,
   onFocusRequirement,
 }: PublishSheetProps) {
   const narrow = useIsNarrow();
@@ -466,7 +456,12 @@ export function PublishSheet({
             onClickCapture={(event) => event.preventDefault()}
             style={{ maxWidth: 420, width: "100%" }}
           >
-            <GalleryCard build={preview} srcByPath={srcByPath} credit={credit} />
+            {/* The preview carries the two frozen snapshot columns (see
+                previewBuild above), so the card composes the credit here
+                exactly as it will on the published page — which is what makes
+                "exactly as the card will render it" a fact and not a promise
+                (BG-P11). */}
+            <GalleryCard build={preview} srcByPath={srcByPath} />
           </div>
 
           {cover ? null : (

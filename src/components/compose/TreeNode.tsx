@@ -41,7 +41,7 @@ import {
   hexToRgba,
   labelText,
 } from "@/components/build/tokens";
-import { categoryFill } from "@/lib/theme/category";
+import { CategoryChip } from "@/components/brand/CategoryChip";
 import { descendantIds, insideDropId, type NodeDrag } from "./useNodeDrag";
 
 /** Matches the active nav treatment used across the application. */
@@ -163,27 +163,23 @@ function Grip() {
   );
 }
 
+/**
+ * BG-P11: the shared chip, which also takes this off `border-radius: 100` —
+ * the capsule the theme dropped by decision. The name stays `TypePill` because
+ * four files import it under that name and renaming it is a change of its own.
+ *
+ * BG-P05's rule is unchanged: the chip is the node's CATEGORY in one of the
+ * nine hues rather than `node_types.colour`, falling back to the type key so a
+ * node whose registry row has not loaded still resolves, and to --cat-fallback
+ * when neither is one of the nine.
+ */
 export function TypePill({ nodeType, typeKey }: { nodeType?: NodeType; typeKey: string }) {
-  // BG-P05: the pill is the node's CATEGORY in one of the nine hues, not
-  // `node_types.colour`. Falls back to the type key so a node whose registry row
-  // has not loaded still resolves — and to --cat-fallback when neither is one
-  // of the nine.
-  const fill = categoryFill(nodeType?.category ?? typeKey);
   return (
-    <span
-      style={{
-        ...labelText,
-        flexShrink: 0,
-        fontSize: 11,
-        padding: "1px 8px",
-        borderRadius: 100,
-        background: fill.background,
-        color: fill.color,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {nodeType?.label ?? typeKey}
-    </span>
+    <CategoryChip
+      category={nodeType?.category ?? typeKey}
+      label={nodeType?.label ?? typeKey}
+      style={{ flexShrink: 0 }}
+    />
   );
 }
 

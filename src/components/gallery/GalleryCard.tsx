@@ -32,10 +32,11 @@
 // — which is why it and the freshness line are one object, the PLAQUE, and why
 // they are always together, always under the title, never in a footer.
 //
-// THE CONTENT ORDER UNDER THE BOX IS FIXED: title → credit → plaque → chips.
-// BG-P09 moved all four from "under the media" to "on the frame under the box",
-// which is a change of container and not of order. Nothing among them was added,
-// removed or reordered.
+// THE CONTENT ORDER UNDER THE BOX IS FIXED: title → credit → plaque → chips →
+// the open ask. BG-P09 moved them from "under the media" to "on the frame under
+// the box", which is a change of container and not of order, and BG-P11 swapped
+// four of the five for the shared components in `components/brand/` without
+// moving any of them. Nothing among them has been added, removed or reordered.
 //
 // Styled with inline style objects, like every other surface on the new path:
 // Tailwind's generated utilities win over hand-written classes at build time.
@@ -43,24 +44,20 @@
 import { useMemo, useState, type CSSProperties, type ReactElement } from "react";
 import { Link } from "react-router-dom";
 import { BranchIcon } from "@/components/build/BranchIcon";
-import { categoryFill } from "@/lib/theme/category";
+import { CategoryChip } from "@/components/brand/CategoryChip";
+import { GapMarker, gapEdge } from "@/components/brand/GapMarker";
+import { Plaque } from "@/components/brand/Plaque";
+import { RebuildCredit } from "@/components/brand/RebuildCredit";
 import { GLASS_BLUR, UI_EASING, UI_MS, hoverIsFine, prefersReducedMotion } from "@/lib/theme/controls";
 import { elevation } from "@/lib/theme/elevation";
+import { chipType } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 // Roles by name, not the `type` object: this file uses inline `type X`
 // import modifiers, which a value binding called `type` makes ambiguous.
-import {
-  body as bodyText,
-  cardTitle,
-  data as dataText,
-  eyebrow as eyebrowText,
-  tabular,
-} from "@/lib/theme/type";
+import { cardTitle, tabular } from "@/lib/theme/type";
 import {
   aspectOf,
-  freshnessLabel,
-  isStale,
   type BuildShape,
   type GalleryBuild,
   type GalleryMedia,
@@ -126,19 +123,6 @@ export interface GalleryCardProps {
   /** Signed once for the whole page, never per card. */
   srcByPath: MediaSrcMap;
   /**
-   * "Rebuilt from Inbox triage agent by @amara", from rebuildCredit.ts.
-   *
-   * A PROP RATHER THAN SOMETHING THIS CARD WORKS OUT, because it cannot: the
-   * columns it is composed from are not in GALLERY_BUILD_COLUMNS, and a card
-   * that fetched them would issue one query per card. The page that lists the
-   * builds composes the line once and hands it down.
-   *
-   * Absent on every build that is not a rebuild, and absent is the ordinary
-   * case — nothing renders, and a card without one is the card that was here
-   * before this prop existed.
-   */
-  credit?: string | null;
-  /**
    * THE ONE MEMBER BG-P09 ADDED, and it defaults so that every existing call
    * site is unchanged.
    *
@@ -154,19 +138,11 @@ export interface GalleryCardProps {
   layout?: CardLayout;
 }
 
-export function GalleryCard({
-  build,
-  srcByPath,
-  credit,
-  layout = "grid",
-}: GalleryCardProps) {
+export function GalleryCard({ build, srcByPath, layout = "grid" }: GalleryCardProps) {
   const Body =
     BODY_FOR_SHAPE[(build.shape ?? "other") as BuildShape] ?? DefaultCardBody;
 
   const shape = (build.shape ?? "other") as BuildShape;
-  const count = build.reproduction_count ?? 0;
-  const freshness = freshnessLabel(build);
-  const stale = isStale(build);
   const promoted = build.status === "gallery";
   const bounty = openBounty(build);
 
@@ -234,58 +210,47 @@ export function GalleryCard({
 
         {/* 2. THE CREDIT, on a rebuild only. One quiet line under the title,
              because it is provenance rather than a claim the card is making for
-             itself — findable, not loud. Composed by rebuildCredit.ts, which
-             reads the two FROZEN snapshot columns so a credit cannot be revoked
-             by the party being credited.
+             itself — findable, not loud.
 
-             NO CHANGE SUMMARY BESIDE IT, and that is a gap rather than a choice.
-             The theme asks for "a machine-computed change summary in mono,
-             prefixed Δ"; nothing in this codebase computes one — grep finds no
-             such helper — and builds.rebuild_note is not it. That column is the
-             rebuilder's own prose, which the feed already renders above the card
-             in their voice, and mono never sets prose. Inventing a summary here
-             would have put a sentence in the reader's way that no code stands
-             behind. Whichever prompt computes it has one line to add. */}
-        {credit ? (
-          <p
-            data-testid="gallery-card-credit"
-            data-card-part="credit"
-            title={credit}
-            style={{
-              ...bodyText,
-              margin: 0,
-              color: t.text2,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {credit}
-          </p>
-        ) : null}
+             READ OFF THE CARD'S OWN RECORD (BG-P11). This was a `credit` PROP,
+             on the reasoning that the snapshot columns were not in the card's
+             query and a card that fetched them would issue one request per
+             card. Both halves of that stopped being true at NS-P40, which put
+             source_title_at_fork and source_handle_at_fork in
+             GALLERY_BUILD_COLUMNS: they ride in on the query the card already
+             makes. Composing here rather than in each page is what makes the
+             credit structural — three pages could each decide not to pass it,
+             and the theme is explicit that the credit is not the rebuilder's
+             (or the page's) to remove.
 
-        {/* 3. THE PLAQUE: reproduction and freshness, together, one object. */}
+             NO Δ SUMMARY BESIDE IT, and that is a gap rather than a choice.
+             Computing one needs BOTH whole records — this build's and its
+             source's — and a grid of twenty-four cards cannot read
+             forty-eight. A stored summary column would fix it; until there is
+             one, `changes` is left absent, which RebuildCredit renders as
+             "nobody worked it out" rather than as "nothing changed". */}
+        <RebuildCredit source={build} placement="card" />
+
+        {/* 3. THE PLAQUE: reproduction and freshness, together, one object.
+             The rebuild count rides at its end rather than beside it: it is
+             provenance on the same record, not a third trust signal. */}
         <Plaque
-          count={count}
-          freshness={freshness}
-          stale={stale}
-          rebuilds={build.rebuild_count ?? 0}
+          build={build}
+          size="card"
+          trailing={<Rebuilds count={build.rebuild_count ?? 0} />}
         />
 
         {/* 4. THE PART CHIPS. */}
-        <Chips roles={build.made_for ?? []} promoted={promoted} bounty={bounty} />
+        <Chips roles={build.made_for ?? []} promoted={promoted} />
 
-        {/* An open ask's reward, in mono under the chips. No special container:
-            the dashed edge on the frame is the whole treatment. */}
-        {bounty ? (
-          <p
-            data-testid="gallery-card-bounty"
-            data-card-part="reward"
-            style={{ ...dataText, ...tabular, margin: 0, color: t.catBreakage }}
-          >
-            {bounty}
-          </p>
-        ) : null}
+        {/* 5. An open ask's reward, in mono under the chips. No special
+             container: the dashed edge on the frame is the whole treatment. */}
+        <GapMarker
+          placement="card"
+          state="funded"
+          summary={bounty}
+          testId="gallery-card-bounty"
+        />
       </div>
     </Frame>
   );
@@ -408,13 +373,11 @@ function Frame({
   const lifted = hover && hoverIsFine() && !prefersReducedMotion();
 
   const edge: CSSProperties = bounty
-    ? {
-        // A gap is an invitation, not a defect: the ordinary card shape with a
-        // dashed edge, and the reward in words below the chips. No container.
-        borderWidth: 1.5,
-        borderStyle: "dashed",
-        borderColor: t.catBreakage,
-      }
+    ? // A gap is an invitation, not a defect: the ordinary card shape with a
+      // dashed edge, and the reward in words below the chips. No container.
+      // The edge is GapMarker's, so the card and the node card and the panel
+      // cannot drift to three different dashes (BG-P11).
+      gapEdge("card")
     : {
         ...elevation.flat,
         borderColor: lifted ? t.glassHi : t.glassBorder,
@@ -453,150 +416,39 @@ function Frame({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   The plaque
+   The rebuild count
    ──────────────────────────────────────────────────────────────────────────── */
 
 /**
- * The two trust signals, as one object, under the title and above the chips.
+ * "3 REBUILDS", riding at the end of the plaque. Absent at zero.
  *
- * IMPOSSIBLE TO RENDER ONE WITHOUT THE OTHER, which is what the theme asks for:
- * they are two children of one element rather than two things a caller puts
- * where it likes. A build page and a card therefore cannot disagree about
- * whether a reader is entitled to both.
- *
- *   reproduction  an `--evidence-fill` tag with legal text on it: "41
- *                 reproduced". ZERO IS SHOWN, not hidden — "nobody yet" is a
- *                 real state a reader is entitled to, and suppressing it would
- *                 leave them unable to tell it from "we are not saying".
- *   freshness     an amber `--lit` OVAL LAMP plus mono text carrying the model:
- *                 "confirmed 3 days ago, on sonnet-4.5". Amber is light here and
- *                 never type, which is the one rule the colour contract states
- *                 twice; the words beside it are `--text2`.
- *
- * Three states. Healthy. Stale: the lamp dims to 45% and the text drops to
- * `--text2`, and the copy stays a gentle prompt — a build nobody has confirmed
- * lately has not failed, and the plaque must not read as though it had. Never
- * reproduced: "not yet reproduced", no lamp at all, because an unlit lamp and a
- * missing one say different things and only one of them is true.
- *
- * THE REBUILD COUNT RIDES WITH IT, absent at zero. "Nobody has run this yet" is
- * a fact worth a reader's attention before they spend an hour; "nobody has
- * rebuilt this yet" is not a warning about anything, and printing it on every
- * card would put a column of noughts down the page.
+ * NOT A THIRD TRUST SIGNAL, which is why it is a `trailing` child of the plaque
+ * rather than a third member of it. "Nobody has run this yet" is a fact worth a
+ * reader's attention before they spend an hour; "nobody has rebuilt this yet"
+ * is not a warning about anything, and printing it on every card would put a
+ * column of noughts down the page.
  */
-function Plaque({
-  count,
-  freshness,
-  stale,
-  rebuilds,
-}: {
-  count: number;
-  freshness: string | null;
-  stale: boolean;
-  rebuilds: number;
-}) {
-  const evidence = categoryFill("evidence");
+function Rebuilds({ count }: { count: number }) {
+  if (count <= 0) return null;
 
-  return (
-    <div
-      data-card-part="plaque"
-      data-plaque-state={count === 0 ? "unreproduced" : stale ? "stale" : "healthy"}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        flexWrap: "wrap",
-        gap: 8,
-      }}
-    >
-      <span
-        data-plaque-reproduction=""
-        title={
-          count === 0
-            ? "Nobody other than the creator has recorded running this yet."
-            : `${count} ${count === 1 ? "person" : "people"} other than the creator ran this and said what happened.`
-        }
-        style={{
-          ...dataText,
-          ...tabular,
-          flexShrink: 0,
-          padding: "2px 8px",
-          borderRadius: r.chip,
-          // --evidence-fill with --text on it: 11.89:1 on Exhibition, and the
-          // measured pair the contract names for this tag.
-          background: evidence.background,
-          color: t.text,
-        }}
-      >
-        {count === 0 ? "not yet reproduced" : `${count} reproduced`}
-      </span>
-
-      <span
-        data-plaque-freshness=""
-        style={{
-          ...dataText,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          minWidth: 0,
-          color: t.text2,
-        }}
-      >
-        {freshness ? <Lamp dim={stale} /> : null}
-        <span
-          style={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {freshness ?? "not confirmed by anyone yet"}
-        </span>
-      </span>
-
-      {rebuilds > 0 ? (
-        <span
-          data-testid="rebuild-count"
-          title={`${rebuilds} ${rebuilds === 1 ? "build was" : "builds were"} started from this one.`}
-          style={{
-            ...dataText,
-            ...tabular,
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            flexShrink: 0,
-            marginLeft: "auto",
-            color: t.text2,
-          }}
-        >
-          <BranchIcon size={11} colour="currentColor" />
-          {rebuilds} {rebuilds === 1 ? "REBUILD" : "REBUILDS"}
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-/**
- * The lamp: an oval of `--lit`, dimmed to 45% when the claim has gone stale.
- *
- * An OVAL and not a circle, and 10×7 rather than 10×10, because the scale's
- * circular step is for genuinely circular objects and a lamp is a light rather
- * than a dot. `opacity` carries the stale state so the colour stays one token.
- */
-function Lamp({ dim }: { dim: boolean }) {
   return (
     <span
-      aria-hidden
-      data-plaque-lamp={dim ? "dim" : "lit"}
+      data-testid="rebuild-count"
+      title={`${count} ${count === 1 ? "build was" : "builds were"} started from this one.`}
       style={{
+        ...chipType,
+        ...tabular,
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
         flexShrink: 0,
-        width: 10,
-        height: 7,
-        borderRadius: "50% / 50%",
-        background: t.lit,
-        opacity: dim ? 0.45 : 1,
+        marginLeft: "auto",
+        color: t.text2,
       }}
-    />
+    >
+      <BranchIcon size={11} colour="currentColor" />
+      {count} {count === 1 ? "REBUILD" : "REBUILDS"}
+    </span>
   );
 }
 
@@ -604,60 +456,43 @@ function Lamp({ dim }: { dim: boolean }) {
    The chips
    ──────────────────────────────────────────────────────────────────────────── */
 
+/** How many roles fit before the rest become a "+N". */
+const ROLES_SHOWN = 3;
+
 /**
- * The part chips, in `categoryFill`'s measured pairs (BG-P05).
+ * The part chips, on CategoryChip's measured pairs (BG-P11).
  *
  * A ROLE IS NOT A PART CATEGORY, which is why `made_for` resolves through the
  * fallback pair rather than being handed a hue: the nine hues mean something
  * specific and borrowing one for "for founders" would say this card was talking
- * about a configuration. PICKED keeps `--evidence`, which is what it is.
+ * about a configuration. PICKED is `evidence`, which is what it is.
+ *
+ * THE OVERFLOW CHIP IS NEW, and it is the one thing BG-P11 adds to this row
+ * rather than repaints. The slice was always three; before this the fourth role
+ * simply vanished, and a reader had no way to know the card was holding
+ * anything back. "+2" is the smallest honest fix and it costs the row one chip.
  */
-function Chips({
-  roles,
-  promoted,
-  bounty,
-}: {
-  roles: readonly string[];
-  promoted: boolean;
-  bounty: string | null;
-}) {
-  const shown = roles.slice(0, 3);
-  if (shown.length === 0 && !promoted && !bounty) return null;
-
-  const fallback = categoryFill("__none__");
+function Chips({ roles, promoted }: { roles: readonly string[]; promoted: boolean }) {
+  const shown = roles.slice(0, ROLES_SHOWN);
+  const overflow = Math.max(0, roles.length - ROLES_SHOWN);
+  if (shown.length === 0 && !promoted) return null;
 
   return (
     <div
       data-card-part="chips"
       style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}
     >
-      {promoted ? (
-        <span
-          style={{
-            ...eyebrowText,
-            padding: "2px 7px",
-            borderRadius: r.chip,
-            background: categoryFill("evidence").background,
-            color: t.evidence,
-          }}
-        >
-          PICKED
-        </span>
-      ) : null}
+      {promoted ? <CategoryChip category="evidence" label="PICKED" /> : null}
       {shown.map((role) => (
-        <span
-          key={role}
-          style={{
-            ...dataText,
-            padding: "2px 7px",
-            borderRadius: r.chip,
-            background: fallback.background,
-            color: fallback.color,
-          }}
-        >
-          {role}
-        </span>
+        <CategoryChip key={role} category={role} label={role} />
       ))}
+      {overflow > 0 ? (
+        <CategoryChip
+          variant="overflow"
+          count={overflow}
+          title={roles.slice(ROLES_SHOWN).join(", ")}
+        />
+      ) : null}
     </div>
   );
 }

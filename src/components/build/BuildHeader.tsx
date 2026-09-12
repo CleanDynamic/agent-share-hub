@@ -25,6 +25,8 @@ import {
   labelText,
   pageHeadingText,
 } from "./tokens";
+import { CategoryChip } from "@/components/brand/CategoryChip";
+import { Plaque } from "@/components/brand/Plaque";
 import { categoryColour } from "@/lib/theme/category";
 import { tabular, type } from "@/lib/theme/type";
 
@@ -120,21 +122,22 @@ function formatMoney(amount: number, currency: string | null): string {
   }
 }
 
-function Chip({ text, colour }: { text: string; colour: string }) {
-  return (
-    <span
-      style={{
-        ...labelText,
-        color: colour,
-        border: `1px solid ${HAIRLINE}`,
-        borderRadius: 999,
-        padding: "3px 10px",
-        fontSize: 11,
-      }}
-    >
-      {text}
-    </span>
-  );
+/**
+ * A "made for" or "made with" chip.
+ *
+ * BG-P11: THESE WERE NOT CATEGORY CHIPS AND NOW THEY ARE. Each was a hairline
+ * outline at `border-radius: 999` — the capsule the theme dropped by decision —
+ * in a hardcoded teal or orange, which meant "made for founders" was painted
+ * the same green the platform reserves for a configuration part and "made with
+ * Claude" the same rust it reserves for an instruction. Both now resolve
+ * through CategoryChip, which lands them on the measured FALLBACK pair: a role
+ * and a tool are not part categories, the nine hues mean something specific,
+ * and borrowing one for either would be the same untrue claim in a quieter
+ * voice. The two rows stay apart by their labels, which is what the labels are
+ * for.
+ */
+function Chip({ text }: { text: string }) {
+  return <CategoryChip category={text} label={text} />;
 }
 
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
@@ -248,7 +251,6 @@ export function BuildHeader({
   const typesByKey = new Map(nodeTypes.map((type) => [type.key, type]));
 
   const hasCost = build.cost_setup !== null || build.cost_monthly !== null;
-  const confirmed = (build.reproduction_count ?? 0) > 0 || Boolean(build.last_confirmed_at);
 
   return (
     <header style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -306,7 +308,7 @@ export function BuildHeader({
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>Made for</span>
               {build.made_for.map((item) => (
-                <Chip key={item} text={item} colour={TEAL} />
+                <Chip key={item} text={item} />
               ))}
             </div>
           ) : null}
@@ -314,7 +316,7 @@ export function BuildHeader({
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>Made with</span>
               {build.made_with.map((item) => (
-                <Chip key={item} text={item} colour={ORANGE} />
+                <Chip key={item} text={item} />
               ))}
             </div>
           ) : null}
@@ -346,24 +348,17 @@ export function BuildHeader({
           </Fact>
         ) : null}
 
+        {/* BG-P11: the fallback is the shared plaque. It used to be this file's
+            own rendering, and it had already drifted — it printed a raw
+            toLocaleDateString and never named the model, so the same build said
+            "on Sonnet 4.5" on its card and said nothing about the model on its
+            own page. The model always travels with the claim. */}
         {reproduction ?? (
           <div data-visual-slot="build-reproduction" style={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <span style={{ ...type.eyebrow, color: TEXT_MUTED }}>
               Reproduction
             </span>
-            {confirmed ? (
-              <span style={{ ...type.data, ...tabular, color: TEXT_PRIMARY }}>
-                reproduced {build.reproduction_count}{" "}
-                {build.reproduction_count === 1 ? "time" : "times"}
-                {build.last_confirmed_at
-                  ? ` · last confirmed ${new Date(build.last_confirmed_at).toLocaleDateString()}`
-                  : null}
-              </span>
-            ) : (
-              <span style={{ ...type.data, color: TEXT_MUTED }}>
-                not yet confirmed by anyone
-              </span>
-            )}
+            <Plaque build={build} size="header" />
           </div>
         )}
 

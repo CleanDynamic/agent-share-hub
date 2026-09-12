@@ -57,6 +57,7 @@ import {
   type ChangeLine,
   type ForkOrigin,
 } from "@/lib/build";
+import { ChangeSummary, RebuildCredit } from "@/components/brand/RebuildCredit";
 import { rebuildCreditLine } from "./rebuildCredit";
 import {
   HAIRLINE,
@@ -83,17 +84,6 @@ const EXPAND_LABEL = "See what changed";
 const COLLAPSE_LABEL = "Hide what changed";
 /** An expander that opens onto nothing has to say so in its own words. */
 const NO_LINES = "Nothing in the record reads differently from its source.";
-
-/**
- * Kind to colour, the same pairing the publish sheet's list uses (NS-P39), so
- * a rebuilder recognises their own change lines on the published page.
- */
-const KIND_COLOUR: Record<ChangeKind, string> = {
-  changed: ORANGE,
-  added: TEAL,
-  removed: "#9CA3AF",
-  header: "#F59E0B",
-};
 
 export interface ForkAttributionProps {
   build: Build;
@@ -216,35 +206,20 @@ function RebuildBanner({
         padding: "10px 12px",
       }}
     >
-      <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
-        Rebuilt from{" "}
-        {resolved ? (
-          <Link
-            to={`/b2/${resolved.slug}`}
-            style={{ color: ORANGE, textDecoration: "none", fontWeight: 400 }}
-          >
-            {title}
-          </Link>
-        ) : (
-          <span style={{ color: TEXT_PRIMARY }}>{title}</span>
-        )}
-        {handle ? (
-          <>
-            {" by "}
-            {resolved ? (
-              <Link
-                to={`/creator/${handle}`}
-                style={{ color: ORANGE, textDecoration: "none", fontWeight: 400 }}
-              >
-                @{handle}
-              </Link>
-            ) : (
-              <span style={{ color: TEXT_PRIMARY }}>@{handle}</span>
-            )}
-          </>
-        ) : null}
-        {gone ? <span style={{ color: TEXT_MUTED }}> {GONE}</span> : null}
-      </p>
+      {/* BG-P11: the shared credit, in the slot this paragraph already
+          occupied. It composes the same sentence from the same two frozen
+          snapshot columns — rebuildCredit.ts is still the only place the words
+          are decided — and takes the two link targets rather than building the
+          links itself, so the card and this banner cannot say the credit
+          differently. `gone` stays a prop rather than `!to`: a banner that
+          announced a missing source for the length of one request would libel
+          every live source on the site. */}
+      <RebuildCredit
+        source={build}
+        to={resolved ? `/b2/${resolved.slug}` : null}
+        handleTo={resolved && handle ? `/creator/${handle}` : null}
+        gone={gone}
+      />
 
       {/* Under the credit, above the note: it qualifies what this build IS,
           which the rebuilder's commentary on it does not. The link carries the
@@ -379,49 +354,21 @@ function ChangeLines({
     return <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>{NO_LINES}</p>;
   }
 
+  /* BG-P11: the shared Δ summary, in the slot this list already occupied. The
+     dot-per-kind this file drew became a Δ carrying the same four hues,
+     resolved through the part categories rather than through two hexes and two
+     imported constants — and the six-line rule the publish sheet has always
+     applied now applies here too, from the same function.
+
+     IT IS RENDERED HERE RATHER THAN INSIDE RebuildCredit ABOVE, because the
+     banner puts its list below a button that gates the query these lines come
+     from, three elements down from the credit. Folding it in would put the
+     summary above the note and leave the expander below the thing it expands.
+     BG-P21 owns that arrangement; see the handoff note. */
   return (
-    <ul
-      data-testid="rebuild-banner-changes"
-      style={{
-        listStyle: "none",
-        margin: 0,
-        padding: 0,
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-      }}
-    >
-      {lines.map((line) => (
-        <li
-          key={line.key}
-          data-change-kind={line.kind}
-          style={{
-            ...bodyText,
-            margin: 0,
-            padding: "3px 0",
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 8,
-          }}
-        >
-          {/* The dot carries the kind and the text carries the change, which is
-              why it is aria-hidden: "orange bullet" adds nothing to the line a
-              screen reader already reads out. */}
-          <span
-            aria-hidden
-            style={{
-              width: 5,
-              height: 5,
-              marginTop: 8,
-              borderRadius: 999,
-              flexShrink: 0,
-              background: KIND_COLOUR[line.kind],
-            }}
-          />
-          <span style={{ minWidth: 0 }}>{line.text}</span>
-        </li>
-      ))}
-    </ul>
+    <div data-testid="rebuild-banner-changes">
+      <ChangeSummary lines={lines} />
+    </div>
   );
 }
 

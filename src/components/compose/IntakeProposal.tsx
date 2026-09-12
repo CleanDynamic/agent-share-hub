@@ -48,7 +48,7 @@ import {
   pageHeadingText,
   titleText,
 } from "@/components/build/tokens";
-import { categoryFill } from "@/lib/theme/category";
+import { CategoryChip } from "@/components/brand/CategoryChip";
 
 /** Long enough to recognise the item, short enough to stay on one line. */
 const SUMMARY_LIMIT = 96;
@@ -96,28 +96,15 @@ function plural(count: number, [one, many]: [string, string]): string {
 // Pieces
 // -----------------------------------------------------------------------------
 
+/**
+ * BG-P11: the shared chip, which also takes this off `border-radius: 100` —
+ * the capsule the theme dropped by decision. BG-P05's rule is unchanged: a type
+ * the parser learned but this map has not is the fallback rather than an
+ * invented hue, and it still renders under its own key.
+ */
 function TypePill({ typeKey }: { typeKey: string }) {
   const known = PARSER_TYPES[typeKey];
-  // BG-P05: a type the parser learned but this map has not is the fallback
-  // rather than an invented hue, and it still renders under its own key.
-  const fill = categoryFill(known?.category ?? "");
-
-  return (
-    <span
-      style={{
-        ...labelText,
-        fontSize: 10,
-        textTransform: "uppercase",
-        padding: "2px 7px",
-        borderRadius: 100,
-        whiteSpace: "nowrap",
-        background: fill.background,
-        color: fill.color,
-      }}
-    >
-      {known?.label ?? typeKey}
-    </span>
-  );
+  return <CategoryChip category={known?.category ?? ""} label={known?.label ?? typeKey} />;
 }
 
 /**

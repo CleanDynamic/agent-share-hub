@@ -41,7 +41,6 @@ import {
 } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  freshnessLabel,
   getBuildHeader,
   getReproductions,
   isStale,
@@ -50,6 +49,7 @@ import {
   type Build,
   type BuildReproduction,
 } from "@/lib/build";
+import { Plaque } from "@/components/brand/Plaque";
 import {
   GAP_RED,
   HAIRLINE,
@@ -65,14 +65,6 @@ import {
   panelGlass,
   titleText,
 } from "./tokens";
-
-/**
- * The type size of the reproduction count.
- *
- * Exported so a test can hold the page to acceptance 2 — larger than every
- * other figure — without reading a number out of a style object by hand.
- */
-export const COUNT_FONT_SIZE = 44;
 
 /** Enough rows that a reader's own is almost always among them. See `mine`. */
 const REPRODUCTION_FETCH_LIMIT = 200;
@@ -122,13 +114,6 @@ function Field({
 }
 
 /** What the count says next to itself. Zero gets its own sentence. */
-function countCaption(count: number): string {
-  if (count <= 0) return "no one has run this yet";
-  return count === 1
-    ? "person ran this and it worked"
-    : "people ran this and it worked";
-}
-
 export interface ReproductionActionProps {
   build: Build;
   /**
@@ -178,7 +163,6 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
   }, [justRecorded, rows, user]);
 
   const count = build.reproduction_count ?? 0;
-  const freshness = freshnessLabel(build);
   const stale = isStale(build);
 
   /** The models this build says it was made with, offered rather than imposed. */
@@ -282,29 +266,26 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
         Reproduction
       </span>
 
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-        <span
-          data-testid="reproduction-count"
-          style={{
-            fontSize: COUNT_FONT_SIZE,
-            fontWeight: 700,
-            lineHeight: 1,
-            letterSpacing: "-0.02em",
-            fontVariantNumeric: "tabular-nums",
-            color: count > 0 ? TEAL : TEXT_MUTED,
-          }}
-        >
-          {count}
-        </span>
-        <span style={{ ...bodyText, color: TEXT_SECONDARY }}>{countCaption(count)}</span>
-      </div>
+      {/* BG-P11: the count and the freshness line are the SHARED PLAQUE now,
+          in the slot they already occupied. Two things changed and neither is
+          a move.
 
-      {/* Never fabricated: no confirmation, no date. */}
-      {freshness ? (
-        <span style={{ ...bodyText, color: TEXT_SECONDARY }}>{freshness}</span>
-      ) : (
-        <span style={{ ...bodyText, color: TEXT_MUTED }}>not yet confirmed by anyone</span>
-      )}
+          THE 44px FIGURE IS GONE, and that is the von-Restorff correction this
+          prompt asks for: "make it the distinct one without inflating it". A
+          44px numeral made the count distinct by shouting, which costs the
+          panel's other figures their own scale and does not survive greyscale
+          any better than a fill does. The plaque makes it distinct by being
+          the only filled ground on an object that is otherwise mono text on
+          nothing — isolation by fill and weight, which is what the effect
+          actually asks for — and steps the numeral up one notch inside that
+          tag rather than across the page.
+
+          THE LAMP ARRIVES. This panel never had one: a build gone stale said
+          so in a sentence to its CREATOR and said nothing at all to everybody
+          else, so the one reader who most needs to know the claim is old — the
+          person deciding whether to spend an hour on it — was the one reader
+          not told. The plaque dims the lamp for all of them. */}
+      <Plaque build={build} size="header" />
 
       {isCreator ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

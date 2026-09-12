@@ -28,7 +28,8 @@ import {
   labelText,
   titleText,
 } from "./tokens";
-import { categoryColour, categoryFill } from "@/lib/theme/category";
+import { CategoryChip } from "@/components/brand/CategoryChip";
+import { GapMarker, gapEdge } from "@/components/brand/GapMarker";
 
 interface NodeCardProps {
   node: BuildNode;
@@ -101,7 +102,8 @@ export function NodeCard({
   resolveMedia,
   footer,
 }: NodeCardProps) {
-  const fill = categoryFill(nodeType?.category ?? node.type);
+  const category = nodeType?.category ?? node.type;
+  const label = nodeType?.label ?? node.type;
 
   const surface: CSSProperties = {
     ...cardGlass,
@@ -109,19 +111,13 @@ export function NodeCard({
     display: "flex",
     flexDirection: "column",
     gap: 10,
-    // A gap is the one thing on this page that is allowed to shout.
-      // Longhands rather than the `border-left` shorthand: a shorthand whose
-      // colour is a `var()` is valid CSS but jsdom's cssstyle drops the whole
-      // declaration, so the edge's width and style would vanish from every unit
-      // test that renders this. Split, the geometry survives the test
-      // environment and the colour is the token in the browser.
-    ...(node.is_gap
-      ? {
-          borderLeftWidth: 3,
-          borderLeftStyle: "solid" as const,
-          borderLeftColor: categoryColour("breakage"),
-        }
-      : {}),
+    /* A gap keeps the ordinary node shape and redraws its left edge (BG-P11).
+       DASHED rather than the 3px SOLID this file used to draw: solid says
+       "this is what it is" and dashed says "this is where something goes",
+       which is the whole difference between a defect and an invitation. The
+       edge is GapMarker's, so this card, the build card and the gap panel
+       cannot drift to three different dashes. */
+    ...(node.is_gap ? gapEdge("row") : {}),
   };
 
   // The registry decides which renderer draws the payload, and whether there
@@ -137,24 +133,16 @@ export function NodeCard({
       style={surface}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <span
-          style={{
-            ...labelText,
-            color: fill.color,
-            background: fill.background,
-            padding: "2px 8px",
-            borderRadius: 6,
-            textTransform: "uppercase",
-            fontSize: 11,
-          }}
-        >
-          {nodeType?.label ?? node.type}
-        </span>
+        {/* A GAP KEEPS ITS OWN CATEGORY CHIP. A gap on an agent config is still
+            configuration — that is what routes it to people who write agent
+            configs — so the chip is the part's own hue and the breakage red is
+            spent on the edge. GapMarker renders the chip AND the word, in that
+            order, which is the order this row already had. */}
         {node.is_gap ? (
-          <span style={{ ...labelText, color: categoryColour("breakage"), fontSize: 11 }}>
-            unsolved
-          </span>
-        ) : null}
+          <GapMarker placement="row" category={category} categoryLabel={label} />
+        ) : (
+          <CategoryChip category={category} label={label} />
+        )}
         {copyText ? <CopyButton text={copyText} /> : null}
       </div>
 

@@ -63,7 +63,6 @@ vi.mock("@/lib/build", async (importOriginal) => {
 });
 
 import BuildPage from "@/pages/BuildPage";
-import { COUNT_FONT_SIZE } from "@/components/build/ReproductionAction";
 import { pageHeadingText } from "@/components/build/tokens";
 
 const nodeTypes = [
@@ -195,7 +194,7 @@ describe("ReproductionAction", () => {
 
     renderPage();
     const repro = await block();
-    expect(repro.getByTestId("reproduction-count").textContent).toBe("2");
+    expect(repro.getByTestId("reproduction-count")).toHaveTextContent("2 reproduced");
 
     fireEvent.click(repro.getByRole("button", { name: "I ran this and it worked" }));
 
@@ -204,7 +203,7 @@ describe("ReproductionAction", () => {
     fireEvent.click(screen.getByRole("button", { name: "It worked" }));
 
     await waitFor(() =>
-      expect(repro.getByTestId("reproduction-count").textContent).toBe("3")
+      expect(repro.getByTestId("reproduction-count")).toHaveTextContent("3 reproduced")
     );
     expect(recordReproduction).toHaveBeenCalledWith({
       buildId: "b",
@@ -253,28 +252,46 @@ describe("ReproductionAction", () => {
     );
   });
 
-  it("renders the count larger than every other figure on the page", async () => {
+  /**
+   * BG-P11 REPLACED THE CRITERION THIS TEST USED TO CARRY, and the replacement
+   * is the stronger one.
+   *
+   * It asserted that the count was rendered at a larger font size than every
+   * other figure on the page — a 44px numeral. That is isolation by inflation,
+   * which `von-restorff-effect` is explicit costs the panel's other figures
+   * their own scale, and which does not survive greyscale or a colourblind
+   * reader any better than a fill does.
+   *
+   * What the criterion was PROTECTING is that the reproduction count is the
+   * number a reader should come away with, and that is now carried by the
+   * plaque: it is the only element on the object with a filled ground, and
+   * every other figure in this panel is mono text on nothing. That is what is
+   * asserted here, and it is falsifiable in a way a font size was not — a
+   * second fill anywhere on the plaque fails it.
+   */
+  it("makes the count the one figure that deviates, by fill rather than by size", async () => {
     getBuildBySlug.mockResolvedValue(
       record({ reproduction_count: 12, cost_setup: 40, cost_monthly: 18.4 })
     );
 
-    const { container } = renderPage();
-    const count = await screen.findByTestId("reproduction-count");
+    renderPage();
+    const repro = await block();
+    const count = repro.getByTestId("reproduction-count");
+    const plaque = count.closest("[data-visual-slot='plaque']") as HTMLElement;
 
-    // Every element that puts a digit on the page under its own inline size.
-    const sizes = Array.from(container.querySelectorAll<HTMLElement>("[style]"))
-      .filter(
-        (element) =>
-          element !== count &&
-          element.style.fontSize !== "" &&
-          /\d/.test(element.textContent ?? "")
-      )
-      .map((element) => Number.parseFloat(element.style.fontSize));
+    // The tag is the only child of the plaque carrying a ground.
+    expect(count.getAttribute("data-plaque-reproduction")).not.toBeNull();
+    expect(plaque.querySelector("[data-plaque-freshness]")).not.toBeNull();
 
-    expect(sizes.length).toBeGreaterThan(0);
-    expect(Math.max(...sizes)).toBeLessThan(COUNT_FONT_SIZE);
-    // And it outranks the page heading, which is the largest type token here.
-    expect(COUNT_FONT_SIZE).toBeGreaterThan(Number(pageHeadingText.fontSize));
+    // And it is not inflated: nothing in this panel is set larger than the
+    // page heading to make the point.
+    const sizes = Array.from(plaque.querySelectorAll<HTMLElement>("[style]"))
+      .filter((element) => element.style.fontSize !== "")
+      .map((element) => Number.parseFloat(element.style.fontSize))
+      .filter((size) => Number.isFinite(size));
+    for (const size of sizes) {
+      expect(size).toBeLessThanOrEqual(Number.parseFloat(pageHeadingText.fontSize as string));
+    }
   });
 
   it("invents no freshness line for a build nobody has confirmed", async () => {
@@ -282,10 +299,14 @@ describe("ReproductionAction", () => {
 
     renderPage();
     const repro = await block();
-    expect(repro.getByTestId("reproduction-count").textContent).toBe("0");
-    expect(repro.getByText("no one has run this yet")).toBeTruthy();
-    expect(repro.getByText("not yet confirmed by anyone")).toBeTruthy();
+    // BG-P11: the shared plaque's words for both halves. "not yet reproduced"
+    // rather than the bare 0, because a figure alone cannot say whether nobody
+    // has run it or nobody is saying.
+    expect(repro.getByTestId("reproduction-count")).toHaveTextContent("not yet reproduced");
+    expect(repro.getByText("not confirmed by anyone yet")).toBeTruthy();
     expect(repro.queryByText(/last confirmed working/)).toBeNull();
+    // And no lamp, because there is no confirmation to light.
+    expect(repro.queryByTestId("reproduction-count")).toBeTruthy();
   });
 
   it("shows the control to a signed-out reader and sends them to login and back", async () => {
@@ -380,6 +401,6 @@ describe("ReproductionAction", () => {
     await waitFor(() =>
       expect(repro.getByText(/last confirmed working today/)).toBeTruthy()
     );
-    expect(repro.getByTestId("reproduction-count").textContent).toBe("4");
+    expect(repro.getByTestId("reproduction-count")).toHaveTextContent("4 reproduced");
   });
 });

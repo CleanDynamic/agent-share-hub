@@ -26,3 +26,7 @@ dist-ssr
 
 # TypeScript incremental build artefacts
 *.tsbuildinfo
+
+# Playwright run output
+test-results
+playwright-report

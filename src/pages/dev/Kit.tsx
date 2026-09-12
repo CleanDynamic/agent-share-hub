@@ -42,12 +42,18 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 import { GalleryCard, GalleryCardSkeleton } from "@/components/gallery/GalleryCard";
+import { CategoryChip } from "@/components/brand/CategoryChip";
+import { GapMarker, gapEdge, type GapState } from "@/components/brand/GapMarker";
+import { Plaque, type PlaqueSize } from "@/components/brand/Plaque";
+import { RebuildCredit } from "@/components/brand/RebuildCredit";
+import type { ChangeLine } from "@/lib/build";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import type { GalleryBuild, GalleryMedia } from "@/lib/build";
 
 import { CATEGORIES } from "@/lib/theme/category";
 import { fieldMessageStyle } from "@/lib/theme/controls";
 import { SPACE } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { cardTitle, eyebrow } from "@/lib/theme/type";
 
@@ -226,9 +232,15 @@ function cardSamples() {
       build: sampleBuild({ media: postOf([{ width: 1600, height: 1000 }]) }),
     },
     {
-      label: "four entries · collapsed",
+      label: "four entries · collapsed · a rebuild, so the card carries its credit",
       build: sampleBuild({
         title: "Four screenshots, one run",
+        // BG-P11: the card reads the credit off these two frozen columns now
+        // rather than being handed a string, so a fixture makes itself a
+        // rebuild by carrying the snapshot — exactly as a real row does.
+        parent_build_id: "kit-source",
+        source_title_at_fork: "Inbox triage agent",
+        source_handle_at_fork: "amara",
         media: postOf([
           { width: 1600, height: 1000 },
           { width: 1200, height: 1200 },
@@ -359,7 +371,7 @@ function CardSection() {
         {samples.map(({ label, build }) => (
           <div key={`grid-${build.id}`} style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}>
             <span style={{ ...eyebrow, color: t.text2 }}>{label}</span>
-            <GalleryCard build={build} srcByPath={srcByPath} credit={null} />
+            <GalleryCard build={build} srcByPath={srcByPath} />
           </div>
         ))}
         <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}>
@@ -375,11 +387,6 @@ function CardSection() {
             <GalleryCard
               build={build}
               srcByPath={srcByPath}
-              credit={
-                build.title === "Four screenshots, one run"
-                  ? "Rebuilt from Inbox triage agent by @amara"
-                  : null
-              }
               layout="feed"
             />
           </CardSample>
@@ -389,6 +396,387 @@ function CardSection() {
         </CardSample>
       </div>
     </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   BG-P11 — the four shared pieces, every state and size.
+
+   THE REVIEW SURFACE FOR BG-P30, and the reason it is here rather than on a
+   product screen: three of these four have states a real page shows only when
+   the data happens to be in them. There is no build in the gallery that is
+   simultaneously stale, never-reproduced and freshly confirmed, and waiting for
+   one is not a review process.
+
+   EVERY COMPONENT HERE IS THE REAL ONE. The fixtures are DATA — a build record
+   shaped the way a query returns it, a ChangeLine[] shaped the way
+   serialiseChangeSet returns one — handed to the same components the gallery,
+   the build page and the publish sheet render. If it looks right here and wrong
+   in the product, the difference is the consumer.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const DAY = 86_400_000;
+
+const PLAQUE_SIZES: PlaqueSize[] = ["card", "header", "row"];
+
+/** The three states, as the records that produce them. */
+const PLAQUE_STATES: Array<{ label: string; build: Parameters<typeof Plaque>[0]["build"] }> = [
+  {
+    label: "healthy",
+    build: {
+      reproduction_count: 41,
+      rebuild_count: 3,
+      last_confirmed_at: new Date(Date.now() - 3 * DAY).toISOString(),
+      last_confirmed_model: "claude-sonnet-4-5",
+      published_at: new Date(Date.now() - 40 * DAY).toISOString(),
+    },
+  },
+  {
+    label: "stale — lamp at 45%, copy still a statement of fact",
+    build: {
+      reproduction_count: 12,
+      rebuild_count: 0,
+      last_confirmed_at: new Date(Date.now() - 250 * DAY).toISOString(),
+      last_confirmed_model: "claude-sonnet-4-0",
+      published_at: new Date(Date.now() - 400 * DAY).toISOString(),
+    },
+  },
+  {
+    label: "never reproduced, never confirmed — no lamp",
+    build: {
+      reproduction_count: 0,
+      rebuild_count: 0,
+      last_confirmed_at: null,
+      last_confirmed_model: null,
+      published_at: new Date(Date.now() - 6 * DAY).toISOString(),
+    },
+  },
+  {
+    label: "never reproduced, but the creator has confirmed it",
+    build: {
+      reproduction_count: 0,
+      rebuild_count: 0,
+      last_confirmed_at: new Date(Date.now() - 1 * DAY).toISOString(),
+      last_confirmed_model: "claude-opus-4-5",
+      published_at: new Date(Date.now() - 6 * DAY).toISOString(),
+    },
+  },
+];
+
+const CREDIT_SOURCE = {
+  source_title_at_fork: "Inbox triage agent",
+  source_handle_at_fork: "amara",
+};
+
+/** serialiseChangeSet's shape, at the two lengths the truncation turns on. */
+function changeLines(count: number): ChangeLine[] {
+  const kinds = ["changed", "added", "removed", "header"] as const;
+  const texts = [
+    "Swapped the model from Sonnet 4.0 to Opus 4.5",
+    "Added a retry prompt 'Back off on 429'",
+    "Removed the spreadsheet export",
+    "Renamed the build",
+    "Changed the result 'What it did'",
+    "Added a dataset 'Two weeks of live mail'",
+    "Removed the cost note",
+    "Added 3 steps to the sequence",
+    "Changed the prompt 'Classify the email'",
+    "Added an evidence note 'It held up on 300'",
+  ];
+  return Array.from({ length: count }, (_, i) => ({
+    kind: kinds[i % kinds.length],
+    key: `kit-change-${i}`,
+    text: texts[i % texts.length],
+  }));
+}
+
+const GAP_STATES: GapState[] = ["unsolved", "funded", "solved"];
+
+/** The props a gap marker needs to show everything it has, per state. */
+function gapProps(state: GapState) {
+  return {
+    state,
+    category: "configuration",
+    categoryLabel: "Model settings",
+    problem:
+      "The retry prompt gives up after one 429, so a long run dies on the first rate limit.",
+    problemFallback: "The creator has not written down what is wrong yet.",
+    reward: state === "unsolved" ? null : "£150",
+    deadline: state === "unsolved" ? null : "closes in 6 days",
+    solutions: state === "solved" ? "1 solution" : "2 solutions",
+    summary:
+      state === "solved"
+        ? "1 part solved · £150"
+        : state === "unsolved"
+          ? "1 part unsolved"
+          : "1 part unsolved · £150",
+  };
+}
+
+/** A labelled cell, so a reviewer can name what they are looking at. */
+function Cell({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs, minWidth: 0 }}>
+      <span style={{ ...eyebrow, color: t.text2 }}>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function BrandSection() {
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: SPACE.md }}>
+      <h2 style={{ ...eyebrow, color: t.text2, margin: 0 }}>
+        Plaque — three states × three sizes
+      </h2>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(320px, 100%), 1fr))",
+          gap: SPACE.md,
+          alignItems: "start",
+          padding: SPACE.md,
+          background: t.glass,
+          borderRadius: r.card,
+          borderWidth: 1,
+          borderStyle: "solid",
+          borderColor: t.line,
+        }}
+      >
+        {PLAQUE_SIZES.map((size) =>
+          PLAQUE_STATES.map((sample) => (
+            <Cell key={`${size}-${sample.label}`} label={`${size} · ${sample.label}`}>
+              <Plaque build={sample.build} size={size} />
+            </Cell>
+          ))
+        )}
+      </div>
+
+      <h2 style={{ ...eyebrow, color: t.text2, margin: 0 }}>Rebuild credit</h2>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(360px, 100%), 1fr))",
+          gap: SPACE.md,
+          alignItems: "start",
+          padding: SPACE.md,
+          background: t.glass,
+          borderRadius: r.card,
+          borderWidth: 1,
+          borderStyle: "solid",
+          borderColor: t.line,
+        }}
+      >
+        <Cell label="credit only — a card has no Δ to show">
+          <RebuildCredit source={CREDIT_SOURCE} />
+        </Cell>
+        <Cell label="linked — title to the build, handle to its creator">
+          <RebuildCredit
+            source={CREDIT_SOURCE}
+            to="/b2/inbox-triage-agent-demo"
+            handleTo="/creator/amara"
+          />
+        </Cell>
+        <Cell label="source deleted — snapshot text, no link">
+          <RebuildCredit source={CREDIT_SOURCE} gone />
+        </Cell>
+        <Cell label="no handle on the source">
+          <RebuildCredit
+            source={{ source_title_at_fork: "A build by nobody in particular", source_handle_at_fork: null }}
+          />
+        </Cell>
+        <Cell label="Δ — three changes, nothing to expand">
+          <RebuildCredit source={CREDIT_SOURCE} changes={changeLines(3)} />
+        </Cell>
+        <Cell label="Δ — six changes, still nothing to expand">
+          <RebuildCredit source={CREDIT_SOURCE} changes={changeLines(6)} />
+        </Cell>
+        <Cell label="Δ — ten changes, truncated to six · click 'and 4 more'">
+          <RebuildCredit source={CREDIT_SOURCE} changes={changeLines(10)} />
+        </Cell>
+        <Cell label="Δ — worked out, and nothing differs">
+          <RebuildCredit source={CREDIT_SOURCE} changes={[]} />
+        </Cell>
+        <Cell label="on a card — clipped to one line, whole sentence on hover">
+          <div style={{ maxWidth: 240 }}>
+            <RebuildCredit
+              source={{
+                source_title_at_fork:
+                  "A source with a title far too long to sit on one line of a gallery card",
+                source_handle_at_fork: "someone-with-a-long-handle",
+              }}
+              placement="card"
+            />
+          </div>
+        </Cell>
+      </div>
+
+      <h2 style={{ ...eyebrow, color: t.text2, margin: 0 }}>Category chips</h2>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: SPACE.sm,
+          padding: SPACE.md,
+          background: t.glass,
+          borderRadius: r.card,
+          borderWidth: 1,
+          borderStyle: "solid",
+          borderColor: t.line,
+        }}
+      >
+        <Row label="the nine">
+          {CATEGORIES.map((category) => (
+            <CategoryChip key={category} category={category} label={category} />
+          ))}
+        </Row>
+        <Row label="with counts">
+          {CATEGORIES.slice(0, 5).map((category, index) => (
+            <CategoryChip
+              key={category}
+              category={category}
+              label={category}
+              count={(index + 1) * 3}
+            />
+          ))}
+        </Row>
+        <Row label="not one of the nine — the measured fallback pair">
+          <CategoryChip category="founders" label="founders" />
+          <CategoryChip category="ops" label="ops" />
+          <CategoryChip category="" label="no category at all" />
+        </Row>
+        <Row label="synonyms resolve rather than falling back">
+          <CategoryChip category="gap" label="gap → breakage" />
+          <CategoryChip category="agent" label="agent → agents" />
+        </Row>
+        <Row label="selectable — click, or Tab and press Enter">
+          <KitChipRow />
+        </Row>
+        <Row label="overflow — names no category, so wears no ground">
+          <CategoryChip category="instruction" label="instruction" />
+          <CategoryChip category="data" label="data" />
+          <CategoryChip variant="overflow" count={4} />
+        </Row>
+      </div>
+
+      <h2 style={{ ...eyebrow, color: t.text2, margin: 0 }}>
+        Gap marker — three placements × three states
+      </h2>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(340px, 100%), 1fr))",
+          gap: SPACE.md,
+          alignItems: "start",
+          padding: SPACE.md,
+          background: t.glass,
+          borderRadius: r.card,
+          borderWidth: 1,
+          borderStyle: "solid",
+          borderColor: t.line,
+        }}
+      >
+        {GAP_STATES.map((state) => (
+          <Cell key={`card-${state}`} label={`card · ${state} — the edge is the treatment`}>
+            {/* The edge belongs to the host surface, so the sample draws the
+                host: gapEdge on an ordinary card shape, the marker's line
+                inside it. This is exactly what GalleryCard's frame does. */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: SPACE.xs,
+                padding: SPACE.sm,
+                borderRadius: r.card,
+                background: t.cardFrame,
+                ...gapEdge("card", state),
+              }}
+            >
+              <span style={{ ...cardTitle, fontSize: 18, color: t.text }}>
+                Works, except for the retry prompt
+              </span>
+              <GapMarker placement="card" {...gapProps(state)} />
+            </div>
+          </Cell>
+        ))}
+
+        {GAP_STATES.map((state) => (
+          <Cell key={`row-${state}`} label={`row · ${state} — dashed left edge`}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: SPACE.xs,
+                padding: SPACE.sm,
+                background: t.recess,
+                borderRadius: r.control,
+                ...gapEdge("row", state),
+              }}
+            >
+              <GapMarker placement="row" {...gapProps(state)} />
+              <span style={{ color: t.text2 }}>Calendar-aware delegation</span>
+            </div>
+          </Cell>
+        ))}
+
+        {GAP_STATES.map((state) => (
+          <Cell key={`panel-${state}`} label={`panel · ${state}`}>
+            <GapMarker
+              placement="panel"
+              {...gapProps(state)}
+              primaryAction={
+                state === "solved"
+                  ? undefined
+                  : { label: "Offer a solution", onClick: () => {} }
+              }
+              secondaryActions={
+                state === "solved" ? null : (
+                  <Button variant="ghost" size="sm">
+                    I need this too
+                  </Button>
+                )
+              }
+            />
+          </Cell>
+        ))}
+
+        <Cell label="panel · a build-level ask — names no part, so shows no chip">
+          <GapMarker
+            placement="panel"
+            state="funded"
+            problem={null}
+            problemFallback="The creator has not written down what is wrong yet."
+            reward="£80"
+            solutions="no solutions yet"
+            primaryAction={{ label: "Offer a solution", onClick: () => {} }}
+          />
+        </Cell>
+      </div>
+    </section>
+  );
+}
+
+/** The chip row that actually toggles, so selection can be seen and not just read. */
+function KitChipRow() {
+  const [picked, setPicked] = useState<string[]>(["configuration"]);
+  return (
+    <>
+      {CATEGORIES.slice(0, 5).map((category) => (
+        <CategoryChip
+          key={category}
+          category={category}
+          label={category}
+          selected={picked.includes(category)}
+          onClick={() =>
+            setPicked((current) =>
+              current.includes(category)
+                ? current.filter((c) => c !== category)
+                : [...current, category]
+            )
+          }
+        />
+      ))}
+    </>
   );
 }
 
@@ -646,6 +1034,8 @@ export default function Kit() {
           </Sheet>
         </Row>
       </Section>
+
+      <BrandSection />
 
       <CardSection />
 

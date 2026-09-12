@@ -406,7 +406,12 @@ export function PublishControl({
       ? rebuildGate
       : readiness;
 
-  /** Frozen at the fork, and rendered by the card exactly as it reads here. */
+  /**
+   * Frozen at the fork. The publish sheet's card no longer takes it — it reads
+   * the same two columns off the draft itself (BG-P11) — so this is the
+   * rebuild section's copy, shown beside the note where the sheet says the
+   * credit is permanent.
+   */
   const credit = isRebuild ? rebuildCreditLine(build) : null;
 
   /** The pill only opens a sheet, so nothing but a write in flight closes it. */
@@ -555,7 +560,6 @@ export function PublishControl({
             onConfirm={confirm}
             isPublishing={isPublishing}
             publishError={publishError}
-            credit={credit}
             // Both sections can apply at once: a rebuild is allowed to leave a
             // hole in what it rebuilt. Undefined when neither does, so a plain
             // draft passes the sheet exactly what it passed before NS-P51.

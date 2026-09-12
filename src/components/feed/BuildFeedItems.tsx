@@ -21,7 +21,6 @@
 import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
-import { rebuildCreditLine } from "@/components/build/rebuildCredit";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import {
@@ -84,7 +83,7 @@ function BuildItem({
 }) {
   return (
     <div data-testid="feed-item-build" style={itemFrame}>
-      <GalleryCard build={item.build} srcByPath={srcByPath} credit={null} />
+      <GalleryCard build={item.build} srcByPath={srcByPath} />
     </div>
   );
 }
@@ -98,11 +97,10 @@ function BuildItem({
  * account of their own build. Putting it under the card would read as a
  * caption on somebody else's work.
  *
- * THE CREDIT IS COMPOSED HERE, not inside the card, for the same reason the
- * gallery composes it in the page: rebuildCreditLine reads the two frozen
- * snapshot columns, which arrive on the feed row with everything else, so a
- * rebuild's credit costs the feed nothing. See rebuildCredit.ts for why it is
- * a string rather than a component.
+ * THE CREDIT IS THE CARD'S (BG-P11). It reads the two frozen snapshot columns
+ * off the record it is handed, and the feed row carries them like everything
+ * else the card shows — so the feed neither composes the credit nor can decline
+ * to pass it, which is what "the credit is structural" has to mean in code.
  *
  * A rebuild with no note renders the card alone. "A rebuild has to change
  * something" is enforced at publish; saying what you changed in prose is not,
@@ -135,11 +133,7 @@ function RebuildItem({
           {item.note}
         </p>
       ) : null}
-      <GalleryCard
-        build={item.build}
-        srcByPath={srcByPath}
-        credit={rebuildCreditLine(item.build)}
-      />
+      <GalleryCard build={item.build} srcByPath={srcByPath} />
     </div>
   );
 }
@@ -208,7 +202,7 @@ function BountyItem({
           </span>
         ) : null}
       </div>
-      <GalleryCard build={item.build} srcByPath={srcByPath} credit={null} />
+      <GalleryCard build={item.build} srcByPath={srcByPath} />
     </div>
   );
 }
