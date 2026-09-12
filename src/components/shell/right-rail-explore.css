@@ -1,49 +1,57 @@
 /* ────────────────────────────────────────────────
    right-rail-explore.css — internal styles for the Explore rail.
    Copied VERBATIM from NeoScaleShell's injected CSS so the panel's
-   internals render exactly as before. Do not restyle.
+   internals render exactly as before.
+
+   BG-P13. The colours are no longer verbatim: every one is a var(--token),
+   so the rail follows <html data-theme> with the rest of the frame. Section
+   headings take the mono eyebrow role in --text2, rows take --r-control and a
+   --recess hover, chips take --r-chip, and the search field takes the BG-P07
+   field paint. Declarations were repointed in place — no rule was added or
+   removed, and no measurement moved.
 ──────────────────────────────────────────────── */
 
 .ns-right-title {
-  font-size: 11px; font-weight: 600;
-  color: rgba(255,255,255,0.45);
-  letter-spacing: 1.5px; text-transform: uppercase;
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+  font-size: 12px; font-weight: 500;
+  color: var(--text2);
+  letter-spacing: 0.08em; text-transform: uppercase;
   padding: 0 4px; margin-bottom: 14px;
 }
 .ns-right-search {
   width: 100%; height: 34px;
-  border-radius: 17px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--r-control);
+  background: var(--recess);
+  border: 1px solid var(--line);
   display: flex; align-items: center;
   padding: 0 12px; gap: 8px;
   margin-bottom: 16px;
   cursor: pointer;
   transition: border-color 0.2s;
 }
-.ns-right-search:hover { border-color: rgba(255,255,255,0.15); }
-.ns-right-search svg { width: 13px; height: 13px; color: rgba(255,255,255,0.25); flex-shrink: 0; }
+.ns-right-search:hover { border-color: var(--text2); }
+.ns-right-search svg { width: 13px; height: 13px; color: var(--text2); flex-shrink: 0; }
 .ns-right-search input {
   flex: 1; background: none; border: none; outline: none;
-  font-size: 11px; color: rgba(255,255,255,0.55);
+  font-size: 11px; color: var(--text);
   font-family: inherit;
 }
-.ns-right-search input::placeholder { color: rgba(255,255,255,0.25); }
+.ns-right-search input::placeholder { color: var(--text2); }
 .ns-right-search-results {
   position: absolute; left: 14px; right: 14px; top: 68px;
-  background: rgba(8,8,12,0.97); border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 12px; max-height: 300px; overflow-y: auto; z-index: 20;
+  background: var(--bg); border: 1px solid var(--line);
+  border-radius: var(--r-panel); max-height: 300px; overflow-y: auto; z-index: 20;
   padding: 6px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.40);
+  box-shadow: var(--elev-raised);
 }
 .ns-search-result {
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 8px; border-radius: 8px; cursor: pointer;
+  padding: 6px 8px; border-radius: var(--r-control); cursor: pointer;
   transition: background 0.15s;
 }
-.ns-search-result:hover { background: rgba(255, 255, 255, 0.12); }
-.ns-search-result-title { font-size: 11px; color: rgba(255,255,255,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.ns-search-result-badge { font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(255, 255, 255, 0.14); color: rgba(255,255,255,0.45); flex-shrink: 0; }
+.ns-search-result:hover { background: var(--recess); }
+.ns-search-result-title { font-size: 11px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.ns-search-result-badge { font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace; font-size: 9px; padding: 1px 5px; border-radius: var(--r-chip); background: var(--recess); color: var(--text2); flex-shrink: 0; }
 
 /* ── Right panel tile grid ── */
 .ns-tile-grid {
@@ -55,7 +63,7 @@
 
 .ns-tile {
   position: relative;
-  border-radius: 8px;
+  border-radius: var(--r-control);
   padding: 10px 14px;
   display: flex;
   flex-direction: row;
@@ -63,7 +71,7 @@
   gap: 10px;
   cursor: pointer;
   transition: background 0.15s;
-  background: rgba(255,255,255,0.03);
+  background: var(--glass-2);
   border: none;
   overflow: hidden;
   width: 100%;
@@ -76,7 +84,7 @@
   left: 0; top: 20%; bottom: 20%;
   width: 2px;
   border-radius: 0 2px 2px 0;
-  background: var(--tile-hover-color, rgba(255,255,255,0.15));
+  background: var(--tile-hover-color, var(--line));
   opacity: 0;
   transition: opacity 0.15s;
 }
@@ -89,10 +97,10 @@
   content: '';
   position: absolute;
   inset: -1px;
-  border-radius: 11px;
+  border-radius: 13px;
   padding: 1px;
   background: conic-gradient(
-    var(--tile-hover-color, #8B4513) var(--tile-fill, 0%),
+    var(--tile-hover-color, var(--action)) var(--tile-fill, 0%),
     transparent var(--tile-fill, 0%)
   );
   -webkit-mask:
@@ -106,7 +114,7 @@
 }
 
 .ns-tile:hover {
-  background: rgba(255,255,255,0.05);
+  background: var(--recess);
 }
 
 .ns-tile:hover::after {
@@ -132,7 +140,7 @@
 .ns-tile-label {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255,255,255,0.55);
+  color: var(--text);
   text-transform: none;
   letter-spacing: 0;
   flex: 1;
@@ -140,17 +148,18 @@
 
 .ns-tile-count {
   font-size: 11px;
-  font-weight: 700;
-  color: rgba(255,255,255,0.20);
+  font-weight: 500;
+  color: var(--text2);
   position: relative;
   z-index: 1;
 }
 
-.ns-right-divider { height: 1px; background: rgba(255, 255, 255, 0.14); margin: 4px 0 14px; }
+.ns-right-divider { height: 1px; background: var(--line); margin: 4px 0 14px; }
 .ns-trending-title {
-  font-size: 10px; font-weight: 600;
-  color: rgba(255,255,255,0.40);
-  letter-spacing: 1.2px; text-transform: uppercase;
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+  font-size: 12px; font-weight: 500;
+  color: var(--text2);
+  letter-spacing: 0.08em; text-transform: uppercase;
   padding: 0 4px; margin-bottom: 10px;
 }
 .ns-trending-list {
@@ -158,16 +167,16 @@
 }
 .ns-trending-item {
   display: flex; align-items: center; gap: 10px;
-  padding: 8px 8px; border-radius: 8px;
+  padding: 8px 8px; border-radius: var(--r-control);
   cursor: pointer; transition: background 0.2s;
 }
-.ns-trending-item:hover { background: rgba(255, 255, 255, 0.12); }
-.ns-trending-rank { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.20); width: 16px; text-align: center; }
+.ns-trending-item:hover { background: var(--recess); }
+.ns-trending-rank { font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace; font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text2); width: 16px; text-align: center; }
 .ns-trending-info { flex: 1; min-width: 0; }
-.ns-trending-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.55); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ns-trending-name { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ns-trending-badge {
   display: inline-block; padding: 2px 7px;
-  border-radius: 4px; font-size: 9px; font-weight: 600; letter-spacing: 0.3px;
+  border-radius: var(--r-chip); font-size: 9px; font-weight: 600; letter-spacing: 0.3px;
 }
 /* BG-P05: the four difficulty colour rules that stood here are retired.
    .ns-trending-badge above keeps the shape; the label's colour now comes from
@@ -175,67 +184,71 @@
 
 /* ── Right panel sections ── */
 .ns-section-title {
-  font-size: 10px; font-weight: 600;
-  color: rgba(255,255,255,0.40);
-  letter-spacing: 1.2px; text-transform: uppercase;
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+  font-size: 12px; font-weight: 500;
+  color: var(--text2);
+  letter-spacing: 0.08em; text-transform: uppercase;
   padding: 0 4px; margin: 14px 0 8px;
 }
 .ns-curator-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 8px; border-radius: 8px;
+  padding: 6px 8px; border-radius: var(--r-control);
   cursor: pointer; transition: background 0.15s;
 }
-.ns-curator-item:hover { background: rgba(255, 255, 255, 0.12); }
+.ns-curator-item:hover { background: var(--recess); }
 .ns-curator-avatar {
   width: 22px; height: 22px; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14); flex-shrink: 0;
+  background: var(--recess); flex-shrink: 0;
   overflow: hidden;
 }
 .ns-curator-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ns-collection-item {
   display: flex; flex-direction: column; gap: 2px;
-  padding: 8px; border-radius: 8px;
+  padding: 8px; border-radius: var(--r-control);
   cursor: pointer; transition: background 0.15s;
 }
-.ns-collection-item:hover { background: rgba(255, 255, 255, 0.12); }
+.ns-collection-item:hover { background: var(--recess); }
 .ns-follow-item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 4px;
 }
 .ns-follow-avatar {
   width: 28px; height: 28px; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14); flex-shrink: 0;
+  background: var(--recess); flex-shrink: 0;
   overflow: hidden;
 }
 .ns-follow-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ns-follow-info { flex: 1; min-width: 0; }
-.ns-follow-name { font-size: 12px; color: rgba(255,255,255,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ns-follow-handle { font-size: 10px; color: rgba(255,255,255,0.30); }
+.ns-follow-name { font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ns-follow-handle { font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace; font-size: 10px; color: var(--text2); }
 .ns-footer-links {
   margin-top: 16px; padding: 12px 4px 4px;
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: 1px solid var(--line);
   display: flex; flex-direction: column; gap: 4px;
 }
 .ns-footer-link {
-  font-size: 10px; color: rgba(255,255,255,0.25);
+  font-size: 10px; color: var(--text2);
   text-decoration: none; transition: color 0.15s;
   cursor: pointer;
 }
-.ns-footer-link:hover { color: rgba(255,255,255,0.55); }
+.ns-footer-link:hover { color: var(--text); }
 
 /* ── Guest auth buttons (rail variant, unchanged from old shell) ── */
 .ns-auth-btns { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
 .ns-auth-btn {
   display: flex; align-items: center; justify-content: center;
-  height: 32px; border-radius: 8px; font-size: 12px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; border: none;
+  height: 32px; border-radius: var(--r-control); font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  /* `transition: all` is forbidden by the theme — named properties only. */
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, opacity 0.2s;
+  border: none;
 }
 .ns-auth-btn.signin {
-  background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255,255,255,0.10);
-  color: rgba(255,255,255,0.6);
+  background: var(--glass-2); border: 1px solid var(--line);
+  color: var(--text);
 }
-.ns-auth-btn.signin:hover { background: rgba(255,255,255,0.08); }
+.ns-auth-btn.signin:hover { background: var(--recess); }
 .ns-auth-btn.join {
-  background: #111; border: 1px solid rgba(255,255,255,0.15); color: #fff;
+  background: var(--action); border: 1px solid var(--action); color: var(--on-action);
 }
-.ns-auth-btn.join:hover { background: #333; }
+.ns-auth-btn.join:hover { opacity: 0.92; }

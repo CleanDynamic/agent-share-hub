@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { FollowButton } from "@/components/FollowButton";
 import { DIFFICULTY_LABEL_CLASS, displayContentType } from "@/lib/content-types";
+import { focusRing } from "@/lib/theme/focus";
+import { t } from "@/lib/theme/tokens";
+import { eyebrow } from "@/lib/theme/type";
 import "./right-rail-explore.css";
 
 /* ────────────────────────────────────────────────
@@ -17,18 +20,17 @@ import "./right-rail-explore.css";
 ──────────────────────────────────────────────── */
 
 const POST_TYPE_TILES = [
-  { value: 'blueprint', label: 'Blueprints', emoji: '🔷', color: '#8B4513' },
-  { value: 'blog',      label: 'Blogs',      emoji: '📝', color: '#3B82F6' },
-  { value: 'bounty',    label: 'Bounties',   emoji: '🎯', color: '#F59E0B' },
+  { value: 'blueprint', label: 'Blueprints', emoji: '🔷' },
+  { value: 'blog',      label: 'Blogs',      emoji: '📝' },
+  { value: 'bounty',    label: 'Bounties',   emoji: '🎯' },
 ];
 
-const TILE_HOVER_COLORS = [
-  '#8B4513', '#1F7A6D', '#7C3AED', '#3B82F6',
-  '#F59E0B', '#22C55E', '#EC4899', '#06B6D4',
-  '#A78BFA', '#F97316',
-];
-const randomTileColor = () =>
-  TILE_HOVER_COLORS[Math.floor(Math.random() * TILE_HOVER_COLORS.length)];
+/* BG-P13. The tiles used to pick a hover colour at random from ten hard-coded
+   hexes on every mouse-enter. The nine category hues encode a part's category
+   and are never used decoratively, and a colour drawn from a hat cannot be
+   repointed at a token at all — so the rainbow is gone and the hover edge is
+   --action, the same mark the active nav row carries. */
+const TILE_EDGE = t.action;
 
 // BG-P05. The four `.ns-badge-*` difficulty classes are retired: difficulty is
 // not a part category and carries no colour. The trending badge keeps its shape
@@ -37,6 +39,9 @@ const randomTileColor = () =>
 function diffBadgeClass(_difficulty?: string): string {
   return DIFFICULTY_LABEL_CLASS;
 }
+
+/** The mono eyebrow the rail's section headings wear, in --text2. */
+const SECTION_LABEL = { ...eyebrow, color: t.text2 } as const;
 
 export function RightRailExplore() {
   const navigate = useNavigate();
@@ -47,6 +52,10 @@ export function RightRailExplore() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchPeopleResults, setSearchPeopleResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  /* The field's ring is tracked here rather than in CSS because
+     `.ns-right-search input` sets `outline: none`, and an inline style is the
+     only thing that outranks it without adding a rule to the stylesheet. */
+  const [searchFocused, setSearchFocused] = useState(false);
 
   /* ── Supabase: trending ── */
   const { data: trendingItems } = useQuery({
@@ -164,6 +173,9 @@ export function RightRailExplore() {
         <input
           placeholder="Quick search…"
           value={searchQuery}
+          style={searchFocused ? { ...focusRing } : undefined}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
           onChange={(e) => handleSearchChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && searchQuery.trim().length >= 1) {
@@ -175,17 +187,15 @@ export function RightRailExplore() {
       </div>
       {searchOpen && (
         <div className="ns-right-search-results">
-          {searchLoading && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.35)" }}>Searching…</div>}
-          {!searchLoading && searchResults.length === 0 && searchPeopleResults.length === 0 && <div style={{ padding: 8, fontSize: 10, color: "rgba(255,255,255,0.35)" }}>No results</div>}
+          {searchLoading && <div style={{ padding: 8, fontSize: 10, color: t.text2 }}>Searching…</div>}
+          {!searchLoading && searchResults.length === 0 && searchPeopleResults.length === 0 && <div style={{ padding: 8, fontSize: 10, color: t.text2 }}>No results</div>}
 
           {/* People results */}
           {searchPeopleResults && searchPeopleResults.length > 0 && (
             <>
               <div style={{
-                fontSize: 9, fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.10em',
-                color: 'rgba(255,255,255,0.35)',
+                ...SECTION_LABEL,
+                fontSize: 10,
                 padding: '4px 10px 2px 10px',
               }}>
                 People
@@ -204,34 +214,33 @@ export function RightRailExplore() {
                 >
                   <div style={{
                     width: 20, height: 20, borderRadius: '50%',
-                    background: 'rgba(139,69,19,0.15)',
-                    border: '1px solid rgba(139,69,19,0.25)',
+                    background: t.recess,
+                    border: `1px solid ${t.line}`,
                     display: 'flex', alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 9, fontWeight: 700, color: '#8B4513',
+                    fontSize: 9, fontWeight: 500, color: t.text,
                     flexShrink: 0,
                   }}>
                     {(p.display_name ?? p.username)[0].toUpperCase()}
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 11,
-                      color: 'rgba(255,255,255,0.70)',
+                      color: t.text,
                       overflow: 'hidden', textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap' }}>
                       {p.display_name}
                     </div>
                     <div style={{ fontSize: 10,
-                      color: 'rgba(255,255,255,0.35)' }}>
+                      fontFamily: eyebrow.fontFamily,
+                      color: t.text2 }}>
                       @{p.username}
                     </div>
                   </div>
                 </div>
               ))}
               <div style={{
-                fontSize: 9, fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.10em',
-                color: 'rgba(255,255,255,0.35)',
+                ...SECTION_LABEL,
+                fontSize: 10,
                 padding: '4px 10px 2px 10px',
                 marginTop: 4,
               }}>
@@ -252,7 +261,7 @@ export function RightRailExplore() {
               setSearchOpen(false);
               setSearchQuery("");
             }}>
-              <span style={{ fontSize: 10, color: "#55e0d2" }}>See all results →</span>
+              <span style={{ fontSize: 10, color: t.action }}>See all results →</span>
             </div>
           )}
         </div>
@@ -260,10 +269,7 @@ export function RightRailExplore() {
 
       {/* ── Section label */}
       <div style={{
-        fontSize: 10, fontWeight: 700,
-        color: 'rgba(255,255,255,0.35)',
-        letterSpacing: '1.4px',
-        textTransform: 'uppercase' as const,
+        ...SECTION_LABEL,
         padding: '0 4px',
         marginBottom: 10,
       }}>
@@ -277,20 +283,14 @@ export function RightRailExplore() {
             key={tile.value}
             className="ns-tile"
             style={{
-              '--tile-hover-color': tile.color,
+              '--tile-hover-color': TILE_EDGE,
             } as React.CSSProperties}
-            onMouseEnter={e => {
-              const color = randomTileColor();
-              (e.currentTarget as HTMLElement).style.setProperty(
-                '--tile-hover-color', color
-              );
-            }}
             onClick={() => navigate("/")}
           >
             <span className="ns-tile-label">{tile.label}</span>
             <span style={{
               fontSize: 11,
-              color: 'rgba(255,255,255,0.25)',
+              color: t.text2,
               marginLeft: 'auto',
               flexShrink: 0,
             }}>→</span>
@@ -319,7 +319,7 @@ export function RightRailExplore() {
           </div>
         ))}
         {(!trendingItems || trendingItems.length === 0) && (
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", padding: "8px 8px" }}>
+          <div style={{ fontSize: 11, color: t.text2, padding: "8px 8px" }}>
             Loading…
           </div>
         )}
@@ -335,10 +335,10 @@ export function RightRailExplore() {
             return (
               <div key={pick.id} className="ns-curator-item" onClick={() => { if (content) { navigate(`/content/${content.id}`); } }}>
                 <div className="ns-curator-avatar">
-                  {curator?.avatar_url ? <img src={curator.avatar_url} alt="" /> : <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>✦</span>}
+                  {curator?.avatar_url ? <img src={curator.avatar_url} alt="" /> : <span style={{ fontSize: 10, color: t.text2, display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>✦</span>}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{content?.title}</div>
+                  <div style={{ fontSize: 11, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{content?.title}</div>
                   <span className="ns-search-result-badge">{content?.content_type ? displayContentType(content.content_type) : ""}</span>
                 </div>
               </div>
@@ -353,8 +353,8 @@ export function RightRailExplore() {
           <div className="ns-section-title">Collections</div>
           {featuredCollections.map((col: any) => (
             <div key={col.id} className="ns-collection-item" onClick={() => navigate(`/collection/${col.slug || col.id}`)}>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>{col.title}</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.30)" }}>
+              <div style={{ fontSize: 12, color: t.text, fontWeight: 500 }}>{col.title}</div>
+              <div style={{ fontSize: 10, fontFamily: eyebrow.fontFamily, color: t.text2 }}>
                 {(col.profiles as any)?.display_name || (col.profiles as any)?.username || "Creator"} · {col.item_count} items
               </div>
             </div>
@@ -369,7 +369,7 @@ export function RightRailExplore() {
           {followSuggestions.map((s: any) => (
             <div key={s.id} className="ns-follow-item">
               <div className="ns-follow-avatar" style={{ cursor: "pointer" }} onClick={() => navigate(`/creator/${s.username}`)}>
-                {s.avatar_url ? <img src={s.avatar_url} alt="" /> : <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>{(s.display_name || "?")[0]}</span>}
+                {s.avatar_url ? <img src={s.avatar_url} alt="" /> : <span style={{ fontSize: 11, color: t.text2, display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>{(s.display_name || "?")[0]}</span>}
               </div>
               <div className="ns-follow-info" style={{ cursor: "pointer" }} onClick={() => navigate(`/creator/${s.username}`)}>
                 <div className="ns-follow-name">{s.display_name || s.username}</div>
