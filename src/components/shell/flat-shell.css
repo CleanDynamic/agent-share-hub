@@ -157,7 +157,13 @@
   cursor: pointer;
 }
 
-/* ── Left nav ── */
+/* ── Left nav ──
+     BG-P13. The capsule was dropped with the rest of the shape language, so the
+     active row is NOT a filled pill: it is a 2px --action left edge, --action
+     text, and a 12%-alpha --action wash. Every row carries the edge in
+     `transparent` so that becoming active changes a colour and never a
+     position — a border added only on the active row would shove its icon 2px
+     sideways on every navigation. ── */
 .fs-nav-list {
   list-style: none;
   display: flex;
@@ -169,7 +175,7 @@
 }
 .fs-nav-divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--line);
   margin: 8px 4px;
 }
 .fs-nav-item {
@@ -177,15 +183,20 @@
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  border-radius: 100px;
+  border-radius: var(--r-control);
+  border-left: 2px solid transparent;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.70);
-  transition: background 0.15s ease, color 0.15s ease;
+  color: var(--text2);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-.fs-nav-item:hover { background: rgba(255, 255, 255, 0.08); }
+.fs-nav-item:hover {
+  background: var(--recess);
+  color: var(--text);
+}
 .fs-nav-item.active {
-  background: rgba(232, 87, 26, 0.12);
-  color: #E8571A;
+  background: color-mix(in oklch, var(--action) 12%, transparent);
+  border-left-color: var(--action);
+  color: var(--action);
 }
 .fs-nav-icon {
   width: 20px;
@@ -196,9 +207,9 @@
   flex-shrink: 0;
 }
 .fs-nav-label {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
-  letter-spacing: 0.1px;
+  letter-spacing: 0.01em;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -211,22 +222,25 @@
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  border-radius: 100px;
+  border-radius: var(--r-chip);
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
   font-size: 10px;
-  font-weight: 700;
-  background: #E8571A;
-  color: #fff;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  background: var(--recess);
+  color: var(--text);
   flex-shrink: 0;
 }
+/* Drafts. Same recess, quieter label — the count is context, not a summons. */
 .fs-nav-badge.muted {
-  background: rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.45);
+  background: var(--recess);
+  color: var(--text2);
 }
 .fs-nav-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #E8571A;
+  background: var(--action);
   margin-left: auto;
   flex-shrink: 0;
 }
