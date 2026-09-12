@@ -58,6 +58,7 @@ import {
   tabular,
 } from "@/lib/theme/type";
 import {
+  aspectOf,
   freshnessLabel,
   isStale,
   type BuildShape,
@@ -73,7 +74,9 @@ import {
   StudyCardBody,
   type CardBodyProps,
 } from "./cardBodies";
-import { CardThread, type CardLayout } from "./CardThread";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CardThread, THREAD_PAD, type CardLayout } from "./CardThread";
+import { BODY_HEIGHT } from "./cardBodies";
 import { coverMedia, mediaAlt, postMediaOf, stillFor, type MediaSrcMap } from "./cardMedia";
 
 /**
@@ -108,6 +111,15 @@ const CONTENT_PAD = 16;
  * in the one case where the title is the only thing carrying the card.
  */
 const TITLE_NO_PICTURE_PX = 26;
+
+/**
+ * One line of the title, for the skeleton to reserve.
+ *
+ * Derived from the role rather than guessed: 22 × 1.25 is the line box
+ * `type.cardTitle` produces, so a skeleton line is the height a title line will
+ * be and the swap moves nothing.
+ */
+const TITLE_LINE = Math.round(22 * 1.25);
 
 export interface GalleryCardProps {
   build: GalleryBuild;
@@ -276,6 +288,87 @@ export function GalleryCard({
         ) : null}
       </div>
     </Frame>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   The skeleton
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The card's shape before the card exists.
+ *
+ * THE SAME PROPORTIONS, NOT AN APPROXIMATION OF THEM. It spends FRAME_PAD,
+ * CONTENT_PAD, THREAD_PAD and BODY_HEIGHT — the same constants the real card
+ * spends — so a skeleton cannot drift from the thing it stands in for, and the
+ * swap when the data lands does not move the page. In feed layout the media
+ * block reserves its height with `aspect-ratio` at `aspectOf(null).capped`,
+ * which is the ratio the real card uses for a row whose dimensions it does not
+ * know yet: the skeleton and the first paint of the loaded card are the same box.
+ *
+ * NO BACKDROP-FILTER. The frame's glass is the one blurred surface on a real
+ * card; a grid of twenty-four skeletons blurring the page for the few hundred
+ * milliseconds before the data arrives would be paying the card's whole
+ * compositing cost for a placeholder. The surface colour is the frame's own, so
+ * the shape and the tone still read as the card.
+ *
+ * The shimmer is BG-P07's: `--recess` with a highlight swept across it by the
+ * `bgShimmer` keyframe, reduced-motion answered in both the style object and the
+ * stylesheet. Nothing here re-implements it.
+ */
+export function GalleryCardSkeleton({ layout = "grid" }: { layout?: CardLayout }) {
+  return (
+    <div
+      data-visual-slot="gallery-card-skeleton"
+      data-card-layout={layout}
+      aria-hidden
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        background: t.cardFrame,
+        borderRadius: r.card,
+        ...elevation.flat,
+        borderColor: t.glassBorder,
+        padding: FRAME_PAD,
+      }}
+    >
+      <div
+        style={{
+          background: t.cardThread,
+          borderRadius: r.thread,
+          padding: `${THREAD_PAD}px 0`,
+        }}
+      >
+        <Skeleton
+          style={{
+            margin: `0 ${THREAD_PAD}px`,
+            borderRadius: r.media,
+            ...(layout === "feed"
+              ? { aspectRatio: String(aspectOf(null).capped) }
+              : { height: BODY_HEIGHT }),
+          }}
+        />
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          padding: CONTENT_PAD,
+        }}
+      >
+        {/* The title, at its own line height so the block is the height two
+            lines of the real title would take. */}
+        <Skeleton style={{ height: TITLE_LINE, borderRadius: r.chip }} />
+        <Skeleton style={{ height: TITLE_LINE, width: "62%", borderRadius: r.chip }} />
+        {/* The plaque: one row, because its two halves are one object. */}
+        <Skeleton style={{ height: 20, width: "78%", borderRadius: r.chip }} />
+        <div style={{ display: "flex", gap: 6 }}>
+          <Skeleton style={{ height: 22, width: 64, borderRadius: r.chip }} />
+          <Skeleton style={{ height: 22, width: 48, borderRadius: r.chip }} />
+        </div>
+      </div>
+    </div>
   );
 }
 

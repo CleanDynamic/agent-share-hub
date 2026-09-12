@@ -16,7 +16,8 @@ import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import type { GalleryBuild } from "@/lib/build";
-import { GalleryCard } from "./GalleryCard";
+import { GalleryCard, GalleryCardSkeleton } from "./GalleryCard";
+import { BODY_HEIGHT } from "./cardBodies";
 import type { MediaSrcMap } from "./cardMedia";
 
 const NO_MEDIA: MediaSrcMap = new Map();
@@ -69,10 +70,14 @@ const heroMediaRow = {
   height: 800,
 };
 
-function renderCard(subject: GalleryBuild, srcByPath: MediaSrcMap = NO_MEDIA) {
+function renderCard(
+  subject: GalleryBuild,
+  srcByPath: MediaSrcMap = NO_MEDIA,
+  layout?: "feed" | "grid"
+) {
   const { container } = render(
     <MemoryRouter>
-      <GalleryCard build={subject} srcByPath={srcByPath} />
+      <GalleryCard build={subject} srcByPath={srcByPath} layout={layout} />
     </MemoryRouter>
   );
   const body = container.querySelector("[data-card-branch]") as HTMLElement;
@@ -374,5 +379,190 @@ describe("the floor under every body", () => {
     expect(branch).toBe("outcome");
     expect(isNonEmpty(body)).toBe(true);
     expect(body.querySelector("img")).toBeNull();
+  });
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+   BG-P09 — the two layers, and the variants of the card itself
+   ──────────────────────────────────────────────────────────────────────────── */
+
+describe("the card's two layers", () => {
+  it("puts the body inside a thread box, inside the frame", () => {
+    const { container, body } = renderCard(build());
+    const frame = container.querySelector('[data-visual-slot="gallery-card"]');
+    const box = container.querySelector('[data-visual-slot="card-thread"]');
+
+    expect(frame).not.toBeNull();
+    expect(box).not.toBeNull();
+    // Frame contains box contains body. The nesting IS the structure.
+    expect(frame?.contains(box as Node)).toBe(true);
+    expect(box?.contains(body)).toBe(true);
+  });
+
+  it("keeps the title, credit, plaque and chips on the frame, under the box", () => {
+    const { container } = renderCard(
+      build({ made_for: ["founders"], parent_build_id: "b0" } as Partial<GalleryBuild>)
+    );
+    const box = container.querySelector('[data-visual-slot="card-thread"]') as HTMLElement;
+
+    for (const part of ["title", "plaque", "chips"]) {
+      const el = container.querySelector(`[data-card-part="${part}"]`);
+      expect(el, `${part} is missing`).not.toBeNull();
+      // On the frame, NOT in the box.
+      expect(box.contains(el as Node), `${part} is inside the thread box`).toBe(false);
+    }
+  });
+
+  it("renders title, then plaque, then chips, in that order and no other", () => {
+    // THE ORDER IS FIXED. BG-P09 moved these from under the media to under the
+    // box, which is a change of container; a change of order would be a
+    // different card.
+    const { container } = renderCard(build({ made_for: ["founders"] }));
+    const parts = [...container.querySelectorAll("[data-card-part]")].map((el) =>
+      el.getAttribute("data-card-part")
+    );
+    expect(parts).toEqual(["title", "plaque", "chips"]);
+  });
+
+  it("slots the credit between the title and the plaque when there is one", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <GalleryCard
+          build={build({ made_for: ["founders"] })}
+          srcByPath={NO_MEDIA}
+          credit="Rebuilt from Inbox triage agent by @amara"
+        />
+      </MemoryRouter>
+    );
+    const parts = [...container.querySelectorAll("[data-card-part]")].map((el) =>
+      el.getAttribute("data-card-part")
+    );
+    expect(parts).toEqual(["title", "credit", "plaque", "chips"]);
+  });
+
+  it("defaults to grid layout, so every call site that predates the prop is unchanged", () => {
+    const { container } = renderCard(build());
+    expect(container.querySelector('[data-card-layout="grid"]')).not.toBeNull();
+    expect(container.querySelector("[data-thread-text]")).toBeNull();
+    expect(container.querySelector("[data-thread-control]")).toBeNull();
+  });
+});
+
+describe("the plaque", () => {
+  it("cannot render one trust signal without the other", () => {
+    const { container } = renderCard(build({ reproduction_count: 41 }));
+    const plaque = container.querySelector('[data-card-part="plaque"]') as HTMLElement;
+    expect(plaque.querySelector("[data-plaque-reproduction]")).not.toBeNull();
+    expect(plaque.querySelector("[data-plaque-freshness]")).not.toBeNull();
+    expect(plaque).toHaveTextContent("41 reproduced");
+  });
+
+  it("dims the lamp and says the gentle thing when the claim has gone stale", () => {
+    const old = new Date(Date.now() - 400 * 86_400_000).toISOString();
+    const { container } = renderCard(
+      build({
+        reproduction_count: 4,
+        last_confirmed_at: old,
+        last_confirmed_model: "sonnet-4-5",
+      })
+    );
+    expect(container.querySelector("[data-card-part='plaque']")).toHaveAttribute(
+      "data-plaque-state",
+      "stale"
+    );
+    expect(container.querySelector("[data-plaque-lamp]")).toHaveAttribute(
+      "data-plaque-lamp",
+      "dim"
+    );
+    // A prompt, never a failure.
+    expect(container.querySelector("[data-plaque-freshness]")).toHaveTextContent(
+      /last confirmed working/i
+    );
+  });
+
+  it("shows no lamp at all for a build nobody has reproduced", () => {
+    const { container } = renderCard(build({ reproduction_count: 0 }));
+    expect(container.querySelector("[data-card-part='plaque']")).toHaveAttribute(
+      "data-plaque-state",
+      "unreproduced"
+    );
+    expect(container.querySelector("[data-plaque-lamp]")).toBeNull();
+    expect(container.querySelector("[data-plaque-reproduction]")).toHaveTextContent(
+      "not yet reproduced"
+    );
+  });
+});
+
+describe("the card's variants", () => {
+  it("steps the title up when the card has no picture", () => {
+    const { container } = renderCard(build());
+    const title = container.querySelector('[data-card-part="title"]') as HTMLElement;
+    expect(title.style.fontSize).toBe("26px");
+  });
+
+  it("leaves the title at the role's own size when there is a picture", () => {
+    const withPicture = build({
+      hero_node_id: "hero-node",
+      media: [heroMediaRow],
+    } as Partial<GalleryBuild>);
+    const { container } = renderCard(withPicture, SIGNED);
+    const title = container.querySelector('[data-card-part="title"]') as HTMLElement;
+    // The role's size, not an override: nothing inline argues with the scale.
+    expect(title.style.fontSize).toBe("22px");
+  });
+
+  it("dashes the frame's edge for an open ask and says what is unsolved", () => {
+    const { container } = renderCard(
+      build({ bounties: [{ id: "bo1", reward_gbp: 150, status: "open" }] } as Partial<GalleryBuild>)
+    );
+    const frame = container.querySelector('[data-visual-slot="gallery-card"]') as HTMLElement;
+    expect(frame.style.borderStyle).toBe("dashed");
+    expect(frame.style.borderWidth).toBe("1.5px");
+    // The ordinary card shape, with no special container around it.
+    expect(frame.style.borderRadius).toBe("var(--r-card)");
+    expect(container.querySelector('[data-card-part="reward"]')).toHaveTextContent(
+      "1 part unsolved · £150"
+    );
+  });
+
+  it("leaves the edge solid on a card with nothing outstanding", () => {
+    const { container } = renderCard(build());
+    const frame = container.querySelector('[data-visual-slot="gallery-card"]') as HTMLElement;
+    expect(frame.style.borderStyle).toBe("solid");
+  });
+});
+
+describe("the skeleton", () => {
+  it("reserves the card's real proportions in both layouts", () => {
+    const { container } = render(
+      <>
+        <GalleryCardSkeleton />
+        <GalleryCardSkeleton layout="feed" />
+      </>
+    );
+    const [grid, feed] = [
+      container.querySelector('[data-card-layout="grid"]') as HTMLElement,
+      container.querySelector('[data-card-layout="feed"]') as HTMLElement,
+    ];
+
+    // Grid reserves the fixed slot the loaded grid card uses.
+    expect(grid.querySelector("[data-bg-animated]")).toHaveStyle({ height: `${BODY_HEIGHT}px` });
+    // Feed reserves a RATIO, which is what the loaded feed card does for a row
+    // whose dimensions it does not know yet — so the swap moves nothing.
+    const media = feed.querySelector("[data-bg-animated]") as HTMLElement;
+    expect(media.style.aspectRatio).toBe("1.5");
+    expect(media.style.height).toBe("");
+  });
+
+  it("draws the frame, the box, two title lines, a plaque line and a chip row", () => {
+    const { container } = render(<GalleryCardSkeleton />);
+    // Five shimmering blocks: two title lines, the plaque, two chips, plus media.
+    expect(container.querySelectorAll("[data-bg-animated]")).toHaveLength(6);
+    expect(container.querySelector('[data-visual-slot="gallery-card-skeleton"]')).not.toBeNull();
+  });
+
+  it("is hidden from a screen reader, which has nothing to read in it", () => {
+    const { container } = render(<GalleryCardSkeleton />);
+    expect(container.firstElementChild).toHaveAttribute("aria-hidden");
   });
 });

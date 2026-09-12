@@ -41,6 +41,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
+import { GalleryCard, GalleryCardSkeleton } from "@/components/gallery/GalleryCard";
+import type { MediaSrcMap } from "@/components/gallery/cardMedia";
+import type { GalleryBuild, GalleryMedia } from "@/lib/build";
+
 import { CATEGORIES } from "@/lib/theme/category";
 import { fieldMessageStyle } from "@/lib/theme/controls";
 import { SPACE } from "@/lib/theme/space";
@@ -105,6 +109,286 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
       <span style={{ ...eyebrow, color: t.text2 }}>{label}</span>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: SPACE.xs }}>{children}</div>
     </div>
+  );
+}
+
+
+/* ────────────────────────────────────────────────────────────────────────────
+   BG-P09 — the card, every variant, both layouts.
+
+   THE REAL COMPONENT, LIKE EVERYTHING ELSE ON THIS PAGE. These are fixtures for
+   the DATA, not a re-implementation of the card: each one is a GalleryBuild
+   shaped the way the gallery's own query returns it, handed to the same
+   GalleryCard the gallery and the feed render.
+
+   THE PICTURES ARE DATA URIs, and that is the one liberty. A real card's images
+   arrive as signed, width-transformed URLs from a private bucket, which a dev
+   page cannot produce and should not try to — so each sample carries an inline
+   SVG at the exact pixel dimensions the fixture claims. The point of the section
+   is the SHAPE a picture is framed at, which comes from the stored width and
+   height rather than from the bytes, so an SVG at 5000×1000 exercises the 2.0
+   cap exactly as a photograph would. No network, no transform to get wrong.
+
+   WHY "four unfolded" IS A CLICK RATHER THAN A PROP. Unfold state is internal to
+   the card by design — BG-P18's list has no business knowing what is inside one
+   — so the fourth sample is a four-entry card with its control showing, and
+   unfolding it is one click. A `defaultUnfolded` prop would have been a second
+   public member of the card's API existing only for this page.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/** An inline SVG at exactly these pixels, so a fixture's shape is its shape. */
+function swatch(width: number, height: number, label: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+    <rect width="${width}" height="${height}" fill="#8A8FA0"/>
+    <rect x="1" y="1" width="${width - 2}" height="${height - 2}" fill="none" stroke="#EDEFF3" stroke-width="2"/>
+    <text x="50%" y="50%" fill="#1B2026" font-family="monospace" font-size="${Math.max(
+      14,
+      Math.round(Math.min(width, height) / 8),
+    )}" text-anchor="middle" dominant-baseline="middle">${label}</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+let sampleSeq = 0;
+
+/** One media row of the post, plus its swatch, registered in the signed map. */
+function sampleMedia(
+  srcByPath: Map<string, string>,
+  over: Partial<GalleryMedia> & { width: number; height: number },
+): GalleryMedia {
+  const n = (sampleSeq += 1);
+  const path = `kit/${n}.svg`;
+  const row: GalleryMedia = {
+    id: `kit-m${n}`,
+    node_id: null,
+    bucket: "build-media",
+    path,
+    kind: "image",
+    poster_path: null,
+    duration: null,
+    post_position: null,
+    post_text: null,
+    ...over,
+  };
+  srcByPath.set(
+    row.poster_path ?? row.path,
+    swatch(over.width, over.height, `${over.width}×${over.height}`),
+  );
+  return row;
+}
+
+function sampleBuild(over: Partial<GalleryBuild> = {}): GalleryBuild {
+  return {
+    id: `kit-${(sampleSeq += 1)}`,
+    creator_id: "kit",
+    slug: "a-sample-build",
+    title: "Inbox triage agent that files its own receipts",
+    outcome: "Turns a week of manual triage into ten minutes, and says what it did.",
+    shape: "agent",
+    status: "published",
+    made_for: ["founders", "ops"],
+    made_with: [],
+    live_url: null,
+    repo_url: null,
+    hero_node_id: null,
+    cover_media_id: null,
+    completeness: 80,
+    reproduction_count: 41,
+    last_confirmed_at: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+    last_confirmed_model: "sonnet-4-5",
+    published_at: new Date(Date.now() - 20 * 86_400_000).toISOString(),
+    parent_build_id: null,
+    rebuild_count: 3,
+    rebuild_note: null,
+    source_title_at_fork: null,
+    source_handle_at_fork: null,
+    nodes: [],
+    media: [],
+    bounties: [],
+    ...over,
+  } as GalleryBuild;
+}
+
+/** Every sample, built once so the swatches and the map cannot disagree. */
+function cardSamples() {
+  const srcByPath = new Map<string, string>();
+  const m = (over: Partial<GalleryMedia> & { width: number; height: number }) =>
+    sampleMedia(srcByPath, over);
+
+  /** A post of N pictures at these shapes, positioned in order. */
+  const postOf = (
+    shapes: Array<Partial<GalleryMedia> & { width: number; height: number }>,
+  ) => shapes.map((shape, i) => ({ ...m(shape), post_position: i }));
+
+  const samples: Array<{ label: string; build: GalleryBuild }> = [
+    {
+      label: "one entry",
+      build: sampleBuild({ media: postOf([{ width: 1600, height: 1000 }]) }),
+    },
+    {
+      label: "four entries · collapsed",
+      build: sampleBuild({
+        title: "Four screenshots, one run",
+        media: postOf([
+          { width: 1600, height: 1000 },
+          { width: 1200, height: 1200 },
+          { width: 900, height: 1200 },
+          { width: 2000, height: 900 },
+        ]),
+      }),
+    },
+    {
+      label: "four entries · click Show thread (mixed shapes + video)",
+      build: sampleBuild({
+        title: "Mixed shapes, and one of them moves",
+        media: postOf([
+          { width: 1600, height: 1000, post_text: "The queue before." },
+          { width: 1200, height: 1600, post_text: "And after, on live mail." },
+          {
+            width: 1920,
+            height: 1080,
+            kind: "video",
+            poster_path: "kit/video-poster.svg",
+            duration: 42,
+          },
+          { width: 2400, height: 1000, post_text: "The receipts it filed." },
+        ]),
+      }),
+    },
+    {
+      label: "an entry with no text",
+      build: sampleBuild({
+        outcome: null,
+        title: "A picture that speaks for itself",
+        media: postOf([{ width: 1500, height: 1000 }]),
+      }),
+    },
+    {
+      label: "no picture",
+      build: sampleBuild({
+        title: "A study with nothing to show but its numbers",
+        shape: "study",
+        media: [],
+      }),
+    },
+    {
+      label: "5:1 panorama → cropped to the 2.0 cap",
+      build: sampleBuild({
+        title: "A panorama, framed",
+        media: postOf([{ width: 5000, height: 1000 }]),
+      }),
+    },
+    {
+      label: "1:3 portrait → cropped to the 0.75 cap",
+      build: sampleBuild({
+        title: "A tall one, framed",
+        media: postOf([{ width: 1000, height: 3000 }]),
+      }),
+    },
+    {
+      label: "open bounty",
+      build: sampleBuild({
+        title: "Works, except for the retry prompt",
+        media: postOf([{ width: 1600, height: 1000 }]),
+        bounties: [{ id: "kit-bo", reward_gbp: 150, status: "open" }],
+      } as Partial<GalleryBuild>),
+    },
+    {
+      label: "never reproduced · stale · rebuilt",
+      build: sampleBuild({
+        title: "Nobody has run this one yet",
+        reproduction_count: 0,
+        last_confirmed_at: null,
+        last_confirmed_model: null,
+        media: postOf([{ width: 1600, height: 1000 }]),
+      }),
+    },
+  ];
+
+  // The video's poster needs a swatch of its own: a card renders a video from
+  // its poster, never from the video.
+  srcByPath.set("kit/video-poster.svg", swatch(1920, 1080, "poster 1920×1080"));
+
+  return { samples, srcByPath: srcByPath as MediaSrcMap };
+}
+
+const CARD_SAMPLES = cardSamples();
+
+/** One sample, at one width, labelled. */
+function CardSample({
+  label,
+  children,
+  width,
+}: {
+  label: string;
+  children: React.ReactNode;
+  width: number;
+}) {
+  return (
+    // `min()` rather than a flat width: the feed column is 560 where there is
+    // room for 560, and the page must not scroll sideways at 390 to show it.
+    <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs, width: `min(${width}px, 100%)` }}>
+      <span style={{ ...eyebrow, color: t.text2 }}>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * The Card section.
+ *
+ * TWO COLUMN WIDTHS, because the two layouts are two column widths: a gallery
+ * cell is ~300px and the feed's centre column is ~560px, and a card that only
+ * ever looked right at one of them would be a card with a bug this page exists
+ * to find.
+ */
+function CardSection() {
+  const { samples, srcByPath } = CARD_SAMPLES;
+
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: SPACE.md }}>
+      <h2 style={{ ...eyebrow, color: t.text2, margin: 0 }}>Card — grid layout (272px cell)</h2>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(272px, 1fr))",
+          gap: SPACE.sm,
+          alignItems: "start",
+        }}
+      >
+        {samples.map(({ label, build }) => (
+          <div key={`grid-${build.id}`} style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}>
+            <span style={{ ...eyebrow, color: t.text2 }}>{label}</span>
+            <GalleryCard build={build} srcByPath={srcByPath} credit={null} />
+          </div>
+        ))}
+        <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}>
+          <span style={{ ...eyebrow, color: t.text2 }}>skeleton</span>
+          <GalleryCardSkeleton />
+        </div>
+      </div>
+
+      <h2 style={{ ...eyebrow, color: t.text2, margin: 0 }}>Card — feed layout (560px column)</h2>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.md, alignItems: "flex-start" }}>
+        {samples.map(({ label, build }) => (
+          <CardSample key={`feed-${build.id}`} label={label} width={560}>
+            <GalleryCard
+              build={build}
+              srcByPath={srcByPath}
+              credit={
+                build.title === "Four screenshots, one run"
+                  ? "Rebuilt from Inbox triage agent by @amara"
+                  : null
+              }
+              layout="feed"
+            />
+          </CardSample>
+        ))}
+        <CardSample label="skeleton" width={560}>
+          <GalleryCardSkeleton layout="feed" />
+        </CardSample>
+      </div>
+    </section>
   );
 }
 
@@ -362,6 +646,8 @@ export default function Kit() {
           </Sheet>
         </Row>
       </Section>
+
+      <CardSection />
 
       <Section title="Loading">
         <Row label="skeleton">

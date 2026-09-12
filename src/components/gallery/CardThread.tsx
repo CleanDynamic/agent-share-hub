@@ -627,7 +627,9 @@ function UnfoldRegion({
       // so it is set on the element rather than passed as a prop. A ref is the
       // only place that can be done without the version of React deciding
       // whether the attribute survives.
-      ref={(el) => el?.toggleAttribute("inert", !open)}
+      ref={(el) => {
+        el?.toggleAttribute("inert", !open);
+      }}
       style={{
         display: "grid",
         gridTemplateRows: open ? "1fr" : "0fr",

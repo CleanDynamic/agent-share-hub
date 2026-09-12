@@ -25,13 +25,30 @@
 
 import type { CSSProperties, ReactElement } from "react";
 import { categoryColour, categoryFill } from "@/lib/theme/category";
-import {
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  hexToRgba,
-} from "@/components/build/tokens";
+import { t } from "@/lib/theme/tokens";
+
+/* ────────────────────────────────────────────────────────────────────────────
+   BG-P09 — the colours in this file are TOKENS now, repointed in place.
+
+   The bodies were written for the legacy dark shell, where TEXT_PRIMARY was a
+   near-white hex. That was invisible the moment BG-P09 put them inside the
+   thread box: the box is `--card-thread` over `--card-frame`, which is a LIGHT
+   surface in Exhibition, and white text on it is the "dark card on a light
+   ground" the spec forbids, arrived at from the other direction.
+
+   So every colour declaration below reads a semantic token and the layout is
+   untouched — the repaint the theme sanctions, not a reshape. The names kept
+   their jobs: primary text is `--text`, the two quieter greys are `--text2`, and
+   the teal that marked a study's winner is `--evidence`, which is what it always
+   meant.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/** Primary text on a card body. */
+const TEXT_PRIMARY = t.text;
+/** The quieter voice: a column header, a role, a caption. */
+const TEXT_MUTED = t.text2;
+/** Between the two on the legacy ramp; one token serves both here. */
+const TEXT_SECONDARY = t.text2;
 import type { GalleryBuild, GalleryMedia } from "@/lib/build";
 import {
   EVIDENCE_TYPES,
@@ -277,7 +294,7 @@ export function StudyCardBody({ build, srcByPath }: CardBodyProps) {
                 gap: 10,
                 padding: "3px 6px",
                 borderRadius: 6,
-                background: isWinner ? hexToRgba(TEAL, 0.1) : "transparent",
+                background: isWinner ? categoryFill("evidence").background : "transparent",
               }}
             >
               {splitCells(row, Math.max(columns.length, 1)).map((cell, cellIndex) => (
@@ -288,7 +305,7 @@ export function StudyCardBody({ build, srcByPath }: CardBodyProps) {
                     minWidth: 0,
                     fontSize: 12,
                     fontWeight: isWinner && cellIndex === 0 ? 600 : 300,
-                    color: isWinner ? TEAL : TEXT_PRIMARY,
+                    color: isWinner ? t.evidence : TEXT_PRIMARY,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -487,9 +504,10 @@ function evidenceWords(build: GalleryBuild): ReactElement | null {
  */
 export function OutcomeBlock({
   build,
-  accent = TEAL,
+  accent = "evidence",
 }: {
   build: GalleryBuild;
+  /** A part category, resolved through categoryFill. Never a raw colour. */
   accent?: string;
 }) {
   const text = nonEmpty(build.outcome) ?? nonEmpty(build.title) ?? "Untitled build";
@@ -502,7 +520,10 @@ export function OutcomeBlock({
         display: "flex",
         alignItems: "center",
         padding: "16px 18px",
-        background: `linear-gradient(140deg, ${hexToRgba(accent, 0.1)}, var(--recess))`,
+        // The accent's measured fill, fading into the well. A gradient rather
+        // than a flat fill because the outcome set large IS the card here, and
+        // the wash is what keeps it from reading as an empty slot.
+        background: `linear-gradient(140deg, ${categoryFill(accent).background}, var(--recess))`,
       }}
     >
       <p

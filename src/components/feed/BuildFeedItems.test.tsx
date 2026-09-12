@@ -133,3 +133,40 @@ describe("a bounty in the feed", () => {
     expect(screen.queryByTestId("feed-item-bounty")).toBeNull();
   });
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+   BG-P09 — one change, two surfaces
+   ──────────────────────────────────────────────────────────────────────────── */
+
+describe("the rebuilt card in the feed", () => {
+  it("renders the frame and the thread box, the same two layers the gallery draws", () => {
+    // THE POINT OF THE SHARED COMPONENT. This file imports GalleryCard; BG-P09
+    // rebuilt that component; so the Builds tab got the rebuild without a line
+    // of feed code changing. A feed that had drawn its own card would have to be
+    // remembered here every time, and would drift the first time it was not.
+    renderItem(row());
+    const item = screen.getByTestId("feed-item-build");
+    expect(item.querySelector('[data-visual-slot="gallery-card"]')).not.toBeNull();
+    expect(item.querySelector('[data-visual-slot="card-thread"]')).not.toBeNull();
+  });
+
+  it("still lays the feed's cards out in grid layout, which is BG-P18's to switch", () => {
+    // The feed's own layout is not this prompt's. Until BG-P18 switches it, the
+    // card in the feed is the grid card: a fixed slot, no entry text, no unfold.
+    renderItem(row());
+    const item = screen.getByTestId("feed-item-build");
+    expect(item.querySelector('[data-card-layout="grid"]')).not.toBeNull();
+    expect(item.querySelector("[data-thread-control]")).toBeNull();
+  });
+
+  it("puts the title, plaque and chips on the frame under the box, in order", () => {
+    renderItem(row());
+    const item = screen.getByTestId("feed-item-build");
+    const parts = [...item.querySelectorAll("[data-card-part]")].map((el) =>
+      el.getAttribute("data-card-part")
+    );
+    // Chips are absent on a feed row carrying no roles; the order of what is
+    // present is what is fixed.
+    expect(parts.slice(0, 2)).toEqual(["title", "plaque"]);
+  });
+});

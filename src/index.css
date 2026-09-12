@@ -555,8 +555,16 @@ input[type="search"] { border-radius: var(--r-control); }
   }
 }
 
+/* BG-P07's rule, applied to the card: reduced motion is answered TWICE. The
+   inline styles drop their transitions at render, which covers every render;
+   this covers the gap that leaves — a visitor who changes the setting while a
+   card is already on screen, where nothing would re-render to notice. The
+   unfold then snaps, which is the behaviour the theme asks for: the reader
+   still gets the thread, just not the travel. */
 @media (prefers-reduced-motion: reduce) {
-  [data-visual-slot="gallery-card"]::after {
-    transition: none;
+  [data-visual-slot="gallery-card"],
+  [data-visual-slot="gallery-card"]::after,
+  [data-thread-region] {
+    transition: none !important;
   }
 }
