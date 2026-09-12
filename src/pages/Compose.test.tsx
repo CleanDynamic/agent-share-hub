@@ -5,6 +5,7 @@
 // state that writes nothing, a debounced title, and the single-column collapse.
 
 import { StrictMode } from "react";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -64,16 +65,18 @@ function renderAt(path: string, { strict = false } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const tree = (
     <QueryClientProvider client={client}>
-      <TooltipProvider>
-        <MemoryRouter initialEntries={[path]}>
-          <LocationProbe />
-          <Routes>
-            <Route path="/compose/new" element={<Compose />} />
-            <Route path="/compose/:buildId" element={<Compose />} />
-            <Route path="/login" element={<span>login page</span>} />
-          </Routes>
-        </MemoryRouter>
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <MemoryRouter initialEntries={[path]}>
+            <LocationProbe />
+            <Routes>
+              <Route path="/compose/new" element={<Compose />} />
+              <Route path="/compose/:buildId" element={<Compose />} />
+              <Route path="/login" element={<span>login page</span>} />
+            </Routes>
+          </MemoryRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
   return render(strict ? <StrictMode>{tree}</StrictMode> : tree);

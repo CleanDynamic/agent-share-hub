@@ -77,6 +77,11 @@ import {
   useBuildFileDrop,
 } from "@/components/compose/useBuildFileDrop";
 import {
+  WorkspaceBar,
+  workspaceGround,
+  workspacePanel,
+} from "@/components/shell/WorkspaceBar";
+import {
   FONT_STACK,
   GAP_RED,
   HAIRLINE,
@@ -84,12 +89,10 @@ import {
   TEXT_MUTED,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
-  VOID,
   bodyText,
   hexToRgba,
   labelText,
   pageHeadingText,
-  panelGlass,
 } from "@/components/build/tokens";
 
 /** A build is never asked to name itself before it exists. */
@@ -140,6 +143,19 @@ function messageOf(cause: unknown): string {
   return cause instanceof Error ? cause.message : String(cause);
 }
 
+/**
+ * The intake step, on the workspace ground (BG-P16).
+ *
+ * IT HAD NO WAY OUT AT ALL. Of the four authoring routes this was the worst:
+ * compose had a "← buildgallery" link, rebuild and convert each had their own
+ * back link, and /compose/new had nothing — a creator who opened it and changed
+ * their mind had the browser's Back button. It now carries the same bar as the
+ * workspace it leads to, so the exit is in one place across the whole act.
+ *
+ * The ground was #08080C and the card was `panelGlass` — a blurred surface on a
+ * void, which is the reading-surface treatment on a working surface. Flat now:
+ * `--bg` under a `--recess` panel with a `--line` hairline.
+ */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div
@@ -147,31 +163,42 @@ function Shell({ children }: { children: React.ReactNode }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: VOID,
-        color: TEXT_PRIMARY,
-        fontFamily: FONT_STACK,
+        ...workspaceGround,
         display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
-        overflowY: "auto",
-        padding: 24,
+        flexDirection: "column",
         isolation: "isolate",
       }}
     >
+      <WorkspaceBar
+        mode="compose"
+        exit={{ to: "/gallery" }}
+        context={{ kind: "readonly", text: "New build" }}
+      />
       <div
         style={{
-          ...panelGlass,
-          borderRadius: 16,
-          width: "100%",
-          maxWidth: 720,
-          margin: "auto",
-          padding: 28,
+          flex: 1,
+          minHeight: 0,
           display: "flex",
-          flexDirection: "column",
-          gap: 18,
+          alignItems: "flex-start",
+          justifyContent: "center",
+          overflowY: "auto",
+          padding: 24,
         }}
       >
-        {children}
+        <div
+          style={{
+            ...workspacePanel,
+            width: "100%",
+            maxWidth: 720,
+            margin: "auto",
+            padding: 28,
+            display: "flex",
+            flexDirection: "column",
+            gap: 18,
+          }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

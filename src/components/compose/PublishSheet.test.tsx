@@ -12,6 +12,7 @@
 // preview and the one thing a screenshot could not prove.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -139,13 +140,15 @@ function renderCompose() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <TooltipProvider>
-        <MemoryRouter initialEntries={["/compose/b1"]}>
-          <Routes>
-            <Route path="/compose/:buildId" element={<Compose />} />
-          </Routes>
-        </MemoryRouter>
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <MemoryRouter initialEntries={["/compose/b1"]}>
+            <Routes>
+              <Route path="/compose/:buildId" element={<Compose />} />
+            </Routes>
+          </MemoryRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
@@ -295,18 +298,20 @@ describe("the publish sheet", () => {
     const readiness: PublishReadiness = { ready: true, blocking: [], reason: null };
     render(
       <MemoryRouter>
-        <PublishSheet
-          build={draft() as unknown as Build}
-          tree={[] as NodeTree[]}
-          completeness={{ score: 60, missing: [] }}
-          readiness={readiness}
-          open
-          onOpenChange={() => {}}
-          onConfirm={() => {}}
-          isPublishing={false}
-          publishError={null}
-          sections={<div data-testid="extra-section">A later prompt's section</div>}
-        />
+        <ThemeProvider>
+          <PublishSheet
+            build={draft() as unknown as Build}
+            tree={[] as NodeTree[]}
+            completeness={{ score: 60, missing: [] }}
+            readiness={readiness}
+            open
+            onOpenChange={() => {}}
+            onConfirm={() => {}}
+            isPublishing={false}
+            publishError={null}
+            sections={<div data-testid="extra-section">A later prompt's section</div>}
+          />
+        </ThemeProvider>
       </MemoryRouter>
     );
 
@@ -325,17 +330,19 @@ describe("the publish sheet", () => {
     const readiness: PublishReadiness = { ready: true, blocking: [], reason: null };
     render(
       <MemoryRouter>
-        <PublishSheet
-          build={draft() as unknown as Build}
-          tree={[] as NodeTree[]}
-          completeness={{ score: 100, missing: [] }}
-          readiness={readiness}
-          open
-          onOpenChange={() => {}}
-          onConfirm={() => {}}
-          isPublishing={false}
-          publishError={null}
-        />
+        <ThemeProvider>
+          <PublishSheet
+            build={draft() as unknown as Build}
+            tree={[] as NodeTree[]}
+            completeness={{ score: 100, missing: [] }}
+            readiness={readiness}
+            open
+            onOpenChange={() => {}}
+            onConfirm={() => {}}
+            isPublishing={false}
+            publishError={null}
+          />
+        </ThemeProvider>
       </MemoryRouter>
     );
 

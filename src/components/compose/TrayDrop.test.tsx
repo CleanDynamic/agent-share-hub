@@ -10,6 +10,7 @@
 // tested here is the HTML5 drop path that runs beside them.
 
 import { useMemo } from "react";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -177,11 +178,13 @@ function renderWorkspace(selectedNodeId: string | null = null) {
   });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <TooltipProvider>
-          <Harness selectedNodeId={selectedNodeId} />
-        </TooltipProvider>
-      </MemoryRouter>
+      <ThemeProvider>
+        <MemoryRouter>
+          <TooltipProvider>
+            <Harness selectedNodeId={selectedNodeId} />
+          </TooltipProvider>
+        </MemoryRouter>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

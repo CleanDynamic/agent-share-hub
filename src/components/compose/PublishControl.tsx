@@ -98,6 +98,8 @@ import {
   type PublishReadiness,
   type RequirementKey,
 } from "@/lib/build";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import {
   GAP_RED,
   HAIRLINE,
@@ -179,6 +181,20 @@ interface BountyPlanItem {
   closesAt: string | null;
 }
 
+/**
+ * The publish trigger's geometry (BG-P16).
+ *
+ * SCOPE. BG-P16 repaints the workspace CHROME and nothing else, so this is the
+ * only thing in this file it touches: the trigger stands in the workspace bar,
+ * and the bar's ground moved from a hard-coded #08080C void to `--bg`. Left on
+ * rgba(255,255,255,.025) with a 45%-white label, the one primary action on the
+ * compose route would have been near-invisible in Exhibition, which is the
+ * default theme. The publish SHEET and the confirmation screen below are
+ * BG-P24's and are untouched.
+ *
+ * `--r-control` rather than the 100px capsule: the capsule rule was removed
+ * from the system by decision, and a button at 999px is off-brand now.
+ */
 const controlBase: React.CSSProperties = {
   fontFamily: "inherit",
   fontSize: 12,
@@ -186,10 +202,12 @@ const controlBase: React.CSSProperties = {
   letterSpacing: "0.04em",
   height: 30,
   padding: "0 14px",
-  borderRadius: 100,
-  background: "rgba(255,255,255,0.025)",
-  border: "1px solid rgba(255,255,255,0.06)",
-  color: TEXT_SECONDARY,
+  borderRadius: r.control,
+  backgroundColor: t.recess,
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderColor: t.line,
+  color: t.text2,
   cursor: "pointer",
 };
 
@@ -513,29 +531,38 @@ export function PublishControl({
               style={{
                 ...controlBase,
                 whiteSpace: "nowrap",
-                color: publishError
-                  ? GAP_RED
+                /* The accent is still the readiness signal: armed when the
+                   record clears the gate, quiet while it does not. What
+                   changed in BG-P16 is that "armed" is now the system's actual
+                   primary treatment — an `--action` fill with an `--on-action`
+                   label, the measured pair — rather than a 14%-alpha wash of
+                   it. Publish is the one primary action on this route, and the
+                   theme allows exactly one, so nothing else in the bar
+                   competes: the exit is a bordered `--recess` control and
+                   every other control is quieter still. */
+                ...(publishError
+                  ? {
+                      color: t.catBreakage,
+                      borderColor: t.catBreakage,
+                      backgroundColor: t.catBreakageFill,
+                    }
                   : isLive
-                    ? TEAL
-                    : canOpen
-                      ? TEXT_PRIMARY
-                      : TEXT_MUTED,
-                // The accent is still the readiness signal: armed when the
-                // record clears the gate, quiet while it does not.
-                borderColor: publishError
-                  ? hexToRgba(GAP_RED, 0.35)
-                  : isLive
-                    ? hexToRgba(TEAL, 0.35)
+                    ? {
+                        color: t.evidence,
+                        borderColor: t.evidence,
+                        backgroundColor: t.evidenceFill,
+                      }
                     : canPublish
-                      ? hexToRgba(ORANGE, 0.45)
-                      : "rgba(255,255,255,0.06)",
-                background: publishError
-                  ? hexToRgba(GAP_RED, 0.1)
-                  : isLive
-                    ? hexToRgba(TEAL, 0.1)
-                    : canPublish
-                      ? hexToRgba(ORANGE, 0.14)
-                      : "rgba(255,255,255,0.025)",
+                      ? {
+                          color: t.onAction,
+                          borderColor: t.action,
+                          backgroundColor: t.action,
+                        }
+                      : {
+                          color: canOpen ? t.text : t.text2,
+                          borderColor: t.line,
+                          backgroundColor: t.recess,
+                        }),
                 cursor: canOpen ? "pointer" : "not-allowed",
                 pointerEvents: canOpen ? "auto" : "none",
                 opacity: isPublishing ? 0.7 : 1,
@@ -632,10 +659,16 @@ export function PublishControl({
 /**
  * What a creator sees the moment their build goes live.
  *
- * PORTALLED TO THE BODY, and not by preference. The compose top bar carries
- * backdropFilter, and a filtered element is the containing block for every
- * fixed-position descendant — a fixed overlay rendered inside the bar would be
- * trapped in a 52px-tall strip. The portal takes it out of that subtree.
+ * PORTALLED TO THE BODY, and not by preference: a fixed overlay rendered
+ * inside the bar would be trapped in a 52px-tall strip rather than covering the
+ * viewport. The portal takes it out of that subtree.
+ *
+ * THE REASON CHANGED IN BG-P16 AND THE PORTAL DID NOT. It used to be the bar's
+ * own `backdropFilter` — a filtered element is the containing block for every
+ * fixed-position descendant — and BG-P16 removed that blur, because a working
+ * surface carries no glass. The workspace frame's `isolation: isolate` and
+ * `overflow: hidden` each still require the portal on their own, so this is not
+ * dead scaffolding to be tidied up.
  */
 function PublishConfirmation({
   build,

@@ -20,11 +20,35 @@
 // The bar is a fixed 52px flex row and the panels below it are flex:1, so a new
 // element between them is absorbed by the row below and nothing that already
 // lays the workspace out changes — the same seam CoverStrip took in NS-P28.
+//
+// BG-P16 — THE BAR ITSELF IS NOW WorkspaceBar, shared with /compose/new,
+// /rebuild/:slug and /convert/:contentItemId so the four authoring routes stop
+// each having their own chrome and their own way out. What stayed here is what
+// is specific to composing: the shape select, the hero control, the save state,
+// the change count, View and Publish. They MOVED into the shared bar's right
+// slot rather than being rebuilt — same elements, same behaviour, repainted
+// onto tokens because the bar's ground is now `--bg` and a control drawn in
+// rgba(255,255,255,.025) with 45%-white text is invisible on Exhibition.
+//
+// PublishControl IS THE ONE THING LEFT ON ITS LEGACY PAINT, deliberately and on
+// two separate grounds: the publish sheet belongs to BG-P24, and its trigger
+// carries `data-visual-slot="btn-primary"`, which neoscale-code-review names as
+// an externally-supplied visual shell that AI-generated surface treatment must
+// not touch. It is reported rather than quietly repainted.
 
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PublishControl } from "@/components/compose/PublishControl";
+import {
+  WorkspaceBar,
+  workspaceHairline,
+  type WorkspaceMode,
+} from "@/components/shell/WorkspaceBar";
+import { ring, uiTransition } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { data as dataText, eyebrow } from "@/lib/theme/type";
 import type { RebuildDiff } from "@/hooks/useRebuildDiff";
 import type { BuildBounties } from "@/hooks/useBuildBounties";
 import type {
@@ -36,21 +60,46 @@ import type {
   NodeType,
   RequirementKey,
 } from "@/lib/build";
-import {
-  GAP_RED,
-  HAIRLINE,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  hexToRgba,
-  labelText,
-  panelGlass,
-  titleText,
-} from "@/components/build/tokens";
 
-const TOP_BAR_HEIGHT = 52;
+/**
+ * A control standing in the workspace bar.
+ *
+ * Flat, by the workspace ground rule: `--recess` on the bar's `--bg`, one
+ * `--line` hairline, `--r-control`, and a `--text2` label so these stay
+ * subordinate to the exit (whose border is `--text2`) and to Publish. No glass
+ * and no `--glass*` token — see WorkspaceBar.tsx.
+ *
+ * Longhands rather than the `background`/`border` shorthands because jsdom
+ * drops any shorthand carrying a `var()`, which would make every token here
+ * untestable.
+ */
+function controlStyle(state: {
+  hovered?: boolean;
+  focusVisible?: boolean;
+  disabled?: boolean;
+} = {}): React.CSSProperties {
+  const live = !state.disabled;
+  const hot = Boolean(live && state.hovered);
+
+  return {
+    ...eyebrow,
+    fontSize: 12,
+    letterSpacing: "0.04em",
+    textTransform: "none",
+    height: 30,
+    padding: "0 10px",
+    borderRadius: r.control,
+    backgroundColor: hot ? t.line : t.recess,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: hot ? t.text2 : t.line,
+    color: t.text2,
+    opacity: live ? 1 : 0.55,
+    cursor: live ? "pointer" : "not-allowed",
+    transition: uiTransition(),
+    ...ring(live && state.focusVisible),
+  };
+}
 
 /**
  * The nine shapes, in the order the handover lists them.
@@ -71,20 +120,6 @@ const BUILD_SHAPES: { value: BuildShape; label: string }[] = [
   { value: "technique", label: "Technique" },
   { value: "other", label: "Other" },
 ];
-
-const controlBase: React.CSSProperties = {
-  fontFamily: "inherit",
-  fontSize: 12,
-  fontWeight: 500,
-  letterSpacing: "0.04em",
-  height: 30,
-  padding: "0 10px",
-  borderRadius: 8,
-  background: "rgba(255,255,255,0.025)",
-  border: `1px solid rgba(255,255,255,0.06)`,
-  color: TEXT_SECONDARY,
-  cursor: "pointer",
-};
 
 interface ComposeTopBarProps {
   build: Build;
@@ -133,13 +168,17 @@ function SaveState({
   lastSavedAt,
   saveError,
 }: Pick<ComposeTopBarProps, "isSaving" | "lastSavedAt" | "saveError">) {
+  /* Breakage red for a failed save, evidence for a saved one, --text2 for the
+     two quiet states. The three category-adjacent hues are the tokens the
+     theme already measures on both grounds; the legacy GAP_RED/TEAL hexes only
+     ever read on a dark room. */
   const { text, colour } = saveError
-    ? { text: "Not saved", colour: GAP_RED }
+    ? { text: "Not saved", colour: t.catBreakage }
     : isSaving
-      ? { text: "Saving…", colour: TEXT_SECONDARY }
+      ? { text: "Saving…", colour: t.text2 }
       : lastSavedAt
-        ? { text: "Saved", colour: TEAL }
-        : { text: "Draft", colour: TEXT_MUTED };
+        ? { text: "Saved", colour: t.evidence }
+        : { text: "Draft", colour: t.text2 };
 
   return (
     <span
@@ -153,11 +192,12 @@ function SaveState({
             : undefined
       }
       style={{
-        ...labelText,
+        ...dataText,
         color: colour,
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
+        flexShrink: 0,
         whiteSpace: "nowrap",
       }}
     >
@@ -166,8 +206,8 @@ function SaveState({
         style={{
           width: 6,
           height: 6,
-          borderRadius: 999,
-          background: colour,
+          borderRadius: r.full,
+          backgroundColor: colour,
           opacity: isSaving ? 0.5 : 1,
         }}
       />
@@ -200,10 +240,10 @@ function ChangeCount({ count }: { count: number }) {
           : "What this rebuild changed about the build it came from."
       }
       style={{
-        ...labelText,
+        ...dataText,
         flexShrink: 0,
         whiteSpace: "nowrap",
-        color: none ? TEXT_MUTED : TEAL,
+        color: none ? t.text2 : t.evidence,
       }}
     >
       {none ? "no changes yet" : `${count} change${count === 1 ? "" : "s"}`}
@@ -245,11 +285,21 @@ function RebuildOriginStrip({
       data-testid="rebuild-origin-strip"
       data-visual-slot="compose-rebuild-origin"
       style={{
-        ...panelGlass,
-        border: "none",
-        borderBottom: `1px solid ${HAIRLINE}`,
-        borderLeft: `2px solid ${hexToRgba(ORANGE, 0.5)}`,
-        background: hexToRgba(ORANGE, 0.05),
+        /* BG-P16 — repainted onto tokens and off the glass. It sits BENEATH the
+           workspace bar and is separated from the panels by the same `--line`
+           hairline the bar uses, so the two read as one band of chrome rather
+           than as a notice stuck to the top of the work.
+
+           `--recess` rather than a tint of the accent: this is provenance, not
+           a warning, and a coloured wash across the full width would give a
+           permanent fixture the weight of an alert. The accent survives as the
+           2px left edge and the link, which is where RebuildCredit puts it too
+           (`t.action` — the same clay the credit's links take). */
+        backgroundColor: t.recess,
+        ...workspaceHairline,
+        borderLeftWidth: 2,
+        borderLeftStyle: "solid",
+        borderLeftColor: t.action,
         flexShrink: 0,
         display: "flex",
         alignItems: "center",
@@ -257,19 +307,19 @@ function RebuildOriginStrip({
         padding: "6px 14px",
       }}
     >
-      <span style={{ ...labelText, fontSize: 11, color: TEXT_SECONDARY }}>
+      <span style={{ ...dataText, fontSize: 12, color: t.text2, minWidth: 0 }}>
         Rebuilding from{" "}
         {slug ? (
           <Link
             to={`/b2/${slug}`}
             target="_blank"
             rel="noreferrer"
-            style={{ color: ORANGE, textDecoration: "none" }}
+            style={{ color: t.action, textDecoration: "none" }}
           >
             {title}
           </Link>
         ) : (
-          <span style={{ color: TEXT_PRIMARY }}>{title}</span>
+          <span style={{ color: t.text }}>{title}</span>
         )}
         {handle ? ` by @${handle}` : null}
       </span>
@@ -325,12 +375,18 @@ function HeroControl({
               onPatch({ hero_node_id: isHero ? null : selectedNodeId })
             }
             style={{
-              ...controlBase,
+              ...controlStyle({ disabled: !enabled }),
               whiteSpace: "nowrap",
-              color: isHero ? TEAL : enabled ? TEXT_SECONDARY : TEXT_MUTED,
-              borderColor: isHero ? "rgba(46,196,182,0.35)" : "rgba(255,255,255,0.06)",
-              background: isHero ? "rgba(46,196,182,0.10)" : "rgba(255,255,255,0.025)",
-              cursor: enabled ? "pointer" : "not-allowed",
+              flexShrink: 0,
+              /* Set: the measured evidence pair, which is the token for "this is
+                 so" and is legal as text on both grounds. */
+              ...(isHero
+                ? {
+                    color: t.evidence,
+                    borderColor: t.evidence,
+                    backgroundColor: t.evidenceFill,
+                  }
+                : null),
               pointerEvents: enabled ? "auto" : "none",
             }}
           >
@@ -363,73 +419,42 @@ export function ComposeTopBar({
   rebuild,
   bounties,
 }: ComposeTopBarProps) {
-  // Inline styles cannot express :focus, so the focus treatment is state.
-  const [titleFocused, setTitleFocused] = useState(false);
-
   // The count waits for the diff rather than guessing at it. A rebuild whose
   // source is still loading — or has been unpublished since the fork — shows no
   // number, because "no changes yet" on an uncomputed diff is a claim, not a
   // blank.
   const isRebuild = Boolean(rebuild?.isRebuild);
 
+  /* A draft forked from somebody else's build IS a rebuild, and the bar says
+     so. /rebuild/:slug is only the door; this is the room, and it is where a
+     creator actually spends the hour. */
+  const mode: WorkspaceMode = isRebuild ? "rebuild" : "compose";
+
   return (
     <>
-    <header
-      data-visual-slot="compose-top-bar"
-      style={{
-        ...panelGlass,
-        border: "none",
-        borderBottom: `1px solid ${HAIRLINE}`,
-        height: TOP_BAR_HEIGHT,
-        flexShrink: 0,
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "0 14px",
+    <WorkspaceBar
+      mode={mode}
+      exit={{ to: "/gallery" }}
+      context={{
+        kind: "editable",
+        value: build.title ?? "",
+        onChange: (title) => onPatch({ title }),
+        label: "Build title",
+        placeholder: "Untitled build",
       }}
-    >
-      <Link
-        to="/"
-        style={{ ...labelText, color: TEXT_SECONDARY, textDecoration: "none", flexShrink: 0 }}
-      >
-        ← buildgallery
-      </Link>
-
-      <span aria-hidden style={{ width: 1, height: 20, background: HAIRLINE, flexShrink: 0 }} />
-
-      <input
-        aria-label="Build title"
-        value={build.title ?? ""}
-        onChange={(event) => onPatch({ title: event.target.value })}
-        onFocus={() => setTitleFocused(true)}
-        onBlur={() => setTitleFocused(false)}
-        placeholder="Untitled build"
-        spellCheck={false}
-        style={{
-          ...titleText,
-          fontFamily: "inherit",
-          flex: 1,
-          minWidth: 80,
-          height: 32,
-          padding: "0 8px",
-          borderRadius: 8,
-          outline: "none",
-          background: titleFocused ? "rgba(255,255,255,0.04)" : "transparent",
-          border: `1px solid ${titleFocused ? "rgba(255,255,255,0.12)" : "transparent"}`,
-          color: TEXT_PRIMARY,
-          transition: "background 120ms ease, border-color 120ms ease",
-        }}
-      />
-
+      right={
+        <>
       <select
         aria-label="Build shape"
         value={(build.shape as BuildShape) ?? "other"}
         onChange={(event) => onPatch({ shape: event.target.value as BuildShape })}
         style={{
-          ...controlBase,
+          ...controlStyle(),
           flexShrink: 0,
-          // Renders the native option list dark rather than system white.
-          colorScheme: "dark",
+          /* The native option list follows the room rather than always being
+             dark: `colorScheme: "dark"` was correct when the workspace was a
+             hard-coded void and is wrong now that Exhibition is the default. */
+          colorScheme: "light dark",
         }}
       >
         {BUILD_SHAPES.map((shape) => (
@@ -440,12 +465,12 @@ export function ComposeTopBar({
       </select>
 
       {onOpenTray && (
-        <button type="button" onClick={onOpenTray} style={{ ...controlBase, flexShrink: 0 }}>
+        <button type="button" onClick={onOpenTray} style={{ ...controlStyle(), flexShrink: 0 }}>
           Tray
         </button>
       )}
       {onOpenInspector && (
-        <button type="button" onClick={onOpenInspector} style={{ ...controlBase, flexShrink: 0 }}>
+        <button type="button" onClick={onOpenInspector} style={{ ...controlStyle(), flexShrink: 0 }}>
           Inspector
         </button>
       )}
@@ -465,11 +490,22 @@ export function ComposeTopBar({
         to={`/b2/${build.slug}`}
         target="_blank"
         rel="noreferrer"
-        style={{ ...controlBase, flexShrink: 0, display: "inline-flex", alignItems: "center", textDecoration: "none" }}
+        style={{
+          ...controlStyle(),
+          flexShrink: 0,
+          display: "inline-flex",
+          alignItems: "center",
+          textDecoration: "none",
+        }}
       >
         View
       </Link>
 
+      {/* UNTOUCHED BY BG-P16, on two grounds: the publish sheet belongs to
+          BG-P24, and this trigger carries data-visual-slot="btn-primary",
+          which is an externally-supplied visual shell. It still carries its
+          dark-only paint and will read poorly on Exhibition until BG-P24
+          repaints it — reported in the handoff rather than taken quietly. */}
       <PublishControl
         build={build}
         tree={tree}
@@ -482,7 +518,9 @@ export function ComposeTopBar({
         rebuild={rebuild}
         bounties={bounties}
       />
-    </header>
+        </>
+      }
+    />
 
     {isRebuild && rebuild ? <RebuildOriginStrip build={build} rebuild={rebuild} /> : null}
     </>

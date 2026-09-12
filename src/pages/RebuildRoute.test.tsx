@@ -6,6 +6,8 @@
 // that failed saying so with the way back.
 
 import { StrictMode } from "react";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -50,15 +52,19 @@ function renderAt(path: string, { strict = false } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const tree = (
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[path]}>
-        <LocationProbe />
-        <Routes>
-          <Route path="/rebuild/:slug" element={<RebuildRoute />} />
-          <Route path="/compose/:buildId" element={<span>the workspace</span>} />
-          <Route path="/login" element={<span>login page</span>} />
-          <Route path="/b2/:slug" element={<span>the build page</span>} />
-        </Routes>
-      </MemoryRouter>
+      <ThemeProvider>
+        <TooltipProvider>
+          <MemoryRouter initialEntries={[path]}>
+            <LocationProbe />
+            <Routes>
+              <Route path="/rebuild/:slug" element={<RebuildRoute />} />
+              <Route path="/compose/:buildId" element={<span>the workspace</span>} />
+              <Route path="/login" element={<span>login page</span>} />
+              <Route path="/b2/:slug" element={<span>the build page</span>} />
+            </Routes>
+          </MemoryRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
   return render(strict ? <StrictMode>{tree}</StrictMode> : tree);

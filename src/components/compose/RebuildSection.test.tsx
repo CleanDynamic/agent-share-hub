@@ -17,6 +17,7 @@
 // fails on the change nobody thought to write an assertion for.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -150,13 +151,15 @@ function renderCompose() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <TooltipProvider>
-        <MemoryRouter initialEntries={["/compose/d1"]}>
-          <Routes>
-            <Route path="/compose/:buildId" element={<Compose />} />
-          </Routes>
-        </MemoryRouter>
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <MemoryRouter initialEntries={["/compose/d1"]}>
+            <Routes>
+              <Route path="/compose/:buildId" element={<Compose />} />
+            </Routes>
+          </MemoryRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

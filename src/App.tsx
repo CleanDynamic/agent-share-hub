@@ -260,10 +260,30 @@ const App = () => (
                 <Route path="/gallery" element={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Gallery /></Suspense>} />
                 <Route path="/import" element={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><ImportPage /></Suspense>} />
               </Route>
-              <Route path="/compose/new" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><ComposeNew /></Suspense>} />
-              <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><Compose /></Suspense>} />
-              <Route path="/rebuild/:slug" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><RebuildRoute /></Suspense>} />
-              <Route path="/convert/:contentItemId" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><ConvertPrompt /></Suspense>} />
+              {/* ── BG-P16 — the four authoring routes.
+
+                  THEY STAY OUT HERE, ON PURPOSE. Unlike the three routes
+                  BG-P15 moved in, these are not reading surfaces: an authoring
+                  workspace drops navigation the way Figma and Docs do, because
+                  a tray, a tree and an inspector cannot share a viewport with
+                  two rails and a mobile bottom bar, and because a creator who
+                  is building should not be offered somewhere else to go. What
+                  BG-P16 fixed was not their position but the fact that leaving
+                  the frame happened abruptly and looked like a different
+                  product — they now share one WorkspaceBar, so the workspace
+                  reads as the same product in a different mode.
+
+                  THE FALLBACKS LOSE THEIR HARD-CODED #08080C, which is the
+                  same correction BG-P15 made to the routes it moved. That void
+                  is neither theme's ground: it was the workspace's own colour
+                  arriving before the workspace, and now that the workspace is
+                  `--bg` it would be a flash of black before a luminous grey
+                  room on Exhibition. `--bg` is the live theme's ground, so the
+                  fallback is the room the route is about to paint. ── */}
+              <Route path="/compose/new" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><ComposeNew /></Suspense>} />
+              <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><Compose /></Suspense>} />
+              <Route path="/rebuild/:slug" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><RebuildRoute /></Suspense>} />
+              <Route path="/convert/:contentItemId" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}><ConvertPrompt /></Suspense>} />
               {Kit && (
                 <Route
                   path="/dev/kit"

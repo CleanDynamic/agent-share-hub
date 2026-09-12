@@ -43,18 +43,21 @@ import {
   type NodeType,
 } from "@/lib/build";
 import {
+  WorkspaceBar,
+  workspaceGround,
+  workspacePanel,
+} from "@/components/shell/WorkspaceBar";
+import {
   FONT_STACK,
   HAIRLINE,
   TEAL,
   TEXT_MUTED,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
-  VOID,
   bodyText,
   hexToRgba,
   labelText,
   pageHeadingText,
-  panelGlass,
   titleText,
 } from "./tokens";
 import { CategoryChip } from "@/components/brand/CategoryChip";
@@ -73,18 +76,51 @@ function messageOf(cause: unknown): string {
   return cause instanceof Error ? cause.message : String(cause);
 }
 
-function Frame({ children }: { children: React.ReactNode }) {
+/**
+ * The convert page, on the workspace ground (BG-P16).
+ *
+ * THE EXIT GOES TO THE POST, NOT TO THE GALLERY, and the tooltip says so. This
+ * is the one of the four routes whose way out is not /gallery: a creator here
+ * is looking at a decision about one specific post, and the post is where they
+ * came from and where they belong if they decline. The shared bar takes the
+ * destination and its name together for exactly this reason — a tooltip reading
+ * "Back to the gallery" over a control that opens a post would be worse than no
+ * tooltip at all.
+ *
+ * STICKY RATHER THAN FIXED, because this route is the one that scrolls. The
+ * other three are `position: fixed` workspaces whose bar cannot leave the
+ * screen; this is a document, and a bar that scrolled away would put the exit
+ * out of reach exactly when a long conversion plan has been read to the bottom.
+ * The page's own scrolling is untouched — no fixed container, no inner scroll
+ * area, so scroll restoration and the mobile URL bar behave as they did.
+ *
+ * The ground was #08080C, which went black on Exhibition.
+ */
+function Frame({
+  contentItemId,
+  title,
+  children,
+}: {
+  contentItemId: string;
+  title?: string | null;
+  children: React.ReactNode;
+}) {
   return (
     <div
       data-visual-slot="convert-frame"
       style={{
         minHeight: "100vh",
-        background: VOID,
-        color: TEXT_PRIMARY,
-        fontFamily: FONT_STACK,
+        ...workspaceGround,
         isolation: "isolate",
       }}
     >
+      <div style={{ position: "sticky", top: 0, zIndex: 20 }}>
+        <WorkspaceBar
+          mode="convert"
+          exit={{ to: `/content/${contentItemId}`, hint: "Back to the post" }}
+          context={{ kind: "readonly", text: title ?? null }}
+        />
+      </div>
       <div
         style={{
           maxWidth: 760,
@@ -164,8 +200,9 @@ function Section({
   return (
     <section
       style={{
-        ...panelGlass,
-        borderRadius: 12,
+        /* Flat `--recess`, no blur: this is a working surface. The 40px blur it
+           carried was also 2.5x the system's single 16px blur value. */
+        ...workspacePanel,
         padding: 16,
         display: "flex",
         flexDirection: "column",
@@ -224,7 +261,7 @@ export default function ConvertPrompt() {
   }, [contentItemId, isConverting]);
 
   if (authLoading) {
-    return <Frame><Quiet>…</Quiet></Frame>;
+    return <Frame contentItemId={contentItemId}><Quiet>…</Quiet></Frame>;
   }
 
   if (!isLoggedIn) {
@@ -235,12 +272,12 @@ export default function ConvertPrompt() {
   const postUrl = `/content/${contentItemId}`;
 
   if (load.isLoading) {
-    return <Frame><Quiet>Reading the post…</Quiet></Frame>;
+    return <Frame contentItemId={contentItemId}><Quiet>Reading the post…</Quiet></Frame>;
   }
 
   if (load.isError || !load.data) {
     return (
-      <Frame>
+      <Frame contentItemId={contentItemId}>
         <h1 style={{ ...pageHeadingText, margin: 0 }}>That post could not be read</h1>
         <Quiet>{load.error ? messageOf(load.error) : "It may have been removed."}</Quiet>
         <Plain to={postUrl}>Back to the post</Plain>
@@ -254,7 +291,7 @@ export default function ConvertPrompt() {
   // this is the version of the refusal that reads like a sentence.
   if (user?.id !== creatorId) {
     return (
-      <Frame>
+      <Frame contentItemId={contentItemId}>
         <h1 style={{ ...pageHeadingText, margin: 0 }}>This post is not yours</h1>
         <Quiet>
           A post is converted by the person who wrote it. Nothing here changes
@@ -271,7 +308,7 @@ export default function ConvertPrompt() {
   // the draft that exists, never a second one.
   if (draft) {
     return (
-      <Frame>
+      <Frame contentItemId={contentItemId} title={plan.header.title}>
         <Helmet>
           <title>Converted — buildgallery</title>
         </Helmet>
@@ -295,18 +332,18 @@ export default function ConvertPrompt() {
   const tray = plan.nodes.filter((node) => !node.placed);
 
   return (
-    <Frame>
+    <Frame contentItemId={contentItemId} title={plan.header.title}>
       <Helmet>
         <title>Convert to a build record — buildgallery</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 
+      {/* The "← Back to the post" link that used to sit here is gone: the
+          workspace bar's exit is that link, in the one place it is now in on
+          all four routes. The in-body "Back to the post" links on the failure
+          and already-converted screens BELOW are kept, because there the post
+          is the answer to the sentence above it rather than a way out. */}
       <header style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-          <Link to={postUrl} style={{ ...labelText, color: TEXT_SECONDARY, textDecoration: "none" }}>
-            ← Back to the post
-          </Link>
-        </div>
         <h1 style={{ ...pageHeadingText, margin: 0 }}>
           Convert “{plan.header.title}” to a build record
         </h1>

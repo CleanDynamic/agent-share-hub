@@ -9,6 +9,7 @@
 // handed the hook a pre-changed record would prove the diff and not the cadence.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -133,13 +134,15 @@ function renderAt(path: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <TooltipProvider>
-        <MemoryRouter initialEntries={[path]}>
-          <Routes>
-            <Route path="/compose/:buildId" element={<Compose />} />
-          </Routes>
-        </MemoryRouter>
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <MemoryRouter initialEntries={[path]}>
+            <Routes>
+              <Route path="/compose/:buildId" element={<Compose />} />
+            </Routes>
+          </MemoryRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

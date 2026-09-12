@@ -42,16 +42,15 @@ import { useNodeDrag, type NodeDrag } from "@/components/compose/useNodeDrag";
 import {
   FONT_STACK,
   GAP_RED,
-  HAIRLINE,
   TEAL,
   TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  VOID,
   cardGlass,
   hexToRgba,
   labelText,
-  panelGlass,
 } from "@/components/build/tokens";
+import { workspaceGround } from "@/components/shell/WorkspaceBar";
+import { t } from "@/lib/theme/tokens";
+import { eyebrow } from "@/lib/theme/type";
 
 /** Below this the three rails cannot hold their content, so the workspace
  *  collapses to the centre panel with the other two behind sheets. */
@@ -447,9 +446,13 @@ function ComposeWorkspace({
         style={{
           position: "fixed",
           inset: 0,
-          background: VOID,
-          color: TEXT_PRIMARY,
-          fontFamily: FONT_STACK,
+          /* BG-P16 — THE WORKSPACE GROUND. `--bg`, flat, no glass. See the rule
+             at the top of WorkspaceBar.tsx: reading surfaces have glass and
+             depth, working surfaces do not, because in a workspace the content
+             is figure and the chrome has to recede behind it. This was the
+             hard-coded #08080C void, which was neither theme's ground and went
+             black on Exhibition. */
+          ...workspaceGround,
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
@@ -494,9 +497,13 @@ function ComposeWorkspace({
               data-visual-slot="compose-left"
               aria-label="Tray"
               style={{
-                ...panelGlass,
-                border: "none",
-                borderRight: `1px solid ${HAIRLINE}`,
+                /* A panel on the workspace ground: flat `--recess`, one `--line`
+                   hairline, no blur. Structurally identical to the blurred
+                   version it replaces — one 1px edge, same box. */
+                backgroundColor: t.recess,
+                borderRightWidth: 1,
+                borderRightStyle: "solid",
+                borderRightColor: t.line,
                 width: LEFT_RAIL_WIDTH,
                 flexShrink: 0,
                 ...railScroll,
@@ -525,9 +532,10 @@ function ComposeWorkspace({
               data-visual-slot="compose-right"
               aria-label="Inspector"
               style={{
-                ...panelGlass,
-                border: "none",
-                borderLeft: `1px solid ${HAIRLINE}`,
+                backgroundColor: t.recess,
+                borderLeftWidth: 1,
+                borderLeftStyle: "solid",
+                borderLeftColor: t.line,
                 width: RIGHT_RAIL_WIDTH,
                 flexShrink: 0,
                 ...railScroll,
@@ -553,9 +561,9 @@ function ComposeWorkspace({
               <SheetContent
                 side="left"
                 data-visual-slot="modal-surface"
-                style={{ ...panelGlass, color: TEXT_PRIMARY, fontFamily: FONT_STACK }}
+                style={{ ...workspaceGround, backgroundColor: t.recess }}
               >
-                <SheetTitle style={{ ...labelText, color: TEXT_SECONDARY }}>Tray</SheetTitle>
+                <SheetTitle style={{ ...eyebrow, color: t.text2 }}>Tray</SheetTitle>
                 <LeftPanelContent compose={compose} drag={drag} justArrived={justArrived} />
               </SheetContent>
             </Sheet>
@@ -565,14 +573,13 @@ function ComposeWorkspace({
                 side="bottom"
                 data-visual-slot="modal-surface"
                 style={{
-                  ...panelGlass,
-                  color: TEXT_PRIMARY,
-                  fontFamily: FONT_STACK,
+                  ...workspaceGround,
+                  backgroundColor: t.recess,
                   maxHeight: "70vh",
                   overflowY: "auto",
                 }}
               >
-                <SheetTitle style={{ ...labelText, color: TEXT_SECONDARY }}>Inspector</SheetTitle>
+                <SheetTitle style={{ ...eyebrow, color: t.text2 }}>Inspector</SheetTitle>
                 <RightPanelContent
                   compose={compose}
                   drag={drag}
