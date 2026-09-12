@@ -31,8 +31,19 @@
 }
 .ns-right-search:hover { border-color: var(--text2); }
 .ns-right-search svg { width: 13px; height: 13px; color: var(--text2); flex-shrink: 0; }
+/* BG-P13. The wrapper above IS the field — it is what carries the --recess
+   ground, the --line border and the --r-control radius, with the search icon
+   inside it. BG-P07's global `input` rule paints every raw <input> in the app
+   with that same treatment and does it with !important, so without these three
+   the inner input drew a second bordered --recess box inside the first. The
+   declarations were already here saying exactly this; they just could not win.
+   The ring moves to the wrapper, so the whole field marks focus rather than the
+   text area inside it. */
 .ns-right-search input {
-  flex: 1; background: none; border: none; outline: none;
+  flex: 1;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
   font-size: 11px; color: var(--text);
   font-family: inherit;
 }

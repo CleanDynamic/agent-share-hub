@@ -52,9 +52,11 @@ export function RightRailExplore() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchPeopleResults, setSearchPeopleResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  /* The field's ring is tracked here rather than in CSS because
-     `.ns-right-search input` sets `outline: none`, and an inline style is the
-     only thing that outranks it without adding a rule to the stylesheet. */
+  /* The ring belongs on the wrapper, which is the element that looks like the
+     field — the inner input is transparent and borderless. A wrapper cannot
+     carry :focus-visible for a child in CSS without a new rule, so it is
+     tracked here and applied inline. `:focus-visible` is asked of the input
+     itself, so a mouse click does not leave a ring behind and a Tab does. */
   const [searchFocused, setSearchFocused] = useState(false);
 
   /* ── Supabase: trending ── */
@@ -166,15 +168,17 @@ export function RightRailExplore() {
       <div className="ns-right-title">Explore</div>
 
       {/* Working search bar */}
-      <div className="ns-right-search" style={{ position: "relative" }}>
+      <div
+        className="ns-right-search"
+        style={{ position: "relative", ...(searchFocused ? focusRing : null) }}
+      >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
           placeholder="Quick search…"
           value={searchQuery}
-          style={searchFocused ? { ...focusRing } : undefined}
-          onFocus={() => setSearchFocused(true)}
+          onFocus={(e) => setSearchFocused(e.currentTarget.matches(":focus-visible"))}
           onBlur={() => setSearchFocused(false)}
           onChange={(e) => handleSearchChange(e.target.value)}
           onKeyDown={(e) => {
