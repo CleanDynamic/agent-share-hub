@@ -15,13 +15,15 @@
 // rectangle with a rectangle in it.
 //
 // THE TITLE WINS EVEN THOUGH IT SITS UNDER THE PICTURE. That is the one thing
-// this card has to get right, and it is why the title spends `type.cardTitle` in
-// full `--text` while everything around it is 13–16px of `--text2` and mono. A
-// picture is always the first thing the eye lands on, so a title cannot win by
+// this card has to get right. It is why `type.cardTitle` is now the DISPLAY face
+// at 22 in full `--text`, where it used to be the body face clamped from 19,
+// while everything around it is 13–16px of `--text2` and mono. A picture is
+// always the first thing the eye lands on, so a title under one cannot win by
 // position: it wins by face, size and contrast, and every other element under
-// the box is deliberately quieter. (The face itself is named in `type.ts` and
-// nowhere else, which type.test.ts sweeps for — a card that spelled out a
-// family would be a card that could drift from the scale.)
+// the box is deliberately quieter than it. 22 clears the display floor, which is
+// what makes the change legal rather than a waiver — see the role's own note.
+// (The family is named in `type.ts` and nowhere else, which type.test.ts sweeps
+// for: a card that spelled out a face would be a card that could drift.)
 //
 // THE FIGURE THAT USED TO LEAD IS THE REPRODUCTION COUNT, and it still says the
 // same thing: how many people who are not the creator ran the thing and said
