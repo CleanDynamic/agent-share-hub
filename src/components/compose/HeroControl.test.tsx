@@ -10,6 +10,7 @@
 // render and the creator with no way to tell why.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -48,25 +49,27 @@ function renderBar({
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
-    <MemoryRouter>
-      <TooltipProvider>
-        <ComposeTopBar
-          build={makeBuild(heroNodeId)}
-          isSaving={false}
-          lastSavedAt={null}
-          saveError={null}
-          onPatch={onPatch}
-          selectedNodeId={selectedNodeId}
-          heroEligible={heroEligible}
-          tree={[]}
-          nodeTypes={[]}
-          completeness={null}
-          onPublish={() => Promise.reject(new Error("not under test"))}
-          isPublishing={false}
-          publishError={null}
-        />
-      </TooltipProvider>
-    </MemoryRouter>
+      <ThemeProvider>
+      <MemoryRouter>
+        <TooltipProvider>
+          <ComposeTopBar
+            build={makeBuild(heroNodeId)}
+            isSaving={false}
+            lastSavedAt={null}
+            saveError={null}
+            onPatch={onPatch}
+            selectedNodeId={selectedNodeId}
+            heroEligible={heroEligible}
+            tree={[]}
+            nodeTypes={[]}
+            completeness={null}
+            onPublish={() => Promise.reject(new Error("not under test"))}
+            isPublishing={false}
+            publishError={null}
+          />
+        </TooltipProvider>
+      </MemoryRouter>
+      </ThemeProvider>
     </QueryClientProvider>
   );
   return { onPatch };

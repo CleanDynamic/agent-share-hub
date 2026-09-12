@@ -26,45 +26,74 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { getBuildHeaderBySlug, startRebuild, type Build } from "@/lib/build";
 import {
-  FONT_STACK,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  VOID,
-  bodyText,
-  headingText,
-  labelText,
-} from "@/components/build/tokens";
+  WorkspaceBar,
+  workspaceGround,
+  workspacePanel,
+} from "@/components/shell/WorkspaceBar";
+import { buttonStyle } from "@/lib/theme/controls";
+import { t } from "@/lib/theme/tokens";
+import { body as bodyText, sectionHead } from "@/lib/theme/type";
 
 /** A build's title does not change while somebody is forking it. */
 const STALE_TIME = 300_000;
 
 /**
- * The whole viewport, quiet, on the void.
+ * The whole viewport, quiet, on the workspace ground.
  *
- * Deliberately the same frame the compose route uses for its own waiting and
+ * Deliberately the same chrome the compose route uses for its own waiting and
  * failure states: this page is the first half of arriving at that one, and two
- * different backgrounds either side of one redirect would read as two products.
+ * different surfaces either side of one redirect would read as two products.
+ * BG-P16 made that literally true rather than approximately — it is the same
+ * WorkspaceBar component, so the exit does not move between this page and the
+ * workspace it hands the creator to.
+ *
+ * The ground was #08080C, which is neither theme's, and went black on
+ * Exhibition. It is `--bg` now, flat, with the panel on `--recess`.
+ *
+ * THE MODE READS "REBUILD" AND THE CONTEXT NAMES THE SOURCE, which is the one
+ * thing a creator waiting on a fork wants confirmed: that it is forking the
+ * build they meant.
  */
-function Frame({ children }: { children: React.ReactNode }) {
+function Frame({
+  sourceTitle,
+  children,
+}: {
+  sourceTitle?: string | null;
+  children: React.ReactNode;
+}) {
   return (
     <div
       data-visual-slot="rebuild-frame"
       style={{
         position: "fixed",
         inset: 0,
-        background: VOID,
-        color: TEXT_PRIMARY,
-        fontFamily: FONT_STACK,
+        ...workspaceGround,
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
+        flexDirection: "column",
         isolation: "isolate",
       }}
     >
-      {children}
+      {/* To /gallery, not to /b2/:slug. The build page has its own way back to
+          itself and a reader who abandons a fork is leaving the act, not
+          stepping one page back inside it. The failure panel below still offers
+          the source specifically, because there the source is the answer. */}
+      <WorkspaceBar
+        mode="rebuild"
+        exit={{ to: "/gallery" }}
+        context={{ kind: "readonly", text: sourceTitle ?? null }}
+      />
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -72,12 +101,12 @@ function Frame({ children }: { children: React.ReactNode }) {
 /** The line that holds the screen while the fork is being written. */
 function Working({ title }: { title: string | null }) {
   return (
-    <Frame>
+    <Frame sourceTitle={title}>
       <p
         data-testid="rebuild-working"
         role="status"
         aria-live="polite"
-        style={{ ...bodyText, margin: 0, color: TEXT_MUTED, textAlign: "center" }}
+        style={{ ...bodyText, margin: 0, color: t.text2, textAlign: "center" }}
       >
         {title
           ? `Setting up your rebuild of “${title}”…`
@@ -100,12 +129,24 @@ function Failure({ slug, detail }: { slug: string | undefined; detail: string })
     <Frame>
       <div
         data-testid="rebuild-error"
-        style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 460 }}
+        style={{
+          ...workspacePanel,
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          maxWidth: 460,
+          padding: 24,
+        }}
       >
-        <h1 style={{ ...headingText, margin: 0 }}>The rebuild could not be started</h1>
-        <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>{detail}</p>
+        <h1 style={{ ...sectionHead, fontSize: 24, margin: 0, color: t.text }}>
+          The rebuild could not be started
+        </h1>
+        <p style={{ ...bodyText, margin: 0, color: t.text2 }}>{detail}</p>
         {slug ? (
-          <Link to={`/b2/${slug}`} style={{ ...labelText, color: TEAL }}>
+          <Link
+            to={`/b2/${slug}`}
+            style={{ ...buttonStyle("link"), alignSelf: "flex-start" }}
+          >
             ← Back to the build
           </Link>
         ) : null}
@@ -167,7 +208,13 @@ export default function RebuildRoute() {
   if (authLoading) {
     return (
       <Frame>
-        <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED }}>Checking your session…</p>
+        <p
+          role="status"
+          aria-live="polite"
+          style={{ ...bodyText, margin: 0, color: t.text2 }}
+        >
+          Checking your session…
+        </p>
       </Frame>
     );
   }

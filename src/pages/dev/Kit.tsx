@@ -40,6 +40,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { WorkspaceBar } from "@/components/shell/WorkspaceBar";
 
 import { GalleryCard, GalleryCardSkeleton } from "@/components/gallery/GalleryCard";
 import { CategoryChip } from "@/components/brand/CategoryChip";
@@ -104,6 +105,49 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         }}
       >
         {children}
+      </div>
+    </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   The workspace bar (BG-P16).
+
+   WHY IT IS IN THE KIT AND NOT ONLY ON ITS FOUR ROUTES. /compose/new,
+   /compose/:buildId, /rebuild/:slug and /convert/:contentItemId all require a
+   signed-in creator and, for three of them, a real record — so none of them can
+   be opened by a browser test without seeded credentials, and the claims BG-P16
+   has to prove are claims about the CHROME rather than about any record: the
+   bar is 52px, the exit reads as a control, the theme toggle works from inside
+   it, and nothing in it is blurred. Mounting one specimen here makes all four
+   measurable on a bare dev server, which is the same reason BG-P14 verified the
+   wide frame on /dev/wide rather than on a real route.
+
+   It is rendered at full width in its own strip rather than inside a Section,
+   because a bar boxed inside a padded card would not be the thing under test.
+   ──────────────────────────────────────────────────────────────────────────── */
+function WorkspaceSection() {
+  const [title, setTitle] = useState("Inbox triage agent");
+
+  return (
+    <section
+      data-testid="kit-workspace"
+      style={{ display: "flex", flexDirection: "column", gap: SPACE.sm }}
+    >
+      <h2 style={{ ...eyebrow, color: t.text2, margin: 0 }}>Workspace bar</h2>
+      <div style={{ borderWidth: 1, borderStyle: "solid", borderColor: t.line, overflow: "hidden" }}>
+        <WorkspaceBar
+          mode="compose"
+          exit={{ to: "/gallery" }}
+          context={{
+            kind: "editable",
+            value: title,
+            onChange: setTitle,
+            label: "Build title",
+            placeholder: "Untitled build",
+          }}
+          right={<Button size="sm">Publish</Button>}
+        />
       </div>
     </section>
   );
@@ -1038,6 +1082,8 @@ export default function Kit() {
       <BrandSection />
 
       <CardSection />
+
+      <WorkspaceSection />
 
       <Section title="Loading">
         <Row label="skeleton">

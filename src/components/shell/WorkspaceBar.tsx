@@ -289,10 +289,17 @@ function ExitControl({ exit }: { exit: WorkspaceExit }) {
           style={exitControlStyle(state)}
         >
           <Chevron />
-          {/* The wordmark, in the display face. Twenty is the theme's display
-              floor and the smallest Bodoni Moda may ever be set — below it the
-              hairlines break up, worst on Dusk. The rails set it at 22; a
-              control inside a 52px bar takes the floor instead. */}
+          {/* The wordmark, in the display face, from the BODONI stack rather
+              than a hand-written family — naming the face in source is what
+              `type.test.ts` forbids, because that guard is what keeps the
+              20px display floor enforceable across the whole product.
+
+              TWENTY IS THAT FLOOR EXACTLY, and the smallest the display face
+              may ever be set: below it a didone's hairlines break up, worst on
+              Dusk. The rails set the wordmark at 22; a control inside a 52px
+              bar takes the floor instead. WorkspaceBar.test.tsx asserts it,
+              because the scale's own sweep only sees sizes written into CSS
+              template literals and this one is a style object. */}
           <span
             style={{
               fontFamily: BODONI,
@@ -337,7 +344,9 @@ function EditableContext({
         fontWeight: 600,
         fontFamily: "inherit",
         flex: 1,
-        minWidth: 80,
+        /* Shrinks to nothing rather than holding 80px open: at a crowded width
+           a narrower title field costs less than a clipped control. */
+        minWidth: 0,
         height: 32,
         padding: "0 10px",
         outline: state.focusVisible ? undefined : "none",
@@ -402,6 +411,24 @@ export function WorkspaceBar({ mode, exit, context, right }: WorkspaceBarProps) 
         alignItems: "center",
         gap: 10,
         padding: "0 14px",
+        /* NOTHING IN THE BAR IS EVER UNREACHABLE, WHICH IS NOT THE SAME AS
+           EVERYTHING FITTING. Measured at 1440/1280/1100/1024/900/768, the bar's
+           contents fit down to about 1000px and then run over: the theme toggle
+           is 203px of three word-labelled segments and the compose bar was
+           already close to full before it. The workspace frame is
+           `overflow: hidden`, so without this the controls at the right end —
+           Publish among them — would be clipped off-screen rather than merely
+           cramped, and the route's one primary action would be unreachable at a
+           laptop width.
+
+           `overflow-x: auto` with `overflow-y: hidden` keeps the row exactly
+           WORKSPACE_BAR_HEIGHT tall (measured: 52px at every width above) and
+           makes the overrun scrollable instead of lost. It is a floor, not a
+           fix: the real answer is a denser theme control or a bar that sheds
+           labels below the single-column breakpoint, and both are a design
+           decision this prompt does not own. Reported in the handoff. */
+        overflowX: "auto",
+        overflowY: "hidden",
       }}
     >
       <ExitControl exit={exit} />

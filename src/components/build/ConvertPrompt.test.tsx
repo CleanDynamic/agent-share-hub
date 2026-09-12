@@ -9,6 +9,8 @@
 // planConversion is deliberately NOT stubbed. The list on screen is the write.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -93,13 +95,17 @@ function renderPrompt() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[`/convert/${ITEM_ID}`]}>
-        <LocationProbe />
-        <Routes>
-          <Route path="/convert/:contentItemId" element={<ConvertPrompt />} />
-          <Route path="/login" element={<span>sign in</span>} />
-        </Routes>
-      </MemoryRouter>
+      <ThemeProvider>
+        <TooltipProvider>
+          <MemoryRouter initialEntries={[`/convert/${ITEM_ID}`]}>
+            <LocationProbe />
+            <Routes>
+              <Route path="/convert/:contentItemId" element={<ConvertPrompt />} />
+              <Route path="/login" element={<span>sign in</span>} />
+            </Routes>
+          </MemoryRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
@@ -132,13 +138,22 @@ describe("the conversion offer", () => {
     expect(convertContentItem).not.toHaveBeenCalled();
   });
 
-  it("promises the post is untouched, and keeps a link back to it", async () => {
+  it("promises the post is untouched, and keeps a way back to it", async () => {
     renderPrompt();
     await screen.findByText(/Convert “Inbox triage agent”/);
 
     expect(screen.getByText(/published, unchanged, at the same URL/i)).toBeTruthy();
-    const back = screen.getByText("← Back to the post") as HTMLAnchorElement;
-    expect(back.getAttribute("href")).toBe(`/content/${ITEM_ID}`);
+
+    /* BG-P16 — the in-header "← Back to the post" link is now the workspace
+       bar's exit, which is the same promise made by a control instead of by
+       four words of body text. The guarantee under test is unchanged: this
+       page always offers the post it is about. */
+    const exit = screen.getByTestId("workspace-exit") as HTMLAnchorElement;
+    expect(exit.getAttribute("href")).toBe(`/content/${ITEM_ID}`);
+    // It names the post, not the gallery: convert is the one route whose way
+    // out is not /gallery, and a tooltip that lied would be worse than none.
+    expect(exit).toHaveAccessibleName("Back to the post");
+    expect(screen.getByTestId("workspace-mode")).toHaveTextContent("CONVERT");
   });
 
   it("converts once and then offers the draft", async () => {

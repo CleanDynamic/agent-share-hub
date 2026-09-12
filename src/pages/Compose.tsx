@@ -17,24 +17,32 @@ import type { IntakeArrival } from "@/lib/build";
 import { useComposeBuild } from "@/hooks/useComposeBuild";
 import { ComposeFrame } from "@/components/compose/ComposeFrame";
 import {
-  FONT_STACK,
-  GAP_RED,
-  HAIRLINE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  VOID,
-  bodyText,
-  headingText,
-  hexToRgba,
-  labelText,
-  panelGlass,
-} from "@/components/build/tokens";
+  WorkspaceBar,
+  workspaceGround,
+  workspacePanel,
+} from "@/components/shell/WorkspaceBar";
+import { buttonStyle } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body as bodyText, sectionHead, data as dataText } from "@/lib/theme/type";
 
 /** A build is never asked to name itself before it exists. */
 const DRAFT_TITLE = "Untitled build";
 
+/**
+ * The workspace, before there is a workspace: the states between arriving at
+ * /compose/:buildId and the frame opening.
+ *
+ * BG-P16 — IT CARRIES THE WORKSPACE BAR NOW, which is not decoration. Every one
+ * of these states used to be a sentence centred on a black field with no way
+ * out of it at all: a creator who hit "This build isn't yours" or a failed
+ * session check had the browser's Back button and nothing else. The bar means
+ * the exit is in the same place here as it is in the workspace itself, which is
+ * the whole point of a shared chrome.
+ *
+ * The ground is `--bg` and the panel is `--recess`, flat, per the rule in
+ * WorkspaceBar.tsx. It was #08080C, which went black on Exhibition.
+ */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div
@@ -42,17 +50,25 @@ function Shell({ children }: { children: React.ReactNode }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: VOID,
-        color: TEXT_PRIMARY,
-        fontFamily: FONT_STACK,
+        ...workspaceGround,
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
+        flexDirection: "column",
         isolation: "isolate",
       }}
     >
-      {children}
+      <WorkspaceBar mode="compose" exit={{ to: "/gallery" }} />
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -67,9 +83,18 @@ function Message({
   children?: React.ReactNode;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 460 }}>
-      <h1 style={{ ...headingText, margin: 0 }}>{heading}</h1>
-      <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>{detail}</p>
+    <div
+      style={{
+        ...workspacePanel,
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        maxWidth: 460,
+        padding: 24,
+      }}
+    >
+      <h1 style={{ ...sectionHead, fontSize: 24, margin: 0, color: t.text }}>{heading}</h1>
+      <p style={{ ...bodyText, margin: 0, color: t.text2 }}>{detail}</p>
       {children}
     </div>
   );
@@ -91,7 +116,9 @@ function ArrivalNotice({ arrival }: { arrival: IntakeArrival }) {
   if (dismissed) return null;
 
   const failed = arrival.tone === "failed";
-  const accent = failed ? GAP_RED : TEAL;
+  /* Breakage for a parse that failed, evidence for one that worked. Both are
+     measured as text on both grounds; the GAP_RED/TEAL hexes were not. */
+  const accent = failed ? t.catBreakage : t.evidence;
 
   return (
     <div
@@ -99,7 +126,12 @@ function ArrivalNotice({ arrival }: { arrival: IntakeArrival }) {
       role="status"
       aria-live="polite"
       style={{
-        ...panelGlass,
+        /* Flat `--recess`, like every other panel in the workspace. The tone is
+           carried by the 2px left edge alone — a coloured wash behind the text
+           was legible on the void and is not on either theme's ground. */
+        ...workspacePanel,
+        borderLeftWidth: 2,
+        borderLeftColor: accent,
         position: "fixed",
         left: 18,
         bottom: 18,
@@ -109,26 +141,25 @@ function ArrivalNotice({ arrival }: { arrival: IntakeArrival }) {
         alignItems: "flex-start",
         gap: 12,
         padding: "11px 13px",
-        borderRadius: 10,
-        borderLeft: `2px solid ${accent}`,
-        background: hexToRgba(accent, 0.07),
       }}
     >
-      <span style={{ ...bodyText, margin: 0, color: TEXT_PRIMARY }}>{arrival.message}</span>
+      <span style={{ ...bodyText, margin: 0, color: t.text }}>{arrival.message}</span>
       <button
         type="button"
         onClick={() => setDismissed(true)}
         aria-label="Dismiss"
         style={{
-          ...labelText,
+          ...dataText,
           fontFamily: "inherit",
           flexShrink: 0,
-          background: "transparent",
-          border: `1px solid ${HAIRLINE}`,
-          borderRadius: 6,
+          backgroundColor: "transparent",
+          borderWidth: 1,
+          borderStyle: "solid",
+          borderColor: t.line,
+          borderRadius: r.chip,
           padding: "1px 7px",
           cursor: "pointer",
-          color: TEXT_MUTED,
+          color: t.text2,
         }}
       >
         ✕
@@ -140,7 +171,9 @@ function ArrivalNotice({ arrival }: { arrival: IntakeArrival }) {
 function Waiting({ text }: { text: string }) {
   return (
     <Shell>
-      <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED }}>{text}</p>
+      <p role="status" aria-live="polite" style={{ ...bodyText, margin: 0, color: t.text2 }}>
+        {text}
+      </p>
     </Shell>
   );
 }
@@ -209,14 +242,10 @@ export default function Compose() {
                 setAttempt((n) => n + 1);
               }}
               style={{
-                ...labelText,
-                color: TEAL,
+                ...buttonStyle("link"),
                 fontFamily: "inherit",
                 alignSelf: "flex-start",
-                background: "transparent",
-                border: "none",
                 padding: 0,
-                cursor: "pointer",
               }}
             >
               Try again
@@ -248,7 +277,7 @@ export default function Compose() {
           heading="No build at this address"
           detail="Nothing here, or nothing you can open. It may have been deleted, or it may be another creator's draft."
         >
-          <Link to="/compose/new" style={{ ...labelText, color: TEAL }}>
+          <Link to="/compose/new" style={{ ...buttonStyle("link"), alignSelf: "flex-start" }}>
             Start a new build
           </Link>
         </Message>
@@ -267,7 +296,10 @@ export default function Compose() {
           heading="This build isn't yours"
           detail="Only its creator can edit a build. You can still read it as it was published."
         >
-          <Link to={`/b2/${compose.build.slug}`} style={{ ...labelText, color: TEAL }}>
+          <Link
+            to={`/b2/${compose.build.slug}`}
+            style={{ ...buttonStyle("link"), alignSelf: "flex-start" }}
+          >
             View the build →
           </Link>
         </Message>

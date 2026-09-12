@@ -21,6 +21,7 @@ import {
   type WorkspaceMode,
 } from "./WorkspaceBar";
 import { focusRing } from "@/lib/theme/focus";
+import { DISPLAY_MIN_PX } from "@/lib/theme/type";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, THEME_STORAGE_KEY } from "@/contexts/ThemeContext";
 
@@ -209,6 +210,15 @@ describe("WorkspaceBar — the right side", () => {
 });
 
 describe("WorkspaceBar — the ground rule", () => {
+  it("sets the wordmark at the display floor and never under it", () => {
+    renderBar();
+    const style = exit().querySelector("span")?.getAttribute("style") ?? "";
+    const size = Number(/font-size:\s*(\d+)px/.exec(style)?.[1]);
+    // type.test.ts sweeps CSS template literals for this; a style object is
+    // invisible to it, so the one new Bodoni site checks its own floor.
+    expect(size).toBeGreaterThanOrEqual(DISPLAY_MIN_PX);
+  });
+
   it("is 52px, which is the height ComposeTopBar has always been", () => {
     expect(WORKSPACE_BAR_HEIGHT).toBe(52);
     renderBar();

@@ -6,6 +6,8 @@
 // forty turns are a count rather than forty rows.
 
 import { StrictMode } from "react";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -133,11 +135,15 @@ function Landed() {
 function renderIntake({ strict = false } = {}) {
   const tree = (
     <MemoryRouter initialEntries={["/compose/new"]}>
-      <Routes>
-        <Route path="/compose/new" element={<ComposeNew />} />
-        <Route path="/compose/:buildId" element={<Landed />} />
-        <Route path="/login" element={<span>login page</span>} />
-      </Routes>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Routes>
+            <Route path="/compose/new" element={<ComposeNew />} />
+            <Route path="/compose/:buildId" element={<Landed />} />
+            <Route path="/login" element={<span>login page</span>} />
+          </Routes>
+        </TooltipProvider>
+      </ThemeProvider>
     </MemoryRouter>
   );
   return render(strict ? <StrictMode>{tree}</StrictMode> : tree);
