@@ -19,9 +19,16 @@
 // control is pressed. The chip on that layer says so before either is.
 //
 // PORTALLED TO THE BODY, like the publish confirmation and for the same
-// reason: the compose top bar carries backdropFilter, which makes it the
-// containing block for every fixed-position descendant. A fixed overlay
-// rendered inside it would be trapped in a 52px strip.
+// reason: a fixed overlay rendered inside the bar would be trapped in a 52px
+// strip rather than covering the viewport.
+//
+// THE REASON CHANGED IN BG-P16 AND THE PORTAL DID NOT. It used to be the bar's
+// own `backdropFilter` doing it — a filtered element is the containing block
+// for every fixed-position descendant — and BG-P16 removed that blur, because
+// a working surface carries no glass. The portal is still required: the
+// workspace frame sets `isolation: isolate` and `overflow: hidden`, either of
+// which would clip or trap this overlay on its own. Do not "simplify" it away
+// on the grounds that the blur is gone.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";

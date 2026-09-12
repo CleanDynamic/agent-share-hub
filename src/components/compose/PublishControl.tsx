@@ -659,10 +659,16 @@ export function PublishControl({
 /**
  * What a creator sees the moment their build goes live.
  *
- * PORTALLED TO THE BODY, and not by preference. The compose top bar carries
- * backdropFilter, and a filtered element is the containing block for every
- * fixed-position descendant — a fixed overlay rendered inside the bar would be
- * trapped in a 52px-tall strip. The portal takes it out of that subtree.
+ * PORTALLED TO THE BODY, and not by preference: a fixed overlay rendered
+ * inside the bar would be trapped in a 52px-tall strip rather than covering the
+ * viewport. The portal takes it out of that subtree.
+ *
+ * THE REASON CHANGED IN BG-P16 AND THE PORTAL DID NOT. It used to be the bar's
+ * own `backdropFilter` — a filtered element is the containing block for every
+ * fixed-position descendant — and BG-P16 removed that blur, because a working
+ * surface carries no glass. The workspace frame's `isolation: isolate` and
+ * `overflow: hidden` each still require the portal on their own, so this is not
+ * dead scaffolding to be tidied up.
  */
 function PublishConfirmation({
   build,
