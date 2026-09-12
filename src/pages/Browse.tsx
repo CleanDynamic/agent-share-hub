@@ -835,7 +835,7 @@ const Browse = () => {
   return (
     <div style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24 }}>
       <SeoHead
-        title="Discover AI Blueprints — NeoScale AI"
+        title="Discover AI Blueprints — buildgallery.ai"
         description="Find ready-made AI setups for any task. Filter by type, difficulty, and the AI tools you already use. Free to download."
         path="/browse"
       />

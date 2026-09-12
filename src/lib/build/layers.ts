@@ -81,7 +81,7 @@ export const LAYER_COLUMNS =
  * never presented as the creator's own words, and this is what says so.
  */
 export const LAYER_ATTRIBUTION =
-  "Written by NeoScale from this build’s record, reviewed by the creator.";
+  "Written by buildgallery from this build’s record, reviewed by the creator.";
 
 export const LAYER_TITLE: Record<Layer, string> = {
   run: "Run it",

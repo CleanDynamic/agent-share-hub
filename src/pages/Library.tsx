@@ -359,7 +359,7 @@ export default function LibraryPage() {
   return (
     <>
       <SeoHead
-        title={`${pageTitle} — NeoScale AI`}
+        title={`${pageTitle} — buildgallery.ai`}
         description="Saved collections of blueprints, blogs, stages, and blocks."
         path={visitorHandle ? `/library/${visitorHandle}` : "/library"}
         noIndex

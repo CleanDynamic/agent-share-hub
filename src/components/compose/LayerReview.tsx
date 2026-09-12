@@ -467,7 +467,7 @@ export function LayerReview({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Review what NeoScale wrote about this build"
+      aria-label="Review what buildgallery wrote about this build"
       style={{
         position: "fixed",
         inset: 0,
@@ -495,7 +495,7 @@ export function LayerReview({
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <h2 style={{ ...headingText, margin: 0 }}>
-            NeoScale wrote two readings of your record.
+            buildgallery wrote two readings of your record.
           </h2>
           <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
             Change any line, or take neither. Nothing here is shown to a reader

@@ -199,7 +199,7 @@ export default function FYPPage() {
   if (!isLoggedIn) {
     return (
       <div className="py-20 px-6 flex flex-col items-center gap-4 text-center">
-        <SeoHead title="For You — NeoScale AI" description="Your personalised feed" path="/fyp" noIndex />
+        <SeoHead title="For You — buildgallery.ai" description="Your personalised feed" path="/fyp" noIndex />
         <h1 className="text-2xl font-bold text-foreground">Sign in to see your personalised feed.</h1>
         <p className="text-sm text-muted-foreground max-w-sm">
           Follow creators and see what they download, rate, and comment on.
@@ -216,7 +216,7 @@ export default function FYPPage() {
   if (!hasFollowing && !isLoading) {
     return (
       <div className="py-20 px-6 flex flex-col items-center gap-4 text-center">
-        <SeoHead title="For You — NeoScale AI" description="Your personalised feed" path="/fyp" noIndex />
+        <SeoHead title="For You — buildgallery.ai" description="Your personalised feed" path="/fyp" noIndex />
         <Users className="h-10 w-10 text-muted-foreground" />
         <h1 className="text-2xl font-bold text-foreground">For You</h1>
         <p className="text-sm text-muted-foreground max-w-sm">
@@ -229,7 +229,7 @@ export default function FYPPage() {
 
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6">
-      <SeoHead title="For You — NeoScale AI" description="Your personalised feed" path="/fyp" noIndex />
+      <SeoHead title="For You — buildgallery.ai" description="Your personalised feed" path="/fyp" noIndex />
       <div className="mx-auto max-w-5xl">
         <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">For You</h1>

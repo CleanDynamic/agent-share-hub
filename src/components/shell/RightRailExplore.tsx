@@ -393,7 +393,7 @@ export function RightRailExplore() {
 
       {/* Footer links */}
       <div className="ns-footer-links">
-        <span className="ns-footer-link" onClick={() => navigate("/about")}>About NeoScale AI →</span>
+        <span className="ns-footer-link" onClick={() => navigate("/about")}>About buildgallery.ai →</span>
         <a className="ns-footer-link" href="https://twitter.com/neoscaleai" target="_blank" rel="noopener noreferrer">Twitter @neoscaleai →</a>
       </div>
     </>

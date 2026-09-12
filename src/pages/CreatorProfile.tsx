@@ -229,11 +229,11 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
     return t;
   }, [collections, profile.bounties_solved]);
 
-  const seoDesc = `${(profile.bio || "").slice(0, 155)}${profile.bio ? " — " : ""}${contentItems?.length ?? 0} posts on NeoScale AI.`;
+  const seoDesc = `${(profile.bio || "").slice(0, 155)}${profile.bio ? " — " : ""}${contentItems?.length ?? 0} posts on buildgallery.ai.`;
 
   return (
     <div className="w-full">
-      <SeoHead title={`${displayName} on NeoScale AI`} description={seoDesc} path={`/creator/${profile.username}`} ogType="profile" />
+      <SeoHead title={`${displayName} on buildgallery.ai`} description={seoDesc} path={`/creator/${profile.username}`} ogType="profile" />
 
       {/* BANNER */}
       <div className="relative w-full" style={{ height: 200 }}>

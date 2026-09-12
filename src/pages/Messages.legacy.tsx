@@ -362,9 +362,9 @@ const MessagesPage = () => {
 
   // Browser tab title with unread count
   useEffect(() => {
-    const title = totalUnread > 0 ? `(${totalUnread > 9 ? "9+" : totalUnread}) Messages — NeoScale AI` : "Messages — NeoScale AI";
+    const title = totalUnread > 0 ? `(${totalUnread > 9 ? "9+" : totalUnread}) Messages — buildgallery.ai` : "Messages — buildgallery.ai";
     document.title = title;
-    return () => { document.title = "NeoScale AI"; };
+    return () => { document.title = "buildgallery.ai"; };
   }, [totalUnread]);
 
   // Fetch all threads
@@ -935,7 +935,7 @@ const MessagesPage = () => {
 
   return (
     <div className={`flex flex-col ${mobileShowThread && showThreadView && isMobileView ? 'h-screen' : 'h-[calc(100vh-56px)]'} lg:h-screen`}>
-      <SeoHead title="Messages — NeoScale AI" description="Your messages" path="/messages" />
+      <SeoHead title="Messages — buildgallery.ai" description="Your messages" path="/messages" />
 
       {/* Desktop: two columns */}
       <div className="hidden lg:flex flex-1 overflow-hidden">

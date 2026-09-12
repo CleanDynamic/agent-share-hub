@@ -270,7 +270,7 @@ export default function BountySolvePage() {
   return (
     <>
       <SeoHead
-        title={`Solve · ${(bounty as any).title} — NeoScale`}
+        title={`Solve · ${(bounty as any).title} — buildgallery`}
         description={`Submit a solution for ${slot.kind}: ${slot.name}`}
         path={`/b/${slug}/solve/${slotId}`}
         ogType="article"

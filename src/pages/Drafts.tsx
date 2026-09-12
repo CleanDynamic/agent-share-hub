@@ -142,7 +142,7 @@ export default function DraftsPage() {
 
   return (
     <div style={{ paddingBottom: 40 }}>
-      <SeoHead title="Drafts — NeoScale AI" description="Manage your draft posts." path="/drafts" noIndex />
+      <SeoHead title="Drafts — buildgallery.ai" description="Manage your draft posts." path="/drafts" noIndex />
       <ShellHeader
         onBack={() => navigate(-1)}
         primaryAction={{ label: "New draft", icon: Plus, onClick: () => openUploadTypePicker() }}

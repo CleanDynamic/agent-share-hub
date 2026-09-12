@@ -29,7 +29,7 @@ const CATEGORIES: CategoryDef[] = [
     name: "Prompt(s)",
     contentType: "Prompt File",
     description: "Ready-made prompts you can paste directly into any AI tool to get specialist results instantly.",
-    seoTitle: "Prompts — Download AI Prompts | NeoScale AI",
+    seoTitle: "Prompts — Download AI Prompts | buildgallery.ai",
     seoDescription: "Download ready-made prompts for ChatGPT, Claude, Gemini and any AI. Free to download.",
   },
   {
@@ -37,7 +37,7 @@ const CATEGORIES: CategoryDef[] = [
     name: "Agent(s)",
     contentType: "Agent Blueprint",
     description: "Complete setup guides with exact prompts, tools, and step-by-step instructions for building AI agents.",
-    seoTitle: "Agent(s) — Setup Guides | NeoScale AI",
+    seoTitle: "Agent(s) — Setup Guides | buildgallery.ai",
     seoDescription: "Step-by-step AI blueprints with exact prompts, tools, and setup instructions.",
   },
   {
@@ -45,7 +45,7 @@ const CATEGORIES: CategoryDef[] = [
     name: "Model Config Guides",
     contentType: "Model Config Guide",
     description: "Configuration guides for AI models — temperature settings, system prompts, and optimal parameters.",
-    seoTitle: "Model Config Guides — AI Model Settings | NeoScale AI",
+    seoTitle: "Model Config Guides — AI Model Settings | buildgallery.ai",
     seoDescription: "Optimal configuration guides for AI models.",
   },
   {
@@ -53,7 +53,7 @@ const CATEGORIES: CategoryDef[] = [
     name: "Integration Guides",
     contentType: "Integration Guide",
     description: "Guides for connecting AI tools with other platforms and services.",
-    seoTitle: "Integration Guides — Connect AI Tools | NeoScale AI",
+    seoTitle: "Integration Guides — Connect AI Tools | buildgallery.ai",
     seoDescription: "Step-by-step guides for integrating AI tools with your existing platforms.",
   },
   {
@@ -61,7 +61,7 @@ const CATEGORIES: CategoryDef[] = [
     name: "AI Automations",
     contentType: "Workflow Template",
     description: "Ready-made automation templates for Zapier, Make, and n8n that you can import and run immediately.",
-    seoTitle: "AI Automations — Zapier and Make Templates | NeoScale AI",
+    seoTitle: "AI Automations — Zapier and Make Templates | buildgallery.ai",
     seoDescription: "Ready-made automation templates for Zapier, Make and n8n.",
   },
   {
@@ -69,7 +69,7 @@ const CATEGORIES: CategoryDef[] = [
     name: "Evaluation Frameworks",
     contentType: "Evaluation Framework",
     description: "Frameworks and rubrics for measuring AI output quality and comparing model performance.",
-    seoTitle: "Evaluation Frameworks — Measure AI Quality | NeoScale AI",
+    seoTitle: "Evaluation Frameworks — Measure AI Quality | buildgallery.ai",
     seoDescription: "Frameworks for evaluating AI output quality.",
   },
   {
@@ -77,7 +77,7 @@ const CATEGORIES: CategoryDef[] = [
     name: "Agent Stacks",
     contentType: "Agent Stack",
     description: "Curated combinations of AI tools and configurations that work together for specific workflows.",
-    seoTitle: "Agent Stacks — AI Tool Combinations | NeoScale AI",
+    seoTitle: "Agent Stacks — AI Tool Combinations | buildgallery.ai",
     seoDescription: "Curated AI tool stacks for specific workflows.",
   },
   {
@@ -85,7 +85,7 @@ const CATEGORIES: CategoryDef[] = [
     name: "Failure Library",
     contentType: "Failure Library",
     description: "Honest post-mortems from AI builders. What went wrong, why, and exactly how it was fixed.",
-    seoTitle: "AI Failure Library — What Broke and How to Fix It | NeoScale AI",
+    seoTitle: "AI Failure Library — What Broke and How to Fix It | buildgallery.ai",
     seoDescription: "Honest post-mortems from AI builders.",
   },
   {
@@ -93,7 +93,7 @@ const CATEGORIES: CategoryDef[] = [
     name: "AI Tools Tutorials",
     contentType: "AI Tools (LLMs)",
     description: "Discover and share AI tools, models, and platforms. Reviews, guides, and commentary from the community.",
-    seoTitle: "AI Tools Tutorials — Discover AI Models | NeoScale AI",
+    seoTitle: "AI Tools Tutorials — Discover AI Models | buildgallery.ai",
     seoDescription: "Explore AI tools tutorials, LLMs, and platforms. Community reviews and guides.",
   },
   {
@@ -101,7 +101,7 @@ const CATEGORIES: CategoryDef[] = [
     name: "Projects",
     contentType: "",
     description: "Complete collections of blueprints — multi-step AI systems built to work together.",
-    seoTitle: "Projects — AI Blueprint Collections | NeoScale AI",
+    seoTitle: "Projects — AI Blueprint Collections | buildgallery.ai",
     seoDescription: "Complete collections of blueprints. Multi-step AI systems built to work together.",
     isProject: true,
   },

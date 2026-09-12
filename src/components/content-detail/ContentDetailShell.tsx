@@ -768,7 +768,7 @@ export function ContentDetailShell({
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 16 }}>
           <div>
             <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16, fontWeight: 600, color: "rgba(255,255,255,0.88)" }}>
-              Want to publish on NeoScale?
+              Want to publish on buildgallery?
             </div>
             <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.50)" }}>
               Share your blueprints, blogs, and bounties with the community.

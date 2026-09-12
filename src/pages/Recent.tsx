@@ -67,7 +67,7 @@ export default function RecentPage() {
 
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6">
-      <SeoHead title="Recently Uploaded — NeoScale AI" description="The latest content from the NeoScale AI community" path="/recent" />
+      <SeoHead title="Recently Uploaded — buildgallery.ai" description="The latest content from the buildgallery.ai community" path="/recent" />
       <div className="mx-auto max-w-5xl">
         {/* Header */}
         <div className="mb-6">
@@ -79,7 +79,7 @@ export default function RecentPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Recently Uploaded</h1>
             <span className="text-xs text-muted-foreground ml-1">Updated live</span>
           </div>
-          <p className="text-sm text-muted-foreground">The latest content from the NeoScale AI community</p>
+          <p className="text-sm text-muted-foreground">The latest content from the buildgallery.ai community</p>
         </div>
 
         {/* Filter bar */}

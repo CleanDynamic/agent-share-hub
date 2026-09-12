@@ -334,8 +334,8 @@ export default function PublishMetadata() {
   useEffect(() => {
     if (!data) return;
     const title = (data.title || "Untitled").trim();
-    document.title = `Publish: ${title} · NeoScale`;
-    return () => { document.title = "NeoScale"; };
+    document.title = `Publish: ${title} · buildgallery`;
+    return () => { document.title = "buildgallery"; };
   }, [data]);
 
   // Loading — skeleton mirrors the form layout

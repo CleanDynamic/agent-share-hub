@@ -172,7 +172,7 @@ describe("the cover strip", () => {
       screen.getByText("Show what you made — drop a screenshot or video, or browse")
     ).toBeInTheDocument();
     expect(
-      screen.getByText("This becomes your post's picture everywhere on NeoScale.")
+      screen.getByText("This becomes your post's picture everywhere on buildgallery.")
     ).toBeInTheDocument();
   });
 

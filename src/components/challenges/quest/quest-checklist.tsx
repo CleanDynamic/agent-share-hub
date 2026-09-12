@@ -104,7 +104,7 @@ export default function QuestChecklist({
               className="text-balance text-xl font-bold"
               style={{ color: colors.textPrimary }}
             >
-              Quest complete — you&apos;re a NeoScale creator
+              Quest complete — you&apos;re a buildgallery creator
             </h2>
             <p
               className="mt-1 text-sm"

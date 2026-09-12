@@ -68,7 +68,7 @@ export function MobileTopBar({
               letterSpacing: "0.04em",
             }}
           >
-            NeoScale
+            buildgallery
           </span>
         );
       case "discover":

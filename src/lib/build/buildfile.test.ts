@@ -175,7 +175,7 @@ describe("extractEnvelope", () => {
       '{ "neoscale_build": 1, "build": { "title": "Fenced" } }',
       "```",
       "",
-      "Paste that into NeoScale's import page.",
+      "Paste that into buildgallery's import page.",
     ].join("\n");
 
     expect(extractEnvelope(file)).toEqual({

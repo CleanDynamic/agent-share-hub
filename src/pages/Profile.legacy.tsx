@@ -270,8 +270,8 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
   return (
     <div className="w-full">
       <SeoHead
-        title={isOwnProfile ? "My Profile — NeoScale AI" : `${displayName} on NeoScale AI`}
-        description={profile.bio || `${displayName}'s profile on NeoScale AI.`}
+        title={isOwnProfile ? "My Profile — buildgallery.ai" : `${displayName} on buildgallery.ai`}
+        description={profile.bio || `${displayName}'s profile on buildgallery.ai.`}
         path={isOwnProfile ? "/profile" : `/creator/${profile.username}`}
         noIndex={isOwnProfile}
       />

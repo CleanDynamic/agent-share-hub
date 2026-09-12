@@ -120,7 +120,7 @@ export function RightRailDrawer({ isOpen, onClose, onNavigate }: RightRailDrawer
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search across NeoScale"
+              placeholder="Search across buildgallery"
               style={{
                 flex: 1, background: "transparent", border: "none", outline: "none",
                 fontFamily: "Figtree, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.95)",

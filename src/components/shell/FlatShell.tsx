@@ -91,7 +91,7 @@ export function FlatShell({
         {/* ═══ LEFT RAIL ═══ */}
         {!isMobile && !hideLeftRail && (
           <nav className="fs-rail fs-left" aria-label="Primary">
-            <div className="fs-logo" onClick={onLogoClick}>NeoScale</div>
+            <div className="fs-logo" onClick={onLogoClick}>buildgallery</div>
             <ul className="fs-nav-list">
               {navItems.map((item, idx) => (
                 <li key={item.key}>

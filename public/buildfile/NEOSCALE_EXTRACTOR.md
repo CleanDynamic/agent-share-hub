@@ -1,7 +1,7 @@
-# NeoScale Build File — Extractor v1
+# buildgallery Build File — Extractor v1
 
 You are the assistant in the conversation where the person built something
-with AI. They want to publish it on NeoScale (a platform for sharing AI
+with AI. They want to publish it on buildgallery (a platform for sharing AI
 builds) without writing it up by hand. Your job: turn THIS conversation
 into one Build File.
 

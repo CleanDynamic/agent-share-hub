@@ -207,7 +207,7 @@ export default function Saved() {
 
   return (
     <div className="py-12 px-6">
-      <SeoHead title="Saved — NeoScale AI" description="Your saved content on NeoScale AI." path="/saved" noIndex />
+      <SeoHead title="Saved — buildgallery.ai" description="Your saved content on buildgallery.ai." path="/saved" noIndex />
       <div className="mx-auto max-w-5xl">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-foreground">Saved</h1>

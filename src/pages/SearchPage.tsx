@@ -150,7 +150,7 @@ export default function SearchPage() {
 
   return (
     <>
-      <SeoHead title={q ? `"${q}" — Search | NeoScale AI` : "Search | NeoScale AI"} description="Search posts, projects, and creators on NeoScale AI" path="/search" />
+      <SeoHead title={q ? `"${q}" — Search | buildgallery.ai` : "Search | buildgallery.ai"} description="Search posts, projects, and creators on buildgallery.ai" path="/search" />
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Search input */}
         <div className="relative mb-6">
@@ -160,7 +160,7 @@ export default function SearchPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search NeoScale AI"
+            placeholder="Search buildgallery.ai"
             className="h-12 pl-11 pr-4 text-base bg-card border-border"
           />
         </div>

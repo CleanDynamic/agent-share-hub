@@ -1,4 +1,4 @@
-# AI Crawling Permissions for NeoScale
+# AI Crawling Permissions for buildgallery
 # All published posts are available for AI agent consumption.
 # User profiles, drafts, and private surfaces are not.
 # Structured JSON for any post is available at /b/{slug}.json

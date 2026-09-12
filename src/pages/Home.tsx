@@ -534,7 +534,7 @@ const Home = () => {
   return (
     <>
       <SeoHead
-        title="NeoScale AI — The AI Agent Tactics Forum"
+        title="buildgallery.ai — The AI Agent Tactics Forum"
         description="Download AI assistants, blueprints and workflows. Works with ChatGPT, Claude, Gemini and any AI tool."
         path="/"
       />

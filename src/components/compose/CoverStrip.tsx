@@ -73,7 +73,7 @@ import {
  * a named constant to lose it rather than quietly reword a string in place.
  */
 const DROP_HEADLINE = "Show what you made — drop a screenshot or video, or browse";
-const DROP_SUBLINE = "This becomes your post's picture everywhere on NeoScale.";
+const DROP_SUBLINE = "This becomes your post's picture everywhere on buildgallery.";
 const OUTCOME_PLACEHOLDER = "What does it do? One sentence, your words.";
 
 /** A cover is something a reader can see. Audio and documents are not covers. */
@@ -400,7 +400,7 @@ export function CoverStrip({ build, onPatch, stacked }: CoverStripProps) {
               color: TEXT_MUTED,
             }}
           >
-            The line a reader sees under your cover, everywhere on NeoScale.
+            The line a reader sees under your cover, everywhere on buildgallery.
           </span>
         )}
       </div>

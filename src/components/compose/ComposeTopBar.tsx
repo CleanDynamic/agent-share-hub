@@ -392,7 +392,7 @@ export function ComposeTopBar({
         to="/"
         style={{ ...labelText, color: TEXT_SECONDARY, textDecoration: "none", flexShrink: 0 }}
       >
-        ← NeoScale
+        ← buildgallery
       </Link>
 
       <span aria-hidden style={{ width: 1, height: 20, background: HAIRLINE, flexShrink: 0 }} />

@@ -278,7 +278,7 @@ export default function ContentEditPage() {
 
   return (
     <div className="py-0 px-0">
-      <SeoHead title="Edit Update — NeoScale AI" description="Edit and post an update." path={`/content/${id}/edit`} noIndex />
+      <SeoHead title="Edit Update — buildgallery.ai" description="Edit and post an update." path={`/content/${id}/edit`} noIndex />
 
       {/* Sticky top bar */}
       <div className="sticky top-0 z-30 h-[52px] flex items-center justify-between px-4 sm:px-6 border-b border-border bg-card">

@@ -755,7 +755,7 @@ const ContentDetail = () => {
     return (
       <>
         <SeoHead
-          title={`${item.title} — NeoScale`}
+          title={`${item.title} — buildgallery`}
           description={
             (item as any).use_case ||
             (item as any).description ||
@@ -821,7 +821,7 @@ const ContentDetail = () => {
       boxSizing: 'border-box',
     }}>
       <SeoHead
-        title={`${item.title} — NeoScale AI`}
+        title={`${item.title} — buildgallery.ai`}
         description={item.description || `${item.content_type} for ${(item.ai_tools ?? []).join(", ") || "any AI tool"}`}
         path={`/content/${item.id}`}
         jsonLd={jsonLd}

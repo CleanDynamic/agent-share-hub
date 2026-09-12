@@ -146,7 +146,7 @@ export default function LearningPathDetail() {
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6">
       <SeoHead
-        title={`${path.title} — NeoScale AI`}
+        title={`${path.title} — buildgallery.ai`}
         description={path.description}
         path={`/path/${id}`}
       />
@@ -159,7 +159,7 @@ export default function LearningPathDetail() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
             {path.is_platform_curated ? (
-              <span>NeoScale AI curated</span>
+              <span>buildgallery.ai curated</span>
             ) : creator ? (
               <Link to={`/creator/${creator.username}`} className="hover:text-foreground transition-colors">
                 By {creator.display_name || creator.username}
