@@ -1,5 +1,7 @@
 import { ArrowLeft, Search, Bell } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { t } from "@/lib/theme/tokens";
+import { BODONI, FIGTREE } from "@/lib/theme/type";
 
 export type PageContextType =
   | "home"
@@ -31,13 +33,26 @@ export interface MobileTopBarProps {
   onNotificationsOpen?: () => void;
 }
 
-const BRAND_ORANGE = "#E8571A";
+/* BG-P13. The bar is glass rather than a flat fill: it is 56px of fixed
+   chrome, not a full-height panel, so it is one of the surfaces the theme
+   still allows a blur under — at the system's single 16px value, not the 20px
+   this carried. */
+const BAR_BLUR = "blur(16px) saturate(1.15)";
 
 const TITLE_STYLE: React.CSSProperties = {
-  color: "#FFFFFF",
-  fontFamily: "Figtree, sans-serif",
+  color: t.text,
+  fontFamily: FIGTREE,
   fontSize: 16,
   fontWeight: 600,
+};
+
+/* The wordmark, in the display face at the same 22px the left rail uses. */
+const WORDMARK_STYLE: React.CSSProperties = {
+  color: t.text,
+  fontFamily: BODONI,
+  fontSize: 22,
+  fontWeight: 500,
+  letterSpacing: "-0.01em",
 };
 
 export function MobileTopBar({
@@ -59,17 +74,7 @@ export function MobileTopBar({
     switch (pageContext.type) {
       case "home":
         return (
-          <span
-            style={{
-              color: BRAND_ORANGE,
-              fontFamily: "Figtree, sans-serif",
-              fontSize: 16,
-              fontWeight: 700,
-              letterSpacing: "0.04em",
-            }}
-          >
-            buildgallery
-          </span>
+          <span style={WORDMARK_STYLE}>buildgallery</span>
         );
       case "discover":
         return <span style={TITLE_STYLE}>Discover</span>;
@@ -104,10 +109,10 @@ export function MobileTopBar({
         display: "grid",
         gridTemplateColumns: "56px 1fr 56px",
         alignItems: "center",
-        background: "rgba(15,15,20,0.92)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        background: t.glass,
+        backdropFilter: BAR_BLUR,
+        WebkitBackdropFilter: BAR_BLUR,
+        borderBottom: `1px solid ${t.line}`,
         zIndex: 1000,
       }}
     >
@@ -129,7 +134,7 @@ export function MobileTopBar({
       >
         <Avatar className="h-8 w-8">
           {currentUserAvatarUrl && <AvatarImage src={currentUserAvatarUrl} />}
-          <AvatarFallback style={{ background: "#8B4513", color: "#fff", fontSize: 11 }}>
+          <AvatarFallback style={{ background: t.recess, color: t.text, fontSize: 11 }}>
             {currentUserInitials}
           </AvatarFallback>
         </Avatar>
@@ -150,7 +155,7 @@ export function MobileTopBar({
               height: 32,
               background: "transparent",
               border: "none",
-              color: "rgba(255,255,255,0.65)",
+              color: t.text2,
               cursor: "pointer",
             }}
           >
@@ -174,7 +179,7 @@ export function MobileTopBar({
           minHeight: 44,
           background: "transparent",
           border: "none",
-          color: "rgba(255,255,255,0.65)",
+          color: t.text2,
           cursor: "pointer",
         }}
       >
@@ -187,9 +192,9 @@ export function MobileTopBar({
               right: 12,
               width: 8,
               height: 8,
-              background: BRAND_ORANGE,
+              background: t.action,
               borderRadius: "50%",
-              border: "1.5px solid #0F0F14",
+              border: `1.5px solid ${t.bg}`,
             }}
           />
         )}
