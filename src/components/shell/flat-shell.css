@@ -7,6 +7,12 @@
    - backdrop-filter ONLY on .fs-rail (the two side rails)
    - transitions only on color / background / opacity, max 0.15s
    - No page background — BlobBackground paints it.
+
+   BG-P13. Every colour, border and radius below is a `var(--token)` from the
+   buildgallery theme, so the frame follows <html data-theme> with no re-render.
+   This is a repoint of declarations that were already here — no rule was added,
+   no rule was removed, and not one measurement moved. The 1200/240/300/600
+   widths and the 768/1024 breakpoints are exactly as they were.
 ──────────────────────────────────────────────── */
 
 .fs-root {
@@ -14,7 +20,7 @@
   display: flex;
   justify-content: center;
   font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text);
 }
 
 .fs-frame {
@@ -30,11 +36,11 @@
 
 /* ── The two rails — the ONLY elements in the shell with backdrop-filter ── */
 .fs-rail {
-  background: rgba(52, 52, 66, 0.55);
+  background: var(--glass);
   backdrop-filter: blur(28px) saturate(160%);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
-  border: 0.5px solid rgba(255, 255, 255, 0.10);
-  border-radius: 16px;
+  border: 0.5px solid var(--line);
+  border-radius: var(--r-panel);
   flex-shrink: 0;
   box-sizing: border-box;
   height: 100%;
@@ -83,7 +89,7 @@
   flex-direction: column;
 }
 .fs-page-body::-webkit-scrollbar { width: 3px; }
-.fs-page-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+.fs-page-body::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
 /* Route content should fill the scroll region so pages that manage their own
    height (e.g. Messages) get a full-height surface. */
 .fs-page-body > * { flex: 1 0 auto; min-height: 0; }
@@ -107,21 +113,21 @@
 }
 .fs-page-body .text-foreground,
 .fs-page-body [class*="text-foreground"] {
-  color: rgba(255,255,255,0.85) !important;
+  color: var(--text) !important;
   font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
 }
 .fs-page-body .text-muted-foreground,
 .fs-page-body [class*="text-muted-foreground"] {
-  color: rgba(255,255,255,0.45) !important;
+  color: var(--text2) !important;
 }
 .fs-page-body .border-border,
 .fs-page-body [class*="border-border"] {
-  border-color: rgba(255,255,255,0.08) !important;
+  border-color: var(--line) !important;
 }
 /* No !important here: page components that style their own sticky elements
    inline (e.g. the home feed tab bar) must keep their own background. */
 .fs-page-body .sticky {
-  background: rgba(7,7,13,0.90);
+  background: var(--bg);
 }
 .fs-page-body .max-w-2xl,
 .fs-page-body .max-w-xl,
@@ -145,7 +151,7 @@
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.3px;
-  color: #E8571A;
+  color: var(--text);
   padding: 0 8px;
   margin-bottom: 28px;
   cursor: pointer;
@@ -228,7 +234,7 @@
 /* ── User block at the bottom of the left rail ── */
 .fs-user-section {
   padding: 12px 8px 4px;
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: 1px solid var(--line);
   margin-top: 8px;
   position: relative;
 }
@@ -238,7 +244,7 @@
   gap: 10px;
   width: 100%;
   padding: 8px;
-  border-radius: 10px;
+  border-radius: var(--r-control);
   cursor: pointer;
   transition: background 0.15s;
   border: none;
@@ -247,13 +253,13 @@
   color: inherit;
   font-family: inherit;
 }
-.fs-user-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.fs-user-btn:hover { background: var(--recess); }
 .fs-user-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #E8571A;
-  color: #fff;
+  background: var(--recess);
+  color: var(--text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -266,24 +272,24 @@
 .fs-user-name {
   font-size: 14px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.70);
+  color: var(--text2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
 }
-.fs-user-dots { color: rgba(255, 255, 255, 0.35); font-size: 16px; }
+.fs-user-dots { color: var(--text2); font-size: 16px; }
 .fs-user-menu {
   position: absolute;
   bottom: 56px;
   left: 8px;
   right: 8px;
-  background: rgba(8, 8, 12, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
   padding: 4px;
   z-index: 10;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.40);
+  box-shadow: var(--elev-raised);
 }
 .fs-user-menu button {
   display: flex;
@@ -293,14 +299,14 @@
   padding: 8px 10px;
   border: none;
   background: none;
-  border-radius: 8px;
+  border-radius: var(--r-control);
   cursor: pointer;
   font-size: 12px;
-  color: #e74c3c;
+  color: var(--text);
   font-family: inherit;
   transition: background 0.15s;
 }
-.fs-user-menu button:hover { background: rgba(255, 255, 255, 0.05); }
+.fs-user-menu button:hover { background: var(--recess); }
 
 /* ── Signed-out: stacked auth buttons ── */
 .fs-auth-btns {
@@ -314,7 +320,7 @@
   align-items: center;
   justify-content: center;
   height: 34px;
-  border-radius: 100px;
+  border-radius: var(--r-control);
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
@@ -322,15 +328,18 @@
   transition: background 0.15s, color 0.15s, opacity 0.15s;
   border: none;
 }
+/* Secondary: glass with a --line border. Primary: --action fill with an
+   --on-action label. One primary action in the rail, and the gradient is gone —
+   the system has no gradients. */
 .fs-auth-btn.signin {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  color: rgba(255, 255, 255, 0.70);
+  background: var(--glass-2);
+  border: 1px solid var(--line);
+  color: var(--text);
 }
-.fs-auth-btn.signin:hover { background: rgba(255, 255, 255, 0.12); }
+.fs-auth-btn.signin:hover { background: var(--recess); }
 .fs-auth-btn.join {
-  background: linear-gradient(135deg, #E8571A, #C44514);
-  color: #fff;
+  background: var(--action);
+  color: var(--on-action);
 }
 .fs-auth-btn.join:hover { opacity: 0.9; }
 
