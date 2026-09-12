@@ -5,25 +5,71 @@ import { WIDE_ROUTES, layoutForRoute, matchWideRoute } from "./wideRoutes";
    BG-P14 — the wide-layout route table.
 
    The table is the whole opt-in mechanism, so these tests are about the
-   mechanism and not about which routes use it. The one assertion about
-   membership is that it is EMPTY: this prompt builds the capability and moves
-   no route, and a route that quietly became wide here would be a layout change
-   to a shipping page with no other trace.
+   mechanism and not about which routes use it.
+
+   BG-P15 — MEMBERSHIP IS NOW ASSERTED BOTH WAYS. BG-P14's assertion was that
+   the table is empty, which was its way of saying "no shipping page changed
+   layout in that prompt". The equivalent guard now the table is populated is
+   the pair below: the three routes this prompt moved are wide with the
+   rail preference each one chose, and every OTHER route is still standard —
+   including the four compose surfaces BG-P16 owns, which keep reduced chrome
+   deliberately and must not be swept in by a pattern that is too broad.
 ──────────────────────────────────────────────── */
 
 describe("WIDE_ROUTES", () => {
-  it("is empty — BG-P14 moves no route", () => {
-    expect(WIDE_ROUTES).toEqual([]);
+  it("holds the three routes BG-P15 moved, and their rail decisions", () => {
+    expect(WIDE_ROUTES).toEqual([
+      { pattern: "/gallery", rightRail: false },
+      { pattern: "/b2/*", rightRail: true },
+      { pattern: "/import", rightRail: false },
+    ]);
   });
 
-  it("leaves every real route standard", () => {
+  it("makes the three moved routes wide", () => {
+    for (const path of ["/gallery", "/import", "/b2/some-build"]) {
+      expect([path, layoutForRoute(path)]).toEqual([path, "wide"]);
+    }
+  });
+
+  it("shows the right rail on the build page only", () => {
+    expect(matchWideRoute("/b2/some-build")?.rightRail).toBe(true);
+    expect(matchWideRoute("/gallery")?.rightRail).toBe(false);
+    expect(matchWideRoute("/import")?.rightRail).toBe(false);
+  });
+
+  it("leaves every other route standard", () => {
     for (const path of [
       "/", "/browse", "/discover", "/library", "/drafts", "/messages",
       "/notifications", "/profile", "/analytics", "/upload", "/upload/blueprint",
-      "/gallery", "/import", "/b2/some-build", "/compose/new", "/dev/kit",
+      "/dev/kit",
+      /* BG-P16's four. Reduced chrome is deliberate on these — if a prompt
+         ever makes one wide it will be that one, not a widened pattern here. */
+      "/compose/new", "/compose/some-build-id", "/rebuild/some-slug",
+      "/convert/some-content-id",
     ]) {
       expect([path, layoutForRoute(path)]).toEqual([path, "standard"]);
     }
+  });
+
+  it("does not match a path that merely starts with a moved route's name", () => {
+    /* "/gallery" is exact, so a future "/galleries" route is not swept in;
+       "/b2/*" is a prefix and must not match "/b20". */
+    expect(matchWideRoute("/galleries")).toBeNull();
+    expect(matchWideRoute("/importer")).toBeNull();
+    expect(matchWideRoute("/b20/x")).toBeNull();
+  });
+
+  it("matches the build page at its bare prefix and below it", () => {
+    expect(matchWideRoute("/b2")?.pattern).toBe("/b2/*");
+    expect(matchWideRoute("/b2/a-slug")?.pattern).toBe("/b2/*");
+  });
+
+  it("does not reach the lineage page, which is under /b/ and stays standard", () => {
+    /* `/b/:slug/lineage` is the only route whose path could be mistaken for
+       one of the build page's. It is a DIFFERENT prefix — /b/, not /b2/ — and
+       it is already inside the frame in standard mode, which is where it
+       belongs: it is one column of ancestry, not a grid. */
+    expect(layoutForRoute("/b/a-slug/lineage")).toBe("standard");
   });
 });
 

@@ -222,10 +222,44 @@ const App = () => (
                     }
                   />
                 )}
+
+                {/* ── BG-P15 — the gallery, the build page and the import page.
+
+                    THESE THREE MOVED IN FROM OUTSIDE. Until this prompt they
+                    were registered after this block, which meant no left rail,
+                    no right rail, no wordmark and no mobile chrome: a reader
+                    who arrived on one of them got a "← buildgallery" text link
+                    standing in for the whole application, and the product read
+                    as two websites. The move is exactly this — the same three
+                    <Route> elements with the same lazy components and the same
+                    Suspense boundaries, sitting inside <Route
+                    element={<Layout />}> instead of after it.
+
+                    THEY RENDER WIDE, and that is decided in
+                    src/components/shell/wideRoutes.ts, not here. Three entries
+                    in that table give them the 1600px frame and the per-route
+                    right-rail answer — the rail on the build page, suppressed
+                    on the other two. This file only decides that Layout wraps
+                    them at all.
+
+                    STILL LAZY, WHICH IS WHY THE SUSPENSE BOUNDARIES CAME WITH
+                    THEM. Moving a route inside Layout changes who renders it,
+                    not when its chunk is fetched: the three
+                    `lazy(() => import(…))` calls at the top of this file are
+                    untouched, so each page is still its own chunk and none of
+                    them is in the initial bundle.
+
+                    THE FALLBACKS LOST THEIR HARD-CODED #08080C. Outside the
+                    frame, a full-viewport dark block was the page's own ground
+                    arriving before the page. Inside it, that block would paint
+                    over the frame and flash dark on Exhibition, so it is
+                    `--bg` — the live theme's ground — and it fills the centre
+                    column rather than the viewport, because the frame is
+                    already on screen and only the page is still coming. ── */}
+                <Route path="/b2/:slug" element={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><BuildPage /></Suspense>} />
+                <Route path="/gallery" element={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Gallery /></Suspense>} />
+                <Route path="/import" element={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><ImportPage /></Suspense>} />
               </Route>
-              <Route path="/b2/:slug" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><BuildPage /></Suspense>} />
-              <Route path="/gallery" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><Gallery /></Suspense>} />
-              <Route path="/import" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "#08080C" }} />}><ImportPage /></Suspense>} />
               <Route path="/compose/new" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><ComposeNew /></Suspense>} />
               <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><Compose /></Suspense>} />
               <Route path="/rebuild/:slug" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#08080C" }} />}><RebuildRoute /></Suspense>} />

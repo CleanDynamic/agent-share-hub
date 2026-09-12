@@ -24,9 +24,18 @@
 // builds is thin, but four builds made for lawyers is a section. So they sit at
 // the top of the page, open, not behind a menu.
 //
-// Outside NeoScaleShell, like /b2/:slug and /compose. Lazy-loaded, and it adds
-// no navigation entry anywhere: reachable directly and from the publish
-// confirmation.
+// BG-P15 — INSIDE THE APPLICATION FRAME NOW. This page used to render outside
+// it, like /b2/:slug and /compose still partly do, which meant a reader who
+// arrived here had no navigation at all — a "← buildgallery" text link stood in
+// for the left rail, the right rail, the wordmark and the mobile bottom bar. It
+// is registered inside <Route element={<Layout />}> and listed in
+// src/components/shell/wideRoutes.ts, so it renders in the frame's wide mode:
+// 1600px, the centre unpinned, and NO RIGHT RAIL — the grid wants that 300px
+// more than Explore does, because a gallery of builds already answers the
+// question Explore asks.
+//
+// Still lazy-loaded, and it still adds no navigation entry anywhere: reachable
+// directly and from the publish confirmation.
 
 import { useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
@@ -44,7 +53,6 @@ import {
 import { GalleryCard } from "@/components/gallery/GalleryCard";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import {
-  FONT_STACK,
   GAP_RED,
   HAIRLINE,
   ORANGE,
@@ -52,13 +60,14 @@ import {
   TEXT_MUTED,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
-  VOID,
   bodyText,
   hexToRgba,
   labelText,
-  pageHeadingText,
   panelGlass,
 } from "@/components/build/tokens";
+import { PageHeader } from "@/components/shell/PageHeader";
+import { SPACE } from "@/lib/theme/space";
+import { t } from "@/lib/theme/tokens";
 
 /** Facets change far more slowly than the builds they describe. */
 const FACETS_STALE_MS = 5 * 60 * 1000;
@@ -135,13 +144,44 @@ export default function Gallery() {
   const filtered = madeFor.length > 0 || madeWith.length > 0 || openBounties;
 
   return (
+    /* ── BG-P15 — THE PAGE'S OWN FRAME IS GONE.
+
+       What this div used to be: `minHeight: 100vh`, `background: VOID`,
+       `color: TEXT_PRIMARY` and `fontFamily: FONT_STACK` — a page painting an
+       entire dark viewport for itself because nothing else was going to. All
+       four were the application frame's job, and the page is now inside the
+       application frame, so all four are gone:
+
+         minHeight   the frame owns the viewport (`.fs-frame` is 100dvh with
+                     its own scroll region in `.fs-page-body`); a 100vh floor
+                     inside that scroller is a second full screen of height.
+         background  `t.bg` instead of a hard-coded #08080C, so the page's
+                     ground follows the theme like every other surface. It is
+                     painted here rather than left transparent for the reason
+                     /dev/wide paints it: the centre column is transparent and
+                     BlobBackground behind it is hard-coded dark in both
+                     themes, so Exhibition needs a ground under the header or
+                     the type is dark ink on a dark room.
+         color       inherited from `.fs-root`, which is `var(--text)`.
+         fontFamily  inherited from `.fs-root`, which is Figtree.
+
+       `isolation: isolate` STAYS. It is not frame duplication — it keeps this
+       page's z-indexes from being compared with the rails' — and it is the one
+       property here that was never the frame's to provide.
+
+       THE INNER CONTAINER'S `maxWidth: 1240` AND `margin: "0 auto"` ARE GONE
+       TOO, and they are the doubled measure this move exists to remove: the
+       wide frame already caps at 1600 and centres, so a second cap inside it
+       centred a 1240px column inside an already-centred column. Its
+       `padding: "28px 20px 64px"` is gone for the same reason — one padding
+       on the outer div, `SPACE.md`, which is what a wide page carries (see
+       /dev/wide) because `.fs-page-body` supplies no horizontal inset of its
+       own and at phone width the frame's own 24px collapses to nothing. ── */
     <div
       data-visual-slot="gallery-frame"
       style={{
-        minHeight: "100vh",
-        background: VOID,
-        color: TEXT_PRIMARY,
-        fontFamily: FONT_STACK,
+        padding: SPACE.md,
+        background: t.bg,
         isolation: "isolate",
       }}
     >
@@ -153,30 +193,62 @@ export default function Gallery() {
         />
       </Helmet>
 
+        {/* BG-P15. The bespoke header — a "← buildgallery" link beside an
+            <h1>Gallery> — is replaced by the frame's PageHeader. The back link
+            is deleted outright rather than rehomed: the left rail's wordmark
+            goes to the home page and every nav entry is one click away, which
+            is what the link was standing in for.
+
+            The title is the eyebrow's job now. "GALLERY" names the kind of
+            page, so the <h1> is free to say what the page is FOR rather than
+            repeat the route's name.
+
+            THE FACET CONTROLS ARE NOT IN THE `actions` SLOT, and that is a
+            deliberate departure from BG-P15's brief. Rendered there they are
+            laid beside the title in a flex row that gives them roughly a
+            quarter of the centre column: the three rows collapse to about
+            240px, "Loading…" clips, and a chip list that is meant to be read
+            across becomes a corner widget. Two reasons not to:
+
+              1. This page's own note, at the top of this file, says the
+                 filters sit "at the top of the page, open, not behind a menu"
+                 — they are the answer to a sparse launch, turning one broad
+                 platform into several dense ones. A cramped corner is a menu
+                 in all but name.
+              2. Moving the section inside the header changes the page's
+                 internal content structure, which BG-P15's first hard
+                 constraint forbids.
+
+            So the section stays exactly where it was, a sibling directly
+            under the header, and `actions` stays empty. The header gained a
+            page title; it did not gain the filters. */}
+        <PageHeader
+          eyebrow="GALLERY"
+          title="Builds worth running"
+          description="Builds written down completely enough to follow, ordered by how many people other than their creator have run them and said what happened."
+        />
+
+      {/* ── BG-P15 — PageHeader sits ABOVE this column, not inside it, and that
+          is the last of the doubled spacings.
+
+          PageHeader already declares the space under itself: `marginBottom:
+          SPACE.lg`, 40px. Inside a flex column with `gap: 20` that 40 became
+          60 between the header and the filters, while every other pair on the
+          page kept 20 — a gulf under the header and nowhere else, which read
+          as the filters having come loose from it.
+
+          Lifting the header out fixes it without touching the page's own
+          rhythm: the facets, the results and the pagination keep the exact
+          20px gap they always had, and the header keeps the 40 it brought.
+          It is also how /dev/wide composes a wide page — header, then the
+          grid, as siblings. ── */}
       <div
         style={{
-          maxWidth: 1240,
-          margin: "0 auto",
-          padding: "28px 20px 64px",
           display: "flex",
           flexDirection: "column",
           gap: 20,
         }}
       >
-        <header style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-            <Link to="/" style={{ ...labelText, color: TEXT_SECONDARY, textDecoration: "none" }}>
-              ← buildgallery
-            </Link>
-            <h1 style={{ ...pageHeadingText, margin: 0 }}>Gallery</h1>
-          </div>
-          <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY, maxWidth: 620 }}>
-            Builds written down completely enough to follow, ordered by how many
-            people other than their creator have run them and said what
-            happened.
-          </p>
-        </header>
-
         <section
           data-visual-slot="gallery-filters"
           style={{

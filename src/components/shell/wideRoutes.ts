@@ -6,10 +6,13 @@
    scattered through the shell, because the moment there are two of those the
    answer to "which routes are wide?" stops being readable anywhere.
 
-   IT IS EMPTY, AND THAT IS THIS PROMPT'S POINT. BG-P14 builds the capability
-   and proves it on a dev-only route; BG-P15 moves the gallery, the build page
-   and the import page in by adding three entries below and deleting the
-   `<Route>` registrations that currently put them outside the frame.
+   BG-P15 FILLED IT. The three entries below are the gallery, the build page
+   and the import page, which until this prompt rendered outside the frame
+   entirely — no nav, no rails, no mobile chrome, and a text link back to the
+   home page standing in for all of it. Their `<Route>` registrations moved
+   inside `<Route element={<Layout />}>` in App.tsx and nothing else about the
+   move touched this file's mechanism: BG-P14's capability took three lines of
+   data to use, which is what it was built for.
    ──────────────────────────────────────────────────────────────────────────── */
 
 export interface WideRoute {
@@ -47,7 +50,42 @@ export interface WideRoute {
  * layout prop, the frame's max-width, the centre's flex behaviour and the
  * right rail all follow from an entry here.
  */
-export const WIDE_ROUTES: readonly WideRoute[] = [];
+export const WIDE_ROUTES: readonly WideRoute[] = [
+  /* The gallery — a grid of build cards, and the surface wide mode was
+     measured for. NO RIGHT RAIL: the grid's columns are auto-filled from a
+     320px floor, so the rail's 300px is very nearly one more column of
+     builds. Explore in the rail and a gallery of builds answer the same
+     question — "what else is there?" — and the grid answers it better,
+     because these are the builds themselves rather than links to them. */
+  { pattern: "/gallery", rightRail: false },
+
+  /* The build page — one build, read top to bottom. RIGHT RAIL ON, the only
+     one of the three that asks for it. A reader who has finished a build
+     record is at the natural moment to be shown another, and Explore is
+     exactly that offer; on the gallery it would compete with the grid, and
+     here there is no grid to compete with. The centre is still the reading
+     column it was — the rail takes its 300px from the frame's new width, not
+     from the prose.
+
+     A PREFIX PATTERN, because `/b2/:slug` is one route per build and an exact
+     pattern would match none of them. */
+  { pattern: "/b2/*", rightRail: true },
+
+  /* The import page — paste a document, get a Build File, drop it back. NO
+     RIGHT RAIL: it is a task with one path through it, and the rail's job is
+     to offer somewhere else to go.
+
+     IT IS THE WEAKEST OF THE THREE CLAIMS ON WIDE, and that is recorded here
+     rather than dressed up. BG-P15 moves all three routes into wide mode as
+     one change, so this one comes with them; but its content is a three-step
+     list authored against a 720px column, and in a ~1090px centre the step
+     cards stretch while their contents keep their old measure, leaving a band
+     of empty card to the right of every step. Nothing overflows and nothing is
+     illegible — it is under-filled, not broken — and re-laying it out is not
+     this prompt's to do. The honest fix is either a measure on the step list
+     or this route going back to standard; see BG-P15's handoff note. */
+  { pattern: "/import", rightRail: false },
+];
 
 /**
  * The dev-only demo route, appended to the table in development and absent

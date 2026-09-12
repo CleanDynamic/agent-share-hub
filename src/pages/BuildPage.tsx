@@ -1,14 +1,25 @@
 // The public build page: /b2/:slug.
 //
-// It renders OUTSIDE NeoScaleShell, as a sibling route with its own full-bleed
-// frame. The shell's centre column is a hardcoded 600x775 panel inside a 3D
-// card flip; a hero, a summary strip and five tabs do not fit in it. The route
-// is lazy because this page pulls in the whole build record renderer and no
-// other route needs it.
+// BG-P15 — IT RENDERS INSIDE THE APPLICATION FRAME NOW. The reason it did not
+// is gone: the shell it could not fit in was NeoScaleShell, whose centre column
+// was a hardcoded 600x775 panel inside a 3D card flip, and a hero, a summary
+// strip and five tabs do not fit in that. FlatShell replaced it, BG-P14 gave
+// that frame a wide mode, and this page is listed in
+// src/components/shell/wideRoutes.ts — so the centre is now whatever the rails
+// leave of 1600px, which is room enough.
+//
+// WITH THE RIGHT RAIL, alone among the three routes BG-P15 moved. A reader who
+// has finished one build record is at the moment when "what else is there?" is
+// worth answering, and Explore is that answer. The rail takes its 300px from
+// the frame's new width, not from the prose: <main> still caps at its 880px
+// reading measure.
+//
+// The route is lazy because this page pulls in the whole build record renderer
+// and no other route needs it. Moving it inside the frame did not change that.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   getApprovedLayers,
   getBuildBySlug,
@@ -52,16 +63,12 @@ import { RebuildCount, RebuildsTab } from "@/components/build/RebuildsTab";
 import { Replay } from "@/components/build/Replay";
 import { RunView } from "@/components/build/RunView";
 import {
-  FONT_STACK,
   HAIRLINE,
   TEXT_MUTED,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
-  VOID,
   bodyText,
   headingText,
-  labelText,
-  panelGlass,
 } from "@/components/build/tokens";
 
 /** The app's QueryClient defaults to staleTime 0. A build record does not
@@ -225,47 +232,58 @@ function payloadCaption(node: BuildNode | undefined): string | null {
   return typeof caption === "string" ? trimmed(caption) : null;
 }
 
+/* ── BG-P15 — what this used to be, and why almost all of it is gone.
+
+   Frame was the build page's stand-in for the application frame: a 100vh dark
+   viewport, a sticky bar across the top, and a "← buildgallery" link in that
+   bar that was the only navigation on the route. The page renders inside
+   <Route element={<Layout />}> now, in wide mode WITH THE RIGHT RAIL — the only
+   one of BG-P15's three routes that asks for it, because a reader who has just
+   finished a build record is at the natural moment to be offered another.
+
+   THE STICKY BAR IS DELETED OUTRIGHT. It held one link and nothing else, and
+   the left rail carries the wordmark, Home, Discover and the rest — so the bar
+   is not rehomed, it is redundant. Deleting it also removes the page's second
+   copy of its own measure: the bar's inner div was `maxWidth: 880` + `margin:
+   0 auto` + `padding: 12px 24px`, the same three values `<main>` below carries,
+   applied twice because the bar and the content were separately centred inside
+   a full-bleed page. One of them is now the only one.
+
+   THE RICH HEADER IS NOT REPLACED BY `PageHeader`, on instruction and on
+   merit: BuildHeader is a title, an outcome, a stack, a cost and a plaque
+   arranged as one object, and PageHeader's four parts cannot hold it. It sits
+   directly in the wide centre, which is what it wanted all along.
+
+   `maxWidth: 880` ON `<main>` STAYS, and it is not the doubled measure the
+   sticky bar's copy was. 880 is a READING measure, not a frame width: with the
+   rail mounted the centre runs to about 960px at the frame's full 1600, and
+   this page is prose — the theme caps a line at 60–75 characters and 960px of
+   Figtree is past it. The frame decides how much room the page gets; this
+   decides how much of it the prose uses.
+
+   NO `background`, WHICH IS DELIBERATE AND IS NOT THE SAME ANSWER /gallery
+   GOT. Both pages are still painted from the legacy dark token module
+   (src/components/build/tokens.ts) — white-alpha text that has not been
+   repainted onto the two-theme semantic tokens yet. /gallery could take a
+   `t.bg` ground because the surfaces it puts on that ground are repainted ones
+   (PageHeader, GalleryCard). This page's header, tabs and body are not: on an
+   Exhibition-light ground their white text would vanish. So it keeps the
+   application's centre ground — hard-coded dark in both themes today, which is
+   exactly what Home, Discover and the feed sit on — and `color: TEXT_PRIMARY`
+   stays with it, because inheriting `--text` would put Exhibition's dark ink
+   on that dark ground. Both come out when this page is repainted.
+
+   `minHeight: 100vh` and `fontFamily: FONT_STACK` are gone as plain
+   duplicates: the frame is 100dvh with its own scroll region, and `.fs-root`
+   already sets this exact Figtree stack. ── */
 function Frame({ children }: { children: React.ReactNode }) {
   return (
     <div
       data-visual-slot="build-page-frame"
       style={{
-        minHeight: "100vh",
-        background: VOID,
         color: TEXT_PRIMARY,
-        fontFamily: FONT_STACK,
       }}
     >
-      <div
-        style={{
-          ...panelGlass,
-          borderLeft: "none",
-          borderRight: "none",
-          borderTop: "none",
-          position: "sticky",
-          top: 0,
-          zIndex: 2,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 880,
-            margin: "0 auto",
-            padding: "12px 24px",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          <Link
-            to="/"
-            style={{ ...labelText, color: TEXT_SECONDARY, textDecoration: "none" }}
-          >
-            ← buildgallery
-          </Link>
-        </div>
-      </div>
-
       <main style={{ maxWidth: 880, margin: "0 auto", padding: "32px 24px 96px" }}>
         {children}
       </main>
