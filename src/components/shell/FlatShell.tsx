@@ -13,6 +13,14 @@ import "./flat-shell.css";
 
    This component knows nothing about routing, auth, or data — the wired
    container (AppShell) supplies everything through props.
+
+   BG-P14 — TWO LAYOUT MODES. `layout="standard"` is the frame every route
+   renders today: a 1200px shell around a 600px reading column. `layout="wide"`
+   is the same frame with the centre unpinned, for the surfaces that need a
+   grid. The mode is one class on the root (`.fs-wide`) and every rule it turns
+   on is scoped under it, so a standard frame is byte-for-byte the frame it was.
+   Which routes are wide is decided by `wideRoutes.ts`, not here and not by a
+   page.
 ──────────────────────────────────────────────── */
 
 export interface FlatShellNavItem {
@@ -54,6 +62,28 @@ export interface FlatShellProps {
   hideLeftRail?: boolean;
   /** Keep the right rail visible on tablet (blueprint editor workspace). */
   forceRightRail?: boolean;
+  /**
+   * BG-P14. Which of the frame's two layout modes to render.
+   *
+   * `"standard"` (the default, and what every route renders today) is the
+   * 1200px frame with a 600px reading column. `"wide"` opens the frame to
+   * 1600px and lets the centre take whatever the rails leave, for the
+   * surfaces that need a grid rather than a measure.
+   *
+   * THIS IS DECIDED BY THE ROUTE TABLE, NOT BY THE PAGE. `AppShell` reads
+   * `WIDE_ROUTES` and threads the answer down here, exactly as it threads
+   * `hideLeftRail`; a page component never sets it.
+   */
+  layout?: "standard" | "wide";
+  /**
+   * BG-P14. Mount the right rail in wide mode. Ignored in standard mode,
+   * where the rail's visibility is `rightRail != null` as it always was.
+   *
+   * Default false — wide mode suppresses the rail unless the route asks. See
+   * `WideRoute.rightRail` in wideRoutes.ts for why the default is the quieter
+   * answer.
+   */
+  wideRightRail?: boolean;
 }
 
 export function FlatShell({
@@ -71,9 +101,19 @@ export function FlatShell({
   beforeUserSlot,
   hideLeftRail,
   forceRightRail,
+  layout = "standard",
+  wideRightRail = false,
 }: FlatShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const isWide = layout === "wide";
+
+  /* The right rail's two modes. Standard is untouched: a rail renders when the
+     container supplied one. Wide adds the route's opt-in on top, so a wide
+     route that did not ask for the rail does not pay for it in the DOM either
+     — the CSS hiding it below 1280 is for the route that DID ask. */
+  const showRightRail = !isMobile && rightRail != null && (!isWide || wideRightRail);
 
   // Close the "..." menu on outside click.
   useEffect(() => {
@@ -88,7 +128,7 @@ export function FlatShell({
   }, [menuOpen]);
 
   return (
-    <div className="fs-root">
+    <div className={`fs-root${isWide ? " fs-wide" : ""}`} data-layout={layout}>
       <div className="fs-frame">
         {/* ═══ LEFT RAIL ═══ */}
         {!isMobile && !hideLeftRail && (
@@ -151,7 +191,7 @@ export function FlatShell({
         </main>
 
         {/* ═══ RIGHT RAIL ═══ */}
-        {!isMobile && rightRail != null && (
+        {showRightRail && (
           <aside
             className={`fs-rail fs-right${forceRightRail ? " fs-right--force" : ""}`}
             aria-label="Explore"

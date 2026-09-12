@@ -20,6 +20,7 @@ import { useNavBadges } from "@/hooks/useNavBadges";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { useProgress } from "@/hooks/useProgress";
 import { FlatShell, type FlatShellNavItem } from "@/components/shell/FlatShell";
+import { matchWideRoute } from "@/components/shell/wideRoutes";
 import { RightRailExplore } from "@/components/shell/RightRailExplore";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import { MobileTopBar, type PageContextType } from "@/components/shell/MobileTopBar";
@@ -87,6 +88,14 @@ export function AppShell() {
 
   const pathname = location.pathname;
   const activeKey = routeToNav(pathname);
+
+  /* ── BG-P14. The layout mode, from the route table and from nowhere else.
+     `WIDE_ROUTES` is empty, so every route below resolves to "standard" and
+     renders the frame it renders today; BG-P15 adds the gallery, the build
+     page and the import page to that table and they arrive here without a
+     line of this file changing. ── */
+  const wideRoute = matchWideRoute(pathname);
+  const layout = wideRoute ? "wide" : "standard";
 
   /* ── Blueprint-editor special case (unchanged behaviour): on small
      desktops the left rail hides and the right rail shows the editor
@@ -246,6 +255,8 @@ export function AppShell() {
         isMobile={isMobile}
         hideLeftRail={uploadEditorSmall}
         forceRightRail={uploadEditorSmall}
+        layout={layout}
+        wideRightRail={wideRoute?.rightRail ?? false}
         beforeUserSlot={
           /* The left rail's user area, immediately above the user block.
              BG-P02 mounts the theme toggle here rather than adjacent: it is the

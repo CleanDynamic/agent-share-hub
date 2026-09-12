@@ -421,3 +421,111 @@
     padding-bottom: calc(80px + env(safe-area-inset-bottom));
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   BG-P14 — WIDE MODE
+
+   A second layout mode on the same frame, and the only thing in the visual
+   remodel that adds a structural capability rather than repainting one. It is
+   additive by construction: every rule below is scoped under `.fs-wide`, a
+   class FlatShell puts on `.fs-root` only when a route asks for it, so a frame
+   without that class cannot see any of this. The standard mode's 1200 / 240 /
+   300 / 600 and its 768 and 1024 breakpoints are untouched above and stay
+   untouched here.
+
+   WHY IT EXISTS. The centre column is 600px, which is a reading measure and not
+   a grid. The gallery, the build page and the import page each need a grid, so
+   today they render outside the frame entirely — three routes with no rails, no
+   nav and no wordmark. This mode is the room they need; BG-P15 moves them in.
+
+   NO COLOURS BELOW. Measurements only. Every colour on this frame is a
+   `var(--token)` set in the rules above, and a wide frame paints from exactly
+   the same ones — the mode changes how much room a surface gets, never what it
+   is made of.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── The mode itself ──
+     Guarded at 768 so that below it NOT ONE wide declaration applies and the
+     two modes are identical by construction rather than by arithmetic. They
+     would in fact compute the same either way — a 1600px cap and a 100%-wide
+     lone flex child both resolve to the viewport on a phone — but "identical
+     because nothing applies" is a claim a reader can check, and "identical
+     because two different rules happen to land on the same number" is not.
+
+     `flex: 1 1 0%` rather than the `flex: 1 1 auto` the tablet rule uses: the
+     wide centre's job is to take whatever the rails leave, so its basis is 0
+     and its content does not get a vote. `min-width: 0` is what lets it
+     actually shrink — without it a grid child wider than its track floors the
+     column at that child's width and pushes the rail off the frame. ── */
+@media (min-width: 768px) {
+  .fs-wide .fs-frame {
+    max-width: 1600px;
+  }
+  .fs-wide .fs-centre {
+    width: auto;
+    max-width: none;
+    flex: 1 1 0%;
+    min-width: 0;
+  }
+}
+
+/* ── The right rail in wide mode ──
+     OPTIONAL, AND SUPPRESSED BY DEFAULT. FlatShell does not mount it at all
+     unless the route asked for it (`wideRightRail`), because the two wide
+     surfaces want opposite things: the gallery wants the 300px for another
+     grid column, the build page wants the rail. This rule handles the other
+     half — a route that DID ask for it still gives the space back below 1280,
+     where a rail plus a grid leaves neither enough room. Above 1280 the rail
+     shows and the grid drops a column, which is the trade the route chose.
+
+     `:not(.fs-right--force)` so the blueprint editor's forced rail keeps
+     working if a wide route ever wants it; the two rules would otherwise have
+     equal specificity and this one, being later in the file, would win. ── */
+@media (max-width: 1279px) {
+  .fs-wide .fs-right:not(.fs-right--force) {
+    display: none;
+  }
+}
+
+/* ── The grid ──
+     A CONTAINER PAGES OPT INTO, NOT SOMETHING IMPOSED. It is a class a wide
+     page puts on a wrapper, not a rule on `.fs-centre`: a wide page that wants
+     one column, or a header above a grid above a table, still gets exactly
+     that. Imposing the grid on the centre would make every direct child of
+     every wide page a grid item, `PageHeader` included.
+
+     `repeat(auto-fill, minmax(320px, 1fr))` — the column count follows the room
+     rather than the breakpoint, which is what lets one rule serve a frame whose
+     centre changes width when a rail appears as well as when the window does.
+     320px is the floor a build card needs before its title starts wrapping to
+     three lines.
+
+     Gutters are scale steps and nothing else: `md` (24) at the small end,
+     opening to `lg` (40) above 1280 where the frame is wide enough that 24px
+     between two cards reads as one band rather than two objects. Both clear the
+     scale's one hard rule — a card's padding (md, 24) never exceeds the gap to
+     its neighbour.
+
+     `align-items: start` so a short card does not stretch to the height of the
+     tallest card in its row. ── */
+.fs-wide .fs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+@media (min-width: 1280px) {
+  .fs-wide .fs-grid {
+    gap: 40px;
+  }
+}
+
+/* Mobile is one column and always was. Stated rather than left to auto-fill:
+   at 700px a 320px minimum fits twice, and the phone layout is a single column
+   by decision, not by whatever two tracks and a gutter happen to add up to. */
+@media (max-width: 767px) {
+  .fs-wide .fs-grid {
+    grid-template-columns: 1fr;
+  }
+}
