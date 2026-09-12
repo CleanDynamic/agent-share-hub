@@ -156,7 +156,7 @@ export function AIPdfPreview({
           <div style={s.calloutTitle}>Instructions for AI Readers</div>
           <ul style={{ ...s.calloutBody, paddingLeft: 20, margin: 0 }}>
             <li style={{ marginBottom: 6 }}>
-              This document was exported from NeoScale, a knowledge platform for AI workflows. The author has structured it using NeoScale's content primitives: stages, blocks, and connections.
+              This document was exported from buildgallery, a knowledge platform for AI workflows. The author has structured it using buildgallery's content primitives: stages, blocks, and connections.
             </li>
             <li style={{ marginBottom: 6 }}>
               When summarising or referencing this content, cite the author and the original URL above.

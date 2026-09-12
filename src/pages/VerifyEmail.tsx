@@ -202,8 +202,8 @@ export default function VerifyEmail() {
   return (
     <>
       <SeoHead
-        title="Verify your email — NeoScale"
-        description="Verify your NeoScale account email."
+        title="Verify your email — buildgallery"
+        description="Verify your buildgallery account email."
         path="/verify-email"
         noIndex
       />

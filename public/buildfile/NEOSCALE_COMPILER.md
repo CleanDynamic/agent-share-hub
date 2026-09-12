@@ -1,6 +1,6 @@
-# NeoScale Build File — Compiler v1
+# buildgallery Build File — Compiler v1
 
-The person built one thing across several AI tools and has a NeoScale
+The person built one thing across several AI tools and has a buildgallery
 Build File from each (produced by the Extractor). Your job: merge the
 Build Files they paste below into ONE Build File of the same format.
 

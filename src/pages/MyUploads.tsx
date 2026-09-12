@@ -128,7 +128,7 @@ export default function MyUploads() {
 
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6">
-      <SeoHead title="My Uploads — NeoScale AI" description="Manage your uploaded content." path="/my-uploads" noIndex />
+      <SeoHead title="My Uploads — buildgallery.ai" description="Manage your uploaded content." path="/my-uploads" noIndex />
       <div className="mx-auto max-w-5xl">
         {/* Drafts indicator */}
         {draftDisplay && (

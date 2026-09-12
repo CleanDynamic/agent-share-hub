@@ -526,7 +526,7 @@ const Discover = () => {
   return (
     <>
       <SeoHead
-        title="Discover · NeoScale"
+        title="Discover · buildgallery"
         description="Search and discover Blueprints, Stages, and Blocks."
         path="/discover"
       />

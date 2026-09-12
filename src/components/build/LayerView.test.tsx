@@ -181,7 +181,7 @@ describe("an approved run layer", () => {
 
     const line = screen.getByTestId("layer-attribution");
     expect(line.textContent).toBe(LAYER_ATTRIBUTION);
-    expect(line.textContent).toContain("Written by NeoScale");
+    expect(line.textContent).toContain("Written by buildgallery");
     expect(line.textContent).toContain("reviewed by the creator");
   });
 

@@ -212,8 +212,8 @@ export default function ResetPassword() {
 
   const seoHead = (
     <SeoHead
-      title="Reset your password — NeoScale"
-      description="Reset your NeoScale account password."
+      title="Reset your password — buildgallery"
+      description="Reset your buildgallery account password."
       path="/reset-password"
       noIndex
     />

@@ -45,7 +45,7 @@ export function ProfileWelcomeCoachmark({ visible }: ProfileWelcomeCoachmarkProp
       }}
     >
       <span>
-        Welcome to NeoScale. Start by creating a blueprint or bookmarking
+        Welcome to buildgallery. Start by creating a blueprint or bookmarking
         content from Discover.
       </span>
       <button

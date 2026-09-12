@@ -82,8 +82,8 @@ export default function Login() {
   return (
     <>
       <SeoHead
-        title="Sign in — NeoScale"
-        description="Sign in to your NeoScale account."
+        title="Sign in — buildgallery"
+        description="Sign in to your buildgallery account."
         path="/login"
         noIndex
       />

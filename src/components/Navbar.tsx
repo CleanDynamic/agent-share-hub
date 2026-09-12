@@ -61,7 +61,7 @@ export function Navbar() {
       <nav className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-border bg-background/95 backdrop-blur-md">
         <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="text-lg font-bold tracking-tight text-primary">
-            NeoScale AI
+            buildgallery.ai
           </Link>
 
           {/* Desktop */}

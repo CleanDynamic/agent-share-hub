@@ -174,8 +174,8 @@ export default function Signup() {
   return (
     <>
       <SeoHead
-        title="Join NeoScale"
-        description="Create a free NeoScale account."
+        title="Join buildgallery"
+        description="Create a free buildgallery account."
         path="/signup"
         noIndex
       />

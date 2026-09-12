@@ -522,7 +522,7 @@ const NotificationsPage = () => {
 
   return (
     <div style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24 }}>
-      <SeoHead title="Notifications — NeoScale AI" description="Your notifications" path="/notifications" />
+      <SeoHead title="Notifications — buildgallery.ai" description="Your notifications" path="/notifications" />
       <div className="mx-auto max-w-2xl">
         {allNotifications.some((n) => !n.is_read) && (
           <div className="flex justify-end" style={{ marginBottom: 12 }}>

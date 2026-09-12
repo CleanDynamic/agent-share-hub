@@ -36,11 +36,11 @@ const endpoints = [
 export default function ApiDocs() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
-      <SeoHead title="API Documentation — NeoScale AI" description="Public API documentation for the NeoScale Blueprint library." path="/api-docs" />
+      <SeoHead title="API Documentation — buildgallery.ai" description="Public API documentation for the buildgallery Blueprint library." path="/api-docs" />
 
-      <h1 className="text-2xl font-bold text-foreground mb-2">NeoScale Public API</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-2">buildgallery Public API</h1>
       <p className="text-sm text-muted-foreground mb-8">
-        Read-only access to the NeoScale Blueprint library. No authentication required. Rate limited to 60 requests per minute per IP.
+        Read-only access to the buildgallery Blueprint library. No authentication required. Rate limited to 60 requests per minute per IP.
       </p>
 
       <div className="mb-6 p-4 rounded-xl border border-border bg-card">

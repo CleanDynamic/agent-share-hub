@@ -6,7 +6,7 @@ export function Footer() {
       <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         {/* Left */}
         <div>
-          <span className="text-sm font-bold text-primary">NeoScale AI</span>
+          <span className="text-sm font-bold text-primary">buildgallery.ai</span>
           <p className="text-xs text-muted-foreground mt-1">
             The AI Tactics Forum. For Builders and Normies.
           </p>
@@ -37,7 +37,7 @@ export function Footer() {
         </div>
       </div>
       <div className="mx-auto max-w-6xl mt-8 pt-6 border-t border-border">
-        <p className="text-[11px] text-muted-foreground">© 2026 NeoScale AI. All rights reserved.</p>
+        <p className="text-[11px] text-muted-foreground">© 2026 buildgallery.ai. All rights reserved.</p>
       </div>
     </footer>
   );

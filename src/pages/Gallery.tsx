@@ -146,7 +146,7 @@ export default function Gallery() {
       }}
     >
       <Helmet>
-        <title>Gallery — NeoScale</title>
+        <title>Gallery — buildgallery</title>
         <meta
           name="description"
           content="Builds other people have run: the prompts, configs and evidence, structured so you can run them too."
@@ -166,7 +166,7 @@ export default function Gallery() {
         <header style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
             <Link to="/" style={{ ...labelText, color: TEXT_SECONDARY, textDecoration: "none" }}>
-              ← NeoScale
+              ← buildgallery
             </Link>
             <h1 style={{ ...pageHeadingText, margin: 0 }}>Gallery</h1>
           </div>

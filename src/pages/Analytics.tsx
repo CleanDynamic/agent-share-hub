@@ -178,7 +178,7 @@ export default function Analytics() {
 
   return (
     <>
-      <SeoHead title="Your Progress — NeoScale AI" description="Track your XP, quests, and creator marks." path="/analytics" />
+      <SeoHead title="Your Progress — buildgallery.ai" description="Track your XP, quests, and creator marks." path="/analytics" />
       <ShellHeader title="Your Progress" />
       <div
         className="mx-auto"

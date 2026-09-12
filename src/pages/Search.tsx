@@ -189,7 +189,7 @@ export default function Search() {
                 setTab('Top');
               }
             }}
-            placeholder="Search NeoScale..."
+            placeholder="Search buildgallery..."
             style={{
               flex: 1, background: 'transparent',
               border: 'none', outline: 'none',
@@ -260,7 +260,7 @@ export default function Search() {
           <div style={{
              ...type.cardTitle,
           }}>
-            Search NeoScale
+            Search buildgallery
           </div>
           <div style={{ fontSize: 13, textAlign: 'center',
             lineHeight: 1.6 }}>

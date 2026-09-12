@@ -7,7 +7,9 @@ import "./flat-shell.css";
 
    A flat, standard-2D replacement for NeoScaleShell's compositing-heavy
    frame. Hard rules (see flat-shell.css): no SVG filters, no 3D
-   transforms, no scale wrapper; backdrop-filter only on the two rails.
+   transforms, no scale wrapper, and — since BG-P13 — no backdrop-filter
+   at all: both rails are full-height fixed panels, which the theme's
+   glass rule never blurs.
 
    This component knows nothing about routing, auth, or data — the wired
    container (AppShell) supplies everything through props.
@@ -91,7 +93,7 @@ export function FlatShell({
         {/* ═══ LEFT RAIL ═══ */}
         {!isMobile && !hideLeftRail && (
           <nav className="fs-rail fs-left" aria-label="Primary">
-            <div className="fs-logo" onClick={onLogoClick}>NeoScale</div>
+            <div className="fs-logo" onClick={onLogoClick}>buildgallery</div>
             <ul className="fs-nav-list">
               {navItems.map((item, idx) => (
                 <li key={item.key}>

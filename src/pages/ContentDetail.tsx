@@ -2130,7 +2130,7 @@ export default function ContentDetail() {
           },
           publisher: {
             "@type": "Organization",
-            name: "NeoScale",
+            name: "buildgallery",
             url: SITE,
           },
           mainEntityOfPage: postUrl,
@@ -2153,7 +2153,7 @@ export default function ContentDetail() {
         };
         return (
           <SeoHead
-            title={`${shellPost.title} — NeoScale`}
+            title={`${shellPost.title} — buildgallery`}
             description={shellPost.description || shellPost.title}
             path={`/b/${shellPost.slug}`}
             image={shellPost.coverUrl}

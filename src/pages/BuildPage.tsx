@@ -261,7 +261,7 @@ function Frame({ children }: { children: React.ReactNode }) {
             to="/"
             style={{ ...labelText, color: TEXT_SECONDARY, textDecoration: "none" }}
           >
-            ← NeoScale
+            ← buildgallery
           </Link>
         </div>
       </div>

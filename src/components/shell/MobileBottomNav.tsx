@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Home, Search, PlusCircle, MessageCircle } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { FIGTREE } from "@/lib/theme/type";
 
 export type MobileRoute = "home" | "discover" | "upload" | "messages" | "profile";
 
@@ -13,8 +16,16 @@ export interface MobileBottomNavProps {
   onNavigate: (route: MobileRoute) => void;
 }
 
-const ACTIVE = "#E8571A";
-const INACTIVE = "rgba(255,255,255,0.55)";
+const ACTIVE = t.action;
+const INACTIVE = t.text2;
+
+/* 64px of fixed chrome, not a full-height panel, so the theme still allows a
+   blur here — at its single 16px value, not the 20px this carried. */
+const BAR_BLUR = "blur(16px) saturate(1.15)";
+
+/* The press wash. A neutral scrim mixed from --text reads on either ground in
+   either theme, where a fixed rgba only ever reads on one of them. */
+const PRESSED = "color-mix(in oklch, var(--text) 6%, transparent)";
 
 function BarItem({
   active,
@@ -48,17 +59,16 @@ function BarItem({
         minWidth: 44,
         minHeight: 44,
         padding: "6px 0",
-        background: isUpload
-          ? "rgba(232,87,26,0.10)"
-          : pressed
-          ? "rgba(255,255,255,0.04)"
-          : "transparent",
-        border: isUpload ? "1px solid rgba(232,87,26,0.40)" : "none",
-        borderRadius: isUpload ? 12 : 0,
+        /* The one primary action on mobile: a solid --action fill with an
+           --on-action label, so it is the element that differs from its four
+           neighbours rather than a tinted version of them. */
+        background: isUpload ? ACTIVE : pressed ? PRESSED : "transparent",
+        border: isUpload ? `1px solid ${ACTIVE}` : "none",
+        borderRadius: isUpload ? r.control : 0,
         margin: isUpload ? "0 4px" : 0,
         transform: pressed ? "scale(0.95)" : "scale(1)",
         transition: "transform 100ms ease-out, background-color 100ms ease-out",
-        color: active ? ACTIVE : INACTIVE,
+        color: isUpload ? t.onAction : active ? ACTIVE : INACTIVE,
       }}
     >
       {active && !isUpload && (
@@ -87,17 +97,17 @@ function BarItem({
               height: 8,
               background: ACTIVE,
               borderRadius: "50%",
-              border: "1.5px solid #0F0F14",
+              border: `1.5px solid ${t.bg}`,
             }}
           />
         )}
       </span>
       <span
         style={{
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: FIGTREE,
           fontSize: 10,
           fontWeight: 500,
-          color: active ? ACTIVE : INACTIVE,
+          color: isUpload ? t.onAction : active ? ACTIVE : INACTIVE,
         }}
       >
         {label}
@@ -128,10 +138,10 @@ export function MobileBottomNav({
         display: "flex",
         alignItems: "stretch",
         gap: 0,
-        background: "rgba(15,15,20,0.92)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderTop: "1px solid rgba(255,255,255,0.08)",
+        background: t.glass,
+        backdropFilter: BAR_BLUR,
+        WebkitBackdropFilter: BAR_BLUR,
+        borderTop: `1px solid ${t.line}`,
         zIndex: 1000,
       }}
     >
@@ -142,7 +152,7 @@ export function MobileBottomNav({
         <Search size={22} />
       </BarItem>
       <BarItem active={currentRoute === "upload"} label="Upload" isUpload onClick={() => onNavigate("upload")}>
-        <PlusCircle size={22} color={ACTIVE} />
+        <PlusCircle size={22} />
       </BarItem>
       <BarItem
         active={currentRoute === "messages"}
@@ -161,11 +171,11 @@ export function MobileBottomNav({
         <Avatar
           className="h-6 w-6"
           style={{
-            border: currentRoute === "profile" ? `1.5px solid ${ACTIVE}` : "1px solid rgba(255,255,255,0.14)",
+            border: currentRoute === "profile" ? `1.5px solid ${ACTIVE}` : `1px solid ${t.line}`,
           }}
         >
           {currentUserAvatarUrl && <AvatarImage src={currentUserAvatarUrl} />}
-          <AvatarFallback className="text-[10px]" style={{ background: "#8B4513", color: "#fff" }}>
+          <AvatarFallback className="text-[10px]" style={{ background: t.recess, color: t.text }}>
             {currentUserInitials}
           </AvatarFallback>
         </Avatar>

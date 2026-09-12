@@ -370,7 +370,7 @@ export default function CollectionDetailRoute() {
     <>
       <SeoHead
         title={`${collection.name} — Library`}
-        description={collection.description ?? `Collection on NeoScale AI`}
+        description={collection.description ?? `Collection on buildgallery.ai`}
         path={`/library/collections/${collection.id}`}
         noIndex={collection.isPrivate}
       />

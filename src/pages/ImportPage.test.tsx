@@ -138,8 +138,8 @@ async function drop(file: File) {
   await Promise.resolve();
 }
 
-const EXTRACTOR_BODY = "# NeoScale Build File — Extractor v1\n\nRules — these are strict\n";
-const COMPILER_BODY = "# NeoScale Build File — Compiler v1\n\nEach source file becomes one PHASE.\n";
+const EXTRACTOR_BODY = "# buildgallery Build File — Extractor v1\n\nRules — these are strict\n";
+const COMPILER_BODY = "# buildgallery Build File — Compiler v1\n\nEach source file becomes one PHASE.\n";
 
 let written: string[] = [];
 

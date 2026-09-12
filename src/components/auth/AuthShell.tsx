@@ -40,7 +40,7 @@ export function AuthShell({ children }: AuthShellProps) {
               letterSpacing: "0.04em",
             }}
           >
-            NeoScale
+            buildgallery
           </span>
           <span
             style={{

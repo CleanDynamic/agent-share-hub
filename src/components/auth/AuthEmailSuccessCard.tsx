@@ -77,7 +77,7 @@ export function AuthEmailSuccessCard({ onContinue }: AuthEmailSuccessCardProps) 
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#D14E17")}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#E8571A")}
       >
-        Continue to NeoScale
+        Continue to buildgallery
       </button>
     </div>
   );

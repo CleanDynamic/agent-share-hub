@@ -147,9 +147,9 @@ export default function MessagesPage() {
 
   // Browser tab title
   useEffect(() => {
-    const title = totalUnread > 0 ? `(${totalUnread > 9 ? "9+" : totalUnread}) Messages — NeoScale AI` : "Messages — NeoScale AI";
+    const title = totalUnread > 0 ? `(${totalUnread > 9 ? "9+" : totalUnread}) Messages — buildgallery.ai` : "Messages — buildgallery.ai";
     document.title = title;
-    return () => { document.title = "NeoScale AI"; };
+    return () => { document.title = "buildgallery.ai"; };
   }, [totalUnread]);
 
   // Fetch threads for the active tab
@@ -430,7 +430,7 @@ export default function MessagesPage() {
 
   return (
     <>
-      <SeoHead title="Messages" description="Your conversations on NeoScale AI." path="/messages" />
+      <SeoHead title="Messages" description="Your conversations on buildgallery.ai." path="/messages" />
       <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%" }}>
         <ShellHeader
           onBack={() => navigate(-1)}

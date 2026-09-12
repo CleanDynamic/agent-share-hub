@@ -273,7 +273,7 @@ export default function ConvertPrompt() {
     return (
       <Frame>
         <Helmet>
-          <title>Converted — NeoScale</title>
+          <title>Converted — buildgallery</title>
         </Helmet>
         <h1 style={{ ...pageHeadingText, margin: 0 }}>
           {converted ? "Converted" : "You have already converted this post"}
@@ -297,7 +297,7 @@ export default function ConvertPrompt() {
   return (
     <Frame>
       <Helmet>
-        <title>Convert to a build record — NeoScale</title>
+        <title>Convert to a build record — buildgallery</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 

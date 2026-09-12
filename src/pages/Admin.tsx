@@ -399,7 +399,7 @@ const Admin = () => {
 
   return (
     <div className="py-10 px-6">
-      <SeoHead title="Admin — NeoScale AI" description="Admin panel." path="/admin" noIndex />
+      <SeoHead title="Admin — buildgallery.ai" description="Admin panel." path="/admin" noIndex />
       <div className="mx-auto max-w-5xl">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-foreground">Admin Panel</h1>
@@ -932,7 +932,7 @@ function CuratorsTab() {
         recipient_id: app.user_id,
         actor_id: null,
         notification_type: "curator_approved",
-        metadata: { message: "You are now a NeoScale Curator. Start recommending content." },
+        metadata: { message: "You are now a buildgallery Curator. Start recommending content." },
       });
     },
     onSuccess: (_d, app) => {

@@ -400,7 +400,7 @@ export default function ImportPage() {
       }}
     >
       <Helmet>
-        <title>Import a build — NeoScale</title>
+        <title>Import a build — buildgallery</title>
         <meta
           name="description"
           content="Paste one document into the chat where you built your thing. The AI writes it up as a Build File, and you drop that file here."
@@ -420,7 +420,7 @@ export default function ImportPage() {
         <header style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
             <Link to="/" style={{ ...labelText, color: TEXT_SECONDARY, textDecoration: "none" }}>
-              ← NeoScale
+              ← buildgallery
             </Link>
           </div>
           {taking ? null : (
