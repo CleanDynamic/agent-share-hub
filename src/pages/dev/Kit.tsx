@@ -532,7 +532,7 @@ function BrandSection() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(320px, 100%), 1fr))",
           gap: SPACE.md,
           alignItems: "start",
           padding: SPACE.md,
@@ -556,7 +556,7 @@ function BrandSection() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(360px, 100%), 1fr))",
           gap: SPACE.md,
           alignItems: "start",
           padding: SPACE.md,
@@ -665,7 +665,7 @@ function BrandSection() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(340px, 100%), 1fr))",
           gap: SPACE.md,
           alignItems: "start",
           padding: SPACE.md,

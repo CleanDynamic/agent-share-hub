@@ -150,7 +150,14 @@ export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
 
   const frame: CSSProperties =
     size === "header"
-      ? { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6 }
+      ? {
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          gap: 6,
+          minWidth: 0,
+          maxWidth: "100%",
+        }
       : {
           display: "flex",
           alignItems: "center",
@@ -223,7 +230,14 @@ export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
           display: "flex",
           alignItems: "center",
           gap: 6,
+          /* Both, and for different jobs. `minWidth: 0` lets this shrink below
+             its content inside a flex row; `maxWidth: 100%` stops it growing
+             past its container in a COLUMN, where flex-start sizes a child to
+             max-content and a nowrap line would otherwise run off the page.
+             Without the second, the freshness sentence overflowed the header
+             plaque at 390px. */
           minWidth: 0,
+          maxWidth: "100%",
           color: t.text2,
         }}
       >

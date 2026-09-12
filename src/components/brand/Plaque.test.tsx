@@ -177,6 +177,28 @@ describe("the reproduction count is the distinct one", () => {
   });
 });
 
+describe("it fits where it is put", () => {
+  /**
+   * The header plaque is a COLUMN with `align-items: flex-start`, which sizes
+   * each child to max-content — and the freshness line never wraps. Without a
+   * cap it ran off the page at 390px, which the /dev/kit overflow sweep caught.
+   * Both constraints are needed and they do different jobs: `min-width: 0` lets
+   * it shrink inside a flex ROW, `max-width: 100%` stops it growing inside a
+   * COLUMN.
+   */
+  it("caps the freshness line so a nowrap sentence cannot run off the page", () => {
+    for (const size of SIZES) {
+      const container = renderPlaque(build(), size);
+      const freshness = container.querySelector("[data-plaque-freshness]") as HTMLElement;
+      expect(freshness.style.minWidth).toBe("0");
+      expect(freshness.style.maxWidth).toBe("100%");
+      expect(freshness.querySelector("span:last-child")?.getAttribute("style")).toContain(
+        "text-overflow: ellipsis"
+      );
+    }
+  });
+});
+
 describe("tokens only", () => {
   it("carries no raw hex anywhere, in any state or size", () => {
     const states: PlaqueBuild[] = [
