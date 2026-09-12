@@ -31,7 +31,15 @@
 // depend on which browser someone opened it in. The Compiler is behind a fold
 // and is fetched when that fold opens, for the same reason and no earlier.
 //
-// Outside NeoScaleShell and lazy-loaded, like /gallery and /compose.
+// BG-P15 — INSIDE THE APPLICATION FRAME NOW, like /gallery, and listed in
+// src/components/shell/wideRoutes.ts so it renders in wide mode. NO RIGHT
+// RAIL: this is a task with one path through it, and the rail's whole job is
+// to offer somewhere else to go. Wide rather than standard because the two
+// documents it hands over are code blocks, and a 600px reading column wraps
+// them into noise.
+//
+// Still lazy-loaded: the prose here is only read by someone who came to import
+// a build.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
@@ -56,6 +64,7 @@ import {
   pageHeadingText,
   titleText,
 } from "@/components/build/tokens";
+import { SPACE } from "@/lib/theme/space";
 import { measure } from "@/lib/theme/type";
 
 /** Served from public/buildfile/. Both are plain Markdown, ~5 kB and ~2 kB. */
@@ -385,13 +394,47 @@ export default function ImportPage() {
   const taking = drop.state.name !== "idle";
 
   return (
+    /* ── BG-P15 — the page's own frame is gone.
+
+       `minHeight: 100vh` went because the frame is 100dvh with its own scroll
+       region, and a 100vh floor inside that scroller is a second screen of
+       height. `fontFamily: FONT_STACK` went because `.fs-root` sets that exact
+       Figtree stack already.
+
+       The inner container's `maxWidth: 720` + `margin: "0 auto"` went as the
+       doubled measure — the wide frame already caps and centres — and its
+       `padding: "28px 20px 64px"` is replaced by one `SPACE.md` on this div,
+       which is the padding a wide page carries because `.fs-page-body` has no
+       horizontal inset of its own and the frame's own 24px collapses to 0 at
+       phone width.
+
+       `background: VOID` AND `color: TEXT_PRIMARY` STAY, as a pair, and this
+       is the same answer /b2/:slug got rather than the one /gallery got. This
+       page and everything under it — the steps, the drop target, the whole
+       BuildFileIntake subtree in components/compose — are still painted from
+       the legacy dark token module: white-alpha text with no opaque surface of
+       its own under it (`cardGlass` is rgba(255,255,255,.025), a translucent
+       film). Put that on an Exhibition-light ground and the page's entire body
+       disappears; it was rendered and looked at, and it is not shippable. So
+       the ground stays dark until the repaint, and the explicit text colour
+       stays with it, because inheriting `--text` would put Exhibition's dark
+       ink on that dark ground.
+
+       VOID rather than dropping to the application's own centre ground: this
+       page paints an inset drag ring across its whole surface, so it needs to
+       BE a surface. See the handoff note — the repaint that retires the legacy
+       module here retires both of these lines with it.
+
+       `isolation: isolate` STAYS, and on this page it earns its place twice
+       over: the drag ring is an inset shadow on this element, and the page is
+       a drop target for the whole of itself. So does the boxShadow — it is the
+       drag affordance, not frame decoration. ── */
     <div
       data-visual-slot="import-frame"
       style={{
-        minHeight: "100vh",
+        padding: SPACE.md,
         background: VOID,
         color: TEXT_PRIMARY,
-        fontFamily: FONT_STACK,
         isolation: "isolate",
         // Visual only: an inset ring while a file is over the page, so the
         // whole surface reads as the target it is. No structural property here.
@@ -409,34 +452,51 @@ export default function ImportPage() {
 
       <div
         style={{
-          maxWidth: 720,
-          margin: "0 auto",
-          padding: "28px 20px 64px",
           display: "flex",
           flexDirection: "column",
           gap: 20,
         }}
       >
-        <header style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-            <Link to="/" style={{ ...labelText, color: TEXT_SECONDARY, textDecoration: "none" }}>
-              ← buildgallery
-            </Link>
-          </div>
-          {taking ? null : (
-            <>
-              <h1 style={{ ...pageHeadingText, margin: 0 }}>
-                Post a build without writing it up.
-              </h1>
-              <p style={{ ...bodyText, ...measure, margin: 0, color: TEXT_SECONDARY }}>
-                The chat where you built the thing already knows what you did.
-                Give it the document below and it writes your build up for you —
-                the prompts you sent, the settings you landed on, what worked and
-                what broke. You bring the file back here.
-              </p>
-            </>
-          )}
-        </header>
+        {/* BG-P15. The "← buildgallery" back link is deleted — the left rail
+            carries the wordmark and the nav, and on a phone the bottom bar
+            does. The <div> that held it goes with it, and the header is now
+            the <h1> and its paragraph, which is all it ever was underneath.
+
+            THIS IS NOT `PageHeader`, AND IT WAS MEANT TO BE. BG-P15 asked for
+            an "IMPORT" eyebrow over "Post a build without writing it up", and
+            it was built that way, rendered, and taken back out. PageHeader
+            paints from the two-theme semantic tokens; this page and the whole
+            BuildFileIntake subtree under it still paint from the legacy dark
+            module. There is no ground that serves both: on `t.bg` the header
+            is perfect and every step body vanishes into the light (verified —
+            the steps sit on `cardGlass`, a 2.5%-white film, not an opaque
+            surface), and on the dark ground the bodies are right and the
+            header's `--text` is Exhibition ink on a dark room.
+
+            So the page keeps the header it can paint, and PageHeader arrives
+            here the day this page is repainted — which is the same day
+            `VOID` and `TEXT_PRIMARY` leave the wrapper above. That repaint
+            reaches into components/compose, which BG-P16 owns, so it is not
+            this prompt's to do. /gallery took PageHeader because what it puts
+            on a light ground is already repainted: PageHeader and GalleryCard.
+
+            The header still disappears once a file is in hand — `taking` is
+            true from the moment a Build File is being read, reviewed or
+            refused, and the intake gets the page to itself. That behaviour is
+            unchanged; only the back link above it is gone. */}
+        {taking ? null : (
+          <header style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <h1 style={{ ...pageHeadingText, margin: 0 }}>
+              Post a build without writing it up.
+            </h1>
+            <p style={{ ...bodyText, ...measure, margin: 0, color: TEXT_SECONDARY }}>
+              The chat where you built the thing already knows what you did.
+              Give it the document below and it writes your build up for you —
+              the prompts you sent, the settings you landed on, what worked and
+              what broke. You bring the file back here.
+            </p>
+          </header>
+        )}
 
         {taking ? (
           <BuildFileIntake
