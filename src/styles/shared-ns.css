@@ -7,6 +7,24 @@
      .ns-engagement-bar  → src/components/content-detail/FloatingEngagementBar.tsx
      .ns-comment-drawer  → src/components/content-detail/PrimitiveCommentDrawer.tsx
    Imported once in src/main.tsx. Do not add shell-internal rules here.
+
+   BG-P17 RETIRES NeoScaleShell, AND FOUND NOTHING LEFT TO EXTRACT. The audit
+   that prompt ran resolved every .ns-* class referenced by a live file to a
+   definition outside the shell: the four below, the Explore rail's fifty-two in
+   src/components/shell/right-rail-explore.css, .ns-badge in src/index.css, and
+   .ns-collections-grid, .ns-detail-grid and .ns-comment-new-reply in <style>
+   blocks inside their own consumers. Three more — .ns-btn-primary,
+   .ns-btn-silver and .ns-right-cat — are referenced but defined nowhere, and
+   were already inert before the shell went. So BG-P17 moved no rule and edited
+   no declaration; it only recorded where these came from.
+
+   THE FOUR RULES BELOW ARE STILL ON THE OLD COLOURS. Every colour here is a
+   hardcoded rgba(255,255,255,…) inherited from the shell, which only ever
+   rendered on a dark ground. They do not read <html data-theme> and so do not
+   change between Exhibition and Dusk. Repainting them onto tokens is BG-P29's
+   job — the rail's stylesheet already had that done in BG-P13, this file has
+   not — and deliberately not this prompt's, which is a deletion and must stay
+   bisectable.
 ──────────────────────────────────────────────── */
 
 /* ── Back button ── */
