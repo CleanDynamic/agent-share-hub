@@ -21,9 +21,9 @@
 //
 // TWO LAYOUTS, ONE COMPONENT.
 //
-//   feed  entries at their own shape, text above each picture. Heights come
-//         from the STORED dimensions of each picture, so the box is the right
-//         height before a single image has loaded.
+//   feed  entries at their own shape, text above each picture, unfolding in
+//         place. Heights come from the STORED dimensions of each picture, so
+//         the box is the right height before a single image has loaded.
 //   grid  the shape body the gallery has always rendered, in its fixed slot,
 //         with no text and no unfold. A gallery cell is 300px wide: a column of
 //         four pictures at their own ratios would be a column of stamps, and the
@@ -43,10 +43,11 @@
 // Styled with inline style objects, like every other surface on the new path:
 // Tailwind's generated utilities win over hand-written classes at build time.
 
-import { type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { aspectOf, type GalleryMedia, type PostEntry } from "@/lib/build";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
+import { UI_EASING, prefersReducedMotion } from "@/lib/theme/controls";
 import { body as bodyText, data as dataText, tabular } from "@/lib/theme/type";
 import { stillFor, type MediaSrcMap } from "./cardMedia";
 
@@ -64,6 +65,15 @@ export const TEXT_TO_MEDIA = 12;
 
 /** Between one entry and the next, above and below the hairline. */
 export const ENTRY_GAP = 16;
+
+/** The unfold control's row. A 40px target, which is the kit's list-row height. */
+export const CONTROL_HEIGHT = 40;
+
+/** The rail: 2px of --line, centred in the box's left padding. */
+export const RAIL_WIDTH = 2;
+
+/** The one animated moment on the card. */
+export const UNFOLD_MS = 240;
 
 /**
  * Which of the two the card is drawing.
@@ -105,6 +115,14 @@ export interface CardThreadProps {
    * has SOMETHING in it stays where it was written.
    */
   gridBody?: ReactNode;
+  /**
+   * Resets the unfold when the card is pointed at a different build.
+   *
+   * A feed list that reuses a card's element for the next build — a keyed list
+   * whose key changed, a virtualiser recycling a row — would otherwise show the
+   * new build's post already open because the old one was.
+   */
+  resetKey?: string;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -139,25 +157,34 @@ export function reservedMediaHeight(
 }
 
 /**
- * What the box reserves for its pictures.
+ * What the box reserves for its pictures, collapsed and unfolded.
  *
- * Every entry, plus the gaps between them. In grid layout it is the fixed slot,
- * because that is what grid renders.
+ * `collapsed` is entry 0 alone plus the control row when there is one to show;
+ * `unfolded` adds every later entry and the gaps between them. In grid layout
+ * both are the fixed slot, because that is what grid renders.
  */
 export function threadReserve(
   entries: readonly PostEntry<GalleryMedia>[],
   layout: CardLayout,
   boxWidth: number,
   fixedSlotHeight: number
-): number {
-  if (layout === "grid" || entries.length === 0) return fixedSlotHeight + THREAD_PAD * 2;
+): { collapsed: number; unfolded: number } {
+  if (layout === "grid" || entries.length === 0) {
+    const fixed = fixedSlotHeight + THREAD_PAD * 2;
+    return { collapsed: fixed, unfolded: fixed };
+  }
 
   const media = entries.map((entry) => reservedMediaHeight(entry.media, boxWidth));
-  return (
+  const control = entries.length > 1 ? CONTROL_HEIGHT : 0;
+
+  const collapsed = THREAD_PAD * 2 + media[0] + control;
+  const unfolded =
     THREAD_PAD * 2 +
     media.reduce((sum, height) => sum + height, 0) +
-    ENTRY_GAP * 2 * (entries.length - 1)
-  );
+    ENTRY_GAP * 2 * (entries.length - 1) +
+    control;
+
+  return { collapsed, unfolded };
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -171,14 +198,44 @@ export function CardThread({
   shape,
   altFor,
   gridBody,
+  resetKey,
 }: CardThreadProps) {
+  const [unfolded, setUnfolded] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const regionId = useId();
+
+  // Pointed at a different build: the previous build's unfold is not this
+  // build's state. An effect rather than a key on the caller's side, because
+  // the card's props API gained exactly one member and this is internal.
+  useEffect(() => {
+    setUnfolded(false);
+  }, [resetKey]);
+
   const first = entries[0] ?? null;
   const rest = entries.slice(1);
+  const foldable = layout === "feed" && entries.length > 1;
+
+  const collapse = () => {
+    // A card whose top has scrolled above the viewport is about to get shorter
+    // under the reader's eyes, which drops them into the middle of a page they
+    // did not scroll to. Put its top back on screen first.
+    const top = boxRef.current?.closest("[data-visual-slot='gallery-card']");
+    const above = top ? top.getBoundingClientRect().top < 0 : false;
+    setUnfolded(false);
+    if (top && above) {
+      top.scrollIntoView({
+        block: "start",
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+      });
+    }
+  };
 
   return (
     <div
+      ref={boxRef}
       data-visual-slot="card-thread"
       data-thread-layout={layout}
+      data-thread-unfolded={unfolded ? "" : undefined}
       style={{
         // --card-thread over the frame's --card-frame: the step that makes the
         // box a region rather than a rectangle. No border and no blur; the tone
@@ -209,26 +266,41 @@ export function CardThread({
               shape={shape}
               first
             />
-            {rest.map((entry) => (
-              <div
-                key={entry.media.id}
-                data-thread-entry={entry.position}
-                style={{
-                  marginTop: ENTRY_GAP,
-                  paddingTop: ENTRY_GAP,
-                  borderTop: `1px solid ${t.line}`,
-                }}
-              >
-                <EntryText text={entry.text} />
-                <EntryMedia
-                  entry={entry}
-                  srcByPath={srcByPath}
-                  altFor={altFor}
-                  shape={shape}
-                />
-              </div>
-            ))}
+            <UnfoldRegion open={unfolded} id={regionId}>
+              {rest.map((entry) => (
+                <div
+                  key={entry.media.id}
+                  data-thread-entry={entry.position}
+                  style={{
+                    marginTop: ENTRY_GAP,
+                    paddingTop: ENTRY_GAP,
+                    borderTop: `1px solid ${t.line}`,
+                  }}
+                >
+                  <EntryText text={entry.text} />
+                  <EntryMedia
+                    entry={entry}
+                    srcByPath={srcByPath}
+                    altFor={altFor}
+                    shape={shape}
+                  />
+                </div>
+              ))}
+            </UnfoldRegion>
+            {/* The rail spans the pictures, not the words above the first one:
+                it is the thread's spine, and a spine that started above the
+                first picture would point at nothing. */}
+            {unfolded && rest.length > 0 ? <Rail /> : null}
           </div>
+          {foldable ? (
+            <UnfoldControl
+              open={unfolded}
+              more={rest.length}
+              controls={regionId}
+              onOpen={() => setUnfolded(true)}
+              onClose={collapse}
+            />
+          ) : null}
         </>
       ) : (
         // No post and no fixed body: the frame's own title and plaque carry the
@@ -404,9 +476,9 @@ function CountChip({ total }: { total: number }) {
 /**
  * The play mark. A rounded square at `--r-control`, NOT a disc.
  *
- * Nothing on this card is `--r-full`: the radius scale keeps 999px for genuinely
- * circular objects, and the previous card's 50% disc was the shape language this
- * series replaced. Decoration for a screen reader — the picture beneath already
+ * Nothing on this card is the scale's circular step: that step is reserved for
+ * genuinely circular objects, and the previous card's 50% disc was the shape
+ * language this series replaced. Decoration for a screen reader — the picture beneath already
  * carries the description, and the card is a link to the build rather than a
  * player, so announcing it would promise something the card does not do.
  */
@@ -482,4 +554,169 @@ export function durationLabel(seconds: number | null | undefined): string | null
   const minutes = Math.floor(whole / 60);
   const rest = whole % 60;
   return `${minutes}:${String(rest).padStart(2, "0")}`;
+}
+
+/**
+ * The rail: the thread's spine, down the box's left padding.
+ *
+ * Positioned against the block that begins at the first picture's top and ends
+ * at the last entry's bottom, so its extent is those two facts rather than a
+ * measured length. Centred in the 16px padding — (16 − 2) / 2 = 7 — which is the
+ * one column of the box nothing else occupies.
+ */
+function Rail() {
+  return (
+    <span
+      aria-hidden
+      data-thread-rail=""
+      style={{
+        position: "absolute",
+        left: (THREAD_PAD - RAIL_WIDTH) / 2,
+        top: 0,
+        bottom: 0,
+        width: RAIL_WIDTH,
+        borderRadius: RAIL_WIDTH,
+        background: t.line,
+      }}
+    />
+  );
+}
+
+/**
+ * The part that unfolds, and the card's one animated moment.
+ *
+ * ONE TRANSITION, ONE STEP, NO MEASUREMENT. The region is a single-row grid
+ * whose row goes from `0fr` to `1fr`: in an auto-height container an `fr` row
+ * resolves to its content, so the height interpolates from nothing to exactly
+ * the height the content already reserved — once, and never adjusted afterwards.
+ * Because every picture inside has its `aspect-ratio` from stored pixels, that
+ * target is settled before a single image has loaded, so an image landing
+ * mid-transition changes nothing.
+ *
+ * WHY NOT `height`, WHICH IS WHAT BG-P09 ASKED FOR. A `height` transition needs
+ * two concrete pixel values, and the only way to get the second one is to
+ * measure the rendered content — the thing this file is not allowed to do, and
+ * the thing that makes the "grows twice" failure possible in the first place
+ * (measure early, get it wrong, correct it later). `grid-template-rows` is the
+ * same single transition of the same box's height with the measurement removed.
+ * `overflow: hidden` and `minHeight: 0` are load-bearing: without them the row
+ * refuses to shrink below its content and nothing animates.
+ *
+ * Reduced motion snaps. `hidden` is not used — a hidden subtree is not laid out,
+ * so its height could not be part of a transition — but `inert` keeps the
+ * collapsed entries out of the tab order and off a screen reader's path, which
+ * is what `hidden` would have been for.
+ */
+function UnfoldRegion({
+  open,
+  id,
+  children,
+}: {
+  open: boolean;
+  id: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      id={id}
+      data-thread-region={open ? "open" : "closed"}
+      // `inert` KEEPS THE COLLAPSED ENTRIES OUT OF THE TAB ORDER and off a
+      // screen reader's path. `hidden` cannot do that job here — a hidden
+      // subtree is not laid out, so its height could not then be part of a
+      // transition — and React 18 does not carry `inert` in its prop allowlist,
+      // so it is set on the element rather than passed as a prop. A ref is the
+      // only place that can be done without the version of React deciding
+      // whether the attribute survives.
+      ref={(el) => el?.toggleAttribute("inert", !open)}
+      style={{
+        display: "grid",
+        gridTemplateRows: open ? "1fr" : "0fr",
+        transition: prefersReducedMotion()
+          ? "none"
+          : `grid-template-rows ${UNFOLD_MS}ms ${UI_EASING}`,
+      }}
+    >
+      <div style={{ overflow: "hidden", minHeight: 0 }}>{children}</div>
+    </div>
+  );
+}
+
+/**
+ * "Show thread · 3 more", and "Show less" once it is open.
+ *
+ * A BUTTON INSIDE A LINK, WHICH IS WHY THE PROPAGATION STOPS. The whole card is
+ * an anchor to the build, so a click that reached it would navigate away from the
+ * thread the reader just asked to see. `preventDefault` cancels the anchor's own
+ * activation and `stopPropagation` keeps the event off it; both are needed,
+ * because the anchor is the ancestor rather than the target. Keyboard activation
+ * of a button fires a click, so Enter and Space go through the same guard.
+ */
+function UnfoldControl({
+  open,
+  more,
+  controls,
+  onOpen,
+  onClose,
+}: {
+  open: boolean;
+  more: number;
+  controls: string;
+  onOpen: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-thread-control=""
+      aria-expanded={open}
+      aria-controls={controls}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (open) onClose();
+        else onOpen();
+      }}
+      style={{
+        ...dataText,
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        width: "100%",
+        height: CONTROL_HEIGHT,
+        marginTop: ENTRY_GAP,
+        padding: `0 ${THREAD_PAD}px`,
+        border: "none",
+        borderTop: `1px solid ${t.line}`,
+        background: "transparent",
+        color: t.text2,
+        cursor: "pointer",
+        textAlign: "left",
+      }}
+    >
+      <span>{open ? "Show less" : `Show thread · ${more} more`}</span>
+      <Chevron open={open} />
+    </button>
+  );
+}
+
+/** The control's chevron: right when closed, up when open. */
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      aria-hidden
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      style={{ flexShrink: 0 }}
+    >
+      <path
+        d={open ? "M2.5 7.5L6 4l3.5 3.5" : "M4 2.5L7.5 6L4 9.5"}
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }

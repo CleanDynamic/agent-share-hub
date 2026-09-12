@@ -187,6 +187,7 @@ export function GalleryCard({
         layout={layout === "feed" && entries.length > 0 ? "feed" : "grid"}
         shape={shape}
         altFor={altFor}
+        resetKey={build.id}
         gridBody={<Body build={build} srcByPath={srcByPath} />}
       />
 
@@ -483,8 +484,8 @@ function Plaque({
 /**
  * The lamp: an oval of `--lit`, dimmed to 45% when the claim has gone stale.
  *
- * An OVAL and not a circle, and 10×7 rather than 10×10, because the radius scale
- * keeps `--r-full` for genuinely circular objects and a lamp is a light rather
+ * An OVAL and not a circle, and 10×7 rather than 10×10, because the scale's
+ * circular step is for genuinely circular objects and a lamp is a light rather
  * than a dot. `opacity` carries the stale state so the colour stays one token.
  */
 function Lamp({ dim }: { dim: boolean }) {
