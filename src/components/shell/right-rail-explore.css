@@ -256,12 +256,18 @@
   transition: background-color 0.2s, border-color 0.2s, color 0.2s, opacity 0.2s;
   border: none;
 }
+/* BG-P13. NEITHER OF THESE IS THE PRIMARY, AND THAT IS THE POINT. A
+   signed-out visitor at 1024 and up sees this pair AND the identical pair in
+   the left rail, so painting "Join free" as an --action fill here put two
+   primaries on one screen — the theme allows one, and two cancel each other
+   out. The left rail keeps the fill; this pair is the quieter repeat, one step
+   apart from each other by label colour alone. */
 .ns-auth-btn.signin {
   background: var(--glass-2); border: 1px solid var(--line);
-  color: var(--text);
+  color: var(--text2);
 }
-.ns-auth-btn.signin:hover { background: var(--bg); }
+.ns-auth-btn.signin:hover { background: var(--bg); color: var(--text); }
 .ns-auth-btn.join {
-  background: var(--action); border: 1px solid var(--action); color: var(--on-action);
+  background: var(--glass-2); border: 1px solid var(--line); color: var(--text);
 }
-.ns-auth-btn.join:hover { opacity: 0.92; }
+.ns-auth-btn.join:hover { background: var(--bg); }
