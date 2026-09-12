@@ -99,7 +99,7 @@ describe("a bounty in the feed", () => {
     // The card the gallery draws, not a second design for the same build.
     expect(item).toHaveTextContent("Inbox triage agent");
     expect(within(item).getByTestId("gallery-card-bounty")).toHaveTextContent(
-      "bounty · £120"
+      "1 part unsolved · £120"
     );
   });
 
@@ -118,7 +118,9 @@ describe("a bounty in the feed", () => {
     // for one that has none — an unpriced ask is still a real bounty.
     expect(item).toHaveTextContent("part of this build is unsolved");
     expect(within(item).queryByTestId("feed-bounty-reward")).toBeNull();
-    expect(within(item).getByTestId("gallery-card-bounty")).toHaveTextContent("bounty");
+    expect(within(item).getByTestId("gallery-card-bounty")).toHaveTextContent(
+      "1 part unsolved"
+    );
   });
 
   it("leaves an ordinary build card saying nothing about bounties", () => {
@@ -129,5 +131,42 @@ describe("a bounty in the feed", () => {
     // must not assert that the build has no open ask.
     expect(within(item).queryByTestId("gallery-card-bounty")).toBeNull();
     expect(screen.queryByTestId("feed-item-bounty")).toBeNull();
+  });
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+   BG-P09 — one change, two surfaces
+   ──────────────────────────────────────────────────────────────────────────── */
+
+describe("the rebuilt card in the feed", () => {
+  it("renders the frame and the thread box, the same two layers the gallery draws", () => {
+    // THE POINT OF THE SHARED COMPONENT. This file imports GalleryCard; BG-P09
+    // rebuilt that component; so the Builds tab got the rebuild without a line
+    // of feed code changing. A feed that had drawn its own card would have to be
+    // remembered here every time, and would drift the first time it was not.
+    renderItem(row());
+    const item = screen.getByTestId("feed-item-build");
+    expect(item.querySelector('[data-visual-slot="gallery-card"]')).not.toBeNull();
+    expect(item.querySelector('[data-visual-slot="card-thread"]')).not.toBeNull();
+  });
+
+  it("still lays the feed's cards out in grid layout, which is BG-P18's to switch", () => {
+    // The feed's own layout is not this prompt's. Until BG-P18 switches it, the
+    // card in the feed is the grid card: a fixed slot, no entry text, no unfold.
+    renderItem(row());
+    const item = screen.getByTestId("feed-item-build");
+    expect(item.querySelector('[data-card-layout="grid"]')).not.toBeNull();
+    expect(item.querySelector("[data-thread-control]")).toBeNull();
+  });
+
+  it("puts the title, plaque and chips on the frame under the box, in order", () => {
+    renderItem(row());
+    const item = screen.getByTestId("feed-item-build");
+    const parts = [...item.querySelectorAll("[data-card-part]")].map((el) =>
+      el.getAttribute("data-card-part")
+    );
+    // Chips are absent on a feed row carrying no roles; the order of what is
+    // present is what is fixed.
+    expect(parts.slice(0, 2)).toEqual(["title", "plaque"]);
   });
 });

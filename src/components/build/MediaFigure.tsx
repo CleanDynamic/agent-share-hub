@@ -53,6 +53,18 @@ export const MEDIA_WIDTH = {
    * must not silently move the tree figure with it.
    */
   card: 640,
+  /**
+   * One picture in a build card's thread box, in feed layout (BG-P09).
+   *
+   * Wider than `card` because the slot is: the feed's centre column runs to
+   * about 560 CSS pixels where a gallery cell is about 300, and a thread box
+   * picture fills the box rather than a 168px letterbox inside it. 1200 is the
+   * retina width for that, which is the same number as `hero` and, like `card`
+   * beside `tree`, deliberately its own entry — the feed column and the build
+   * page's hero will not stay the same width, and one moving must not move the
+   * other.
+   */
+  thread: 1200,
   /** One cell of the generated_media variant grid, and the inspector preview. */
   variant: 240,
 } as const;

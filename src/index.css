@@ -76,6 +76,12 @@
   --glass-border: rgba(255,255,255,.80);
   --glass-hi: rgba(255,255,255,.95);
 
+  /* BG-P09 — the card's two layers. The frame is one step DARKER than the
+     thread box inset in it, and that step is what groups the post inside the
+     record. Only the frame is blurred. */
+  --card-frame: rgba(255,255,255,.42);
+  --card-thread: rgba(255,255,255,.55);
+
   --action: #9E4B2C;
   --on-action: #F7F8F9;
   --evidence: #0F6E63;
@@ -117,6 +123,7 @@
   --r-chip: 8px;
   --r-media: 10px;
   --r-control: 12px;
+  --r-thread: 12px;
   --r-card: 14px;
   --r-panel: 16px;
   --r-full: 999px;
@@ -140,6 +147,11 @@
   --glass-2: rgba(72,63,104,.26);
   --glass-border: rgba(238,234,244,.14);
   --glass-hi: rgba(238,234,244,.22);
+
+  /* BG-P09 — the card's two layers. Struck from the stone for the frame and
+     from the room's light for the box, so the box is lighter here too. */
+  --card-frame: rgba(72,63,104,.42);
+  --card-thread: rgba(238,234,244,.06);
 
   --action: #D98C6B;
   --on-action: #241B1A;
@@ -182,6 +194,7 @@
   --r-chip: 8px;
   --r-media: 10px;
   --r-control: 12px;
+  --r-thread: 12px;
   --r-card: 14px;
   --r-panel: 16px;
   --r-full: 999px;
@@ -501,5 +514,57 @@ input[type="search"] { border-radius: var(--r-control); }
 @media (prefers-reduced-motion: reduce) {
   [data-bg-animated] {
     animation: none !important;
+  }
+}
+
+/* ── The card's hover shadow (BG-P09) ─────────────────────────────────────────
+   A PSEUDO-ELEMENT, BECAUSE THE THEME FORBIDS ANIMATING `box-shadow`. A shadow
+   that changes has to change on a pseudo-element whose OPACITY is animated:
+   `box-shadow` is not a compositable property, so transitioning it repaints the
+   card on every frame of every hover, twenty-four cards to a grid.
+
+   THIS IS THE ONE THING THE CARD CANNOT DO INLINE. BG-P09 styles inline and adds
+   no CSS classes; a pseudo-element has no inline form at all, so the rule is
+   keyed on the `data-visual-slot` attribute the card already carries — an
+   attribute selector on existing markup rather than a new class to hang styling
+   on. The shadow itself is the theme's own `--elev-raised`, per theme, so the
+   light room's shadow and the dark room's are not the same object.
+
+   GATED ON A FINE POINTER. A touch reader has no hover, and a `:hover` rule that
+   reaches them leaves a card stuck in a lifted state after a tap. The transform
+   and the border colour are carried inline by the same gate in JavaScript; this
+   is the half of the effect that cannot be.
+
+   `inset: 0` and `z-index: -1` put it exactly behind the card, and
+   `pointer-events: none` keeps it out of the way of the link it sits under. */
+@media (hover: hover) and (pointer: fine) {
+  [data-visual-slot="gallery-card"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: var(--r-card);
+    box-shadow: var(--elev-raised);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms cubic-bezier(.2,.6,.35,1);
+  }
+
+  [data-visual-slot="gallery-card"]:hover::after {
+    opacity: 1;
+  }
+}
+
+/* BG-P07's rule, applied to the card: reduced motion is answered TWICE. The
+   inline styles drop their transitions at render, which covers every render;
+   this covers the gap that leaves — a visitor who changes the setting while a
+   card is already on screen, where nothing would re-render to notice. The
+   unfold then snaps, which is the behaviour the theme asks for: the reader
+   still gets the thread, just not the travel. */
+@media (prefers-reduced-motion: reduce) {
+  [data-visual-slot="gallery-card"],
+  [data-visual-slot="gallery-card"]::after,
+  [data-thread-region] {
+    transition: none !important;
   }
 }

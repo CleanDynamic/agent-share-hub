@@ -134,6 +134,12 @@ function toGalleryMedia(row: BuildMedia): GalleryMedia {
     // A video's still. The preview card renders it exactly as the gallery
     // does, so a creator sees the poster their card will lead with.
     poster_path: row.poster_path,
+    duration: row.duration,
+    // BG-P09: the card reads the post's arrangement off these two. BuildMedia
+    // carries them, so the preview shows the thread the creator arranged rather
+    // than a card that has forgotten about it.
+    post_position: row.post_position,
+    post_text: row.post_text,
   };
 }
 

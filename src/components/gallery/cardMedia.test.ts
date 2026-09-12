@@ -20,11 +20,13 @@ import {
 } from "@/lib/build";
 import {
   CARD_MEDIA_WIDTH,
+  CARD_THREAD_WIDTH,
   CARD_VARIANT_WIDTH,
   cardMedia,
   coverMedia,
   mediaAlt,
   nodeTypeLabel,
+  postMediaOf,
   stillRef,
 } from "./cardMedia";
 
@@ -38,6 +40,11 @@ function media(over: Partial<GalleryMedia> = {}): GalleryMedia {
     width: 1600,
     height: 900,
     poster_path: null,
+    duration: null,
+    // Not in the creator's post by default: a fixture that claimed position 0
+    // would put every test's build on the thread path.
+    post_position: null,
+    post_text: null,
     ...over,
   };
 }
@@ -230,5 +237,154 @@ describe("what a card's picture is called", () => {
   it("says a node type the way a reader would", () => {
     expect(nodeTypeLabel("screenshot")).toBe("Screenshot");
     expect(nodeTypeLabel("comparison_table")).toBe("Comparison table");
+  });
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+   BG-P09 — the post's set
+   ──────────────────────────────────────────────────────────────────────────── */
+
+describe("the post a creator arranged", () => {
+  /** Three pictures in the creator's order, plus one that is not in the post. */
+  const arranged = (shape: GalleryBuild["shape"] = "other") =>
+    build({
+      shape,
+      media: [
+        media({ id: "p2", path: "b1/2.png", post_position: 2 }),
+        media({ id: "p0", path: "b1/0.png", post_position: 0 }),
+        media({ id: "p1", path: "b1/1.png", post_position: 1 }),
+        media({ id: "loose", path: "b1/loose.png", post_position: null }),
+      ],
+    } as Partial<GalleryBuild>);
+
+  it("reads the set off the rows the page already has, in the creator's order", () => {
+    expect(postMediaOf(arranged()).map((entry) => entry.media.id)).toEqual([
+      "p0",
+      "p1",
+      "p2",
+    ]);
+  });
+
+  it("drops a row that is not one of the post's entries", () => {
+    // A picture hanging off a node is not an entry, and a card that promoted one
+    // would show the creator a post they never composed.
+    expect(postMediaOf(arranged()).some((entry) => entry.media.id === "loose")).toBe(false);
+  });
+
+  it("is empty for the ordinary build, which has no set at all", () => {
+    expect(postMediaOf(build())).toEqual([]);
+  });
+
+  it("supplies the build's description as entry 0's words", () => {
+    const entries = postMediaOf(arranged());
+    expect(entries[0].text).toBe("Turns a week of triage into ten minutes.");
+    // And nothing for the later entries, which carry their own words or none.
+    expect(entries[1].text).toBeNull();
+    expect(entries[2].text).toBeNull();
+  });
+
+  it("lets the creator's own post_text override the description", () => {
+    const subject = build({
+      media: [media({ id: "p0", post_position: 0, post_text: "Running on live mail." })],
+    } as Partial<GalleryBuild>);
+    expect(postMediaOf(subject)[0].text).toBe("Running on live mail.");
+  });
+});
+
+describe("what a card asks the network for, once it has a post", () => {
+  const arranged = (shape: GalleryBuild["shape"]) =>
+    build({
+      shape,
+      media: [
+        media({ id: "p0", path: "b1/0.png", post_position: 0 }),
+        media({ id: "p1", path: "b1/1.png", post_position: 1 }),
+      ],
+    } as Partial<GalleryBuild>);
+
+  it("signs every entry of the set, for every shape, at the thread width", () => {
+    for (const shape of ["app", "agent", "workflow", "prompt", "study", "media", "other"] as const) {
+      const rows = cardMedia(arranged(shape));
+      const post = rows.filter((row) => row.slotWidth === CARD_THREAD_WIDTH);
+      expect(post.map((row) => row.id), `shape ${shape}`).toEqual(["p0", "p1"]);
+    }
+  });
+
+  it("never asks for an original: the thread slot has a width like every other", () => {
+    for (const row of cardMedia(arranged("agent"))) {
+      expect(row.slotWidth).toBeTypeOf("number");
+      expect(row.slotWidth).toBeGreaterThan(0);
+    }
+  });
+
+  it("stays inside the four-row ceiling the database enforces", () => {
+    // The 0..3 CHECK makes a fifth entry unrepresentable, so the per-card
+    // request count cannot grow past this however the set is arranged.
+    const four = build({
+      media: [0, 1, 2, 3].map((i) =>
+        media({ id: `p${i}`, path: `b1/${i}.png`, post_position: i }),
+      ),
+    } as Partial<GalleryBuild>);
+    expect(cardMedia(four)).toHaveLength(4);
+  });
+
+  it("keeps the variant grid as the fallback for a media build with no set", () => {
+    const variants = ["a", "b"].map((suffix) =>
+      media({ id: `m-${suffix}`, node_id: "n-gen", path: `b1/${suffix}.png` }),
+    );
+    const subject = build({
+      shape: "media",
+      media: variants,
+      nodes: [
+        {
+          id: "n-gen",
+          type: "generated_media",
+          title: null,
+          payload: { variants: [{ media_id: "m-a" }, { media_id: "m-b", chosen: true }] },
+          position: 0,
+          is_gap: false,
+        },
+      ],
+    } as Partial<GalleryBuild>);
+
+    const widths = cardMedia(subject).map((row) => row.slotWidth);
+    expect(widths).toContain(CARD_VARIANT_WIDTH);
+    expect(widths).not.toContain(CARD_THREAD_WIDTH);
+  });
+
+  it("does not sign a variant grid for a build whose post already says what to show", () => {
+    const subject = build({
+      shape: "media",
+      media: [
+        media({ id: "p0", path: "b1/0.png", post_position: 0 }),
+        media({ id: "m-a", node_id: "n-gen", path: "b1/a.png" }),
+      ],
+      nodes: [
+        {
+          id: "n-gen",
+          type: "generated_media",
+          title: null,
+          payload: { variants: [{ media_id: "m-a" }] },
+          position: 0,
+          is_gap: false,
+        },
+      ],
+    } as Partial<GalleryBuild>);
+
+    expect(cardMedia(subject).map((row) => row.id)).toEqual(["p0"]);
+  });
+
+  it("signs a row in two slots at the wider of them", () => {
+    // The cover and entry 0 are usually the same row — the database trigger
+    // mirrors position 0 into cover_media_id — and the thread's width is larger,
+    // so the one signature has to be the thread's.
+    const subject = build({
+      cover_media_id: "p0",
+      media: [media({ id: "p0", path: "b1/0.png", post_position: 0 })],
+    } as Partial<GalleryBuild>);
+
+    const rows = cardMedia(subject);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].slotWidth).toBe(CARD_THREAD_WIDTH);
+    expect(CARD_THREAD_WIDTH).toBeGreaterThan(CARD_MEDIA_WIDTH);
   });
 });

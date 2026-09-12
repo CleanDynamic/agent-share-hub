@@ -2,8 +2,12 @@
 //
 // `css-parity.test.ts` proves the two theme blocks in index.css declare the
 // scale this module describes. What is proved here is the shape of the scale
-// itself: six steps and no seventh, one circular step that is not a default,
-// and an accessor that hands out `var()` references rather than pixels.
+// itself: the steps and no eighth, one circular step that is not a default, and
+// an accessor that hands out `var()` references rather than pixels.
+//
+// BG-P09 added the seventh, `r-thread`, and with it the scale's first pair of
+// names sharing a value. The distinctness assertion below became an assertion
+// about that ONE pair rather than being dropped.
 
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -25,11 +29,12 @@ function sourceFiles(dir = SRC): Array<[string, string]> {
 }
 
 describe("the radius scale", () => {
-  it("is exactly the six steps the spec lists", () => {
+  it("is exactly the steps the spec lists, plus BG-P09's thread box", () => {
     expect(RADIUS).toEqual({
       "r-chip": "8px",
       "r-media": "10px",
       "r-control": "12px",
+      "r-thread": "12px",
       "r-card": "14px",
       "r-panel": "16px",
       "r-full": "999px",
@@ -51,11 +56,32 @@ describe("the radius scale", () => {
     for (const value of Object.values(r)) expect(value).toMatch(/^var\(--r-[a-z]+\)$/);
   });
 
-  it("steps upward from chip to panel, with no two steps the same", () => {
-    const rectangular: RadiusName[] = ["r-chip", "r-media", "r-control", "r-card", "r-panel"];
+  it("steps upward from chip to panel, and never downward", () => {
+    const rectangular: RadiusName[] = [
+      "r-chip",
+      "r-media",
+      "r-control",
+      "r-thread",
+      "r-card",
+      "r-panel",
+    ];
     const px = rectangular.map((n) => parseInt(RADIUS[n], 10));
     expect(px).toEqual([...px].sort((a, b) => a - b));
-    expect(new Set(px).size).toBe(px.length);
+  });
+
+  it("has exactly one pair sharing a value, and it is control and thread", () => {
+    // Distinctness used to be the rule. BG-P09 broke it once, on purpose: the
+    // thread box is 12px because it sits between the pictures and the frame,
+    // and a button is 12px because a button is 12px. Two roles, two names, one
+    // value today — see the note on `r-thread`. Any OTHER collision is a name
+    // for a size the scale already has, which is how six steps become sixteen,
+    // so this asserts the exception rather than dropping the rule.
+    const byValue = new Map<string, RadiusName[]>();
+    for (const name of RADIUS_NAMES) {
+      byValue.set(RADIUS[name], [...(byValue.get(RADIUS[name]) ?? []), name]);
+    }
+    const shared = [...byValue.values()].filter((names) => names.length > 1);
+    expect(shared).toEqual([["r-control", "r-thread"]]);
   });
 
   it("keeps --r-full for circular things, far above the rectangular steps", () => {

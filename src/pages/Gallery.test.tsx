@@ -286,7 +286,10 @@ describe("the gallery page", () => {
 
     const pills = screen.getAllByTestId("gallery-card-bounty");
     expect(pills).toHaveLength(1);
-    expect(pills[0]).toHaveTextContent("bounty · £120");
+    // BG-P09: the theme's words for a gap on a card. It has to read as an
+    // invitation — the build works, one piece is missing on purpose — and
+    // naming the missing piece is what says so.
+    expect(pills[0]).toHaveTextContent("1 part unsolved · £120");
     // The pill rides in on the grid's own query: no card fetched anything.
     expect(listGallery).toHaveBeenCalledTimes(1);
   });
@@ -301,8 +304,9 @@ describe("the gallery page", () => {
 
     renderGallery();
     const pill = await screen.findByTestId("gallery-card-bounty");
-    // An unpriced gap is still a real open bounty. See bountyDisplay.ts.
-    expect(pill).toHaveTextContent("bounty");
+    // An unpriced gap is still a real open bounty: it keeps the invitation and
+    // drops the price. See bountyDisplay.ts.
+    expect(pill).toHaveTextContent("1 part unsolved");
     expect(pill).not.toHaveTextContent("£");
   });
 
@@ -319,18 +323,26 @@ describe("the gallery page", () => {
     );
   });
 
-  it("leads each card with the reproduction count and the freshness line", async () => {
+  it("puts the reproduction count and the freshness line on every card", async () => {
     renderGallery();
     await screen.findByText("Inbox triage agent");
 
     // Scoped by the figure's own explanation, because a facet chip also
     // carries a count and the assertion must be about the card.
+    //
+    // BG-P09 made these two the PLAQUE: one object, always together, under the
+    // title. The count reads "4 reproduced" as an --evidence-fill tag rather
+    // than as the big figure in a right-hand rail it used to be — the theme's
+    // own words for it, and the reason the title can now lead the card.
     const figure = screen.getByTitle(/4 people other than the creator ran this/i);
-    expect(figure).toHaveTextContent("4");
-    expect(figure).toHaveTextContent("REPRODUCTIONS");
+    expect(figure).toHaveTextContent("4 reproduced");
     expect(
       screen.getByText(/last confirmed working .* on Sonnet 4\.5/i)
     ).toBeInTheDocument();
+    // Neither half may be rendered without the other.
+    const plaque = figure.closest("[data-card-part='plaque']");
+    expect(plaque).not.toBeNull();
+    expect(plaque).toHaveTextContent(/last confirmed working/i);
   });
 
   it("says so plainly when a build has never been confirmed", async () => {
@@ -341,8 +353,14 @@ describe("the gallery page", () => {
     renderGallery();
 
     expect(await screen.findByText("not confirmed by anyone yet")).toBeInTheDocument();
-    // Zero is shown. A reader must be able to tell "nobody yet" from silence.
-    expect(screen.getByTitle(/Nobody other than the creator/i)).toHaveTextContent("0");
+    // The zero state is SAID, not suppressed. A reader must be able to tell
+    // "nobody yet" from silence, and BG-P09 says it in words rather than as a
+    // nought — "not yet reproduced", which is the theme's third plaque state.
+    expect(screen.getByTitle(/Nobody other than the creator/i)).toHaveTextContent(
+      "not yet reproduced"
+    );
+    // And no lamp: an unlit lamp and a missing one say different things.
+    expect(document.querySelector("[data-plaque-lamp]")).toBeNull();
   });
 
   it("surfaces a failed load instead of an empty grid", async () => {

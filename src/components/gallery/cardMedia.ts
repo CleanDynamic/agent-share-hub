@@ -27,18 +27,22 @@
 // latency; twenty-four originals cost six megabytes.
 //
 // The count is kept down by signing only what a card can actually put on
-// screen: the ONE row its body leads with, plus the variant grid for the one
-// shape that renders a grid. That is why cardMedia is no longer a superset.
+// screen: the creator's post set where there is one, else the ONE row its body
+// leads with plus the variant grid for the one shape that renders a grid. That
+// is why cardMedia is no longer a superset. The post set is at most four rows —
+// a database CHECK, not a convention — so the ceiling per card is unchanged.
 
 import { useEffect, useState } from "react";
 import {
   BUILD_MEDIA_BUCKET,
+  postEntriesOf,
   resolveCover,
   signedMediaUrl,
   type GalleryBuild,
   type GalleryMedia,
   type GalleryNode,
   type MediaRef,
+  type PostEntry,
 } from "@/lib/build";
 import { MEDIA_WIDTH } from "@/components/build/MediaFigure";
 import type { Json } from "@/integrations/supabase/types";
@@ -302,6 +306,36 @@ export const CARD_MEDIA_WIDTH = MEDIA_WIDTH.card;
 export const CARD_VARIANT_WIDTH = MEDIA_WIDTH.variant;
 
 /**
+ * One picture in the thread box (BG-P09). The widest slot a card has.
+ *
+ * EVERY POST ENTRY IS SIGNED AT THIS WIDTH, including the ones only feed layout
+ * unfolds to show, because the same signed map serves both layouts and a grid
+ * card that had signed its cover narrow would have to re-sign it the moment the
+ * feed rendered the same build. One width per row, chosen by the widest slot
+ * that row can land in, is the rule this file already follows for a row that is
+ * both a cover and a variant.
+ */
+export const CARD_THREAD_WIDTH = MEDIA_WIDTH.thread;
+
+/**
+ * The post the creator arranged, as entries in their order. Empty when there
+ * isn't one, which is the ordinary case.
+ *
+ * THE PURE READ, NOT `getPostMedia`. BG-P09 asked for the set "via getPostMedia";
+ * that function issues a query, and this file exists because a card must not.
+ * Since BG-P09 put post_position and post_text on GALLERY_MEDIA_COLUMNS, the
+ * rows are already in hand on the one request the grid makes, and postEntriesOf
+ * is the same resolver getPostMedia's callers feed — the pure half of the pair,
+ * documented in cover.ts as the one place the description rule lives. So the
+ * answer is identical and a grid of twenty-four cards still costs one query.
+ * getPostMedia stays the right call for a surface loading ONE build (BG-P23's
+ * composer), which is what it was written for.
+ */
+export function postMediaOf(build: GalleryBuild): PostEntry<GalleryMedia>[] {
+  return postEntriesOf(build, build.media);
+}
+
+/**
  * Every media row this build's card may render, each at the width of its slot.
  *
  * NO LONGER A SUPERSET, and that is the point of the change. Signing carries a
@@ -311,9 +345,16 @@ export const CARD_VARIANT_WIDTH = MEDIA_WIDTH.variant;
  * shape draws a variant grid. So the shape is read here, which is one switch
  * rather than the whole body table duplicated.
  *
- * The cover goes first so that a row which is BOTH the cover and a variant is
- * signed at the larger width. Oversized in a small cell costs bytes; undersized
- * in the body is a blurred card, and only one of those is visible.
+ * THE POST'S SET COMES FIRST AND FOR EVERY SHAPE (BG-P09). A creator who
+ * arranged a thread arranged it for the card, so all of it is signed — at most
+ * four rows, which the 0..3 CHECK makes a hard ceiling rather than a hope. The
+ * shape-derived answers below are the FALLBACK for the builds that have no set,
+ * which is nearly all of them today, and they are unchanged: variantsOf still
+ * feeds the media shape's grid exactly as it did.
+ *
+ * Order decides width where a row lands in two slots: the thread's width first,
+ * then the body's, then the grid cell's. Oversized in a small cell costs bytes;
+ * undersized in a big slot is a blurred card, and only one of those is visible.
  */
 export function cardMedia(build: GalleryBuild): CardMedia[] {
   const rows: CardMedia[] = [];
@@ -322,9 +363,12 @@ export function cardMedia(build: GalleryBuild): CardMedia[] {
     rows.push({ ...row, slotWidth });
   };
 
+  const post = postMediaOf(build);
+  for (const entry of post) push(entry.media, CARD_THREAD_WIDTH);
+
   push(coverMedia(build), CARD_MEDIA_WIDTH);
 
-  if ((build.shape ?? "other") === "media") {
+  if (post.length === 0 && (build.shape ?? "other") === "media") {
     for (const variant of variantsOf(build, firstNodeOfType(build, "generated_media"))) {
       push(variant.media, CARD_VARIANT_WIDTH);
     }

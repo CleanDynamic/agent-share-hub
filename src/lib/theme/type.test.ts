@@ -179,8 +179,16 @@ describe("the scale", () => {
     expect(type.body.lineHeight).toBe(1.55);
     expect(type.bodyLarge.fontSize).toBe("17px");
 
-    expect(minPx(type.cardTitle.fontSize)).toBe(19);
+    // BG-P09 — THE FLOOR ASSERTION FOR THE DISPLAY CARD TITLE. It used to be 19,
+    // in Figtree, with a comment on the role saying the display face could not
+    // have it because 19 is under DISPLAY_MIN_PX. The card's rebuild inverted
+    // that: the title now sits UNDER the picture and has to win the eye by face
+    // and size, so the role is the display face at a fixed 22. 22 ≥ 20, so the
+    // floor passes — which is what makes the change legal rather than a waiver.
+    expect(minPx(type.cardTitle.fontSize)).toBe(22);
+    expect(minPx(type.cardTitle.fontSize)).toBeGreaterThanOrEqual(DISPLAY_MIN_PX);
     expect(type.cardTitle.fontWeight).toBe(500);
+    expect(floorViolations("cardTitle", type.cardTitle)).toEqual([]);
     expect(minPx(type.sectionHead.fontSize)).toBe(30);
     expect(minPx(type.hero.fontSize)).toBe(44);
     expect(minPx(type.data.fontSize)).toBe(13);

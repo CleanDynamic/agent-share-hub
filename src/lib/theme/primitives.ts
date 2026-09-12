@@ -41,6 +41,8 @@ export const grey = {
 /** Exhibition's glass, struck from `grey.0`. `0/55` reads "grey.0 at 55%". */
 export const greyAlpha = {
   "0/34": "rgba(255,255,255,.34)",
+  /** BG-P09 — the card frame, one step darker than the thread box inside it. */
+  "0/42": "rgba(255,255,255,.42)",
   "0/55": "rgba(255,255,255,.55)",
   "0/80": "rgba(255,255,255,.80)",
   "0/95": "rgba(255,255,255,.95)",
@@ -63,6 +65,13 @@ export const lavender = {
 export const lavenderAlpha = {
   "650/26": "rgba(72,63,104,.26)",
   "650/42": "rgba(72,63,104,.42)",
+  /**
+   * BG-P09 — Dusk's thread box. The lightest step in this table by a wide
+   * margin, and deliberately so: on a dark ground a box is lifted off the card
+   * around it by a breath of the room's own light, where the same step struck
+   * from the stone would read as a second card.
+   */
+  "50/06": "rgba(238,234,244,.06)",
   "50/14": "rgba(238,234,244,.14)",
   "50/22": "rgba(238,234,244,.22)",
 } as const;

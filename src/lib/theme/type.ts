@@ -90,11 +90,29 @@ export const bodyLarge = {
   textWrap: "pretty",
 } as const satisfies CSSProperties;
 
-/** 19–22px Figtree 500. A card's title. Sans, not display: at this size
-    Bodoni would be below its floor at the small end and shimmer at the large. */
+/**
+ * 22px Bodoni Moda 500. A card's title.
+ *
+ * DISPLAY, AND FIXED AT THE TOP OF ITS RANGE RATHER THAN CLAMPED (BG-P09). It
+ * was `clamp(19px, 1.4vw, 22px)` in Figtree, and the note here said the display
+ * face could not have the role because 19 is below its 20px floor. Both halves
+ * of that were true; the resolution is to drop the clamp rather than the face.
+ *
+ * The card is why. BG-P09 rebuilt it as a picture above a title, and a title
+ * under a picture cannot win the reader's eye by POSITION — it has to win by
+ * face, size and contrast. Figtree 500 at 19 loses that contest to any
+ * photograph. Bodoni at 22 wins it, and 22 ≥ DISPLAY_MIN_PX, so the floor is
+ * cleared by the same assertion that used to rule the face out: `assertFloors`
+ * runs over this table at import time in dev and in CI, and it passes because
+ * the smallest this role can now render is 22 and not 19.
+ *
+ * A fixed size rather than a clamp is the price, and it is the right one: the
+ * lower bound was what breached the floor, and a display face that shimmered on
+ * Dusk at a narrow viewport would have been the floor's whole point.
+ */
 export const cardTitle = {
-  fontFamily: FIGTREE,
-  fontSize: "clamp(19px, 1.4vw, 22px)",
+  fontFamily: BODONI,
+  fontSize: "22px",
   fontWeight: 500,
   lineHeight: 1.25,
   letterSpacing: "-0.01em",

@@ -4,7 +4,8 @@
 // domed "pod" cards, porthole ovals, chrome rims, a reflective floor and a
 // capsule rule that made every control a pill. All five were dropped by
 // decision, and this scale is what replaced them: radius is now the WHOLE shape
-// vocabulary, which is why there are six steps and not sixteen.
+// vocabulary, which is why there are seven steps and not sixteen. (Six until
+// BG-P09 added `r-thread` for the box inset in a build card; see its note.)
 //
 // NOTHING IS A PILL AND NOTHING IS SQUARE. `--r-full` is not the default for
 // anything interactive — it exists only for genuinely circular objects, a
@@ -35,6 +36,19 @@ export const RADIUS = {
   "r-media": "10px",
   /** 12px — buttons, inputs, selects, switch tracks, list rows. NOT 999px. */
   "r-control": "12px",
+  /**
+   * 12px — the thread box inset in a build card (BG-P09), and nothing else.
+   *
+   * THE SAME VALUE AS `r-control`, AND A SEPARATE NAME ANYWAY. The step belongs
+   * between `r-media` and `r-card` by role: the box is bigger than the pictures
+   * inside it and smaller than the frame around it, and that relationship is the
+   * only reason it is 12 rather than 10 or 14. `r-control` is 12 because a
+   * button is 12. Spending `r-control` on the box would tie the box's shape to
+   * the button scale, so the day a control moves the card would silently follow
+   * it — which is exactly the drift the named scale exists to stop. A radius
+   * with two jobs is two radii.
+   */
+  "r-thread": "12px",
   /** 14px — cards. Matches the legacy `--radius-card`, which it supersedes. */
   "r-card": "14px",
   /** 16px — panels, sheets, dialogs, menus. The largest rectangular step. */
@@ -62,9 +76,9 @@ export type RadiusAccessor = {
 };
 
 /**
- * The scale, by role: `r.chip`, `r.control`, `r.card`, `r.panel`, `r.media`,
- * `r.full`. Values are `var()` references, so a surface written with them needs
- * no re-render if a radius ever moves.
+ * The scale, by role: `r.chip`, `r.media`, `r.control`, `r.thread`, `r.card`,
+ * `r.panel`, `r.full`. Values are `var()` references, so a surface written with
+ * them needs no re-render if a radius ever moves.
  */
 export const r = Object.fromEntries(
   RADIUS_NAMES.map((name) => [name.slice(2), `var(--${name})`]),

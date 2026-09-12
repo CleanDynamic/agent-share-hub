@@ -237,9 +237,23 @@ const GALLERY_NODE_COLUMNS = "id, type, title, payload, position, is_gap";
  * poster_path is on this list because a card renders a VIDEO from its poster
  * (NS-P31): a still it can transform to the card's width, rather than a video
  * element pulling frames for a card nobody has clicked.
+ *
+ * width and height are what BG-P09's card RESERVES ITS MEDIA SLOTS FROM. They
+ * are not decoration: an `aspect-ratio` computed from the stored pixels holds
+ * the space before the picture arrives, which is the difference between a
+ * gallery that settles as it loads and one that does not move at all.
+ *
+ * duration is the video chip's only source — a recording whose probe never got
+ * one simply has no chip, which is better than a card printing "0:00".
+ *
+ * post_position and post_text arrived with BG-P09, and cover.ts's note on
+ * CoverMedia is the prompt for them: the thread resolver needs BOTH columns on
+ * every row it is handed, and until this list carried them a card could not ask
+ * what the creator's post was without a query of its own. They cost two narrow
+ * columns on a request the card already makes.
  */
 const GALLERY_MEDIA_COLUMNS =
-  "id, node_id, bucket, path, kind, width, height, poster_path";
+  "id, node_id, bucket, path, kind, width, height, poster_path, duration, post_position, post_text";
 
 /**
  * The bounty columns a card's pill reads (NS-P52).
@@ -291,7 +305,10 @@ export type GalleryNode = Pick<
  */
 export type GalleryBounty = Pick<Bounty, "id" | "reward_gbp" | "status">;
 
-/** A card's media row. Satisfies MediaRef, so mediaUrl takes it as it stands. */
+/**
+ * A card's media row. Satisfies MediaRef, so mediaUrl takes it as it stands —
+ * and, since BG-P09, PostEntryMedia, so postEntriesOf takes it too.
+ */
 export type GalleryMedia = Pick<
   BuildMedia,
   | "id"
@@ -302,6 +319,9 @@ export type GalleryMedia = Pick<
   | "width"
   | "height"
   | "poster_path"
+  | "duration"
+  | "post_position"
+  | "post_text"
 >;
 
 /** One card: a build header, the nodes its body reads, and their media. */

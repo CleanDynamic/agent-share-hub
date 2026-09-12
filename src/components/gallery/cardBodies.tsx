@@ -25,14 +25,30 @@
 
 import type { CSSProperties, ReactElement } from "react";
 import { categoryColour, categoryFill } from "@/lib/theme/category";
-import {
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  VOID,
-  hexToRgba,
-} from "@/components/build/tokens";
+import { t } from "@/lib/theme/tokens";
+
+/* ────────────────────────────────────────────────────────────────────────────
+   BG-P09 — the colours in this file are TOKENS now, repointed in place.
+
+   The bodies were written for the legacy dark shell, where TEXT_PRIMARY was a
+   near-white hex. That was invisible the moment BG-P09 put them inside the
+   thread box: the box is `--card-thread` over `--card-frame`, which is a LIGHT
+   surface in Exhibition, and white text on it is the "dark card on a light
+   ground" the spec forbids, arrived at from the other direction.
+
+   So every colour declaration below reads a semantic token and the layout is
+   untouched — the repaint the theme sanctions, not a reshape. The names kept
+   their jobs: primary text is `--text`, the two quieter greys are `--text2`, and
+   the teal that marked a study's winner is `--evidence`, which is what it always
+   meant.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/** Primary text on a card body. */
+const TEXT_PRIMARY = t.text;
+/** The quieter voice: a column header, a role, a caption. */
+const TEXT_MUTED = t.text2;
+/** Between the two on the legacy ramp; one token serves both here. */
+const TEXT_SECONDARY = t.text2;
 import type { GalleryBuild, GalleryMedia } from "@/lib/build";
 import {
   EVIDENCE_TYPES,
@@ -57,13 +73,25 @@ export interface CardBodyProps {
 /** Every body fills the same slot, so the grid stays a grid. */
 export const BODY_HEIGHT = 168;
 
+/**
+ * The fixed slot every grid body fills. BG-P09 repainted it and moved nothing:
+ * `BODY_HEIGHT` and the crop are the gallery's layout and survive unchanged.
+ *
+ * `--recess` is what a slot with no picture in it shows, and it is what a slot
+ * with one shows while the bytes are in flight — an inset surface waiting for
+ * content rather than a frame that failed. It is also what makes the "no
+ * picture" card the theme describes: a text body on --recess, inside the thread
+ * box, under a title stepped up one size.
+ *
+ * No border. The thread box around it is already a region; a hairline inside a
+ * region inside a frame is the third edge in 8px, and the tone is enough.
+ */
 const bodyFrame: CSSProperties = {
   position: "relative",
   height: BODY_HEIGHT,
   overflow: "hidden",
-  borderRadius: 10,
-  background: "rgba(255,255,255,0.02)",
-  border: "1px solid rgba(255,255,255,0.05)",
+  borderRadius: "var(--r-media)",
+  background: "var(--recess)",
 };
 
 /** The measured media pair, for the tag on a chosen variant. */
@@ -266,7 +294,7 @@ export function StudyCardBody({ build, srcByPath }: CardBodyProps) {
                 gap: 10,
                 padding: "3px 6px",
                 borderRadius: 6,
-                background: isWinner ? hexToRgba(TEAL, 0.1) : "transparent",
+                background: isWinner ? categoryFill("evidence").background : "transparent",
               }}
             >
               {splitCells(row, Math.max(columns.length, 1)).map((cell, cellIndex) => (
@@ -277,7 +305,7 @@ export function StudyCardBody({ build, srcByPath }: CardBodyProps) {
                     minWidth: 0,
                     fontSize: 12,
                     fontWeight: isWinner && cellIndex === 0 ? 600 : 300,
-                    color: isWinner ? TEAL : TEXT_PRIMARY,
+                    color: isWinner ? t.evidence : TEXT_PRIMARY,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -476,9 +504,10 @@ function evidenceWords(build: GalleryBuild): ReactElement | null {
  */
 export function OutcomeBlock({
   build,
-  accent = TEAL,
+  accent = "evidence",
 }: {
   build: GalleryBuild;
+  /** A part category, resolved through categoryFill. Never a raw colour. */
   accent?: string;
 }) {
   const text = nonEmpty(build.outcome) ?? nonEmpty(build.title) ?? "Untitled build";
@@ -491,7 +520,10 @@ export function OutcomeBlock({
         display: "flex",
         alignItems: "center",
         padding: "16px 18px",
-        background: `linear-gradient(140deg, ${hexToRgba(accent, 0.1)}, rgba(255,255,255,0.02))`,
+        // The accent's measured fill, fading into the well. A gradient rather
+        // than a flat fill because the outcome set large IS the card here, and
+        // the wash is what keeps it from reading as an empty slot.
+        background: `linear-gradient(140deg, ${categoryFill(accent).background}, var(--recess))`,
       }}
     >
       <p
@@ -573,6 +605,16 @@ function mediaBlock(
 /**
  * The centred play mark that says "this one moves".
  *
+ * THE GRID'S SIZE OF IT (BG-P09): 36px at `--r-media` with a 14px triangle,
+ * where the thread box's is 48 at `--r-control` with 18. A 168px letterbox and a
+ * full-width picture are not the same slot, and a mark sized for the larger one
+ * covers a third of the smaller.
+ *
+ * NOT A DISC. The 50% radius this used to carry was the shape language the
+ * series replaced; `--r-full` is for genuinely circular objects and nothing on
+ * this card is one. `--glass-2` as a FILL and deliberately NOT a
+ * backdrop-filter: the frame carries the card's only blur.
+ *
  * Decoration for a screen reader — the picture beneath it already carries the
  * description, and the card is a link to the build rather than a player, so a
  * second announcement would be a promise the card does not keep.
@@ -587,18 +629,13 @@ function PlayGlyph() {
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
-        width: 44,
-        height: 44,
-        borderRadius: "50%",
+        width: 36,
+        height: 36,
+        borderRadius: "var(--r-media)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        // Opaque enough to read over any frame, and deliberately NOT a
-        // backdrop-filter: this app already pays for nine nested ones in the
-        // shell, and a grid of cards is the last place to add more.
-        background: hexToRgba(VOID, 0.62),
-        border: "1px solid rgba(255,255,255,0.22)",
-        boxShadow: "0 2px 12px rgba(0,0,0,0.35)",
+        background: "var(--glass-2)",
       }}
     >
       <span
@@ -608,10 +645,10 @@ function PlayGlyph() {
           // optical centre sits left of its box.
           width: 0,
           height: 0,
-          marginLeft: 3,
+          marginLeft: 2,
           borderTop: "7px solid transparent",
           borderBottom: "7px solid transparent",
-          borderLeft: `12px solid ${TEXT_PRIMARY}`,
+          borderLeft: "14px solid var(--text)",
         }}
       />
     </span>
