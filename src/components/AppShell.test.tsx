@@ -256,3 +256,29 @@ describe("theme toggle", () => {
     expect(toggle()).toBeNull();
   });
 });
+
+/* ────────────────────────────────────────────────
+   BG-P14 — the layout mode, threaded from the route table.
+
+   The capability landed in this prompt; no route uses it. These lock that in
+   from the container's side: whatever `WIDE_ROUTES` comes to hold, a route
+   that is not in it renders the standard frame, and the shell asks the table
+   rather than deciding for itself.
+──────────────────────────────────────────────── */
+describe("AppShell layout mode", () => {
+  const root = () => document.querySelector(".fs-root")!;
+
+  it("renders every real route standard", () => {
+    for (const path of ["/", "/browse", "/library", "/upload", "/drafts", "/messages", "/profile"]) {
+      const view = renderAt(path);
+      expect([path, root().getAttribute("data-layout")]).toEqual([path, "standard"]);
+      expect([path, root().classList.contains("fs-wide")]).toEqual([path, false]);
+      view.unmount();
+    }
+  });
+
+  it("keeps the right rail on a standard route, as it always did", () => {
+    renderAt("/");
+    expect(screen.getByTestId("right-rail-explore")).toBeInTheDocument();
+  });
+});
