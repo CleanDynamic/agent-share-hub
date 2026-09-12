@@ -34,9 +34,16 @@
 // BG-P15 — INSIDE THE APPLICATION FRAME NOW, like /gallery, and listed in
 // src/components/shell/wideRoutes.ts so it renders in wide mode. NO RIGHT
 // RAIL: this is a task with one path through it, and the rail's whole job is
-// to offer somewhere else to go. Wide rather than standard because the two
-// documents it hands over are code blocks, and a 600px reading column wraps
-// them into noise.
+// to offer somewhere else to go.
+//
+// IT UNDER-FILLS THE WIDE CENTRE, which is recorded rather than fixed. The
+// steps below were authored against the 720px column this page used to cap
+// itself at; in a ~1090px centre the step cards stretch to the full width
+// while their contents keep that measure, so every step has a band of empty
+// card to its right. Nothing overflows and nothing is illegible. BG-P15 moves
+// all three routes into wide mode as one change and forbids re-laying out the
+// pages it moves, so the fix — a measure on the step list, or this route
+// going back to standard — belongs to whoever owns this page next.
 //
 // Still lazy-loaded: the prose here is only read by someone who came to import
 // a build.

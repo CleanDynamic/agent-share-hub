@@ -73,9 +73,17 @@ export const WIDE_ROUTES: readonly WideRoute[] = [
 
   /* The import page — paste a document, get a Build File, drop it back. NO
      RIGHT RAIL: it is a task with one path through it, and the rail's job is
-     to offer somewhere else to go. It is wide rather than standard because
-     the two documents it hands over are code blocks that a 600px reading
-     column wraps into noise. */
+     to offer somewhere else to go.
+
+     IT IS THE WEAKEST OF THE THREE CLAIMS ON WIDE, and that is recorded here
+     rather than dressed up. BG-P15 moves all three routes into wide mode as
+     one change, so this one comes with them; but its content is a three-step
+     list authored against a 720px column, and in a ~1090px centre the step
+     cards stretch while their contents keep their old measure, leaving a band
+     of empty card to the right of every step. Nothing overflows and nothing is
+     illegible — it is under-filled, not broken — and re-laying it out is not
+     this prompt's to do. The honest fix is either a measure on the step list
+     or this route going back to standard; see BG-P15's handoff note. */
   { pattern: "/import", rightRail: false },
 ];
 
