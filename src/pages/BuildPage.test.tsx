@@ -185,7 +185,9 @@ describe("BuildPage", () => {
 
     expect(await screen.findByText("Inbox triage agent")).toBeTruthy();
     expect(screen.getByText("first result in 35 minutes")).toBeTruthy();
-    expect(screen.getByText("not yet confirmed by anyone")).toBeTruthy();
+    // BG-P11: the shared plaque's words. It says the same thing the build
+    // page's own line used to, in the wording the card has always used.
+    expect(screen.getByText("not confirmed by anyone yet")).toBeTruthy();
     expect(screen.getByText("Load it here")).toBeTruthy();
 
     for (const tab of ["Anatomy", "Watch it get built", "Run it yourself", "Where it broke"]) {
@@ -201,15 +203,18 @@ describe("BuildPage", () => {
     expect(container.innerHTML).not.toContain("Triage view, second draft");
     expect(container.innerHTML).not.toContain("Cost note, unfinished");
 
-    // BG-P05: the gap edge is 3px of --cat-breakage, written as longhands. The
-    // width and style are asserted here; the hue is not, because jsdom's
-    // cssstyle drops a `var()` from a colour property, so `borderLeftColor`
-    // reads empty in this environment however the component sets it. That the
-    // token IS the breakage hue, in both themes, is asserted in
-    // src/lib/theme/category.test.ts, and that it renders is covered by e2e.
+    // BG-P11: the gap edge is GapMarker's — 1.5px DASHED --cat-breakage,
+    // written as longhands. It was 3px solid; solid says "this is what it is"
+    // and dashed says "this is where something goes", which is the whole
+    // difference between a defect and an invitation, and 1.5 is the theme's own
+    // number for it. The width and style are asserted here; the hue is not,
+    // because jsdom's cssstyle drops a `var()` from a colour property, so
+    // `borderLeftColor` reads empty in this environment however the component
+    // sets it. That the token IS the breakage hue, in both themes, is asserted
+    // in src/lib/theme/category.test.ts, and that it renders is covered by e2e.
     const gap = container.querySelector('[data-node-id="n3"]') as HTMLElement;
-    expect(gap.style.borderLeftWidth).toBe("3px");
-    expect(gap.style.borderLeftStyle).toBe("solid");
+    expect(gap.style.borderLeftWidth).toBe("1.5px");
+    expect(gap.style.borderLeftStyle).toBe("dashed");
   });
 
   it("switches to the run view, which shows only the copyable nodes", async () => {

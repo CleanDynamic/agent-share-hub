@@ -57,7 +57,7 @@ import {
   panelGlass,
   titleText,
 } from "./tokens";
-import { categoryFill } from "@/lib/theme/category";
+import { CategoryChip } from "@/components/brand/CategoryChip";
 import { measure } from "@/lib/theme/type";
 
 interface ConvertLoad {
@@ -122,26 +122,18 @@ function Plain({ to, children }: { to: string; children: React.ReactNode }) {
 /** One line of the preview: what this block becomes, and what it is called. */
 function PlanRow({ node, nodeTypes }: { node: NodePlan; nodeTypes: NodeType[] }) {
   const type = nodeTypes.find((candidate) => candidate.key === node.type);
-  // BG-P05: the category decides the hue. A type the registry has not loaded
-  // yet, or one whose category this build does not know, gets --cat-fallback.
-  const fill = categoryFill(type?.category ?? "");
 
   return (
     <li style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 0" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <span
-          style={{
-            ...labelText,
-            color: fill.color,
-            background: fill.background,
-            padding: "2px 8px",
-            borderRadius: 6,
-            textTransform: "uppercase",
-            fontSize: 11,
-          }}
-        >
-          {type?.label ?? node.type}
-        </span>
+        {/* BG-P11: the shared chip. BG-P05 already resolved the hue through the
+            category — a type the registry has not loaded yet, or one whose
+            category this build does not know, gets --cat-fallback — and this
+            keeps that and drops the local box. */}
+        <CategoryChip
+          category={type?.category ?? ""}
+          label={type?.label ?? node.type}
+        />
         <span style={{ ...bodyText, minWidth: 0, overflowWrap: "anywhere" }}>{node.title}</span>
       </div>
 

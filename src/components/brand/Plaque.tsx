@@ -181,9 +181,12 @@ export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
         style={{
           ...chipType,
           ...tabular,
-          display: "inline-flex",
-          alignItems: "baseline",
-          gap: 5,
+          /* INLINE FLOW, NOT FLEX. The numeral is its own span so it can step
+             up at header size, and a flex container would swallow the space
+             between it and the word — leaving "41reproduced" in the accessible
+             name and in anything that copies the text. Inline flow keeps the
+             space real and puts the two on the same baseline for free. */
+          display: "inline-block",
           flexShrink: 0,
           padding: size === "header" ? "4px 10px" : "2px 8px",
           borderRadius: r.chip,
@@ -204,8 +207,8 @@ export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
           <>
             <span style={countPx ? { fontSize: countPx, fontWeight: 500 } : undefined}>
               {count}
-            </span>
-            <span>reproduced</span>
+            </span>{" "}
+            reproduced
           </>
         )}
       </span>

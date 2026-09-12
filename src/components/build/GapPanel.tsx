@@ -21,7 +21,6 @@
 // Tailwind's generated utilities win over hand-written classes at build time.
 
 import { Suspense, lazy, useCallback, useState } from "react";
-import type { CSSProperties } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,49 +46,27 @@ import {
   rewardLabel,
   solutionCountLabel,
 } from "@/components/bounty/bountyDisplay";
+import { GapMarker, gapState } from "@/components/brand/GapMarker";
+import { buttonStyle, chipType } from "@/lib/theme/controls";
+import { t } from "@/lib/theme/tokens";
+import { tabular } from "@/lib/theme/type";
 import type { ResolveMedia, ResolveNode } from "./renderers";
-import {
-  GAP_RED,
-  HAIRLINE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  hexToRgba,
-  labelText,
-} from "./tokens";
+import { TEAL, TEXT_MUTED, bodyText, labelText } from "./tokens";
 
-/** The invitation. A constant because it is the design, not a string. */
-export const GAP_INVITATION = "This part is unsolved — the build works without it.";
+/**
+ * The invitation, re-exported from the shared marker (BG-P11).
+ *
+ * It was declared here and GapPanel.test.tsx imports it from here, so the name
+ * stays put; the STRING moved to GapMarker, which is the component that now
+ * puts it on the page. One constant, one sentence.
+ */
+export { GAP_INVITATION } from "@/components/brand/GapMarker";
+
 const NO_PROBLEM =
   "The creator has not written down what is wrong yet. Ask in the discussion before you spend an hour on it.";
 const SOLVE_LABEL = "Offer a solution";
 const ME_TOO_LABEL = "I need this too";
 const ME_TOO_MARKED = "You need this too";
-
-const chip: CSSProperties = {
-  ...labelText,
-  fontSize: 11,
-  padding: "2px 8px",
-  borderRadius: 100,
-  border: `1px solid ${HAIRLINE}`,
-  color: TEXT_SECONDARY,
-  background: "rgba(255,255,255,0.025)",
-};
-
-const controlBase: CSSProperties = {
-  ...labelText,
-  fontFamily: "inherit",
-  fontSize: 12,
-  padding: "7px 12px",
-  borderRadius: 8,
-  cursor: "pointer",
-  whiteSpace: "nowrap",
-  border: `1px solid ${HAIRLINE}`,
-  background: "rgba(255,255,255,0.025)",
-  color: TEXT_SECONDARY,
-};
 
 /**
  * What is wrong with this node, in the creator's own words.
@@ -178,129 +155,85 @@ export function GapPanel({
   });
 
   return (
-    <div
-      data-testid="gap-panel"
-      data-visual-slot="build-gap-panel"
-      data-bounty-id={entry.bounty.id}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-        padding: "12px 14px",
-        borderRadius: 10,
-        border: `1px solid ${hexToRgba(GAP_RED, 0.28)}`,
-        background: hexToRgba(GAP_RED, 0.06),
-      }}
-    >
-      <span style={{ ...labelText, fontSize: 11, color: GAP_RED, textTransform: "uppercase" }}>
-        Open bounty
-      </span>
+    /* BG-P11: the panel placement of the shared marker. The container, the
+       eyebrow, the invitation, the problem, the reward and deadline chips and
+       the action row are all GapMarker's now; what stays here is the DATA and
+       the two mutations, which is the division this file always wanted.
 
-      <p style={{ ...bodyText, margin: 0, color: TEXT_PRIMARY }}>{GAP_INVITATION}</p>
-
-      <p
-        data-testid="gap-problem-statement"
-        style={{
-          ...bodyText,
-          margin: 0,
-          color: problem ? TEXT_SECONDARY : TEXT_MUTED,
-          whiteSpace: "pre-wrap",
+       Three things changed and none of them moves anything. The edge is 1.5px
+       DASHED rather than 1px solid, which is the theme's own number and the
+       whole difference between "where something goes" and "what is wrong". The
+       red wash behind it is gone: a tinted ground under an invitation reads as
+       an error box. And "Offer a solution" is BG-P07's primary button rather
+       than a hand-rolled teal one, which is what makes it the one primary
+       action on the panel rather than one of two things that look alike. */
+    <div data-visual-slot="build-gap-panel" data-bounty-id={entry.bounty.id}>
+      <GapMarker
+        placement="panel"
+        state={gapState(false, reward)}
+        testId="gap-panel"
+        /* THE GAP'S OWN CATEGORY, never breakage. A gap on an agent config is
+           still configuration, and that is what routes it to the right
+           solvers. */
+        category={nodeType?.category ?? node.type}
+        categoryLabel={nodeType?.label ?? node.type}
+        problem={problem}
+        problemFallback={NO_PROBLEM}
+        reward={reward}
+        deadline={closes}
+        solutions={solutionCountLabel(entry.solutions)}
+        primaryAction={{
+          label: SOLVE_LABEL,
+          onClick: () => setSolving(true),
+          testId: "solve-open",
         }}
+        secondaryActions={
+          <button
+            type="button"
+            data-testid="gap-me-too"
+            aria-pressed={marked}
+            disabled={meToo.isPending}
+            onClick={() => (isLoggedIn ? meToo.mutate() : signIn())}
+            style={{
+              ...buttonStyle(marked ? "outline" : "ghost"),
+              ...chipType,
+              fontFamily: "inherit",
+              padding: "7px 12px",
+              cursor: meToo.isPending ? "wait" : "pointer",
+            }}
+          >
+            {marked ? ME_TOO_MARKED : ME_TOO_LABEL}
+            {count > 0 ? (
+              <span style={{ marginLeft: 6, ...tabular }}>{count}</span>
+            ) : null}
+          </button>
+        }
       >
-        {problem || NO_PROBLEM}
-      </p>
+        {meToo.isError ? (
+          <span role="alert" style={{ ...bodyText, fontSize: 12, color: t.catBreakage }}>
+            {(meToo.error as Error).message}
+          </span>
+        ) : null}
 
-      {/* The two facts that are only sometimes true. Neither is invented: an
-          unpriced bounty shows no reward, and one with no deadline shows no
-          date. */}
-      {reward || closes ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          {reward ? (
-            <span
-              data-testid="gap-reward"
-              style={{
-                ...chip,
-                color: GAP_RED,
-                border: `1px solid ${hexToRgba(GAP_RED, 0.35)}`,
-                background: hexToRgba(GAP_RED, 0.1),
-              }}
-            >
-              {reward}
-            </span>
-          ) : null}
-          {closes ? (
-            <span data-testid="gap-deadline" style={chip}>
-              {closes}
-            </span>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <button
-          type="button"
-          data-testid="solve-open"
-          onClick={() => setSolving(true)}
-          style={{
-            ...controlBase,
-            color: TEAL,
-            border: `1px solid ${hexToRgba(TEAL, 0.35)}`,
-            background: hexToRgba(TEAL, 0.1),
-            fontWeight: 600,
-          }}
-        >
-          {SOLVE_LABEL}
-        </button>
-
-        <button
-          type="button"
-          data-testid="gap-me-too"
-          aria-pressed={marked}
-          disabled={meToo.isPending}
-          onClick={() => (isLoggedIn ? meToo.mutate() : signIn())}
-          style={{
-            ...controlBase,
-            color: marked ? GAP_RED : TEXT_SECONDARY,
-            border: `1px solid ${marked ? hexToRgba(GAP_RED, 0.35) : HAIRLINE}`,
-            background: marked ? hexToRgba(GAP_RED, 0.1) : "rgba(255,255,255,0.025)",
-            cursor: meToo.isPending ? "wait" : "pointer",
-          }}
-        >
-          {marked ? ME_TOO_MARKED : ME_TOO_LABEL}
-          {count > 0 ? (
-            <span style={{ marginLeft: 6, fontVariantNumeric: "tabular-nums" }}>{count}</span>
-          ) : null}
-        </button>
-
-        <span data-testid="gap-solution-count" style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED }}>
-          {solutionCountLabel(entry.solutions)}
-        </span>
-      </div>
-
-      {meToo.isError ? (
-        <span role="alert" style={{ ...bodyText, fontSize: 12, color: GAP_RED }}>
-          {(meToo.error as Error).message}
-        </span>
-      ) : null}
-
-      {/* Mounted only once opened: the panel loads the type's fields and the
-          answers, and a page of four gaps should not fetch four of each for
-          sheets nobody has opened. */}
-      {solving ? (
-        <Suspense fallback={null}>
-          <SolvePanel
-            open={solving}
-            onOpenChange={setSolving}
-            bounty={entry.bounty}
-            build={build}
-            gapNode={node}
-            nodeType={nodeType}
-            resolveNode={resolveNode}
-            resolveMedia={resolveMedia}
-            onChanged={onChanged}
-          />
-        </Suspense>
-      ) : null}
+        {/* Mounted only once opened: the panel loads the type's fields and the
+            answers, and a page of four gaps should not fetch four of each for
+            sheets nobody has opened. */}
+        {solving ? (
+          <Suspense fallback={null}>
+            <SolvePanel
+              open={solving}
+              onOpenChange={setSolving}
+              bounty={entry.bounty}
+              build={build}
+              gapNode={node}
+              nodeType={nodeType}
+              resolveNode={resolveNode}
+              resolveMedia={resolveMedia}
+              onChanged={onChanged}
+            />
+          </Suspense>
+        ) : null}
+      </GapMarker>
     </div>
   );
 }

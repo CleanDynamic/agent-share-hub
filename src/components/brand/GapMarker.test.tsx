@@ -9,7 +9,15 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { GAP_INVITATION, GapMarker, gapEdge, gapState, type GapPlacement, type GapState } from "./GapMarker";
+import {
+  GAP_INVITATION,
+  GAP_SOLVED,
+  GapMarker,
+  gapEdge,
+  gapState,
+  type GapPlacement,
+  type GapState,
+} from "./GapMarker";
 
 const PLACEMENTS: GapPlacement[] = ["card", "row", "panel"];
 const STATES: GapState[] = ["unsolved", "funded", "solved"];
@@ -134,6 +142,15 @@ describe("the panel", () => {
     expect(screen.getByText(GAP_INVITATION)).toBeInTheDocument();
   });
 
+  it("changes the tense once it is answered, not the claim", () => {
+    // The build always worked without this part. What a solved gap reports is
+    // that somebody answered it, which is why the shape stays and only the
+    // edge and the sentence move.
+    render(sample("panel", "solved"));
+    expect(screen.getByText(GAP_SOLVED)).toBeInTheDocument();
+    expect(screen.queryByText(GAP_INVITATION)).toBeNull();
+  });
+
   it("falls back in the creator's absence rather than inventing a problem", () => {
     render(
       <GapMarker
@@ -204,6 +221,34 @@ describe("the card placement", () => {
   it("renders nothing without a summary to print", () => {
     const { container } = render(<GapMarker placement="card" category="data" categoryLabel="Dataset" />);
     expect(container.querySelector("[data-visual-slot='gap-marker']")).toBeNull();
+  });
+});
+
+describe("every hue sits on a ground somebody measured", () => {
+  /**
+   * `critique-color` caught this one on the rendered kit: the row's state word
+   * was the breakage hue AS TEXT, and the nine were each measured against
+   * `--bg`. A part row sits on `--recess` or on a card's glass, where the same
+   * hue falls to 4.23–4.47 against a 4.5 floor. The remedy the theme names
+   * first is to reuse a legal pairing, which is the category's own measured
+   * fill — opaque, so it holds on any ground.
+   */
+  it("gives the row's state word a fill rather than leaving it bare ink", () => {
+    for (const state of STATES) {
+      const html = markup(sample("row", state));
+      const word = html.slice(html.indexOf("data-gap-word"));
+      expect(word.slice(0, 400)).toMatch(
+        state === "solved"
+          ? /background:var\(--cat-evidence-fill\)/
+          : /background:var\(--cat-breakage-fill\)/
+      );
+    }
+  });
+
+  it("gives the reward the breakage fill rather than breakage ink on nothing", () => {
+    const html = markup(sample("panel", "funded"));
+    const reward = html.slice(html.indexOf('data-testid="gap-reward"'));
+    expect(reward.slice(0, 400)).toContain("background:var(--cat-breakage-fill)");
   });
 });
 

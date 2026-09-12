@@ -18,6 +18,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -63,6 +64,7 @@ vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => auth }));
 import Compose from "@/pages/Compose";
 import { NO_CHANGES_REASON } from "@/lib/build";
 import { RebuildSection } from "./RebuildSection";
+import { changeKindColour } from "@/components/brand/RebuildCredit";
 
 const nodeTypes = [
   {
@@ -243,7 +245,10 @@ describe("the publish sheet, on a rebuild", () => {
     // The same string on the card, from the same composer: the preview is the
     // post, so the two can never say different things.
     const card = await screen.findByTestId("publish-card-preview");
-    expect(within(card).getByTestId("gallery-card-credit").textContent).toBe(credit);
+    // BG-P11: the card composes the credit from the draft's own frozen columns
+    // and renders it through the shared RebuildCredit, so the preview and the
+    // sheet's own line are one sentence rather than two that could disagree.
+    expect(within(card).getByTestId("rebuild-credit-line").textContent).toBe(credit);
   });
 
   // ACCEPTANCE 2 (the client half; the trigger and the counter are proven
@@ -373,16 +378,36 @@ describe("the rebuild section itself", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(6);
   });
 
-  it("colours each line's dot by its kind", () => {
-    renderSection(4);
-    const dot = (kind: string) =>
-      (document.querySelector(`[data-change-kind="${kind}"] span`) as HTMLElement).style
-        .background;
+  /**
+   * BG-P11: the four accents are TOKENS now, resolved through the part
+   * categories by `changeKindColour`, and the published page's Δ summary spends
+   * the same four. They used to be two imported hexes and two written ones, and
+   * this test used to read the computed rgb() back out of jsdom — which is no
+   * longer possible for a `var()` and would not have caught a drift between the
+   * two surfaces anyway.
+   *
+   * Asserted through SSR, which writes React's style object out verbatim: it is
+   * the only place in a test run where the declaration this component actually
+   * ships is visible.
+   */
+  it("colours each line's dot by its kind, from the shared resolver", () => {
+    const lines = Array.from({ length: 4 }, (_, index) =>
+      line(index, (["changed", "added", "removed", "header"] as const)[index])
+    );
+    const html = renderToStaticMarkup(
+      <RebuildSection lines={lines} diffed note="" onNoteChange={() => {}} credit={null} />
+    );
 
-    expect(dot("changed")).toBe("rgb(232, 87, 26)");
-    expect(dot("added")).toBe("rgb(46, 196, 182)");
-    expect(dot("removed")).toBe("rgb(156, 163, 175)");
-    expect(dot("header")).toBe("rgb(245, 158, 11)");
+    for (const kind of ["changed", "added", "removed", "header"] as const) {
+      const row = html.slice(html.indexOf(`data-change-kind="${kind}"`));
+      expect(row.slice(0, 400)).toContain(`background:${changeKindColour(kind)}`);
+    }
+
+    // The same four the published page paints, and none of them a hex.
+    expect(changeKindColour("changed")).toBe("var(--cat-instruction)");
+    expect(changeKindColour("added")).toBe("var(--cat-evidence)");
+    expect(changeKindColour("removed")).toBe("var(--cat-narrative)");
+    expect(changeKindColour("header")).toBe("var(--cat-artefact)");
   });
 
   it("labels the note as optional, and says the list is shown either way", () => {

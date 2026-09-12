@@ -425,19 +425,23 @@ describe("the card's two layers", () => {
   });
 
   it("slots the credit between the title and the plaque when there is one", () => {
-    const { container } = render(
-      <MemoryRouter>
-        <GalleryCard
-          build={build({ made_for: ["founders"] })}
-          srcByPath={NO_MEDIA}
-          credit="Rebuilt from Inbox triage agent by @amara"
-        />
-      </MemoryRouter>
+    // BG-P11: the credit is read off the card's own record rather than handed
+    // down as a string, so a rebuild is a build with the two frozen snapshot
+    // columns set — which is what the card's own query returns.
+    const { container } = renderCard(
+      build({
+        made_for: ["founders"],
+        source_title_at_fork: "Inbox triage agent",
+        source_handle_at_fork: "amara",
+      })
     );
     const parts = [...container.querySelectorAll("[data-card-part]")].map((el) =>
       el.getAttribute("data-card-part")
     );
     expect(parts).toEqual(["title", "credit", "plaque", "chips"]);
+    expect(container.querySelector("[data-card-part='credit']")).toHaveTextContent(
+      "Rebuilt from Inbox triage agent by @amara"
+    );
   });
 
   it("defaults to grid layout, so every call site that predates the prop is unchanged", () => {

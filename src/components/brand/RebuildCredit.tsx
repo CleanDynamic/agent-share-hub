@@ -49,7 +49,7 @@ export const GONE = "(no longer available)";
 
 /** The sentence's fixed halves, so the segmented rendering cannot invent one. */
 const PREFIX = "Rebuilt from ";
-const BY = " by @";
+const BY = " by ";
 
 /**
  * How many change lines a reader sees before they have to ask for the rest, and
@@ -121,8 +121,16 @@ export interface RebuildCreditProps {
   handleTo?: string | null;
   /** The lookup came back empty. Appends GONE and drops every link. */
   gone?: boolean;
-  /** Truncate the credit to one line — a card, where it is provenance, not prose. */
-  clamp?: boolean;
+  /**
+   * Where the credit is standing.
+   *
+   *   panel  a build page, a publish sheet. The sentence wraps and the summary
+   *          sits under it.
+   *   card   a build card, where the credit is provenance rather than prose: it
+   *          clips to one line with the whole sentence on hover, and carries
+   *          the card's content-order marker.
+   */
+  placement?: "card" | "panel";
   /** Anything the surface hangs under the summary, such as a rebuilder's note. */
   children?: ReactNode;
 }
@@ -133,10 +141,9 @@ export function RebuildCredit({
   to,
   handleTo,
   gone = false,
-  clamp = false,
+  placement = "panel",
   children,
 }: RebuildCreditProps) {
-  const [expanded, setExpanded] = useState(false);
   const line = rebuildCreditLine(source);
 
   // Naming nobody is better than "Rebuilt from" trailing off. A fork taken
@@ -148,9 +155,10 @@ export function RebuildCredit({
   const handle = (source.source_handle_at_fork ?? "").trim();
   const linked = !gone && (Boolean(to) || Boolean(handleTo));
 
-  const clampStyle: CSSProperties = clamp
-    ? { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
-    : {};
+  const clampStyle: CSSProperties =
+    placement === "card"
+      ? { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
+      : {};
 
   return (
     <div
@@ -161,6 +169,10 @@ export function RebuildCredit({
       <p
         data-testid="rebuild-credit-line"
         data-rebuild-credit=""
+        /* The card's content-order contract (BG-P09) names its parts in the
+           DOM and the credit is the second. Emitted at `card` placement only,
+           because a build page is not a card. */
+        data-card-part={placement === "card" ? "credit" : undefined}
         /* The whole sentence on hover, because the clamped rendering on a card
            is the one that cannot show all of it. */
         title={gone ? `${line} ${GONE}` : line}
@@ -173,7 +185,9 @@ export function RebuildCredit({
             {handle ? (
               <>
                 {BY}
-                <CreditPart to={handleTo}>{handle}</CreditPart>
+                {/* The "@" travels INSIDE the link, so the destination's
+                    accessible name is the handle as a reader would say it. */}
+                <CreditPart to={handleTo}>@{handle}</CreditPart>
               </>
             ) : null}
           </>
@@ -183,13 +197,7 @@ export function RebuildCredit({
         {gone ? <span style={{ color: t.text2 }}> {GONE}</span> : null}
       </p>
 
-      {changes ? (
-        <ChangeSummary
-          lines={changes}
-          expanded={expanded}
-          onToggle={() => setExpanded((open) => !open)}
-        />
-      ) : null}
+      {changes ? <ChangeSummary lines={changes} /> : null}
 
       {children}
     </div>
@@ -223,16 +231,22 @@ function CreditPart({ to, children }: { to?: string | null; children: ReactNode 
  * EXPANDS IN PLACE. The button swaps its own label and the list grows under it;
  * nothing opens, moves or scrolls. A reader who wanted line seven does not want
  * the page to jump.
+ *
+ * EXPORTED SEPARATELY, and for one reason. The build page's rebuild banner
+ * (ForkAttribution) already renders its change list BELOW a "See what changed"
+ * button that gates the query the lines come from, three elements down from its
+ * credit. Folding that into RebuildCredit would put the list above the note and
+ * the expander below the thing it expands — a reorder of that banner, which
+ * BG-P11 is not allowed to make. So the banner renders this directly, in the
+ * slot its list already occupies, and the Δ, the kind colours and the six-line
+ * rule are one implementation even though the two surfaces arrange them
+ * differently. See the handoff note: BG-P21 owns that arrangement.
+ *
+ * It holds its own expanded state, because that state is about this list and
+ * nothing else on the surface around it needs to know.
  */
-function ChangeSummary({
-  lines,
-  expanded,
-  onToggle,
-}: {
-  lines: readonly ChangeLine[];
-  expanded: boolean;
-  onToggle: () => void;
-}) {
+export function ChangeSummary({ lines }: { lines: readonly ChangeLine[] }) {
+  const [expanded, setExpanded] = useState(false);
   const { shown, hidden, collapsible } = summaryWindow(lines, expanded);
 
   if (lines.length === 0) {
@@ -290,7 +304,7 @@ function ChangeSummary({
         <button
           type="button"
           data-testid="rebuild-credit-more"
-          onClick={onToggle}
+          onClick={() => setExpanded((open) => !open)}
           aria-expanded={expanded}
           style={{
             ...chipType,

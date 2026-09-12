@@ -24,7 +24,8 @@
 
 import { useId, useState } from "react";
 import type { CSSProperties } from "react";
-import type { ChangeKind, ChangeLine } from "@/lib/build";
+import type { ChangeLine } from "@/lib/build";
+import { changeKindColour, summaryWindow } from "@/components/brand/RebuildCredit";
 import {
   HAIRLINE,
   ORANGE,
@@ -55,33 +56,24 @@ const NO_DIFF =
   "The build this came from could not be read, so its changes cannot be listed.";
 const CREDIT_PERMANENT = "This credit is part of the post and can't be removed.";
 
-/**
- * How many lines a reader sees before they have to ask for the rest, and the
- * length at which asking is worth it.
- *
- * Seven rather than six is deliberate: collapsing a list to six to hide one
- * line costs a reader a press to learn nothing. The expander earns its place
- * from the second hidden line onwards.
- */
-const COLLAPSED_LINES = 6;
-const EXPAND_FROM = 7;
+/*  BG-P11 — THE TRUNCATION RULE AND THE KIND COLOURS MOVED, THE ARRANGEMENT DID
+    NOT.
 
-/**
- * Kind to colour, as the handover specifies them.
- *
- * changed and added are the two accents the whole platform already uses for
- * "was here and moved" and "is new" — the same pair the tree paints since
- * NS-P38, so a creator reading this list recognises it. removed and header take
- * the two greys from the category table: a removal is not a warning and a
- * rename is not an edit to the build's substance, and neither should read as
- * loudly as the two that are.
- */
-const KIND_COLOUR: Record<ChangeKind, string> = {
-  changed: ORANGE,
-  added: TEAL,
-  removed: "#9CA3AF",
-  header: "#F59E0B",
-};
+    `summaryWindow` is the six-shown / seven-to-collapse rule this file wrote
+    first and the published page now applies too; it lives in RebuildCredit so
+    the two cannot drift to different numbers, and this file reads it rather
+    than keeping a second `slice(0, 6)`.
+
+    `changeKindColour` is the same four accents resolved through the part
+    categories instead of through two imported constants and two raw hexes.
+    changed is the rust the tree marks an edited part with and added is its
+    teal, so a creator reading this list still recognises it; a removal is grey
+    because it is not a warning, and a header move is ochre.
+
+    WHAT DID NOT MOVE is where the list sits. The publish sheet leads with the
+    diff — it IS the content here, and the credit is a footnote under the note
+    box — so this file does not render the shared credit component's own
+    arrangement. See the handoff note. */
 
 const quietControl: CSSProperties = {
   ...labelText,
@@ -127,9 +119,7 @@ export function RebuildSection({
    *  collides the first time two of these are mounted at once. */
   const noteId = useId();
 
-  const collapsible = lines.length >= EXPAND_FROM;
-  const shown = collapsible && !expanded ? lines.slice(0, COLLAPSED_LINES) : lines;
-  const hidden = lines.length - COLLAPSED_LINES;
+  const { shown, hidden, collapsible } = summaryWindow(lines, expanded);
 
   return (
     <section
@@ -265,7 +255,7 @@ function ChangeLineRow({ line }: { line: ChangeLine }) {
           marginTop: 8,
           borderRadius: 999,
           flexShrink: 0,
-          background: KIND_COLOUR[line.kind],
+          background: changeKindColour(line.kind),
         }}
       />
       <span style={{ minWidth: 0 }}>{line.text}</span>

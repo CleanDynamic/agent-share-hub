@@ -57,6 +57,16 @@ export type GapState = "unsolved" | "funded" | "solved";
 /** The invitation. A constant because it is the design, not a string. */
 export const GAP_INVITATION = "This part is unsolved — the build works without it.";
 
+/**
+ * And what the same sentence becomes once somebody has answered it.
+ *
+ * The shape does not change when a gap is filled and neither does the claim it
+ * makes about the build: the build always worked without this part. What
+ * changes is the tense, which is the whole point of a gap reading as an
+ * invitation — it was answered, rather than fixed.
+ */
+export const GAP_SOLVED = "This part was unsolved — somebody answered it.";
+
 /** What the row says, per state. Never an apology, never a defect. */
 const ROW_WORD: Record<GapState, string> = {
   unsolved: "unsolved",
@@ -66,6 +76,9 @@ const ROW_WORD: Record<GapState, string> = {
 
 /** The edge's weight. The theme's own number, and the same in all three. */
 const EDGE_WIDTH = 1.5;
+
+/** A tag's padding, matching CategoryChip's so a row of them is one row. */
+const PAD = "2px 8px";
 
 /**
  * The state, from the two facts that decide it.
@@ -115,6 +128,16 @@ export interface GapMarkerProps {
   placement?: GapPlacement;
   state?: GapState;
   /**
+   * The host surface's own testid for this marker.
+   *
+   * Kept as a prop rather than fixed, because the three placements landed on
+   * surfaces that already had established testids — `gap-panel` on the build
+   * page and `gallery-card-bounty` on a card — and a consolidation that
+   * silently renamed the selectors every spec uses would be a consolidation
+   * that broke the suite for no reader's benefit.
+   */
+  testId?: string;
+  /**
    * The part's OWN category, never breakage.
    *
    * Absent on a build-level ask, which names no part — and then no chip
@@ -159,6 +182,7 @@ export interface GapMarkerProps {
 export function GapMarker({
   placement = "row",
   state = "unsolved",
+  testId,
   category,
   categoryLabel,
   problem,
@@ -185,6 +209,7 @@ export function GapMarker({
     return (
       <p
         data-visual-slot="gap-marker"
+        data-testid={testId}
         data-gap-placement="card"
         data-gap-state={state}
         data-card-part="reward"
@@ -204,23 +229,38 @@ export function GapMarker({
     return (
       <span
         data-visual-slot="gap-marker"
+        data-testid={testId}
         data-gap-placement="row"
         data-gap-state={state}
         style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}
       >
         {chip}
+        {/* THE STATE WORD IS A TAG ON ITS OWN MEASURED GROUND, not a bare hue.
+            It was the hue as text, which is the pairing `critique-color` caught:
+            the nine were each measured against `--bg`, and a part row sits on
+            `--recess` or on a card's glass, where breakage-as-text falls to
+            4.23–4.47 against a 4.5 floor. The measured pair is legal on any
+            ground because the fill is opaque — the theme's own first remedy,
+            reuse a legal pairing, rather than moving the hue. */}
         <span
           data-gap-word=""
           style={{
-            ...dataText,
-            color: state === "solved" ? t.evidence : t.catBreakage,
+            ...chipStyle("category", { category: state === "solved" ? "evidence" : "breakage" }),
+            padding: PAD,
             whiteSpace: "nowrap",
           }}
         >
           {ROW_WORD[state]}
         </span>
         {reward ? (
-          <span data-gap-reward="" style={{ ...dataText, ...tabular, color: t.catBreakage }}>
+          <span
+            data-gap-reward=""
+            style={{
+              ...chipStyle("category", { category: "breakage" }),
+              ...tabular,
+              padding: PAD,
+            }}
+          >
             {reward}
           </span>
         ) : null}
@@ -232,6 +272,7 @@ export function GapMarker({
   return (
     <div
       data-visual-slot="gap-marker"
+      data-testid={testId}
       data-gap-placement="panel"
       data-gap-state={state}
       style={{
@@ -256,7 +297,9 @@ export function GapMarker({
         {chip}
       </div>
 
-      <p style={{ ...bodyText, margin: 0, color: t.text }}>{GAP_INVITATION}</p>
+      <p style={{ ...bodyText, margin: 0, color: t.text }}>
+        {state === "solved" ? GAP_SOLVED : GAP_INVITATION}
+      </p>
 
       <p
         data-testid="gap-problem-statement"
@@ -277,12 +320,13 @@ export function GapMarker({
             <span
               data-testid="gap-reward"
               style={{
-                /* The BREAKAGE category's own measured pair, which is the one
-                   place on this marker the hue is legal as ink: it is on the
-                   ground that was measured under it. */
+                /* The BREAKAGE category's own measured pair, which is where the
+                   hue is legal as ink: on the ground that was measured under
+                   it. The fill is opaque, so it holds on a glass card, a recess
+                   or the page alike. */
                 ...chipStyle("category", { category: "breakage" }),
                 ...tabular,
-                padding: "2px 8px",
+                padding: PAD,
               }}
             >
               {reward}
@@ -291,7 +335,7 @@ export function GapMarker({
           {deadline ? (
             <span
               data-testid="gap-deadline"
-              style={{ ...chipStyle("neutral"), ...tabular, padding: "2px 8px" }}
+              style={{ ...chipStyle("neutral"), ...tabular, padding: PAD }}
             >
               {deadline}
             </span>
