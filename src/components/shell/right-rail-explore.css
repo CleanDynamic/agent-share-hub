@@ -6,8 +6,10 @@
    BG-P13. The colours are no longer verbatim: every one is a var(--token),
    so the rail follows <html data-theme> with the rest of the frame. Section
    headings take the mono eyebrow role in --text2, rows take --r-control and a
-   neutral hover wash, chips take --r-chip, and the search field takes the
-   BG-P07 field paint. Declarations were repointed in place — no rule was added or
+   --bg hover, chips take --r-chip, and the search field takes the BG-P07 field
+   paint. A row hovers to --bg rather than to --recess because --recess is the
+   rail's own ground; --bg is the one step from it that moves the right way in
+   both themes, so every label on a hovered row gains contrast. Declarations were repointed in place — no rule was added or
    removed, and no measurement moved.
 ──────────────────────────────────────────────── */
 
@@ -125,7 +127,7 @@
 }
 
 .ns-tile:hover {
-  background: color-mix(in oklch, var(--text) 7%, transparent);
+  background: var(--bg);
 }
 
 .ns-tile:hover::after {
@@ -181,7 +183,7 @@
   padding: 8px 8px; border-radius: var(--r-control);
   cursor: pointer; transition: background 0.2s;
 }
-.ns-trending-item:hover { background: color-mix(in oklch, var(--text) 7%, transparent); }
+.ns-trending-item:hover { background: var(--bg); }
 .ns-trending-rank { font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace; font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text2); width: 16px; text-align: center; }
 .ns-trending-info { flex: 1; min-width: 0; }
 .ns-trending-name { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -206,7 +208,7 @@
   padding: 6px 8px; border-radius: var(--r-control);
   cursor: pointer; transition: background 0.15s;
 }
-.ns-curator-item:hover { background: color-mix(in oklch, var(--text) 7%, transparent); }
+.ns-curator-item:hover { background: var(--bg); }
 .ns-curator-avatar {
   width: 22px; height: 22px; border-radius: 50%;
   background: var(--recess); flex-shrink: 0;
@@ -218,7 +220,7 @@
   padding: 8px; border-radius: var(--r-control);
   cursor: pointer; transition: background 0.15s;
 }
-.ns-collection-item:hover { background: color-mix(in oklch, var(--text) 7%, transparent); }
+.ns-collection-item:hover { background: var(--bg); }
 .ns-follow-item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 4px;
@@ -258,7 +260,7 @@
   background: var(--glass-2); border: 1px solid var(--line);
   color: var(--text);
 }
-.ns-auth-btn.signin:hover { background: color-mix(in oklch, var(--text) 7%, transparent); }
+.ns-auth-btn.signin:hover { background: var(--bg); }
 .ns-auth-btn.join {
   background: var(--action); border: 1px solid var(--action); color: var(--on-action);
 }

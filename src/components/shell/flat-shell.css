@@ -174,11 +174,22 @@
 
 /* ── Left nav ──
      BG-P13. The capsule was dropped with the rest of the shape language, so the
-     active row is NOT a filled pill: it is a 2px --action left edge, --action
-     text, and a 12%-alpha --action wash. Every row carries the edge in
-     `transparent` so that becoming active changes a colour and never a
-     position — a border added only on the active row would shove its icon 2px
-     sideways on every navigation. ── */
+     active row is NOT a filled pill: it is a 2px --action left edge, a
+     12%-alpha --action wash, and the label at full --text strength. Every row
+     carries the edge in `transparent` so that becoming active changes a colour
+     and never a position — a border added only on the active row would shove
+     its icon 2px sideways on every navigation.
+
+     THE LABEL IS --text AND NOT --action, AND THAT IS A MEASUREMENT, NOT A
+     PREFERENCE. The theme measures --action at 4.80:1 on --bg, which is where
+     it is legal as text. The rails are --recess, which is darker, and on the
+     12% --action wash the row actually draws, --action measures 3.57:1 on
+     Exhibition and 3.94:1 on Dusk — both under the 4.5:1 text floor. So the
+     ladder's first step applies: reuse a legal pairing. --text on that wash is
+     9.75:1 and 8.83:1. The hue still carries the state, as the 2px edge and the
+     wash, which are graphical marks floored at 3.0:1 and clear it in both
+     themes — the same move the theme makes with amber, which is light and
+     never type. ── */
 .fs-nav-list {
   list-style: none;
   display: flex;
@@ -204,17 +215,21 @@
   color: var(--text2);
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-/* The rail's ground is --recess, so the hover cannot also be --recess. A
-   neutral wash mixed from --text reads on either ground in either theme,
-   where a fixed rgba only ever reads on one of them. */
+/* The rail's ground is --recess, so the hover cannot also be --recess: it is
+   --bg, the room the rail sits in. That token is the one step from --recess
+   that moves the RIGHT WAY in both themes — lighter on Exhibition, darker on
+   Dusk — so a hovered row separates from the rail and every label on it gains
+   contrast rather than losing it. A neutral wash mixed from --text did the
+   first job and not the second: it took --text2 to 4.00:1 on Exhibition, under
+   the floor, where --bg takes it to 5.26:1. */
 .fs-nav-item:hover {
-  background: color-mix(in oklch, var(--text) 7%, transparent);
+  background: var(--bg);
   color: var(--text);
 }
 .fs-nav-item.active {
   background: color-mix(in oklch, var(--action) 12%, transparent);
   border-left-color: var(--action);
-  color: var(--action);
+  color: var(--text);
 }
 .fs-nav-icon {
   width: 20px;
@@ -285,7 +300,7 @@
   color: inherit;
   font-family: inherit;
 }
-.fs-user-btn:hover { background: color-mix(in oklch, var(--text) 7%, transparent); }
+.fs-user-btn:hover { background: var(--bg); }
 .fs-user-avatar {
   width: 32px;
   height: 32px;
@@ -368,7 +383,7 @@
   border: 1px solid var(--line);
   color: var(--text);
 }
-.fs-auth-btn.signin:hover { background: color-mix(in oklch, var(--text) 7%, transparent); }
+.fs-auth-btn.signin:hover { background: var(--bg); }
 .fs-auth-btn.join {
   background: var(--action);
   color: var(--on-action);
