@@ -193,13 +193,6 @@ export default function Gallery() {
         />
       </Helmet>
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 20,
-        }}
-      >
         {/* BG-P15. The bespoke header — a "← buildgallery" link beside an
             <h1>Gallery> — is replaced by the frame's PageHeader. The back link
             is deleted outright rather than rehomed: the left rail's wordmark
@@ -235,6 +228,27 @@ export default function Gallery() {
           description="Builds written down completely enough to follow, ordered by how many people other than their creator have run them and said what happened."
         />
 
+      {/* ── BG-P15 — PageHeader sits ABOVE this column, not inside it, and that
+          is the last of the doubled spacings.
+
+          PageHeader already declares the space under itself: `marginBottom:
+          SPACE.lg`, 40px. Inside a flex column with `gap: 20` that 40 became
+          60 between the header and the filters, while every other pair on the
+          page kept 20 — a gulf under the header and nowhere else, which read
+          as the filters having come loose from it.
+
+          Lifting the header out fixes it without touching the page's own
+          rhythm: the facets, the results and the pagination keep the exact
+          20px gap they always had, and the header keeps the 40 it brought.
+          It is also how /dev/wide composes a wide page — header, then the
+          grid, as siblings. ── */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 20,
+        }}
+      >
         <section
           data-visual-slot="gallery-filters"
           style={{
