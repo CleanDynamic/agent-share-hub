@@ -105,7 +105,7 @@ export default function MasteryRibbons({ ribbons, title = "Mastery" }: MasteryRi
                   style={{
                     height: 6,
                     borderRadius: tokens.radius.pill,
-                    background: "rgba(255,255,255,0.08)",
+                    background: tokens.surface.card,
                     overflow: "hidden",
                   }}
                 >

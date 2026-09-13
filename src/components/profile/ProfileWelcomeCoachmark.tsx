@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body } from "@/lib/theme/type";
 
 const STORAGE_KEY = "profile:welcome-coachmark-dismissed";
 
@@ -34,14 +37,16 @@ export function ProfileWelcomeCoachmark({ visible }: ProfileWelcomeCoachmarkProp
         justifyContent: "space-between",
         gap: "12px",
         padding: "12px 16px",
-        background: "rgba(46,196,182,0.06)",
-        border: "0.5px solid rgba(46,196,182,0.20)",
-        borderRadius: "8px",
+        /* A welcome, not a warning: the recess ground the rest of the page
+           uses for an inset panel, with ordinary text on it. */
+        background: t.recess,
+        border: `1px solid ${t.line}`,
+        borderRadius: r.panel,
         marginBottom: "16px",
-        fontFamily: "Figtree, sans-serif",
+        ...body,
         fontSize: "13px",
         fontWeight: 500,
-        color: "rgba(46,196,182,0.85)",
+        color: t.text,
       }}
     >
       <span>
@@ -63,7 +68,7 @@ export function ProfileWelcomeCoachmark({ visible }: ProfileWelcomeCoachmarkProp
           background: "transparent",
           border: "none",
           cursor: "pointer",
-          color: "rgba(46,196,182,0.85)",
+          color: t.text2,
           padding: 4,
           flexShrink: 0,
           display: "inline-flex",

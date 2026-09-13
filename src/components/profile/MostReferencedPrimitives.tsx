@@ -1,16 +1,35 @@
+// The most-referenced strip — repainted for BG-P25.
+//
+// SIX HEXES BECOME THE CATEGORY RESOLVER. `BLOCK_TYPE_COLORS` was a private
+// six-hue palette for block types, which is the same job the nine part
+// categories do — a seventh and eighth palette for one strip is how a system
+// loses the ability to say that two things of the same kind look alike. Every
+// type now resolves through `categoryFill`, and a type the registry does not
+// know lands on the measured fallback pair rather than on a hardcoded slate.
+//
+// THE REFERENCE COUNT IS AN EVIDENCE TAG, NOT AN AMBER ONE. It was amber type
+// on an amber wash, and amber may never be type — `--lit` is 3.01:1 on the
+// Exhibition ground, legal as a light and illegal as a word. It is the same
+// claim a card's plaque makes (other people used this), so it takes the same
+// measured evidence pair the plaque's count does.
+//
+// THE CODE PREVIEW'S FOUR SYNTAX HEXES ARE GONE. A two-line teaser of somebody
+// else's code does not need a syntax theme, and the four it carried were a
+// Material Palenight fragment that rendered on one ground only; the preview is
+// now one ink on the well, which is what the rest of the strip already was.
+// That also removes an `innerHTML` assembled from a database string.
+
 import { useRef, useCallback } from "react";
 import { Star, Quote } from "lucide-react";
+import { categoryColour, categoryFill } from "@/lib/theme/category";
+import { chipType } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body, data as dataText, DM_MONO, tabular } from "@/lib/theme/type";
 
-const BLOCK_TYPE_COLORS: Record<string, string> = {
-  prompt: "#A78BFA",
-  code: "#60A5FA",
-  data: "#34D399",
-  model: "#F472B6",
-  tool: "#FBBF24",
-  default: "#94A3B8",
-};
-
-const STAGE_COLOR = "#2EC4B6";
+/** A block type's hue, through the one resolver. "stage" is a narrative step. */
+const typeColourFor = (type: string | undefined, isStage: boolean) =>
+  categoryColour(isStage ? "narrative" : type ?? "");
 
 export interface PrimitiveCardData {
   id: string;
@@ -56,7 +75,7 @@ function StageMiniMap({
           y1={10 + (i % 3) * 8}
           x2={30 + i * 12}
           y2={15 + ((i + 1) % 3) * 8}
-          stroke="rgba(46,196,182,0.3)"
+          stroke={t.line}
           strokeWidth="1"
         />
       ))}
@@ -68,8 +87,8 @@ function StageMiniMap({
           width="16"
           height="12"
           rx="2"
-          fill="rgba(46,196,182,0.25)"
-          stroke="rgba(46,196,182,0.5)"
+          fill={categoryFill("narrative").background}
+          stroke={t.line}
           strokeWidth="0.5"
         />
       ))}
@@ -80,44 +99,13 @@ function StageMiniMap({
 function CodePreview({ code }: { code: string }) {
   const lines = code.split("\n").slice(0, 2);
 
-  const highlightCode = (line: string) => {
-    return line
-      .split(
-        /(const|let|var|function|return|if|else|for|while|import|export|from|async|await)/g
-      )
-      .map((part, i) => {
-        if (
-          /^(const|let|var|function|return|if|else|for|while|import|export|from|async|await)$/.test(
-            part
-          )
-        ) {
-          return `<span style="color:#C792EA">${part}</span>`;
-        }
-        return part
-          .split(/("[^"]*"|'[^']*'|`[^`]*`)/g)
-          .map((p) => {
-            if (/^("[^"]*"|'[^']*'|`[^`]*`)$/.test(p)) {
-              return `<span style="color:#C3E88D">${p}</span>`;
-            }
-            return p
-              .split(/(\d+)/g)
-              .map((n) =>
-                /^\d+$/.test(n) ? `<span style="color:#F78C6C">${n}</span>` : n
-              )
-              .join("");
-          })
-          .join("");
-      })
-      .join("");
-  };
-
   return (
     <div
       style={{
-        fontFamily: '"JetBrains Mono", monospace',
+        fontFamily: DM_MONO,
         fontSize: "10px",
         lineHeight: 1.4,
-        color: "rgba(255,255,255,0.55)",
+        color: t.text2,
         overflow: "hidden",
       }}
     >
@@ -129,8 +117,9 @@ function CodePreview({ code }: { code: string }) {
             overflow: "hidden",
             textOverflow: "ellipsis",
           }}
-          dangerouslySetInnerHTML={{ __html: highlightCode(line) }}
-        />
+        >
+          {line}
+        </div>
       ))}
     </div>
   );
@@ -144,10 +133,8 @@ function PrimitiveCard({
   onClick: () => void;
 }) {
   const isStage = primitive.type === "stage";
-  const typeColor = isStage
-    ? STAGE_COLOR
-    : BLOCK_TYPE_COLORS[primitive.blockType?.toLowerCase() || ""] ||
-      BLOCK_TYPE_COLORS.default;
+  const typeColor = typeColourFor(primitive.blockType?.toLowerCase(), isStage);
+  const evidence = categoryFill("evidence");
   const typeLabel = isStage
     ? "STAGE"
     : (primitive.blockType?.toUpperCase() || "BLOCK");
@@ -162,21 +149,21 @@ function PrimitiveCard({
       style={{
         width: "280px",
         height: "130px",
-        background: "rgba(22,22,30,0.40)",
-        border: "0.5px solid rgba(255, 255, 255, 0.14)",
-        borderRadius: "8px",
+        background: t.glass,
+        border: `1px solid ${t.glassBorder}`,
+        borderRadius: r.card,
         padding: "12px",
         cursor: "pointer",
         display: "flex",
         flexDirection: "column",
-        transition: "border-color 0.15s ease",
+        transition: "border-color 160ms cubic-bezier(.2,.6,.35,1)",
         flexShrink: 0,
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "rgba(245,158,11,0.30)";
+        e.currentTarget.style.borderColor = t.text2;
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.14)";
+        e.currentTarget.style.borderColor = t.glassBorder;
       }}
     >
       <div
@@ -192,15 +179,14 @@ function PrimitiveCard({
             style={{
               width: "6px",
               height: "6px",
-              borderRadius: "50%",
+              borderRadius: r.full,
               backgroundColor: typeColor,
             }}
           />
           <span
             style={{
-              fontFamily: "Figtree, sans-serif",
+              ...chipType,
               fontSize: "9px",
-              fontWeight: 600,
               letterSpacing: "0.08em",
               color: typeColor,
             }}
@@ -213,18 +199,20 @@ function PrimitiveCard({
             display: "flex",
             alignItems: "center",
             gap: "4px",
-            background: "rgba(245,158,11,0.08)",
+            /* The evidence pair, both halves. Somebody else used this block —
+               the same class of claim the plaque's count carries. */
+            backgroundColor: evidence.background,
             padding: "1px 6px",
-            borderRadius: "100px",
+            borderRadius: r.chip,
           }}
         >
-          <Quote size={10} style={{ color: "rgba(245,158,11,0.85)" }} />
+          <Quote size={10} style={{ color: t.text }} />
           <span
             style={{
-              fontFamily: "Figtree, sans-serif",
+              ...chipType,
+              ...tabular,
               fontSize: "11px",
-              fontWeight: 600,
-              color: "rgba(245,158,11,0.85)",
+              color: t.text,
             }}
           >
             {primitive.referenceCount}
@@ -234,10 +222,10 @@ function PrimitiveCard({
 
       <div
         style={{
-          fontFamily: "Figtree, sans-serif",
+          ...body,
           fontSize: "13px",
           fontWeight: 600,
-          color: hasName ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.50)",
+          color: hasName ? t.text : t.text2,
           fontStyle: hasName ? "normal" : "italic",
           marginTop: "8px",
           whiteSpace: "nowrap",
@@ -251,8 +239,9 @@ function PrimitiveCard({
       <div
         style={{
           height: "50px",
-          background: "rgba(0,0,0,0.20)",
-          borderRadius: "4px",
+          /* A well: the page cut into, which is what `--recess` names. */
+          background: t.recess,
+          borderRadius: r.media,
           padding: "6px 8px",
           marginTop: "8px",
           overflow: "hidden",
@@ -272,10 +261,9 @@ function PrimitiveCard({
         ) : (
           <div
             style={{
-              fontFamily: "Figtree, sans-serif",
+              ...body,
               fontSize: "10px",
-              fontWeight: 400,
-              color: "rgba(255,255,255,0.55)",
+              color: t.text2,
               lineHeight: 1.4,
               overflow: "hidden",
               display: "-webkit-box",
@@ -292,10 +280,9 @@ function PrimitiveCard({
         style={{
           height: "16px",
           marginTop: "auto",
-          fontFamily: "Figtree, sans-serif",
+          ...dataText,
           fontSize: "10px",
-          fontWeight: 400,
-          color: "rgba(255,255,255,0.40)",
+          color: t.text2,
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -344,13 +331,15 @@ export function MostReferencedPrimitives({
           marginBottom: "12px",
         }}
       >
-        <Star size={14} style={{ color: "#F59E0B", flexShrink: 0 }} />
+        {/* A lamp, not amber type: `--lit` may be a light and may never be a
+            word, and an icon is a light. */}
+        <Star size={14} style={{ color: t.lit, flexShrink: 0 }} />
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            ...body,
             fontSize: "13px",
             fontWeight: 600,
-            color: "rgba(255,255,255,0.85)",
+            color: t.text,
             marginLeft: "8px",
           }}
         >
@@ -358,10 +347,9 @@ export function MostReferencedPrimitives({
         </span>
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            ...body,
             fontSize: "11px",
-            fontWeight: 400,
-            color: "rgba(255,255,255,0.45)",
+            color: t.text2,
             marginLeft: "8px",
           }}
         >
@@ -372,14 +360,16 @@ export function MostReferencedPrimitives({
           <button
             onClick={onViewAllClick}
             style={{
-              fontFamily: "Figtree, sans-serif",
+              ...body,
               fontSize: "11px",
               fontWeight: 500,
-              color: "rgba(46,196,182,0.85)",
+              color: t.action,
               background: "none",
               border: "none",
               cursor: "pointer",
               padding: 0,
+              textDecoration: "underline",
+              textUnderlineOffset: "3px",
             }}
           >
             View all
@@ -417,8 +407,10 @@ export function MostReferencedPrimitives({
             right: 0,
             width: "48px",
             height: "100%",
-            background:
-              "linear-gradient(to right, transparent, rgba(8,8,12,0.85))",
+            /* The scroller's right edge, fading into the PAGE rather than into
+               a fixed near-black — the fade has to end on whatever ground the
+               theme is currently painting. */
+            background: `linear-gradient(to right, transparent, ${t.bg})`,
             pointerEvents: "none",
           }}
         />

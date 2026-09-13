@@ -33,7 +33,7 @@ export default function ProfileStatsBar({ stats, style }: ProfileStatsBarProps) 
       style={{
         gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))`,
         borderRadius: tokens.radius.panel,
-        background: "rgba(255,255,255,0.06)",
+        background: tokens.surface.card,
         border: tokens.border.strong,
         ...style,
       }}

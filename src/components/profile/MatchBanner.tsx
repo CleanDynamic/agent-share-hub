@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { Sparkles, X } from "lucide-react";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body } from "@/lib/theme/type";
 import { supabase } from "@/integrations/supabase/client";
 
 const STORAGE_KEY = "profile:match-banner-dismissed";
@@ -70,12 +73,16 @@ export function MatchBanner({ targetUserId, viewerId, isOwnProfile }: MatchBanne
   return (
     <div
       role="status"
-      className="mt-4 flex items-center gap-3 rounded-lg px-4 py-3"
+      className="mt-4 flex items-center gap-3 px-4 py-3"
+      /* The measured evidence pair: `--evidence-fill` with `--text` on it.
+         Teal at 6% alpha was a value nobody measured and, on Exhibition, a
+         banner that was not there. */
       style={{
-        background: "rgba(46,196,182,0.06)",
-        border: "0.5px solid rgba(46,196,182,0.20)",
-        color: "rgba(46,196,182,0.90)",
-        fontFamily: "Figtree, sans-serif",
+        background: t.evidenceFill,
+        border: `1px solid ${t.line}`,
+        borderRadius: r.panel,
+        color: t.text,
+        ...body,
         fontSize: "13px",
         fontWeight: 500,
       }}
@@ -96,7 +103,14 @@ export function MatchBanner({ targetUserId, viewerId, isOwnProfile }: MatchBanne
           }
           setDismissed(true);
         }}
-        className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-md hover:bg-white/5"
+        className="shrink-0 inline-flex items-center justify-center w-6 h-6"
+        style={{
+          background: "transparent",
+          border: "none",
+          borderRadius: r.chip,
+          color: t.text2,
+          cursor: "pointer",
+        }}
       >
         <X size={12} />
       </button>

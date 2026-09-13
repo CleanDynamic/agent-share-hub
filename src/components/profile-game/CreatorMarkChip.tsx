@@ -31,7 +31,7 @@ export default function CreatorMarkChip({ mark, style }: CreatorMarkChipProps) {
         height: 24,
         padding: "0 10px",
         borderRadius: tokens.radius.pill,
-        background: "rgba(82,82,100,0.45)",
+        background: tokens.surface.card,
         border: tokens.border.soft,
         fontFamily: tokens.font.sans,
         fontSize: 12,

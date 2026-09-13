@@ -42,9 +42,14 @@ export default function ShowcaseStrip({ items }: ShowcaseStripProps) {
               className="flex items-end"
               style={{
                 height: 104,
+                /* No picture is a MEDIA WELL, not a tinted gradient. A
+                   two-stop ramp struck from an accent plus a dark-room grey
+                   had no second stop that was legal on Exhibition, and the
+                   theme already names the surface a missing image falls back
+                   to. */
                 background: item.imageUrl
                   ? `center / cover no-repeat url(${item.imageUrl})`
-                  : `linear-gradient(135deg, ${accent}40 0%, rgba(82,82,100,0.4) 100%)`,
+                  : tokens.surface.well,
                 borderBottom: `2px solid ${accent}`,
               }}
             />

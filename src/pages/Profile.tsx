@@ -25,6 +25,10 @@ import { ProfileAuthoredReblogs } from "@/components/profile/ProfileAuthoredRebl
 import { MatchBanner } from "@/components/profile/MatchBanner";
 import { ProfileWelcomeCoachmark } from "@/components/profile/ProfileWelcomeCoachmark";
 import { MakeCollectionDialog } from "@/components/profile/MakeCollectionDialog";
+// Straight from the module, not the @/lib/build barrel: this page is eagerly
+// imported by App, and the barrel would pull the whole build layer — intake,
+// portable, gallery, layers — into the main chunk with it.
+import { listBuildsByCreator } from "@/lib/build/builds";
 import { getProfileSummary } from "@/lib/profile/getProfileSummary";
 import { getAuthorStats } from "@/lib/profile/getAuthorStats";
 import { getMostReferenced } from "@/lib/profile/getMostReferenced";
@@ -38,6 +42,12 @@ import { useProfileGameData } from "@/hooks/useProfileGameData";
 import { Sparkles } from "lucide-react";
 import type { CreatorMark } from "@/components/profile-game/CreatorMarkChip";
 import type { ShowcaseItem } from "@/components/profile-game/ShowcaseStrip";
+
+/** The two trigger-maintained counters the header's earned numbers sum. */
+interface EarnedCounts {
+  reproduction_count?: number | null;
+  rebuild_count?: number | null;
+}
 
 const PAGE_SIZE = 20;
 const VALID_ZONES: Zone[] = ["authored", "curated", "activity", "network"];
@@ -123,6 +133,35 @@ export default function Profile() {
       return count ?? 0;
     },
   });
+
+  /* THE TWO EARNED NUMBERS (BG-P25 task 1).
+     Reproductions received and rebuilds of this creator's work, both summed
+     across their builds. Neither figure exists anywhere else on this page:
+     `profile_stats` predates the build record and counts content_items, and
+     `reproduction_count`/`rebuild_count` are columns on `builds` that only a
+     database trigger writes. This spends `listBuildsByCreator` EXACTLY AS IT
+     STANDS — no filter added, no ordering changed, nothing about the query
+     touched — because the header needs the two columns and that helper is
+     already the sanctioned way to read a creator's build headers. */
+  const { data: creatorBuilds, isLoading: earnedLoading } = useQuery({
+    queryKey: ["profile-earned", summary?.id ?? null],
+    enabled: !!summary?.id,
+    queryFn: () => listBuildsByCreator(summary!.id),
+  });
+
+  const earned = useMemo(() => {
+    let reproductions = 0;
+    let rebuilds = 0;
+    /* The two columns, named locally. `builds.rebuild_count` is not in the
+       generated Supabase types yet — the same gap `ForkAttribution` and
+       `Plaque` already work around by declaring the shape they read rather
+       than waiting on a regeneration this prompt is not allowed to run. */
+    for (const build of (creatorBuilds ?? []) as EarnedCounts[]) {
+      reproductions += build.reproduction_count ?? 0;
+      rebuilds += build.rebuild_count ?? 0;
+    }
+    return { reproductions, rebuilds };
+  }, [creatorBuilds]);
 
   // Most-referenced primitives strip.
   const { data: mostReferenced } = useQuery({
@@ -565,6 +604,9 @@ export default function Profile() {
           level={gameData?.level ?? 1}
           progressPct={gameData?.progressPct ?? 0}
           creatorMarks={creatorMarks}
+          reproductionsReceived={earned.reproductions}
+          rebuildsReceived={earned.rebuilds}
+          earnedLoading={earnedLoading && !!summary.id}
           founderAccessory={
             gameData?.founderBadge ? (
               <FounderMark
