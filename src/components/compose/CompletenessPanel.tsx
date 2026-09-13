@@ -2,10 +2,18 @@
 //
 // WHAT THIS PANEL IS NOT. It is not a mark, a rating or a verdict on the person
 // who wrote the record. Every row is an instruction the creator can act on, and
-// every row that is already done says what did it. The percentage is here
-// because a checklist with a progress bar is a checklist — twelve of twenty
-// boxes ticked is a state, not a judgement — and it never appears as a mark out
-// of ten, a letter, or anything with an opinion in it.
+// every row that is already done says what did it.
+//
+// BG-P23 — THE PERCENTAGE AND THE BAR ARE GONE. An earlier revision argued that
+// a checklist with a progress bar is still a checklist, twelve of twenty boxes
+// being a state rather than a judgement. It reads as a judgement anyway: "72%
+// filled in" over a part-full bar is a mark out of a hundred whatever the
+// surrounding copy says, and a creator whose build is finished at 60% is being
+// told they are four-tenths short of something. What is left is the count of
+// outstanding rows in words, as an invitation — the same fact, with no
+// denominator to fall short of. `builds.completeness` is still computed and
+// still written, because the gallery gates on it; it is simply not something
+// this panel says out loud.
 //
 // The rules are NS-P17's and stay there. This file reads SHAPE_RULES for the
 // order of the list and computeCompleteness for which of them are outstanding;
@@ -49,6 +57,8 @@ import {
   focusControl,
   helpStyle,
 } from "@/components/compose/fields";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 
 /** Longest satisfied-by summary before it is cut. Rows are one line each. */
 const SUMMARY_MAX = 72;
@@ -250,7 +260,7 @@ function parseNumber(value: string): number | null {
 const tickBase: React.CSSProperties = {
   width: 14,
   height: 14,
-  borderRadius: 4,
+  borderRadius: r.chip,
   flexShrink: 0,
   marginTop: 2,
   display: "inline-flex",
@@ -370,7 +380,6 @@ export function CompletenessPanel({
 
   if (!completeness) return null;
 
-  const filled = completeness.score;
   const left = completeness.missing.length;
 
   return (
@@ -411,34 +420,13 @@ export function CompletenessPanel({
         The record
       </button>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={filled}
-          aria-label="How much of this record is filled in"
-          style={{
-            height: 4,
-            borderRadius: 4,
-            background: "rgba(255,255,255,0.06)",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              width: `${filled}%`,
-              height: "100%",
-              background: TEAL,
-              transition: "width 200ms ease",
-            }}
-          />
-        </div>
-        <span style={{ ...labelText, fontSize: 11, color: TEXT_SECONDARY }}>
-          {filled}% filled in
-          {left > 0 ? ` · ${left === 1 ? "1 thing" : `${left} things`} left` : ""}
-        </span>
-      </div>
+      {/* An invitation, not a score. Plain words and a count of what is still
+          open — never a percentage, never a bar, never a denominator. */}
+      <span style={{ ...labelText, fontSize: 11, color: TEXT_SECONDARY }}>
+        {left === 0
+          ? "Everything this record asks for is here."
+          : `${left === 1 ? "One thing" : `${left} things`} left to add`}
+      </span>
 
       {open ? (
         <>
@@ -471,9 +459,9 @@ export function CompletenessPanel({
                     gap: 8,
                     textAlign: "left",
                     padding: "6px 6px",
-                    borderRadius: 8,
+                    borderRadius: r.control,
                     background:
-                      openField === row.key ? "rgba(255,255,255,0.04)" : "transparent",
+                      openField === row.key ? tokenAlpha("action", 0.1) : "transparent",
                     border: "1px solid transparent",
                     color: row.met ? TEXT_SECONDARY : TEXT_PRIMARY,
                     cursor: "pointer",
@@ -484,7 +472,7 @@ export function CompletenessPanel({
                     style={{
                       ...tickBase,
                       background: row.met ? hexToRgba(TEAL, 0.18) : "transparent",
-                      border: `1px solid ${row.met ? hexToRgba(TEAL, 0.5) : "rgba(255,255,255,0.14)"}`,
+                      border: `1px solid ${row.met ? t.evidence : t.line}`,
                       color: TEAL,
                     }}
                   >

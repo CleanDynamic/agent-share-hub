@@ -78,7 +78,7 @@ export function TimestampField({
         <p
           style={{
             fontSize: 11,
-            fontWeight: 300,
+            fontWeight: 400,
             lineHeight: 1.5,
             margin: 0,
             fontFamily:

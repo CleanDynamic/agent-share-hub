@@ -46,11 +46,12 @@ import {
   HAIRLINE,
   TEXT_MUTED,
   TEXT_SECONDARY,
-  cardGlass,
   labelText,
 } from "@/components/build/tokens";
 import { FieldShell } from "../SchemaForm";
 import { resolveWidget, type FieldWidgetProps } from "./index";
+import { r } from "@/lib/theme/radius";
+import { workspaceCard } from "@/components/shell/WorkspaceBar";
 
 /** A row is an object keyed by the sub-field keys. Anything else is repaired. */
 type Row = Record<string, Json | undefined>;
@@ -155,7 +156,7 @@ const removeStyle: React.CSSProperties = {
   background: "transparent",
   border: "none",
   padding: 0,
-  borderRadius: 4,
+  borderRadius: r.chip,
   color: TEXT_MUTED,
   cursor: "pointer",
 };
@@ -189,7 +190,7 @@ function ListRow({
     <li
       ref={setNodeRef}
       style={{
-        ...cardGlass,
+        ...workspaceCard,
         display: "flex",
         alignItems: "flex-start",
         gap: 6,
@@ -409,7 +410,7 @@ export function ListField({ field, value, onChange, id, touched, compact }: Fiel
             gap: 6,
             alignSelf: "flex-start",
             padding: "5px 10px",
-            borderRadius: 8,
+            borderRadius: r.control,
             background: "transparent",
             border: `1px dashed ${HAIRLINE}`,
             color: TEXT_SECONDARY,

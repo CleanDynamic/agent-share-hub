@@ -6,7 +6,8 @@
 
 import { FieldShell } from "../SchemaForm";
 import { CONTROL_BORDER, TEAL_TRACK, type FieldWidgetProps } from "./index";
-import { TEXT_MUTED } from "@/components/build/tokens";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 
 const TRACK_WIDTH = 34;
 const TRACK_HEIGHT = 20;
@@ -43,11 +44,14 @@ export function BooleanField({
           width: TRACK_WIDTH,
           height: TRACK_HEIGHT,
           padding: 0,
-          borderRadius: TRACK_HEIGHT,
+          /* `--r-control`, which is the token for a switch track. At 20px tall
+             a 12px radius still reads as a capsule — see switchTrackStyle's note
+             on why the token wins over the render anyway. */
+          borderRadius: r.control,
           border: `1px solid ${checked ? TEAL_TRACK : CONTROL_BORDER}`,
-          background: checked ? TEAL_TRACK : "rgba(255,255,255,0.04)",
+          background: checked ? TEAL_TRACK : t.recess,
           cursor: "pointer",
-          transition: "background 140ms ease, border-color 140ms ease",
+          transition: "background 160ms cubic-bezier(.2,.6,.35,1)",
         }}
       >
         <span
@@ -58,9 +62,12 @@ export function BooleanField({
             width: KNOB,
             height: KNOB,
             marginTop: -(KNOB / 2),
-            borderRadius: "50%",
-            background: checked ? "#08080C" : TEXT_MUTED,
-            transition: "left 140ms ease, background 140ms ease",
+            /* A thumb is a circle, which is what `--r-full` is for. */
+            borderRadius: r.full,
+            /* --on-action is the measured ink on a filled control. "#08080C" was
+               the old void: invisible on the track in the light room. */
+            background: checked ? t.onAction : t.text2,
+            transition: "left 160ms cubic-bezier(.2,.6,.35,1)",
           }}
         />
       </button>

@@ -27,6 +27,8 @@ import {
   labelText,
 } from "@/components/build/tokens";
 import { categoryColour, categoryFill } from "@/lib/theme/category";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 
 /** The six categories, in the order the registry defines them. A category the
  *  registry grows beyond these still renders, after them. */
@@ -50,9 +52,9 @@ const trigger: CSSProperties = {
   letterSpacing: "0.04em",
   height: 28,
   padding: "0 12px",
-  borderRadius: 8,
-  background: "rgba(255,255,255,0.025)",
-  border: `1px solid rgba(255,255,255,0.06)`,
+  borderRadius: r.control,
+  background: t.recess,
+  border: `1px solid ${t.line}`,
   color: TEXT_SECONDARY,
   cursor: "pointer",
   flexShrink: 0,
@@ -143,7 +145,7 @@ export function AddNodeMenu({ nodeTypes, onAdd, disabled, levelLabel }: AddNodeM
                     style={{
                       width: 6,
                       height: 6,
-                      borderRadius: 100,
+                      borderRadius: r.chip,
                       background: fill.color,
                       boxShadow: `0 0 0 3px ${fill.background}`,
                       flexShrink: 0,

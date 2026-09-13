@@ -12,7 +12,7 @@
 // promise appears only once there is something for it to be a promise about,
 // and it is worded as a plain statement rather than a policy:
 //
-//   "These aren't in your post. They stay private until you place them."
+//   "Nothing here is in your post yet. It stays private until you place it."
 //
 // The one thing an empty tray still does is answer a drag. The whole panel is
 // one droppable, and while a node is held over it the drop hint comes back:
@@ -21,27 +21,38 @@
 // NS-P34 will land Build File imports here. `justArrived` is the seam it needs
 // and nothing sets it today — a positive count renders one line above the
 // list, an absent or zero count renders nothing at all.
+//
+// BG-P23 — REPAINTED, AND THE GLASS IS GONE. Every item used to be `cardGlass`,
+// which is `--glass-2` plus a `--glass-border`: three blurred surfaces per tray
+// and a blurred panel behind them, in the one place the theme forbids glass
+// outright. A working surface carries depth with `--recess` and hairlines so the
+// content is what stands out, and this panel is now flat. The item's own prose
+// also came off weight 300, which is below the theme's floor for anything under
+// 18px — a label nobody can read is not a quieter label.
 
 import type { CSSProperties } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import type { Json } from "@/integrations/supabase/types";
 import type { BuildNode, NodeType } from "@/lib/build";
-import {
-  HAIRLINE,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  cardGlass,
-  hexToRgba,
-  labelText,
-} from "@/components/build/tokens";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
+import { body, data as dataType, eyebrow } from "@/lib/theme/type";
 import { TypePill } from "./TreeNode";
 import { TRAY_DROP_ID, type NodeDrag } from "./useNodeDrag";
 
 /** Long enough to recognise the thing, short enough to stay one or two lines. */
 const SUMMARY_LIMIT = 110;
+
+/**
+ * The privacy line, reworded (BG-P23) and held as a constant because it is a
+ * promise rather than a caption.
+ *
+ * It said "These aren't in your post. They stay private until you place them."
+ * Plural agreement with a one-item tray was the smaller problem; the larger one
+ * is that the composer now has a POST at the top of it, so "your post" names a
+ * thing on screen and the sentence can point at it plainly.
+ */
+const TRAY_PRIVACY = "Nothing here is in your post yet. It stays private until you place it.";
 
 function isRecord(value: unknown): value is Record<string, Json> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -102,20 +113,29 @@ function TrayItem({
   const source = describeSource(node.source_ref);
 
   const style: CSSProperties = {
-    ...cardGlass,
     display: "flex",
     flexDirection: "column",
     gap: 6,
     padding: "10px 10px 10px 8px",
-    borderLeft: `2px solid ${isSelected ? ORANGE : "transparent"}`,
-    background: isSelected ? "rgba(232,87,26,0.08)" : cardGlass.background,
-    opacity: isDragging ? 0.4 : 1,
+    /* An item is a row, so `--r-control`. Flat on the ground with one hairline;
+       selection is a `--action` left edge over a low-alpha `--action` ground,
+       the same two moves the tree's selected row makes, so the two panels agree
+       about what "chosen" looks like. */
+    borderRadius: r.control,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: t.line,
+    borderLeftWidth: 2,
+    borderLeftColor: isSelected ? t.action : t.line,
+    background: isSelected ? tokenAlpha("action", 0.1) : t.bg,
+    opacity: isDragging ? 0.6 : 1,
     cursor: "grab",
     touchAction: "none",
     textAlign: "left",
     fontFamily: "inherit",
     width: "100%",
-    transition: "background 120ms ease",
+    /* transform and opacity only; a colour change is cheap but a shadow is not. */
+    transition: "opacity 200ms cubic-bezier(.2,.6,.35,1)",
   };
 
   return (
@@ -131,16 +151,18 @@ function TrayItem({
         <TypePill nodeType={nodeType} typeKey={node.type} />
         <span
           style={{
+            ...body,
             fontSize: 13,
-            fontWeight: 300,
+            fontWeight: 400,
             lineHeight: 1.5,
-            color: summary ? TEXT_PRIMARY : TEXT_MUTED,
+            color: summary ? t.text : t.text2,
           }}
         >
           {summary ?? `Untitled ${nodeType?.label ?? node.type}`}
         </span>
+        {/* Where it was captured from is data about the row, so mono. */}
         {source ? (
-          <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>{source}</span>
+          <span style={{ ...dataType, fontSize: 11, color: t.text2 }}>{source}</span>
         ) : null}
       </button>
     </li>
@@ -194,19 +216,26 @@ export function TrayPanel({
         gap: 12,
         padding: 18,
         minHeight: "100%",
-        background: isOver ? hexToRgba(TEAL, 0.06) : "transparent",
-        transition: "background 120ms ease",
+        /* The drop answer is a ground, not a glow: --recess is the token for a
+           surface the page is cut into, which is what a target should look like
+           while something is held over it. */
+        background: isOver ? t.recess : "transparent",
+        transition: "background 200ms cubic-bezier(.2,.6,.35,1)",
       }}
     >
       {/* The whole panel when the tray is empty: a count, in the quietest
           weight the token set has, naming what it is in words a creator would
           use rather than the word "tray". */}
+      {/* Mono, and tabular, because this is a count: the digit must not shift
+          the label as the tray fills. --text2 in both states — the theme
+          publishes two text tokens, not three, and the collapsed header was
+          reaching for a third rung that was never legible. */}
       <span
         data-testid="tray-header"
         style={{
-          ...labelText,
-          textTransform: "uppercase",
-          color: hasItems ? TEXT_SECONDARY : TEXT_MUTED,
+          ...eyebrow,
+          color: hasItems ? t.text : t.text2,
+          fontVariantNumeric: "tabular-nums",
         }}
       >
         {`Not placed yet · ${tray.length}`}
@@ -216,16 +245,20 @@ export function TrayPanel({
         <p
           data-testid="tray-arrival"
           style={{
+            ...body,
             margin: 0,
             padding: "8px 10px",
-            borderRadius: 8,
-            border: `1px solid ${hexToRgba(TEAL, 0.35)}`,
-            background: hexToRgba(TEAL, 0.08),
+            borderRadius: r.chip,
+            /* --evidence-fill is the measured ground for "this happened". The
+               ink on it is --text, which the theme measures at 11.89 on
+               Exhibition and higher on Dusk — --evidence on that fill is 4.44 in
+               the light room, under the 4.5 text floor, so it carries the border
+               instead, where the floor is 3.0. */
+            border: `1px solid ${t.evidence}`,
+            background: t.evidenceFill,
             fontSize: 12,
-            fontWeight: 500,
-            letterSpacing: "0.04em",
             lineHeight: 1.5,
-            color: TEAL,
+            color: t.text,
           }}
         >
           {`${arrived} ${arrived === 1 ? "item" : "items"} arrived — drag the keepers into your build`}
@@ -237,19 +270,18 @@ export function TrayPanel({
            material it does not hold. */
         <p
           style={{
+            ...body,
             margin: 0,
             padding: "8px 10px",
-            borderRadius: 8,
-            border: `1px solid ${HAIRLINE}`,
-            background: "rgba(255,255,255,0.02)",
+            borderRadius: r.chip,
+            border: `1px solid ${t.line}`,
+            background: t.recess,
             fontSize: 12,
-            fontWeight: 500,
-            letterSpacing: "0.04em",
             lineHeight: 1.5,
-            color: TEXT_SECONDARY,
+            color: t.text2,
           }}
         >
-          {"These aren't in your post. They stay private until you place them."}
+          {TRAY_PRIVACY}
         </p>
       ) : null}
 
@@ -268,7 +300,7 @@ export function TrayPanel({
       ) : isOver ? (
         // Nothing at rest, but a drag still gets an answer: this hint is a reply
         // to a gesture the creator is already making, not an idle invitation.
-        <p style={{ fontSize: 13, fontWeight: 300, lineHeight: 1.6, margin: 0, color: TEXT_MUTED }}>
+        <p style={{ ...body, fontSize: 13, lineHeight: 1.6, margin: 0, color: t.text2 }}>
           Drop it here to unplace it.
         </p>
       ) : null}

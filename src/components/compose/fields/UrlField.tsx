@@ -19,6 +19,7 @@ import {
   focusControl,
   type FieldWidgetProps,
 } from "./index";
+import { r } from "@/lib/theme/radius";
 
 /**
  * A scheme and, for the web schemes, a host.
@@ -109,7 +110,7 @@ export function UrlField({
               width: 24,
               height: 24,
               flexShrink: 0,
-              borderRadius: 6,
+              borderRadius: r.chip,
               color: TEXT_MUTED,
             }}
           >
@@ -122,7 +123,7 @@ export function UrlField({
         <p
           style={{
             fontSize: 11,
-            fontWeight: 300,
+            fontWeight: 400,
             lineHeight: 1.5,
             margin: 0,
             color: ORANGE,

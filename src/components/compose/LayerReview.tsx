@@ -55,13 +55,12 @@ import {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   bodyText,
-  cardGlass,
   headingText,
   hexToRgba,
   labelText,
-  panelGlass,
   titleText,
 } from "@/components/build/tokens";
+import { workspaceCard, workspacePanel } from "@/components/shell/WorkspaceBar";
 
 /** Below this the two layers cannot sit beside each other, so they stack. */
 const TWO_COLUMN_MIN = 900;
@@ -162,7 +161,7 @@ function StepEditor({
       : {};
 
   return (
-    <li style={{ ...cardGlass, padding: "10px 12px", display: "flex", gap: 10 }}>
+    <li style={{ ...workspaceCard, padding: "10px 12px", display: "flex", gap: 10 }}>
       <span
         aria-hidden
         style={{
@@ -489,7 +488,7 @@ export function LayerReview({
       <div
         data-visual-slot="layer-review"
         style={{
-          ...panelGlass,
+          ...workspacePanel,
           width: "min(1040px, 100%)",
           maxHeight: "100%",
           overflowY: "auto",

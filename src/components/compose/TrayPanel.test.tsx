@@ -125,11 +125,17 @@ describe("TrayPanel", () => {
     it("states the privacy promise in plain words", () => {
       renderTray({ tray: [makeNode("n1", "First capture")] });
 
+      // BG-P23's wording. The composer has a POST at the top of it now, so the
+      // sentence can point at a thing on screen, and it agrees with a one-item
+      // tray rather than assuming several.
       expect(
-        screen.getByText("These aren't in your post. They stay private until you place them.")
+        screen.getByText(
+          "Nothing here is in your post yet. It stays private until you place it."
+        )
       ).toBeInTheDocument();
-      // The NS-P29 wording is gone rather than shown beside the new one.
+      // Each earlier wording is gone rather than shown beside the new one.
       expect(screen.queryByText(/Anything left here stays private/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/These aren't in your post/i)).not.toBeInTheDocument();
     });
   });
 

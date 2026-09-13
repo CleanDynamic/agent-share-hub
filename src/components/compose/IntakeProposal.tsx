@@ -42,13 +42,15 @@ import {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   bodyText,
-  cardGlass,
   hexToRgba,
   labelText,
   pageHeadingText,
   titleText,
 } from "@/components/build/tokens";
 import { CategoryChip } from "@/components/brand/CategoryChip";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
+import { workspaceCard } from "@/components/shell/WorkspaceBar";
 
 /** Long enough to recognise the item, short enough to stay on one line. */
 const SUMMARY_LIMIT = 96;
@@ -125,7 +127,7 @@ function InferredMark({ reason }: { reason: string | null }) {
         fontSize: 10,
         textTransform: "uppercase",
         padding: "2px 7px",
-        borderRadius: 100,
+        borderRadius: r.chip,
         whiteSpace: "nowrap",
         cursor: "help",
         background: hexToRgba(ORANGE, 0.14),
@@ -163,9 +165,9 @@ function KeepToggle({
         gap: 6,
         flexShrink: 0,
         padding: "3px 9px",
-        borderRadius: 100,
+        borderRadius: r.chip,
         cursor: "pointer",
-        background: kept ? hexToRgba(TEAL, 0.12) : "rgba(255,255,255,0.03)",
+        background: kept ? t.evidenceFill : t.recess,
         border: `1px solid ${kept ? hexToRgba(TEAL, 0.32) : HAIRLINE}`,
         color: kept ? TEAL : TEXT_MUTED,
         transition: "background 120ms ease, border-color 120ms ease, color 120ms ease",
@@ -180,7 +182,7 @@ function KeepToggle({
 /** A row that dims when discarded, so the kept set is readable at a glance. */
 function rowStyle(kept: boolean): CSSProperties {
   return {
-    ...cardGlass,
+    ...workspaceCard,
     display: "flex",
     alignItems: "flex-start",
     gap: 10,
@@ -508,7 +510,7 @@ function SecretsBanner({ secrets }: { secrets: SecretWarning[] }) {
         flexDirection: "column",
         gap: 8,
         padding: "12px 14px",
-        borderRadius: 10,
+        borderRadius: r.control,
         border: `1px solid ${hexToRgba(GAP_RED, 0.3)}`,
         background: hexToRgba(GAP_RED, 0.06),
       }}
@@ -669,7 +671,7 @@ export function IntakeProposal({
             display: "flex",
             flexDirection: "column",
             gap: 6,
-            borderRadius: 8,
+            borderRadius: r.control,
             border: `1px solid ${hexToRgba(ORANGE, 0.22)}`,
             background: hexToRgba(ORANGE, 0.05),
           }}
@@ -725,7 +727,7 @@ export function IntakeProposal({
             ...bodyText,
             margin: 0,
             padding: "10px 12px",
-            borderRadius: 8,
+            borderRadius: r.control,
             border: `1px solid ${hexToRgba(GAP_RED, 0.3)}`,
             background: hexToRgba(GAP_RED, 0.06),
             color: TEXT_PRIMARY,
@@ -760,8 +762,8 @@ export function IntakeProposal({
               letterSpacing: "0.04em",
               height: 34,
               padding: "0 18px",
-              borderRadius: 100,
-              background: "rgba(255,255,255,0.025)",
+              borderRadius: r.chip,
+              background: t.recess,
               border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
               color: isWriting ? TEXT_MUTED : TEAL,
               cursor: isWriting ? "wait" : "pointer",

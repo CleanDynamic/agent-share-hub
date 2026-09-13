@@ -194,7 +194,14 @@ describe("compose, on a rebuild", () => {
     expect(row(container, "d1n2").getAttribute("data-rebuild")).toBe("inherited");
     // Quiet grey on what the creator arrived with. The first row is the one
     // ?from=rebuild selected, and the selected accent still wins over it.
-    expect(row(container, "d1n2").style.borderLeft).toBe("2px solid rgba(255,255,255,0.18)");
+    // BG-P23 — ASSERTED SEMANTICALLY, NOT BY COLOUR. The inherited accent is
+    // `var(--line)` now and jsdom's CSS parser stores no `var()` at all, so a
+    // colour read here would pass or fail for reasons that have nothing to do
+    // with the component. The facts that matter are that this row is not the
+    // selected one and that its treatment is inherited; the token itself is
+    // asserted in NodeTree.test.tsx through `staticDoc`, where it can be seen.
+    expect(row(container, "d1n2").parentElement?.getAttribute("aria-selected")).toBe("false");
+    expect(row(container, "d1n2").getAttribute("data-rebuild")).toBe("inherited");
     expect(screen.queryAllByTestId("rebuild-node-pill")).toHaveLength(0);
 
     expect(screen.getByTestId("rebuild-change-count").textContent).toBe("no changes yet");
@@ -239,17 +246,20 @@ describe("compose, on a rebuild", () => {
     // Selection still outranks the diff: the row being edited is the row the
     // creator needs to find, and the pill carries the other fact meanwhile.
     //
-    // BG-P21 — THE SELECTED ACCENT IS ASSERTED THROUGH THE FILL, NOT THE EDGE.
-    // The edge is `2px solid var(--action)` now, and jsdom's CSS parser drops a
-    // `var()` on assignment rather than storing it, so `style.borderLeft` reads
-    // back empty for a border a browser paints. The selected fill is still a
-    // literal rgba and moves with the same flag, so it carries the claim: this
-    // row reads as selected while its treatment is "changed".
-    expect(row(container, "d1n2").style.background).toBe("rgba(232, 87, 26, 0.08)");
+    // BG-P23 — THE CLAIM MOVES OFF COLOUR ENTIRELY. BG-P21 asserted it through
+    // the selected FILL, which was still a literal rgba once the edge had become
+    // `var(--action)`. That fill is now a low-alpha `--action` through
+    // `color-mix()`, and jsdom stores neither `var()` nor `color-mix()` — so
+    // there is no colour left in this row that a unit test can see. What the
+    // claim was always about is which row reads as selected, and `aria-selected`
+    // says that in the tree's own vocabulary. The tokens are asserted in
+    // NodeTree.test.tsx through `staticDoc`, which never hands the style
+    // attribute to the CSS parser.
+    expect(row(container, "d1n2").parentElement?.getAttribute("aria-selected")).toBe("true");
     expect(row(container, "d1n2").getAttribute("data-rebuild")).toBe("changed");
 
     fireEvent.click(screen.getByText("First prompt"));
-    expect(row(container, "d1n2").style.background).toBe("transparent");
+    expect(row(container, "d1n2").parentElement?.getAttribute("aria-selected")).toBe("false");
     expect(row(container, "d1n2").getAttribute("data-rebuild")).toBe("changed");
     // Untouched material stays quiet.
     expect(row(container, "d1n1").getAttribute("data-rebuild")).toBe("inherited");

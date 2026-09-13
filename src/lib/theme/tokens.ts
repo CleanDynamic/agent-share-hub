@@ -59,3 +59,28 @@ export const t = Object.fromEntries(
  * `cat-${category}`, say — where `t.catInstruction` cannot be spelled out.
  */
 export const tokenVar = (name: TokenName): `var(--${TokenName})` => `var(--${name})`;
+
+/**
+ * One token at a fraction of its opacity, as a ground.
+ *
+ * WHY color-mix RATHER THAN AN rgba() STRING. A semantic token is a
+ * `var(--name)` reference, not a hex, so there are no channels to take apart at
+ * author time — and the whole point of the reference is that its value changes
+ * with `<html data-theme>`. `color-mix` defers the blend to the browser, which
+ * is the only place both facts are known at once.
+ *
+ * It exists because THREE surfaces need the same low-alpha `--action` ground for
+ * a selected row — the compose tray, the node tree and the inspector — and three
+ * hand-written `color-mix` strings are three chances to pick a different
+ * percentage for one state. The deprecated `hexToRgba` in
+ * `src/components/build/tokens.ts` emits exactly this for a token input; this is
+ * that behaviour under a name new code may import.
+ *
+ * Clamped and rounded to a tenth of a percent: `color-mix` rejects a negative or
+ * >100 percentage outright, and an unrounded float prints sixteen digits into
+ * the style attribute for no gain.
+ */
+export function tokenAlpha(name: TokenName, alpha: number): string {
+  const percent = Math.round(Math.min(Math.max(alpha, 0), 1) * 1000) / 10;
+  return `color-mix(in srgb, var(--${name}) ${percent}%, transparent)`;
+}

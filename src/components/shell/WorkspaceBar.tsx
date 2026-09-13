@@ -120,6 +120,28 @@ export const workspacePanel: CSSProperties = {
 };
 
 /**
+ * A card, a row, an inset group standing INSIDE a workspace panel.
+ *
+ * The flat counterpart to `cardGlass` (src/components/build/tokens.ts), which is
+ * `--glass-2` over a `--glass-border` and is therefore glass — forbidden on a
+ * working surface by the rule at the top of this file, whether or not it carries
+ * a blur of its own. `--bg` inside a `--recess` panel steps the opposite way
+ * from the panel's own step off the ground, so a card reads as an object ON the
+ * panel in both rooms, and one `--line` hairline draws its edge.
+ *
+ * It lives here beside `workspacePanel` because this file is where the
+ * workspace's flat vocabulary is kept, and five surfaces across compose needed
+ * the same three declarations.
+ */
+export const workspaceCard: CSSProperties = {
+  backgroundColor: t.bg,
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderColor: t.line,
+  borderRadius: r.card,
+};
+
+/**
  * The hairline the workspace separates anything with.
  *
  * LONGHANDS RATHER THAN THE `border: 1px solid var(--line)` SHORTHAND, here and
@@ -340,7 +362,14 @@ function EditableContext({
       style={{
         ...fieldStyle(state),
         ...labelType,
-        fontSize: 15,
+        /* BG-P23 — THE TITLE OUTRANKS BODY, because it is the one thing on the
+           screen that names the work. 18 against a 16–17 body is one clear step
+           up rather than the half-step 17 would be, and 600 weight clears the
+           scale's floor for anything under 18. The height below is unchanged, so
+           the bar is still WORKSPACE_BAR_HEIGHT — measured by the tier-3 spec at
+           every width, which is what stops a type change from resizing the
+           chrome the tray, tree and inspector share their pixels with. */
+        fontSize: 18,
         fontWeight: 600,
         fontFamily: "inherit",
         flex: 1,

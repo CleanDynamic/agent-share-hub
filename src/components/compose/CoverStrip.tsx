@@ -1,4 +1,4 @@
-// The compose workspace's cover strip: the first thing the page asks for.
+// The compose workspace's THREAD EDITOR: the place a creator writes the post.
 //
 // THE QUESTION IT PUTS FIRST
 // Everything below this strip — the tray, the anatomy tree, the inspector — is
@@ -8,62 +8,83 @@
 // post social are asked for here, above all of it: a picture, and a sentence
 // saying what the thing does.
 //
-// WHY IT READS cover_media_id AND NOT resolveCover
-// resolveCover (src/lib/build/cover.ts) is the READ chain: it falls through the
-// explicit cover to the hero node's media to the first evidence image, so a
-// card always has something to show. This strip is the WRITE surface for the
-// first link only. If it rendered the resolved answer, Remove would clear the
-// column and the strip would immediately fill again with whatever the chain
-// found next — the creator would press Remove and watch nothing happen. So it
-// shows the explicit choice, and only that.
+// WHY THE FILE IS STILL CALLED CoverStrip.tsx (BG-P23)
+// It stopped being a cover strip in this prompt. It is now a thread of up to
+// four entries, each a passage of text above a picture, in the creator's order —
+// the same shape BG-P09's card renders. The file keeps its name so that the one
+// import in ComposeFrame does not churn, and every word a CREATOR reads says
+// "thread". Read the name as the file's address, not as its subject.
 //
-// WHY THE WRITE GOES THROUGH setCover RATHER THAN patchBuild
-// Every other header edit in the workspace is debounced by useComposeBuild: a
-// title is typed, and 800ms later one row update carries it. An upload is not
-// typing. It is a single deliberate act that has already cost the creator a
-// wait, and it should be durable the moment it returns rather than 800ms after
-// it. setCover is the lib layer's named write for exactly this one column, so
-// the strip calls it and then merges the answer back into the workspace's
-// cached record — that one key, not the whole row, so a debounced save landing
-// at the same moment keeps whatever it wrote.
+// WHY IT WRITES THE SET AND NEVER cover_media_id
+// BG-P07b made the SET the source of truth and cover_media_id derived: a trigger
+// mirrors position 0 into that column. So reordering to position 0 IS changing
+// the cover, and this surface must not write the column itself — two writers on
+// one derived value is how the cover and the post drift apart. setCover is gone
+// from this file for that reason.
+//
+// WHY THE FIRST ENTRY'S TEXT IS builds.outcome AND NOT post_text
+// The first entry's text IS the build's one-sentence description, exactly as a
+// tweet's text sits above its image, and it is deliberately NOT duplicated into
+// post_text — postEntriesOf (src/lib/build/cover.ts) falls position 0 back to
+// the build's own description, and that fallback is the single place the rule
+// lives. `builds.outcome` is the column holding it: the whole rebuilt product —
+// the gallery query, the completeness signals, the rebuild change lines, the
+// portable export, intake — reads `outcome` for the one-sentence description,
+// and nothing in it reads `builds.description`, which belongs to the legacy app.
+// So this field writes `outcome` through the workspace's debounced save, the
+// same path the title takes, and the preview updates because the resolver reads
+// the same column. See the handoff note.
 //
 // Styled inline, like every other surface on this route: Tailwind's generated
-// utilities win over hand-written classes at build time.
+// utilities win over hand-written classes at build time. And NO GLASS — a
+// working surface carries depth with `--recess` and hairlines (BG-P16).
 
-import { useCallback, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, DragEvent } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Play } from "lucide-react";
 import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { GripVertical, Play } from "lucide-react";
+import {
+  MAX_POST_MEDIA,
   MEDIA_MAX_BYTES,
+  POST_TEXT_MAX,
+  PostMediaError,
   acceptedMediaTypes,
+  addPostMedia,
+  getPostMedia,
   mediaKindFor,
-  setCover,
+  postEntriesOf,
+  removePostMedia,
+  setPostMedia,
+  setPostMediaText,
   type Build,
   type BuildMedia,
   type BuildPatch,
-  type BuildRecord,
   type MediaKind,
   type MediaRef,
+  type PostEntry,
 } from "@/lib/build";
 import {
   MEDIA_WIDTH,
   MediaUnavailable,
   useMediaSrc,
 } from "@/components/build/MediaFigure";
-import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
+import { SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
 import { useComposeMedia } from "@/hooks/useComposeMedia";
-import {
-  GAP_RED,
-  HAIRLINE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  hexToRgba,
-  labelText,
-} from "@/components/build/tokens";
+import { fieldStyle, prefersReducedMotion, hoverIsFine } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
+import { body, data as dataType, eyebrow, label as labelType } from "@/lib/theme/type";
 
 /**
  * The copy, held as constants because it is the design.
@@ -73,30 +94,36 @@ import {
  * a named constant to lose it rather than quietly reword a string in place.
  */
 const DROP_HEADLINE = "Show what you made — drop a screenshot or video, or browse";
-const DROP_SUBLINE = "This becomes your post's picture everywhere on buildgallery.";
-const OUTCOME_PLACEHOLDER = "What does it do? One sentence, your words.";
+const DROP_SUBLINE = "This becomes the first picture of your post, everywhere on buildgallery.";
+const ADD_HEADLINE = "Add another picture or video";
+/**
+ * The description's question, asked ONCE.
+ *
+ * It is the LABEL rather than the placeholder. As a placeholder it vanished the
+ * moment a creator started typing — taking the question with it — and as both it
+ * would print the same sentence twice in a strip that has three other things to
+ * say. A label stays put, and the field below it needs no hint of its own.
+ */
+const OUTCOME_LABEL = "What does it do? One sentence, your words.";
+const ENTRY_PLACEHOLDER = "Say what this shows";
+
+/** The refusal for a fifth upload. A plain sentence, not an error. */
+const FULL_SENTENCE = `A post shows ${MAX_POST_MEDIA} pictures at most. Remove one to add another.`;
 
 /** A cover is something a reader can see. Audio and documents are not covers. */
 const COVER_KINDS: readonly MediaKind[] = ["image", "video"];
 
-/** Empty, the target is a band. Filled, it is a 16:9 thumbnail 320 x 180. */
+/** Empty, the target is a band. */
 const EMPTY_HEIGHT = 120;
-const THUMB_WIDTH = 320;
 
-/** The description sits beside the cover, not across the whole workspace. */
-const OUTCOME_MAX_WIDTH = 520;
+/** An entry's still, in the row. 16:9 at this width. */
+const ENTRY_THUMB_WIDTH = 148;
 
-const quietButton: CSSProperties = {
-  ...labelText,
-  fontFamily: "inherit",
-  fontSize: 11,
-  padding: "3px 9px",
-  borderRadius: 6,
-  background: "rgba(8,8,12,0.72)",
-  border: `1px solid rgba(255,255,255,0.14)`,
-  color: TEXT_PRIMARY,
-  cursor: "pointer",
-};
+/** Beside the editor above this width, beneath it below. */
+const PREVIEW_BESIDE_MIN = 1024;
+
+/** The preview column. A feed card's own measure, so it previews honestly. */
+const PREVIEW_WIDTH = 420;
 
 /** The `accept` attribute, filtered out of the lib layer's own list. */
 export function coverAcceptedTypes(): string {
@@ -106,7 +133,7 @@ export function coverAcceptedTypes(): string {
 }
 
 /**
- * Why this file cannot be a cover, or null when it can.
+ * Why this file cannot be a post picture, or null when it can.
  *
  * Checked HERE, before uploadMedia is called at all, so a 40MB video costs no
  * request and no wait. The sentence names the limit, because "too large" is not
@@ -139,16 +166,34 @@ function posterRef(media: BuildMedia | null | undefined): MediaRef | null {
   return { bucket: media.bucket, path: media.poster_path, kind: "image" };
 }
 
+/**
+ * The post's own rows, cached apart from the workspace's media list.
+ *
+ * A SECOND QUERY, AND IT HAS TO BE. getMediaForBuild selects MEDIA_COLUMNS,
+ * which does not include post_position or post_text — so the list every other
+ * panel reads reports no entries at all, and postEntriesOf would drop every row
+ * it was handed. getPostMedia is the read that carries the two columns, and
+ * cover.ts names this surface as its caller.
+ */
+export function postMediaQueryKey(buildId: string) {
+  return ["compose", "post-media", buildId] as const;
+}
+
+/** transform and opacity only, and never against a creator's stated wish. */
+function dragTransition(): string | undefined {
+  return prefersReducedMotion() ? undefined : "transform 200ms cubic-bezier(.2,.6,.35,1)";
+}
+
 interface CoverStripProps {
   build: Build;
   /** The workspace's debounced header write. The description goes through it. */
   onPatch: (patch: BuildPatch) => void;
-  /** True below the compose breakpoint: the cover stacks above the description. */
+  /** True below the compose breakpoint: the editor stacks. */
   stacked: boolean;
 }
 
 /**
- * The cover, and the sentence beside it.
+ * The thread, and the preview of what it publishes as.
  *
  * A NEW element between the top bar and the three-panel frame. Nothing that
  * already lays this page out is touched: the panel row below is flex:1 and
@@ -162,41 +207,65 @@ export function CoverStrip({ build, onPatch, stacked }: CoverStripProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [over, setOver] = useState(false);
-  const [outcomeFocused, setOutcomeFocused] = useState(false);
 
-  const coverId = build.cover_media_id ?? null;
-  // undefined while the media list is still loading, null when it holds no
-  // such row. See ResolveMedia in renderers/shared.tsx.
-  const cover = coverId ? media?.resolveMedia(coverId) : null;
+  const key = useMemo(() => postMediaQueryKey(build.id), [build.id]);
+  const { data: rows } = useQuery<BuildMedia[]>({
+    queryKey: key,
+    queryFn: () => getPostMedia(build.id),
+    // The writes below put their own answer in the cache, so there is nothing
+    // to refetch for — the same discipline the workspace's media list keeps.
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+
+  const postRows = useMemo(() => rows ?? [], [rows]);
+  const entries = useMemo(() => postEntriesOf(build, postRows), [build, postRows]);
+  const full = entries.length >= MAX_POST_MEDIA;
+
+  /** Every write returns the new set; one place puts it in the cache. */
+  const commit = useCallback(
+    (next: BuildMedia[]) => queryClient.setQueryData<BuildMedia[]>(key, next),
+    [key, queryClient]
+  );
 
   /**
-   * Write the column, then reconcile the workspace's cached record.
+   * One saved row back into the set, in place.
    *
-   * One key rather than the whole returned row: useComposeBuild may have a
-   * debounced save open on the same record, and replacing its build wholesale
-   * would drop whatever that save is about to reconcile.
+   * setPostMediaText returns the row it wrote and nothing else, because it
+   * changed nothing else — so this merges rather than replacing, and a position
+   * the text write never touched cannot be reordered by it.
    */
-  const write = useCallback(
-    async (mediaId: string | null) => {
-      const row = await setCover(build.id, mediaId);
-      queryClient.setQueryData<BuildRecord | null>(
-        composeBuildQueryKey(build.id),
-        (previous) =>
-          previous
-            ? {
-                ...previous,
-                build: { ...previous.build, cover_media_id: row.cover_media_id },
-              }
-            : previous
-      );
-    },
-    [build.id, queryClient]
+  const mergeRow = useCallback(
+    (row: BuildMedia) =>
+      queryClient.setQueryData<BuildMedia[]>(key, (previous) =>
+        (previous ?? []).map((existing) => (existing.id === row.id ? row : existing))
+      ),
+    [key, queryClient]
   );
+
+  /**
+   * A refusal the data layer names is a sentence; anything else is the message.
+   *
+   * PostMediaError carries a code precisely so "full" can be shown next to the
+   * control that is full rather than toasted as a failure — see cover.ts.
+   */
+  const report = useCallback((cause: unknown) => {
+    if (cause instanceof PostMediaError) {
+      setError(cause.code === "full" ? FULL_SENTENCE : cause.message);
+      return;
+    }
+    setError(cause instanceof Error ? cause.message : String(cause));
+  }, []);
 
   const accept = useCallback(
     async (file: File | undefined) => {
       if (!media || !file || uploading) return;
       setError(null);
+
+      if (full) {
+        setError(FULL_SENTENCE);
+        return;
+      }
 
       const reason = coverRejection(file);
       if (reason) {
@@ -206,40 +275,87 @@ export function CoverStrip({ build, onPatch, stacked }: CoverStripProps) {
 
       setUploading(true);
       try {
-        // nodeId null puts the object under UNPLACED_SEGMENT: a cover is the
-        // build's picture, not any one node's evidence.
+        // nodeId null puts the object under UNPLACED_SEGMENT: a post's picture
+        // is the build's, not any one node's evidence. The upload path itself
+        // is untouched.
         const row = await media.upload(file, { nodeId: null });
-        await write(row.id);
+        commit(await addPostMedia(build.id, row.id));
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : String(cause));
+        report(cause);
       } finally {
         setUploading(false);
       }
     },
-    [media, uploading, write]
+    [build.id, commit, full, media, report, uploading]
   );
 
   /**
-   * Clear the pointer. The uploaded row is left where it is.
+   * Take one entry out. The gap closes and its text goes with it.
    *
-   * Deleting it would be a guess: an unplaced media row is also what a file
-   * dropped on the workspace becomes, and a tray node may already point at
-   * this one. A pointer nobody follows costs nothing; a deleted object a tray
-   * node still references is a broken card.
+   * BOTH are the data layer's job and it does them in one transaction —
+   * removePostMedia reassigns positions from array order, and the database
+   * function nulls the text of a row leaving the set. Reimplementing either
+   * here would be a second answer to a question that already has one.
    */
-  const clear = useCallback(async () => {
-    setError(null);
-    try {
-      await write(null);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    }
-  }, [write]);
+  const remove = useCallback(
+    async (mediaId: string) => {
+      setError(null);
+      try {
+        commit(await removePostMedia(build.id, mediaId));
+      } catch (cause) {
+        report(cause);
+      }
+    },
+    [build.id, commit, report]
+  );
+
+  /**
+   * Reorder, optimistically, then write the whole set.
+   *
+   * The optimistic hop and the revert are useNodeDrag's conventions, kept here
+   * rather than imported because that hook owns build_nodes and this owns one
+   * column of build_media. Text travels with its entry for free: the row moves,
+   * and post_text is on the row — so nothing re-saves text after a drag.
+   */
+  const reorder = useCallback(
+    async (from: number, to: number) => {
+      if (from === to || to < 0 || from < 0) return;
+      const ids = entries.map((entry) => entry.media.id);
+      if (from >= ids.length) return;
+
+      const next = [...ids];
+      const [moved] = next.splice(from, 1);
+      next.splice(to > from ? to - 1 : to, 0, moved);
+      if (next.every((id, index) => id === ids[index])) return;
+
+      const before = postRows;
+      // Optimistic: the rows in the new order, positions renumbered, so the
+      // list and the preview move before the server has agreed.
+      const byId = new Map(before.map((row) => [row.id, row]));
+      commit(
+        next
+          .map((id, index) => {
+            const row = byId.get(id);
+            return row ? { ...row, post_position: index } : null;
+          })
+          .filter((row): row is BuildMedia => row !== null)
+      );
+
+      setError(null);
+      try {
+        commit(await setPostMedia(build.id, next));
+      } catch (cause) {
+        commit(before);
+        report(cause);
+      }
+    },
+    [build.id, commit, entries, postRows, report]
+  );
 
   const browse = useCallback(() => inputRef.current?.click(), []);
 
   // The workspace frame also takes file drops, and turns them into tray nodes.
-  // A drop that landed on the cover is not one of those.
+  // A drop that landed on the thread is not one of those.
   const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -256,33 +372,57 @@ export function CoverStrip({ build, onPatch, stacked }: CoverStripProps) {
     [accept]
   );
 
+  const beside = usePreviewBeside() && !stacked;
+
   return (
     <section
       data-visual-slot="compose-cover"
       data-testid="cover-strip"
-      aria-label="Cover and description"
+      aria-label="Your post"
       style={{
         flexShrink: 0,
         display: "flex",
-        flexDirection: stacked ? "column" : "row",
-        alignItems: stacked ? "stretch" : "flex-start",
-        gap: 14,
+        flexDirection: beside ? "row" : "column",
+        alignItems: "flex-start",
+        gap: 16,
         padding: "12px 14px",
-        borderBottom: `1px solid ${HAIRLINE}`,
-        background: "rgba(255,255,255,0.012)",
+        borderBottom: `1px solid ${t.line}`,
+        /* The ground itself. A working surface asserts nothing behind the work
+           — no tint, no blur; the hairline above is the whole separation. */
+        background: t.bg,
       }}
     >
-      <div
-        style={{
-          // Empty, the target claims the room. Filled, it is 320 wide and the
-          // description moves up beside it.
-          flex: coverId ? "0 0 auto" : "1 1 auto",
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-        }}
-      >
+      <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+        <ThreadHeader count={entries.length} />
+
+        {/* The visible affordance is the band, the rows and their controls;
+            this is what they all open. */}
+        <input
+          ref={inputRef}
+          type="file"
+          aria-label="Picture or video for your post"
+          accept={coverAcceptedTypes()}
+          disabled={!media || uploading}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            // Cleared so choosing the same file twice fires a change again.
+            event.target.value = "";
+            void accept(file);
+          }}
+          style={{ display: "none" }}
+        />
+
+        <ThreadEntries
+          build={build}
+          entries={entries}
+          onPatch={onPatch}
+          onRemove={remove}
+          onReplace={browse}
+          onReorder={reorder}
+          onError={report}
+          onMergeRow={mergeRow}
+        />
+
         <div
           data-testid="cover-drop"
           onDragOver={onDragOver}
@@ -291,33 +431,26 @@ export function CoverStrip({ build, onPatch, stacked }: CoverStripProps) {
           onDrop={onDrop}
           style={{ display: "flex", minWidth: 0 }}
         >
-          {/* The visible affordance is the band and the two hover controls;
-              this is what they open. */}
-          <input
-            ref={inputRef}
-            type="file"
-            aria-label="Cover image or video"
-            accept={coverAcceptedTypes()}
-            disabled={!media || uploading}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              // Cleared so choosing the same file twice fires a change again.
-              event.target.value = "";
-              void accept(file);
-            }}
-            style={{ display: "none" }}
-          />
-
           {uploading ? (
             <Uploading />
-          ) : coverId ? (
-            <CoverThumb
-              media={cover}
-              onReplace={browse}
-              onRemove={() => void clear()}
-            />
+          ) : full ? (
+            <p
+              style={{
+                ...body,
+                fontSize: 13,
+                margin: 0,
+                color: t.text2,
+              }}
+            >
+              {FULL_SENTENCE}
+            </p>
           ) : (
-            <EmptyTarget over={over} disabled={!media} onBrowse={browse} />
+            <EmptyTarget
+              over={over}
+              disabled={!media}
+              onBrowse={browse}
+              first={entries.length === 0}
+            />
           )}
         </div>
 
@@ -325,11 +458,11 @@ export function CoverStrip({ build, onPatch, stacked }: CoverStripProps) {
           <span
             role="alert"
             style={{
-              ...bodyText,
+              ...body,
               fontSize: 12,
               lineHeight: 1.5,
-              color: GAP_RED,
-              maxWidth: 520,
+              color: t.catBreakage,
+              maxWidth: "60ch",
             }}
           >
             {error}
@@ -337,170 +470,409 @@ export function CoverStrip({ build, onPatch, stacked }: CoverStripProps) {
         ) : null}
       </div>
 
-      <div
-        style={{
-          flex: "1 1 0",
-          minWidth: 0,
-          maxWidth: stacked ? undefined : OUTCOME_MAX_WIDTH,
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-        }}
-      >
-        <label
-          htmlFor="compose-outcome"
-          style={{ ...labelText, textTransform: "uppercase", color: TEXT_MUTED }}
-        >
-          Description
-        </label>
-        {/* builds.outcome. The column keeps its name; the word a creator reads
-            is Description, because "outcome" is a word about the record and
-            this is a question about their work. */}
-        <input
-          id="compose-outcome"
-          data-testid="outcome-input"
-          type="text"
-          value={build.outcome ?? ""}
-          placeholder={OUTCOME_PLACEHOLDER}
-          spellCheck
-          onChange={(event) =>
-            onPatch({ outcome: event.target.value === "" ? null : event.target.value })
-          }
-          onFocus={() => setOutcomeFocused(true)}
-          onBlur={() => setOutcomeFocused(false)}
-          style={{
-            ...bodyText,
-            fontFamily: "inherit",
-            fontSize: 14,
-            width: "100%",
-            height: 38,
-            padding: "0 10px",
-            borderRadius: 8,
-            outline: "none",
-            background: outcomeFocused
-              ? "rgba(255,255,255,0.05)"
-              : "rgba(255,255,255,0.025)",
-            border: `1px solid ${
-              outcomeFocused ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.06)"
-            }`,
-            color: TEXT_PRIMARY,
-            transition: "background 120ms ease, border-color 120ms ease",
-          }}
-        />
-        {/* Dropped when the strip is stacked: on a phone this band already
-            costs a third of the viewport before the tree begins, and the
-            placeholder above says the same thing in fewer words. */}
-        {stacked ? null : (
-          <span
-            style={{
-              ...labelText,
-              fontSize: 11,
-              fontWeight: 400,
-              letterSpacing: 0,
-              color: TEXT_MUTED,
-            }}
-          >
-            The line a reader sees under your cover, everywhere on buildgallery.
-          </span>
-        )}
-      </div>
+      <ThreadPreview build={build} rows={postRows} beside={beside} />
     </section>
   );
 }
 
-/** The band that asks the question. A button, so a keyboard reaches it. */
-function EmptyTarget({
-  over,
-  disabled,
-  onBrowse,
-}: {
-  over: boolean;
-  disabled: boolean;
-  onBrowse: () => void;
-}) {
+/** Beside the editor at PREVIEW_BESIDE_MIN and up. */
+function usePreviewBeside(): boolean {
+  /* matchMedia rather than a CSS media query, for the reason every surface on
+     this route is styled inline: there is no stylesheet to put a breakpoint in.
+     Same shape as ComposeFrame's useIsSingleColumn. */
+  const [beside, setBeside] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia(`(min-width: ${PREVIEW_BESIDE_MIN}px)`).matches
+  );
+
+  useEffect(() => {
+    const query = window.matchMedia(`(min-width: ${PREVIEW_BESIDE_MIN}px)`);
+    const onChange = () => setBeside(query.matches);
+    onChange();
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  return beside;
+}
+
+/** The eyebrow and the count. Mono, because a count is data about the surface. */
+function ThreadHeader({ count }: { count: number }) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onBrowse}
-      style={{
-        fontFamily: "inherit",
-        width: "100%",
-        minHeight: EMPTY_HEIGHT,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 6,
-        padding: "14px 16px",
-        borderRadius: 12,
-        border: `1px dashed ${over ? TEAL : "rgba(255,255,255,0.14)"}`,
-        background: over ? hexToRgba(TEAL, 0.06) : "rgba(255,255,255,0.02)",
-        textAlign: "center",
-        cursor: disabled ? "default" : "pointer",
-        transition: "background 120ms ease, border-color 120ms ease",
-      }}
-    >
-      <span style={{ ...bodyText, fontSize: 14, fontWeight: 400, color: TEXT_PRIMARY }}>
-        {DROP_HEADLINE}
+    <div style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+      <h2 style={{ ...eyebrow, color: t.text, margin: 0 }}>Your post</h2>
+      <span
+        data-testid="thread-count"
+        style={{ ...dataType, fontSize: 12, color: t.text2, fontVariantNumeric: "tabular-nums" }}
+      >
+        {count} / {MAX_POST_MEDIA}
       </span>
-      <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED }}>
-        {DROP_SUBLINE}
-      </span>
-    </button>
+    </div>
+  );
+}
+
+/* ── The entries ───────────────────────────────────────────────────────────────
+   One draggable row per entry, with an insertion point between each pair.
+
+   THE DRAG IS useNodeDrag'S CONVENTIONS, NOT A SECOND MECHANISM. Same library,
+   same sensors (4px of travel before a drag starts, so a click still lands in a
+   text field), the same `::`-separated encoded droppable ids, the same
+   "optimistic hop then revert on failure" shape. What it is NOT is a second
+   registration in the tree's DndContext: that context belongs to build_nodes
+   and adding a foreign id namespace to it would mean editing the node drag,
+   which this prompt must not touch. A nested context keeps the two apart — a
+   pointer-down on an entry activates only this one, because these rows call
+   useDraggable from this provider.
+
+   A "gap" is one insertion point, modelled exactly as useNodeDrag models it:
+   gap i is simultaneously after the entry above it and before the entry below,
+   so each place an entry can land has exactly one droppable.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+const SEP = "::";
+const ENTRY = "thread-entry";
+const GAP = "thread-gap";
+
+function entryDragId(mediaId: string): string {
+  return `${ENTRY}${SEP}${mediaId}`;
+}
+
+function threadGapId(index: number): string {
+  return `${GAP}${SEP}${index}`;
+}
+
+/** The insertion index a droppable id names, or null when it is not one. */
+export function decodeThreadGap(raw: string): number | null {
+  const parts = raw.split(SEP);
+  if (parts[0] !== GAP || parts.length !== 2) return null;
+  const index = Number(parts[1]);
+  return Number.isInteger(index) && index >= 0 ? index : null;
+}
+
+type Entry = PostEntry<BuildMedia>;
+
+function ThreadEntries({
+  build,
+  entries,
+  onPatch,
+  onRemove,
+  onReplace,
+  onReorder,
+  onError,
+  onMergeRow,
+}: {
+  build: Build;
+  entries: Entry[];
+  onPatch: (patch: BuildPatch) => void;
+  onRemove: (mediaId: string) => void;
+  onReplace: () => void;
+  onReorder: (from: number, to: number) => void;
+  onError: (cause: unknown) => void;
+  onMergeRow: (row: BuildMedia) => void;
+}) {
+  const sensors = useSensors(
+    // A few pixels of travel before a drag starts, so a click on a row still
+    // reaches the text field inside it. useNodeDrag's number, for the same
+    // reason it chose it.
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor)
+  );
+
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const onDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+  }, []);
+
+  const onDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setActiveId(null);
+      const over = event.over ? decodeThreadGap(String(event.over.id)) : null;
+      if (over === null) return;
+      const from = entries.findIndex(
+        (entry) => entryDragId(entry.media.id) === String(event.active.id)
+      );
+      if (from < 0) return;
+      onReorder(from, over);
+    },
+    [entries, onReorder]
+  );
+
+  const saveText = useEntryText(build.id, onMergeRow, onError);
+
+  /* NO PICTURE YET, BUT PERHAPS A SENTENCE. The description must never be
+     orphaned: a build whose creator wrote the sentence before finding a
+     screenshot still shows the field, above the empty target rather than
+     hidden behind it. It is also shown when both are empty, because the
+     sentence is the one thing this screen asks for that needs no upload. */
+  if (entries.length === 0) {
+    return (
+      <EntryText
+        position={0}
+        value={build.outcome ?? ""}
+        onChange={(next) => onPatch({ outcome: next === "" ? null : next })}
+      />
+    );
+  }
+
+  return (
+    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      <div
+        role="list"
+        aria-label="The entries of your post, in order"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          /* THE COMMON REGION. Four rows of picture-and-text in a dense
+             workspace group by a shared ground and one hairline, which survives
+             the density that proximity alone would not. --recess is the token
+             for a surface the page is cut into; the rows sit on --bg inside it,
+             so each entry reads as a thing ON the tray rather than as more
+             tray. */
+          gap: 2,
+          padding: 6,
+          borderRadius: r.control,
+          border: `1px solid ${t.line}`,
+          background: t.recess,
+        }}
+      >
+        <ThreadGap index={0} activeId={activeId} />
+        {entries.map((entry, index) => (
+          <div key={entry.media.id} style={{ display: "contents" }}>
+            <EntryRow
+              entry={entry}
+              index={index}
+              dragging={activeId === entryDragId(entry.media.id)}
+              build={build}
+              onPatch={onPatch}
+              onRemove={onRemove}
+              onReplace={onReplace}
+              onSaveText={saveText}
+            />
+            <ThreadGap index={index + 1} activeId={activeId} />
+          </div>
+        ))}
+      </div>
+    </DndContext>
   );
 }
 
 /**
- * The upload, mid-flight.
+ * Entry text, held locally and flushed on the workspace's own cycle.
  *
- * Indeterminate, and the same treatment as IntakeProgress: a sweep clipped by a
- * fixed rail. uploadMedia can report bytes, but a cover upload is one short act
- * and a bar that jumped to 99% and then waited on the row insert would be
- * reporting the wrong half of it.
+ * SAVE_DEBOUNCE_MS is useComposeBuild's constant, imported rather than copied:
+ * a second 800 in this file is how one surface starts saving on a different beat
+ * from the rest of the workspace. One timer per entry, because editing the words
+ * under picture three must not cancel the save of picture one.
+ *
+ * Pending writes are FLUSHED on unmount, not cleared — leaving the workspace
+ * mid-debounce must not lose the last sentence a creator typed, which is the
+ * same guarantee useComposeBuild makes for the header.
  */
-function Uploading() {
+function useEntryText(
+  buildId: string,
+  onMergeRow: (row: BuildMedia) => void,
+  onError: (cause: unknown) => void
+) {
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const pending = useRef(new Map<string, string>());
+
+  useEffect(() => {
+    const map = timers.current;
+    const queued = pending.current;
+    return () => {
+      for (const [mediaId, timer] of map) {
+        clearTimeout(timer);
+        const text = queued.get(mediaId);
+        // Fire and forget: the component is going away and there is nobody left
+        // to tell, but the sentence still belongs in the table.
+        if (text !== undefined) void setPostMediaText(buildId, mediaId, text).catch(() => {});
+      }
+      map.clear();
+      queued.clear();
+    };
+  }, [buildId]);
+
+  return useCallback(
+    (mediaId: string, text: string) => {
+      const existing = timers.current.get(mediaId);
+      if (existing) clearTimeout(existing);
+      pending.current.set(mediaId, text);
+      timers.current.set(
+        mediaId,
+        setTimeout(() => {
+          timers.current.delete(mediaId);
+          pending.current.delete(mediaId);
+          setPostMediaText(buildId, mediaId, text).then(onMergeRow).catch(onError);
+        }, SAVE_DEBOUNCE_MS)
+      );
+    },
+    [buildId, onError, onMergeRow]
+  );
+}
+
+/** The insertion point between two entries. `--action`, 2px, transform only. */
+function ThreadGap({ index, activeId }: { index: number; activeId: string | null }) {
+  const { setNodeRef, isOver } = useDroppable({ id: threadGapId(index) });
+  const live = activeId !== null;
+
   return (
     <div
-      role="status"
-      aria-live="polite"
+      ref={setNodeRef}
+      aria-hidden
       style={{
-        width: "100%",
-        minHeight: EMPTY_HEIGHT,
+        /* Two pixels at rest so the rows keep their rhythm, and the indicator
+           SCALES rather than growing the row: a height animation would move
+           every entry below it. */
+        height: live ? 8 : 2,
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
-        gap: 10,
-        padding: "14px 16px",
-        borderRadius: 12,
-        border: `1px dashed ${hexToRgba(TEAL, 0.35)}`,
-        background: hexToRgba(TEAL, 0.04),
       }}
     >
-      <span style={{ ...labelText, color: TEAL }}>Uploading your cover…</span>
-      {/* The track clips the sweep, so it reads as motion along a fixed rail
-          rather than a block flying across the strip. */}
-      <div
-        aria-hidden="true"
+      <span
         style={{
-          position: "relative",
-          height: 2,
           width: "100%",
-          maxWidth: 280,
-          overflow: "hidden",
+          height: 2,
           borderRadius: 2,
-          background: HAIRLINE,
+          background: isOver ? t.action : "transparent",
+          transform: isOver ? "scaleY(1)" : "scaleY(0)",
+          transformOrigin: "center",
+          transition: dragTransition(),
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * One entry: a passage of text above a picture, which is the order a reader
+ * meets them in and therefore the order they are edited in.
+ */
+function EntryRow({
+  entry,
+  index,
+  dragging,
+  build,
+  onPatch,
+  onRemove,
+  onReplace,
+  onSaveText,
+}: {
+  entry: Entry;
+  index: number;
+  dragging: boolean;
+  build: Build;
+  onPatch: (patch: BuildPatch) => void;
+  onRemove: (mediaId: string) => void;
+  onReplace: () => void;
+  onSaveText: (mediaId: string, text: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: entryDragId(entry.media.id),
+  });
+  const [active, setActive] = useState(false);
+  const first = index === 0;
+
+  return (
+    <div
+      role="listitem"
+      ref={setNodeRef}
+      onMouseEnter={() => setActive(true)}
+      onMouseLeave={() => setActive(false)}
+      onFocus={() => setActive(true)}
+      onBlur={() => setActive(false)}
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
+        padding: 8,
+        borderRadius: r.control,
+        border: `1px solid ${t.line}`,
+        background: t.bg,
+        /* transform and opacity only, and the dragged row keeps its place in
+           the list rather than being torn out of it. */
+        transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+        opacity: dragging ? 0.6 : 1,
+        transition: dragging ? undefined : dragTransition(),
+      }}
+    >
+      <button
+        type="button"
+        aria-label={`Reorder entry ${index + 1}`}
+        {...attributes}
+        {...listeners}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          /* A TOUCH TARGET, NOT JUST A GLYPH. 22x28 was under the 44px floor a
+             finger needs, and this control is the only way to reorder a thread
+             on a phone. The row's height is set by its thumbnail (148px at 16:9,
+             so ~83px plus padding), so a 44px-tall handle fits inside it without
+             making the strip one pixel taller. The grip drawn in the middle
+             stays small; what grew is the area around it. */
+          width: 32,
+          height: 44,
+          padding: 0,
+          borderRadius: r.chip,
+          border: "none",
+          background: "transparent",
+          color: t.text2,
+          cursor: "grab",
+          touchAction: "none",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "25%",
-            borderRadius: 2,
-            background: `linear-gradient(90deg, transparent, ${TEAL}, transparent)`,
-            animation: "intakeSweep 1200ms ease-in-out infinite",
+        <GripVertical size={14} aria-hidden />
+      </button>
+
+      <EntryStill media={entry.media} position={index} />
+
+      <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          {first ? (
+            <span
+              data-testid="thread-cover-label"
+              style={{ ...dataType, fontSize: 11, letterSpacing: "0.08em", color: t.text2 }}
+            >
+              COVER
+            </span>
+          ) : (
+            <span style={{ ...dataType, fontSize: 11, color: t.text2 }}>{index + 1}</span>
+          )}
+
+          {/* Quiet until the row is hovered or something inside it takes focus.
+              An inline style cannot express :hover, and hiding them from the
+              keyboard as well would make Remove unreachable without a mouse. */}
+          <span
+            style={{
+              marginLeft: "auto",
+              display: "flex",
+              gap: 6,
+              opacity: active || !hoverIsFine() ? 1 : 0,
+              transition: dragTransition(),
+            }}
+          >
+            <QuietButton onClick={onReplace}>Replace</QuietButton>
+            <QuietButton onClick={() => onRemove(entry.media.id)}>Remove</QuietButton>
+          </span>
+        </div>
+
+        <EntryText
+          position={index}
+          value={first ? build.outcome ?? "" : entry.media.post_text ?? ""}
+          onChange={(next) => {
+            /* THE FIRST ENTRY'S TEXT IS THE DESCRIPTION, and it goes to the
+               build's own column through the workspace's debounced save — never
+               to post_text. postEntriesOf falls position 0 back to exactly that
+               column, so the preview follows without a second copy of the
+               sentence existing anywhere. */
+            if (first) {
+              onPatch({ outcome: next === "" ? null : next });
+              return;
+            }
+            onSaveText(entry.media.id, next);
           }}
         />
       </div>
@@ -509,53 +881,152 @@ function Uploading() {
 }
 
 /**
- * What the build is leading with.
+ * The text above one picture.
  *
- * The two controls are quiet until the thumbnail is hovered or something inside
- * it takes focus — an inline style cannot express :hover, and hiding them from
- * the keyboard as well would make Remove unreachable without a mouse.
+ * The first is the description and is asked for in words: it is the sentence
+ * the whole screen exists to collect, so it carries a label and a size the rest
+ * do not. Every later one is a caption and needs only its placeholder.
  */
-function CoverThumb({
-  media,
-  onReplace,
-  onRemove,
+function EntryText({
+  position,
+  value,
+  onChange,
 }: {
-  /** null when the row has gone, undefined while the media list is loading. */
-  media: BuildMedia | null | undefined;
-  onReplace: () => void;
-  onRemove: () => void;
+  position: number;
+  value: string;
+  onChange: (next: string) => void;
 }) {
-  const [active, setActive] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const first = position === 0;
+
+  // Code points, as char_length() counts them and as POST_TEXT_MAX is measured:
+  // an emoji costs one of a creator's 280 rather than the two .length reports.
+  const used = [...value].length;
+  const over = used > POST_TEXT_MAX;
+
+  const id = first ? "compose-outcome" : `compose-entry-text-${position}`;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+      {first ? (
+        <label htmlFor={id} style={{ ...labelType, fontSize: 13, fontWeight: 500, color: t.text }}>
+          {OUTCOME_LABEL}
+        </label>
+      ) : null}
+
+      <input
+        id={id}
+        data-testid={first ? "outcome-input" : `entry-text-${position}`}
+        type="text"
+        value={value}
+        placeholder={first ? undefined : ENTRY_PLACEHOLDER}
+        spellCheck
+        onChange={(event) => onChange(event.target.value)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          ...fieldStyle({ hovered, focusVisible: focused, invalid: over }),
+          ...body,
+          /* The description outranks a caption, and both outrank the tree. 17
+             is the top of the body range; a caption sits one step under it. */
+          fontSize: first ? 17 : 14,
+          fontWeight: 400,
+          fontFamily: "inherit",
+          width: "100%",
+          height: first ? 40 : 34,
+          padding: "0 10px",
+          outline: focused ? undefined : "none",
+        }}
+      />
+
+      {/* The counter is mono and appears once there is something to count, so an
+          empty field is an invitation rather than a budget. */}
+      {used > 0 || over ? (
+        <span
+          data-testid={`entry-count-${position}`}
+          style={{
+            ...dataType,
+            fontSize: 11,
+            alignSelf: "flex-end",
+            color: over ? t.catBreakage : t.text2,
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {used} / {POST_TEXT_MAX}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/** A row's control. Quiet, on the ground, a hairline for its edge. */
+function QuietButton({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        ...quietButton,
+        borderColor: hovered ? t.text2 : t.line,
+        color: hovered ? t.text : t.text2,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+const quietButton: CSSProperties = {
+  ...labelType,
+  fontFamily: "inherit",
+  fontSize: 11,
+  fontWeight: 500,
+  padding: "3px 9px",
+  borderRadius: r.chip,
+  background: "transparent",
+  borderWidth: 1,
+  borderStyle: "solid",
+  cursor: "pointer",
+};
+
+/** An entry's still. 16:9 at --r-media, which is the token for a thumbnail. */
+function EntryStill({ media, position }: { media: BuildMedia; position: number }) {
   const src = useMediaSrc(media, MEDIA_WIDTH.tree);
   const poster = useMediaSrc(posterRef(media), MEDIA_WIDTH.tree);
-  const isVideo = media?.kind === "video";
+  const isVideo = media.kind === "video";
   const still = isVideo ? poster : src;
 
   return (
     <div
-      onMouseEnter={() => setActive(true)}
-      onMouseLeave={() => setActive(false)}
-      onFocus={() => setActive(true)}
-      onBlur={() => setActive(false)}
       style={{
         position: "relative",
-        width: THUMB_WIDTH,
-        maxWidth: "100%",
+        flexShrink: 0,
+        width: ENTRY_THUMB_WIDTH,
+        maxWidth: "40%",
         aspectRatio: "16 / 9",
-        borderRadius: 12,
+        borderRadius: r.media,
         overflow: "hidden",
-        border: "1px solid rgba(255,255,255,0.10)",
-        background: "rgba(255,255,255,0.03)",
+        border: `1px solid ${t.line}`,
+        background: t.recess,
       }}
     >
-      {media === null ? (
-        <MediaUnavailable
-          style={{ height: "100%", border: "none", justifyContent: "center" }}
-        />
-      ) : still ? (
+      {still ? (
         <img
           src={still}
-          alt="Build cover"
+          alt={position === 0 ? "Build cover" : `Post picture ${position + 1}`}
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
         />
       ) : isVideo && src ? (
@@ -567,7 +1038,9 @@ function CoverThumb({
           preload="metadata"
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
         />
-      ) : null}
+      ) : (
+        <MediaUnavailable style={{ height: "100%", border: "none", justifyContent: "center" }} />
+      )}
 
       {isVideo ? (
         <span
@@ -578,7 +1051,6 @@ function CoverThumb({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "rgba(255,255,255,0.92)",
           }}
         >
           <span
@@ -586,40 +1058,203 @@ function CoverThumb({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 40,
-              height: 40,
-              borderRadius: 999,
-              background: "rgba(8,8,12,0.55)",
-              border: "1px solid rgba(255,255,255,0.18)",
+              width: 28,
+              height: 28,
+              /* --r-full is for circular things, and a play badge is one. */
+              borderRadius: r.full,
+              /* NOT `--action`. A play badge says "this one is a video", which
+                 is a fact about the entry, not an action to take — and --action
+                 is spent on the one primary action this view has (Publish).
+                 Three accent fills on a screen cancel each other out. --porthole
+                 is the media-well token and --chrome-hi its highlight, so the
+                 badge reads as part of the picture it sits on in both rooms. */
+              background: tokenAlpha("porthole", 0.62),
+              color: t.chromeHi,
             }}
           >
-            <Play size={16} fill="currentColor" />
+            <Play size={12} fill="currentColor" />
           </span>
         </span>
       ) : null}
+    </div>
+  );
+}
 
+/** The band that asks the question. A button, so a keyboard reaches it. */
+function EmptyTarget({
+  over,
+  disabled,
+  onBrowse,
+  first,
+}: {
+  over: boolean;
+  disabled: boolean;
+  onBrowse: () => void;
+  /** The first picture is the ask; a later one is an addition, and quieter. */
+  first: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onBrowse}
+      style={{
+        fontFamily: "inherit",
+        width: "100%",
+        minHeight: first ? EMPTY_HEIGHT : 44,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        padding: first ? "14px 16px" : "10px 16px",
+        borderRadius: r.control,
+        /* Dashed in --line, which is the hairline token: a target is an outline
+           of a thing that is not there yet, and --action would promise that
+           pressing it publishes something. --action is kept for the state that
+           means "this is where it lands". */
+        border: `1px dashed ${over ? t.action : t.line}`,
+        background: over ? t.recess : "transparent",
+        textAlign: "center",
+        cursor: disabled ? "not-allowed" : "pointer",
+        /* Disabled says so. It reads identically to the live target otherwise,
+           which is a target that refuses a drop for no visible reason — and
+           opacity carries it without relying on colour alone, since the cursor
+           says the same thing. */
+        opacity: disabled ? 0.55 : 1,
+        transition: dragTransition(),
+      }}
+    >
+      <span style={{ ...body, fontSize: first ? 15 : 13, fontWeight: 400, color: t.text }}>
+        {first ? DROP_HEADLINE : ADD_HEADLINE}
+      </span>
+      {first ? (
+        <span style={{ ...body, fontSize: 12, color: t.text2 }}>{DROP_SUBLINE}</span>
+      ) : null}
+    </button>
+  );
+}
+
+/**
+ * The upload, mid-flight.
+ *
+ * Indeterminate, and the same treatment as IntakeProgress: a sweep clipped by a
+ * fixed rail. uploadMedia can report bytes, but one picture is one short act and
+ * a bar that jumped to 99% and then waited on the row insert would be reporting
+ * the wrong half of it.
+ */
+function Uploading() {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        width: "100%",
+        minHeight: 44,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        padding: "10px 16px",
+        borderRadius: r.control,
+        border: `1px dashed ${t.line}`,
+        background: t.recess,
+      }}
+    >
+      <span style={{ ...dataType, fontSize: 12, color: t.evidence }}>
+        Uploading…
+      </span>
+      {/* The track clips the sweep, so it reads as motion along a fixed rail
+          rather than a block flying across the strip. */}
       <div
+        aria-hidden
         style={{
-          position: "absolute",
-          right: 8,
-          bottom: 8,
-          display: "flex",
-          gap: 6,
-          opacity: active ? 1 : 0,
-          transition: "opacity 120ms ease",
+          position: "relative",
+          height: 2,
+          width: "100%",
+          maxWidth: 280,
+          overflow: "hidden",
+          borderRadius: 2,
+          background: t.line,
         }}
       >
-        <button type="button" onClick={onReplace} style={quietButton}>
-          Replace
-        </button>
-        <button
-          type="button"
-          onClick={onRemove}
-          style={{ ...quietButton, color: TEXT_SECONDARY }}
-        >
-          Remove
-        </button>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "25%",
+            borderRadius: 2,
+            background: `linear-gradient(90deg, transparent, ${t.evidence}, transparent)`,
+            animation: "intakeSweep 1200ms ease-in-out infinite",
+          }}
+        />
       </div>
     </div>
+  );
+}
+
+/* ── The preview ───────────────────────────────────────────────────────────────
+   LAZY, AND THAT IS THE POINT. The card is the one thing here that pulls a chunk
+   compose had no reason to fetch before, and compose is the heaviest route in the
+   application. Splitting it (ThreadPreviewCard.tsx) keeps the editor interactive
+   on the route's own payload and lets the picture of the post arrive a moment
+   after the means of making one — the right order for a screen whose primary ask
+   is the first entry.
+
+   THE LINK IS NEUTRALISED. A card is a link to /b2/:slug, and a creator who
+   clicked their own preview would leave the workspace mid-draft. preventDefault
+   in the CAPTURE phase runs before the Link's own handler, which navigates only
+   while the event is not already defaulted — so the card still unfolds, and
+   still cannot navigate.
+   ─────────────────────────────────────────────────────────────────────────── */
+const ThreadPreviewCard = lazy(() => import("./ThreadPreviewCard"));
+
+function ThreadPreview({
+  build,
+  rows,
+  beside,
+}: {
+  build: Build;
+  rows: BuildMedia[];
+  beside: boolean;
+}) {
+  return (
+    <aside
+      data-testid="thread-preview"
+      aria-label="How your post will look"
+      style={{
+        flexShrink: 0,
+        width: beside ? PREVIEW_WIDTH : "100%",
+        maxWidth: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+      }}
+    >
+      <h2 style={{ ...eyebrow, color: t.text2, margin: 0 }}>How it will look</h2>
+      <div
+        onClickCapture={(event) => event.preventDefault()}
+        style={{ minWidth: 0, maxWidth: "100%" }}
+      >
+        <Suspense
+          fallback={
+            /* A quiet well at the card's own radius, so the arrival settles into
+               a shape that was already there rather than shifting the row. */
+            <div
+              aria-hidden
+              style={{
+                minHeight: 180,
+                borderRadius: r.card,
+                border: `1px solid ${t.line}`,
+                background: t.recess,
+              }}
+            />
+          }
+        >
+          <ThreadPreviewCard build={build} rows={rows} />
+        </Suspense>
+      </div>
+    </aside>
   );
 }

@@ -43,6 +43,8 @@ import {
 import type { BuildMedia } from "@/lib/build";
 import { FieldShell } from "../SchemaForm";
 import { type FieldWidgetProps } from "./index";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 
 const MONO =
   "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace";
@@ -54,7 +56,7 @@ const buttonStyle: CSSProperties = {
   ...labelText,
   fontSize: 11,
   padding: "3px 9px",
-  borderRadius: 6,
+  borderRadius: r.chip,
   background: "transparent",
   border: `1px solid ${HAIRLINE}`,
   color: TEXT_SECONDARY,
@@ -181,8 +183,8 @@ export function MediaRefField({
           flexDirection: "column",
           gap: 8,
           padding: compact ? 6 : 8,
-          borderRadius: 8,
-          background: over ? hexToRgba(TEAL, 0.06) : "rgba(255,255,255,0.02)",
+          borderRadius: r.control,
+          background: over ? tokenAlpha("action", 0.08) : t.recess,
           border: `1px dashed ${over ? TEAL : HAIRLINE}`,
           transition: "background 120ms ease, border-color 120ms ease",
         }}
@@ -294,8 +296,9 @@ function Progress({ fraction }: { fraction: number }) {
         style={{
           flex: 1,
           height: 4,
-          borderRadius: 999,
-          background: "rgba(255,255,255,0.08)",
+          /* A circular badge is the one place --r-full is correct. */
+          borderRadius: r.full,
+          background: t.recess,
           overflow: "hidden",
         }}
       >
@@ -358,8 +361,8 @@ function Preview({
         style={{
           width: size,
           height: size,
-          borderRadius: 6,
-          background: "rgba(255,255,255,0.02)",
+          borderRadius: r.media,
+          background: t.recess,
           border: `1px solid ${HAIRLINE}`,
         }}
       />
@@ -404,9 +407,9 @@ function Preview({
           width: size,
           height: size,
           flexShrink: 0,
-          borderRadius: 6,
+          borderRadius: r.media,
           overflow: "hidden",
-          background: "rgba(0,0,0,0.35)",
+          background: tokenAlpha("porthole", 0.55),
           border: `1px solid ${HAIRLINE}`,
         }}
       >

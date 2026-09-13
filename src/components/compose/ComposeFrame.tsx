@@ -47,11 +47,13 @@ import {
   GAP_RED,
   TEAL,
   TEXT_PRIMARY,
-  cardGlass,
   hexToRgba,
   labelText,
 } from "@/components/build/tokens";
-import { workspaceGround } from "@/components/shell/WorkspaceBar";
+import {
+  workspaceCard,
+  workspaceGround,
+} from "@/components/shell/WorkspaceBar";
 import { t } from "@/lib/theme/tokens";
 import { eyebrow } from "@/lib/theme/type";
 
@@ -126,7 +128,7 @@ function DragGhost({ compose, drag }: PanelProps) {
   return (
     <div
       style={{
-        ...cardGlass,
+        ...workspaceCard,
         display: "flex",
         flexDirection: "column",
         gap: 6,

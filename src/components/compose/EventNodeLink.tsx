@@ -31,6 +31,8 @@ import {
   compactControlStyle,
   focusControl,
 } from "@/components/compose/fields";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 
 /** One node an event may be linked to. */
 export interface NodeLinkOption {
@@ -64,7 +66,7 @@ const chipButton: React.CSSProperties = {
   maxWidth: 200,
   minWidth: 0,
   padding: "3px 8px",
-  borderRadius: 999,
+  borderRadius: r.chip,
   background: CONTROL_BACKGROUND,
   border: `1px solid ${CONTROL_BORDER}`,
   color: TEXT_SECONDARY,
@@ -82,13 +84,13 @@ const rowButton: React.CSSProperties = {
   width: "100%",
   textAlign: "left",
   padding: "5px 8px",
-  borderRadius: 6,
+  borderRadius: r.chip,
   background: "transparent",
   border: "1px solid transparent",
   color: TEXT_PRIMARY,
   fontFamily: "inherit",
   fontSize: 12,
-  fontWeight: 300,
+  fontWeight: 400,
   cursor: "pointer",
 };
 
@@ -157,7 +159,7 @@ export function EventNodeLink({ event, options, onLink, labelPrefix }: EventNode
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
-            fontWeight: 300,
+            fontWeight: 400,
           }}
         >
           {linked ? optionTitle(linked) : isMissing ? "missing node" : "Link node"}
@@ -172,9 +174,9 @@ export function EventNodeLink({ event, options, onLink, labelPrefix }: EventNode
             flexDirection: "column",
             gap: 4,
             padding: 6,
-            borderRadius: 8,
+            borderRadius: r.control,
             border: `1px solid ${HAIRLINE}`,
-            background: "rgba(255,255,255,0.02)",
+            background: t.recess,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

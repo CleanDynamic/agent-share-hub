@@ -18,6 +18,8 @@ import {
   labelText,
   titleText,
 } from "@/components/build/tokens";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 
 /** Long enough that a fast parse never shows it, short enough to reassure. */
 const PATIENCE_MS = 3500;
@@ -110,7 +112,7 @@ export function IntakeProgress({
             ...bodyText,
             margin: 0,
             padding: "8px 10px",
-            borderRadius: 8,
+            borderRadius: r.control,
             border: `1px solid ${HAIRLINE}`,
             background: hexToRgba(TEAL, 0.05),
             color: TEXT_SECONDARY,

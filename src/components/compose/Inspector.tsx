@@ -42,17 +42,14 @@ import type { Json } from "@/integrations/supabase/types";
 import type { FieldDef, NodePayload, NodeTree, NodeType } from "@/lib/build";
 import { gapProblem, gapProblemPatch } from "@/lib/build";
 import type { ComposeBuild } from "@/hooks/useComposeBuild";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 import {
-  GAP_RED,
-  HAIRLINE,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  hexToRgba,
-  labelText,
-  titleText,
-} from "@/components/build/tokens";
+  body as bodyText,
+  cardTitle as titleText,
+  eyebrow,
+  label as labelText,
+} from "@/lib/theme/type";
 import { TypePill } from "@/components/compose/TreeNode";
 import {
   SchemaForm,
@@ -85,10 +82,10 @@ function findInTree(nodes: NodeTree[], nodeId: string): NodeTree | null {
   return null;
 }
 
+/** A panel's own name. Mono, like every other eyebrow naming a surface. */
 const sectionLabel: React.CSSProperties = {
-  ...labelText,
-  textTransform: "uppercase",
-  color: TEXT_SECONDARY,
+  ...eyebrow,
+  color: t.text2,
 };
 
 /**
@@ -102,7 +99,7 @@ function EmptyState() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 18 }}>
       <span style={sectionLabel}>Inspector</span>
-      <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED }}>
+      <p style={{ ...bodyText, fontSize: 13, margin: 0, color: t.text2 }}>
         Select a node to edit its fields. What appears here is whatever that
         node's type says it holds.
       </p>
@@ -144,12 +141,12 @@ function SuggestedFields({ fields, payload }: { fields: FieldDef[]; payload: Nod
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <span style={{ ...labelText, color: TEXT_SECONDARY }}>
+      <span style={{ ...labelText, color: t.text }}>
         {filled === fields.length
           ? `All ${fields.length} suggested fields filled`
           : `${filled} of ${fields.length} suggested fields filled`}
       </span>
-      <span style={{ ...helpStyle, color: TEXT_MUTED }}>
+      <span style={{ ...helpStyle, color: t.text2 }}>
         What this type suggests. Fill what you have.
       </span>
     </div>
@@ -212,9 +209,15 @@ function GapControl({
         flexDirection: "column",
         gap: 10,
         padding: "10px 12px",
-        borderRadius: 10,
-        border: `1px solid ${isGap ? hexToRgba(GAP_RED, 0.35) : HAIRLINE}`,
-        background: isGap ? hexToRgba(GAP_RED, 0.06) : "transparent",
+        borderRadius: r.control,
+        /* DASHED WHEN ON, like every other unsolved mark in the system — the
+           card's border, the part list's left edge, the tree row. A gap is an
+           invitation, and a dashed edge is what says "not finished, on purpose"
+           where a solid red one would say "broken". */
+        borderWidth: 1,
+        borderStyle: isGap ? "dashed" : "solid",
+        borderColor: isGap ? t.catBreakage : t.line,
+        background: isGap ? tokenAlpha("cat-breakage", 0.06) : "transparent",
       }}
     >
       <div
@@ -226,14 +229,18 @@ function GapControl({
         }}
       >
         <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-          <span style={{ ...labelText, color: isGap ? GAP_RED : TEXT_SECONDARY }}>
+          <span style={{ ...labelText, color: isGap ? t.catBreakage : t.text }}>
             {UNSOLVED_LABEL}
           </span>
-          <span style={{ ...helpStyle, color: TEXT_MUTED }}>{UNSOLVED_HELP}</span>
+          <span style={{ ...helpStyle, color: t.text2 }}>{UNSOLVED_HELP}</span>
         </span>
 
-        {/* The same switch geometry BooleanField uses, in the gap accent rather
-            than the teal one: red is what this flag means everywhere else. */}
+        {/* BG-P07's switch, in the breakage accent rather than the action one:
+            red is what this flag means everywhere else. The track takes
+            `--r-control` and the thumb `--r-full`, which is the one place a
+            circle is correct — see switchTrackStyle's note on why a 24px track
+            at a 12px radius still renders as a capsule and why the token wins
+            anyway. */}
         <button
           type="button"
           role="switch"
@@ -247,11 +254,11 @@ function GapControl({
             width: TRACK_WIDTH,
             height: TRACK_HEIGHT,
             padding: 0,
-            borderRadius: TRACK_HEIGHT,
-            border: `1px solid ${isGap ? hexToRgba(GAP_RED, 0.75) : HAIRLINE}`,
-            background: isGap ? hexToRgba(GAP_RED, 0.75) : "rgba(255,255,255,0.04)",
+            borderRadius: r.control,
+            border: `1px solid ${isGap ? t.catBreakage : t.line}`,
+            background: isGap ? t.catBreakage : t.recess,
             cursor: "pointer",
-            transition: "background 140ms ease, border-color 140ms ease",
+            transition: "background 160ms cubic-bezier(.2,.6,.35,1)",
           }}
         >
           <span
@@ -262,9 +269,12 @@ function GapControl({
               width: KNOB,
               height: KNOB,
               marginTop: -(KNOB / 2),
-              borderRadius: "50%",
-              background: isGap ? "#08080C" : TEXT_MUTED,
-              transition: "left 140ms ease, background 140ms ease",
+              /* A thumb is a circle, which is what `--r-full` is for. */
+              borderRadius: r.full,
+              /* --on-action is the measured ink for a filled control; "#08080C"
+                 was the old void, invisible on a red track in the light room. */
+              background: isGap ? t.onAction : t.text2,
+              transition: "left 160ms cubic-bezier(.2,.6,.35,1)",
             }}
           />
         </button>
@@ -275,7 +285,7 @@ function GapControl({
           <label htmlFor="inspector-gap-problem" style={{ ...labelText }}>
             {PROBLEM_LABEL}
           </label>
-          <p style={{ ...helpStyle, margin: 0, color: TEXT_MUTED }}>{PROBLEM_HELP}</p>
+          <p style={{ ...helpStyle, margin: 0, color: t.text2 }}>{PROBLEM_HELP}</p>
           <textarea
             id="inspector-gap-problem"
             data-testid="gap-problem"
@@ -345,7 +355,7 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <TypePill nodeType={nodeType} typeKey={node.type} />
-        <span style={{ ...titleText, color: TEXT_PRIMARY }}>{label}</span>
+        <span style={{ ...titleText, fontSize: 19, color: t.text }}>{label}</span>
       </div>
 
       <SuggestedFields fields={fields} payload={asPayload(node.payload)} />
@@ -397,7 +407,7 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
         onProblemChange={(text) => patchPayload(gapProblemPatch(text))}
       />
 
-      <div style={{ height: 1, background: HAIRLINE }} />
+      <div style={{ height: 1, background: t.line }} />
 
       {/* Every node_id field below resolves its options from here, so the
           picker sees the same tree and tray the panels do without SchemaForm
@@ -418,7 +428,7 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
           justifyContent: "space-between",
           gap: 12,
           paddingTop: 12,
-          borderTop: `1px solid ${HAIRLINE}`,
+          borderTop: `1px solid ${t.line}`,
         }}
       >
         <span
@@ -427,7 +437,7 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
             fontSize: 11,
             fontFamily:
               "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace",
-            color: TEXT_MUTED,
+            color: t.text2,
           }}
           title={node.id}
         >
@@ -443,10 +453,10 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
             alignItems: "center",
             gap: 6,
             padding: "5px 10px",
-            borderRadius: 8,
+            borderRadius: r.control,
             background: "transparent",
-            border: `1px solid ${HAIRLINE}`,
-            color: TEXT_SECONDARY,
+            border: `1px solid ${t.line}`,
+            color: t.text2,
             cursor: "pointer",
           }}
         >
@@ -476,7 +486,7 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
             <AlertDialogCancel>Keep it</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              style={{ background: GAP_RED, color: "#fff" }}
+              style={{ background: t.catBreakage, color: t.onAction }}
             >
               Delete {descendants > 0 ? `${descendants + 1} nodes` : "node"}
             </AlertDialogAction>

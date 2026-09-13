@@ -38,6 +38,8 @@ import { SequenceView } from "./SequenceView";
 import type { NodeLinkOption } from "./EventNodeLink";
 import { flattenNodes, useSequence } from "./useSequence";
 import type { NodeDrag } from "./useNodeDrag";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 
 export type CentreView = "anatomy" | "sequence";
 
@@ -98,7 +100,7 @@ export function CentrePanel({
           gap: 2,
           padding: 3,
           margin: "16px 16px 0",
-          borderRadius: 10,
+          borderRadius: r.control,
           border: `1px solid ${CONTROL_BORDER}`,
           background: CONTROL_BACKGROUND,
           alignSelf: "flex-start",
@@ -121,7 +123,7 @@ export function CentrePanel({
                 alignItems: "center",
                 gap: 6,
                 padding: "5px 12px",
-                borderRadius: 8,
+                borderRadius: r.chip,
                 border: `1px solid ${active ? hexToRgba(TEAL, 0.35) : "transparent"}`,
                 background: active ? hexToRgba(TEAL, 0.14) : "transparent",
                 color: active ? TEAL : TEXT_MUTED,
