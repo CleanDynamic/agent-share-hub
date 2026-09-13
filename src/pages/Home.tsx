@@ -75,8 +75,50 @@ function renderFeedEntry(entry: any) {
   return <FeedCard key={entry.id} post={adaptToFeedPost(entry)} />;
 }
 
+/**
+ * What a tab hands the shell.
+ *
+ * BG-P18 ADDED THE LAST THREE MEMBERS AND CHANGED NOT ONE QUERY. Every tab
+ * already had an error state in react-query's hands and threw it away, so a
+ * tab whose queries failed showed the empty state — "nothing here yet", which
+ * is a claim nobody had checked, next to a button sending the reader somewhere
+ * else. The queries below are byte-for-byte what they were: same keys, same
+ * columns, same filters, same limits, same merge, same sort. What is new is
+ * that the flags react-query already computed are now returned rather than
+ * dropped, and `refetch` with them so the state can offer a way out.
+ */
+interface TabData {
+  cards: React.ReactNode[];
+  isLoading: boolean;
+  isEmpty: boolean;
+  isError: boolean;
+  errorMessage: string | null;
+  onRetry: () => void;
+}
+
+/**
+ * The first thing that actually went wrong, in its own words.
+ *
+ * NOT `String(error)`. A supabase-js failure is a plain object —
+ * `{ message, details, hint, code }` — not an `Error`, so stringifying it puts
+ * "[object Object]" in front of the reader, which is worse than saying nothing.
+ * The `message` is read off whichever shape arrived, and anything with no
+ * message at all returns null so the state renders its own sentence alone.
+ */
+function firstError(...queries: { error?: unknown }[]): string | null {
+  for (const q of queries) {
+    const e = q.error;
+    if (!e) continue;
+    if (e instanceof Error) return e.message;
+    if (typeof e === "string") return e;
+    const message = (e as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return null;
+}
+
 /* ---- Recent tab data ---- */
-function useRecentTab(enabled: boolean) {
+function useRecentTab(enabled: boolean): TabData {
   const bp = useQuery({
     queryKey: ["home_recent_blueprints"],
     enabled,
@@ -154,13 +196,26 @@ function useRecentTab(enabled: boolean) {
   });
 
   const isLoading = bp.isLoading || col.isLoading || proj.isLoading || rb.isLoading;
+  const isError = bp.isError || col.isError || proj.isError || rb.isError;
   const merged = [...(bp.data ?? []), ...(col.data ?? []), ...(proj.data ?? []), ...(rb.data ?? [])]
     .sort((a, b) => b._sortDate - a._sortDate);
-  return { cards: merged.map(renderFeedEntry), isLoading, isEmpty: !isLoading && merged.length === 0 };
+  return {
+    cards: merged.map(renderFeedEntry),
+    isLoading,
+    isEmpty: !isLoading && !isError && merged.length === 0,
+    isError,
+    errorMessage: firstError(bp, col, proj, rb),
+    onRetry: () => {
+      void bp.refetch();
+      void col.refetch();
+      void proj.refetch();
+      void rb.refetch();
+    },
+  };
 }
 
 /* ---- For You tab data ---- */
-function useForYouTab(enabled: boolean) {
+function useForYouTab(enabled: boolean): TabData {
   const { user } = useAuth();
   const followIdsQ = useQuery({
     queryKey: ["fyp_follow_ids_home", user?.id],
@@ -214,6 +269,7 @@ function useForYouTab(enabled: boolean) {
 
   const contentMap = new Map((contentQ.data ?? []).map(c => [c.id, c]));
   const isLoading = followIdsQ.isLoading || interactionsQ.isLoading || contentQ.isLoading;
+  const isError = followIdsQ.isError || interactionsQ.isError || contentQ.isError;
 
   const cards = deduped.map((interaction: any) => {
     const content = contentMap.get(interaction.content_id);
@@ -257,11 +313,22 @@ function useForYouTab(enabled: boolean) {
     );
   }).filter(Boolean) as React.ReactNode[];
 
-  return { cards, isLoading, isEmpty: !isLoading && cards.length === 0 };
+  return {
+    cards,
+    isLoading,
+    isEmpty: !isLoading && !isError && cards.length === 0,
+    isError,
+    errorMessage: firstError(followIdsQ, interactionsQ, contentQ),
+    onRetry: () => {
+      void followIdsQ.refetch();
+      void interactionsQ.refetch();
+      void contentQ.refetch();
+    },
+  };
 }
 
 /* ---- Following tab data ---- */
-function useFollowingTab(enabled: boolean) {
+function useFollowingTab(enabled: boolean): TabData {
   const { user } = useAuth();
   const followIdsQ = useQuery({
     queryKey: ["home_follow_ids", user?.id],
@@ -323,14 +390,27 @@ function useFollowingTab(enabled: boolean) {
   });
 
   const isLoading = followIdsQ.isLoading || bp.isLoading || col.isLoading || proj.isLoading;
+  const isError = followIdsQ.isError || bp.isError || col.isError || proj.isError;
   const merged = [...(bp.data ?? []), ...(col.data ?? []), ...(proj.data ?? [])]
     .sort((a, b) => b._sortDate - a._sortDate);
-  return { cards: merged.map(renderFeedEntry), isLoading, isEmpty: !isLoading && merged.length === 0 };
+  return {
+    cards: merged.map(renderFeedEntry),
+    isLoading,
+    isEmpty: !isLoading && !isError && merged.length === 0,
+    isError,
+    errorMessage: firstError(followIdsQ, bp, col, proj),
+    onRetry: () => {
+      void followIdsQ.refetch();
+      void bp.refetch();
+      void col.refetch();
+      void proj.refetch();
+    },
+  };
 }
 
 /* ---- Trending tab data ---- */
-function useTrendingTab(enabled: boolean) {
-  const { data, isLoading } = useQuery({
+function useTrendingTab(enabled: boolean): TabData {
+  const trending = useQuery({
     queryKey: ["home_trending"],
     enabled,
     staleTime: 60_000,
@@ -366,8 +446,16 @@ function useTrendingTab(enabled: boolean) {
     },
   });
 
+  const { data, isLoading, isError } = trending;
   const cards = (data ?? []).map((item: any) => <FeedCard key={item.id} post={adaptToFeedPost(item)} />);
-  return { cards, isLoading, isEmpty: !isLoading && cards.length === 0 };
+  return {
+    cards,
+    isLoading,
+    isEmpty: !isLoading && !isError && cards.length === 0,
+    isError,
+    errorMessage: firstError(trending),
+    onRetry: () => void trending.refetch(),
+  };
 }
 
 /* ---- Bounties tab data + active bounties strip ---- */
@@ -424,7 +512,7 @@ const Home = () => {
   const trending = useTrendingTab(activeTab === "trending");
   const bountiesQ = useBountiesData(true); // also used by the strip
 
-  const tabData =
+  const tabData: TabData =
     // NS-P41, first because it is the first tab. It renders as a single entry
     // in the existing content area and reports neither loading nor empty:
     // BuildsTab does both itself, with the same skeleton and the same empty
@@ -438,6 +526,13 @@ const Home = () => {
         ],
         isLoading: false,
         isEmpty: false,
+        // BG-P18. The Builds tab draws all three of its own states, for the
+        // same reason it reports neither loading nor empty: it is the thing
+        // that knows when its own lazily loaded page has arrived, and it is the
+        // only tab whose retry can refetch the one query that failed.
+        isError: false,
+        errorMessage: null,
+        onRetry: () => {},
       }
     : activeTab === "recent" ? recent
     : activeTab === "following" ? following
@@ -445,7 +540,11 @@ const Home = () => {
     : activeTab === "bounties" ? {
         cards: (bountiesQ.data ?? []).map((item: any) => <FeedCard key={item.id} post={adaptToFeedPost(item)} />),
         isLoading: bountiesQ.isLoading,
-        isEmpty: !bountiesQ.isLoading && (bountiesQ.data ?? []).length === 0,
+        isEmpty:
+          !bountiesQ.isLoading && !bountiesQ.isError && (bountiesQ.data ?? []).length === 0,
+        isError: bountiesQ.isError,
+        errorMessage: firstError(bountiesQ),
+        onRetry: () => void bountiesQ.refetch(),
       }
     : foryou;
 
@@ -567,6 +666,9 @@ const Home = () => {
         onLoadNewPosts={onLoadNewPosts}
         onComposeClick={() => openUploadTypePicker()}
         isEmpty={tabData.isEmpty}
+        isError={tabData.isError}
+        errorMessage={tabData.errorMessage}
+        onRetry={tabData.onRetry}
         onEmptyCTAClick={onEmptyCTAClick}
         liveActive={liveActive}
       />

@@ -36,8 +36,10 @@ import {
   Clock,
   ChevronUp,
   Layers,
+  RotateCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   FOCUS_RING_CLASS,
   TAB_TRIGGER_CLASS,
@@ -51,6 +53,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import {
   body as bodyText,
+  cardTitle,
   data as dataText,
   eyebrow as eyebrowText,
   label as labelText,
@@ -98,6 +101,18 @@ interface FeedShellProps {
   isEmpty: boolean;
   onEmptyCTAClick: () => void;
   liveActive: boolean;
+  /**
+   * BG-P18. The tab's own data failed.
+   *
+   * A tab that errors shows the error INSTEAD of an empty state, because
+   * "there is nothing here" and "we could not find out" are different facts
+   * and only one of them is a reason to send a reader somewhere else.
+   */
+  isError?: boolean;
+  /** What the data layer said, shown verbatim. Never invented. */
+  errorMessage?: string | null;
+  /** Asks the tab's queries again. Absent means no retry is offered. */
+  onRetry?: () => void;
 }
 
 const TABS: { key: FeedTabKey; label: string }[] = [
@@ -108,6 +123,12 @@ const TABS: { key: FeedTabKey; label: string }[] = [
   { key: "recent", label: "Recent" },
   { key: "bounties", label: "Bounties" },
 ];
+
+/** The tab's own name, for the one sentence that has to say which failed. */
+const TAB_LABEL: Record<FeedTabKey, string> = TABS.reduce(
+  (acc, tab) => ({ ...acc, [tab.key]: tab.label }),
+  {} as Record<FeedTabKey, string>,
+);
 
 /**
  * A tab's label, at the size the tab bar sets it.
@@ -121,6 +142,16 @@ const TABS: { key: FeedTabKey; label: string }[] = [
  */
 const TAB_LABEL_TYPE = { ...labelText, fontSize: 15 } as const;
 
+/**
+ * What each tab says when it has nothing, in the platform's voice.
+ *
+ * QUIET, AND POINTING SOMEWHERE. Every one of these ends by naming a place with
+ * more in it, because an empty feed is nearly always a reader who has not
+ * followed anybody yet rather than a platform with nothing on it — and a dead
+ * end teaches them the product is empty. None of them apologises, and none
+ * suggests the reader did something wrong: an empty Following tab is a fact
+ * about who they follow, not a fault.
+ */
 const EMPTY_STATES: Record<
   FeedTabKey,
   { icon: React.ElementType; headline: string; body: string; cta?: string }
@@ -133,30 +164,30 @@ const EMPTY_STATES: Record<
   },
   foryou: {
     icon: Sparkles,
-    headline: "Your feed is waiting",
-    body: "Follow a few creators or open Discover to start filling this with content worth your attention.",
+    headline: "Nothing here yet",
+    body: "This fills as the people you follow publish, run and rebuild things. The gallery has more.",
     cta: "Open Discover",
   },
   following: {
     icon: Users,
-    headline: "No recent activity from people you follow",
-    body: "When the creators you follow publish, share, or comment, it appears here. Try Discover to find more.",
+    headline: "Nothing here yet",
+    body: "When somebody you follow publishes, shares or comments, it lands here. The gallery has more.",
     cta: "Open Discover",
   },
   trending: {
     icon: TrendingUp,
     headline: "Nothing trending right now",
-    body: "Trending posts update throughout the day. Check back in an hour or two.",
+    body: "Trending is recalculated through the day, so this is a lull rather than a wall. The gallery has more.",
   },
   recent: {
     icon: Clock,
-    headline: "No recent posts",
-    body: "When new content is published, it appears here first.",
+    headline: "Nothing published recently",
+    body: "New builds, collections and rebuilds arrive here first. The gallery has more.",
   },
   bounties: {
     icon: Trophy,
-    headline: "No active bounties",
-    body: "When community challenges open, they appear here. You can also start your own.",
+    headline: "No open bounties",
+    body: "A bounty is a part of a build somebody marked unsolved. None are open right now — and you can mark one on a build of your own.",
     cta: "Start a bounty",
   },
 };
@@ -514,14 +545,28 @@ function FeedContentArea({
   feedCards,
   isLoading,
   isEmpty,
+  isError,
+  errorMessage,
+  onRetry,
   onEmptyCTAClick,
 }: {
   activeTab: FeedTabKey;
   feedCards: React.ReactNode[];
   isLoading: boolean;
   isEmpty: boolean;
+  isError?: boolean;
+  errorMessage?: string | null;
+  onRetry?: () => void;
   onEmptyCTAClick: () => void;
 }) {
+  // An error outranks both of the others: a tab whose queries failed is not
+  // loading and is not empty, and saying either would be a claim nobody checked.
+  if (isError) {
+    return (
+      <FeedErrorState activeTab={activeTab} message={errorMessage} onRetry={onRetry} />
+    );
+  }
+
   if (isLoading) return <FeedSkeleton />;
 
   if (isEmpty) {
@@ -552,38 +597,181 @@ function FeedContentArea({
   );
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+   The three states
+   ──────────────────────────────────────────────────────────────────────────── */
+
 /**
- * The three shimmering blocks a tab shows while its first page is in flight.
+ * The legacy feed card's own measurements, which the skeleton reserves.
  *
- * EXPORTED because NS-P41's Builds tab loads its own content lazily and has to
- * show the same thing while it does. Two implementations of "the feed is
- * loading" would drift, and a reader switching tabs would see the drift.
+ * Read off the cards rather than guessed, which is the only way a placeholder
+ * can promise not to move the page when the data lands.
+ */
+const LEGACY_CARD = {
+  /** `18px 20px` on every `content_items` card in the five older tabs. */
+  padY: 18,
+  padX: 20,
+  /** The author row, which is an avatar's height and nothing more. */
+  header: 34,
+  /**
+   * The cover, at the fixed height `feed-card.tsx` gives it — NOT an aspect
+   * ratio. A build card reserves its picture from stored dimensions; a legacy
+   * card crops every cover into a 160px letterbox, so 160 is what a reader
+   * actually gets and an aspect ratio here would reserve twice the height and
+   * then collapse.
+   */
+  cover: 160,
+  /** The gap to the next item down. */
+  gap: 12,
+} as const;
+
+/**
+ * The three shimmering cards a tab shows while its first page is in flight.
+ *
+ * AT THE LEGACY CARD'S PROPORTIONS, NOT THE BUILD CARD'S, and which one is
+ * right depends on which tab is loading. Five of the six render `content_items`
+ * cards and this stands in for those: the same 18/20 padding, the same 34px
+ * author row, a media block at the 3:2 their covers are capped to, and the same
+ * stats hairline — so the swap when the data lands does not move the page. The
+ * Builds tab does NOT use this. It shows `GalleryCardSkeleton` at the build
+ * card's real proportions, from inside its own lazy chunk, because importing
+ * the card's skeleton HERE would put the whole gallery card in Home's entry
+ * bundle for the sake of a placeholder.
+ *
+ * EXPORTED because it is also Home's `Suspense` fallback while the Builds tab's
+ * chunk is on the wire — the one moment when nothing yet knows which card is
+ * coming, and where the generic shape is the honest one.
+ *
+ * The shimmer is BG-P07's `Skeleton`: `--recess` with a highlight swept over it
+ * by the `bgShimmer` keyframe, reduced motion answered in the style object and
+ * again in the stylesheet. This file no longer injects a keyframe of its own,
+ * and the three `h-32` grey rectangles it used to draw — which were a card's
+ * shape only by coincidence — are gone.
  */
 export function FeedSkeleton() {
   return (
-    <div className="space-y-0">
+    <div data-visual-slot="feed-skeleton" data-testid="feed-skeleton" aria-hidden>
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="h-32 mb-3 rounded-xl overflow-hidden relative"
-          style={{ background: "rgba(255,255,255,0.04)" }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+            marginBottom: LEGACY_CARD.gap,
+            padding: `${LEGACY_CARD.padY}px ${LEGACY_CARD.padX}px`,
+            background: t.glass,
+            ...elevation.flat,
+            borderRadius: r.card,
+          }}
         >
+          {/* The author row: avatar, name, handle. */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Skeleton
+              style={{
+                width: LEGACY_CARD.header,
+                height: LEGACY_CARD.header,
+                borderRadius: r.full,
+                flexShrink: 0,
+              }}
+            />
+            <Skeleton style={{ height: 13, width: 120, borderRadius: r.chip }} />
+            <Skeleton style={{ height: 12, width: 64, borderRadius: r.chip }} />
+          </div>
+          {/* The type badge, then two lines of title. */}
+          <Skeleton style={{ height: 18, width: 76, borderRadius: r.chip }} />
+          <Skeleton style={{ height: 20, borderRadius: r.chip }} />
+          <Skeleton style={{ height: 20, width: "58%", borderRadius: r.chip }} />
+          {/* The cover, at the height the card crops one to. */}
+          <Skeleton style={{ height: LEGACY_CARD.cover, borderRadius: r.media }} />
+          {/* The stats row, under its hairline. */}
           <div
-            className="absolute inset-0"
             style={{
-              background:
-                "linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)",
-              animation: "ns-shimmer 1.6s infinite",
+              borderTop: `1px solid ${t.line}`,
+              paddingTop: 14,
+              display: "flex",
+              gap: 16,
             }}
-          />
+          >
+            <Skeleton style={{ height: 14, width: 56, borderRadius: r.chip }} />
+            <Skeleton style={{ height: 14, width: 56, borderRadius: r.chip }} />
+            <Skeleton style={{ height: 14, width: 40, borderRadius: r.chip }} />
+          </div>
         </div>
       ))}
-      <style>{`@keyframes ns-shimmer { 0% { transform: translateX(-100%);} 100% { transform: translateX(100%);} }`}</style>
     </div>
   );
 }
 
-/** What a tab says when it has nothing. Exported for the same reason. */
+/**
+ * The frame the empty and the error state share: a quiet mark, a line of
+ * display type, a sentence, and at most one control.
+ *
+ * ONE COMPONENT FOR BOTH, so the two cannot drift into two different ways of
+ * saying "there is nothing to show here". They differ in their words and in
+ * which control they offer, which is exactly as much as they should differ.
+ */
+function FeedNotice({
+  icon: Icon,
+  headline,
+  body,
+  testId,
+  children,
+}: {
+  icon: React.ElementType;
+  headline: string;
+  body: React.ReactNode;
+  testId?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div
+      className="flex flex-col items-center text-center"
+      data-visual-slot="feed-notice"
+      data-testid={testId}
+      style={{ marginTop: 48 }}
+    >
+      {/* `--recess` under a hairline, not an accent wash. An empty tab is an
+          ordinary state, and a tinted disc around an icon reads as a warning
+          about one. */}
+      <div
+        className="flex items-center justify-center"
+        style={{
+          width: 72,
+          height: 72,
+          borderRadius: r.full,
+          background: t.recess,
+          ...elevation.flat,
+          marginBottom: 16,
+        }}
+      >
+        <Icon style={{ width: 28, height: 28, color: t.text2 }} />
+      </div>
+      <div style={{ ...cardTitle, color: t.text, marginBottom: 8 }}>{headline}</div>
+      <p
+        style={{
+          ...bodyText,
+          color: t.text2,
+          /* A measure, not a width: 44 characters is short enough that a
+             two-sentence notice breaks where it reads best. */
+          maxWidth: "44ch",
+          marginBottom: children ? 20 : 0,
+        }}
+      >
+        {body}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * What a tab says when it has nothing.
+ *
+ * Exported because the Builds tab draws its own — it is the thing that knows
+ * when its own lazily loaded page has arrived — and two implementations of
+ * "this tab is empty" would drift the first time either changed.
+ */
 export function FeedEmptyState({
   activeTab,
   onEmptyCTAClick,
@@ -592,67 +780,73 @@ export function FeedEmptyState({
   onEmptyCTAClick: () => void;
 }) {
   const e = EMPTY_STATES[activeTab];
-  const Icon = e.icon;
   return (
-    <div className="flex flex-col items-center text-center" style={{ marginTop: 48 }}>
-      <div
-        className="flex items-center justify-center"
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: "50%",
-          background: "rgba(232, 87, 26, 0.08)",
-          border: "0.5px solid rgba(232, 87, 26, 0.20)",
-          marginBottom: 16,
-        }}
-      >
-        <Icon style={{ width: 32, height: 32, color: "#E8571A" }} />
-      </div>
-      <div
-        style={{
-          fontFamily: "'Figtree', sans-serif",
-          fontSize: 18,
-          fontWeight: 600,
-          color: "rgba(255,255,255,0.92)",
-          marginBottom: 8,
-        }}
-      >
-        {e.headline}
-      </div>
-      <p
-        style={{
-          fontFamily: "'Figtree', sans-serif",
-          fontSize: 13,
-          fontWeight: 400,
-          lineHeight: 1.55,
-          color: "rgba(255,255,255,0.55)",
-          maxWidth: 380,
-          marginBottom: e.cta ? 20 : 0,
-        }}
-      >
-        {e.body}
-      </p>
-      {e.cta && (
-        <button
-          onClick={onEmptyCTAClick}
-          className="feed-empty-cta transition-colors"
-          style={{
-            padding: "10px 24px",
-            borderRadius: 100,
-            background: "rgba(232, 87, 26, 0.10)",
-            border: "0.5px solid rgba(232, 87, 26, 0.40)",
-            color: "#E8571A",
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "'Figtree', sans-serif",
-          }}
-        >
+    <FeedNotice icon={e.icon} headline={e.headline} body={e.body} testId="feed-empty">
+      {e.cta ? (
+        /* SECONDARY, NOT PRIMARY. The theme allows one primary action per view
+           and the compose strip at the top of the feed is already spending it;
+           an empty tab is a signpost, not a second call to action. It was an
+           `--action`-tinted capsule with a hand-written `.feed-empty-cta` hover
+           rule in an injected <style> — a class, which Tailwind's own output
+           beats at build time, and which is the one styling mechanism
+           `neoscale-ui` forbids outright. */
+        <Button type="button" variant="secondary" onClick={onEmptyCTAClick}>
           {e.cta}
-        </button>
-      )}
-      <style>{`.feed-empty-cta:hover { background: rgba(232,87,26,0.16) !important; border-color: rgba(232,87,26,0.60) !important; }`}</style>
-    </div>
+        </Button>
+      ) : null}
+    </FeedNotice>
+  );
+}
+
+/**
+ * What a tab says when its data failed.
+ *
+ * IT NAMES THE TAB AND REPEATS WHAT THE DATA LAYER SAID. "Something went wrong"
+ * on its own leaves a reader unable to tell a dropped connection from a broken
+ * deploy, and this application's one maintainer is not a developer — the
+ * sentence they can paste into a bug report is most of the state's value. The
+ * message is rendered in the data face, because it is a machine's words inside
+ * a human sentence and should not be mistaken for the platform's own voice.
+ *
+ * THE RETRY RE-ASKS THE TAB'S QUERIES rather than reloading the page, so the
+ * reader keeps their scroll position, their tab and everything else already
+ * fetched. A tab whose caller offers no retry gets the sentence without the
+ * button rather than a button that does nothing.
+ */
+export function FeedErrorState({
+  activeTab,
+  message,
+  onRetry,
+}: {
+  activeTab: FeedTabKey;
+  message?: string | null;
+  onRetry?: () => void;
+}) {
+  const said = (message ?? "").trim();
+  return (
+    <FeedNotice
+      icon={RotateCw}
+      headline={`${TAB_LABEL[activeTab]} could not be loaded`}
+      testId="feed-error"
+      body={
+        <>
+          The request for this tab failed. Nothing is lost — the feed only reads,
+          and a retry asks again.
+          {said ? (
+            <>
+              {" "}
+              <span style={{ ...dataText, color: t.text2 }}>{said}</span>
+            </>
+          ) : null}
+        </>
+      }
+    >
+      {onRetry ? (
+        <Button type="button" variant="secondary" onClick={onRetry}>
+          Try again
+        </Button>
+      ) : null}
+    </FeedNotice>
   );
 }
 
@@ -672,6 +866,9 @@ export function FeedShell({
   isEmpty,
   onEmptyCTAClick,
   liveActive,
+  isError,
+  errorMessage,
+  onRetry,
 }: FeedShellProps) {
   return (
     <div
@@ -711,6 +908,9 @@ export function FeedShell({
         feedCards={feedCards}
         isLoading={isLoading}
         isEmpty={isEmpty}
+        isError={isError}
+        errorMessage={errorMessage}
+        onRetry={onRetry}
         onEmptyCTAClick={onEmptyCTAClick}
       />
     </div>
