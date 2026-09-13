@@ -467,7 +467,11 @@ function FeedTabBar({
   return (
     <div
       ref={strip}
-      data-testid="feed-tab-bar"
+      /* `feed-tabs`, not `feed-tab-bar`, and the mark is `feed-active-mark`:
+         `getByTestId(/^feed-tab-/)` is how the tier-3 spec says "the six tabs",
+         and two more elements answering to that prefix would silently change
+         what that assertion counts. */
+      data-testid="feed-tabs"
       className="scrollbar-hide"
       style={{
         position: "sticky",
@@ -546,7 +550,7 @@ function FeedTabBar({
                 measurement and shifts no neighbour. */}
             {active ? (
               <span
-                data-testid="feed-tab-indicator"
+                data-testid="feed-active-mark"
                 aria-hidden
                 style={{
                   position: "absolute",
@@ -925,7 +929,12 @@ export function FeedEmptyState({
           type="button"
           variant="secondary"
           onClick={onEmptyCTAClick}
-          style={{ height: 40, borderRadius: r.control }}
+          /* 15px, not the kit's `text-sm`. Every other row and label on this
+             route is 15 or 16, and 14 on the one control in an empty column is
+             the smallest thing on the screen sitting under the largest. The
+             cva's size classes are the kit's and are not touched; this is one
+             inline override on one button. */
+          style={{ height: 40, borderRadius: r.control, fontSize: 15 }}
         >
           {e.cta}
         </Button>
@@ -981,7 +990,12 @@ export function FeedErrorState({
           type="button"
           variant="secondary"
           onClick={onRetry}
-          style={{ height: 40, borderRadius: r.control }}
+          /* 15px, not the kit's `text-sm`. Every other row and label on this
+             route is 15 or 16, and 14 on the one control in an empty column is
+             the smallest thing on the screen sitting under the largest. The
+             cva's size classes are the kit's and are not touched; this is one
+             inline override on one button. */
+          style={{ height: 40, borderRadius: r.control, fontSize: 15 }}
         >
           Try again
         </Button>

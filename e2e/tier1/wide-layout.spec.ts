@@ -42,14 +42,33 @@ const columns = (page: Page) =>
     .locator(".fs-grid")
     .evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(" ").filter(Boolean).length);
 
-/** True when anything on the page reaches past the viewport in either direction. */
+/**
+ * True when anything on the page reaches past the viewport in either direction.
+ *
+ * BG-P18b ADDED THE SCROLLER EXEMPTION, and it is a correction rather than a
+ * loosening. The element sweep asks "does this box stick out of the window",
+ * which is the right question for a box in normal flow and the wrong one for a
+ * box inside a horizontal scroller: the feed's tab bar is a `.scrollbar-hide`
+ * strip whose later tabs are DELIBERATELY past the right edge below 768 — that
+ * is what makes it a scroller — and the page does not move because of them. An
+ * element inside a scrolling ancestor is clipped by it, so the document check
+ * on the first line is the one that can see it, and it stays.
+ */
 const overflows = (page: Page) =>
   page.evaluate(() => {
     if (document.documentElement.scrollWidth > window.innerWidth + 1) return true;
+    const inScroller = (el: Element) => {
+      for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+        const x = getComputedStyle(p).overflowX;
+        if (x === "auto" || x === "scroll" || x === "hidden") return true;
+      }
+      return false;
+    };
     return [...document.querySelectorAll("body *")].some((el) => {
       const r = el.getBoundingClientRect();
       if (r.width === 0 && r.height === 0) return false;
-      return r.right > window.innerWidth + 1 || r.left < -1;
+      if (r.right <= window.innerWidth + 1 && r.left >= -1) return false;
+      return !inScroller(el);
     });
   });
 
@@ -60,21 +79,50 @@ async function open(page: Page, path: string, viewport: number, theme = "exhibit
   await page.locator(".fs-frame").waitFor();
 }
 
-test.describe("standard mode is the frame that shipped", () => {
-  test("keeps 1200 / 240 / 300 / 600 on a desktop viewport", async ({ page }) => {
+/* BG-P18b. The reading column is 634 and not 600, and the frame's 24px padding
+   and gap are 0. 634 is 1 + 16 + 600 + 16 + 1 under `box-sizing: border-box` —
+   a hairline and 16px of padding on each side of the 600 a CARD is specified
+   at, where the old 600 column plus the home wrapper's own 16px inset rendered
+   568px cards. The frame, the two rails and the breakpoints are as they were,
+   and those are the numbers this file has always been for. */
+test.describe("standard mode is the frame", () => {
+  test("keeps 1200 / 240 / 300, with a 634 reading column", async ({ page }) => {
     await open(page, "/", 1400);
     expect(await page.locator(".fs-root.fs-wide").count()).toBe(0);
     expect(await width(page, ".fs-frame")).toBe(1200);
     expect(await width(page, ".fs-left")).toBe(240);
-    expect(await width(page, ".fs-centre")).toBe(600);
+    expect(await width(page, ".fs-centre")).toBe(634);
     expect(await width(page, ".fs-right")).toBe(300);
+  });
+
+  test("puts a card at exactly 600 inside that column", async ({ page }) => {
+    await open(page, "/", 1400);
+    // The column's content box, which is what every item in the feed fills.
+    const content = await page
+      .locator(".fs-centre")
+      .evaluate((el) => el.clientWidth - 32);
+    expect(content).toBe(600);
+    expect(await width(page, '[data-testid="feed-tabs"]')).toBe(600);
   });
 
   test("does not widen past 1200 however wide the window gets", async ({ page }) => {
     await open(page, "/", 1920);
     expect(await width(page, ".fs-frame")).toBe(1200);
-    expect(await width(page, ".fs-centre")).toBe(600);
+    expect(await width(page, ".fs-centre")).toBe(634);
   });
+
+  /* 1024 is the one these exist for. All three columns render from 1024 up and
+     1174 does not fit; with the centre pinned the row overflowed and
+     `justify-content: center` put the left rail at x = -82, measured before
+     this change. The centre gives way instead. One test per width rather than a
+     loop in one test: `/` is a real route against a real backend, and seven
+     navigations do not fit in one test's budget. */
+  for (const viewport of [390, 768, 1024, 1200, 1280, 1440, 1920]) {
+    test(`does not overflow at ${viewport}px`, async ({ page }) => {
+      await open(page, "/", viewport);
+      expect(await overflows(page)).toBe(false);
+    });
+  }
 });
 
 test.describe("wide mode", () => {

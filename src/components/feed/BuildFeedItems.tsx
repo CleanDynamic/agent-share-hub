@@ -69,14 +69,21 @@ import type {
  * `overflow: hidden` would clip the thing the layout exists to show. BG-P18
  * checked for both and found neither, so nothing here changed; this note is the
  * guard against the next person adding one. The only properties are the column
- * direction, the 8px gap between a strip and the card under it, and the 12px to
+ * direction, the 8px gap between a strip and the card under it, and the gap to
  * the next item.
+ *
+ * BG-P18b MOVED THAT GAP FROM 12 TO 16, which is the column's rhythm and not
+ * this component's preference. The Builds tab reaches the feed as ONE node —
+ * Home hands `FeedShell` a single lazily-loaded `<BuildsTab />` rather than an
+ * array of cards — so `FeedRow`'s collapsing 16px margin lands around the whole
+ * tab and this frame is what actually spaces the items inside it. 16 here and
+ * 16 there is the same number in the two places the column is assembled.
  */
 const itemFrame: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: 8,
-  marginBottom: 12,
+  marginBottom: 16,
 };
 
 /**
