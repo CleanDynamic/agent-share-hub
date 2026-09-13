@@ -36,6 +36,7 @@ import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { body, data as dataType, eyebrow } from "@/lib/theme/type";
 import { CategoryChip } from "@/components/brand/CategoryChip";
+import { gapEdge } from "@/components/brand/GapMarker";
 import { descendantIds, insideDropId, type NodeDrag } from "./useNodeDrag";
 
 /**
@@ -296,12 +297,22 @@ export function TreeNode({
         : "transparent";
 
   /* A GAP'S EDGE IS DASHED, and that is the whole difference between a hole and
-     a fault. The dash is the same mark the card and the public part list use for
-     a part left unsolved on purpose, so the invitation reads the same in all
-     three places. Selected still wins — a creator who has just clicked a row
-     needs to see which row that was — and a selected gap gets a solid --action
-     edge with the category chip still saying what kind of hole it is. */
-  const accentStyle = !isSelected && node.is_gap ? "dashed" : "solid";
+     a fault. It is GapMarker's `gapEdge("row")` rather than a dash written out
+     here, so the composer, the public part list and the card cannot drift to
+     three different dashes — the same reason NodeCard takes it. Selected still
+     wins: a creator who has just clicked a row needs to see which row that was,
+     and a selected gap keeps its category chip saying what kind of hole it is.
+
+     THE LEFT CORNERS GO SQUARE WHENEVER AN ACCENT SHOWS, and that is a fix
+     rather than a liberty. `--r-control` is 12px and a tree row is about 30px
+     tall, so a rounded left edge leaves roughly six straight pixels between two
+     curves — a solid rule survives that, but a DASHED one lands its dashes on
+     the curve and renders as a small broken parenthesis floating beside the
+     row. Squaring the two corners the accent runs down turns it back into an
+     edge; every other corner keeps the scale. A row with no accent is rounded
+     all the way round, as before. */
+  const gapAccent = !isSelected && node.is_gap;
+  const accented = accent !== "transparent";
 
   const rowStyle: CSSProperties = {
     display: "flex",
@@ -311,14 +322,16 @@ export function TreeNode({
     /* A row is a row: --r-control. The ground is --bg, so the tree reads as the
        working surface it is rather than as a stack of cards. */
     borderRadius: r.control,
+    borderTopLeftRadius: accented ? 0 : r.control,
+    borderBottomLeftRadius: accented ? 0 : r.control,
     /* LONGHANDS, NOT `borderLeft`. A CSS shorthand whose value contains a
        `var()` is dropped wholesale by jsdom's parser, so the accent that says
        "selected" or "unsolved" would be invisible to every unit test even though
        a browser paints it — which is how an untested repaint slips through.
-       WorkspaceBar and controls.ts take the same position for the same reason. */
-    borderLeftWidth: 2,
-    borderLeftStyle: accentStyle,
-    borderLeftColor: accent,
+       WorkspaceBar, controls.ts and GapMarker take the same position. */
+    ...(gapAccent
+      ? gapEdge("row")
+      : { borderLeftWidth: 2, borderLeftStyle: "solid" as const, borderLeftColor: accent }),
     background: isSelected
       ? SELECTED_BACKGROUND
       : isNestTarget

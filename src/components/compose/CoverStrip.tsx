@@ -83,7 +83,7 @@ import { SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
 import { useComposeMedia } from "@/hooks/useComposeMedia";
 import { fieldStyle, prefersReducedMotion, hoverIsFine } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
-import { t } from "@/lib/theme/tokens";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { body, data as dataType, eyebrow, label as labelType } from "@/lib/theme/type";
 
 /**
@@ -807,8 +807,14 @@ function EntryRow({
           alignItems: "center",
           justifyContent: "center",
           flexShrink: 0,
-          width: 22,
-          height: 28,
+          /* A TOUCH TARGET, NOT JUST A GLYPH. 22x28 was under the 44px floor a
+             finger needs, and this control is the only way to reorder a thread
+             on a phone. The row's height is set by its thumbnail (148px at 16:9,
+             so ~83px plus padding), so a 44px-tall handle fits inside it without
+             making the strip one pixel taller. The grip drawn in the middle
+             stays small; what grew is the area around it. */
+          width: 32,
+          height: 44,
           padding: 0,
           borderRadius: r.chip,
           border: "none",
@@ -1045,7 +1051,6 @@ function EntryStill({ media, position }: { media: BuildMedia; position: number }
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: t.onAction,
           }}
         >
           <span
@@ -1057,7 +1062,14 @@ function EntryStill({ media, position }: { media: BuildMedia; position: number }
               height: 28,
               /* --r-full is for circular things, and a play badge is one. */
               borderRadius: r.full,
-              background: t.action,
+              /* NOT `--action`. A play badge says "this one is a video", which
+                 is a fact about the entry, not an action to take — and --action
+                 is spent on the one primary action this view has (Publish).
+                 Three accent fills on a screen cancel each other out. --porthole
+                 is the media-well token and --chrome-hi its highlight, so the
+                 badge reads as part of the picture it sits on in both rooms. */
+              background: tokenAlpha("porthole", 0.62),
+              color: t.chromeHi,
             }}
           >
             <Play size={12} fill="currentColor" />
@@ -1104,7 +1116,12 @@ function EmptyTarget({
         border: `1px dashed ${over ? t.action : t.line}`,
         background: over ? t.recess : "transparent",
         textAlign: "center",
-        cursor: disabled ? "default" : "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
+        /* Disabled says so. It reads identically to the live target otherwise,
+           which is a target that refuses a drop for no visible reason — and
+           opacity carries it without relying on colour alone, since the cursor
+           says the same thing. */
+        opacity: disabled ? 0.55 : 1,
         transition: dragTransition(),
       }}
     >

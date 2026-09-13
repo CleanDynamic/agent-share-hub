@@ -2,10 +2,18 @@
 //
 // WHAT THIS PANEL IS NOT. It is not a mark, a rating or a verdict on the person
 // who wrote the record. Every row is an instruction the creator can act on, and
-// every row that is already done says what did it. The percentage is here
-// because a checklist with a progress bar is a checklist — twelve of twenty
-// boxes ticked is a state, not a judgement — and it never appears as a mark out
-// of ten, a letter, or anything with an opinion in it.
+// every row that is already done says what did it.
+//
+// BG-P23 — THE PERCENTAGE AND THE BAR ARE GONE. An earlier revision argued that
+// a checklist with a progress bar is still a checklist, twelve of twenty boxes
+// being a state rather than a judgement. It reads as a judgement anyway: "72%
+// filled in" over a part-full bar is a mark out of a hundred whatever the
+// surrounding copy says, and a creator whose build is finished at 60% is being
+// told they are four-tenths short of something. What is left is the count of
+// outstanding rows in words, as an invitation — the same fact, with no
+// denominator to fall short of. `builds.completeness` is still computed and
+// still written, because the gallery gates on it; it is simply not something
+// this panel says out loud.
 //
 // The rules are NS-P17's and stay there. This file reads SHAPE_RULES for the
 // order of the list and computeCompleteness for which of them are outstanding;
@@ -372,7 +380,6 @@ export function CompletenessPanel({
 
   if (!completeness) return null;
 
-  const filled = completeness.score;
   const left = completeness.missing.length;
 
   return (
@@ -413,34 +420,13 @@ export function CompletenessPanel({
         The record
       </button>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={filled}
-          aria-label="How much of this record is filled in"
-          style={{
-            height: 4,
-            borderRadius: r.chip,
-            background: t.line,
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              width: `${filled}%`,
-              height: "100%",
-              background: TEAL,
-              transition: "width 200ms ease",
-            }}
-          />
-        </div>
-        <span style={{ ...labelText, fontSize: 11, color: TEXT_SECONDARY }}>
-          {filled}% filled in
-          {left > 0 ? ` · ${left === 1 ? "1 thing" : `${left} things`} left` : ""}
-        </span>
-      </div>
+      {/* An invitation, not a score. Plain words and a count of what is still
+          open — never a percentage, never a bar, never a denominator. */}
+      <span style={{ ...labelText, fontSize: 11, color: TEXT_SECONDARY }}>
+        {left === 0
+          ? "Everything this record asks for is here."
+          : `${left === 1 ? "One thing" : `${left} things`} left to add`}
+      </span>
 
       {open ? (
         <>

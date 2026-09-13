@@ -140,7 +140,7 @@ describe("CompletenessPanel", () => {
     }));
   });
 
-  it("lists what is missing in plain language, and how much is filled in", async () => {
+  it("lists what is missing in plain language, and what is left, as an invitation", async () => {
     getBuild.mockResolvedValue(record(emptyDraft()));
 
     renderCompose();
@@ -149,17 +149,17 @@ describe("CompletenessPanel", () => {
     for (const copy of MISSING_COPY) {
       expect(screen.getByText(copy)).toBeTruthy();
     }
-    expect(screen.getByText("0% filled in · 9 things left")).toBeTruthy();
+    expect(screen.getByText("9 things left to add")).toBeTruthy();
     expect(
       screen.getByText(
         "Everything you publish is live, searchable and forkable. The gallery asks for a bit more."
       )
     ).toBeTruthy();
-    // A checklist state, never a mark: the bar carries the number.
-    const bar = screen.getByRole("progressbar", {
-      name: "How much of this record is filled in",
-    });
-    expect(bar.getAttribute("aria-valuenow")).toBe("0");
+    // BG-P23 — NEVER A SCORE. No percentage, and no bar to read one off: a
+    // denominator turns a checklist into a mark out of a hundred, and a build
+    // that is finished at 60% is not four-tenths short of anything.
+    expect(screen.queryByRole("progressbar")).toBeNull();
+    expect(screen.queryByText(/% filled in/)).toBeNull();
   });
 
   it("focuses the field behind every header row that is clicked", async () => {
@@ -234,7 +234,7 @@ describe("CompletenessPanel", () => {
 
     renderCompose();
     await screen.findByLabelText("Build title");
-    expect(screen.getByText("0% filled in · 9 things left")).toBeTruthy();
+    expect(screen.getByText("9 things left to add")).toBeTruthy();
 
     fireEvent.click(row("say who this is for"));
     fireEvent.change(await screen.findByLabelText("Who it is for"), {
@@ -260,7 +260,7 @@ describe("CompletenessPanel", () => {
     // Two of an app's nine rules, weighted 6 each out of 100.
     expect(patch.completeness).toBe(12);
     await waitFor(() =>
-      expect(screen.getByText("12% filled in · 7 things left")).toBeTruthy()
+      expect(screen.getByText("7 things left to add")).toBeTruthy()
     );
   });
 });
