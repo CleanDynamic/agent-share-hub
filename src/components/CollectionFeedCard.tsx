@@ -4,6 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Eye, Users } from "lucide-react";
 import { timeAgo, formatNum } from "@/components/FeedItem";
+import { UI_EASING, UI_MS } from "@/lib/theme/controls";
+import { elevation } from "@/lib/theme/elevation";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { data as dataText } from "@/lib/theme/type";
 
 interface CollectionFeedCardProps {
   item: {
@@ -24,7 +29,7 @@ function CoverMosaic({ images, title }: { images: string[]; title: string }) {
   if (cells.length === 0) return null;
 
   return (
-    <div className="w-full rounded-xl overflow-hidden mt-2 grid grid-cols-2 gap-[2px]" style={{ maxHeight: 200 }}>
+    <div className="w-full overflow-hidden mt-2 grid grid-cols-2 gap-[2px]" style={{ maxHeight: 200, borderRadius: r.media }}>
       {cells.map((url, i) => (
         <img
           key={i}
@@ -51,30 +56,37 @@ export function CollectionFeedCard({ item }: CollectionFeedCardProps) {
       onClick={() => navigate(`/collections/${item.slug}`)}
       data-visual-slot="feed-card"
       style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-card)',
+        // BG-P18. `--surface` and `--border` are the legacy `:root` pair — a 3%
+        // white and a 14% white, fixed for a dark page. `--glass` on a `--line`
+        // hairline at `--r-card` is the theme's own answer to the same three
+        // questions, and it is what puts this card in the same room as the
+        // build card beside it in the feed. Not `--card-frame`: that token is
+        // half of the build card's two-layer pair and means "the record", which
+        // this is not.
+        background: t.glass,
+        ...elevation.flat,
+        borderRadius: r.card,
         marginBottom: 12,
         padding: '18px 20px',
-        transition: 'border-color 0.2s ease',
+        transition: `border-color ${UI_MS}ms ${UI_EASING}`,
         cursor: 'pointer',
       }}
-      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--text2)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--line)'}
     >
       {/* Header */}
       <div className="flex items-center gap-2" style={{ height: 34 }}>
         <Link to={`/creator/${profile?.username}`} onClick={stop}>
           <Avatar className="shrink-0" style={{ width: 34, height: 34 }}>
-            <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
+            <AvatarFallback className="text-[10px]" style={{ background: t.action, color: t.onAction }}>{initials}</AvatarFallback>
           </Avatar>
         </Link>
-        <Link to={`/creator/${profile?.username}`} onClick={stop} className="hover:underline truncate" style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.90)' }}>
+        <Link to={`/creator/${profile?.username}`} onClick={stop} className="hover:underline truncate" style={{ fontSize: 13, fontWeight: 500, color: t.text }}>
           {profile?.display_name || profile?.username || "Unknown"}
         </Link>
-        <span className="truncate" style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>@{profile?.username}</span>
-        <span style={{ color: 'rgba(255,255,255,0.20)' }}>·</span>
-        <span className="shrink-0" style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)' }}>{timeAgo(item.created_at)}</span>
+        <span className="truncate" style={{ ...dataText, fontSize: 12, color: t.text2 }}>@{profile?.username}</span>
+        <span style={{ color: t.text2 }}>·</span>
+        <span className="shrink-0" style={{ ...dataText, fontSize: 12, color: t.text2 }}>{timeAgo(item.created_at)}</span>
         <div className="ml-auto shrink-0" onClick={stop}>
           <BookmarkButton contentId={item.id} />
         </div>
@@ -82,15 +94,18 @@ export function CollectionFeedCard({ item }: CollectionFeedCardProps) {
 
       {/* Badge */}
       <div className="flex items-center gap-1.5 mt-1">
-        <Badge variant="outline" className="text-[10px] font-medium bg-[#1F7A6D]/20 text-[#1F7A6D] border-[#1F7A6D]/25">
-          Collection
-        </Badge>
+        {/* BG-P18. The fourteen legacy content-type badge colours are retired
+            by the theme: a content type is not a part category, and nothing
+            that is not a part category carries one of the nine hues. `secondary`
+            is the kit's neutral chip — `--recess` under `--text2` — which is
+            what the theme says a label with no category resolves to. */}
+        <Badge variant="secondary">Collection</Badge>
       </div>
 
       {/* Title + Description */}
-      <p className="line-clamp-2" style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.90)', lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
+      <p className="line-clamp-2" style={{ fontSize: 15, fontWeight: 600, color: t.text, lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
       {item.description && (
-        <p className="truncate" style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{item.description}</p>
+        <p className="truncate" style={{ fontSize: 12, color: t.text2, marginTop: 4 }}>{item.description}</p>
       )}
 
       {/* Mosaic */}
@@ -99,7 +114,7 @@ export function CollectionFeedCard({ item }: CollectionFeedCardProps) {
       )}
 
       {/* Stats row */}
-      <div className="flex items-center" style={{ gap: 16, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.12)', fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>
+      <div className="flex items-center" style={{ gap: 16, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${t.line}`, fontSize: 12, fontWeight: 400, color: t.text2 }}>
         <span className="inline-flex items-center gap-1 shrink-0">{item.item_count} blueprint{item.item_count !== 1 ? "s" : ""}</span>
         <span className="inline-flex items-center gap-1 shrink-0"><Users style={{ width: 15, height: 15 }} />{formatNum(item.follower_count)} followers</span>
       </div>

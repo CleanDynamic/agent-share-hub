@@ -33,9 +33,12 @@ const PILL_COLORS: Record<
   EmbeddedOriginalCardPost["postType"],
   { color: string; bg: string }
 > = {
-  blueprint: { color: "#E8571A", bg: "rgba(232, 87, 26, 0.14)" },
-  blog: { color: "#2EC4B6", bg: "rgba(46, 196, 182, 0.14)" },
-  bounty: { color: "#F59E0B", bg: "rgba(245, 158, 11, 0.14)" },
+  /* BG-P18. Three more of the retired content-type colours. A post type is not
+     a part category and carries no hue, so all three resolve to the kit's
+     neutral chip pair — `--text2` on `--recess`, measured in both themes. */
+  blueprint: { color: "var(--text2)", bg: "var(--recess)" },
+  blog: { color: "var(--text2)", bg: "var(--recess)" },
+  bounty: { color: "var(--text2)", bg: "var(--recess)" },
 };
 
 function formatDate(dateStr: string): string {
@@ -106,7 +109,7 @@ function MetaRow({
         fontFamily: "Figtree, sans-serif",
         fontSize: "10px",
         fontWeight: 400,
-        color: "rgba(255, 255, 255, 0.45)",
+        color: "var(--text2)",
         display: "flex",
         alignItems: "center",
         gap: "0px",
@@ -153,22 +156,26 @@ export function EmbeddedOriginalCard({
         }
       }}
       style={{
-        background: "rgba(82, 82, 100, 0.40)",
-        border: "0.5px solid rgba(255, 255, 255, 0.10)",
-        borderRadius: "10px",
+        /* The quoted post is a surface cut INTO the reblog card, so `--recess`
+           rather than a second glass: a card inside a card at the same tone
+           reads as one confusing object. `--r-media` is the step below the
+           card's own, which is the relationship. */
+        background: "var(--recess)",
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-media)",
         padding,
         cursor: "pointer",
         transition: "background 0.15s ease, border-color 0.15s ease",
       }}
       onMouseEnter={(e) => {
         const el = e.currentTarget;
-        el.style.borderColor = "rgba(255, 255, 255, 0.16)";
-        el.style.background = "rgba(82, 82, 100, 0.55)";
+        el.style.borderColor = "var(--text2)";
+        el.style.background = "var(--glass-2)";
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget;
-        el.style.borderColor = "rgba(255, 255, 255, 0.10)";
-        el.style.background = "rgba(82, 82, 100, 0.40)";
+        el.style.borderColor = "var(--line)";
+        el.style.background = "var(--recess)";
       }}
       aria-label={`Original post: ${post.title} by ${post.authorDisplayName}`}
     >
@@ -204,7 +211,7 @@ export function EmbeddedOriginalCard({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "12px",
                 fontWeight: 600,
-                color: "rgba(255, 255, 255, 0.85)",
+                color: "var(--text)",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -217,7 +224,7 @@ export function EmbeddedOriginalCard({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "11px",
                 fontWeight: 400,
-                color: "rgba(255, 255, 255, 0.45)",
+                color: "var(--text2)",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -234,7 +241,7 @@ export function EmbeddedOriginalCard({
               fontFamily: "Figtree, sans-serif",
               fontSize: titleSize,
               fontWeight: 600,
-              color: "rgba(255, 255, 255, 0.95)",
+              color: "var(--text)",
               lineHeight: "1.35",
               display: "-webkit-box",
               WebkitLineClamp: 2,
@@ -253,7 +260,7 @@ export function EmbeddedOriginalCard({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "11px",
                 fontWeight: 400,
-                color: "rgba(255, 255, 255, 0.65)",
+                color: "var(--text2)",
                 lineHeight: "1.4",
                 display: "-webkit-box",
                 WebkitLineClamp: descClamp,

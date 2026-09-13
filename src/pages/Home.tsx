@@ -19,6 +19,7 @@ import {
   type BountyPreview,
 } from "@/components/feed/FeedShell";
 import { resolvePostType } from "@/lib/content-types";
+import { t } from "@/lib/theme/tokens";
 
 /**
  * The Builds tab (NS-P41), in its own chunk.
@@ -225,13 +226,27 @@ function useForYouTab(enabled: boolean) {
       : "saved";
     return (
       <div key={interaction.id}>
-        <div className="px-6 pt-3 pb-1 flex items-center gap-2 text-xs text-muted-foreground">
+        {/* BG-P18. The For You tab's one piece of per-item metadata: who did
+            what to the card below it. Repainted onto the tokens rather than
+            shadcn's `text-muted-foreground`, which resolves through the legacy
+            HSL variables and does not follow `<html data-theme>` with the rest
+            of the feed. Nothing about the row's structure moved. */}
+        <div className="px-6 pt-3 pb-1 flex items-center gap-2 text-xs" style={{ color: t.text2 }}>
           <Link to={`/creator/${actor?.username}`}>
             <Avatar className="h-5 w-5">
-              <AvatarFallback className="bg-accent text-[8px]">{initials}</AvatarFallback>
+              <AvatarFallback
+                className="text-[8px]"
+                style={{ background: t.recess, color: t.text2 }}
+              >
+                {initials}
+              </AvatarFallback>
             </Avatar>
           </Link>
-          <Link to={`/creator/${actor?.username}`} className="font-medium text-foreground hover:underline">
+          <Link
+            to={`/creator/${actor?.username}`}
+            className="font-medium hover:underline"
+            style={{ color: t.text }}
+          >
             {actor?.display_name || actor?.username}
           </Link>
           <span>{label}</span>

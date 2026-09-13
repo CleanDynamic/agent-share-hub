@@ -26,6 +26,9 @@ import { timeAgo, formatNum, difficultyColor } from "@/components/FeedItem";
 import { TYPE_COLORS, TYPE_COLOR_FALLBACK, displayContentType } from "@/lib/content-types";
 import { ReblogComposer, type ReblogComposerOriginal } from "@/components/ReblogComposer";
 import { REBLOG_COMPOSE_ENABLED } from "@/lib/reblog/flags";
+import { elevation } from "@/lib/theme/elevation";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 
 // ── Quoted post card (embedded inside feed card) ──────────────
 
@@ -55,7 +58,7 @@ function QuotedPost({
     return (
       <div
         className="rounded-[10px] border border-white/9 px-3 py-2.5 mt-2"
-        style={{ background: "rgba(255,255,255,0.03)", borderLeft: "3px solid rgba(255,255,255,0.18)" }}
+        style={{ background: "var(--recess)", borderLeft: "3px solid var(--line)" }}
       >
         <p className="text-[12px] text-muted-foreground">Loading original post…</p>
       </div>
@@ -70,7 +73,7 @@ function QuotedPost({
   return (
     <div
       className="rounded-[10px] border border-white/9 px-3 py-2.5 mt-2 cursor-pointer hover:bg-white/5 transition-colors"
-      style={{ background: "rgba(255,255,255,0.03)", borderLeft: "3px solid rgba(255,255,255,0.18)" }}
+      style={{ background: "var(--recess)", borderLeft: "3px solid var(--line)" }}
       onClick={(e) => { stop(e); navigate(`/content/${originalId}`); }}
     >
       <div className="flex items-center gap-1.5 mb-0.5">
@@ -172,7 +175,7 @@ function ThreadBlock({ block, index }: { block: any; index: number }) {
     <div className="flex gap-3 mt-3">
       <div className="flex flex-col items-center shrink-0">
         <span className="text-[12px] text-muted-foreground font-medium">{label}</span>
-        <div className="w-[1px] flex-1 bg-[#1F7A6D]/30 mt-1" />
+        <div className="w-[1px] flex-1 mt-1" style={{ background: t.line }} />
       </div>
       <div className="flex-1 pb-1">
         {block.block_type === "image" && block.image_url ? (
@@ -294,33 +297,39 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
   };
 
   const postCategory = item.post_category || "blueprint";
-  const categoryColors: Record<string, string> = {
-    blog: "bg-[#F472B6]/15 text-[#F472B6] border-[#F472B6]/25",
-    blueprint: "bg-primary/20 text-primary border-primary/25",
-    bounty: "bg-[#374151]/20 text-[#9CA3AF] border-[#374151]/25",
-  };
+  /* BG-P18. The three colour class strings that stood here are gone. They were
+     already inert — BG-P07's Badge paints `chipStyle(tone)` INLINE, which
+     outranks any className — so they coloured nothing and were three more
+     retired hexes for the next reader to wonder about. The badge takes the
+     kit's outline tone, which is `--text2` on a `--line` edge. */
 
   return (
     <div
       onClick={() => navigate(`/content/${item.id}`)}
       data-visual-slot="feed-card"
       style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-card)',
+        // BG-P18. The same repaint the other two legacy feed cards took, for
+        // the same reason: `--glass` on a `--line` hairline at `--r-card` is the
+        // theme's card, and this one sits in the Recent tab beside build cards.
+        // Read-only since NS-P42 — composing a reblog is retired, the frozen
+        // ones still render — which is a reason to keep it legible, not a reason
+        // to leave it in the old palette.
+        background: t.glass,
+        ...elevation.flat,
+        borderRadius: r.card,
         marginBottom: 12,
         padding: '18px 20px',
         transition: 'border-color 0.2s ease',
         cursor: 'pointer',
       }}
-      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--text2)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--line)'}
     >
       {/* ROW 1 — Reblog header */}
       <div className="flex items-start gap-2">
         {/* Reblog indicator */}
         <div className="flex items-center gap-1 mr-0.5 pt-0.5">
-          <Repeat2 className="h-3.5 w-3.5 shrink-0" style={{ color: "#1F7A6D" }} />
+          <Repeat2 className="h-3.5 w-3.5 shrink-0" style={{ color: t.text2 }} />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -334,13 +343,13 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
               to={`/creator/${profile?.username}`}
               onClick={stop}
               className="hover:underline truncate"
-              style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.90)' }}
+              style={{ fontSize: 13, fontWeight: 500, color: t.text }}
             >
               {profile?.display_name || profile?.username || "Unknown"}
             </Link>
-            <span className="truncate" style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>@{profile?.username}</span>
-            <span style={{ color: 'rgba(255,255,255,0.20)' }}>·</span>
-            <span className="shrink-0" style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)' }}>{timeAgo(item.created_at)}</span>
+            <span className="truncate" style={{ fontSize: 12, color: t.text2 }}>@{profile?.username}</span>
+            <span style={{ color: t.text2 }}>·</span>
+            <span className="shrink-0" style={{ fontSize: 12, color: t.text2 }}>{timeAgo(item.created_at)}</span>
             <div className="ml-auto shrink-0" onClick={stop}>
               <BookmarkButton contentId={item.id} />
             </div>
@@ -348,7 +357,7 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
 
           {/* Badges */}
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            <Badge variant="outline" className={`text-[9px] font-bold uppercase tracking-widest ${categoryColors[postCategory] ?? categoryColors.blueprint}`}>
+            <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest">
               ↺ {postCategory.charAt(0).toUpperCase() + postCategory.slice(1)}
             </Badge>
             {item.content_type && item.content_type !== "Blog" && (
@@ -367,7 +376,7 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
 
       {/* ROW 2 — Reblog title (if set) */}
       {item.title && (
-        <p className="line-clamp-2 ml-5" style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.90)', lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
+        <p className="line-clamp-2 ml-5" style={{ fontSize: 15, fontWeight: 600, color: t.text, lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
       )}
 
       {/* ROW 3 — Quoted post (always visible, unless compact mode) */}
@@ -399,7 +408,7 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
           </button>
 
           {threadExpanded && (
-            <div className="mt-2 pl-1 border-l border-[#1F7A6D]/20">
+            <div className="mt-2 pl-1 border-l" style={{ borderColor: t.line }}>
               {threadBlocks.map((block, i) => (
                 <ThreadBlock key={block.id ?? i} block={block} index={i + 1} />
               ))}
@@ -409,8 +418,8 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
       )}
 
       {/* ROW 6 — Stats row */}
-      <div className="flex items-center justify-between ml-5" style={{ paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.12)' }}>
-        <div className="flex items-center" style={{ gap: 16, fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>
+      <div className="flex items-center justify-between ml-5" style={{ paddingTop: 14, borderTop: `1px solid ${t.line}` }}>
+        <div className="flex items-center" style={{ gap: 16, fontSize: 12, fontWeight: 400, color: t.text2 }}>
           <span className="inline-flex items-center gap-1 shrink-0">
             <Eye style={{ width: 15, height: 15 }} />{formatNum(item.view_count ?? 0)}
           </span>
@@ -432,7 +441,7 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
           <button
             onClick={(e) => { stop(e); setReblogOpen(true); }}
             className="text-[11px] font-medium transition-colors hover:opacity-80"
-            style={{ color: userHasReblogged ? "#1F7A6D" : "#1F7A6D" }}
+            style={{ color: userHasReblogged ? t.action : t.text2 }}
           >
             ↺ Reblog this
           </button>

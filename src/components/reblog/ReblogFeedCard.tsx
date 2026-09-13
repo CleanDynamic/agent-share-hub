@@ -120,7 +120,7 @@ function EngagementRow({
   onShareClick,
 }: EngagementRowProps) {
   const iconBtn =
-    "flex items-center gap-1.5 text-[13px] font-medium text-white/55 hover:text-white transition-colors";
+    "flex items-center gap-1.5 text-[13px] font-medium text-[color:var(--text2)] hover:text-[color:var(--text)] transition-colors";
   const stop =
     (fn: () => void) => (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -188,7 +188,7 @@ function EngagementRow({
           <Bookmark
             size={16}
             className={
-              engagement.hasBookmarked ? "fill-white text-white" : ""
+              engagement.hasBookmarked ? "fill-[color:var(--action)] text-[color:var(--action)]" : ""
             }
           />
         </button>
@@ -259,8 +259,14 @@ export function ReblogFeedCard({
   return (
     <article
       onClick={handleCardClick}
-      className="cursor-pointer rounded-2xl border border-white/8 bg-white/[0.03] hover:bg-white/[0.05] transition-colors"
-      style={{ padding: 16 }}
+      className="cursor-pointer transition-colors"
+      style={{
+        // BG-P18. The same card the other four legacy feed cards now wear.
+        background: "var(--glass)",
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-card)",
+        padding: 16,
+      }}
     >
       {/* TOP ROW */}
       <div className="flex items-center gap-2.5">
@@ -284,14 +290,14 @@ export function ReblogFeedCard({
           className="flex items-baseline gap-1.5 min-w-0 cursor-pointer text-left"
         >
           <span
-            className="font-semibold text-white truncate"
-            style={{ fontSize: 14 }}
+            className="font-semibold truncate"
+            style={{ fontSize: 14, color: "var(--text)" }}
           >
             {reblog.rebloggerDisplayName}
           </span>
           <span
-            className="text-white/50 truncate"
-            style={{ fontSize: 13 }}
+            className="truncate"
+            style={{ fontSize: 13, color: "var(--text2)" }}
           >
             @{reblog.rebloggerHandle}
           </span>
@@ -303,8 +309,8 @@ export function ReblogFeedCard({
           style={{
             fontSize: 10,
             padding: "2px 8px",
-            color: "#34d399",
-            background: "rgba(52, 211, 153, 0.12)",
+            color: "var(--evidence)",
+            background: "var(--evidence-fill)",
             letterSpacing: "0.08em",
           }}
         >
@@ -317,8 +323,8 @@ export function ReblogFeedCard({
         {/* Profile-zone variant tag */}
         {variant === "profile-zone" && reblog.viaReblogTag && (
           <span
-            className="shrink-0 text-white/40"
-            style={{ fontSize: 11 }}
+            className="shrink-0"
+            style={{ fontSize: 11, color: "var(--text2)" }}
           >
             via reblog
           </span>
@@ -326,8 +332,8 @@ export function ReblogFeedCard({
 
         {/* Timestamp */}
         <span
-          className="shrink-0 text-white/40"
-          style={{ fontSize: 12 }}
+          className="shrink-0"
+          style={{ fontSize: 12, color: "var(--text2)" }}
         >
           {timeAgo(reblog.publishedAt)}
         </span>
@@ -335,8 +341,8 @@ export function ReblogFeedCard({
         {/* More menu */}
         <button
           onClick={stop(onMore)}
-          className="shrink-0 flex items-center justify-center rounded-md transition-colors hover:bg-white/[0.06] text-white/55 hover:text-white"
-          style={{ width: 28, height: 28 }}
+          className="shrink-0 flex items-center justify-center transition-colors text-[color:var(--text2)] hover:text-[color:var(--text)] hover:bg-[color:var(--recess)]"
+          style={{ width: 28, height: 28, borderRadius: "var(--r-chip)" }}
           aria-label="More options"
         >
           <MoreHorizontal size={16} />
@@ -348,8 +354,9 @@ export function ReblogFeedCard({
         <div style={{ marginTop: 10 }}>
           <p
             ref={textRef}
-            className="text-white/90 whitespace-pre-wrap break-words"
+            className="whitespace-pre-wrap break-words"
             style={{
+              color: "var(--text)",
               fontSize: 15,
               lineHeight: 1.5,
               display: isExpanded ? "block" : "-webkit-box",
@@ -364,7 +371,7 @@ export function ReblogFeedCard({
           {isClamped && !isExpanded && (
             <button
               onClick={stop(() => setIsExpanded(true))}
-              className="font-sans cursor-pointer text-white/55 hover:text-white transition-colors"
+              className="font-sans cursor-pointer text-[color:var(--text2)] hover:text-[color:var(--text)] transition-colors"
               style={{
                 fontSize: 13,
                 fontWeight: 500,
@@ -383,8 +390,8 @@ export function ReblogFeedCard({
       {/* OPTIONAL MEDIA */}
       {reblog.media && (
         <div
-          className="overflow-hidden rounded-xl border border-white/8"
-          style={{ marginTop: 12 }}
+          className="overflow-hidden"
+          style={{ marginTop: 12, borderRadius: "var(--r-media)", border: "1px solid var(--line)" }}
         >
           {reblog.media.kind === "image" ? (
             <img
@@ -410,13 +417,13 @@ export function ReblogFeedCard({
                   style={{
                     width: 56,
                     height: 56,
-                    background: "rgba(0,0,0,0.55)",
+                    background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                     backdropFilter: "blur(4px)",
                   }}
                 >
                   <Play
                     size={24}
-                    className="text-white fill-white"
+                    className="text-[color:var(--chrome-hi)] fill-[color:var(--chrome-hi)]"
                     style={{ marginLeft: 3 }}
                   />
                 </div>
@@ -447,10 +454,10 @@ export function ReblogFeedCard({
             className="flex items-center justify-center rounded-xl"
             style={{
               minHeight: 80,
-              background: "rgba(255,255,255,0.04)",
-              border: "0.5px solid rgba(255,255,255,0.08)",
+              background: "var(--recess)",
+              border: "1px solid var(--line)",
               padding: 16,
-              color: "rgba(255,255,255,0.4)",
+              color: "var(--text2)",
               fontSize: 13,
             }}
           >
