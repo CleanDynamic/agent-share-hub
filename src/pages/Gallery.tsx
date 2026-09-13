@@ -47,13 +47,16 @@ import {
   getGalleryFacets,
   listGallery,
   type GalleryBuild,
-  type GalleryFacet,
   type GalleryPage,
 } from "@/lib/build";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import {
-  GAP_RED,
+  FacetRail,
+  type FacetGroup,
+  type SelectedFacet,
+} from "@/components/gallery/FacetRail";
+import {
   HAIRLINE,
   ORANGE,
   TEAL,
@@ -61,7 +64,6 @@ import {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   bodyText,
-  hexToRgba,
   labelText,
   panelGlass,
 } from "@/components/build/tokens";
@@ -141,7 +143,101 @@ export default function Gallery() {
     setPage(0);
   };
 
+  const clearAll = () => {
+    setMadeFor([]);
+    setMadeWith([]);
+    setOpenBounties(false);
+    setPage(0);
+  };
+
   const filtered = madeFor.length > 0 || madeWith.length > 0 || openBounties;
+
+  /**
+   * The three groups, in one shape.
+   *
+   * Built here rather than inside the rail because the page owns the query
+   * state and the rail owns the pixels: everything below is "what is on offer
+   * and what happens when it is pressed", and nothing in it is a measurement.
+   */
+  const groups: FacetGroup[] = [
+    {
+      key: "made-for",
+      label: "Made for",
+      loading: facets.isLoading,
+      emptyText: "No roles named yet.",
+      options: (facets.data?.roles ?? []).map((option) => ({
+        value: option.value,
+        // The registry's name where one matched, the creator's own spelling
+        // where it did not — the filter still works either way, because the
+        // query filters on what was stored.
+        label: option.label ?? option.value,
+        count: option.count,
+        selected: madeFor.includes(option.value),
+        onToggle: () => toggle(option.value, madeFor, setMadeFor),
+      })),
+    },
+    {
+      key: "made-with",
+      label: "Made with",
+      loading: facets.isLoading,
+      emptyText: "No tools named yet.",
+      options: (facets.data?.tools ?? []).map((option) => ({
+        value: option.value,
+        label: option.label ?? option.value,
+        count: option.count,
+        selected: madeWith.includes(option.value),
+        onToggle: () => toggle(option.value, madeWith, setMadeWith),
+      })),
+    },
+    {
+      key: "bounties",
+      label: "Unsolved",
+      loading: false,
+      emptyText: "",
+      // The one group that names a part category. See FacetGroup.tone.
+      tone: "breakage",
+      options: [
+        {
+          value: "open",
+          label: "Open bounties",
+          // The count is the number of BUILDS carrying an open ask, not the
+          // number of asks: it is the size of the grid this chip produces,
+          // which is the number a reader is deciding about.
+          count: bountyCount.isLoading ? null : (bountyCount.data ?? 0),
+          selected: openBounties,
+          onToggle: () => {
+            setOpenBounties((current) => !current);
+            setPage(0);
+          },
+        },
+      ],
+    },
+  ];
+
+  const selected: SelectedFacet[] = [
+    ...madeFor.map((value) => ({
+      id: `made-for-${value}`,
+      label: labelFor(groups[0], value),
+      onRemove: () => toggle(value, madeFor, setMadeFor),
+    })),
+    ...madeWith.map((value) => ({
+      id: `made-with-${value}`,
+      label: labelFor(groups[1], value),
+      onRemove: () => toggle(value, madeWith, setMadeWith),
+    })),
+    ...(openBounties
+      ? [
+          {
+            id: "bounties-open",
+            label: "Open bounties",
+            onRemove: () => {
+              setOpenBounties(false);
+              setPage(0);
+            },
+          },
+        ]
+      : []),
+  ];
 
   return (
     /* ── BG-P15 — THE PAGE'S OWN FRAME IS GONE.
@@ -249,71 +345,7 @@ export default function Gallery() {
           gap: 20,
         }}
       >
-        <section
-          data-visual-slot="gallery-filters"
-          style={{
-            ...panelGlass,
-            borderRadius: 12,
-            padding: 14,
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-          }}
-        >
-          <FacetRow
-            label="Made for"
-            accent={ORANGE}
-            options={facets.data?.roles ?? []}
-            selected={madeFor}
-            loading={facets.isLoading}
-            emptyText="No roles named yet."
-            onToggle={(value) => toggle(value, madeFor, setMadeFor)}
-          />
-          <div style={{ height: 1, background: HAIRLINE }} />
-          <FacetRow
-            label="Made with"
-            accent={TEAL}
-            options={facets.data?.tools ?? []}
-            selected={madeWith}
-            loading={facets.isLoading}
-            emptyText="No tools named yet."
-            onToggle={(value) => toggle(value, madeWith, setMadeWith)}
-          />
-          <div style={{ height: 1, background: HAIRLINE }} />
-          <BountyFacet
-            active={openBounties}
-            count={bountyCount.data ?? 0}
-            loading={bountyCount.isLoading}
-            onToggle={() => {
-              setOpenBounties((current) => !current);
-              setPage(0);
-            }}
-          />
-          {filtered ? (
-            <div>
-              <button
-                type="button"
-                onClick={() => {
-                  setMadeFor([]);
-                  setMadeWith([]);
-                  setOpenBounties(false);
-                  setPage(0);
-                }}
-                style={{
-                  ...labelText,
-                  fontFamily: "inherit",
-                  background: "transparent",
-                  border: "none",
-                  padding: 0,
-                  color: TEXT_SECONDARY,
-                  cursor: "pointer",
-                }}
-              >
-                Clear filters
-              </button>
-            </div>
-          ) : null}
-        </section>
+        <FacetRail groups={groups} selected={selected} onClearAll={clearAll} />
 
         <Results
           builds={rows}
@@ -338,163 +370,9 @@ export default function Gallery() {
 
 const EMPTY_BUILDS: GalleryBuild[] = [];
 
-/**
- * One filter, as a row of chips.
- *
- * Several chips in a row are an OR — a reader picking "lawyer" and "designer"
- * wants either, not both, and a build is rarely made for two roles at once.
- * The two rows are an AND with each other, which is the useful combination:
- * made for lawyers, made with Claude.
- */
-function FacetRow({
-  label,
-  accent,
-  options,
-  selected,
-  loading,
-  emptyText,
-  onToggle,
-}: {
-  label: string;
-  accent: string;
-  options: GalleryFacet[];
-  selected: string[];
-  loading: boolean;
-  emptyText: string;
-  onToggle: (value: string) => void;
-}) {
-  return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-      <span
-        style={{
-          ...labelText,
-          textTransform: "uppercase",
-          color: TEXT_MUTED,
-          minWidth: 78,
-          paddingTop: 5,
-        }}
-      >
-        {label}
-      </span>
-      <div style={{ flex: 1, minWidth: 0, display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {loading ? (
-          <span style={{ ...bodyText, color: TEXT_MUTED }}>Loading…</span>
-        ) : options.length === 0 ? (
-          <span style={{ ...bodyText, color: TEXT_MUTED }}>{emptyText}</span>
-        ) : (
-          options.map((option) => {
-            const active = selected.includes(option.value);
-            return (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={active}
-                onClick={() => onToggle(option.value)}
-                style={{
-                  fontFamily: "inherit",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  letterSpacing: "0.04em",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  height: 28,
-                  padding: "0 10px",
-                  borderRadius: 100,
-                  cursor: "pointer",
-                  color: active ? accent : TEXT_SECONDARY,
-                  background: active
-                    ? hexToRgba(accent, 0.12)
-                    : "rgba(255,255,255,0.025)",
-                  border: `1px solid ${active ? hexToRgba(accent, 0.4) : "rgba(255,255,255,0.06)"}`,
-                }}
-              >
-                {/* The registry's name where one matched, the creator's own
-                    spelling where it did not — the filter still works either
-                    way, because the query filters on what was stored. */}
-                {option.label ?? option.value}
-                <span style={{ color: TEXT_MUTED, fontVariantNumeric: "tabular-nums" }}>
-                  {option.count}
-                </span>
-              </button>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
-}
-
-/**
- * "Open bounties", as one chip on a row of its own.
- *
- * NOT A FACET ROW LIKE THE OTHER TWO, because it has one option rather than
- * many: made_for and made_with offer whatever creators have written down, and
- * this offers a yes. Red, because it is the same fact the card pill and the
- * build page's gap panel are about, and a reader who has learnt what red means
- * here should not have to learn it again there.
- *
- * The count is the number of BUILDS carrying an open ask, not the number of
- * asks: it is the size of the grid this chip produces, which is the number a
- * reader is deciding about.
- */
-function BountyFacet({
-  active,
-  count,
-  loading,
-  onToggle,
-}: {
-  active: boolean;
-  count: number;
-  loading: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-      <span
-        style={{
-          ...labelText,
-          textTransform: "uppercase",
-          color: TEXT_MUTED,
-          minWidth: 78,
-          paddingTop: 5,
-        }}
-      >
-        Unsolved
-      </span>
-      <div style={{ flex: 1, minWidth: 0, display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <button
-          type="button"
-          data-testid="facet-bounties"
-          aria-pressed={active}
-          onClick={onToggle}
-          style={{
-            fontFamily: "inherit",
-            fontSize: 12,
-            fontWeight: 500,
-            letterSpacing: "0.04em",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            height: 28,
-            padding: "0 10px",
-            borderRadius: 100,
-            cursor: "pointer",
-            color: active ? GAP_RED : TEXT_SECONDARY,
-            background: active ? hexToRgba(GAP_RED, 0.12) : "rgba(255,255,255,0.025)",
-            border: `1px solid ${active ? hexToRgba(GAP_RED, 0.4) : "rgba(255,255,255,0.06)"}`,
-          }}
-        >
-          Open bounties
-          {loading ? null : (
-            <span style={{ color: TEXT_MUTED, fontVariantNumeric: "tabular-nums" }}>
-              {count}
-            </span>
-          )}
-        </button>
-      </div>
-    </div>
-  );
+/** A stored value's display label, falling back to the value itself. */
+function labelFor(group: FacetGroup, value: string): string {
+  return group.options.find((option) => option.value === value)?.label ?? value;
 }
 
 function Results({

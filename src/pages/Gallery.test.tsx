@@ -81,6 +81,19 @@ const FACETS = {
   tools: [{ value: "Claude", count: 4, label: "Claude", logo_url: null }],
 };
 
+/**
+ * jsdom reports 1024, which is the first width at which the facet band is open.
+ * `useBreakpoint` reads `innerWidth` on mount, so setting it before the render
+ * is enough — no resize event is needed.
+ */
+function setViewport(width: number) {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+}
+
 function renderGallery() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -97,6 +110,7 @@ function renderGallery() {
 describe("the gallery page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setViewport(1024);
     createSignedUrl.mockImplementation(async (path: string) => ({
       data: { signedUrl: `https://signed.test/${path}` },
       error: null,
@@ -209,7 +223,7 @@ describe("the gallery page", () => {
     expect(listGallery.mock.calls[0][0]).toMatchObject({ madeFor: [], madeWith: [] });
 
     listGallery.mockResolvedValue({ builds: [], total: 0 });
-    fireEvent.click(screen.getByRole("button", { name: /lawyer/i }));
+    fireEvent.click(screen.getByTestId("facet-made-for-lawyer"));
 
     await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(2));
     expect(listGallery.mock.calls[1][0]).toMatchObject({ madeFor: ["lawyer"] });
@@ -224,17 +238,17 @@ describe("the gallery page", () => {
     renderGallery();
     await screen.findByText("Inbox triage agent");
 
-    fireEvent.click(screen.getByRole("button", { name: /lawyer/i }));
+    fireEvent.click(screen.getByTestId("facet-made-for-lawyer"));
     await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(2));
 
-    fireEvent.click(screen.getByRole("button", { name: /Claude/i }));
+    fireEvent.click(screen.getByTestId("facet-made-with-Claude"));
     await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(3));
     expect(listGallery.mock.calls[2][0]).toMatchObject({
       madeFor: ["lawyer"],
       madeWith: ["Claude"],
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    fireEvent.click(screen.getByTestId("gallery-clear-all"));
     await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(4));
     expect(listGallery.mock.calls[3][0]).toMatchObject({ madeFor: [], madeWith: [] });
   });
@@ -246,7 +260,7 @@ describe("the gallery page", () => {
     await screen.findByText("Inbox triage agent");
     expect(listGallery.mock.calls[0][0]).toMatchObject({ openBounties: false });
 
-    const chip = screen.getByTestId("facet-bounties");
+    const chip = screen.getByTestId("facet-bounties-open");
     expect(chip).toHaveTextContent("Open bounties");
     // The number is the size of the grid the chip produces, not the number of
     // asks: a reader is deciding about builds.
@@ -262,7 +276,7 @@ describe("the gallery page", () => {
     expect(getGalleryFacets).toHaveBeenCalledTimes(1);
     expect(countOpenBountyBuilds).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    fireEvent.click(screen.getByTestId("gallery-clear-all"));
     await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(3));
     expect(listGallery.mock.calls[2][0]).toMatchObject({ openBounties: false });
   });
@@ -314,10 +328,12 @@ describe("the gallery page", () => {
     renderGallery();
     await screen.findByText("Inbox triage agent");
 
-    // Open, on the page, with their counts — not inside a disclosure.
+    // Open, on the page, with their counts — not inside a disclosure. At this
+    // width (jsdom reports 1024) the band is open; the sheet is below it.
     expect(screen.getByText("Made for")).toBeInTheDocument();
     expect(screen.getByText("Made with")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /lawyer/i })).toHaveAttribute(
+    expect(screen.queryByTestId("gallery-filters-trigger")).toBeNull();
+    expect(screen.getByTestId("facet-made-for-lawyer")).toHaveAttribute(
       "aria-pressed",
       "false"
     );
@@ -361,6 +377,61 @@ describe("the gallery page", () => {
     );
     // And no lamp: an unlit lamp and a missing one say different things.
     expect(document.querySelector("[data-plaque-lamp]")).toBeNull();
+  });
+
+  // BG-P19 ACCEPTANCE 2
+  it("shows every chosen facet as a removable chip, and clears them all at once", async () => {
+    renderGallery();
+    await screen.findByText("Inbox triage agent");
+
+    // Nothing chosen: no row, and nothing to clear.
+    expect(screen.queryByTestId("gallery-selected-facets")).toBeNull();
+    expect(screen.queryByTestId("gallery-clear-all")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("facet-made-for-lawyer"));
+    fireEvent.click(screen.getByTestId("facet-bounties-open"));
+    await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(3));
+
+    const chip = screen.getByTestId("selected-facet-made-for-lawyer");
+    expect(chip).toHaveAttribute("aria-label", "Remove filter lawyer");
+    expect(screen.getByTestId("selected-facet-bounties-open")).toBeInTheDocument();
+
+    // One chip removes one facet and leaves the other in place.
+    fireEvent.click(chip);
+    await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(4));
+    expect(listGallery.mock.calls[3][0]).toMatchObject({
+      madeFor: [],
+      openBounties: true,
+    });
+    expect(screen.queryByTestId("selected-facet-made-for-lawyer")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("gallery-clear-all"));
+    await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(5));
+    expect(listGallery.mock.calls[4][0]).toMatchObject({
+      madeFor: [],
+      madeWith: [],
+      openBounties: false,
+    });
+    expect(screen.queryByTestId("gallery-selected-facets")).toBeNull();
+  });
+
+  // BG-P19 ACCEPTANCE 2 — the collapse
+  it("collapses the band into a sheet below 1024, and filters the same way", async () => {
+    setViewport(800);
+    renderGallery();
+    await screen.findByText("Inbox triage agent");
+
+    // The band is gone; one control stands in for it.
+    expect(screen.queryByText("Made for")).toBeNull();
+    const trigger = screen.getByTestId("gallery-filters-trigger");
+
+    fireEvent.click(trigger);
+    // The same three groups, the same chips, the same one request per click.
+    await screen.findByText("Made for");
+    fireEvent.click(screen.getByTestId("facet-made-for-lawyer"));
+    await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(2));
+    expect(listGallery.mock.calls[1][0]).toMatchObject({ madeFor: ["lawyer"] });
+    expect(getGalleryFacets).toHaveBeenCalledTimes(1);
   });
 
   it("surfaces a failed load instead of an empty grid", async () => {
