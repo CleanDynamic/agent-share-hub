@@ -11,7 +11,7 @@
 // The sample list is capped at five rows with the cap stated in words, because
 // a truncated table that does not say it is truncated is a lie about the data.
 
-import { TEXT_SECONDARY } from "../tokens";
+import { t } from "@/lib/theme/tokens";
 import {
   Chip,
   ChipRow,
@@ -136,7 +136,7 @@ export function DataRenderer(props: NodeProps) {
               {looksStructured(value) ? (
                 <MonoBlock text={value} collapseTo={12} />
               ) : (
-                <Prose style={{ color: TEXT_SECONDARY }}>{value}</Prose>
+                <Prose style={{ color: t.text2 }}>{value}</Prose>
               )}
             </Field>
           );

@@ -8,7 +8,7 @@
 // renders without a change here. Nothing in this file switches on node.type.
 
 import type { ReactNode } from "react";
-import { TEAL, TEXT_SECONDARY } from "../tokens";
+import { t } from "@/lib/theme/tokens";
 import {
   Bullets,
   Caption,
@@ -88,7 +88,7 @@ export function AgentConfigRenderer(props: NodeProps) {
         {guardrails.length > 0 ? (
           <Field label={labelFor(props.nodeType, "guardrails", "Guardrails")}>
             <Bullets
-              colour={TEAL}
+              colour={t.evidence}
               items={guardrails.map((rule) => String(rule.rule ?? rule.value ?? ""))}
             />
           </Field>
@@ -109,7 +109,7 @@ export function AgentConfigRenderer(props: NodeProps) {
 
         {memory ? (
           <Field label={labelFor(props.nodeType, "memory", "Memory")}>
-            <Prose style={{ color: TEXT_SECONDARY }}>{memory}</Prose>
+            <Prose style={{ color: t.text2 }}>{memory}</Prose>
           </Field>
         ) : null}
 
@@ -182,7 +182,14 @@ export function ConfigCard(props: NodeProps) {
             href={url}
             target="_blank"
             rel="noreferrer noopener"
-            style={{ color: TEAL, textDecoration: "none", wordBreak: "break-all" }}
+            /* Underlined at rest: colour alone fails WCAG 1.4.1, and `--action`
+               is the token for somewhere to go. */
+            style={{
+              color: t.action,
+              textDecoration: "underline",
+              textUnderlineOffset: "3px",
+              wordBreak: "break-all",
+            }}
           >
             {url}
           </a>

@@ -5,7 +5,9 @@
 // sample size are printed rather than implied: a comparison with no n is an
 // opinion, and the card should look like one.
 
-import { HAIRLINE, TEAL, TEXT_MUTED, TEXT_SECONDARY, bodyText, hexToRgba, labelText } from "../tokens";
+import { hexToRgba } from "../tokens";
+import { t } from "@/lib/theme/tokens";
+import { body as bodyType } from "@/lib/theme/type";
 import { MEDIA_WIDTH, MediaFigure } from "../MediaFigure";
 import {
   Caption,
@@ -113,7 +115,7 @@ export function EvidenceRenderer(props: NodeProps) {
   return (
     <div data-visual-slot="renderer-evidence" style={{ minWidth: 0 }}>
       <Stack gap={12}>
-        <StatRow stats={stats} colour={TEAL} />
+        <StatRow stats={stats} colour={t.evidence} />
 
         {summary ? <Prose>{summary}</Prose> : null}
 
@@ -280,7 +282,7 @@ export function ComparisonTableRenderer(props: NodeProps) {
                 return (
                   <tr
                     key={rowIndex}
-                    style={won ? { background: hexToRgba(TEAL, 0.07) } : undefined}
+                    style={won ? { background: hexToRgba(t.evidence, 0.07) } : undefined}
                   >
                     {columns.map((column, columnIndex) => (
                       <td
@@ -288,16 +290,16 @@ export function ComparisonTableRenderer(props: NodeProps) {
                         style={{
                           ...cellStyle,
                           paddingLeft: columnIndex === 0 ? 12 : 0,
-                          color: won ? TEAL : bodyText.color,
-                          fontWeight: won ? 500 : bodyText.fontWeight,
+                          color: won ? t.evidence : t.text,
+                          fontWeight: won ? 500 : bodyType.fontWeight,
                           ...(columnIndex === 0
                             ? {
-                                borderLeft: `3px solid ${won ? TEAL : "transparent"}`,
+                                borderLeft: `3px solid ${won ? t.evidence : "transparent"}`,
                               }
                             : {}),
                         }}
                       >
-                        {cells[columnIndex] || <span style={{ color: TEXT_MUTED }}>—</span>}
+                        {cells[columnIndex] || <span style={{ color: t.text2 }}>—</span>}
                       </td>
                     ))}
                   </tr>
@@ -311,14 +313,14 @@ export function ComparisonTableRenderer(props: NodeProps) {
 
         {winner ? (
           <ChipRow>
-            <Chip colour={TEAL} tinted>
+            <Chip colour={t.evidence} tinted>
               {`Winner: ${winner}`}
             </Chip>
           </ChipRow>
         ) : null}
 
         {footnote ? (
-          <Caption style={{ paddingTop: 2, borderTop: `1px solid ${HAIRLINE}` }}>
+          <Caption style={{ paddingTop: 2, borderTop: `1px solid ${t.line}` }}>
             {footnote}
           </Caption>
         ) : null}

@@ -31,16 +31,35 @@ import type {
   NodeType,
 } from "@/lib/build";
 import { GenericPayload } from "../GenericPayload";
+import { hexToRgba } from "../tokens";
+import { chipType } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import {
-  HAIRLINE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  hexToRgba,
-  labelText,
-} from "../tokens";
+  DM_MONO,
+  body as bodyType,
+  data as dataType,
+  eyebrow,
+  measure,
+  tabular,
+} from "@/lib/theme/type";
+
+/* ── BG-P21 — the three faces, by job ─────────────────────────────────────────
+
+   Every primitive below used to set its own size and colour off `bodyText` and
+   `labelText`, two 13px/12px objects that did duty for prose, labels, figures,
+   captions and chips alike. The theme gives each of those a face:
+
+     Figtree  prose — a note, a step, a creator's sentence.
+     DM Mono  data — a model name, a cost, a duration, a count, a part label,
+              a field label, a caption, a chip.
+     Bodoni   display — and NOTHING in this file, which draws the inside of a
+              node card. The display face belongs to the build's own title.
+
+   A renderer that mixes them the other way round — mono prose, Figtree figures
+   — is the drift the roles exist to stop, so each primitive names its role once
+   and every renderer spends it by using the primitive.
+   ─────────────────────────────────────────────────────────────────────────── */
 
 // --- the renderer contract ---------------------------------------------------
 
@@ -276,13 +295,12 @@ export function MediaImage({
     return (
       <div
         style={{
-          ...bodyText,
-          color: TEXT_MUTED,
-          fontSize: 12,
+          ...dataType,
+          color: t.text2,
           padding: "18px 14px",
           textAlign: "center",
-          border: `1px dashed ${HAIRLINE}`,
-          borderRadius: 8,
+          border: `1px dashed ${t.line}`,
+          borderRadius: r.media,
           ...style,
         }}
       >
@@ -302,8 +320,8 @@ export function MediaImage({
         display: "block",
         maxWidth: "100%",
         height: "auto",
-        borderRadius: 8,
-        border: `1px solid ${HAIRLINE}`,
+        borderRadius: r.media,
+        border: `1px solid ${t.line}`,
         ...style,
       }}
     />
@@ -338,7 +356,7 @@ export function Field({
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4, ...style }}>
-      <span style={labelText}>{label}</span>
+      <span style={{ ...eyebrow, color: t.text2 }}>{label}</span>
       {children}
     </div>
   );
@@ -349,7 +367,9 @@ export function Prose({ children, style }: { children: ReactNode; style?: CSSPro
   return (
     <p
       style={{
-        ...bodyText,
+        ...bodyType,
+        ...measure,
+        color: t.text,
         margin: 0,
         whiteSpace: "pre-wrap",
         wordBreak: "break-word",
@@ -366,10 +386,9 @@ export function Caption({ children, style }: { children: ReactNode; style?: CSSP
   return (
     <span
       style={{
-        ...bodyText,
-        fontSize: 12,
-        lineHeight: 1.5,
-        color: TEXT_MUTED,
+        ...dataType,
+        ...measure,
+        color: t.text2,
         ...style,
       }}
     >
@@ -380,7 +399,7 @@ export function Caption({ children, style }: { children: ReactNode; style?: CSSP
 
 export function Chip({
   children,
-  colour = TEXT_SECONDARY,
+  colour = t.text2,
   tinted = false,
   title,
 }: {
@@ -393,15 +412,13 @@ export function Chip({
     <span
       title={title}
       style={{
-        ...bodyText,
-        fontSize: 12,
-        lineHeight: 1.4,
+        ...chipType,
         padding: "2px 9px",
-        borderRadius: 6,
+        borderRadius: r.chip,
         whiteSpace: "nowrap",
         color: colour,
         background: tinted ? hexToRgba(colour, 0.14) : "transparent",
-        border: `1px solid ${tinted ? hexToRgba(colour, 0.3) : HAIRLINE}`,
+        border: `1px solid ${tinted ? hexToRgba(colour, 0.3) : t.line}`,
       }}
     >
       {children}
@@ -420,7 +437,7 @@ export function ChipRow({ children }: { children: ReactNode }) {
 /** The leading stat row: a small number of headline figures. */
 export function StatRow({
   stats,
-  colour = TEXT_PRIMARY,
+  colour = t.text,
 }: {
   stats: { label: string; value: string }[];
   colour?: string;
@@ -430,12 +447,16 @@ export function StatRow({
     <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
       {stats.map((stat) => (
         <div key={stat.label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ ...labelText, fontSize: 11 }}>{stat.label}</span>
+          <span style={{ ...eyebrow, color: t.text2 }}>{stat.label}</span>
+          {/* A headline figure: mono, tabular, and stepped up in SIZE rather
+              than given a second face. Two figures that change under a reader
+              must not shift what sits beside them. */}
           <span
             style={{
-              ...bodyText,
+              ...dataType,
+              ...tabular,
               fontSize: 20,
-              fontWeight: 600,
+              fontWeight: 500,
               lineHeight: 1.2,
               color: colour,
             }}
@@ -461,15 +482,18 @@ export function KeyValueGrid({ pairs }: { pairs: { label: string; value: ReactNo
     >
       {pairs.map((pair) => (
         <div key={pair.label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ ...labelText, fontSize: 11 }}>{pair.label}</span>
-          <span style={{ ...bodyText, wordBreak: "break-word" }}>{pair.value}</span>
+          <span style={{ ...eyebrow, color: t.text2 }}>{pair.label}</span>
+          {/* Model names, parameters, ids: data, so mono and tabular. */}
+          <span style={{ ...dataType, ...tabular, color: t.text, wordBreak: "break-word" }}>
+            {pair.value}
+          </span>
         </div>
       ))}
     </div>
   );
 }
 
-export function Bullets({ items, colour = TEAL }: { items: ReactNode[]; colour?: string }) {
+export function Bullets({ items, colour = t.evidence }: { items: ReactNode[]; colour?: string }) {
   if (items.length === 0) return null;
   return (
     <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
@@ -480,13 +504,15 @@ export function Bullets({ items, colour = TEAL }: { items: ReactNode[]; colour?:
             style={{
               width: 4,
               height: 4,
-              borderRadius: "50%",
+              borderRadius: r.full,
               background: colour,
               marginTop: 8,
               flexShrink: 0,
             }}
           />
-          <span style={{ ...bodyText, minWidth: 0, wordBreak: "break-word" }}>{item}</span>
+          <span style={{ ...bodyType, ...measure, color: t.text, minWidth: 0, wordBreak: "break-word" }}>
+            {item}
+          </span>
         </li>
       ))}
     </ul>
@@ -510,23 +536,13 @@ export function Callout({
         flexDirection: "column",
         gap: 10,
         padding: "12px 14px",
-        borderRadius: 10,
+        borderRadius: r.control,
         background: hexToRgba(colour, 0.06),
         border: `1px solid ${hexToRgba(colour, 0.28)}`,
       }}
     >
       {heading ? (
-        <span
-          style={{
-            ...labelText,
-            color: colour,
-            textTransform: "uppercase",
-            fontSize: 11,
-            fontWeight: 600,
-          }}
-        >
-          {heading}
-        </span>
+        <span style={{ ...eyebrow, color: colour }}>{heading}</span>
       ) : null}
       {children}
     </div>
@@ -554,13 +570,7 @@ export function AccentSection({
       }}
     >
       <span
-        style={{
-          ...labelText,
-          color: colour,
-          textTransform: "uppercase",
-          fontSize: 11,
-          fontWeight: 600,
-        }}
+        style={{ ...eyebrow, color: colour }}
       >
         {label}
       </span>
@@ -576,20 +586,33 @@ export function AccentSection({
 // highlighter behind it. This matches that treatment. Monaco is the EDIT
 // surface (CodeBlock.tsx) and stays out of this chunk — it is ~3MB.
 
-export const MONO_STACK =
-  "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace";
+/**
+ * The data face, by its own name.
+ *
+ * BG-P21 — THIS WAS A SECOND MONO STACK. It led with `ui-monospace` and fell
+ * back through five system faces, none of which is the one the theme ships: DM
+ * Mono sets every model name, cost, timestamp and count everywhere else on the
+ * site, and a code block in the same card rendering in SF Mono made one card
+ * carry two monospaces. It is the theme's stack now, re-exported under the name
+ * this folder already imports so no renderer has to change.
+ */
+export const MONO_STACK = DM_MONO;
 
 export const monoBlockStyle: CSSProperties = {
-  background: "rgba(0,0,0,0.45)",
-  border: `1px solid ${HAIRLINE}`,
-  borderRadius: 8,
+  /* A WELL, NOT A BLACK BOX. It was `rgba(0,0,0,0.45)` over whatever sat
+     behind it — a hole punched through the light room. `--recess` is the token
+     for a surface the page is cut into, which is what a code block is, and it
+     is a legal ground for `--text` in both rooms. */
+  background: t.recess,
+  border: `1px solid ${t.line}`,
+  borderRadius: r.control,
   padding: "12px 14px",
   margin: 0,
   fontFamily: MONO_STACK,
   fontSize: 12,
   fontWeight: 400,
   lineHeight: 1.65,
-  color: TEXT_PRIMARY,
+  color: t.text,
   whiteSpace: "pre-wrap",
   wordBreak: "break-word",
   overflowX: "auto",
@@ -622,7 +645,7 @@ export function MonoBlock({
       <pre style={{ ...monoBlockStyle, ...style }}>
         {children && (!collapsible || open) ? children : shown}
         {collapsible && !open ? (
-          <span style={{ color: TEXT_MUTED }}>{"\n…"}</span>
+          <span style={{ color: t.text2 }}>{"\n…"}</span>
         ) : null}
       </pre>
       {collapsible ? (
@@ -630,15 +653,19 @@ export function MonoBlock({
           type="button"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
+          /* A ghost: no fill, no border. It reveals what is already on the
+             page rather than acting on the build, so it reads as a link in the
+             block's own mono rather than as a control competing with it. */
           style={{
-            ...labelText,
+            ...dataType,
             alignSelf: "flex-start",
             background: "transparent",
             border: "none",
             padding: 0,
             cursor: "pointer",
-            color: TEAL,
-            fontSize: 12,
+            color: t.action,
+            textDecoration: "underline",
+            textUnderlineOffset: 3,
           }}
         >
           {open ? "Show less" : `Show all ${lines.length} lines`}
@@ -675,19 +702,27 @@ export function withVariablesHighlighted(text: string, colour: string): ReactNod
 
 // --- tables ------------------------------------------------------------------
 
+/* A TABLE IS DATA, SO IT IS MONO AND TABULAR THROUGHOUT. A comparison of three
+   models on cost and accuracy is four columns of figures that have to line up
+   down the column, which is the one thing a proportional face cannot do. The
+   head is the eyebrow role — a mono label over mono values — and both rules are
+   `--line`, so the table is held by hairlines rather than by a grid. */
+
 export const cellStyle: CSSProperties = {
-  ...bodyText,
+  ...dataType,
+  ...tabular,
+  color: t.text,
   verticalAlign: "top",
   padding: "7px 12px 7px 0",
-  borderBottom: `1px solid ${HAIRLINE}`,
+  borderBottom: `1px solid ${t.line}`,
 };
 
 export const headCellStyle: CSSProperties = {
-  ...labelText,
-  fontSize: 11,
+  ...eyebrow,
+  color: t.text2,
   textAlign: "left",
   padding: "0 12px 6px 0",
-  borderBottom: `1px solid ${HAIRLINE}`,
+  borderBottom: `1px solid ${t.line}`,
   whiteSpace: "nowrap",
 };
 
@@ -743,11 +778,11 @@ export function SampleTable({
                 return (
                   <td key={column.key} style={cellStyle}>
                     {isPresent(value) ? (
-                      <span style={{ fontFamily: MONO_STACK, fontSize: 11.5, wordBreak: "break-word" }}>
+                      <span style={{ ...dataType, ...tabular, wordBreak: "break-word" }}>
                         {String(value)}
                       </span>
                     ) : (
-                      <span style={{ color: TEXT_MUTED }}>—</span>
+                      <span style={{ color: t.text2 }}>—</span>
                     )}
                   </td>
                 );
@@ -775,7 +810,7 @@ export function SampleTable({
 export function NodeRef({
   id,
   resolveNode,
-  colour = TEAL,
+  colour = t.evidence,
 }: {
   id: string | undefined;
   resolveNode: ResolveNode;
@@ -785,7 +820,7 @@ export function NodeRef({
   const target = resolveNode(id);
   const text = target?.title?.trim() || `Node ${id.slice(0, 8)}`;
   return (
-    <Chip colour={target ? colour : TEXT_SECONDARY} tinted={Boolean(target)} title={id}>
+    <Chip colour={target ? colour : t.text2} tinted={Boolean(target)} title={id}>
       {text}
     </Chip>
   );

@@ -18,18 +18,12 @@ import {
   type ResolveMedia,
   type ResolveNode,
 } from "./renderers";
-import {
-  HAIRLINE,
-  TEAL,
-  TEXT_SECONDARY,
-  bodyText,
-  cardGlass,
-  hexToRgba,
-  labelText,
-  titleText,
-} from "./tokens";
+import { cardGlass } from "./tokens";
+import { useActionStyle } from "./actionStyle";
 import { CategoryChip } from "@/components/brand/CategoryChip";
 import { GapMarker, gapEdge } from "@/components/brand/GapMarker";
+import { t } from "@/lib/theme/tokens";
+import { body as bodyType, label as labelType, measure } from "@/lib/theme/type";
 
 interface NodeCardProps {
   node: BuildNode;
@@ -56,6 +50,7 @@ const COPIED_MS = 1500;
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const action = useActionStyle("secondary");
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -72,21 +67,24 @@ function CopyButton({ text }: { text: string }) {
   };
 
   return (
+    /* SECONDARY, AND CONFIRMED IS A STATE OF IT. One copy control per copyable
+       type, in the same place on every card, so the affordance is learned once.
+       The confirmed pairing is the measured `--evidence-fill` / `--evidence`
+       one — "it worked" is what `--evidence` names — rather than the 14% teal
+       wash it replaces, which nobody measured and which vanished on Exhibition. */
     <button
       type="button"
       onClick={copy}
       aria-label={copied ? "Copied" : "Copy"}
+      {...action.handlers}
       style={{
-        ...labelText,
+        ...action.style,
+        ...labelType,
         marginLeft: "auto",
         padding: "2px 9px",
-        borderRadius: 6,
-        fontSize: 11,
-        cursor: "pointer",
-        color: copied ? TEAL : TEXT_SECONDARY,
-        background: copied ? hexToRgba(TEAL, 0.14) : "transparent",
-        border: `1px solid ${copied ? hexToRgba(TEAL, 0.3) : HAIRLINE}`,
-        transition: "color 120ms ease, border-color 120ms ease",
+        ...(copied
+          ? { background: t.evidenceFill, color: t.evidence, borderColor: t.evidence }
+          : {}),
       }}
     >
       {copied ? "✓ Copied" : "Copy"}
@@ -146,14 +144,24 @@ export function NodeCard({
         {copyText ? <CopyButton text={copyText} /> : null}
       </div>
 
-      <h3 style={{ ...titleText, margin: 0 }}>{node.title}</h3>
+      {/* BODY AT 600, NOT THE DISPLAY FACE. A node title is a heading inside a
+          list that can run to twenty of them; `cardTitle` is Bodoni at 22 and
+          belongs to the build's own card, where there is one per object. Twenty
+          didone headings in a tree would out-shout the build's title two
+          screens above them, which is the hierarchy this page cannot afford to
+          lose. Figtree at the body size, at the weight the face publishes for
+          emphasis, is the heading a list row gets. */}
+      <h3 style={{ ...bodyType, fontWeight: 600, margin: 0, color: t.text }}>
+        {node.title}
+      </h3>
 
       {node.note ? (
         <p
           style={{
-            ...bodyText,
+            ...bodyType,
+            ...measure,
             margin: 0,
-            color: TEXT_SECONDARY,
+            color: t.text2,
             whiteSpace: "pre-wrap",
           }}
         >

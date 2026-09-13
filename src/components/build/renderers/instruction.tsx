@@ -10,7 +10,7 @@
 // it and no meta line appended.
 
 import type { ReactNode } from "react";
-import { ORANGE } from "../tokens";
+import { t } from "@/lib/theme/tokens";
 import {
   Caption,
   Field,
@@ -83,7 +83,7 @@ function InstructionBody(props: NodeProps): ReactNode {
   return (
     <Stack gap={12} style={{ minWidth: 0 }}>
       {text ? (
-        <MonoBlock text={text}>{withVariablesHighlighted(text, ORANGE)}</MonoBlock>
+        <MonoBlock text={text}>{withVariablesHighlighted(text, t.action)}</MonoBlock>
       ) : null}
 
       {caption.length > 0 ? <Caption>{caption.join(" · ")}</Caption> : null}
