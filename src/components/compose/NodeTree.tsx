@@ -19,22 +19,29 @@ import { useDroppable } from "@dnd-kit/core";
 import type { NodeTree as NodeTreeShape, NodeType } from "@/lib/build";
 import type { Bounty } from "@/lib/bounty";
 import type { NodeTreatment } from "@/hooks/useRebuildDiff";
-import {
-  GAP_RED,
-  HAIRLINE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_SECONDARY,
-  bodyText,
-  hexToRgba,
-  labelText,
-} from "@/components/build/tokens";
+import { prefersReducedMotion } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
+import { body as bodyText, eyebrow } from "@/lib/theme/type";
 import { AddNodeMenu } from "./AddNodeMenu";
 import { TreeNode } from "./TreeNode";
 import { MAX_DEPTH, findNode, gapDropId, type NodeDrag } from "./useNodeDrag";
 
 /** Indentation per level, matching the public anatomy tree. */
 const INDENT = 18;
+
+/**
+ * The tree's drag feedback: 200ms, transform and opacity only, and nothing at
+ * all for a creator who has asked for less motion.
+ *
+ * Read at render rather than cached, which is what makes a mid-session change to
+ * the OS setting take effect on the next paint instead of on the next reload.
+ */
+function rowTransition(): string | undefined {
+  return prefersReducedMotion()
+    ? undefined
+    : "transform 200ms cubic-bezier(.2,.6,.35,1), opacity 200ms cubic-bezier(.2,.6,.35,1)";
+}
 
 function GapZone({
   parentId,
@@ -58,13 +65,18 @@ function GapZone({
       aria-hidden="true"
       style={{ height: 10, display: "flex", alignItems: "center", padding: "0 8px" }}
     >
+      {/* --action is where it lands; --cat-breakage is why it cannot. The bar
+          scales from the centre rather than animating its height, so an
+          insertion point appearing never moves the rows around it. */}
       <div
         style={{
           height: 2,
           width: "100%",
           borderRadius: 2,
-          background: isOver ? (refused ? GAP_RED : TEAL) : "transparent",
-          transition: "background 120ms ease",
+          background: refused ? t.catBreakage : t.action,
+          transform: isOver ? "scaleY(1)" : "scaleY(0)",
+          transformOrigin: "center",
+          transition: rowTransition(),
         }}
       />
     </div>
@@ -105,8 +117,9 @@ function Level({ nodes, parentId, depth, ...shared }: LevelProps) {
         listStyle: "none",
         margin: nested ? `0 0 0 ${INDENT}px` : 0,
         padding: nested ? "0 0 0 12px" : 0,
-        // The hairline connector down the left of every nested level.
-        borderLeft: nested ? `1px solid ${HAIRLINE}` : "none",
+        // The hairline connector down the left of every nested level: --line is
+        // the token for exactly this, and depth is the only thing it says.
+        borderLeft: nested ? `1px solid ${t.line}` : "none",
       }}
     >
       <GapZone parentId={parentId} index={0} drag={drag} />
@@ -153,14 +166,14 @@ function EmptyTree({ drag }: { drag: NodeDrag }) {
       ref={setNodeRef}
       style={{
         padding: "28px 18px",
-        borderRadius: 12,
-        border: `1px dashed ${isOver ? TEAL : HAIRLINE}`,
-        background: isOver ? hexToRgba(TEAL, 0.06) : "transparent",
+        borderRadius: r.control,
+        border: `1px dashed ${isOver ? t.action : t.line}`,
+        background: isOver ? t.recess : "transparent",
         textAlign: "center",
-        transition: "border-color 120ms ease, background 120ms ease",
+        transition: rowTransition(),
       }}
     >
-      <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED }}>
+      <p style={{ ...bodyText, fontSize: 13, margin: 0, color: t.text2 }}>
         Nothing is placed yet. Drag something across from the tray, or add a node.
       </p>
     </div>
@@ -177,12 +190,14 @@ function RejectionBanner({ reason, onDismiss }: { reason: string; onDismiss: () 
         alignItems: "flex-start",
         gap: 10,
         padding: "8px 10px",
-        borderRadius: 8,
-        background: hexToRgba(GAP_RED, 0.1),
-        border: `1px solid ${hexToRgba(GAP_RED, 0.3)}`,
+        borderRadius: r.chip,
+        background: tokenAlpha("cat-breakage", 0.1),
+        border: `1px solid ${t.catBreakage}`,
       }}
     >
-      <span style={{ ...bodyText, margin: 0, flex: 1, color: GAP_RED }}>{reason}</span>
+      <span style={{ ...bodyText, fontSize: 13, margin: 0, flex: 1, color: t.catBreakage }}>
+        {reason}
+      </span>
       <button
         type="button"
         onClick={onDismiss}
@@ -191,7 +206,7 @@ function RejectionBanner({ reason, onDismiss }: { reason: string; onDismiss: () 
           background: "transparent",
           border: "none",
           padding: 0,
-          color: GAP_RED,
+          color: t.catBreakage,
           fontFamily: "inherit",
           fontSize: 13,
           cursor: "pointer",
@@ -267,11 +282,11 @@ export function NodeTree({
       style={{ display: "flex", flexDirection: "column", gap: 10, padding: 18 }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <span
-          style={{ ...labelText, textTransform: "uppercase", color: TEXT_SECONDARY, flex: 1 }}
-        >
-          Anatomy
-        </span>
+        {/* The panel's own eyebrow: mono, like every other label naming a
+            surface rather than sitting on one. It stays --text2 because the
+            thread editor above is what this screen leads with — the tree is the
+            depth behind it, and its heading must not compete for that. */}
+        <span style={{ ...eyebrow, color: t.text2, flex: 1 }}>Anatomy</span>
         <AddNodeMenu
           nodeTypes={nodeTypes}
           onAdd={drag.addNode}
@@ -280,7 +295,7 @@ export function NodeTree({
         />
       </div>
 
-      <p style={{ ...labelText, margin: 0, color: TEXT_MUTED, fontSize: 11 }}>
+      <p style={{ ...bodyText, fontSize: 12, margin: 0, color: t.text2 }}>
         Drag a row onto another to nest it. Nesting stops at {MAX_DEPTH} levels.
       </p>
 

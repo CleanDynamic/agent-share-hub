@@ -31,21 +31,33 @@ import {
 import type { NodeTree, NodeType } from "@/lib/build";
 import type { Bounty } from "@/lib/bounty";
 import type { NodeTreatment } from "@/hooks/useRebuildDiff";
-import {
-  GAP_RED,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  hexToRgba,
-  labelText,
-} from "@/components/build/tokens";
+import { prefersReducedMotion } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
+import { body, data as dataType, eyebrow } from "@/lib/theme/type";
 import { CategoryChip } from "@/components/brand/CategoryChip";
 import { descendantIds, insideDropId, type NodeDrag } from "./useNodeDrag";
 
-/** Matches the active nav treatment used across the application. */
-const SELECTED_BACKGROUND = "rgba(232,87,26,0.08)";
+/**
+ * The chosen row: a low-alpha `--action` ground under an `--action` left edge.
+ *
+ * It was `rgba(232,87,26,0.08)` — the legacy orange, struck for one dark room
+ * and black-on-black in the light one. The same pair now dresses the tray's
+ * selected item, so the two panels of the workspace agree about what "this is
+ * the row you are editing" looks like.
+ */
+const SELECTED_BACKGROUND = tokenAlpha("action", 0.1);
+
+/**
+ * The row's feedback: 200ms, transform and opacity only, nothing for a creator
+ * who asked for less motion. Read at render, so an OS setting changed
+ * mid-session takes effect on the next paint.
+ */
+function rowTransition(): string | undefined {
+  return prefersReducedMotion()
+    ? undefined
+    : "transform 200ms cubic-bezier(.2,.6,.35,1), opacity 200ms cubic-bezier(.2,.6,.35,1)";
+}
 
 /**
  * What a rebuild's tree says about each row, as an accent and a small label.
@@ -64,9 +76,9 @@ const REBUILD_TREATMENT: Record<
   NodeTreatment,
   { accent: string; pill: string | null; colour: string }
 > = {
-  inherited: { accent: "rgba(255,255,255,0.18)", pill: null, colour: TEXT_MUTED },
-  changed: { accent: hexToRgba(ORANGE, 0.75), pill: "changed", colour: ORANGE },
-  added: { accent: TEAL, pill: "new", colour: TEAL },
+  inherited: { accent: t.line, pill: null, colour: t.text2 },
+  changed: { accent: t.action, pill: "changed", colour: t.action },
+  added: { accent: t.evidence, pill: "new", colour: t.evidence },
 };
 
 /** The 10px marker a touched row carries. Inline, like everything on this
@@ -79,12 +91,17 @@ function TreatmentPill({ treatment }: { treatment: NodeTreatment }) {
     <span
       data-testid="rebuild-node-pill"
       style={{
-        ...labelText,
+        ...dataType,
         flexShrink: 0,
         fontSize: 10,
         padding: "1px 6px",
-        borderRadius: 100,
-        background: hexToRgba(colour, 0.15),
+        /* --r-chip. Nothing is a pill: the capsule rule was removed with the
+           rest of the shape language, and 100px on a badge is off-brand now. */
+        borderRadius: r.chip,
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: colour,
+        background: "transparent",
         color: colour,
         whiteSpace: "nowrap",
       }}
@@ -97,7 +114,7 @@ function TreatmentPill({ treatment }: { treatment: NodeTreatment }) {
 /**
  * The marker on a gap that somebody has been asked to fill (NS-P51).
  *
- * TEAL, BESIDE THE RED, and the pair is the whole point. The red rule down the
+ * EVIDENCE, BESIDE THE BREAKAGE, and the pair is the whole point. The red rule down the
  * left of the row is the hole; this is the ask on it, and teal is what the
  * platform already spends on the actionable half of a gap — the same colour the
  * public page's gap renderer uses for "Solve this and the build is finished".
@@ -120,13 +137,17 @@ function BountyPill({ bounty }: { bounty: Bounty }) {
       data-bounty-status={bounty.status}
       title={`This gap has a bounty on it — ${bounty.status}, ${priced}.`}
       style={{
-        ...labelText,
+        ...dataType,
         flexShrink: 0,
         fontSize: 10,
         padding: "1px 6px",
-        borderRadius: 100,
-        background: hexToRgba(TEAL, solved ? 0.08 : 0.15),
-        color: TEAL,
+        // --r-chip. Nothing is a pill, whatever this one is called.
+        borderRadius: r.chip,
+        background: t.evidenceFill,
+        color: t.text,
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: t.evidence,
         opacity: solved ? 0.6 : 1,
         whiteSpace: "nowrap",
       }}
@@ -193,8 +214,8 @@ const iconButton: CSSProperties = {
   background: "transparent",
   border: "none",
   padding: 0,
-  borderRadius: 4,
-  color: TEXT_MUTED,
+  borderRadius: r.chip,
+  color: t.text2,
   fontFamily: "inherit",
   cursor: "pointer",
 };
@@ -267,29 +288,41 @@ export function TreeNode({
   // transparent before it — the diff is context for the work, and neither
   // "this is the row you are editing" nor "this one is a hole" gives way to it.
   const accent = isSelected
-    ? ORANGE
+    ? t.action
     : node.is_gap
-      ? GAP_RED
+      ? t.catBreakage
       : treatment
         ? REBUILD_TREATMENT[treatment].accent
         : "transparent";
+
+  /* A GAP'S EDGE IS DASHED, and that is the whole difference between a hole and
+     a fault. The dash is the same mark the card and the public part list use for
+     a part left unsolved on purpose, so the invitation reads the same in all
+     three places. Selected still wins — a creator who has just clicked a row
+     needs to see which row that was — and a selected gap gets a solid --action
+     edge with the category chip still saying what kind of hole it is. */
+  const accentStyle = !isSelected && node.is_gap ? "dashed" : "solid";
 
   const rowStyle: CSSProperties = {
     display: "flex",
     alignItems: "center",
     gap: 8,
     padding: "6px 10px 6px 8px",
-    borderRadius: 8,
-    borderLeft: `2px solid ${accent}`,
+    /* A row is a row: --r-control. The ground is --bg, so the tree reads as the
+       working surface it is rather than as a stack of cards. */
+    borderRadius: r.control,
+    borderLeft: `2px ${accentStyle} ${accent}`,
     background: isSelected
       ? SELECTED_BACKGROUND
       : isNestTarget
-        ? hexToRgba(nestRefused ? GAP_RED : TEAL, 0.08)
+        ? tokenAlpha(nestRefused ? "cat-breakage" : "action", 0.1)
         : "transparent",
-    outline: isNestTarget ? `1px dashed ${nestRefused ? GAP_RED : TEAL}` : "none",
+    outline: isNestTarget ? `1px dashed ${nestRefused ? t.catBreakage : t.action}` : "none",
     outlineOffset: -1,
-    opacity: isDragging ? 0.4 : 1,
-    transition: "background 120ms ease, outline-color 120ms ease",
+    /* 0.6, not 0.4: the row being dragged still has to be readable, because it
+       is the thing the creator is aiming. */
+    opacity: isDragging ? 0.6 : 1,
+    transition: rowTransition(),
   };
 
   const deleteNode = () => drag.removeNode(node.id);
@@ -318,7 +351,7 @@ export function TreeNode({
             type="button"
             onClick={() => onToggle(node.id)}
             aria-label={isExpanded ? "Collapse" : "Expand"}
-            style={{ ...iconButton, color: TEXT_SECONDARY }}
+            style={{ ...iconButton, color: t.text2 }}
           >
             <Chevron open={isExpanded} />
           </button>
@@ -346,9 +379,10 @@ export function TreeNode({
           <TypePill nodeType={nodeType} typeKey={node.type} />
           <span
             style={{
+              ...body,
               fontSize: 13,
-              fontWeight: 300,
-              color: node.title ? TEXT_PRIMARY : TEXT_MUTED,
+              fontWeight: 400,
+              color: node.title ? t.text : t.text2,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -367,7 +401,7 @@ export function TreeNode({
             <button
               type="button"
               aria-label={`Actions for ${node.title || node.type}`}
-              style={{ ...iconButton, color: TEXT_SECONDARY, fontSize: 14, lineHeight: 1 }}
+              style={{ ...iconButton, color: t.text2, fontSize: 14, lineHeight: 1 }}
             >
               ⋯
             </button>
@@ -379,7 +413,7 @@ export function TreeNode({
           >
             <DropdownMenuItem
               onSelect={() => drag.moveToTray(node.id)}
-              style={{ ...labelText, color: TEXT_PRIMARY, cursor: "pointer" }}
+              style={{ ...body, fontSize: 13, color: t.text, cursor: "pointer" }}
             >
               Move to tray
             </DropdownMenuItem>
@@ -390,7 +424,7 @@ export function TreeNode({
                 if (descendants > 0) setConfirmOpen(true);
                 else deleteNode();
               }}
-              style={{ ...labelText, color: GAP_RED, cursor: "pointer" }}
+              style={{ ...body, fontSize: 13, color: t.catBreakage, cursor: "pointer" }}
             >
               Delete
             </DropdownMenuItem>
@@ -413,7 +447,12 @@ export function TreeNode({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep them</AlertDialogCancel>
-            <AlertDialogAction onClick={deleteNode} style={{ background: GAP_RED, color: "#fff" }}>
+            {/* --on-action is the measured ink for a filled control; "#fff" was
+                a guess that happened to pass on one ground. */}
+            <AlertDialogAction
+              onClick={deleteNode}
+              style={{ background: t.catBreakage, color: t.onAction }}
+            >
               Delete {descendants + 1} nodes
             </AlertDialogAction>
           </AlertDialogFooter>
