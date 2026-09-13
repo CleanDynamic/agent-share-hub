@@ -33,17 +33,16 @@ import {
   eventTime,
   payloadNumber,
 } from "./eventDisplay";
+import { cardGlass } from "./tokens";
+import { categoryFill } from "@/lib/theme/category";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import {
-  GAP_RED,
-  HAIRLINE,
-  TEXT_MUTED,
-  TEXT_SECONDARY,
-  bodyText,
-  cardGlass,
-  hexToRgba,
-  labelText,
-  titleText,
-} from "./tokens";
+  body as bodyType,
+  data as dataType,
+  eyebrow,
+  measure,
+} from "@/lib/theme/type";
 
 /** The renderer key that says "this node is a breakage". */
 const BREAKAGE_RENDERER = "breakage";
@@ -150,13 +149,28 @@ export function spanLabel(entry: BreakageEntry): string | null {
   return `steps ${entry.start}–${entry.end}`;
 }
 
+/* ── BG-P21 — RESOLVED, NOT ALARMING ──────────────────────────────────────────
+
+   A breakage on this page is a thing that HAPPENED and was written down. It is
+   the most generous part of a build record — the creator saying where it went
+   wrong so the next person does not repeat it — and painting it like a runtime
+   error turns that generosity into a warning label.
+
+   So the hue is `--cat-breakage`, because a breakage is a part category and
+   this is the hue that category wears everywhere else on the site, and it is
+   spent the same way every other category is spent: the measured chip pair on
+   a chip, and nothing else. No full-bleed red ground, no red rule across the
+   panel, no red on the body text. The prose reads in `--text` like every other
+   piece of prose in the record, because what it says is information, not an
+   alarm.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/** The step-span chip: the measured breakage pair, and a link into the replay. */
 const spanStyle: CSSProperties = {
-  ...labelText,
-  fontSize: 11,
-  color: GAP_RED,
-  background: hexToRgba(GAP_RED, 0.14),
-  border: `1px solid ${hexToRgba(GAP_RED, 0.3)}`,
-  borderRadius: 6,
+  ...dataType,
+  ...categoryFill("breakage"),
+  border: `1px solid ${t.catBreakage}`,
+  borderRadius: r.chip,
   padding: "2px 9px",
   cursor: "pointer",
 };
@@ -185,10 +199,10 @@ export function BreakageView({
         data-visual-slot="build-breakage-empty"
         style={{ display: "flex", flexDirection: "column", gap: 8, padding: "48px 0" }}
       >
-        <p style={{ ...titleText, margin: 0, color: TEXT_SECONDARY }}>
+        <p style={{ ...bodyType, fontWeight: 600, margin: 0, color: t.text }}>
           No breakages recorded
         </p>
-        <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED, maxWidth: 520 }}>
+        <p style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}>
           Either nothing broke, or nothing was written down. Both are worth
           knowing, which is why this section stays where it is rather than
           disappearing.
@@ -202,7 +216,7 @@ export function BreakageView({
       data-visual-slot="build-breakage"
       style={{ display: "flex", flexDirection: "column", gap: 16 }}
     >
-      <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY, maxWidth: 620 }}>
+      <p style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}>
         {entries.length} recorded {entries.length === 1 ? "breakage" : "breakages"}, in
         the order they happened. Each one links into the replay at the step it
         broke.
@@ -233,7 +247,7 @@ export function BreakageView({
                   alignItems: "center",
                   gap: 10,
                   flexWrap: "wrap",
-                  borderTop: `1px solid ${HAIRLINE}`,
+                  borderTop: `1px solid ${t.line}`,
                   paddingTop: 12,
                 }}
               >
@@ -244,22 +258,21 @@ export function BreakageView({
                   <>
                     <span
                       style={{
-                        ...labelText,
-                        fontSize: 10,
-                        color: GAP_RED,
-                        background: hexToRgba(GAP_RED, 0.15),
+                        ...eyebrow,
+                        ...categoryFill("breakage"),
                         padding: "2px 7px",
-                        borderRadius: 5,
-                        textTransform: "uppercase",
+                        borderRadius: r.chip,
                       }}
                     >
                       breakage
                     </span>
-                    <h3 style={{ ...titleText, margin: 0 }}>{entry.title}</h3>
+                    <h3 style={{ ...bodyType, fontWeight: 600, color: t.text, margin: 0 }}>
+                      {entry.title}
+                    </h3>
                   </>
                 )}
                 {entry.when ? (
-                  <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>
+                  <span style={{ ...dataType, color: t.text2 }}>
                     {eventTime(entry.when)}
                   </span>
                 ) : null}
@@ -281,7 +294,7 @@ export function BreakageView({
                   )
                 ) : (
                   <span
-                    style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, marginLeft: "auto" }}
+                    style={{ ...dataType, color: t.text2, marginLeft: "auto" }}
                   >
                     no step recorded
                   </span>

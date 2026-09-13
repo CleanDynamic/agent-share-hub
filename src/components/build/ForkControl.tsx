@@ -24,16 +24,12 @@ import { useCallback, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { forkBuild, type Build } from "@/lib/build";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  GAP_RED,
-  HAIRLINE,
-  ORANGE,
-  TEXT_MUTED,
-  TEXT_SECONDARY,
-  bodyText,
-  hexToRgba,
-  labelText,
-} from "./tokens";
+import { t } from "@/lib/theme/tokens";
+// Roles by name, not the `type` object: this file already uses an inline
+// type-import modifier (`import { forkBuild, type Build }`), which a value
+// binding called `type` makes ambiguous. See the note in lib/theme/type.ts.
+import { data as dataType, label as labelType } from "@/lib/theme/type";
+import { useActionStyle } from "./actionStyle";
 
 export interface ForkState {
   /** Fork the build, optionally at an ordinal. */
@@ -89,47 +85,66 @@ export function useForkBuild(build: Build | undefined): ForkState {
   return { fork, pending, error, signedIn: isLoggedIn };
 }
 
-/** The header control: rebuilds the whole build, through /rebuild/:slug. */
+/**
+ * The header control: rebuilds the whole build, through /rebuild/:slug.
+ *
+ * BG-P21 — THIS IS THE PAGE'S ONE PRIMARY, and it was not one before. It was a
+ * 10%-orange wash behind an orange label at 11px: the treatment the theme
+ * reserves for a chip, spent on the single action the whole record exists to
+ * invite. Every other control on this page — copy, download, record a
+ * reproduction, load the embed, step the replay — is secondary or ghost now,
+ * and this one is `--action` filled with `--on-action` on it, at the measured
+ * pairing rather than at a tint nobody measured.
+ *
+ * The geometry is untouched: the padding and the nowrap are the call site's,
+ * spread over the treatment rather than replaced by it, so the header's action
+ * row is laid out exactly as it was.
+ */
 export function ForkControl({ state }: { state: ForkState }) {
+  const action = useActionStyle("default", { disabled: state.pending });
+
   return (
     <div
       data-visual-slot="build-fork-control"
       style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}
     >
-      <button
-        type="button"
-        onClick={() => state.fork()}
-        disabled={state.pending}
-        title={
-          state.signedIn
-            ? "Start your own rebuild of this build, with the source credited"
-            : "Sign in to start your own rebuild of this build"
-        }
-        style={{
-          ...labelText,
-          padding: "6px 12px",
-          borderRadius: 8,
-          fontSize: 11,
-          whiteSpace: "nowrap",
-          cursor: state.pending ? "progress" : "pointer",
-          color: state.pending ? TEXT_MUTED : ORANGE,
-          background: hexToRgba(ORANGE, 0.1),
-          border: `1px solid ${state.pending ? HAIRLINE : hexToRgba(ORANGE, 0.35)}`,
-          transition: "color 120ms ease, border-color 120ms ease",
-        }}
-      >
-        {state.pending
-          ? "Rebuilding…"
-          : state.signedIn
-            ? "Rebuild this"
-            : "Sign in to rebuild"}
-      </button>
+      {/* VISUAL SLOT — the primary button surface is supplied externally.
+          Everything painted here is a default and is spread before any
+          incoming style, so a component dropped in later still wins. */}
+      <span data-visual-slot="btn-primary" style={{ display: "inline-flex" }}>
+        <button
+          type="button"
+          onClick={() => state.fork()}
+          disabled={state.pending}
+          title={
+            state.signedIn
+              ? "Start your own rebuild of this build, with the source credited"
+              : "Sign in to start your own rebuild of this build"
+          }
+          {...action.handlers}
+          style={{
+            ...action.style,
+            ...labelType,
+            padding: "6px 12px",
+            whiteSpace: "nowrap",
+            /* "progress" rather than the treatment's "not-allowed": the action
+               was accepted and is running, which is not the same as refused. */
+            cursor: state.pending ? "progress" : "pointer",
+          }}
+        >
+          {state.pending
+            ? "Rebuilding…"
+            : state.signedIn
+              ? "Rebuild this"
+              : "Sign in to rebuild"}
+        </button>
+      </span>
       {state.error ? (
-        <span role="alert" style={{ ...bodyText, fontSize: 12, color: GAP_RED }}>
+        <span role="alert" style={{ ...dataType, color: t.catBreakage }}>
           {state.error}
         </span>
       ) : (
-        <span style={{ ...bodyText, fontSize: 12, color: TEXT_SECONDARY }} />
+        <span style={{ ...dataType, color: t.text2 }} />
       )}
     </div>
   );

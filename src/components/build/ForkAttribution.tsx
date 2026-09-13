@@ -59,18 +59,34 @@ import {
 } from "@/lib/build";
 import { ChangeSummary, RebuildCredit } from "@/components/brand/RebuildCredit";
 import { rebuildCreditLine } from "./rebuildCredit";
+import { hexToRgba } from "./tokens";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import {
-  HAIRLINE,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  hexToRgba,
-  labelText,
-} from "./tokens";
-import { measure } from "@/lib/theme/type";
+  body as bodyType,
+  data as dataType,
+  label as labelType,
+  measure,
+} from "@/lib/theme/type";
+
+/**
+ * The provenance band, above the build.
+ *
+ * BG-P21 — ONE EDGE AND A WASH THAT FADES OUT, kept because it is doing a job:
+ * the band is the only thing on this page that is ABOUT the build rather than
+ * part of it, and the left edge in `--action` plus a gradient that gives up by
+ * 60% says "this is a margin note" without a second container. The three
+ * hairlines are `--line` and the fill is struck from the action token, so both
+ * follow the room.
+ */
+const provenanceBand = {
+  borderLeft: `2px solid ${t.action}`,
+  background: `linear-gradient(90deg, ${hexToRgba(t.action, 0.06)}, transparent 60%)`,
+  borderTop: `1px solid ${t.line}`,
+  borderRight: `1px solid ${t.line}`,
+  borderBottom: `1px solid ${t.line}`,
+  borderRadius: r.control,
+} as const;
 
 /** Lineage does not change while a reader is on the page. */
 const STALE_TIME = 300_000;
@@ -134,22 +150,20 @@ export function ForkAttribution({ build, record }: ForkAttributionProps) {
       data-forked-from={origin.build.id}
       data-forked-at={origin.ordinal ?? undefined}
       style={{
-        ...bodyText,
+        ...bodyType,
+        ...measure,
         margin: 0,
-        color: TEXT_SECONDARY,
-        borderLeft: `2px solid ${hexToRgba(ORANGE, 0.5)}`,
-        background: `linear-gradient(90deg, ${hexToRgba(ORANGE, 0.06)}, transparent 60%)`,
-        borderTop: `1px solid ${HAIRLINE}`,
-        borderRight: `1px solid ${HAIRLINE}`,
-        borderBottom: `1px solid ${HAIRLINE}`,
-        borderRadius: 8,
+        color: t.text2,
+        ...provenanceBand,
         padding: "8px 12px",
       }}
     >
       forked from{" "}
       <Link
         to={`/b2/${origin.build.slug}`}
-        style={{ color: ORANGE, textDecoration: "none", fontWeight: 400 }}
+        /* Underlined at rest: colour alone fails WCAG 1.4.1, and hover does
+           not exist on a touch screen. */
+        style={{ color: t.action, textDecoration: "underline", textUnderlineOffset: "3px" }}
       >
         {origin.build.title}
       </Link>
@@ -197,12 +211,7 @@ function RebuildBanner({
         display: "flex",
         flexDirection: "column",
         gap: 8,
-        borderLeft: `2px solid ${hexToRgba(ORANGE, 0.5)}`,
-        background: `linear-gradient(90deg, ${hexToRgba(ORANGE, 0.06)}, transparent 60%)`,
-        borderTop: `1px solid ${HAIRLINE}`,
-        borderRight: `1px solid ${HAIRLINE}`,
-        borderBottom: `1px solid ${HAIRLINE}`,
-        borderRadius: 8,
+        ...provenanceBand,
         padding: "10px 12px",
       }}
     >
@@ -230,7 +239,7 @@ function RebuildBanner({
         <p
           data-testid="rebuild-solves-line"
           data-solves-node={build.solves_node_id}
-          style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}
+          style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}
         >
           {SOLVES_PREFIX}
           {resolved ? (
@@ -240,14 +249,18 @@ function RebuildBanner({
               // page, so the two would otherwise be one accessible name over
               // two destinations. This one says where it actually goes.
               aria-label={`Open the gap this build solves on ${title || resolved.title}`}
-              style={{ color: ORANGE, textDecoration: "none", fontWeight: 400 }}
+              style={{
+                color: t.action,
+                textDecoration: "underline",
+                textUnderlineOffset: "3px",
+              }}
             >
               {title || resolved.title}
             </Link>
           ) : (
             // Same rule the credit above follows: what a reader loses when the
             // source disappears is somewhere to click, not what was answered.
-            <span style={{ color: TEXT_PRIMARY }}>{title || "a build"}</span>
+            <span style={{ color: t.text }}>{title || "a build"}</span>
           )}
         </p>
       ) : null}
@@ -257,12 +270,12 @@ function RebuildBanner({
         <blockquote
           data-testid="rebuild-banner-note"
           style={{
-            ...bodyText,
+            ...bodyType,
             ...measure,
             margin: 0,
             paddingLeft: 10,
-            borderLeft: `2px solid ${HAIRLINE}`,
-            color: TEXT_PRIMARY,
+            borderLeft: `2px solid ${t.line}`,
+            color: t.text,
             fontStyle: "italic",
             whiteSpace: "pre-wrap",
           }}
@@ -280,15 +293,15 @@ function RebuildBanner({
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
             style={{
-              ...labelText,
+              ...labelType,
               fontFamily: "inherit",
               fontSize: 11,
               alignSelf: "flex-start",
               padding: "4px 8px",
-              borderRadius: 8,
+              borderRadius: r.control,
               background: "transparent",
-              border: `1px solid ${HAIRLINE}`,
-              color: TEXT_SECONDARY,
+              border: `1px solid ${t.line}`,
+              color: t.text2,
               cursor: "pointer",
             }}
           >
@@ -337,12 +350,14 @@ function ChangeLines({
   });
 
   if (isPending) {
-    return <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED }}>Working out what changed…</p>;
+    return (
+      <p style={{ ...dataType, margin: 0, color: t.text2 }}>Working out what changed…</p>
+    );
   }
 
   if (isError || !data?.source || !data?.draft) {
     return (
-      <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+      <p style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}>
         The build this came from could not be read, so its changes cannot be listed.
       </p>
     );
@@ -351,7 +366,9 @@ function ChangeLines({
   const lines: ChangeLine[] = serialiseChangeSet(changeSet(data.source, data.draft));
 
   if (lines.length === 0) {
-    return <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>{NO_LINES}</p>;
+    return (
+      <p style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}>{NO_LINES}</p>
+    );
   }
 
   /* BG-P11: the shared Δ summary, in the slot this list already occupied. The

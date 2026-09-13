@@ -13,22 +13,64 @@
 import { useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import type { Build, BuildNode, NodeTree, NodeType } from "@/lib/build";
-import {
-  HAIRLINE,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  cardGlass,
-  labelText,
-  pageHeadingText,
-} from "./tokens";
 import { CategoryChip } from "@/components/brand/CategoryChip";
 import { Plaque } from "@/components/brand/Plaque";
 import { categoryColour } from "@/lib/theme/category";
-import { tabular, type } from "@/lib/theme/type";
+import { buttonStyle } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { measure, tabular, type } from "@/lib/theme/type";
+
+/* ── BG-P21 — the hero is a media well, not a card ────────────────────────────
+
+   It was `cardGlass`: a translucent fill, a 1px ring all the way round and a
+   12px radius, drawn around whatever the build's hero happened to be. That is a
+   frame, and a gallery does not frame the work — the wall recedes and the piece
+   stands on it. So the ring is gone, the ground is `--recess` (the token for a
+   surface the page is cut INTO, which is what a media well is), and the only
+   line left is a `--line` hairline along the top, where the header meets the
+   record above it.
+
+   `--r-media` on the media ITSELF and on the well around it, so the corners
+   agree at every slot width: an image that fills the well and an image that
+   letterboxes inside it are the same shape. All three variants take the same
+   treatment — the live embed, the screenshot and the video with its poster —
+   because they are one slot holding three kinds of thing, not three slots.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/** The well the hero sits in. Ground and hairline; no frame. */
+const heroWell: CSSProperties = {
+  background: t.recess,
+  borderTop: `1px solid ${t.line}`,
+  borderRadius: r.media,
+  overflow: "hidden",
+};
+
+/** The media inside it. Its own radius, so it is right when it does not fill. */
+const heroMedia: CSSProperties = {
+  display: "block",
+  width: "100%",
+  height: "auto",
+  borderRadius: r.media,
+};
+
+/**
+ * The build's title.
+ *
+ * `type.hero` is the display role, and it is RE-CLAMPED here rather than taken
+ * whole: the scale's own bound is 44–78px, struck for a page whose title is the
+ * only thing above the fold. This one sits under a running artefact, and 78px
+ * of Bodoni beneath a screenshot fights the screenshot for the reader's first
+ * look — which `visual-hierarchy` says the artefact wins on this page. 40–64
+ * keeps the face, the weight and the balance and gives the hero the room. The
+ * lower bound is 40, twice the 20px floor the display face is held to.
+ */
+const buildTitle: CSSProperties = {
+  ...type.hero,
+  fontSize: "clamp(40px, 4.6vw, 64px)",
+  margin: 0,
+  color: t.text,
+};
 
 interface BuildHeaderProps {
   build: Build;
@@ -140,13 +182,23 @@ function Chip({ text }: { text: string }) {
   return <CategoryChip category={text} label={text} />;
 }
 
+/**
+ * One fact in the strip: a mono label over a mono figure.
+ *
+ * EVENLY WEIGHTED, which is the correction BG-P21 makes. The label sat on the
+ * third text rung and the figure on the first, so the strip read as four
+ * headings with four captions — a hierarchy inside a row whose whole point is
+ * that its members are peers. Both rungs are legal now, one step apart:
+ * `--text2` names the fact, `--text` states it, and no fact out-weighs another.
+ *
+ * `tabular` is on the figure and not on the label, because only one of them has
+ * digits that have to line up when a number changes under the reader.
+ */
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <span style={{ ...type.eyebrow, color: TEXT_MUTED }}>
-        {label}
-      </span>
-      <span style={{ ...type.data, ...tabular, color: TEXT_PRIMARY }}>{children}</span>
+      <span style={{ ...type.eyebrow, color: t.text2 }}>{label}</span>
+      <span style={{ ...type.data, ...tabular, color: t.text }}>{children}</span>
     </div>
   );
 }
@@ -162,8 +214,7 @@ function LiveAppHero({
   const [loaded, setLoaded] = useState(false);
 
   const frame: CSSProperties = {
-    ...cardGlass,
-    overflow: "hidden",
+    ...heroWell,
     height: 420,
     position: "relative",
   };
@@ -176,7 +227,12 @@ function LiveAppHero({
           title="The running build"
           sandbox="allow-scripts allow-same-origin"
           loading="lazy"
-          style={{ width: "100%", height: "100%", border: "none", background: "#fff" }}
+          /* `--chrome-hi` rather than `#fff`: a third-party page arrives with
+             its own ground and this is only what shows through where it has
+             none. The token is white on Exhibition and a pale lavender on
+             Dusk, so an embed with a transparent body does not flash a white
+             rectangle into the dark room. */
+          style={{ width: "100%", height: "100%", border: "none", background: t.chromeHi }}
         />
       ) : (
         <div
@@ -191,21 +247,20 @@ function LiveAppHero({
             textAlign: "center",
           }}
         >
-          <span style={{ ...labelText, color: TEAL, fontSize: 11, textTransform: "uppercase" }}>
-            The running build
-          </span>
+          <span style={{ ...type.eyebrow, color: t.evidence }}>The running build</span>
+          {/* SECONDARY, NOT PRIMARY. Loading the embed is the hero's own
+              affordance and the page already spends its one primary on
+              "Rebuild this" — two filled `--action` buttons in one view is the
+              rule the theme states as one per view, and the reader would be
+              asked twice which thing matters most. */}
           <button
             type="button"
             onClick={() => setLoaded(true)}
             data-visual-slot="build-hero-load-button"
             style={{
-              ...labelText,
-              color: "#08080C",
-              background: ORANGE,
-              border: "none",
-              borderRadius: 8,
+              ...buttonStyle("secondary"),
+              ...type.label,
               padding: "9px 18px",
-              cursor: "pointer",
             }}
           >
             Load it here
@@ -214,12 +269,12 @@ function LiveAppHero({
             href={url}
             target="_blank"
             rel="noreferrer noopener"
-            style={{ ...bodyText, color: TEXT_SECONDARY, textDecoration: "none" }}
+            style={{ ...type.data, color: t.text2, textDecoration: "none" }}
           >
             {url}
           </a>
           {credentialsNote ? (
-            <p style={{ ...bodyText, color: TEXT_MUTED, margin: 0, maxWidth: 520 }}>
+            <p style={{ ...type.body, ...measure, color: t.text2, margin: 0 }}>
               {credentialsNote}
             </p>
           ) : null}
@@ -260,11 +315,16 @@ export function BuildHeader({
           credentialsNote={payloadString(heroNode, "credentials_note")}
         />
       ) : heroMediaSrc ? (
-        <div data-visual-slot="build-hero" style={{ ...cardGlass, overflow: "hidden" }}>
+        <div data-visual-slot="build-hero" style={heroWell}>
           {hero?.kind === "video" ? (
             // Muted by default and never autoplaying: a build page opens in
             // silence, and preload="metadata" means the frames are fetched
             // when a reader asks for them rather than on arrival.
+            //
+            // `--porthole` behind the frames rather than `#000`: it is the
+            // token for a media well's ground in each room, and a recording
+            // that letterboxes should sit in the page's own dark rather than
+            // in a black rectangle the light room has nowhere else.
             <video
               src={heroMediaSrc}
               poster={hero.poster ?? undefined}
@@ -273,24 +333,24 @@ export function BuildHeader({
               playsInline
               preload="metadata"
               aria-label={heroAlt}
-              style={{ display: "block", width: "100%", height: "auto", background: "#000" }}
+              style={{ ...heroMedia, background: t.porthole }}
             >
               {heroAlt}
             </video>
           ) : (
-            <img
-              src={heroMediaSrc}
-              alt={heroAlt}
-              style={{ display: "block", width: "100%", height: "auto" }}
-            />
+            <img src={heroMediaSrc} alt={heroAlt} style={heroMedia} />
           )}
         </div>
       ) : null}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <h1 style={{ ...pageHeadingText, margin: 0 }}>{build.title}</h1>
+        <h1 style={buildTitle}>{build.title}</h1>
         {build.outcome ? (
-          <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY, maxWidth: 680 }}>
+          /* The outcome LEADS the prose, so it takes `bodyLarge` and the 68ch
+             measure rather than the 680px the header carried — a cap in `ch`
+             tracks the face, so the line stays inside the theme's 60–75
+             characters at every size the clamp above can render. */
+          <p style={{ ...type.bodyLarge, ...measure, margin: 0, color: t.text2 }}>
             {build.outcome}
           </p>
         ) : null}
@@ -306,7 +366,7 @@ export function BuildHeader({
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {(build.made_for?.length ?? 0) > 0 ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>Made for</span>
+              <span style={{ ...type.eyebrow, color: t.text2 }}>Made for</span>
               {build.made_for.map((item) => (
                 <Chip key={item} text={item} />
               ))}
@@ -314,7 +374,7 @@ export function BuildHeader({
           ) : null}
           {(build.made_with?.length ?? 0) > 0 ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>Made with</span>
+              <span style={{ ...type.eyebrow, color: t.text2 }}>Made with</span>
               {build.made_with.map((item) => (
                 <Chip key={item} text={item} />
               ))}
@@ -323,14 +383,20 @@ export function BuildHeader({
         </div>
       ) : null}
 
+      {/* The facts strip. Two `--line` rules and nothing else holding it: the
+          row is a set of peers, and a fill or a card around it would make it
+          an object competing with the hero above it. It already wraps, which
+          is what carries it down to 390 — four facts become two rows of two
+          rather than a strip that scrolls sideways. */}
       <div
+        data-visual-slot="build-facts"
         style={{
           display: "flex",
           flexWrap: "wrap",
           gap: 28,
           padding: "16px 0",
-          borderTop: `1px solid ${HAIRLINE}`,
-          borderBottom: `1px solid ${HAIRLINE}`,
+          borderTop: `1px solid ${t.line}`,
+          borderBottom: `1px solid ${t.line}`,
         }}
       >
         {hasCost ? (
@@ -355,9 +421,7 @@ export function BuildHeader({
             own page. The model always travels with the claim. */}
         {reproduction ?? (
           <div data-visual-slot="build-reproduction" style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <span style={{ ...type.eyebrow, color: TEXT_MUTED }}>
-              Reproduction
-            </span>
+            <span style={{ ...type.eyebrow, color: t.text2 }}>Reproduction</span>
             <Plaque build={build} size="header" />
           </div>
         )}
@@ -367,14 +431,15 @@ export function BuildHeader({
 
       {prerequisites.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase" }}>
-            Before you start
-          </span>
+          <span style={{ ...type.eyebrow, color: t.text2 }}>Before you start</span>
           <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
             {prerequisites.map((node) => {
               const requirement = payloadString(node, "requirement");
               return (
-                <li key={node.id} style={{ ...bodyText, display: "flex", gap: 8 }}>
+                <li
+                  key={node.id}
+                  style={{ ...type.body, ...measure, color: t.text, display: "flex", gap: 8 }}
+                >
                   {/* BG-P05: the dash is the prerequisite's category, resolved
                       through the theme, not the registry row's stored colour. */}
                   <span style={{ color: categoryColour(typesByKey.get(node.type)?.category ?? "") }}>
@@ -383,7 +448,7 @@ export function BuildHeader({
                   <span>
                     {node.title}
                     {requirement ? (
-                      <span style={{ color: TEXT_SECONDARY }}> · {requirement}</span>
+                      <span style={{ color: t.text2 }}> · {requirement}</span>
                     ) : null}
                   </span>
                 </li>

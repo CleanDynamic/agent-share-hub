@@ -10,7 +10,8 @@ import type { ReactNode } from "react";
 import type { Build, BuildNode, NodeTree, NodeType } from "@/lib/build";
 import { NodeCard } from "./NodeCard";
 import type { ResolveMedia, ResolveNode } from "./renderers";
-import { HAIRLINE, TEXT_MUTED, TEXT_SECONDARY, bodyText } from "./tokens";
+import { t } from "@/lib/theme/tokens";
+import { body as bodyType, measure } from "@/lib/theme/type";
 
 interface AnatomyTreeProps {
   tree: NodeTree[];
@@ -32,6 +33,23 @@ interface AnatomyTreeProps {
 
 /** Indentation per level. Three levels deep is the deepest the schema allows. */
 const INDENT = 18;
+
+/* ── BG-P21 — DEPTH IS CARRIED BY ALIGNMENT, NOT BY NESTING ───────────────────
+
+   `law-of-continuity`: the eye follows an unbroken path, so a level reads as a
+   level when its rows share a left edge and one line runs down it. It does NOT
+   read as a level by being put inside a box — a card inside a card inside a
+   card is three borders competing to say the same thing, and by the third the
+   reader is measuring insets instead of reading the build.
+
+   This tree was already built that way and BG-P21 keeps it: a child list is a
+   SIBLING of its parent's card rather than a child of it, indented by the width
+   of the chevron column so the guide lands exactly under the disclosure control
+   that owns it. The only thing carrying depth is that alignment plus the
+   hairline, which is why the hairline has to be a hairline — `--line` at 1px,
+   the same rule used everywhere else in the system, and never a heavier or
+   tinted edge that would start competing with the category chips it runs past.
+   ─────────────────────────────────────────────────────────────────────────── */
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -91,7 +109,7 @@ function TreeNode({
               border: "none",
               padding: 0,
               cursor: "pointer",
-              color: TEXT_SECONDARY,
+              color: t.text2,
             }}
           >
             <Chevron open={open} />
@@ -117,8 +135,9 @@ function TreeNode({
             listStyle: "none",
             margin: `10px 0 0 ${INDENT}px`,
             padding: "0 0 0 16px",
-            // The hairline connector down the left of every nested level.
-            borderLeft: `1px solid ${HAIRLINE}`,
+            // The hairline connector down the left of every nested level. One
+            // line, one pixel, `--line` — the guide, not a second container.
+            borderLeft: `1px solid ${t.line}`,
             display: "flex",
             flexDirection: "column",
             gap: 10,
@@ -154,7 +173,7 @@ export function AnatomyTree({
 
   if (tree.length === 0) {
     return (
-      <p style={{ ...bodyText, color: TEXT_MUTED, margin: 0 }}>
+      <p style={{ ...bodyType, ...measure, color: t.text2, margin: 0 }}>
         Nothing has been placed in this build yet.
       </p>
     );

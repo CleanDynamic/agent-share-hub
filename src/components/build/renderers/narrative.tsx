@@ -6,7 +6,7 @@
 // problem on, so it states the problem, what has already been tried and what
 // would count as solved, and it reads as an invitation rather than a warning.
 
-import { GAP_RED, TEAL, TEXT_SECONDARY, bodyText } from "../tokens";
+import { t } from "@/lib/theme/tokens";
 import {
   AccentSection,
   Caption,
@@ -64,7 +64,7 @@ export function NarrativeRenderer(props: NodeProps) {
 
         {supporting.map((field) => (
           <Field key={field.key} label={field.label}>
-            <Prose style={{ color: TEXT_SECONDARY }}>{str(payload, field.key)}</Prose>
+            <Prose style={{ color: t.text2 }}>{str(payload, field.key)}</Prose>
           </Field>
         ))}
 
@@ -96,7 +96,7 @@ export function BreakageRenderer(props: NodeProps) {
     <div data-visual-slot="renderer-breakage" style={{ minWidth: 0 }}>
       <Stack gap={12}>
         {sections.map((key) => (
-          <AccentSection key={key} label={labelFor(props.nodeType, key)} colour={GAP_RED}>
+          <AccentSection key={key} label={labelFor(props.nodeType, key)} colour={t.catBreakage}>
             <Prose>{str(payload, key)}</Prose>
           </AccentSection>
         ))}
@@ -141,21 +141,21 @@ export function GapRenderer(props: NodeProps) {
 
   return (
     <div data-visual-slot="renderer-gap" style={{ minWidth: 0 }}>
-      <Callout colour={GAP_RED} heading="Unsolved">
+      <Callout colour={t.catBreakage} heading="Unsolved">
         <Stack gap={12}>
           {problem ? <Prose>{problem}</Prose> : null}
 
           {tried ? (
             <Field label={labelFor(props.nodeType, GAP_TRIED, "What was tried")}>
-              <Prose style={{ color: TEXT_SECONDARY }}>{tried}</Prose>
+              <Prose style={{ color: t.text2 }}>{tried}</Prose>
             </Field>
           ) : null}
 
           {criteria ? (
             <Field label={labelFor(props.nodeType, GAP_CRITERIA, "Acceptance criteria")}>
               {/* Teal, not red: this is the part someone can act on. */}
-              <Prose style={{ color: bodyText.color as string }}>{criteria}</Prose>
-              <Caption style={{ color: TEAL }}>
+              <Prose style={{ color: t.text }}>{criteria}</Prose>
+              <Caption style={{ color: t.evidence }}>
                 Solve this and the build is finished.
               </Caption>
             </Field>
@@ -163,7 +163,7 @@ export function GapRenderer(props: NodeProps) {
 
           {reward ? (
             <Field label={labelFor(props.nodeType, GAP_REWARD, "Reward")}>
-              <Prose style={{ color: TEXT_SECONDARY }}>{reward}</Prose>
+              <Prose style={{ color: t.text2 }}>{reward}</Prose>
             </Field>
           ) : null}
 

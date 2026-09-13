@@ -47,21 +47,22 @@ import {
   workspaceGround,
   workspacePanel,
 } from "@/components/shell/WorkspaceBar";
-import {
-  FONT_STACK,
-  HAIRLINE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  hexToRgba,
-  labelText,
-  pageHeadingText,
-  titleText,
-} from "./tokens";
 import { CategoryChip } from "@/components/brand/CategoryChip";
-import { measure } from "@/lib/theme/type";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+/* BG-P21 — THE HEADINGS KEEP THEIR SIZE AND CHANGE THEIR FACE. The page
+   headings were `pageHeadingText`, 22px Figtree 700; they are `cardTitle`, 22px
+   Bodoni 500 — the same size, in the face the theme reserves for display, and
+   clear of the 20px floor that rules the display face out below it. The section
+   heading was 15px Figtree 600 and stays a body-face heading at 16/600, because
+   a didone at 15 would breach that floor and a didone at 22 would make a
+   subheading louder than the page's own title. */
+import {
+  body as bodyType,
+  cardTitle,
+  data as dataType,
+  measure,
+} from "@/lib/theme/type";
 
 interface ConvertLoad {
   plan: ConversionPlan;
@@ -139,7 +140,7 @@ function Frame({
 
 function Quiet({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>{children}</p>
+    <p style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}>{children}</p>
   );
 }
 
@@ -148,7 +149,12 @@ function Plain({ to, children }: { to: string; children: React.ReactNode }) {
   return (
     <Link
       to={to}
-      style={{ ...bodyText, color: TEAL, textDecoration: "none", borderBottom: `1px solid ${hexToRgba(TEAL, 0.35)}` }}
+      style={{
+        ...bodyType,
+        color: t.action,
+        textDecoration: "underline",
+        textUnderlineOffset: "3px",
+      }}
     >
       {children}
     </Link>
@@ -170,17 +176,19 @@ function PlanRow({ node, nodeTypes }: { node: NodePlan; nodeTypes: NodeType[] })
           category={type?.category ?? ""}
           label={type?.label ?? node.type}
         />
-        <span style={{ ...bodyText, minWidth: 0, overflowWrap: "anywhere" }}>{node.title}</span>
+        <span style={{ ...bodyType, color: t.text, minWidth: 0, overflowWrap: "anywhere" }}>
+          {node.title}
+        </span>
       </div>
 
       {node.children.length > 0 ? (
-        <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED }}>
+        <span style={{ ...dataType, color: t.text2 }}>
           {node.children.length} step{node.children.length === 1 ? "" : "s"} nested under it
         </span>
       ) : null}
 
       {node.trayReason ? (
-        <span style={{ ...bodyText, fontSize: 12, color: TEXT_SECONDARY, overflowWrap: "anywhere" }}>
+        <span style={{ ...dataType, color: t.text2, overflowWrap: "anywhere" }}>
           {node.trayReason}
         </span>
       ) : null}
@@ -209,7 +217,7 @@ function Section({
         gap: 8,
       }}
     >
-      <h2 style={{ ...titleText, margin: 0 }}>{title}</h2>
+      <h2 style={{ ...bodyType, fontWeight: 600, margin: 0, color: t.text }}>{title}</h2>
       {blurb ? <Quiet>{blurb}</Quiet> : null}
       {children}
     </section>
@@ -278,7 +286,7 @@ export default function ConvertPrompt() {
   if (load.isError || !load.data) {
     return (
       <Frame contentItemId={contentItemId}>
-        <h1 style={{ ...pageHeadingText, margin: 0 }}>That post could not be read</h1>
+        <h1 style={{ ...cardTitle, margin: 0, color: t.text }}>That post could not be read</h1>
         <Quiet>{load.error ? messageOf(load.error) : "It may have been removed."}</Quiet>
         <Plain to={postUrl}>Back to the post</Plain>
       </Frame>
@@ -292,7 +300,7 @@ export default function ConvertPrompt() {
   if (user?.id !== creatorId) {
     return (
       <Frame contentItemId={contentItemId}>
-        <h1 style={{ ...pageHeadingText, margin: 0 }}>This post is not yours</h1>
+        <h1 style={{ ...cardTitle, margin: 0, color: t.text }}>This post is not yours</h1>
         <Quiet>
           A post is converted by the person who wrote it. Nothing here changes
           what you can already read.
@@ -312,7 +320,7 @@ export default function ConvertPrompt() {
         <Helmet>
           <title>Converted — buildgallery</title>
         </Helmet>
-        <h1 style={{ ...pageHeadingText, margin: 0 }}>
+        <h1 style={{ ...cardTitle, margin: 0, color: t.text }}>
           {converted ? "Converted" : "You have already converted this post"}
         </h1>
         <Quiet>
@@ -344,7 +352,7 @@ export default function ConvertPrompt() {
           and already-converted screens BELOW are kept, because there the post
           is the answer to the sentence above it rather than a way out. */}
       <header style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <h1 style={{ ...pageHeadingText, margin: 0 }}>
+        <h1 style={{ ...cardTitle, margin: 0, color: t.text }}>
           Convert “{plan.header.title}” to a build record
         </h1>
         <Quiet>
@@ -388,7 +396,7 @@ export default function ConvertPrompt() {
       <Section title="Worth knowing">
         <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
           {plan.notes.map((note) => (
-            <li key={note} style={{ ...bodyText, ...measure, color: TEXT_SECONDARY }}>
+            <li key={note} style={{ ...bodyType, ...measure, color: t.text2 }}>
               {note}
             </li>
           ))}
@@ -396,7 +404,7 @@ export default function ConvertPrompt() {
       </Section>
 
       {error ? (
-        <p style={{ ...bodyText, margin: 0, color: "#EF4444" }} role="alert">
+        <p style={{ ...bodyType, ...measure, margin: 0, color: t.catBreakage }} role="alert">
           {error}
         </p>
       ) : null}
@@ -416,10 +424,12 @@ export default function ConvertPrompt() {
               letterSpacing: "0.04em",
               height: 34,
               padding: "0 18px",
-              borderRadius: 100,
-              background: "rgba(255,255,255,0.025)",
-              border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
-              color: isConverting ? TEXT_MUTED : TEAL,
+              /* `--r-control`, not 100px: the capsule rule was dropped and a
+                 button at 100px is off-brand in this system. */
+              borderRadius: r.control,
+              background: "transparent",
+              border: `1px solid ${t.evidence}`,
+              color: isConverting ? t.text2 : t.evidence,
               cursor: isConverting ? "wait" : "pointer",
               whiteSpace: "nowrap",
             }}
@@ -428,13 +438,13 @@ export default function ConvertPrompt() {
           </button>
         </span>
 
-        <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED }}>
+        <span style={{ ...dataType, color: t.text2 }}>
           Makes a draft. Nothing is published, and nothing about your post
           changes.
         </span>
       </div>
 
-      <div style={{ height: 1, background: HAIRLINE }} />
+      <div style={{ height: 1, background: t.line }} />
     </Frame>
   );
 }

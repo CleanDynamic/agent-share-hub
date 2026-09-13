@@ -390,14 +390,68 @@ describe("BuildPage", () => {
 
   it("renders a not-found state for an unknown slug", async () => {
     getBuildBySlug.mockResolvedValue(null);
-    renderAt("does-not-exist");
+    const { container } = renderAt("does-not-exist");
     expect(await screen.findByText("No build at this address")).toBeTruthy();
+    expect(container.querySelector('[data-visual-slot="build-page-not-found"]')).toBeTruthy();
   });
 
   it("renders an error state when the accessor throws", async () => {
     getBuildBySlug.mockRejectedValue(new Error("getBuildBySlug failed: boom"));
-    renderAt("kaboom");
+    const { container } = renderAt("kaboom");
     expect(await screen.findByText("This build could not be loaded")).toBeTruthy();
+    expect(container.querySelector('[data-visual-slot="build-page-error"]')).toBeTruthy();
+  });
+
+  /* BG-P21 — the three states, all token-coloured.
+
+     The skeleton is asserted on the FIRST paint, before the record resolves:
+     `renderAt` mounts with the query in flight, so the page is in its loading
+     state for exactly as long as it takes the awaited assertion below to
+     replace it. Its colours are read off the rendered style attributes rather
+     than off `element.style`, which jsdom empties for a `var()`. */
+  it("holds the page's own shape while the record loads", async () => {
+    getBuildBySlug.mockResolvedValue(record);
+    const { container } = renderAt("inbox-triage-agent-demo");
+
+    const skeleton = container.querySelector('[data-visual-slot="build-page-skeleton"]');
+    expect(skeleton).toBeTruthy();
+    // Announced once as a busy region, not read out as a list of empty boxes.
+    expect(skeleton?.getAttribute("aria-busy")).toBe("true");
+    expect(skeleton?.querySelectorAll("[aria-hidden]").length).toBeGreaterThan(5);
+
+    // The page's own shape: a hero well, a title block, a facts strip, a tab
+    // strip and a column of parts — five regions, in that order, so nothing
+    // jumps when the record lands under them.
+    expect(skeleton?.children.length).toBe(5);
+    // Three part placeholders, at the card radius the anatomy's rows carry.
+    const parts = skeleton?.lastElementChild as HTMLElement;
+    expect(parts.children.length).toBe(3);
+    expect(parts.innerHTML).toContain("var(--r-card)");
+    // Every bone is one treatment: BG-P07's, driven by the bgShimmer keyframe.
+    expect(skeleton?.innerHTML).toContain("bgShimmer");
+
+    // And it is replaced by the record rather than sitting beside it.
+    expect(await screen.findByText("Inbox triage agent")).toBeTruthy();
+    expect(
+      container.querySelector('[data-visual-slot="build-page-skeleton"]')
+    ).toBeNull();
+  });
+
+  it("paints both dead ends in the page's own type, not in the breakage hue", async () => {
+    getBuildBySlug.mockResolvedValue(null);
+    const { container } = renderAt("does-not-exist");
+    await screen.findByText("No build at this address");
+
+    const state = container.querySelector(
+      '[data-visual-slot="build-page-not-found"]'
+    ) as HTMLElement;
+    // A build that was unpublished is not a fault and is not painted as one.
+    expect(state.innerHTML).not.toContain("cat-breakage");
+    expect(state.getAttribute("role")).toBe("status");
+    // The display face where the title would be, and one paragraph at the
+    // reading measure where the outcome would be: the same page, emptied.
+    expect(state.querySelector("h1")?.style.fontFamily).toContain("Bodoni");
+    expect(state.querySelector("p")?.style.maxWidth).toBe("68ch");
   });
 });
 

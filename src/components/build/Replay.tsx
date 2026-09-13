@@ -47,20 +47,17 @@ import {
   kindColour,
   kindFill,
 } from "./eventDisplay";
+import { cardGlass, hexToRgba, panelGlass } from "./tokens";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import {
-  HAIRLINE,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  cardGlass,
-  hexToRgba,
-  labelText,
-  panelGlass,
-  titleText,
-} from "./tokens";
+  body as bodyType,
+  data as dataType,
+  eyebrow,
+  label as labelType,
+  measure,
+  tabular,
+} from "@/lib/theme/type";
 
 /** One event per this many milliseconds while playing. */
 export const PLAY_INTERVAL_MS = 1500;
@@ -177,14 +174,21 @@ export function producedAt(
   return null;
 }
 
+/**
+ * The replay's small controls: play, reveal, fork from here.
+ *
+ * Secondary by shape rather than through `buttonStyle`, because these sit
+ * inside a blurred panel where a `--glass` fill on top of `--glass` would be
+ * the nesting the theme forbids. A `--line` outline on nothing, at the chip
+ * radius, is the same treatment with one layer instead of two.
+ */
 const controlStyle: CSSProperties = {
-  ...labelText,
-  fontSize: 11,
+  ...labelType,
   padding: "5px 11px",
-  borderRadius: 7,
-  border: `1px solid ${HAIRLINE}`,
+  borderRadius: r.chip,
+  border: `1px solid ${t.line}`,
   background: "transparent",
-  color: TEXT_SECONDARY,
+  color: t.text2,
   cursor: "pointer",
 };
 
@@ -193,13 +197,11 @@ function KindPill({ kind }: { kind: string | null }) {
   return (
     <span
       style={{
-        ...labelText,
-        fontSize: 10,
+        ...eyebrow,
         color: fill.color,
         background: fill.background,
         padding: "2px 7px",
-        borderRadius: 5,
-        textTransform: "uppercase",
+        borderRadius: r.chip,
       }}
     >
       {kind ?? "event"}
@@ -237,8 +239,11 @@ function EventRow({
         display: "flex",
         flexDirection: "column",
         gap: 8,
-        borderLeft: current ? `3px solid ${ORANGE}` : "3px solid transparent",
-        background: current ? hexToRgba(ORANGE, 0.05) : cardGlass.background,
+        /* The current row, marked by an edge and a wash of the action hue.
+           The edge occupies its 3px at rest in transparent, so stepping
+           through the list moves a colour and never a box. */
+        borderLeft: current ? `3px solid ${t.action}` : "3px solid transparent",
+        background: current ? hexToRgba(t.action, 0.05) : cardGlass.background,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -247,9 +252,9 @@ function EventRow({
           onClick={() => onSelect(index)}
           aria-label={`Go to step ${event.ordinal}`}
           style={{
-            ...labelText,
-            fontSize: 11,
-            color: current ? ORANGE : TEXT_MUTED,
+            ...dataType,
+            ...tabular,
+            color: current ? t.action : t.text2,
             background: "transparent",
             border: "none",
             padding: 0,
@@ -259,7 +264,7 @@ function EventRow({
           step {event.ordinal}
         </button>
         <KindPill kind={event.kind} />
-        <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>
+        <span style={{ ...dataType, ...tabular, color: t.text2 }}>
           {eventTime(event.occurred_at)}
         </span>
         {folded ? (
@@ -277,7 +282,9 @@ function EventRow({
       {lead ? (
         <p
           style={{
-            ...bodyText,
+            ...bodyType,
+            ...measure,
+            color: t.text,
             margin: 0,
             whiteSpace: "pre-wrap",
             // A folded row is one line until it is revealed. The text is in the
@@ -288,7 +295,7 @@ function EventRow({
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
-                  color: TEXT_SECONDARY,
+                  color: t.text2,
                 }),
           }}
         >
@@ -439,7 +446,7 @@ export function Replay({
     return (
       <p
         data-visual-slot="build-replay-empty"
-        style={{ ...bodyText, color: TEXT_MUTED, margin: 0, padding: "48px 0" }}
+        style={{ ...bodyType, ...measure, color: t.text2, margin: 0, padding: "48px 0" }}
       >
         No sequence was recorded for this build.
       </p>
@@ -455,9 +462,17 @@ export function Replay({
       style={{ display: "flex", flexDirection: "column", gap: 24 }}
     >
       <div
+        /* THE SCRUBBER SITS IN A RECESS (BG-P21). It was a blurred panel, and
+           a blur is a thing this page can only afford about twenty of — every
+           node card, every figure and the hero are already spending them. A
+           scrubber is a control surface cut into the page, which is exactly
+           what `--recess` names, and the recess also gives the unreached ticks
+           a ground to be quiet against without a white-alpha wash that only
+           existed in the dark room. */
         style={{
-          ...panelGlass,
-          borderRadius: 12,
+          background: t.recess,
+          border: `1px solid ${t.line}`,
+          borderRadius: r.panel,
           padding: "14px 16px 16px",
           display: "flex",
           flexDirection: "column",
@@ -473,16 +488,19 @@ export function Replay({
                 style={{
                   flex: `${run.to - run.from + 1} 1 0`,
                   minWidth: 0,
-                  borderTop: `1px solid ${HAIRLINE}`,
+                  borderTop: `1px solid ${t.line}`,
                   paddingTop: 5,
                 }}
               >
+                {/* A PHASE HEADING IS MONO. It labels a span of the sequence —
+                    the same job as every other eyebrow on the site — and mono
+                    is what the theme sets a label in. It also keeps the
+                    headings optically even across runs of different lengths,
+                    which a proportional face at 10px did not. */}
                 <span
                   style={{
-                    ...labelText,
-                    fontSize: 10,
-                    color: TEXT_MUTED,
-                    textTransform: "uppercase",
+                    ...eyebrow,
+                    color: t.text2,
                     display: "block",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -542,9 +560,14 @@ export function Replay({
                           height: DIVERGENCE_DOT,
                           padding: 0,
                           border: "none",
-                          borderRadius: 999,
-                          background: TEAL,
-                          boxShadow: `0 0 0 2px ${hexToRgba(TEAL, 0.18)}`,
+                          /* --evidence, and a halo of the same hue rather than
+                             a second colour: a divergence is somebody else's
+                             run of this build, which is the same claim
+                             "reproduced" makes. Circular, so --r-full is
+                             correct here and almost nowhere else. */
+                          borderRadius: r.full,
+                          background: t.evidence,
+                          boxShadow: `0 0 0 2px ${hexToRgba(t.evidence, 0.18)}`,
                           cursor: "pointer",
                         }}
                       />
@@ -589,7 +612,7 @@ export function Replay({
                     border: "none",
                     borderRadius: 3,
                     cursor: "pointer",
-                    background: reached ? colour : "rgba(255,255,255,0.10)",
+                    background: reached ? colour : t.line,
                     // BG-P05: `colour` is a var() now, so the played-but-not-
                     // current tick can no longer be struck as a 45% alpha of it.
                     // Opacity on the tick itself gets the same three steps out of
@@ -608,15 +631,15 @@ export function Replay({
             type="button"
             onClick={() => setPlaying((value) => !value)}
             aria-pressed={playing}
-            style={{ ...controlStyle, color: playing ? TEAL : TEXT_SECONDARY }}
+            style={{ ...controlStyle, color: playing ? t.evidence : t.text2 }}
           >
             {playing ? "Pause" : "Play"}
           </button>
-          <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>
+          <span style={{ ...dataType, ...tabular, color: t.text2 }}>
             step {current.ordinal} of {events[last].ordinal}
           </span>
           <KindPill kind={current.kind} />
-          <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>
+          <span style={{ ...dataType, ...tabular, color: t.text2 }}>
             {eventTime(current.occurred_at)}
           </span>
           {onFork ? (
@@ -627,8 +650,12 @@ export function Replay({
               style={{
                 ...controlStyle,
                 marginLeft: "auto",
-                color: forkPending ? TEXT_MUTED : ORANGE,
-                borderColor: hexToRgba(ORANGE, 0.35),
+                /* "Rebuild from here" is the same act as the header's primary,
+                   at one moment of the sequence — so it takes the action hue,
+                   but as an outline and not a second fill. The page has one
+                   filled --action surface and it is not in this panel. */
+                color: forkPending ? t.text2 : t.action,
+                borderColor: t.action,
                 cursor: forkPending ? "progress" : "pointer",
               }}
             >
@@ -644,7 +671,7 @@ export function Replay({
         {markers.size > 0 ? (
           <p
             data-testid="divergence-names"
-            style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, margin: 0 }}
+            style={{ ...dataType, ...measure, color: t.text2, margin: 0 }}
           >
             {namedRebuilds
               ? namedRebuilds.map((rebuild, index) => (
@@ -654,13 +681,13 @@ export function Replay({
                       type="button"
                       onClick={() => onOpenRebuild?.(rebuild)}
                       style={{
-                        ...labelText,
-                        fontFamily: "inherit",
-                        fontSize: 11,
+                        ...dataType,
                         padding: 0,
                         background: "transparent",
                         border: "none",
-                        color: TEAL,
+                        color: t.evidence,
+                        textDecoration: onOpenRebuild ? "underline" : "none",
+                        textUnderlineOffset: 3,
                         cursor: onOpenRebuild ? "pointer" : "default",
                       }}
                     >
@@ -674,7 +701,7 @@ export function Replay({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase" }}>
+        <span style={{ ...eyebrow, color: t.text2 }}>
           What existed at step {current.ordinal}
         </span>
         {artefact ? (
@@ -688,7 +715,7 @@ export function Replay({
             />
           </div>
         ) : (
-          <p style={{ ...bodyText, color: TEXT_MUTED, margin: 0 }}>
+          <p style={{ ...bodyType, ...measure, color: t.text2, margin: 0 }}>
             Nothing had been produced yet at this point.
           </p>
         )}
@@ -697,13 +724,17 @@ export function Replay({
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {runs.map((run) => (
           <div key={run.key} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {/* THE PHASE HEADING IN THE LIST IS MONO TOO, matching the one over
+                the scrubber: the same phase named twice must not be named in
+                two faces. A hairline above it does the grouping, so the list
+                reads as phases without a box around each one. */}
             <h3
               style={{
-                ...titleText,
+                ...eyebrow,
                 margin: 0,
-                color: TEXT_PRIMARY,
+                color: t.text,
                 paddingTop: 6,
-                borderTop: `1px solid ${HAIRLINE}`,
+                borderTop: `1px solid ${t.line}`,
               }}
             >
               {run.title ?? "Unphased"}

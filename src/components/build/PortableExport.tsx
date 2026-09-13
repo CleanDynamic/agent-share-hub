@@ -10,9 +10,12 @@
 // looking at. Neither computes anything until it is clicked.
 
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type { BuildRecord } from "@/lib/build";
 import { toMarkdown, toPortable } from "@/lib/build/portable";
-import { HAIRLINE, TEAL, TEXT_SECONDARY, hexToRgba, labelText } from "./tokens";
+import { t } from "@/lib/theme/tokens";
+import { label as labelType } from "@/lib/theme/type";
+import { useActionStyle } from "./actionStyle";
 
 interface PortableExportProps {
   record: BuildRecord;
@@ -21,22 +24,31 @@ interface PortableExportProps {
 /** How long a control stays in its confirmed state. */
 const CONFIRMED_MS = 1500;
 
-const controlStyle = (active: boolean) => ({
-  ...labelText,
-  padding: "6px 12px",
-  borderRadius: 8,
-  fontSize: 11,
-  cursor: "pointer",
-  whiteSpace: "nowrap" as const,
-  color: active ? TEAL : TEXT_SECONDARY,
-  background: active ? hexToRgba(TEAL, 0.14) : "transparent",
-  border: `1px solid ${active ? hexToRgba(TEAL, 0.3) : HAIRLINE}`,
-  transition: "color 120ms ease, border-color 120ms ease",
-});
+/**
+ * Both controls, at rest and confirmed.
+ *
+ * BG-P21 — SECONDARY, AND CONFIRMED IS A STATE OF IT RATHER THAN A SECOND
+ * BUTTON. Getting a build out of buildgallery is not the act this page invites;
+ * rebuilding is, and that action holds the page's one primary. So these sit on
+ * BG-P07's secondary treatment — glass on a `--line` border — and change only
+ * their fill and ink for the second and a half after a click.
+ *
+ * The confirmed pairing is the measured `--evidence-fill` / `--evidence` one
+ * rather than the hand-mixed 14%-teal wash it replaces: "it worked" is what
+ * `--evidence` is the token for, and the pair is the one the contrast table
+ * names. Geometry is unchanged, so the two controls sit exactly where they did.
+ */
+const confirmedPaint: CSSProperties = {
+  background: t.evidenceFill,
+  color: t.evidence,
+  borderColor: t.evidence,
+};
 
 export function PortableExport({ record }: PortableExportProps) {
   const [confirmed, setConfirmed] = useState<"copy" | "download" | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const copyAction = useActionStyle("secondary");
+  const downloadAction = useActionStyle("secondary");
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -87,7 +99,14 @@ export function PortableExport({ record }: PortableExportProps) {
         type="button"
         onClick={copyForAI}
         title="The whole build as markdown, ready to paste into an AI tool"
-        style={controlStyle(confirmed === "copy")}
+        {...copyAction.handlers}
+        style={{
+          ...copyAction.style,
+          ...labelType,
+          padding: "6px 12px",
+          whiteSpace: "nowrap",
+          ...(confirmed === "copy" ? confirmedPaint : {}),
+        }}
       >
         {confirmed === "copy" ? "✓ Copied for AI" : "Copy for AI"}
       </button>
@@ -95,7 +114,14 @@ export function PortableExport({ record }: PortableExportProps) {
         type="button"
         onClick={download}
         title={`The whole build as ${record.build.slug}.neoscale.json`}
-        style={controlStyle(confirmed === "download")}
+        {...downloadAction.handlers}
+        style={{
+          ...downloadAction.style,
+          ...labelType,
+          padding: "6px 12px",
+          whiteSpace: "nowrap",
+          ...(confirmed === "download" ? confirmedPaint : {}),
+        }}
       >
         {confirmed === "download" ? "✓ Downloaded" : "Download"}
       </button>

@@ -12,7 +12,10 @@
 // block, `url` makes a launch link, `variants` makes the media grid.
 
 import type { CSSProperties } from "react";
-import { HAIRLINE, TEAL, TEXT_MUTED, TEXT_SECONDARY, bodyText, hexToRgba, labelText } from "../tokens";
+import { hexToRgba } from "../tokens";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { data as dataType, eyebrow, label as labelType, tabular } from "@/lib/theme/type";
 import { MEDIA_WIDTH, MediaFigure } from "../MediaFigure";
 import {
   Caption,
@@ -48,16 +51,16 @@ const VARIANT_WIDTH = MEDIA_WIDTH.variant;
 
 function LaunchLink({ url, label }: { url: string; label: string }) {
   const style: CSSProperties = {
-    ...bodyText,
+    ...labelType,
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
     padding: "7px 12px",
-    borderRadius: 8,
+    borderRadius: r.control,
     textDecoration: "none",
-    color: TEAL,
-    background: hexToRgba(TEAL, 0.1),
-    border: `1px solid ${hexToRgba(TEAL, 0.3)}`,
+    color: t.evidence,
+    background: t.evidenceFill,
+    border: `1px solid ${t.evidence}`,
     wordBreak: "break-all",
   };
   return (
@@ -114,17 +117,18 @@ export function ArtefactRenderer(props: NodeProps) {
         {language || filename || entrypoint ? (
           <ChipRow>
             {language ? (
-              <Chip colour={TEAL} tinted>
+              <Chip colour={t.evidence} tinted>
                 {language}
               </Chip>
             ) : null}
             {filename ? (
               <span
                 style={{
-                  ...bodyText,
+                  ...dataType,
+                  ...tabular,
                   fontFamily: MONO_STACK,
                   fontSize: 12,
-                  color: TEXT_SECONDARY,
+                  color: t.text2,
                   wordBreak: "break-all",
                 }}
               >
@@ -132,7 +136,7 @@ export function ArtefactRenderer(props: NodeProps) {
               </span>
             ) : null}
             {entrypoint ? (
-              <Chip colour={TEAL} tinted title="Start reading here">
+              <Chip colour={t.evidence} tinted title="Start reading here">
                 entrypoint
               </Chip>
             ) : null}
@@ -151,7 +155,7 @@ export function ArtefactRenderer(props: NodeProps) {
 
         {remainingText.map((field) => (
           <Field key={field.key} label={field.label}>
-            <Prose style={{ color: TEXT_SECONDARY }}>{str(payload, field.key)}</Prose>
+            <Prose style={{ color: t.text2 }}>{str(payload, field.key)}</Prose>
           </Field>
         ))}
 
@@ -232,9 +236,9 @@ export function GeneratedMediaRenderer(props: NodeProps) {
                     flexDirection: "column",
                     gap: 6,
                     padding: 6,
-                    borderRadius: 10,
-                    border: `1px solid ${chosen ? TEAL : HAIRLINE}`,
-                    background: chosen ? hexToRgba(TEAL, 0.06) : "transparent",
+                    borderRadius: r.media,
+                    border: `1px solid ${chosen ? t.evidence : t.line}`,
+                    background: chosen ? hexToRgba(t.evidence, 0.06) : "transparent",
                     opacity: chosen || chosenIndex === -1 ? 1 : 0.6,
                   }}
                 >
@@ -243,7 +247,7 @@ export function GeneratedMediaRenderer(props: NodeProps) {
                     resolveMedia={props.resolveMedia}
                     alt={note ?? `Variant ${index + 1}`}
                     width={VARIANT_WIDTH}
-                    style={{ border: "none", borderRadius: 6 }}
+                    style={{ border: "none", borderRadius: r.media }}
                   />
                   <figcaption
                     style={{
@@ -255,9 +259,8 @@ export function GeneratedMediaRenderer(props: NodeProps) {
                   >
                     <span
                       style={{
-                        ...labelText,
-                        fontSize: 11,
-                        color: chosen ? TEAL : TEXT_MUTED,
+                        ...eyebrow,
+                        color: chosen ? t.evidence : t.text2,
                       }}
                     >
                       {chosen ? "chosen" : `variant ${index + 1}`}
@@ -265,9 +268,8 @@ export function GeneratedMediaRenderer(props: NodeProps) {
                     {note ? (
                       <span
                         style={{
-                          ...bodyText,
-                          fontSize: 11,
-                          color: TEXT_MUTED,
+                          ...dataType,
+                          color: t.text2,
                           textAlign: "right",
                           minWidth: 0,
                           wordBreak: "break-word",
