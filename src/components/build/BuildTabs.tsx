@@ -25,7 +25,9 @@
 
 import { useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import { HAIRLINE, ORANGE, TEXT_MUTED, TEXT_SECONDARY, labelText } from "./tokens";
+import { ring } from "@/lib/theme/controls";
+import { t } from "@/lib/theme/tokens";
+import { label as labelType } from "@/lib/theme/type";
 
 interface BuildTabsProps {
   /** The Anatomy panel. */
@@ -65,8 +67,29 @@ const TABS: TabDef[] = [
   { id: "rebuilds", label: "Rebuilds" },
 ];
 
+/* ── BG-P21 — the tab strip, on BG-P07's treatment ────────────────────────────
+
+   THE CURRENT TAB IS AN `--action` UNDERLINE AND `--text`, NOT A FILL. The row
+   is six labels with one of them current; a filled pill would make that one
+   read as a button while its five neighbours read as text, and the strip would
+   stop being a set of peers. BG-P07 settled this for the app's own tab
+   component and this strip follows it rather than inventing a second answer.
+
+   THE UNDERLINE OCCUPIES ITS SPACE AT REST. Every tab carries
+   `2px solid transparent` whether it is current or not, so becoming current
+   changes a colour and never a box — nothing in the row shifts sideways when
+   the reader moves between tabs. That was already true here and it stays true;
+   it is also why the underline is a border rather than the inset box-shadow
+   the Radix component needs, where the border would have added 2px.
+
+   A DISABLED TAB READS AS QUIET, NOT AS BROKEN. It sits on `--text2` like the
+   others and is told apart by its cursor and `aria-disabled`, because the
+   third text rung this file used to reach for is below the contrast floor in
+   both rooms — a label nobody can read is not a quieter label.
+   ─────────────────────────────────────────────────────────────────────────── */
+
 const tabBase: CSSProperties = {
-  ...labelText,
+  ...labelType,
   background: "transparent",
   border: "none",
   borderBottom: "2px solid transparent",
@@ -77,6 +100,7 @@ const tabBase: CSSProperties = {
   alignItems: "flex-start",
   textAlign: "left",
   whiteSpace: "nowrap",
+  transition: "color 160ms cubic-bezier(.2,.6,.35,1), border-color 160ms cubic-bezier(.2,.6,.35,1)",
 };
 
 export function BuildTabs({
@@ -90,6 +114,8 @@ export function BuildTabs({
   onActiveChange,
 }: BuildTabsProps) {
   const [own, setOwn] = useState("anatomy");
+  /** Which tab has the keyboard, so only that one draws the focus ring. */
+  const [focused, setFocused] = useState<string | null>(null);
 
   const panels: Record<string, ReactNode> = { anatomy: children };
   if (watch !== undefined) panels.watch = watch;
@@ -132,7 +158,7 @@ export function BuildTabs({
         style={{
           display: "flex",
           gap: 24,
-          borderBottom: `1px solid ${HAIRLINE}`,
+          borderBottom: `1px solid ${t.line}`,
           overflowX: "auto",
         }}
       >
@@ -154,27 +180,33 @@ export function BuildTabs({
               onKeyDown={(event) => enabled && onKeyDown(event, tab.id)}
               style={{
                 ...tabBase,
-                color: selected ? ORANGE : enabled ? TEXT_SECONDARY : TEXT_MUTED,
-                borderBottom: selected ? `2px solid ${ORANGE}` : "2px solid transparent",
+                color: selected ? t.text : t.text2,
+                borderBottom: selected ? `2px solid ${t.action}` : "2px solid transparent",
                 cursor: enabled ? "pointer" : "not-allowed",
+                ...ring(focused === tab.id),
               }}
+              onFocus={(event) => {
+                let visible = true;
+                try {
+                  visible = event.currentTarget.matches(":focus-visible");
+                } catch {
+                  /* :focus-visible unsupported. Show the ring rather than hide it. */
+                }
+                if (visible) setFocused(tab.id);
+              }}
+              onBlur={() => setFocused((current) => (current === tab.id ? null : current))}
             >
               <span>{tab.label}</span>
+              {/* The second line keeps the row's height whether a tab has a
+                  placeholder or not, so the strip does not grow the first time
+                  one appears. Weight 400: the theme forbids Figtree under 400
+                  below 18px outright, and this line was set at 300. */}
               {tab.placeholder ? (
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 300,
-                    letterSpacing: 0,
-                    color: TEXT_MUTED,
-                  }}
-                >
+                <span style={{ ...labelType, fontSize: 11, color: t.text2 }}>
                   {tab.placeholder}
                 </span>
               ) : (
-                <span style={{ fontSize: 11, fontWeight: 300, color: TEXT_SECONDARY }}>
-                  &nbsp;
-                </span>
+                <span style={{ ...labelType, fontSize: 11, color: t.text2 }}>&nbsp;</span>
               )}
             </button>
           );

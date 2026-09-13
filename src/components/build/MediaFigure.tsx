@@ -30,7 +30,9 @@ import {
   type BuildNode,
   type MediaRef,
 } from "@/lib/build";
-import { HAIRLINE, TEXT_MUTED, TEXT_SECONDARY, bodyText, labelText } from "./tokens";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { data as dataType, eyebrow } from "@/lib/theme/type";
 import { mediaSrc, type ResolveMedia } from "./renderers/shared";
 
 export type { ResolveMedia };
@@ -170,15 +172,14 @@ export function MediaUnavailable({ style }: { style?: CSSProperties }) {
     <div
       data-visual-slot="media-unavailable"
       style={{
-        ...bodyText,
+        ...dataType,
         display: "flex",
         alignItems: "center",
         gap: 6,
-        fontSize: 12,
-        color: TEXT_MUTED,
+        color: t.text2,
         padding: "10px 12px",
-        border: `1px dashed ${HAIRLINE}`,
-        borderRadius: 8,
+        border: `1px dashed ${t.line}`,
+        borderRadius: r.media,
         ...style,
       }}
     >
@@ -244,8 +245,8 @@ export function MediaFigure({
             display: "block",
             maxWidth: "100%",
             height: "auto",
-            borderRadius: 8,
-            border: `1px solid ${HAIRLINE}`,
+            borderRadius: r.media,
+            border: `1px solid ${t.line}`,
             ...style,
           }}
         />
@@ -264,8 +265,8 @@ export function MediaFigure({
     display: "block",
     maxWidth: "100%",
     height: "auto",
-    borderRadius: 8,
-    border: `1px solid ${HAIRLINE}`,
+    borderRadius: r.media,
+    border: `1px solid ${t.line}`,
     ...style,
   };
 
@@ -302,7 +303,9 @@ export function MediaFigure({
         // Nothing on a read surface downloads a video the reader has not
         // asked to watch.
         preload="none"
-        style={{ ...frame, background: "#000", width: "100%" }}
+        /* `--porthole`, the media-well ground, rather than `#000`: a recording
+           that letterboxes sits in the page's own dark in both rooms. */
+        style={{ ...frame, background: t.porthole, width: "100%" }}
       >
         {description}
       </video>
@@ -338,9 +341,12 @@ function MediaPending({
         width: "100%",
         aspectRatio: ratio,
         maxHeight: 320,
-        borderRadius: 8,
-        border: `1px solid ${HAIRLINE}`,
-        background: "rgba(255,255,255,0.02)",
+        borderRadius: r.media,
+        border: `1px solid ${t.line}`,
+        /* The waiting slot is a recess: the shape of the picture that is
+           coming, cut into the page, rather than a pale wash that only
+           existed in the dark room. */
+        background: t.recess,
         ...style,
       }}
     />
@@ -362,8 +368,8 @@ function MediaFileChip({
 
   const body = (
     <>
-      <span style={{ ...bodyText, fontSize: 12 }}>{name}</span>
-      <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>{label}</span>
+      <span style={{ ...dataType, color: t.text }}>{name}</span>
+      <span style={{ ...eyebrow, color: t.text2 }}>{label}</span>
     </>
   );
 
@@ -372,9 +378,9 @@ function MediaFileChip({
     alignItems: "center",
     gap: 8,
     padding: "7px 12px",
-    borderRadius: 8,
-    border: `1px solid ${HAIRLINE}`,
-    color: TEXT_SECONDARY,
+    borderRadius: r.control,
+    border: `1px solid ${t.line}`,
+    color: t.text2,
     textDecoration: "none",
     ...style,
   };

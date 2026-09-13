@@ -19,17 +19,38 @@ import { Link } from "react-router-dom";
 import type { RebuildSummary } from "@/lib/build";
 import { BranchIcon } from "./BranchIcon";
 import { creatorLabel, firstLine } from "./rebuildDisplay";
+import { cardGlass } from "./tokens";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import {
-  HAIRLINE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  cardGlass,
-  labelText,
-  titleText,
-} from "./tokens";
+  body as bodyType,
+  data as dataType,
+  eyebrow,
+  measure,
+  tabular,
+} from "@/lib/theme/type";
+
+/* ── BG-P21 — WHY THESE ROWS ARE NOT `RebuildCredit` ──────────────────────────
+
+   The shared credit renders "Rebuilt from <title> by @<handle>" out of the two
+   FROZEN SNAPSHOT COLUMNS a rebuild carries, plus the machine-computed change
+   summary. `RebuildSummary` — what `listRebuilds` returns, and all this tab has
+   — carries neither: it is id, slug, title, creator, note, date, fork event and
+   reproduction count. Feeding the shared component would mean widening the
+   query, which is a data-layer change and not a repaint.
+
+   And the sentence would be the same on every row anyway: every descendant here
+   was rebuilt from THIS build, by the creator whose page the reader is on. The
+   credit's job is to say where a build came from, and on this tab the answer is
+   "from the thing you are looking at" — once, in the heading above the list.
+
+   So the rows take the credit's VOICE instead of its component: the rebuilder
+   and the date in mono on `--text2`, the title in the body face, the rebuilder's
+   own note as the line that differs between rows. When `listRebuilds` grows the
+   snapshot columns, this list should render the shared component per row and
+   the heading should lose its count — that is the change, and it belongs with
+   the query that makes it possible.
+   ─────────────────────────────────────────────────────────────────────────── */
 
 /** A date a reader can read. The exact time is on the rebuild's own page. */
 function when(created_at: string): string {
@@ -44,7 +65,7 @@ export interface RebuildsTabProps {
 export function RebuildsTab({ rebuilds }: RebuildsTabProps) {
   if (rebuilds.length === 0) {
     return (
-      <p style={{ ...bodyText, color: TEXT_MUTED, margin: 0, padding: "48px 0" }}>
+      <p style={{ ...bodyType, ...measure, color: t.text2, margin: 0, padding: "48px 0" }}>
         Nobody has rebuilt this yet.
       </p>
     );
@@ -56,7 +77,7 @@ export function RebuildsTab({ rebuilds }: RebuildsTabProps) {
       data-visual-slot="build-rebuilds"
       style={{ display: "flex", flexDirection: "column", gap: 10 }}
     >
-      <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase" }}>
+      <span style={{ ...eyebrow, color: t.text2 }}>
         {rebuilds.length === 1 ? "One build started here" : `${rebuilds.length} builds started here`}
       </span>
 
@@ -74,24 +95,25 @@ export function RebuildsTab({ rebuilds }: RebuildsTabProps) {
                 gap: 12,
                 padding: "12px 14px",
                 textDecoration: "none",
-                color: TEXT_PRIMARY,
+                color: t.text,
               }}
             >
               <Avatar rebuild={rebuild} />
 
               <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-                <span style={{ ...labelText, fontSize: 11, color: TEXT_SECONDARY }}>
+                {/* The credit's voice: who, and when, in mono on --text2. */}
+                <span style={{ ...dataType, ...tabular, color: t.text2 }}>
                   {creatorLabel(rebuild)}
-                  <span style={{ color: TEXT_MUTED }}> · {when(rebuild.created_at)}</span>
+                  <span> · {when(rebuild.created_at)}</span>
                 </span>
-                <span style={{ ...titleText }}>
+                <span style={{ ...bodyType, fontWeight: 600, color: t.text }}>
                   {(rebuild.title ?? "").trim() || "Untitled build"}
                 </span>
                 {firstLine(rebuild.rebuild_note) ? (
                   <span
                     style={{
-                      ...bodyText,
-                      color: TEXT_SECONDARY,
+                      ...bodyType,
+                      color: t.text2,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -111,17 +133,18 @@ export function RebuildsTab({ rebuilds }: RebuildsTabProps) {
               >
                 <span
                   style={{
+                    ...dataType,
+                    ...tabular,
                     fontSize: 18,
-                    fontWeight: 700,
+                    fontWeight: 500,
                     lineHeight: 1,
-                    fontVariantNumeric: "tabular-nums",
-                    color: rebuild.reproduction_count > 0 ? TEAL : TEXT_MUTED,
+                    color: rebuild.reproduction_count > 0 ? t.evidence : t.text2,
                   }}
                 >
                   {rebuild.reproduction_count}
                 </span>
-                <span style={{ ...labelText, fontSize: 10, color: TEXT_MUTED }}>
-                  {rebuild.reproduction_count === 1 ? "REPRO" : "REPROS"}
+                <span style={{ ...eyebrow, color: t.text2 }}>
+                  {rebuild.reproduction_count === 1 ? "repro" : "repros"}
                 </span>
               </span>
             </Link>
@@ -146,9 +169,10 @@ function Avatar({ rebuild }: { rebuild: RebuildSummary }) {
   const frame = {
     width: 28,
     height: 28,
-    borderRadius: 999,
+    /* An avatar is a circle, which is what `--r-full` exists for. */
+    borderRadius: r.full,
     flexShrink: 0,
-    border: `1px solid ${HAIRLINE}`,
+    border: `1px solid ${t.line}`,
     objectFit: "cover" as const,
   };
 
@@ -174,10 +198,9 @@ function Avatar({ rebuild }: { rebuild: RebuildSummary }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(255,255,255,0.04)",
-        ...labelText,
-        fontSize: 12,
-        color: TEXT_SECONDARY,
+        background: t.recess,
+        ...dataType,
+        color: t.text2,
       }}
     >
       {initial}
@@ -212,29 +235,31 @@ export function RebuildCount({ count, onOpen }: RebuildCountProps) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase" }}>
-        Rebuilds
-      </span>
+      <span style={{ ...eyebrow, color: t.text2 }}>Rebuilds</span>
       <button
         type="button"
         data-testid="rebuild-count"
         onClick={onOpen}
         title={`${count} ${count === 1 ? "build was" : "builds were"} started from this one.`}
+        /* A FACT IN THE FACTS STRIP, so it is weighted like the facts either
+           side of it: the mono data role on --text, which is exactly what Fact
+           prints. It is a button because it navigates, not because it is a
+           control worth looking like one. */
         style={{
-          ...bodyText,
-          fontFamily: "inherit",
+          ...dataType,
+          ...tabular,
           display: "flex",
           alignItems: "center",
           gap: 6,
           padding: 0,
           background: "transparent",
           border: "none",
-          color: TEXT_SECONDARY,
+          color: t.text,
           cursor: "pointer",
         }}
       >
-        <BranchIcon colour={TEXT_MUTED} />
-        <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 400 }}>
+        <BranchIcon colour={t.text2} />
+        <span>
           {count} {count === 1 ? "rebuild" : "rebuilds"}
         </span>
       </button>

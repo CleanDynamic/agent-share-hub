@@ -29,25 +29,21 @@ import {
   type BuildNode,
   type Layer,
 } from "@/lib/build";
+import { cardGlass, hexToRgba } from "./tokens";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import {
-  HAIRLINE,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  cardGlass,
-  hexToRgba,
-  labelText,
-  titleText,
-} from "./tokens";
+  body as bodyType,
+  data as dataType,
+  eyebrow,
+  label as labelType,
+} from "@/lib/theme/type";
 import { measure } from "@/lib/theme/type";
 
 /** One accent per layer: the doing layer takes the instruction colour. */
 const LAYER_COLOUR: Record<Layer, string> = {
-  run: ORANGE,
-  understand: TEAL,
+  run: t.action,
+  understand: t.evidence,
 };
 
 export interface LayerViewProps {
@@ -69,20 +65,17 @@ function Attribution({ colour }: { colour: string }) {
     <p
       data-testid="layer-attribution"
       style={{
-        ...labelText,
+        ...dataType,
         margin: 0,
         display: "flex",
         alignItems: "center",
         gap: 8,
         padding: "8px 12px",
-        borderRadius: 8,
-        border: `1px solid ${HAIRLINE}`,
+        borderRadius: r.control,
+        border: `1px solid ${t.line}`,
         borderLeft: `2px solid ${colour}`,
         background: hexToRgba(colour, 0.05),
-        color: TEXT_SECONDARY,
-        fontWeight: 400,
-        letterSpacing: 0,
-        lineHeight: 1.5,
+        color: t.text2,
       }}
     >
       {LAYER_ATTRIBUTION}
@@ -114,17 +107,17 @@ function StepCard({
         <span
           aria-hidden
           style={{
-            ...labelText,
+            ...dataType,
             flexShrink: 0,
             width: 24,
             height: 24,
-            borderRadius: 999,
+            /* Circular, which is what `--r-full` is for. */
+            borderRadius: r.full,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
             color: colour,
             background: hexToRgba(colour, 0.15),
-            fontSize: 11,
           }}
         >
           {step.n}
@@ -132,7 +125,7 @@ function StepCard({
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0, flex: 1 }}>
           {step.title ? (
-            <h3 style={{ ...titleText, margin: 0 }}>
+            <h3 style={{ ...bodyType, fontWeight: 600, color: t.text, margin: 0 }}>
               <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
                 {`Step ${step.n}: `}
               </span>
@@ -141,7 +134,7 @@ function StepCard({
           ) : null}
 
           {step.body ? (
-            <p style={{ ...bodyText, ...measure, margin: 0, whiteSpace: "pre-wrap", color: TEXT_PRIMARY }}>
+            <p style={{ ...bodyType, ...measure, margin: 0, whiteSpace: "pre-wrap", color: t.text }}>
               {step.body}
             </p>
           ) : null}
@@ -150,14 +143,17 @@ function StepCard({
             <button
               type="button"
               onClick={() => onOpenNode(node.id)}
+              /* A ghost link into the anatomy, underlined at rest: colour
+                 alone fails WCAG 1.4.1 and hover does not exist on touch. */
               style={{
-                ...labelText,
-                fontFamily: "inherit",
+                ...labelType,
                 alignSelf: "flex-start",
                 background: "transparent",
                 border: "none",
                 padding: 0,
                 color: colour,
+                textDecoration: "underline",
+                textUnderlineOffset: "3px",
                 cursor: "pointer",
                 textAlign: "left",
               }}
@@ -183,12 +179,12 @@ export function LayerView({ layer, resolveNode, onOpenNode }: LayerViewProps) {
     >
       <Attribution colour={colour} />
 
-      <p style={{ ...bodyText, ...measure, margin: 0, color: TEXT_SECONDARY }}>
+      <p style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}>
         {LAYER_BLURB[layer.layer]}
       </p>
 
       {steps.length === 0 ? (
-        <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED }}>
+        <p style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}>
           This layer has no steps in it.
         </p>
       ) : (
@@ -217,12 +213,18 @@ export function LayerView({ layer, resolveNode, onOpenNode }: LayerViewProps) {
   );
 }
 
+/**
+ * One state of the sequence/words switch.
+ *
+ * `--r-control`, NOT 100px. The capsule rule was dropped by decision and a
+ * control at 100px is off-brand in this system; at 28px tall, 12px reads as a
+ * soft rectangle, which is what the scale asks a switch track to be.
+ */
 const switchBase: CSSProperties = {
-  ...labelText,
-  fontFamily: "inherit",
+  ...labelType,
   height: 28,
   padding: "0 12px",
-  borderRadius: 100,
+  borderRadius: r.control,
   border: "1px solid transparent",
   background: "transparent",
   cursor: "pointer",
@@ -268,9 +270,11 @@ export function RunItPanel({
           alignSelf: "flex-start",
           gap: 4,
           padding: 3,
-          borderRadius: 100,
-          border: `1px solid ${HAIRLINE}`,
-          background: "rgba(255,255,255,0.025)",
+          /* The group is one step larger than the states inside it, so the
+             inner radius and the outer stay concentric. */
+          borderRadius: r.card,
+          border: `1px solid ${t.line}`,
+          background: t.recess,
         }}
       >
         {states.map((state) => (
@@ -281,9 +285,9 @@ export function RunItPanel({
             onClick={() => setShowLayer(state.id === "words")}
             style={{
               ...switchBase,
-              color: state.on ? TEXT_PRIMARY : TEXT_SECONDARY,
-              background: state.on ? hexToRgba(ORANGE, 0.14) : "transparent",
-              borderColor: state.on ? hexToRgba(ORANGE, 0.45) : "transparent",
+              color: state.on ? t.text : t.text2,
+              background: state.on ? hexToRgba(t.action, 0.14) : "transparent",
+              borderColor: state.on ? t.action : "transparent",
             }}
           >
             {state.label}

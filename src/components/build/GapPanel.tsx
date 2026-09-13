@@ -51,7 +51,7 @@ import { buttonStyle, chipType } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 import { tabular } from "@/lib/theme/type";
 import type { ResolveMedia, ResolveNode } from "./renderers";
-import { TEAL, TEXT_MUTED, bodyText, labelText } from "./tokens";
+import { data as dataType, label as labelType } from "@/lib/theme/type";
 
 /**
  * The invitation, re-exported from the shared marker (BG-P11).
@@ -210,7 +210,7 @@ export function GapPanel({
         }
       >
         {meToo.isError ? (
-          <span role="alert" style={{ ...bodyText, fontSize: 12, color: t.catBreakage }}>
+          <span role="alert" style={{ ...dataType, color: t.catBreakage }}>
             {(meToo.error as Error).message}
           </span>
         ) : null}
@@ -271,10 +271,10 @@ export function SolvedCredit({
       <p
         data-testid="gap-solved-credit"
         style={{
-          ...labelText,
+          ...labelType,
           margin: 0,
           fontSize: 11,
-          color: TEAL,
+          color: t.evidence,
         }}
       >
         Solved by {handle ? `@${handle}` : "a solver"}
@@ -282,12 +282,17 @@ export function SolvedCredit({
       {build ? (
         <p
           data-testid="gap-solved-build"
-          style={{ ...bodyText, margin: 0, fontSize: 11, color: TEXT_MUTED }}
+          style={{ ...dataType, margin: 0, color: t.text2 }}
         >
           from{" "}
           <Link
             to={`/b2/${build.slug}`}
-            style={{ color: TEAL, textDecoration: "none" }}
+            /* Underlined at rest: colour alone fails WCAG 1.4.1. */
+            style={{
+              color: t.evidence,
+              textDecoration: "underline",
+              textUnderlineOffset: "3px",
+            }}
           >
             {build.title}
           </Link>

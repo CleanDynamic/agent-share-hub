@@ -27,18 +27,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Build, BuildNode, NodeTree, NodeType } from "@/lib/build";
 import { getNodeCopyText } from "./renderers";
 import { MonoBlock } from "./renderers/shared";
+import { useActionStyle } from "./actionStyle";
+import { cardGlass, hexToRgba } from "./tokens";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import {
-  HAIRLINE,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_SECONDARY,
-  bodyText,
-  cardGlass,
-  hexToRgba,
-  labelText,
-  titleText,
-} from "./tokens";
+  body as bodyType,
+  data as dataType,
+  eyebrow,
+  label as labelType,
+  measure,
+} from "@/lib/theme/type";
 import { categoryFill } from "@/lib/theme/category";
 
 interface RunViewProps {
@@ -144,6 +143,7 @@ function CopyButton({
 }) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const action = useActionStyle("secondary");
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -159,23 +159,31 @@ function CopyButton({
     }
   };
 
-  const accent = emphasis ? ORANGE : TEAL;
+  /* SECONDARY IN BOTH SIZES, AND CONFIRMED IS A STATE OF BOTH. "Copy all
+     steps" leads the panel, so it is bigger and outlined in `--action` — but
+     outlined, never filled: the page's one filled action is "Rebuild this", and
+     a second solid button here would put the two in competition at the top of
+     a tab. Confirmation lands on the measured `--evidence-fill` / `--evidence`
+     pair in both sizes, so copying one step and copying all of them confirm
+     identically. */
+  const accent = copied ? t.evidence : t.action;
 
   return (
     <button
       type="button"
       onClick={copy}
+      {...action.handlers}
       style={{
-        ...labelText,
+        ...action.style,
+        ...labelType,
         padding: emphasis ? "7px 14px" : "2px 9px",
-        borderRadius: emphasis ? 8 : 6,
-        fontSize: emphasis ? 12 : 11,
-        cursor: "pointer",
+        borderRadius: emphasis ? r.control : r.chip,
         whiteSpace: "nowrap",
-        color: copied || emphasis ? accent : TEXT_SECONDARY,
-        background: copied || emphasis ? hexToRgba(accent, emphasis ? 0.12 : 0.14) : "transparent",
-        border: `1px solid ${copied || emphasis ? hexToRgba(accent, 0.3) : HAIRLINE}`,
-        transition: "color 120ms ease, border-color 120ms ease",
+        ...(copied
+          ? { color: t.evidence, background: t.evidenceFill, borderColor: t.evidence }
+          : emphasis
+            ? { color: accent, borderColor: accent }
+            : {}),
       }}
     >
       {copied ? "✓ Copied" : label}
@@ -189,9 +197,7 @@ function Checklist({ prerequisites }: { prerequisites: Prerequisite[] }) {
       data-visual-slot="build-run-prerequisites"
       style={{ display: "flex", flexDirection: "column", gap: 10 }}
     >
-      <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase" }}>
-        Before you start
-      </span>
+      <span style={{ ...eyebrow, color: t.text2 }}>Before you start</span>
       <ul
         style={{
           listStyle: "none",
@@ -216,13 +222,13 @@ function Checklist({ prerequisites }: { prerequisites: Prerequisite[] }) {
                 marginTop: 3,
                 flexShrink: 0,
                 borderRadius: 3,
-                border: `1px solid ${hexToRgba(TEAL, 0.45)}`,
+                border: `1px solid ${t.evidence}`,
               }}
             />
-            <span style={{ ...bodyText, minWidth: 0 }}>
+            <span style={{ ...bodyType, ...measure, color: t.text, minWidth: 0 }}>
               {node.title}
               {requirement ? (
-                <span style={{ color: TEXT_SECONDARY }}> — {requirement}</span>
+                <span style={{ color: t.text2 }}> — {requirement}</span>
               ) : null}
             </span>
           </li>
@@ -249,30 +255,30 @@ function StepCard({ step, number }: { step: Step; number: number }) {
           <span
             aria-hidden="true"
             style={{
-              ...labelText,
+              ...dataType,
               width: 24,
               height: 24,
               flexShrink: 0,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              borderRadius: "50%",
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: 0,
+              /* A step number is a circle, which is the one shape `--r-full`
+                 exists for. */
+              borderRadius: r.full,
+              fontWeight: 500,
               color: fill.color,
               background: fill.background,
             }}
           >
             {number}
           </span>
-          <h3 style={{ ...titleText, margin: 0, minWidth: 0 }}>
+          <h3 style={{ ...bodyType, fontWeight: 600, color: t.text, margin: 0, minWidth: 0 }}>
             <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)", whiteSpace: "nowrap" }}>
               {`Step ${number}: `}
             </span>
             {step.node.title}
           </h3>
-          <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase" }}>
+          <span style={{ ...eyebrow, color: t.text2 }}>
             {step.nodeType?.label ?? step.node.type}
           </span>
           <span style={{ marginLeft: "auto" }}>
@@ -283,7 +289,7 @@ function StepCard({ step, number }: { step: Step; number: number }) {
         {step.copyText ? (
           <MonoBlock text={step.copyText} collapseTo={COLLAPSE_AT} />
         ) : (
-          <span style={{ ...bodyText, color: TEXT_MUTED }}>
+          <span style={{ ...bodyType, ...measure, color: t.text2 }}>
             This step carries nothing to copy yet.
           </span>
         )}
@@ -305,7 +311,7 @@ export function RunView({ tree, nodeTypes, build }: RunViewProps) {
 
   if (steps.length === 0 && prerequisites.length === 0) {
     return (
-      <p style={{ ...bodyText, color: TEXT_MUTED, margin: 0 }}>
+      <p style={{ ...bodyType, ...measure, color: t.text2, margin: 0 }}>
         Nothing in this build is runnable yet. The anatomy has no copyable nodes in it.
       </p>
     );
@@ -318,7 +324,7 @@ export function RunView({ tree, nodeTypes, build }: RunViewProps) {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         {steps.length > 0 ? <CopyButton text={allText} label="Copy all steps" emphasis /> : null}
-        <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>
+        <span style={{ ...dataType, color: t.text2 }}>
           {steps.length === 1 ? "1 step" : `${steps.length} steps`}
         </span>
       </div>
