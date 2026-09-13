@@ -426,7 +426,6 @@ function GapRow({
           alignItems: "center",
           gap: 8,
           minWidth: 0,
-          flexWrap: "wrap",
           cursor: locked ? "default" : "pointer",
         }}
       >

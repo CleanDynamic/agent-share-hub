@@ -88,12 +88,20 @@ const CREDIT_PERMANENT = "This credit is part of the post and can't be removed."
     to RebuildCredit: it would render its own second copy of the same lines
     directly beneath the first. */
 
-/** The expander under the Δ list. RebuildCredit's own, so the two match. */
+/**
+ * The expander under the Δ list. RebuildCredit's own paint, so the two match.
+ *
+ * ITS PADDING IS THE ONE THING NOT TAKEN FROM THERE. The shared expander is
+ * `3px 8px` and this was already `4px 8px`; a repaint may change what an
+ * existing control looks like and may not change the box it occupies, and one
+ * pixel of vertical padding is not worth being the exception. The two read
+ * identically at these sizes.
+ */
 const quietControl: CSSProperties = {
   ...chipType,
   fontFamily: "inherit",
   alignSelf: "flex-start",
-  padding: "3px 8px",
+  padding: "4px 8px",
   borderRadius: r.chip,
   background: "transparent",
   borderWidth: 1,
