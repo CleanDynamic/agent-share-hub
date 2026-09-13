@@ -56,23 +56,19 @@ import {
   BUILD_FILE_EXTENSIONS,
   useBuildFileDrop,
 } from "@/components/compose/useBuildFileDrop";
-import {
-  FONT_STACK,
-  HAIRLINE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  VOID,
-  bodyText,
-  cardGlass,
-  hexToRgba,
-  labelText,
-  pageHeadingText,
-  titleText,
-} from "@/components/build/tokens";
+import { PageHeader } from "@/components/shell/PageHeader";
+import { Button } from "@/components/ui/button";
+import { UI_EASING, UI_MS } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
-import { measure } from "@/lib/theme/type";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
+import {
+  body as bodyText,
+  cardTitle,
+  data as dataText,
+  label as labelText,
+  measure,
+} from "@/lib/theme/type";
 
 /** Served from public/buildfile/. Both are plain Markdown, ~5 kB and ~2 kB. */
 const EXTRACTOR_URL = "/buildfile/NEOSCALE_EXTRACTOR.md";
@@ -204,40 +200,35 @@ function CopyDocumentButton({
 
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-      {/* VISUAL SLOT — the primary button surface is supplied externally.
-          Structure only here: pill geometry, no surface. */}
-      <span data-visual-slot="btn-primary" style={{ display: "inline-flex" }}>
-        <button
-          type="button"
-          data-testid={testId}
-          onClick={() => void copy()}
-          style={{
-            fontFamily: FONT_STACK,
-            fontSize: 12,
-            fontWeight: 500,
-            letterSpacing: "0.04em",
-            height: 34,
-            padding: "0 18px",
-            borderRadius: 100,
-            background: "rgba(255,255,255,0.025)",
-            border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
-            color: TEAL,
-            cursor: "pointer",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {label}
-        </button>
-      </span>
+      {/* BG-P24 — THE KIT'S SECONDARY BUTTON.
+          Copying the Extractor is the page's own first step, but the page's
+          one PRIMARY is the drop target below: this is how you get the file,
+          that is where the file lands, and only one of the two can be the
+          thing the eye goes to first. So both controls in this row are
+          secondary — glass over a `--line` border at `--r-control` — rather
+          than the 999px teal-outlined capsule this was. */}
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        data-testid={testId}
+        onClick={() => void copy()}
+        style={{ whiteSpace: "nowrap" }}
+      >
+        {label}
+      </Button>
 
       <span
         role="status"
         aria-live="polite"
         style={{
           ...labelText,
-          color: state === "failed" ? TEXT_PRIMARY : TEAL,
+          /* A failure names the way out and must be readable; a success is a
+             confirmation and can be quiet. Neither is amber, which the theme
+             forbids as type on a light ground. */
+          color: state === "failed" ? t.catBreakage : t.evidence,
           opacity: state === "idle" ? 0 : 1,
-          transition: "opacity 120ms ease",
+          transition: `opacity ${UI_MS}ms ${UI_EASING}`,
         }}
       >
         {state === "copied"
@@ -260,24 +251,41 @@ function DownloadLink({
   filename: string;
 }) {
   return (
-    <a
-      {...(testId ? { "data-testid": testId } : {})}
-      href={href}
-      download={filename}
-      style={{
-        ...labelText,
-        color: TEXT_SECONDARY,
-        textDecoration: "underline",
-        textUnderlineOffset: 3,
-        whiteSpace: "nowrap",
-      }}
-    >
-      Download the .md
-    </a>
+    /* The same secondary treatment as Copy beside it: the two are alternatives
+       to each other — clipboard or file — and an underlined text link next to
+       a button reads as the lesser of two things rather than as the other one.
+       `asChild` keeps it a real anchor, so `download` still works and the
+       browser still offers it to a right-click. */
+    <Button asChild variant="outline" size="sm">
+      <a
+        {...(testId ? { "data-testid": testId } : {})}
+        href={href}
+        download={filename}
+        style={{ whiteSpace: "nowrap" }}
+      >
+        Download the .md
+      </a>
+    </Button>
   );
 }
 
-/** One step: a numeral, a title, and whatever the step asks of the reader. */
+/**
+ * One step: a numeral, a title, and whatever the step asks of the reader.
+ *
+ * BG-P24 — A `--recess` PANEL, NOT A GLASS CARD.
+ *
+ * The steps were `cardGlass`: a 2.5%-white film over a glass border, which is
+ * a reading-surface treatment and which on an Exhibition ground is very nearly
+ * nothing at all. `--recess` is the token for a surface the page is cut into,
+ * and three panels cut into the page is exactly what three steps are. At
+ * `--r-panel`, because that is the step of the scale a panel takes.
+ *
+ * THE NUMERAL IS MONO AND CIRCULAR. A step number is a count — the theme's own
+ * list of what the data face sets — and `--r-full` is legal on it because a
+ * circle is one of the two things that token is for. It carries the part-list
+ * `--text2` on a `--bg` well rather than a teal tint: the numbers are a spine
+ * for the eye to follow, not three accents competing with the drop target.
+ */
 function Step({
   ordinal,
   title,
@@ -291,7 +299,11 @@ function Step({
     <li
       data-visual-slot="import-step"
       style={{
-        ...cardGlass,
+        backgroundColor: t.recess,
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: t.line,
+        borderRadius: r.panel,
         padding: 16,
         display: "flex",
         alignItems: "flex-start",
@@ -300,26 +312,30 @@ function Step({
     >
       <span
         aria-hidden
+        data-testid={`import-step-${ordinal}`}
         style={{
+          ...dataText,
           flex: "0 0 auto",
           width: 26,
           height: 26,
-          borderRadius: 100,
+          borderRadius: r.full,
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 12,
-          fontWeight: 600,
-          color: TEAL,
-          background: hexToRgba(TEAL, 0.1),
-          border: `1px solid ${hexToRgba(TEAL, 0.28)}`,
+          color: t.text2,
+          backgroundColor: t.bg,
+          borderWidth: 1,
+          borderStyle: "solid",
+          borderColor: t.line,
         }}
       >
         {ordinal}
       </span>
 
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-        <h2 style={{ ...titleText, margin: 0 }}>{title}</h2>
+        {/* The display face, at the card-title size — 22px, which clears the
+            20px floor Bodoni may never render below. */}
+        <h2 style={{ ...cardTitle, color: t.text, margin: 0 }}>{title}</h2>
         {children}
       </div>
     </li>
@@ -327,12 +343,35 @@ function Step({
 }
 
 /**
- * Step three, live.
+ * Step three, live — and the visual anchor of the whole page.
  *
  * A button rather than a styled div: the whole page already answers a drag, so
  * what this element adds is the other way in — clicking to choose a file — and
  * that has to work from a keyboard. The hidden input is the file picker; the
  * button is what a person sees and focuses.
+ *
+ * BG-P24 — IT HAS TO READ AS DROPPABLE BEFORE ANYTHING IS DRAGGED AT IT.
+ *
+ * `critique-affordance` asks what on a screen looks like it will accept an
+ * action. A dashed edge is the one border style that says "something goes
+ * here" rather than "this is a thing" — it is the same grammar the gap marker
+ * spends on a part deliberately left unsolved — so the resting state is a
+ * DASHED `--line` edge over a `--recess` ground. Recess is the token for a
+ * surface the page is cut into, which is what a well you drop something into
+ * is, and it steps the target away from the `--recess` panel around it by
+ * sitting on `--bg` when idle: a well inside a well is not a well.
+ *
+ * THREE STATES, AND THE LAST TWO ARE THE SAME COLOUR ON PURPOSE. Resting is
+ * quiet. HOVER brightens the edge to `--action` and washes the ground with it,
+ * so a pointer discovers the target before it commits. DRAG-OVER is the same
+ * accent at full strength with a 1.5px edge and the copy changing to "Let go
+ * to read it" — the same signal, turned up, rather than a different one, so
+ * the thing a creator learned on hover is the thing they see when it matters.
+ *
+ * The accent rather than `--evidence`: this is where the page wants you to go.
+ * `--lit` would have been the obvious "highlight" choice and is forbidden —
+ * amber is light on this system, never a border that carries state on a light
+ * ground.
  */
 function DropTarget({
   isDragging,
@@ -342,6 +381,10 @@ function DropTarget({
   onFile: (file: File) => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [hovered, setHovered] = useState(false);
+
+  /** Drag-over outranks hover: a file in hand is the stronger fact. */
+  const armed = isDragging || hovered;
 
   return (
     <>
@@ -349,26 +392,39 @@ function DropTarget({
         type="button"
         data-testid="import-drop"
         data-visual-slot="import-drop"
+        data-drop-state={isDragging ? "over" : hovered ? "hover" : "idle"}
         onClick={() => inputRef.current?.click()}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         style={{
           fontFamily: "inherit",
           width: "100%",
           padding: "18px 14px",
-          borderRadius: 12,
-          border: `1px dashed ${isDragging ? hexToRgba(TEAL, 0.55) : HAIRLINE}`,
-          background: isDragging ? hexToRgba(TEAL, 0.07) : "rgba(255,255,255,0.02)",
+          borderRadius: r.control,
+          /* Longhands: a `border` shorthand carrying a `var()` is dropped whole
+             by jsdom, taking the dashes with it. */
+          borderWidth: isDragging ? 1.5 : 1,
+          borderStyle: "dashed",
+          borderColor: armed ? t.action : t.line,
+          backgroundColor: isDragging
+            ? tokenAlpha("action", 0.12)
+            : hovered
+              ? tokenAlpha("action", 0.06)
+              : t.bg,
           display: "flex",
           flexDirection: "column",
           gap: 6,
           textAlign: "center",
           cursor: "pointer",
-          transition: "background 120ms ease, border-color 120ms ease",
+          transition: `background-color ${UI_MS}ms ${UI_EASING}, border-color ${UI_MS}ms ${UI_EASING}`,
         }}
       >
-        <span style={{ ...bodyText, color: isDragging ? TEAL : TEXT_SECONDARY }}>
+        <span style={{ ...bodyText, color: armed ? t.action : t.text }}>
           {isDragging ? "Let go to read it" : "Drag your Build File anywhere on this page"}
         </span>
-        <span style={{ ...labelText, color: TEXT_MUTED }}>
+        {/* The formats and the cap in mono, because they are the file's facts
+            rather than an instruction. */}
+        <span style={{ ...dataText, color: t.text2 }}>
           {`or click to choose one — ${BUILD_FILE_EXTENSIONS.join(", ")}, up to 2 MB`}
         </span>
       </button>
@@ -401,52 +457,47 @@ export default function ImportPage() {
   const taking = drop.state.name !== "idle";
 
   return (
-    /* ── BG-P15 — the page's own frame is gone.
+    /* ── BG-P15 put this page inside the application frame. BG-P24 finishes
+       the job that note deferred.
 
        `minHeight: 100vh` went because the frame is 100dvh with its own scroll
        region, and a 100vh floor inside that scroller is a second screen of
-       height. `fontFamily: FONT_STACK` went because `.fs-root` sets that exact
-       Figtree stack already.
+       height. `fontFamily` went because `.fs-root` sets the Figtree stack
+       already. The inner container's `maxWidth: 720` + `margin: "0 auto"` went
+       as the doubled measure — the wide frame already caps and centres — and
+       its padding is one `SPACE.md` on this div, because `.fs-page-body` has
+       no horizontal inset of its own and the frame's own 24px collapses to 0
+       at phone width.
 
-       The inner container's `maxWidth: 720` + `margin: "0 auto"` went as the
-       doubled measure — the wide frame already caps and centres — and its
-       `padding: "28px 20px 64px"` is replaced by one `SPACE.md` on this div,
-       which is the padding a wide page carries because `.fs-page-body` has no
-       horizontal inset of its own and the frame's own 24px collapses to 0 at
-       phone width.
+       THE GROUND AND THE INK STAY EXPLICIT, AND THEY ARE TOKENS NOW. BG-P15
+       left them as `VOID`/`TEXT_PRIMARY` with a note saying this page and the
+       whole BuildFileIntake subtree under it were still painted from the
+       legacy dark module, so a light ground would make the body of the page
+       disappear. That subtree is repainted as of this prompt, and BG-P21
+       repointed both constants at `--bg` and `--text` in any case. What
+       remains is the reason the ground had to be stated at all, which never
+       had anything to do with the legacy module: this page paints an inset
+       drag ring across its WHOLE surface, so it has to BE a surface.
 
-       `background: VOID` AND `color: TEXT_PRIMARY` STAY, as a pair, and this
-       is the same answer /b2/:slug got rather than the one /gallery got. This
-       page and everything under it — the steps, the drop target, the whole
-       BuildFileIntake subtree in components/compose — are still painted from
-       the legacy dark token module: white-alpha text with no opaque surface of
-       its own under it (`cardGlass` is rgba(255,255,255,.025), a translucent
-       film). Put that on an Exhibition-light ground and the page's entire body
-       disappears; it was rendered and looked at, and it is not shippable. So
-       the ground stays dark until the repaint, and the explicit text colour
-       stays with it, because inheriting `--text` would put Exhibition's dark
-       ink on that dark ground.
-
-       VOID rather than dropping to the application's own centre ground: this
-       page paints an inset drag ring across its whole surface, so it needs to
-       BE a surface. See the handoff note — the repaint that retires the legacy
-       module here retires both of these lines with it.
-
-       `isolation: isolate` STAYS, and on this page it earns its place twice
-       over: the drag ring is an inset shadow on this element, and the page is
-       a drop target for the whole of itself. So does the boxShadow — it is the
-       drag affordance, not frame decoration. ── */
+       `isolation: isolate` STAYS and earns its place twice over: the drag ring
+       is an inset shadow on this element, and the page is a drop target for
+       the whole of itself. So does the boxShadow — it is the drag affordance,
+       not frame decoration, and it is `--action` now, the same accent the drop
+       target arms with, so the page and the well agree about what is
+       happening. ── */
     <div
       data-visual-slot="import-frame"
       style={{
         padding: SPACE.md,
-        background: VOID,
-        color: TEXT_PRIMARY,
+        backgroundColor: t.bg,
+        color: t.text,
         isolation: "isolate",
         // Visual only: an inset ring while a file is over the page, so the
         // whole surface reads as the target it is. No structural property here.
-        boxShadow: drop.isDragging ? `inset 0 0 0 2px ${hexToRgba(TEAL, 0.4)}` : "none",
-        transition: "box-shadow 120ms ease",
+        boxShadow: drop.isDragging
+          ? `inset 0 0 0 2px ${tokenAlpha("action", 0.45)}`
+          : "none",
+        transition: `box-shadow ${UI_MS}ms ${UI_EASING}`,
       }}
     >
       <Helmet>
@@ -464,45 +515,36 @@ export default function ImportPage() {
           gap: 20,
         }}
       >
-        {/* BG-P15. The "← buildgallery" back link is deleted — the left rail
+        {/* BG-P15 deleted the "← buildgallery" back link — the left rail
             carries the wordmark and the nav, and on a phone the bottom bar
-            does. The <div> that held it goes with it, and the header is now
-            the <h1> and its paragraph, which is all it ever was underneath.
+            does — and then had to hand-roll the heading that was left,
+            because PageHeader paints from the two-theme semantic tokens while
+            this page and the whole BuildFileIntake subtree under it still
+            painted from the legacy dark module. There was no ground that
+            served both.
 
-            THIS IS NOT `PageHeader`, AND IT WAS MEANT TO BE. BG-P15 asked for
-            an "IMPORT" eyebrow over "Post a build without writing it up", and
-            it was built that way, rendered, and taken back out. PageHeader
-            paints from the two-theme semantic tokens; this page and the whole
-            BuildFileIntake subtree under it still paint from the legacy dark
-            module. There is no ground that serves both: on `t.bg` the header
-            is perfect and every step body vanishes into the light (verified —
-            the steps sit on `cardGlass`, a 2.5%-white film, not an opaque
-            surface), and on the dark ground the bodies are right and the
-            header's `--text` is Exhibition ink on a dark room.
+            BG-P24 REPAINTS THAT SUBTREE, so the header PageHeader was written
+            for arrives with it. The eyebrow is what kind of page this is, the
+            title is what the page is, and the description is the promise —
+            capped at the reading measure by the component rather than by a
+            `measure` spread written here.
 
-            So the page keeps the header it can paint, and PageHeader arrives
-            here the day this page is repainted — which is the same day
-            `VOID` and `TEXT_PRIMARY` leave the wrapper above. That repaint
-            reaches into components/compose, which BG-P16 owns, so it is not
-            this prompt's to do. /gallery took PageHeader because what it puts
-            on a light ground is already repainted: PageHeader and GalleryCard.
-
-            The header still disappears once a file is in hand — `taking` is
-            true from the moment a Build File is being read, reviewed or
-            refused, and the intake gets the page to itself. That behaviour is
-            unchanged; only the back link above it is gone. */}
+            It still disappears once a file is in hand: `taking` is true from
+            the moment a Build File is being read, reviewed or refused, and the
+            intake gets the page to itself. */}
         {taking ? null : (
-          <header style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <h1 style={{ ...pageHeadingText, margin: 0 }}>
-              Post a build without writing it up.
-            </h1>
-            <p style={{ ...bodyText, ...measure, margin: 0, color: TEXT_SECONDARY }}>
-              The chat where you built the thing already knows what you did.
-              Give it the document below and it writes your build up for you —
-              the prompts you sent, the settings you landed on, what worked and
-              what broke. You bring the file back here.
-            </p>
-          </header>
+          <PageHeader
+            eyebrow="Import"
+            title="Post a build without writing it up."
+            description={
+              <>
+                The chat where you built the thing already knows what you did.
+                Give it the document below and it writes your build up for you —
+                the prompts you sent, the settings you landed on, what worked and
+                what broke. You bring the file back here.
+              </>
+            }
+          />
         )}
 
         {taking ? (
@@ -527,7 +569,7 @@ export default function ImportPage() {
             }}
           >
             <Step ordinal={1} title="Copy the Extractor">
-              <p style={{ ...bodyText, ...measure, margin: 0, color: TEXT_SECONDARY }}>
+              <p style={{ ...bodyText, ...measure, margin: 0, color: t.text2 }}>
                 Paste it into the chat where you built your thing — ChatGPT,
                 Claude, Lovable, Cursor, any of them.
               </p>
@@ -551,7 +593,13 @@ export default function ImportPage() {
                 />
               </div>
               {extractor.failed ? (
-                <p style={{ ...bodyText, ...measure, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
+                /* A refusal names the way out. Breakage red as TEXT is legal
+                   on both grounds — the theme measures every category hue at
+                   ≥4.83:1 on Exhibition and ≥5.75:1 on Dusk. */
+                <p
+                  role="status"
+                  style={{ ...dataText, ...measure, margin: 0, color: t.catBreakage }}
+                >
                   The document could not be loaded. The download link still serves
                   it, and Copy will try again.
                 </p>
@@ -559,7 +607,7 @@ export default function ImportPage() {
             </Step>
 
             <Step ordinal={2} title="Save what it gives you">
-              <p style={{ ...bodyText, ...measure, margin: 0, color: TEXT_SECONDARY }}>
+              <p style={{ ...bodyText, ...measure, margin: 0, color: t.text2 }}>
                 The AI writes your build up as one file. Save it as a .md or .json
                 file.
               </p>
@@ -570,7 +618,11 @@ export default function ImportPage() {
                 isDragging={drop.isDragging}
                 onFile={(file) => void drop.acceptFile(file)}
               />
-              <p style={{ ...bodyText, ...measure, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
+              {/* The sentence that does the most work on this page: NOTHING
+                  AUTO-PUBLISHES, and the creator stays between the file and
+                  the record. It is quiet because it is a reassurance, not an
+                  instruction. */}
+              <p style={{ ...bodyText, ...measure, margin: 0, color: t.text2 }}>
                 You see what it found before anything is saved, and nothing is
                 published until you say so.
               </p>
@@ -583,7 +635,14 @@ export default function ImportPage() {
           <section
             data-visual-slot="import-compiler"
             style={{
-              ...cardGlass,
+              /* The same `--recess` panel the three steps take, because the
+                 fold is a fourth thing of the same kind — an answer to a rarer
+                 question, not a different sort of object. */
+              backgroundColor: t.recess,
+              borderWidth: 1,
+              borderStyle: "solid",
+              borderColor: t.line,
+              borderRadius: r.panel,
               padding: 16,
               display: "flex",
               flexDirection: "column",
@@ -595,10 +654,16 @@ export default function ImportPage() {
               onClick={() => setCompilerOpen((open) => !open)}
               aria-expanded={compilerOpen}
               style={{
-                ...titleText,
+                /* The body face at label weight rather than the display face:
+                   this is a control that opens a fold, and Bodoni on a button
+                   reads as a heading that happens to be clickable. */
+                ...bodyText,
+                fontWeight: 500,
                 fontFamily: "inherit",
+                color: t.text,
                 background: "transparent",
-                border: "none",
+                borderWidth: 0,
+                borderStyle: "none",
                 padding: 0,
                 textAlign: "left",
                 cursor: "pointer",
@@ -607,7 +672,7 @@ export default function ImportPage() {
                 gap: 8,
               }}
             >
-              <span aria-hidden style={{ color: TEXT_MUTED, fontSize: 12 }}>
+              <span aria-hidden style={{ ...dataText, color: t.text2 }}>
                 {compilerOpen ? "▾" : "▸"}
               </span>
               Built across more than one AI?
@@ -615,7 +680,7 @@ export default function ImportPage() {
 
             {compilerOpen ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <p style={{ ...bodyText, ...measure, margin: 0, color: TEXT_SECONDARY }}>
+                <p style={{ ...bodyText, ...measure, margin: 0, color: t.text2 }}>
                   Paste the Compiler plus every Build File into one chat; it merges
                   them into one.
                 </p>
@@ -635,7 +700,10 @@ export default function ImportPage() {
                   <DownloadLink href={COMPILER_URL} filename={COMPILER_FILENAME} />
                 </div>
                 {compiler.failed ? (
-                  <p style={{ ...bodyText, ...measure, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
+                  <p
+                    role="status"
+                    style={{ ...dataText, ...measure, margin: 0, color: t.catBreakage }}
+                  >
                     The document could not be loaded. The download link still
                     serves it, and Copy will try again.
                   </p>
@@ -644,11 +712,14 @@ export default function ImportPage() {
             ) : null}
           </section>
 
-          <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED }}>
+          <p style={{ ...bodyText, margin: 0, color: t.text2 }}>
             Would rather do it by hand?{" "}
             <Link
               to="/compose/new"
-              style={{ color: TEAL, textDecoration: "underline", textUnderlineOffset: 3 }}
+              /* `--action`, like every other link out of this page: the accent
+                 is where the site says "go here", and `--evidence` means
+                 something else entirely — that a thing was reproduced. */
+              style={{ color: t.action, textDecoration: "underline", textUnderlineOffset: 3 }}
             >
               Start a build from a transcript or an empty draft
             </Link>

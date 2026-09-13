@@ -235,6 +235,95 @@ describe("/import", () => {
     expect(target).toBeEnabled();
   });
 
+  // --- BG-P24: the repaint ---------------------------------------------------
+  //
+  // jsdom stores nothing for a `var()` colour (src/test/tokenStyle.ts), and
+  // this page renders through the real DOM because the drop behaviour under
+  // test needs events. So these assertions read the properties jsdom DOES
+  // keep — border style, radius, the state attribute the target publishes —
+  // and e2e/tier3/import-repaint.spec.ts reads the resolved colour in both
+  // themes, which is the half only a browser can answer.
+
+  it("cuts each step into the page as a panel with a mono numeral", () => {
+    renderPage();
+
+    const steps = document.querySelectorAll('[data-visual-slot="import-step"]');
+    expect(steps).toHaveLength(3);
+
+    for (const step of Array.from(steps)) {
+      expect(step.getAttribute("style") ?? "").toContain("border-radius: var(--r-panel)");
+    }
+
+    // The numerals are a spine for the eye to follow: circular, and mono
+    // because a step number is a count.
+    for (const ordinal of [1, 2, 3]) {
+      const numeral = screen.getByTestId(`import-step-${ordinal}`);
+      expect(numeral).toHaveTextContent(String(ordinal));
+      const style = numeral.getAttribute("style") ?? "";
+      expect(style).toContain("DM Mono");
+      expect(style).toContain("border-radius: var(--r-full)");
+    }
+  });
+
+  /**
+   * `critique-affordance`: the target has to read as droppable BEFORE anything
+   * is dragged at it.
+   *
+   * A dashed edge is the one border style that says "something goes here"
+   * rather than "this is a thing", and it is present at rest. Hover and
+   * drag-over are then the SAME signal turned up rather than two different
+   * ones, so what a creator learns from the pointer is what they see when it
+   * matters.
+   */
+  it("reads as droppable at rest, and arms on hover before a file is over it", () => {
+    renderPage();
+
+    const target = screen.getByTestId("import-drop");
+    expect(target.dataset.dropState).toBe("idle");
+    expect(target.getAttribute("style") ?? "").toContain("border-style: dashed");
+
+    fireEvent.mouseEnter(target);
+    expect(target.dataset.dropState).toBe("hover");
+    // Still dashed: hover brightens the edge, it does not become a box.
+    expect(target.getAttribute("style") ?? "").toContain("border-style: dashed");
+
+    fireEvent.mouseLeave(target);
+    expect(target.dataset.dropState).toBe("idle");
+  });
+
+  it("turns the same signal up when a file is actually over the page", () => {
+    renderPage();
+
+    const target = screen.getByTestId("import-drop");
+    fireEvent.dragEnter(window, {
+      dataTransfer: { types: ["Files"], items: [], files: [] },
+    });
+    fireEvent.dragOver(window, {
+      dataTransfer: { types: ["Files"], items: [], files: [] },
+    });
+
+    expect(target.dataset.dropState).toBe("over");
+    expect(target).toHaveTextContent("Let go to read it");
+    // Heavier, not different: the edge thickens and stays dashed.
+    expect(target.getAttribute("style") ?? "").toContain("border-style: dashed");
+    expect(target.getAttribute("style") ?? "").toContain("border-width: 1.5px");
+  });
+
+  it("offers copy and download as two controls of the same weight", () => {
+    renderPage();
+
+    const copy = screen.getByTestId("copy-extractor");
+    const download = screen.getByTestId("download-extractor");
+
+    // Both secondary: the page's one primary is the drop target below, and
+    // only one thing on a screen may be the thing the eye goes to first.
+    expect(copy.getAttribute("data-visual-slot")).toBe("btn-secondary");
+    expect(download.getAttribute("data-visual-slot")).toBe("btn-secondary");
+    // The download is still a real anchor, so `download` works and a
+    // right-click still offers it.
+    expect(download.tagName).toBe("A");
+  });
+
   it("reviews a valid extractor file, naming where it came from and what it holds", async () => {
     renderPage();
 

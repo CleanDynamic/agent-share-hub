@@ -33,23 +33,22 @@ import type {
   TranscriptProposal,
 } from "@/lib/build/intake";
 import type { SecretWarning } from "@/lib/build/buildfile";
-import {
-  GAP_RED,
-  HAIRLINE,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  hexToRgba,
-  labelText,
-  pageHeadingText,
-  titleText,
-} from "@/components/build/tokens";
+/* BG-P24 — the colour aliases and the two page-level type roles are gone from
+   this file. What is left are `bodyText` and `labelText`, which carry this
+   route's 13px density rather than a colour: moving those is a reflow of the
+   review rather than a repaint of it, and it is not this prompt's to make. */
+import { bodyText, labelText } from "@/components/build/tokens";
 import { CategoryChip } from "@/components/brand/CategoryChip";
+import { Button } from "@/components/ui/button";
+import { UI_EASING, UI_MS } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
+import {
+  data as dataText,
+  eyebrow as eyebrowText,
+  measure,
+  sectionHead as sectionHeadText,
+} from "@/lib/theme/type";
 import { workspaceCard } from "@/components/shell/WorkspaceBar";
 
 /** Long enough to recognise the item, short enough to stay on one line. */
@@ -130,9 +129,14 @@ function InferredMark({ reason }: { reason: string | null }) {
         borderRadius: r.chip,
         whiteSpace: "nowrap",
         cursor: "help",
-        background: hexToRgba(ORANGE, 0.14),
-        border: `1px solid ${hexToRgba(ORANGE, 0.3)}`,
-        color: ORANGE,
+        /* The accent's own measured pair, opaque, rather than a 14% wash of it
+           — a tint of the accent over an unknown ground is a pairing nobody
+           measured, and on Exhibition it is close to invisible. */
+        backgroundColor: t.action,
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: "transparent",
+        color: t.onAction,
       }}
     >
       Guess
@@ -167,10 +171,12 @@ function KeepToggle({
         padding: "3px 9px",
         borderRadius: r.chip,
         cursor: "pointer",
-        background: kept ? t.evidenceFill : t.recess,
-        border: `1px solid ${kept ? hexToRgba(TEAL, 0.32) : HAIRLINE}`,
-        color: kept ? TEAL : TEXT_MUTED,
-        transition: "background 120ms ease, border-color 120ms ease, color 120ms ease",
+        backgroundColor: kept ? t.evidenceFill : t.recess,
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: kept ? t.evidence : t.line,
+        color: kept ? t.evidence : t.text2,
+        transition: `background-color ${UI_MS}ms ${UI_EASING}, border-color ${UI_MS}ms ${UI_EASING}, color ${UI_MS}ms ${UI_EASING}`,
       }}
     >
       <span aria-hidden style={{ fontSize: 10 }}>{kept ? "✓" : "○"}</span>
@@ -194,7 +200,7 @@ function rowStyle(kept: boolean): CSSProperties {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ ...labelText, textTransform: "uppercase", color: TEXT_SECONDARY }}>
+    <span style={{ ...labelText, textTransform: "uppercase", color: t.text2 }}>
       {children}
     </span>
   );
@@ -219,10 +225,10 @@ function FieldRow({
     <div style={rowStyle(kept)}>
       <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-          <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>{name}</span>
+          <span style={{ ...labelText, fontSize: 11, color: t.text2 }}>{name}</span>
           {field.inferred ? <InferredMark reason={field.inferred_reason} /> : null}
         </div>
-        <span style={{ ...bodyText, color: TEXT_PRIMARY, wordBreak: "break-word" }}>
+        <span style={{ ...bodyText, color: t.text, wordBreak: "break-word" }}>
           {field.value}
         </span>
       </div>
@@ -251,7 +257,7 @@ function EventRow({
           style={{
             ...labelText,
             fontSize: 11,
-            color: TEXT_MUTED,
+            color: t.text2,
             minWidth: 22,
             flexShrink: 0,
             paddingTop: 1,
@@ -260,15 +266,15 @@ function EventRow({
           {event.ordinal}
         </span>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-          <span style={{ ...bodyText, color: TEXT_PRIMARY, wordBreak: "break-word" }}>
+          <span style={{ ...bodyText, color: t.text, wordBreak: "break-word" }}>
             {truncate(event.payload.text ?? "", 140) || "Empty turn"}
           </span>
           {event.payload.response_summary ? (
-            <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED, wordBreak: "break-word" }}>
+            <span style={{ ...bodyText, fontSize: 12, color: t.text2, wordBreak: "break-word" }}>
               ↳ {truncate(event.payload.response_summary, 110)}
             </span>
           ) : null}
-          <span style={{ ...labelText, fontSize: 10, color: TEXT_MUTED }}>
+          <span style={{ ...labelText, fontSize: 10, color: t.text2 }}>
             turn {event.source_ref.index}
           </span>
         </div>
@@ -314,10 +320,11 @@ function EventSection({
 
       <div style={{ ...rowStyle(keptCount > 0), alignItems: "center" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-          <span style={{ ...titleText, fontSize: 14 }}>
+          {/* A count, which the theme sets in the data face. */}
+          <span style={{ ...dataText, color: t.text }}>
             {plural(events.length, ["prompt in sequence", "prompts in sequence"])}
           </span>
-          <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>
+          <span style={{ ...labelText, fontSize: 11, color: t.text2 }}>
             {keptCount === events.length
               ? "All kept"
               : `${keptCount} of ${events.length} kept`}
@@ -337,7 +344,12 @@ function EventSection({
             border: "none",
             padding: 0,
             cursor: "pointer",
-            color: TEAL,
+            /* `--action`, underlined at rest: this is somewhere to go, and
+               `--evidence` means a thing was reproduced rather than "press
+               me". Colour alone is not an affordance. */
+            color: t.action,
+            textDecoration: "underline",
+            textUnderlineOffset: 3,
             flexShrink: 0,
           }}
         >
@@ -395,20 +407,20 @@ function NodeRow({
           <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
             <TypePill typeKey={node.type} />
             {node.inferred ? <InferredMark reason={node.inferred_reason} /> : null}
-            <span style={{ ...labelText, fontSize: 10, color: TEXT_MUTED }}>
+            <span style={{ ...labelText, fontSize: 10, color: t.text2 }}>
               turn {node.source_ref.index}
             </span>
           </div>
-          <span style={{ ...bodyText, color: TEXT_PRIMARY, wordBreak: "break-word" }}>
+          <span style={{ ...bodyText, color: t.text, wordBreak: "break-word" }}>
             {summary ?? `Untitled ${node.type}`}
           </span>
           {detail ? (
-            <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED, wordBreak: "break-word" }}>
+            <span style={{ ...bodyText, fontSize: 12, color: t.text2, wordBreak: "break-word" }}>
               {detail}
             </span>
           ) : null}
           {node.note ? (
-            <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED }}>{node.note}</span>
+            <span style={{ ...bodyText, fontSize: 12, color: t.text2 }}>{node.note}</span>
           ) : null}
         </div>
         <KeepToggle kept={kept} onToggle={onToggle} label={summary ?? node.type} />
@@ -451,7 +463,7 @@ function NodeSection({
 
       {groups.map(([type, group]) => (
         <div key={type} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>
+          <span style={{ ...labelText, fontSize: 11, color: t.text2 }}>
             {plural(group.length, TYPE_NOUNS[type] ?? [type, `${type} items`])}
           </span>
           <ul
@@ -495,8 +507,18 @@ function secretLocation(secret: SecretWarning): string {
  * the file said. Import that silently edits a build is a worse failure than
  * import that shows a creator what is in their own file and lets them decide.
  *
- * Red, at the alpha the intake error panel already uses, because this is the
- * one thing on the review worth stopping to read.
+ * BG-P24 — `--cat-breakage` ON THE EDGE AND ON THE COUNT, NOT UNDER THE PANEL.
+ *
+ * It was a 6% red wash inside a 30%-alpha red border, matching the refusal
+ * panel's old treatment. On the Exhibition ground that is a pink box, and the
+ * two surfaces then say the same thing in the same voice when they mean
+ * different things: the refusal is "this file could not be read" and this is
+ * "read this before you publish". So this keeps a 2px breakage edge over the
+ * `--recess` ground the review stands on, spends the hue on the COUNT — which
+ * is the fact worth stopping at — and leaves the sentence in `--text`.
+ *
+ * The excerpts are DM Mono from the scale rather than a hand-written monospace
+ * stack: a masked key is data, and the theme has one face for that.
  */
 function SecretsBanner({ secrets }: { secrets: SecretWarning[] }) {
   if (secrets.length === 0) return null;
@@ -510,15 +532,20 @@ function SecretsBanner({ secrets }: { secrets: SecretWarning[] }) {
         flexDirection: "column",
         gap: 8,
         padding: "12px 14px",
-        borderRadius: r.control,
-        border: `1px solid ${hexToRgba(GAP_RED, 0.3)}`,
-        background: hexToRgba(GAP_RED, 0.06),
+        backgroundColor: t.recess,
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: t.line,
+        borderRadius: r.panel,
+        borderLeftWidth: 2,
+        borderLeftStyle: "solid",
+        borderLeftColor: t.catBreakage,
       }}
     >
-      <span style={{ ...labelText, textTransform: "uppercase", color: GAP_RED }}>
+      <span style={{ ...eyebrowText, color: t.catBreakage }}>
         {secrets.length === 1 ? "1 possible secret" : `${secrets.length} possible secrets`}
       </span>
-      <p style={{ ...bodyText, margin: 0, color: TEXT_PRIMARY }}>
+      <p style={{ ...bodyText, margin: 0, color: t.text }}>
         Looks like a key or password travelled in this file. Check these before
         you publish — clear them in the fields after import.
       </p>
@@ -544,16 +571,14 @@ function SecretsBanner({ secrets }: { secrets: SecretWarning[] }) {
           >
             <code
               style={{
-                ...bodyText,
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                fontSize: 12,
-                color: TEXT_PRIMARY,
+                ...dataText,
+                color: t.text,
                 wordBreak: "break-all",
               }}
             >
               {secret.excerpt}
             </code>
-            <span style={{ ...labelText, fontSize: 11, color: TEXT_SECONDARY }}>
+            <span style={{ ...dataText, color: t.text2 }}>
               {secretLocation(secret)}
             </span>
           </li>
@@ -640,20 +665,28 @@ export function IntakeProposal({
       style={{ display: "flex", flexDirection: "column", gap: 18, width: "100%" }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <h1 style={{ ...pageHeadingText, margin: 0 }}>Here is what it found</h1>
+        {/* The display face at the section size, which is what this is: the
+            page's one heading once a file is in hand. It was the workspace's
+            22px Figtree, which is a panel title rather than a page's name. */}
+        <h1 style={{ ...sectionHeadText, color: t.text, margin: 0 }}>
+          Here is what it found
+        </h1>
         {sourceLine ? (
           <p
             data-testid="import-source-line"
-            style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}
+            /* Provenance and counts are data — "From Claude, 12 parts and 30
+               steps" is the same role as a model name — so both lines are mono
+               and the prose below them is not. */
+            style={{ ...dataText, margin: 0, color: t.text2 }}
           >
             {sourceLine}
           </p>
         ) : null}
-        <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+        <p style={{ ...dataText, margin: 0, color: t.text2 }}>
           {found.length > 0 ? found.join(" · ") : "Nothing it could split into turns"}
         </p>
-        <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED }}>
-          Anything marked <span style={{ color: ORANGE }}>Guess</span> was inferred
+        <p style={{ ...bodyText, ...measure, margin: 0, color: t.text2 }}>
+          Anything marked <span style={{ color: t.action }}>Guess</span> was inferred
           rather than read — hover it for the reason.{" "}
           {arrivalNote ??
             "Everything you keep lands in the tray, unplaced, for you to arrange."}
@@ -671,9 +704,17 @@ export function IntakeProposal({
             display: "flex",
             flexDirection: "column",
             gap: 6,
-            borderRadius: r.control,
-            border: `1px solid ${hexToRgba(ORANGE, 0.22)}`,
-            background: hexToRgba(ORANGE, 0.05),
+            /* The state on a 2px edge over `--recess`, like every other
+               noticing surface in this flow. A 5% accent wash behind a list is
+               the thing that turns a note into an alert. */
+            backgroundColor: t.recess,
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: t.line,
+            borderRadius: r.panel,
+            borderLeftWidth: 2,
+            borderLeftStyle: "solid",
+            borderLeftColor: t.action,
           }}
         >
           {warnings.map((warning, index) => (
@@ -682,7 +723,7 @@ export function IntakeProposal({
                would collide. */
             <li
               key={`${warning.code}-${index}`}
-              style={{ ...bodyText, fontSize: 12, color: TEXT_SECONDARY }}
+              style={{ ...bodyText, margin: 0, color: t.text2 }}
             >
               {warning.message}
             </li>
@@ -710,7 +751,7 @@ export function IntakeProposal({
             />
           ) : null}
           {!selection.title ? (
-            <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>
+            <span style={{ ...labelText, fontSize: 11, color: t.text2 }}>
               Without a title the build stays called “Untitled build” until you
               name it.
             </span>
@@ -723,14 +764,20 @@ export function IntakeProposal({
 
       {error ? (
         <p
+          role="alert"
           style={{
             ...bodyText,
             margin: 0,
             padding: "10px 12px",
-            borderRadius: r.control,
-            border: `1px solid ${hexToRgba(GAP_RED, 0.3)}`,
-            background: hexToRgba(GAP_RED, 0.06),
-            color: TEXT_PRIMARY,
+            backgroundColor: t.recess,
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: t.line,
+            borderRadius: r.panel,
+            borderLeftWidth: 2,
+            borderLeftStyle: "solid",
+            borderLeftColor: t.catBreakage,
+            color: t.text,
           }}
         >
           {error}
@@ -744,38 +791,31 @@ export function IntakeProposal({
           gap: 14,
           flexWrap: "wrap",
           paddingTop: 4,
-          borderTop: `1px solid ${HAIRLINE}`,
+          borderTopWidth: 1,
+          borderTopStyle: "solid",
+          borderTopColor: t.line,
         }}
       >
-        {/* VISUAL SLOT — the primary button surface is supplied externally.
-            Structure only here: pill geometry, disabled state, no surface. */}
-        <span data-visual-slot="btn-primary" style={{ display: "inline-flex", marginTop: 14 }}>
-          <button
-            type="button"
-            {...(confirmTestId ? { "data-testid": confirmTestId } : {})}
-            onClick={onConfirm}
-            disabled={isWriting}
-            style={{
-              fontFamily: "inherit",
-              fontSize: 12,
-              fontWeight: 500,
-              letterSpacing: "0.04em",
-              height: 34,
-              padding: "0 18px",
-              borderRadius: r.chip,
-              background: t.recess,
-              border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
-              color: isWriting ? TEXT_MUTED : TEAL,
-              cursor: isWriting ? "wait" : "pointer",
-            }}
-          >
-            {isWriting
-              ? "Adding to the draft…"
-              : keptTotal === 0
-                ? "Continue with nothing kept"
-                : `Add ${keptTotal} to the draft`}
-          </button>
-        </span>
+        {/* THE REVIEW'S ONE PRIMARY ACTION (BG-P24). It was a `--recess`
+            button with a 32%-alpha teal outline and a teal label — a
+            SECONDARY treatment on the one control the whole screen exists to
+            reach. `--evidence` is also the wrong hue for it: evidence means
+            "this was reproduced", and this button means "go". The kit's
+            primary Button says both things correctly and carries its own
+            slot, so the wrapper span that used to mark it is gone. */}
+        <Button
+          type="button"
+          {...(confirmTestId ? { "data-testid": confirmTestId } : {})}
+          onClick={onConfirm}
+          disabled={isWriting}
+          style={{ marginTop: 14, cursor: isWriting ? "wait" : undefined }}
+        >
+          {isWriting
+            ? "Adding to the draft…"
+            : keptTotal === 0
+              ? "Continue with nothing kept"
+              : `Add ${keptTotal} to the draft`}
+        </Button>
 
         <button
           type="button"
@@ -786,10 +826,11 @@ export function IntakeProposal({
             fontFamily: "inherit",
             marginTop: 14,
             background: "transparent",
-            border: "none",
+            borderWidth: 0,
+            borderStyle: "none",
             padding: 0,
             cursor: isWriting ? "wait" : "pointer",
-            color: TEXT_SECONDARY,
+            color: t.text2,
             textDecoration: "underline",
             textUnderlineOffset: 3,
           }}

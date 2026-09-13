@@ -29,18 +29,14 @@ import {
   plainLanguageRefusal,
   type BuildFileDropState,
 } from "@/components/compose/useBuildFileDrop";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import {
-  GAP_RED,
-  HAIRLINE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  hexToRgba,
-  labelText,
-  pageHeadingText,
-} from "@/components/build/tokens";
+  body as bodyText,
+  cardTitle,
+  eyebrow as eyebrowText,
+  label as labelText,
+} from "@/lib/theme/type";
 
 /**
  * What the router carries from a drop to the workspace.
@@ -82,6 +78,19 @@ function messageOf(cause: unknown): string {
  * A creator holding a file this could not read has one useful next act: go back
  * to the chat and ask again. So the panel says what is wrong in a sentence, and
  * the shortcut is to the Extractor rather than to a support page.
+ *
+ * BG-P24 — BREAKAGE ON THE EDGE, NOT UNDER THE WHOLE PANEL.
+ *
+ * It was a 6% red wash inside a 30%-alpha red border, which on the Exhibition
+ * ground is a pink box — and a pink box says "you did something wrong", which
+ * is the one thing this panel must not say. The file is wrong; the person is
+ * not. So the state is carried by a 2px `--cat-breakage` left edge over the
+ * `--recess` ground the rest of this flow stands on, the headline is `--text`
+ * at the card-title size, and the red is spent on the eyebrow that names the
+ * file — the smallest mark that still says which of the three states this is.
+ *
+ * The two ways out are `--action` links, both of them underlined at rest. The
+ * Extractor is named first because it is the one that leads somewhere new.
  */
 function RefusalPanel({
   fileName,
@@ -101,28 +110,30 @@ function RefusalPanel({
     <div
       data-testid="import-error"
       data-visual-slot="import-refusal"
+      role="alert"
       style={{
         display: "flex",
         flexDirection: "column",
         gap: 12,
         padding: "16px 18px",
-        borderRadius: 12,
-        border: `1px solid ${hexToRgba(GAP_RED, 0.3)}`,
-        background: hexToRgba(GAP_RED, 0.06),
+        backgroundColor: t.recess,
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: t.line,
+        borderRadius: r.panel,
+        borderLeftWidth: 2,
+        borderLeftStyle: "solid",
+        borderLeftColor: t.catBreakage,
       }}
     >
       {fileName ? (
-        <span style={{ ...labelText, textTransform: "uppercase", color: GAP_RED }}>
-          {fileName}
-        </span>
+        <span style={{ ...eyebrowText, color: t.catBreakage }}>{fileName}</span>
       ) : null}
 
-      <p style={{ ...pageHeadingText, margin: 0, fontSize: 18, color: TEXT_PRIMARY }}>
-        {headline}
-      </p>
+      <p style={{ ...cardTitle, margin: 0, color: t.text }}>{headline}</p>
 
       {detail ? (
-        <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>{detail}</p>
+        <p style={{ ...bodyText, margin: 0, color: t.text2 }}>{detail}</p>
       ) : null}
 
       <div
@@ -132,7 +143,9 @@ function RefusalPanel({
           gap: 14,
           flexWrap: "wrap",
           paddingTop: 4,
-          borderTop: `1px solid ${HAIRLINE}`,
+          borderTopWidth: 1,
+          borderTopStyle: "solid",
+          borderTopColor: t.line,
         }}
       >
         {onCopyExtractor ? (
@@ -145,10 +158,11 @@ function RefusalPanel({
               fontFamily: "inherit",
               marginTop: 12,
               background: "transparent",
-              border: "none",
+              borderWidth: 0,
+              borderStyle: "none",
               padding: 0,
               cursor: "pointer",
-              color: TEAL,
+              color: t.action,
               textDecoration: "underline",
               textUnderlineOffset: 3,
             }}
@@ -162,7 +176,7 @@ function RefusalPanel({
             style={{
               ...labelText,
               marginTop: 12,
-              color: TEAL,
+              color: t.action,
               textDecoration: "underline",
               textUnderlineOffset: 3,
             }}
@@ -180,10 +194,14 @@ function RefusalPanel({
             fontFamily: "inherit",
             marginTop: 12,
             background: "transparent",
-            border: "none",
+            borderWidth: 0,
+            borderStyle: "none",
             padding: 0,
             cursor: "pointer",
-            color: TEXT_SECONDARY,
+            /* The quieter of the two ways out: trying another file is what a
+               creator does anyway, and it needs a target rather than a
+               summons. */
+            color: t.text2,
             textDecoration: "underline",
             textUnderlineOffset: 3,
           }}
