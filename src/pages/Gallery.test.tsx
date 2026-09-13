@@ -10,7 +10,7 @@
 
 import { HelmetProvider } from "react-helmet-async";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -329,7 +329,7 @@ describe("the gallery page", () => {
     // ONE request, and it was the builds query. The facets are the options,
     // not the results, so they are not refetched when a filter changes.
     expect(getGalleryFacets).toHaveBeenCalledTimes(1);
-    await screen.findByText(/Nothing matches those filters yet/i);
+    await screen.findByTestId("gallery-empty-filtered");
   });
 
   it("narrows and then widens again, and both filters combine", async () => {
@@ -687,13 +687,80 @@ describe("the gallery page", () => {
     expect(await screen.findByText(/could not be loaded/i)).toBeInTheDocument();
   });
 
-  it("invites a first build when there is nothing and nothing is filtered", async () => {
-    listGallery.mockResolvedValue({ builds: [], total: 0 });
-    renderGallery();
-    expect(await screen.findByText(/Nothing here yet/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Write one up/i })).toHaveAttribute(
-      "href",
-      "/compose/new"
-    );
+  // BG-P19 ACCEPTANCE 5 — all four states
+  describe("its four states", () => {
+    it("says the gallery is empty, and offers the one thing that fills it", async () => {
+      listGallery.mockResolvedValue({ builds: [], total: 0 });
+      renderGallery();
+
+      const empty = await screen.findByTestId("gallery-empty");
+      expect(empty).toHaveTextContent("Nothing in the gallery yet");
+      // SECONDARY, not primary: the frame's compose control is already
+      // spending this view's one primary action.
+      expect(screen.getByRole("link", { name: "Write one up" })).toHaveAttribute(
+        "href",
+        "/compose/new"
+      );
+      // Not the same sentence as the filtered case, which is the whole point
+      // of having two: "nothing exists" and "nothing matches" are different
+      // problems with different fixes.
+      expect(screen.queryByTestId("gallery-empty-filtered")).toBeNull();
+    });
+
+    it("says a filter is the reason, and clears it", async () => {
+      renderGallery();
+      await screen.findByText("Inbox triage agent");
+
+      listGallery.mockResolvedValue({ builds: [], total: 0 });
+      fireEvent.click(screen.getByTestId("facet-made-for-lawyer"));
+
+      const empty = await screen.findByTestId("gallery-empty-filtered");
+      expect(empty).toHaveTextContent("No builds match — clear a filter");
+
+      listGallery.mockResolvedValue({ builds: [build()], total: 1 });
+      fireEvent.click(within(empty).getByRole("button", { name: "Clear all" }));
+      await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(3));
+      expect(listGallery.mock.calls[2][0]).toMatchObject({ madeFor: [] });
+    });
+
+    it("holds the grid's shape while it loads, at the card's own proportions", async () => {
+      let release: (value: { builds: unknown[]; total: number }) => void = () => {};
+      listGallery.mockImplementation(
+        () => new Promise((resolve) => { release = resolve; })
+      );
+
+      renderGallery();
+
+      const loading = await screen.findByTestId("gallery-loading");
+      // The real skeleton in the real grid container — not a spinner and not a
+      // line of text, so the swap when the data lands does not move the page.
+      expect(loading).toHaveClass("fs-grid");
+      expect(loading).toHaveAttribute("aria-hidden", "true");
+      expect(
+        loading.querySelectorAll('[data-visual-slot="gallery-card-skeleton"]')
+      ).toHaveLength(6);
+
+      release({ builds: [build()], total: 1 });
+      await screen.findByText("Inbox triage agent");
+      expect(screen.queryByTestId("gallery-loading")).toBeNull();
+    });
+
+    it("repeats what the data layer said, and retries without a reload", async () => {
+      listGallery.mockRejectedValue(new Error("column does not exist"));
+      renderGallery();
+
+      const failed = await screen.findByTestId("gallery-error");
+      expect(failed).toHaveTextContent("The gallery could not be loaded");
+      // The machine's own words, verbatim: this application's one maintainer
+      // is not a developer, and that sentence is most of the state's value.
+      expect(failed).toHaveTextContent("column does not exist");
+
+      listGallery.mockResolvedValue({ builds: [build()], total: 1 });
+      fireEvent.click(within(failed).getByRole("button", { name: "Try again" }));
+      // The query is re-asked; the page is not reloaded and the filters are
+      // not lost.
+      await screen.findByText("Inbox triage agent");
+      expect(getGalleryFacets).toHaveBeenCalledTimes(1);
+    });
   });
 });

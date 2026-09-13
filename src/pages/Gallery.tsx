@@ -34,6 +34,30 @@
 // more than Explore does, because a gallery of builds already answers the
 // question Explore asks.
 //
+// ── BG-P19 — THE REPAINT, AND THE FOUR DECISIONS IT RESTS ON ────────────────
+//
+// 1. THE FILTERS ARE ON THE GROUND, NOT IN A PANEL. They were a glass card
+//    with a border and a radius directly under the page's <h1>: the heaviest
+//    object on a page whose entry point has to be the work. The band is now
+//    mono labels and outline chips with one hairline under it. FacetRail.tsx
+//    owns that, and the collapse below 1024.
+//
+// 2. THE GRID IS UNIFORM ON PURPOSE. See the note on GalleryGrid below. It is
+//    the decision most likely to be "fixed" by a later session, so it is
+//    written where the grid is rather than only in a commit message.
+//
+// 3. THE ORDER IS STATED RATHER THAN OFFERED. There is no sort control on this
+//    page and this prompt does not add one: the ordering lives in listGallery's
+//    ORDER BY, and a control would mean a new option on the query, which the
+//    first hard constraint on this page forbids. What a reader gets instead is
+//    the ordering said out loud above the grid — the information a sort control
+//    conveys, minus a control that could not change anything.
+//
+// 4. STALENESS IS THE CARD'S, ONCE. `isStale` already dims the plaque's lamp
+//    and drops its text to --text2 inside GalleryCard. A second treatment at
+//    the grid level — a dimmed card, a badge, a filter — would say the same
+//    thing twice, and at grid scale would read as a fault rather than an age.
+//
 // Still lazy-loaded, and it still adds no navigation entry anywhere: reachable
 // directly and from the publish confirmation.
 
@@ -53,36 +77,38 @@ import {
   type GalleryPage,
   type MissingItem,
 } from "@/lib/build";
-import { GalleryCard } from "@/components/gallery/GalleryCard";
+import { GalleryCard, GalleryCardSkeleton } from "@/components/gallery/GalleryCard";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import {
   FacetRail,
   type FacetGroup,
   type SelectedFacet,
 } from "@/components/gallery/FacetRail";
-import {
-  HAIRLINE,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  labelText,
-  panelGlass,
-} from "@/components/build/tokens";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { prefersReducedMotion } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 /* `data` imported under a name, because this file also binds `data` off a
    query result and the scale module's own note says to rename rather than
    shadow. */
-import { data as dataText } from "@/lib/theme/type";
+import { body, cardTitle, data as dataText, measure, tabular } from "@/lib/theme/type";
 
 /** Facets change far more slowly than the builds they describe. */
 const FACETS_STALE_MS = 5 * 60 * 1000;
+
+/**
+ * How many card shapes the loading state puts up.
+ *
+ * Six, not GALLERY_PAGE_SIZE. A skeleton's job is to hold the shape of the
+ * first screen so the swap does not move the page, and six is two rows of
+ * three at the widths where three columns fit. Twenty-four would be eighteen
+ * placeholder cards laid out below the fold for the few hundred milliseconds
+ * before the real ones replace them.
+ */
+const LOADING_CARDS = 6;
 
 export default function Gallery() {
   const { user } = useAuth();
@@ -335,28 +361,28 @@ export default function Gallery() {
           description="Builds written down completely enough to follow, ordered by how many people other than their creator have run them and said what happened."
         />
 
-      {/* ── BG-P15 — PageHeader sits ABOVE this column, not inside it, and that
-          is the last of the doubled spacings.
+      <FacetRail groups={groups} selected={selected} onClearAll={clearAll} />
 
-          PageHeader already declares the space under itself: `marginBottom:
-          SPACE.lg`, 40px. Inside a flex column with `gap: 20` that 40 became
-          60 between the header and the filters, while every other pair on the
-          page kept 20 — a gulf under the header and nowhere else, which read
-          as the filters having come loose from it.
+      {/* ── BG-P15 — PageHeader sits ABOVE this column, not inside it, and
+          BG-P19 lifted the facet rail out of it too.
 
-          Lifting the header out fixes it without touching the page's own
-          rhythm: the facets, the results and the pagination keep the exact
-          20px gap they always had, and the header keeps the 40 it brought.
-          It is also how /dev/wide composes a wide page — header, then the
-          grid, as siblings. ── */}
+          PageHeader declares the space under itself (`marginBottom: SPACE.lg`),
+          and the rail now declares the space under ITSELF: SPACE.md, then the
+          hairline. So the column below holds only what the rail introduces, at
+          one gap, and the boundary sits in the middle of a 24/24 pair rather
+          than hard against the first card.
+
+          `gap: 20` is gone with it. Twenty is not on the spacing scale, and the
+          three things it separated — the count, the grid and the pagination —
+          are sibling blocks inside one surface, which is what `md` is for. ── */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: 20,
+          gap: SPACE.md,
+          paddingTop: SPACE.md,
         }}
       >
-        <FacetRail groups={groups} selected={selected} onClearAll={clearAll} />
 
         <Results
           builds={rows}
@@ -366,6 +392,8 @@ export default function Gallery() {
           error={(builds.error as Error | null) ?? null}
           filtered={filtered}
           viewerId={user?.id ?? null}
+          onRetry={() => void builds.refetch()}
+          onClearAll={clearAll}
         />
 
         <Pagination
@@ -387,6 +415,10 @@ function labelFor(group: FacetGroup, value: string): string {
   return group.options.find((option) => option.value === value)?.label ?? value;
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+   The four states
+   ──────────────────────────────────────────────────────────────────────────── */
+
 function Results({
   builds,
   srcByPath,
@@ -395,6 +427,8 @@ function Results({
   error,
   filtered,
   viewerId,
+  onRetry,
+  onClearAll,
 }: {
   builds: GalleryBuild[];
   srcByPath: ReturnType<typeof useSignedMedia>;
@@ -403,50 +437,167 @@ function Results({
   error: Error | null;
   filtered: boolean;
   viewerId: string | null;
+  onRetry: () => void;
+  onClearAll: () => void;
 }) {
   if (error) {
     return (
       <Notice
+        testId="gallery-error"
         heading="The gallery could not be loaded"
-        detail={error.message}
-        accent={ORANGE}
+        detail="The request for this page failed. Nothing is lost — the gallery only reads, and a retry asks again."
+        /* The machine's own words, in the machine's own face. This
+           application's one maintainer is not a developer, and the sentence
+           they can paste into a bug report is most of this state's value. */
+        said={error.message}
+        action={
+          <Button type="button" variant="secondary" onClick={onRetry}>
+            Try again
+          </Button>
+        }
       />
     );
   }
 
-  if (isLoading) {
-    return <Notice heading="Loading the gallery…" detail="" accent={TEAL} />;
-  }
+  if (isLoading) return <LoadingGrid />;
 
   if (builds.length === 0) {
     return filtered ? (
       <Notice
-        heading="Nothing matches those filters yet"
-        detail="Clear one of them, or look at everything. The gallery grows as builds are written down more completely."
-        accent={TEAL}
+        testId="gallery-empty-filtered"
+        heading="No builds match — clear a filter"
+        detail="Made for and Made with have to match together. Widening either one, or dropping the open-bounty filter, is usually enough."
+        action={
+          <Button type="button" variant="secondary" onClick={onClearAll}>
+            Clear all
+          </Button>
+        }
       />
     ) : (
       <Notice
-        heading="Nothing here yet"
+        testId="gallery-empty"
+        heading="Nothing in the gallery yet"
         detail="A build reaches the gallery once its record carries enough to follow — the outcome, the thing to run, the evidence, and who it is for."
-        accent={TEAL}
-      >
-        <Link to="/compose/new" style={{ ...labelText, color: TEAL, textDecoration: "none" }}>
-          Write one up →
-        </Link>
-      </Notice>
+        action={
+          <Button type="button" variant="secondary" asChild>
+            <Link to="/compose/new">Write one up</Link>
+          </Button>
+        }
+      />
     );
   }
 
   return (
     <>
-      <p style={{ ...labelText, margin: 0, color: TEXT_MUTED }}>
-        {total === null
-          ? `${builds.length} shown`
-          : `${total} build${total === 1 ? "" : "s"}`}
-      </p>
+      <ResultsSummary total={total} shown={builds.length} />
       <GalleryGrid builds={builds} srcByPath={srcByPath} viewerId={viewerId} />
     </>
+  );
+}
+
+/**
+ * How many builds, and in what order.
+ *
+ * THE ORDER IS THE HALF THAT IS NEW. It is stated rather than offered as a
+ * control because listGallery's ORDER BY is not a runtime option and this
+ * prompt may not make it one — so a sort control would be a control that
+ * cannot sort. A reader gets the information the control would have carried,
+ * which is what the grid in front of them is ordered by.
+ *
+ * Mono, `--text2`, one line: a caption on the grid, not a heading above it.
+ * `tabular` on the count and not on the sentence — aligned digits are for
+ * numbers in a column, and turning the prose monospaced-numeric does nothing.
+ */
+function ResultsSummary({ total, shown }: { total: number | null; shown: number }) {
+  return (
+    <p data-testid="gallery-summary" style={{ ...dataText, margin: 0, color: t.text2 }}>
+      <span style={tabular}>
+        {total === null ? `${shown} shown` : `${total} build${total === 1 ? "" : "s"}`}
+      </span>
+      {" · most reproduced first, then most recently confirmed working"}
+    </p>
+  );
+}
+
+/**
+ * The grid's shape before the grid exists.
+ *
+ * `GalleryCardSkeleton` AT THE CARD'S REAL PROPORTIONS, in the real `.fs-grid`.
+ * It spends the same FRAME_PAD, CONTENT_PAD and BODY_HEIGHT the card spends, so
+ * the swap when the data lands does not move the page — which is the only thing
+ * a loading state is for. A spinner, or the single "Loading the gallery…" line
+ * this replaces, tells a reader to wait without telling them what for.
+ *
+ * `aria-hidden`, because a screen reader should hear the page's content arrive
+ * rather than a description of six placeholder rectangles.
+ */
+function LoadingGrid() {
+  return (
+    <div
+      className="fs-grid"
+      data-visual-slot="gallery-grid-loading"
+      data-testid="gallery-loading"
+      aria-hidden
+    >
+      {Array.from({ length: LOADING_CARDS }, (_, index) => (
+        <GalleryCardSkeleton key={index} />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * A state with nothing in it: empty, empty-under-filters, or failed.
+ *
+ * DESIGNED WITH THE SAME CARE AS THE POPULATED GRID, which is the whole of
+ * `aesthetic-usability`'s argument about these screens — a rough error state
+ * reads as broken and lowers the perceived quality of everything around it. So
+ * it takes the card's own title face, the 68ch measure on its prose, and
+ * exactly one action.
+ *
+ * THE ACTION IS SECONDARY, NEVER PRIMARY. The theme allows one primary action
+ * per view and the frame's own compose control is already spending it
+ * (BG-P13); a page-level primary here would be the second.
+ *
+ * NO GLASS, NO BORDER, NO PANEL. It was a glass card with a coloured left edge
+ * — ORANGE for the error, TEAL for everything else, neither of which is a token
+ * in this system. It sits on the same ground the grid sits on now, because a
+ * bordered box in an empty column reads as a card that failed to load rather
+ * than as the page saying there is nothing to show.
+ */
+function Notice({
+  testId,
+  heading,
+  detail,
+  said,
+  action,
+}: {
+  testId: string;
+  heading: string;
+  detail: string;
+  said?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div
+      data-visual-slot="gallery-notice"
+      data-testid={testId}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: SPACE.sm,
+        paddingTop: SPACE.lg,
+        paddingBottom: SPACE.lg,
+      }}
+    >
+      <h2 style={{ ...cardTitle, margin: 0, color: t.text }}>{heading}</h2>
+      <p style={{ ...body, ...measure, margin: 0, color: t.text2 }}>{detail}</p>
+      {said ? (
+        <p style={{ ...dataText, ...measure, margin: 0, color: t.text2 }}>{said}</p>
+      ) : null}
+      {action}
+    </div>
   );
 }
 
@@ -719,6 +870,10 @@ function sentence(items: MissingItem[]): string {
   return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+   Pagination
+   ──────────────────────────────────────────────────────────────────────────── */
+
 function Pagination({
   page,
   total,
@@ -736,71 +891,31 @@ function Pagination({
     total === null ? shown === GALLERY_PAGE_SIZE : (page + 1) * GALLERY_PAGE_SIZE < total;
   if (page === 0 && !hasMore) return null;
 
-  const button = (label: string, next: number, enabled: boolean) => (
-    <button
+  /* The kit's secondary button rather than three hand-written declarations per
+     control. It was a 100px capsule on an rgba(255,255,255,0.025) fill with a
+     hard-coded hairline — a pill, which the theme retired, on a white alpha
+     that is invisible on Exhibition. `disabled` now carries the kit's own
+     treatment instead of a colour swap this file chose. */
+  const step = (label: string, next: number, enabled: boolean) => (
+    <Button
       type="button"
+      variant="secondary"
       disabled={!enabled || busy}
       onClick={() => {
         onPage(next);
         window.scrollTo({ top: 0 });
       }}
-      style={{
-        ...labelText,
-        fontFamily: "inherit",
-        height: 30,
-        padding: "0 14px",
-        borderRadius: 100,
-        background: "rgba(255,255,255,0.025)",
-        border: `1px solid ${HAIRLINE}`,
-        color: enabled && !busy ? TEXT_SECONDARY : TEXT_MUTED,
-        cursor: enabled && !busy ? "pointer" : "not-allowed",
-      }}
+      style={{ borderRadius: r.control }}
     >
       {label}
-    </button>
+    </Button>
   );
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      {button("← Previous", page - 1, page > 0)}
-      {button("Next →", page + 1, hasMore)}
-      <span style={{ ...labelText, color: TEXT_MUTED }}>Page {page + 1}</span>
-    </div>
-  );
-}
-
-function Notice({
-  heading,
-  detail,
-  accent,
-  children,
-}: {
-  heading: string;
-  detail: string;
-  accent: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        ...panelGlass,
-        borderRadius: 12,
-        borderLeft: `2px solid ${accent}`,
-        padding: "18px 20px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-      }}
-    >
-      <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: TEXT_PRIMARY }}>
-        {heading}
-      </h2>
-      {detail ? (
-        <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY, maxWidth: 560 }}>
-          {detail}
-        </p>
-      ) : null}
-      {children}
+    <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
+      {step("← Previous", page - 1, page > 0)}
+      {step("Next →", page + 1, hasMore)}
+      <span style={{ ...dataText, ...tabular, color: t.text2 }}>Page {page + 1}</span>
     </div>
   );
 }
