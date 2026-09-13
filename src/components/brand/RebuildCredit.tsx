@@ -65,26 +65,43 @@ export const COLLAPSED_LINES = 6;
 export const EXPAND_FROM = 7;
 
 /**
- * Change kind to colour, resolved through the part categories.
+ * Change kind to colour.
  *
- * A CHANGE IS NOT A PART, so it has no category of its own — but the four kinds
- * each read as one of the nine, and borrowing the category keeps the two
- * vocabularies from drifting apart. This is the same move `eventDisplay.ts`
- * makes for event kinds, and it lands on the same four hues the tree and the
- * publish sheet already paint: changed is the rust the tree marks an edited
- * part with, added is the teal it marks a new one with, a removal is grey
- * because it is not a warning, and a header move is the ochre the sheet gave it.
+ * BG-P24 — THREE OF THE FOUR COME OFF THE PART HUES.
+ *
+ * BG-P11 resolved all four through the part categories, on the argument that a
+ * change kind reads as one of the nine and that borrowing the category keeps
+ * the vocabularies together. The theme takes the opposite position on the same
+ * question, in its own words: the nine "encode meaning, so they are never used
+ * decoratively and never borrowed for anything that is not a part category".
+ * A change kind is not a part category. So `changed` is the accent, `added` is
+ * the evidence token, and a removal is the secondary text rung — each the token
+ * that names the JOB the colour is doing rather than a hue on loan from a part.
+ *
+ * `header` keeps `--cat-artefact`: a header move is a change to the record's
+ * own artefact-level facts, and there is no semantic token for that. Borrowing
+ * one hue with a reason is not the thing the rule is about.
+ *
+ * The values barely move — `--cat-instruction` and `--action` are a few RGB
+ * points apart in both rooms, as are `--cat-narrative` and `--text2` — so this
+ * is a change of VOCABULARY rather than of appearance, and the build page's Δ
+ * summary is not redesigned by it.
+ *
+ * WHAT DID NOT CHANGE IS THAT THERE IS ONE MAPPING. The publish sheet's list
+ * and the published page's Δ summary are two renderings of one ChangeSet, and
+ * a second opinion formed in either file is how they come to disagree. This is
+ * still the only place the question is answered.
  */
-export const CHANGE_KIND_CATEGORY: Record<ChangeKind, string> = {
-  changed: "instruction",
-  added: "evidence",
-  removed: "narrative",
-  header: "artefact",
+export const CHANGE_KIND_COLOUR: Record<ChangeKind, string> = {
+  changed: t.action,
+  added: t.evidence,
+  removed: t.text2,
+  header: categoryColour("artefact"),
 };
 
-/** The same, as tokens. */
+/** The same, by kind, with an unrecognised kind landing on the quiet rung. */
 export function changeKindColour(kind: ChangeKind): string {
-  return categoryColour(CHANGE_KIND_CATEGORY[kind] ?? "narrative");
+  return CHANGE_KIND_COLOUR[kind] ?? t.text2;
 }
 
 /**

@@ -66,6 +66,7 @@ import Compose from "@/pages/Compose";
 import { NO_CHANGES_REASON } from "@/lib/build";
 import { RebuildSection } from "./RebuildSection";
 import { changeKindColour } from "@/components/brand/RebuildCredit";
+import { staticDoc, styleOf } from "@/test/tokenStyle";
 
 const nodeTypes = [
   {
@@ -359,7 +360,7 @@ describe("the rebuild section itself", () => {
         diffed
         note=""
         onNoteChange={() => {}}
-        credit={null}
+        source={null}
       />
     );
   }
@@ -382,6 +383,99 @@ describe("the rebuild section itself", () => {
   });
 
   /**
+   * BG-P24 — the Δ lines are DM Mono.
+   *
+   * The theme names "change summaries" in the list of things the data face
+   * sets, and these are machine-computed lines about a record: the same role
+   * as a model name or a timestamp. In the body face they read as the
+   * rebuilder's own account of what they did, which is the NOTE below them and
+   * is somebody's prose. The published page's Δ summary has been mono since
+   * BG-P11, and this is the same list.
+   */
+  it("sets each change line in the data face rather than in the body face", () => {
+    const doc = staticDoc(
+      <RebuildSection
+        lines={[line(0, "changed"), line(1, "added")]}
+        diffed
+        note=""
+        onNoteChange={() => {}}
+        source={null}
+      />
+    );
+
+    for (const row of Array.from(doc.querySelectorAll("[data-change-kind]"))) {
+      expect(styleOf(row)).toContain("DM Mono");
+      expect(styleOf(row)).toContain("color:var(--text)");
+    }
+  });
+
+  /**
+   * BG-P24 — the note is the kit's textarea.
+   *
+   * It was a hand-rolled 2.5%-white film with a 10px radius, which is not a
+   * step of the scale and which disappears on an Exhibition ground. The kit's
+   * field is a `--recess` well at `--r-control`, and taking the component
+   * rather than copying its declarations is what keeps it that way.
+   */
+  it("writes the note into the kit's field rather than a hand-rolled one", () => {
+    const doc = staticDoc(
+      <RebuildSection lines={[]} diffed note="" onNoteChange={() => {}} source={null} />
+    );
+
+    const note = doc.querySelector('[data-testid="rebuild-note"]');
+    expect(note).not.toBeNull();
+    expect(styleOf(note)).toContain("background:var(--recess)");
+    expect(styleOf(note)).toContain("border-radius:var(--r-control)");
+  });
+
+  /**
+   * BG-P24 — the credit preview is the shared component.
+   *
+   * `data-visual-slot="rebuild-credit"` is RebuildCredit's own and is set
+   * nowhere else, so this fails the moment the section goes back to printing
+   * the sentence itself — which is how the sheet and the card came to render
+   * the same credit two different ways in the first place.
+   */
+  it("shows the credit through the shared component, and nothing when there is none", () => {
+    const withCredit = staticDoc(
+      <RebuildSection
+        lines={[]}
+        diffed
+        note=""
+        onNoteChange={() => {}}
+        source={{
+          source_title_at_fork: "Inbox triage agent",
+          source_handle_at_fork: "amara",
+        }}
+      />
+    );
+
+    const credit = withCredit.querySelector('[data-testid="rebuild-credit"]');
+    expect(credit).not.toBeNull();
+    expect(credit?.querySelector('[data-visual-slot="rebuild-credit"]')).not.toBeNull();
+    expect(credit?.textContent).toContain("Rebuilt from Inbox triage agent by @amara");
+    expect(credit?.textContent).toContain("This credit is part of the post and can't be removed.");
+
+    // The Δ list is already above this. Passing `changes` would print a second
+    // copy of it under the note, which is the one thing the arrangement here
+    // exists to avoid.
+    expect(credit?.querySelector('[data-testid="rebuild-credit-summary"]')).toBeNull();
+
+    // A fork taken before the snapshot columns existed renders no container at
+    // all, rather than an empty box around a component that renders nothing.
+    const without = staticDoc(
+      <RebuildSection
+        lines={[]}
+        diffed
+        note=""
+        onNoteChange={() => {}}
+        source={{ source_title_at_fork: null, source_handle_at_fork: null }}
+      />
+    );
+    expect(without.querySelector('[data-testid="rebuild-credit"]')).toBeNull();
+  });
+
+  /**
    * BG-P11: the four accents are TOKENS now, resolved through the part
    * categories by `changeKindColour`, and the published page's Δ summary spends
    * the same four. They used to be two imported hexes and two written ones, and
@@ -398,18 +492,21 @@ describe("the rebuild section itself", () => {
       line(index, (["changed", "added", "removed", "header"] as const)[index])
     );
     const html = renderToStaticMarkup(
-      <RebuildSection lines={lines} diffed note="" onNoteChange={() => {}} credit={null} />
+      <RebuildSection lines={lines} diffed note="" onNoteChange={() => {}} source={null} />
     );
 
     for (const kind of ["changed", "added", "removed", "header"] as const) {
       const row = html.slice(html.indexOf(`data-change-kind="${kind}"`));
-      expect(row.slice(0, 400)).toContain(`background:${changeKindColour(kind)}`);
+      // A wider window than the 400 this used to take: BG-P24 set the line in
+      // DM Mono, and the font stack alone is most of that budget.
+      expect(row.slice(0, 700)).toContain(`background:${changeKindColour(kind)}`);
     }
 
     // The same four the published page paints, and none of them a hex.
-    expect(changeKindColour("changed")).toBe("var(--cat-instruction)");
-    expect(changeKindColour("added")).toBe("var(--cat-evidence)");
-    expect(changeKindColour("removed")).toBe("var(--cat-narrative)");
+    // BG-P24 moved three off the part categories — see RebuildCredit.tsx.
+    expect(changeKindColour("changed")).toBe("var(--action)");
+    expect(changeKindColour("added")).toBe("var(--evidence)");
+    expect(changeKindColour("removed")).toBe("var(--text2)");
     expect(changeKindColour("header")).toBe("var(--cat-artefact)");
   });
 

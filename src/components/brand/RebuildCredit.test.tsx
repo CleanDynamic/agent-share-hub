@@ -196,9 +196,13 @@ describe("summaryWindow", () => {
 
 describe("tokens only", () => {
   it("paints every change kind from the category resolver", () => {
-    expect(changeKindColour("changed")).toBe("var(--cat-instruction)");
-    expect(changeKindColour("added")).toBe("var(--cat-evidence)");
-    expect(changeKindColour("removed")).toBe("var(--cat-narrative)");
+    // BG-P24 — three of the four came off the part hues. The nine encode part
+    // categories and a change kind is not one, so `changed` is the accent,
+    // `added` the evidence token and `removed` the quiet text rung. Only
+    // `header` still borrows a category, and it borrows the one it means.
+    expect(changeKindColour("changed")).toBe("var(--action)");
+    expect(changeKindColour("added")).toBe("var(--evidence)");
+    expect(changeKindColour("removed")).toBe("var(--text2)");
     expect(changeKindColour("header")).toBe("var(--cat-artefact)");
   });
 

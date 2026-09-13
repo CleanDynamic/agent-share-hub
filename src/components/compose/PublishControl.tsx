@@ -77,7 +77,7 @@ import {
   parseReward,
   type GapDraft,
 } from "@/components/compose/BountySection";
-import { rebuildCreditLine } from "@/components/build/rebuildCredit";
+import type { RebuildCreditSource } from "@/components/build/rebuildCredit";
 import type { RebuildDiff } from "@/hooks/useRebuildDiff";
 import type { BuildBounties } from "@/hooks/useBuildBounties";
 import { createBountyForGap, type Bounty } from "@/lib/bounty";
@@ -98,22 +98,18 @@ import {
   type PublishReadiness,
   type RequirementKey,
 } from "@/lib/build";
+import { chipStyle } from "@/lib/theme/controls";
+import { SCRIM, elevation } from "@/lib/theme/elevation";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import {
-  GAP_RED,
-  HAIRLINE,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  headingText,
-  hexToRgba,
-  labelText,
-  titleText,
-} from "@/components/build/tokens";
+import { data as dataText } from "@/lib/theme/type";
+/* BG-P24 — the colour aliases are gone from this file. Every one of them
+   (GAP_RED, HAIRLINE, ORANGE, TEAL and the three text rungs) has been replaced
+   by the semantic token it was an alias for, and `hexToRgba` went with the
+   tinted grounds it was mixing. What is left are the three TYPE roles, which
+   carry this workspace's 13px density rather than a colour — moving those is a
+   reflow of the route, not a repaint of this screen. */
+import { bodyText, headingText, labelText } from "@/components/build/tokens";
 import { workspaceCard, workspacePanel } from "@/components/shell/WorkspaceBar";
 
 /**
@@ -424,12 +420,20 @@ export function PublishControl({
       : readiness;
 
   /**
-   * Frozen at the fork. The publish sheet's card no longer takes it — it reads
-   * the same two columns off the draft itself (BG-P11) — so this is the
-   * rebuild section's copy, shown beside the note where the sheet says the
-   * credit is permanent.
+   * Frozen at the fork, and handed to the section as the SOURCE rather than as
+   * a composed sentence (BG-P24).
+   *
+   * The section renders the shared RebuildCredit now, which composes the
+   * sentence from these two columns itself — so the credit a creator reads
+   * beside the note is the same rendering the card and the build page show,
+   * rather than a second one that happens to agree.
+   *
+   * WHETHER THERE IS A CREDIT AT ALL is no longer decided here. A fork taken
+   * before the snapshot columns existed composes to no sentence, and the
+   * section asks `rebuildCreditLine` that question where it renders the
+   * answer. This file only says whether the draft is a rebuild.
    */
-  const credit = isRebuild ? rebuildCreditLine(build) : null;
+  const credit: RebuildCreditSource | null = isRebuild ? build : null;
 
   /** The pill only opens a sheet, so nothing but a write in flight closes it. */
   const canOpen = !isPublishing;
@@ -599,7 +603,7 @@ export function PublishControl({
                       diffed={Boolean(rebuild?.changes)}
                       note={note}
                       onNoteChange={setNote}
-                      credit={credit}
+                      source={credit}
                     />
                   ) : null}
                   {gaps.length > 0 ? (
@@ -739,7 +743,11 @@ function PublishConfirmation({
         alignItems: "center",
         justifyContent: "center",
         padding: 24,
-        background: "rgba(8,8,12,0.62)",
+        /* The elevation model's own scrim, struck from `--porthole` so the
+           workspace dims into its own room rather than under a sheet of ink.
+           It was a hard-coded near-black, which on Exhibition put a dark room
+           behind a light panel. No blur: this covers the whole viewport. */
+        ...SCRIM,
       }}
     >
       <div
@@ -747,10 +755,13 @@ function PublishConfirmation({
         onClick={(event) => event.stopPropagation()}
         style={{
           ...workspacePanel,
+          /* `--r-panel`, which is what workspacePanel already carries: the 14
+             here was the card step, and this is a dialog. Said by omission
+             now rather than by a literal that disagreed with the token. */
+          ...elevation.overlay,
           width: "min(520px, 100%)",
           maxHeight: "100%",
           overflowY: "auto",
-          borderRadius: 14,
           padding: 22,
           display: "flex",
           flexDirection: "column",
@@ -759,12 +770,21 @@ function PublishConfirmation({
       >
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <h2 style={{ ...headingText, margin: 0 }}>It’s live.</h2>
-          <span style={{ ...labelText, color: TEAL }}>
+          {/* The state, as a measured `--evidence` pair rather than as the hue
+              on whatever ground it lands on. This is a live, reproduced-family
+              signal, which is the job `--evidence` names. */}
+          <span
+            data-testid="publish-state"
+            style={{
+              ...chipStyle("category", { category: "evidence" }),
+              padding: "2px 8px",
+            }}
+          >
             {promoted ? "In the gallery" : "Published"}
           </span>
         </div>
 
-        <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+        <p style={{ ...bodyText, margin: 0, color: t.text2 }}>
           {build.title || "Your build"} is readable by anyone with the link, and
           anyone can fork it from any point in its sequence.
         </p>
@@ -783,9 +803,14 @@ function PublishConfirmation({
             target="_blank"
             rel="noreferrer"
             style={{
-              ...titleText,
-              color: TEAL,
-              textDecoration: "none",
+              /* THE LINK TO THE BUILD, in mono and `--action`. Mono because a
+                 path is data, `--action` because it is the one thing on this
+                 screen a creator has come here to press. Underlined at rest:
+                 colour alone is not an affordance. */
+              ...dataText,
+              color: t.action,
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
               flex: 1,
               minWidth: 0,
               overflow: "hidden",
@@ -804,10 +829,12 @@ function PublishConfirmation({
               flexShrink: 0,
               height: 28,
               padding: "0 10px",
-              borderRadius: 8,
-              background: "rgba(255,255,255,0.025)",
-              border: `1px solid ${HAIRLINE}`,
-              color: copied ? TEAL : TEXT_SECONDARY,
+              borderRadius: r.chip,
+              backgroundColor: t.recess,
+              borderWidth: 1,
+              borderStyle: "solid",
+              borderColor: t.line,
+              color: copied ? t.evidence : t.text2,
               cursor: "pointer",
             }}
           >
@@ -832,10 +859,14 @@ function PublishConfirmation({
               fontFamily: "inherit",
               height: 30,
               padding: "0 14px",
-              borderRadius: 100,
-              background: "rgba(255,255,255,0.025)",
-              border: `1px solid ${HAIRLINE}`,
-              color: TEXT_SECONDARY,
+              /* `--r-control`, not the 999px capsule: the capsule rule was
+                 removed from the system by decision. */
+              borderRadius: r.control,
+              backgroundColor: t.recess,
+              borderWidth: 1,
+              borderStyle: "solid",
+              borderColor: t.line,
+              color: t.text2,
               cursor: "pointer",
             }}
           >
@@ -871,15 +902,22 @@ function GalleryLine({
         style={{
           ...workspaceCard,
           padding: "12px 14px",
-          borderLeft: `2px solid ${TEAL}`,
-          background: hexToRgba(TEAL, 0.06),
+          /* The edge carries the state and the ground stays the workspace's
+             own: a tinted wash behind a whole paragraph is how a note starts
+             reading as an alert. */
+          borderLeftWidth: 2,
+          borderLeftStyle: "solid",
+          borderLeftColor: t.evidence,
         }}
       >
-        <p style={{ ...bodyText, margin: 0 }}>
+        <p style={{ ...bodyText, margin: 0, color: t.text }}>
           {promoted
             ? "This build has been promoted to the gallery by an editor, and appears there whatever it scores."
             : "This record carries enough for the gallery."}{" "}
-          <Link to="/gallery" style={{ color: TEAL, textDecoration: "none" }}>
+          <Link
+            to="/gallery"
+            style={{ color: t.action, textDecoration: "underline", textUnderlineOffset: 3 }}
+          >
             See it at /gallery →
           </Link>
         </p>
@@ -892,16 +930,20 @@ function GalleryLine({
       style={{
         ...workspaceCard,
         padding: "12px 14px",
-        borderLeft: `2px solid ${ORANGE}`,
-        background: hexToRgba(ORANGE, 0.05),
+        borderLeftWidth: 2,
+        borderLeftStyle: "solid",
+        borderLeftColor: t.action,
         display: "flex",
         flexDirection: "column",
         gap: 8,
       }}
     >
-      <p style={{ ...bodyText, margin: 0 }}>
+      <p style={{ ...bodyText, margin: 0, color: t.text }}>
         It is live and forkable, and it sits on your profile. The{" "}
-        <Link to="/gallery" style={{ color: TEAL, textDecoration: "none" }}>
+        <Link
+          to="/gallery"
+          style={{ color: t.action, textDecoration: "underline", textUnderlineOffset: 3 }}
+        >
           gallery
         </Link>{" "}
         asks for a little more of the record
@@ -913,7 +955,7 @@ function GalleryLine({
           ...bodyText,
           margin: 0,
           paddingLeft: 18,
-          color: TEXT_SECONDARY,
+          color: t.text2,
           display: "flex",
           flexDirection: "column",
           gap: 4,
@@ -924,7 +966,7 @@ function GalleryLine({
         ))}
       </ul>
       ) : null}
-      <p style={{ ...bodyText, margin: 0, color: TEXT_MUTED, fontSize: 12 }}>
+      <p style={{ ...dataText, margin: 0, color: t.text2 }}>
         Nothing is lost by leaving it as it is. Add these whenever you like and
         it joins the gallery on its own.
       </p>

@@ -18,7 +18,28 @@
 // WHAT THIS FILE DOES NOT DO. It does not decide whether the build can be
 // published. Readiness arrives as a prop, computed by PublishControl exactly as
 // it was before this file existed, and the primary action is gated on it and on
-// nothing else. Publishing itself is still onConfirm's business.
+// nothing else. Publishing itself is still onConfirm's business. BG-P24 is a
+// repaint: not one line of that gate is touched here.
+//
+// BG-P24 — THE GROUND IS `--bg` AND THERE IS NO GLASS ON IT.
+//
+// The kit's dialog panel is glass, which is right for a reading surface and
+// wrong for this one. The theme draws the line by surface rather than by
+// component: "reading surfaces have glass; working surfaces do not", and the
+// authoring workspace is named in that sentence. This sheet is the last screen
+// of the authoring workspace, so it takes the workspace's treatment — a flat
+// `--bg` ground, `--line` hairlines, `--r-panel`, and `elevation.overlay` with
+// the scrim the dialog already puts behind it. What carries the depth is the
+// shadow and the scrim, not a blur.
+//
+// It also means the ONE blurred surface in view is none: a creator reading this
+// sheet is looking at a card on a page, which is what they are about to make.
+//
+// ONE PRIMARY ACTION, AND IT IS `Publish`. Every other control on the sheet is
+// quieter than it by a full step — the checklist rows are `--text2` sentences
+// with an `--action` marker, the nudge is a line of `--action` text, and the
+// close is the kit dialog's own ghost. `von-restorff-effect`: the thing that
+// must be unmistakable is the thing nothing else is allowed to look like.
 //
 // Styled with inline style objects, like every other surface on this route:
 // Tailwind's generated utilities win over hand-written classes at build time.
@@ -42,20 +63,17 @@ import {
   type PublishReadiness,
   type RequirementKey,
 } from "@/lib/build";
+import { Button } from "@/components/ui/button";
+import { UI_EASING, UI_MS } from "@/lib/theme/controls";
+import { elevation } from "@/lib/theme/elevation";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import {
-  FONT_STACK,
-  GAP_RED,
-  HAIRLINE,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  hexToRgba,
-  labelText,
-  panelGlass,
-} from "@/components/build/tokens";
+  body as bodyText,
+  data as dataText,
+  eyebrow as eyebrowText,
+  label as labelText,
+} from "@/lib/theme/type";
 
 /**
  * The copy, held as constants because it is the design.
@@ -362,6 +380,9 @@ export function PublishSheet({
     padding: narrow ? 16 : 20,
   };
 
+  /** The eyebrow over each half. 12px mono, uppercase, `--text2`. */
+  const eyebrow: CSSProperties = { ...eyebrowText, color: t.text2 };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -379,9 +400,20 @@ export function PublishSheet({
           pending();
         }}
         style={{
-          ...panelGlass,
-          color: TEXT_PRIMARY,
-          fontFamily: FONT_STACK,
+          /* THE KIT'S GLASS IS OVERRIDDEN HERE AND ONLY HERE. `dialogPanelStyle`
+             spreads `--glass` plus a 16px backdrop blur, which is the right
+             treatment for a reading surface and the wrong one for the last
+             screen of the authoring workspace. `backdropFilter: "none"` is
+             explicit rather than omitted, because the kit has already set it on
+             this element and an omission would leave it standing. */
+          background: t.bg,
+          backdropFilter: "none",
+          WebkitBackdropFilter: "none",
+          borderWidth: 1,
+          borderStyle: "solid",
+          borderColor: t.line,
+          ...elevation.overlay,
+          color: t.text,
           padding: 0,
           gap: 0,
           overflow: "hidden",
@@ -396,6 +428,8 @@ export function PublishSheet({
                 maxWidth: "100vw",
                 height: "100%",
                 maxHeight: "100%",
+                /* Square at the viewport edge: a rounded corner needs
+                   something behind it, and full-bleed there is nothing. */
                 borderRadius: 0,
                 display: "flex",
                 flexDirection: "column",
@@ -407,7 +441,7 @@ export function PublishSheet({
                 // outright, and nothing here then depends on class ordering.
                 maxWidth: "min(940px, calc(100vw - 40px))",
                 maxHeight: "min(84vh, 760px)",
-                borderRadius: 16,
+                borderRadius: r.panel,
                 display: "grid",
                 gridTemplateColumns: "minmax(0, 1fr) minmax(0, 360px)",
               }),
@@ -435,8 +469,8 @@ export function PublishSheet({
         <div
           style={{
             ...column,
-            borderRight: narrow ? "none" : `1px solid ${HAIRLINE}`,
-            borderBottom: narrow ? `1px solid ${HAIRLINE}` : "none",
+            borderRight: narrow ? "none" : `1px solid ${t.line}`,
+            borderBottom: narrow ? `1px solid ${t.line}` : "none",
             // The base surface's close control sits absolutely in the top
             // right; on one column that corner belongs to this column.
             paddingRight: narrow ? 44 : undefined,
@@ -444,9 +478,7 @@ export function PublishSheet({
             overflowY: "auto",
           }}
         >
-          <span style={{ ...labelText, textTransform: "uppercase", color: TEXT_MUTED }}>
-            {CARD_LABEL}
-          </span>
+          <span style={eyebrow}>{CARD_LABEL}</span>
 
           <div
             data-testid="publish-card-preview"
@@ -464,37 +496,25 @@ export function PublishSheet({
             <GalleryCard build={preview} srcByPath={srcByPath} />
           </div>
 
-          {cover ? null : (
-            <button
-              type="button"
-              onClick={() => goTo(focusCoverStrip)}
-              style={{
-                ...bodyText,
-                fontFamily: "inherit",
-                textAlign: "left",
-                maxWidth: 420,
-                padding: "10px 12px",
-                borderRadius: 10,
-                border: `1px solid ${hexToRgba(ORANGE, 0.35)}`,
-                background: hexToRgba(ORANGE, 0.08),
-                color: TEXT_PRIMARY,
-                cursor: "pointer",
-              }}
-            >
-              {COVER_NUDGE}
-            </button>
-          )}
+          {/* THE EMPTY-IMAGERY NUDGE (BG-P24).
+              The card above is already showing its own missing-cover state —
+              GalleryCard's, unmodified, which is what a reader would actually
+              see — so this adds the one thing that state cannot say: where to
+              go and that it is worth going. A LINE IN `--action`, not a tinted
+              panel: a filled box here would be a second thing competing with
+              Publish for the eye, and the theme allows one primary per view.
+              It closes the sheet and lands focus in the thread editor, which
+              is the surface that holds the picture. */}
+          {cover ? null : <CoverNudge onClick={() => goTo(focusCoverStrip)} />}
         </div>
 
         {/* --------------------------------------- what is left, in plain words */}
         <div style={{ ...column, flex: narrow ? 1 : undefined, minHeight: 0 }}>
           <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12 }}>
-            <span style={{ ...labelText, textTransform: "uppercase", color: TEXT_MUTED }}>
-              {CHECKLIST_LABEL}
-            </span>
+            <span style={eyebrow}>{CHECKLIST_LABEL}</span>
 
             {missing.length === 0 ? (
-              <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>{NOTHING_LEFT}</p>
+              <p style={{ ...bodyText, margin: 0, color: t.text2 }}>{NOTHING_LEFT}</p>
             ) : (
               <ul
                 style={{
@@ -522,54 +542,94 @@ export function PublishSheet({
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
+            {/* WHY THE REASON IS HERE AND NOT IN A TOAST. A disabled control
+                with its explanation somewhere else is a control that refuses
+                without saying why, and a toast takes the sentence away again
+                after four seconds — from the one reader who needed it longest.
+                It sits against the button, in mono because it is a fact about
+                the record rather than prose, and it stays for as long as the
+                refusal does. */}
             {publishError ? (
-              <p role="alert" style={{ ...bodyText, margin: 0, fontSize: 12, color: GAP_RED }}>
+              <p
+                role="alert"
+                data-testid="publish-error"
+                style={{ ...dataText, margin: 0, color: t.catBreakage }}
+              >
                 {publishError.message}
               </p>
             ) : !canPublish && readiness.reason ? (
-              <p style={{ ...bodyText, margin: 0, fontSize: 12, color: TEXT_SECONDARY }}>
+              <p data-testid="publish-blocked-reason" style={{ ...dataText, margin: 0, color: t.text2 }}>
                 {readiness.reason}
               </p>
             ) : null}
 
-            {/* VISUAL SLOT — the primary button surface is supplied externally.
-                Structure only here: pill geometry, states, no surface. */}
-            <span data-visual-slot="btn-primary" style={{ display: "flex" }}>
-              <button
-                type="button"
-                data-testid="publish-confirm"
-                disabled={!canPublish}
-                onClick={onConfirm}
-                style={{
-                  fontFamily: "inherit",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  letterSpacing: "0.04em",
-                  width: "100%",
-                  height: 38,
-                  borderRadius: 100,
-                  border: `1px solid ${
-                    canPublish ? hexToRgba(ORANGE, 0.45) : "rgba(255,255,255,0.06)"
-                  }`,
-                  background: canPublish
-                    ? hexToRgba(ORANGE, 0.14)
-                    : "rgba(255,255,255,0.025)",
-                  color: canPublish ? TEXT_PRIMARY : TEXT_MUTED,
-                  cursor: canPublish ? "pointer" : "not-allowed",
-                  opacity: isPublishing ? 0.7 : 1,
-                }}
-              >
-                {isPublishing ? "Publishing…" : "Publish"}
-              </button>
-            </span>
+            {/* THE ONE PRIMARY ACTION. The kit's own button rather than a
+                hand-rolled surface: `--action` fill with an `--on-action`
+                label, `--r-control`, and the kit's hover, press, focus and
+                disabled states for free. It carries `data-visual-slot`
+                itself, so the wrapper span that used to mark the slot is
+                gone with the geometry it was marking. */}
+            <Button
+              type="button"
+              data-testid="publish-confirm"
+              disabled={!canPublish}
+              onClick={onConfirm}
+              style={{ width: "100%", opacity: isPublishing ? 0.7 : 1 }}
+            >
+              {isPublishing ? "Publishing…" : "Publish"}
+            </Button>
 
-            <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED }}>
-              {KEEP_EDITING}
-            </span>
+            <span style={{ ...labelText, color: t.text2 }}>{KEEP_EDITING}</span>
           </div>
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * The invitation to add a picture, as one line of `--action`.
+ *
+ * A LINE AND NOT A PANEL (BG-P24). It was a bordered, tinted box, which on the
+ * two-theme ground reads as a second call to action standing beside Publish —
+ * and the theme allows one primary per view. What a creator needs here is the
+ * fact that the card is missing its picture (the card above is already saying
+ * that in its own missing-cover state) and somewhere to go about it. So this is
+ * the somewhere: `--action`, underlined at rest because a link distinguished by
+ * colour alone fails WCAG 1.4.1 and hover does not exist on a touch screen.
+ */
+function CoverNudge({ onClick }: { onClick: () => void }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      type="button"
+      data-testid="publish-cover-nudge"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        ...bodyText,
+        alignSelf: "flex-start",
+        maxWidth: 420,
+        textAlign: "left",
+        padding: 0,
+        background: "transparent",
+        /* Longhands, not `border: none`: a shorthand is dropped whole by
+           jsdom's parser, so a unit test could not see that this line has no
+           box around it — which is the claim the nudge is making. */
+        borderWidth: 0,
+        borderStyle: "none",
+        color: t.action,
+        textDecoration: "underline",
+        textUnderlineOffset: 4,
+        textDecorationThickness: hovered ? 2 : 1,
+        cursor: "pointer",
+        transition: `text-decoration-thickness ${UI_MS}ms ${UI_EASING}`,
+      }}
+    >
+      {COVER_NUDGE}
+    </button>
   );
 }
 
@@ -582,6 +642,20 @@ export function PublishSheet({
  * rows that stand between the build and a live page — without it a creator
  * reading six identical-looking sentences beside a disabled button has no way
  * to tell which ones the button is waiting on.
+ *
+ * BG-P24 — THE SENTENCE IS `--text2` AND THE AFFORDANCE IS `--action`.
+ *
+ * Both halves of that matter. `--text2` keeps a column of six invitations from
+ * shouting over the one button that is the point of the sheet, and it is what
+ * makes them read as things to do rather than as errors. The `--action` arrow
+ * is what says each one is somewhere to GO: it is present at rest rather than
+ * on hover, so the affordance survives a touch screen, and on hover the whole
+ * row lifts to `--text` on a `--recess` ground so the target is unambiguous.
+ *
+ * The dot keeps the distinction it always carried — `--action` for a row the
+ * button is waiting on, `--evidence` for one it is not — and stays aria-hidden,
+ * because "orange bullet" adds nothing to a sentence a screen reader already
+ * reads out. Colour is the fast read for the eye, never the only carrier.
  */
 function ChecklistRow({
   item,
@@ -592,25 +666,34 @@ function ChecklistRow({
   blocks: boolean;
   onClick: () => void;
 }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <li style={{ margin: 0, padding: 0 }}>
       <button
         type="button"
+        data-testid="publish-checklist-row"
+        data-requirement={item.key}
+        data-blocking={blocks ? "true" : "false"}
         onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         style={{
           ...bodyText,
-          fontFamily: "inherit",
           width: "100%",
           display: "flex",
           alignItems: "flex-start",
           gap: 8,
           textAlign: "left",
           padding: "7px 8px",
-          borderRadius: 8,
-          background: "transparent",
-          border: "1px solid transparent",
-          color: TEXT_PRIMARY,
+          borderRadius: r.control,
+          background: hovered ? t.recess : "transparent",
+          borderWidth: 1,
+          borderStyle: "solid",
+          borderColor: "transparent",
+          color: t.text2,
           cursor: "pointer",
+          transition: `background ${UI_MS}ms ${UI_EASING}, color ${UI_MS}ms ${UI_EASING}`,
         }}
       >
         <span
@@ -618,19 +701,25 @@ function ChecklistRow({
           style={{
             width: 5,
             height: 5,
-            marginTop: 8,
-            borderRadius: 999,
+            marginTop: 9,
+            borderRadius: r.full,
             flexShrink: 0,
-            background: blocks ? ORANGE : TEAL,
-            opacity: blocks ? 1 : 0.5,
+            background: blocks ? t.action : t.evidence,
+            opacity: blocks ? 1 : 0.55,
           }}
         />
         <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-          <span>{item.copy}</span>
-          {blocks ? (
-            <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>
-              needed to publish
+          <span style={{ color: hovered ? t.text : t.text2 }}>
+            {item.copy}{" "}
+            {/* The affordance. Inside the sentence rather than floated to the
+                right of it, so it reads as the end of the invitation and wraps
+                with it instead of stranding itself on a narrow column. */}
+            <span aria-hidden style={{ color: t.action, whiteSpace: "nowrap" }}>
+              →
             </span>
+          </span>
+          {blocks ? (
+            <span style={{ ...dataText, color: t.text2 }}>needed to publish</span>
           ) : null}
         </span>
       </button>

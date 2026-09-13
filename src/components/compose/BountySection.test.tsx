@@ -67,11 +67,14 @@ vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => auth }));
 
 import Compose from "@/pages/Compose";
 import {
+  BountySection,
+  DEFAULT_GAP_DRAFT,
   bountyFailureSentence,
   bountyFiledSentence,
   closesAtFrom,
   parseReward,
 } from "./BountySection";
+import { staticDoc, styleOf } from "@/test/tokenStyle";
 
 const NODE_TYPES = [
   {
@@ -410,6 +413,121 @@ describe("pricing the gaps at publish time", () => {
         "2 bounties are open on this build."
       )
     );
+  });
+});
+
+// --- BG-P24: the repaint -----------------------------------------------------
+//
+// Rendered through SSR rather than through the workspace, because the claims
+// here are about COLOUR and jsdom stores nothing at all for a `var()` one. See
+// src/test/tokenStyle.ts. The section is a plain component with no portal in
+// it, so `staticDoc` reaches every element these assertions name.
+
+describe("how the bounty section is painted", () => {
+  const gapNode = (id: string, title: string) => ({
+    id,
+    build_id: "b1",
+    parent_id: null,
+    position: 0,
+    type: "config",
+    title,
+    payload: { problem: "The calendar hand-off is not written yet." },
+    is_gap: true,
+    source_ref: null,
+    created_at: "",
+    updated_at: "",
+    children: [],
+  });
+
+  const configType = {
+    key: "config",
+    label: "Agent config",
+    category: "configuration",
+    colour: null,
+    icon: null,
+    renderer: "configuration",
+    copyable: true,
+    is_active: true,
+    sort: 1,
+    schema: { fields: [] },
+  };
+
+  function section(over: Record<string, unknown> = {}) {
+    const gaps = [gapNode("g1", "Calendar hand-off")];
+    return staticDoc(
+      <BountySection
+        gaps={gaps as never}
+        typesByKey={new Map([["config", configType]]) as never}
+        filedByNode={new Map() as never}
+        drafts={{ g1: DEFAULT_GAP_DRAFT }}
+        onDraftChange={() => {}}
+        skip={false}
+        onSkipChange={() => {}}
+        {...over}
+      />
+    );
+  }
+
+  /**
+   * The row is the shared marker, and the edge is DASHED.
+   *
+   * Solid says "this is what it is"; dashed says "this is where something
+   * goes". A gap is an invitation and the build works without it, so the edge
+   * is the whole of the treatment — and it is the same edge the build page and
+   * the card draw, because it comes from the same exported value.
+   */
+  it("draws each gap with the brand marker and a dashed breakage edge", () => {
+    const doc = section();
+    const row = doc.querySelector('[data-testid="bounty-gap-row"]');
+
+    expect(styleOf(row)).toContain("border-left-style:dashed");
+    expect(styleOf(row)).toContain("border-left-color:var(--cat-breakage)");
+    // No red wash: a tinted ground behind an invitation reads as an error box.
+    expect(styleOf(row)).toContain("background-color:var(--bg)");
+
+    const marker = row?.querySelector('[data-visual-slot="gap-marker"]');
+    expect(marker).not.toBeNull();
+    expect(marker?.getAttribute("data-gap-placement")).toBe("row");
+  });
+
+  /**
+   * THE CHIP KEEPS THE PART'S TRUE CATEGORY, which is the rule about gaps that
+   * is easy to get wrong and expensive to get wrong: a gap on an agent config
+   * is still configuration, and that is what routes it to the people who write
+   * agent configs. A red chip would make a different and untrue claim.
+   */
+  it("keeps the part's own category on the chip rather than recolouring it red", () => {
+    const doc = section();
+    const marker = doc.querySelector('[data-visual-slot="gap-marker"]');
+    const chip = marker?.querySelector("[data-category]") ?? marker?.firstElementChild;
+
+    expect(chip?.textContent).toContain("Agent config");
+    expect(styleOf(chip)).toContain("configuration");
+    expect(styleOf(chip)).not.toContain("cat-breakage");
+  });
+
+  it("gives the reward and the deadline the kit's field paint at the row's own height", () => {
+    const doc = section();
+
+    for (const testid of ["bounty-reward-input", "bounty-deadline-input"]) {
+      const field = doc.querySelector(`[data-testid="${testid}"]`);
+      expect(styleOf(field)).toContain("background:var(--recess)");
+      expect(styleOf(field)).toContain("border-radius:var(--r-control)");
+      // The kit's PAINT, not the kit's box: dropping the component in would
+      // have made these 40px and re-laid out the row.
+      expect(styleOf(field)).toContain("height:30px");
+    }
+  });
+
+  it("makes the skip control the kit's switch rather than a hand-rolled track", () => {
+    const doc = section();
+    const skip = doc.querySelector('[data-testid="bounty-skip"]');
+
+    // Radix's own contract, which is what every test that presses it reads.
+    expect(skip?.getAttribute("role")).toBe("switch");
+    // And the kit's track, not a hard-coded near-black thumb on a white film.
+    expect(styleOf(skip)).toContain("var(--");
+    expect(styleOf(skip)).not.toContain("#08080C");
   });
 });
 
