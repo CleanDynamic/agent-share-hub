@@ -23,14 +23,10 @@
 import type { ComponentType, CSSProperties } from "react";
 import type { Json } from "@/integrations/supabase/types";
 import type { FieldDef, FieldFormat, FieldType } from "@/lib/build";
-import {
-  FONT_STACK,
-  HAIRLINE,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  labelText,
-} from "@/components/build/tokens";
+import { fieldStyle } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { FIGTREE, body, label as labelType } from "@/lib/theme/type";
 
 import { StringField } from "./StringField";
 import { TextField } from "./TextField";
@@ -71,24 +67,46 @@ export type FieldWidget = ComponentType<FieldWidgetProps>;
 
 // --- shared control styling --------------------------------------------------
 
-export const CONTROL_BACKGROUND = "rgba(255,255,255,0.025)";
-export const CONTROL_BORDER = "rgba(255,255,255,0.06)";
-/** Focus ring. Teal rather than orange: orange is the instruction category. */
-export const CONTROL_FOCUS = "rgba(46,196,182,0.55)";
-/** The "on" surface of a toggle. Teal, for the same reason as the focus ring. */
-export const TEAL_TRACK = "rgba(46,196,182,0.75)";
+/* ── The control, on BG-P07's field treatment ──────────────────────────────────
+   EVERY WIDGET IN THIS DIRECTORY IS REPAINTED BY THESE FIVE CONSTANTS, which is
+   why they are here and not in ten files. They were white-alpha values struck
+   for one dark room — a 2.5%-white ground, a 6%-white border, a teal focus edge
+   — so on Exhibition the fields were nearly invisible against the panel and the
+   ink was black on black.
+
+   `fieldStyle()` is the kit's own answer (src/lib/theme/controls.ts): `--recess`
+   for the ground, because a field is a surface the page is cut INTO and that is
+   what separates it from a button standing on the page; `--line` at rest and
+   `--action` once focused; `--r-control`; and the shared focus ring. Taking it
+   here means the composer's fields and every other input in the application are
+   one control rather than two that resemble each other.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/** The resting field, kept as a name because ten widgets spread it. */
+export const CONTROL_BACKGROUND = t.recess;
+export const CONTROL_BORDER = t.line;
+/** Focus. `--action` is the accent a focused field brightens toward. */
+export const CONTROL_FOCUS = t.action;
+/**
+ * The "on" surface of a toggle.
+ *
+ * KEEPS ITS NAME AND CHANGES ITS VALUE, like everything else in the BG-P21
+ * repointing: `TEAL_TRACK` is `--action`, which is burnt orange on Exhibition
+ * and salmon on Dusk. Read the name as the job — "a toggle that is on" — rather
+ * than as the colour it was. BG-P07's switch uses `--action` for exactly this.
+ */
+export const TEAL_TRACK = t.action;
 
 export const controlStyle: CSSProperties = {
+  ...fieldStyle(),
   width: "100%",
   boxSizing: "border-box",
-  fontFamily: FONT_STACK,
+  fontFamily: FIGTREE,
   fontSize: 13,
-  fontWeight: 300,
+  /* 400, not 300. Below 18px the theme never emits Figtree under weight 400,
+     and this is the role that sets most of the prose in the inspector. */
+  fontWeight: 400,
   lineHeight: 1.6,
-  color: TEXT_PRIMARY,
-  background: CONTROL_BACKGROUND,
-  border: `1px solid ${CONTROL_BORDER}`,
-  borderRadius: 8,
   padding: "7px 10px",
   outline: "none",
 };
@@ -97,7 +115,9 @@ export const compactControlStyle: CSSProperties = {
   ...controlStyle,
   fontSize: 12,
   padding: "5px 8px",
-  borderRadius: 6,
+  /* A list row's sub-field is still a control, so still `--r-control`. The 6px
+     it used was a seventh step in a six-step scale. */
+  borderRadius: r.control,
 };
 
 /** Applied on focus and removed on blur, because an inline style has no :focus. */
@@ -109,23 +129,27 @@ export function blurControl(element: HTMLElement) {
   element.style.borderColor = CONTROL_BORDER;
 }
 
+/** A field's label: Figtree 13/500, which is the theme's `label` role exactly. */
 export const fieldLabelStyle: CSSProperties = {
-  ...labelText,
+  ...labelType,
+  color: t.text,
   display: "flex",
   alignItems: "baseline",
   gap: 6,
 };
 
+/** The hint under a label. `--text2`, so it reads as guidance, not as a value. */
 export const helpStyle: CSSProperties = {
+  ...body,
   fontSize: 11,
-  fontWeight: 300,
+  fontWeight: 400,
   lineHeight: 1.5,
-  color: TEXT_MUTED,
+  color: t.text2,
   margin: 0,
 };
 
-export const hairlineStyle = HAIRLINE;
-export const secondaryTextColour = TEXT_SECONDARY;
+export const hairlineStyle = t.line;
+export const secondaryTextColour = t.text2;
 
 // --- the registry ------------------------------------------------------------
 

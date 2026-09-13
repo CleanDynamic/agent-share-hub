@@ -44,7 +44,8 @@ import {
   type NodeTree,
 } from "@/lib/build";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
-import { ORANGE, TEXT_MUTED } from "@/components/build/tokens";
+import { t } from "@/lib/theme/tokens";
+import { data as dataType } from "@/lib/theme/type";
 import {
   fieldLabelStyle,
   helpStyle,
@@ -317,12 +318,16 @@ export function FieldShell({
         <label htmlFor={id}>{field.label}</label>
       )}
       {showRequired && (
+        /* Mono: "required" is a fact about the field rather than prose on it,
+           and the same face carries every other marker in the panel. --action
+           while it is still empty, --text2 once it is answered — the accent is
+           the ask, not a permanent warning. */
         <span
           style={{
+            ...dataType,
             fontSize: 10,
-            fontWeight: 500,
             letterSpacing: "0.04em",
-            color: isMissing ? ORANGE : TEXT_MUTED,
+            color: isMissing ? t.action : t.text2,
           }}
         >
           required
@@ -581,7 +586,16 @@ export function SchemaFields({ nodeId, fields, payload, onPatch }: SchemaFieldsP
               {isOpen ? "\u25BE" : "\u25B8"}
             </span>
             More detail
-            <span style={{ fontSize: 10, fontWeight: 400, color: TEXT_MUTED }}>
+            {/* How many are behind the fold. Mono and tabular, so the digit
+                cannot shift the label as a schema gains a field. */}
+            <span
+              style={{
+                ...dataType,
+                fontSize: 10,
+                color: t.text2,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
               {optional.length}
             </span>
           </button>

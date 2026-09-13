@@ -45,6 +45,8 @@ import {
   helpStyle,
   type FieldWidgetProps,
 } from "./index";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 
 /** One selectable node, with the two things the row shows. */
 export interface NodeRefOption {
@@ -137,13 +139,13 @@ const rowButton: React.CSSProperties = {
   width: "100%",
   textAlign: "left",
   padding: "5px 8px",
-  borderRadius: 6,
+  borderRadius: r.chip,
   background: "transparent",
   border: "1px solid transparent",
   color: TEXT_PRIMARY,
   fontFamily: "inherit",
   fontSize: 12,
-  fontWeight: 300,
+  fontWeight: 400,
   cursor: "pointer",
 };
 
@@ -281,8 +283,8 @@ export function NodeRefField(props: FieldWidgetProps) {
               flexDirection: "column",
               gap: 4,
               padding: 6,
-              borderRadius: 8,
-              background: "rgba(255,255,255,0.025)",
+              borderRadius: r.control,
+              background: t.recess,
               border: `1px solid ${HAIRLINE}`,
             }}
           >
@@ -351,7 +353,7 @@ export function NodeRefField(props: FieldWidgetProps) {
                         onClick={() => choose(option.node.id)}
                         style={{
                           ...rowButton,
-                          background: isSelected ? "rgba(255,255,255,0.05)" : "transparent",
+                          background: isSelected ? tokenAlpha("action", 0.1) : "transparent",
                         }}
                       >
                         <TypePill nodeType={option.nodeType} typeKey={option.node.type} />
