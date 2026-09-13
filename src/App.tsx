@@ -2,7 +2,6 @@ import { Suspense, lazy } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
-import { BlobBackground } from "@/components/BlobBackground";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -120,7 +119,18 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <ErrorBoundary>
-    <BlobBackground />
+    {/* BG-P18b. `<BlobBackground />` stood here and painted the page: a fixed
+        inset-0 div carrying a hard-coded #25252F ground under a 20px dot grid,
+        in BOTH themes. That is what put three light panels on a dark dotted
+        field with Exhibition selected — two themes on one screen, which the
+        theme's first rule forbids outright. The ground is now `--bg` on
+        html/body/#root and nothing else paints behind the frame.
+
+        THE WRAPPER STAYS. Its `position: relative; z-index: 1` existed to lift
+        the app above that fixed background, but it is also the stacking
+        context every portalled overlay in the application has been positioned
+        against; removing it is a structural change to an existing layout
+        element for no visual gain. */}
     <div style={{ position: "relative", zIndex: 1 }}>
     <HelmetProvider>
     <QueryClientProvider client={queryClient}>

@@ -6,7 +6,8 @@
    - NO perspective / transform-style / rotateY / will-change / scale()
    - NO backdrop-filter anywhere in this file (BG-P13 — see .fs-rail)
    - transitions only on color / background / opacity, max 0.15s
-   - No page background — BlobBackground paints it.
+   - No page background HERE, and none anywhere else either: BG-P18b deleted
+     BlobBackground, and `html, body, #root` in index.css are the one ground.
 
    BG-P13. Every colour, border and radius below is a `var(--token)` from the
    buildgallery theme, so the frame follows <html data-theme> with no re-render.
@@ -15,10 +16,17 @@
    widths and the 768/1024 breakpoints are exactly as they were.
 ──────────────────────────────────────────────── */
 
+/* ── The frame is a layout container, not a surface (BG-P18b) ──
+     Both of these are stated `transparent` rather than left unset. An unset
+     background is transparent too, but "transparent" is a decision a reader can
+     check against the acceptance test — `#root`, `.fs-root` and `.fs-frame`
+     must each report `rgba(0, 0, 0, 0)` — and an omission is the shape a page
+     ground grows back into. ── */
 .fs-root {
   min-height: 100dvh;
   display: flex;
   justify-content: center;
+  background: transparent;
   font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--text);
 }
@@ -31,6 +39,7 @@
   max-width: 1200px;
   height: 100dvh;
   padding: 24px;
+  background: transparent;
   box-sizing: border-box;
 }
 
