@@ -192,9 +192,16 @@ test.describe("BG-P15 — the moved pages' own content survived the move", () =>
 
     await expect(page.getByRole("heading", { name: "Builds worth running", level: 1 })).toBeVisible();
     await expect(page.getByText("GALLERY", { exact: true })).toBeVisible();
-    // The facet panel stayed a sibling under the header rather than moving
-    // into PageHeader's actions slot — see the note in Gallery.tsx.
-    await expect(page.locator('[data-visual-slot="gallery-filters"]')).toBeVisible();
+    /* The facets stayed a sibling under the header rather than moving into
+       PageHeader's actions slot — see the note in Gallery.tsx.
+
+       BG-P19 RENAMED THE SLOT from `gallery-filters` to `gallery-facets` and
+       took the panel away with it: the filters are a band on the page's ground
+       now, not a glass card. The CLAIM this test makes is unchanged and is
+       still the one BG-P15 cared about — the facets are under the header, on
+       the page, not in the header's corner — so the selector moves and the
+       assertion does not. */
+    await expect(page.locator('[data-visual-slot="gallery-facets"]')).toBeVisible();
   });
 
   test("the import page still leads with its heading and its drop target", async ({ page }) => {
