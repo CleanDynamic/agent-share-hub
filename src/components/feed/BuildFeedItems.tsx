@@ -41,21 +41,17 @@ import { GalleryCard } from "@/components/gallery/GalleryCard";
 import { gapEdge } from "@/components/brand/GapMarker";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
+import { PlaqueLamp } from "@/components/brand/Plaque";
 import { chipStyle } from "@/lib/theme/controls";
+import { elevation } from "@/lib/theme/elevation";
+import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import {
   body as bodyText,
+  data as dataText,
   eyebrow as eyebrowText,
   tabular,
 } from "@/lib/theme/type";
-import {
-  HAIRLINE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  cardGlass,
-} from "@/components/build/tokens";
 import type {
   BountyFeedItem,
   BuildFeedItem,
@@ -82,6 +78,17 @@ const itemFrame: CSSProperties = {
   gap: 8,
   marginBottom: 12,
 };
+
+/**
+ * One line of body text, in pixels.
+ *
+ * Derived from the role rather than typed, so a change to the body's size or
+ * leading moves the reproduction strip's lamp with it instead of leaving it a
+ * pixel or two off the line it is meant to sit on.
+ */
+const LINE_BOX = Math.round(
+  parseFloat(bodyText.fontSize) * Number(bodyText.lineHeight),
+);
 
 /**
  * What the feed asks the card for.
@@ -263,7 +270,7 @@ function BountyItem({
 }
 
 /**
- * "@rae ran Inbox triage agent — worked on Sonnet 4.5: 'Held up on 300.'"
+ * "@rae ran Inbox triage agent — worked on sonnet-4.5: 'Held up on 300.'"
  *
  * The handle leads because the claim is only worth anything attached to a
  * person: the platform's one unfakeable number counts people who are not the
@@ -274,11 +281,33 @@ function BountyItem({
  * one person's data is a thing the next reader needs to know before they spend
  * an hour on it. A strip that only ever said "worked" would be a testimonials
  * page wearing a feed's clothes.
+ *
+ * NOT A CARD, AND BG-P18 IS WHERE IT STOPS LOOKING LIKE A DIM ONE. It was a
+ * glass panel at 2.5% white with a card's radius and a teal or grey left edge —
+ * which is to say a build card with the volume down, and a reader scanning the
+ * column had to read it before knowing it was not one. Now it is a surface cut
+ * INTO the page rather than one sitting on it: `--recess` under a `--line`
+ * hairline at `--r-control`, which is the list-row shape and not the card shape.
+ * The step goes the opposite way to every card around it, so the difference is
+ * legible before a single word is (`law-of-similarity`).
+ *
+ * THE LAMP IS THE PLAQUE'S LAMP, imported rather than redrawn. A card's plaque
+ * says "confirmed 3 days ago, on sonnet-4.5" with an amber oval beside it; this
+ * strip is one of the confirmations that claim is made of. Lit when it worked,
+ * dimmed to the same 45% when it did not — the plaque's own grammar for a claim
+ * that has weakened, spent on a claim that was negative to begin with. Amber
+ * stays LIGHT and never type, which is the rule the colour contract states
+ * twice.
+ *
+ * THE READER'S OWN WORDS ARE THE ONLY THING IN `--text`. Everything else — who,
+ * what they ran, whether it worked, on which model — is `--text2`, because the
+ * strip is evidence and the evidence is the sentence in quotes. The model name
+ * takes DM Mono, which is the data face and what every other model name on the
+ * platform is set in.
  */
 function ReproNoteStrip({ item }: { item: ReproNoteFeedItem }) {
   const who = item.handle ? `@${item.handle}` : "someone";
   const verb = item.worked ? "worked" : "didn’t work";
-  const on = item.model ? ` on ${item.model}` : "";
 
   return (
     <div data-testid="feed-item-repro" style={itemFrame}>
@@ -287,35 +316,43 @@ function ReproNoteStrip({ item }: { item: ReproNoteFeedItem }) {
         // The build and the rebuild carry the gallery card's own slot; this
         // strip is a surface of its own, so it names one.
         data-visual-slot="feed-repro-strip"
+        data-repro-worked={item.worked ? "" : undefined}
         style={{
-          ...cardGlass,
-          display: "block",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 8,
           padding: "10px 14px",
+          borderRadius: r.control,
+          background: t.recess,
+          ...elevation.flat,
           textDecoration: "none",
-          // Quieter than a card on purpose: a note about a build should not
-          // compete with the builds around it.
-          background: "rgba(255,255,255,0.015)",
-          borderLeft: `2px solid ${item.worked ? TEAL : HAIRLINE}`,
         }}
       >
-        <p
+        {/* One line box tall, so the lamp centres on the FIRST line rather than
+            on the paragraph: a two-line note would otherwise float it halfway
+            down the strip, beside nothing. The height is derived from the body
+            role rather than typed, so it cannot drift from the text it sits
+            beside. */}
+        <span
           style={{
-            margin: 0,
-            fontSize: 13,
-            fontWeight: 300,
-            lineHeight: 1.55,
-            color: TEXT_SECONDARY,
+            display: "flex",
+            alignItems: "center",
+            height: LINE_BOX,
+            flexShrink: 0,
           }}
         >
-          <span style={{ fontWeight: 500, color: TEXT_PRIMARY }}>{who}</span> ran{" "}
-          <span style={{ fontWeight: 500, color: TEXT_PRIMARY }}>{item.title}</span>
-          {" — "}
-          <span style={{ color: item.worked ? TEAL : TEXT_MUTED }}>
-            {verb}
-            {on}
-          </span>
+          <PlaqueLamp dim={!item.worked} />
+        </span>
+        <p style={{ ...bodyText, margin: 0, color: t.text2 }}>
+          {who} ran {item.title} — {verb}
+          {item.model ? (
+            <>
+              {" on "}
+              <span style={dataText}>{item.model}</span>
+            </>
+          ) : null}
           {": "}
-          <span style={{ fontStyle: "italic" }}>“{item.note}”</span>
+          <span style={{ color: t.text }}>“{item.note}”</span>
         </p>
       </Link>
     </div>
