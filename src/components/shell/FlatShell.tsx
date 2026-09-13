@@ -5,11 +5,12 @@ import "./flat-shell.css";
 /* ────────────────────────────────────────────────
    FlatShell — pure presentational app frame.
 
-   A flat, standard-2D replacement for NeoScaleShell's compositing-heavy
-   frame. Hard rules (see flat-shell.css): no SVG filters, no 3D
-   transforms, no scale wrapper, and — since BG-P13 — no backdrop-filter
-   at all: both rails are full-height fixed panels, which the theme's
-   glass rule never blurs.
+   The application's frame, flat and standard-2D. It replaced the
+   compositing-heavy NeoScaleShell, which BG-P17 deleted — so this is now
+   the only frame, not an alternative to one. Hard rules (see
+   flat-shell.css): no SVG filters, no 3D transforms, no scale wrapper,
+   and — since BG-P13 — no backdrop-filter at all: both rails are
+   full-height fixed panels, which the theme's glass rule never blurs.
 
    This component knows nothing about routing, auth, or data — the wired
    container (AppShell) supplies everything through props.

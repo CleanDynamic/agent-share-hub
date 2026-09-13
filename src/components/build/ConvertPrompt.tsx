@@ -7,7 +7,7 @@
 // ContentDetail.tsx is on the existing content path and is out of bounds for
 // this prompt — every component it imports is too — so the affordance takes
 // the route the task names as the alternative: /convert/:contentItemId, its
-// own page, outside NeoScaleShell, lazy-loaded, importing nothing from the
+// own page, outside the application frame, lazy-loaded, importing nothing from the
 // content path but the block type labels. Nothing on the old path changed to
 // make this reachable, and nothing on it has to change for it to work.
 //

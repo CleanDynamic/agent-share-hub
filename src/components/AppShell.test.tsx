@@ -7,9 +7,12 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
    AppShell frame tests.
 
    These lock in the behaviour the flat shell inherited from
-   NeoScaleShell: nav visibility filtering (authOnly / creatorOnly),
-   badge sources, active-route highlighting, single-outlet routing and
-   the mobile rails-hidden mode with the existing mobile chrome.
+   NeoScaleShell, the frame it replaced: nav visibility filtering
+   (authOnly / creatorOnly), badge sources, active-route highlighting,
+   single-outlet routing and the mobile rails-hidden mode with the
+   existing mobile chrome. That shell was deleted in BG-P17, which is
+   what makes these assertions the only remaining record of what the
+   frame is supposed to do.
 ──────────────────────────────────────────────── */
 
 interface MockProfile {

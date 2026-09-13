@@ -1,14 +1,16 @@
 /* ────────────────────────────────────────────────
-   shared-ns.css — .ns-* rules used by components OUTSIDE the app shell.
-   Extracted verbatim from NeoScaleShell's injected CSS so these
-   consumers no longer depend on the shell being mounted:
+   shared-ns.css — .ns-* rules used by components OUTSIDE the app frame.
+   Copied verbatim out of the injected CSS of NeoScaleShell, the frame this
+   application used to render in, so that these consumers would not depend on
+   that shell being mounted. It was deleted in BG-P17, so this file is now the
+   only definition of the four:
      .ns-back-btn        → src/pages/BountyUpload.tsx
      .ns-section-label   → src/components/layout/RightPanelExplore.tsx
      .ns-engagement-bar  → src/components/content-detail/FloatingEngagementBar.tsx
      .ns-comment-drawer  → src/components/content-detail/PrimitiveCommentDrawer.tsx
    Imported once in src/main.tsx. Do not add shell-internal rules here.
 
-   BG-P17 RETIRES NeoScaleShell, AND FOUND NOTHING LEFT TO EXTRACT. The audit
+   BG-P17 RETIRED NeoScaleShell, AND FOUND NOTHING LEFT TO EXTRACT. The audit
    that prompt ran resolved every .ns-* class referenced by a live file to a
    definition outside the shell: the four below, the Explore rail's fifty-two in
    src/components/shell/right-rail-explore.css, .ns-badge in src/index.css, and
