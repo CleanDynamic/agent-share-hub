@@ -10,7 +10,12 @@
 @tailwind utilities;
 
 :root {
-  --bg: #25252F;
+  /* BG-P18b. `--bg: #25252F` stood here and is deleted. It was already dead —
+     the buildgallery block below redeclares --bg at equal specificity and
+     later in the cascade, so the page resolved #E4E6E8 / #1F1B2B either way —
+     but a legacy ground still spelled out in the token block is the line a
+     reader copies. Only this one line went; BG-P29 owns the rest of the
+     block. */
   --surface: rgba(255,255,255,0.03);
   --glass-panel-surface: 240 12% 80%;
   --border: rgba(255, 255, 255, 0.14);
@@ -235,13 +240,39 @@
   }
 }
 
-/* BG-P03. This rule sits outside @layer base, so it wins over the body block
-   there — the face has to be retired in both places or Inter keeps rendering.
-   Size, weight and line-height are deliberately left to the layered rule;
-   only the family is restated here. */
-body {
+/* ── One ground (BG-P18b) ─────────────────────────────────────────────────────
+   THE PAGE IS `--bg` AND NOTHING ELSE. Until this prompt the ground was painted
+   by a fixed inset-0 `BlobBackground` div carrying #25252F under a 20px dot
+   grid in both themes, so Exhibition rendered light panels on a dark patterned
+   field. That component is unmounted and deleted; these three elements are now
+   the only thing behind the frame.
+
+   `background` AS THE SHORTHAND, DELIBERATELY. It resets `background-image`
+   along with the colour, so no gradient, pattern, dot grid or noise overlay can
+   survive on the page ground by being declared somewhere further up the
+   cascade. The theme's rule is that a surface is a token; the page's is that it
+   is one token.
+
+   `min-height: 100dvh` on #root, not on body: #root is the element the frame
+   lives in, and the frame's own 100dvh is measured against it.
+
+   BG-P03's note still applies to the family below: this rule sits outside
+   @layer base so it wins over the body block there, and the face has to be
+   retired in both places or Inter keeps rendering. Size, weight and
+   line-height are left to the layered rule.
+   ─────────────────────────────────────────────────────────────────────────── */
+html,
+body,
+#root {
   background: var(--bg);
   color: var(--text);
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+body {
   font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -374,11 +405,16 @@ body {
   display: none;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar.
+   BG-P18b. The track was #0a0a10 and the thumb #333 — the legacy dark paint's
+   last three hexes on the page ground, which drew a near-black gutter down the
+   right of an Exhibition page. Repointed in place at the tokens: the track is
+   the ground it runs through, the thumb a hairline, and the hover the step
+   `--text2` already is everywhere else. No measurement moved. */
 ::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: #0a0a10; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #555; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text2); }
 
 .mention-link {
   color: #E8571A;

@@ -7,12 +7,15 @@
 
    BG-P13. The colours are no longer verbatim: every one is a var(--token),
    so the rail follows <html data-theme> with the rest of the frame. Section
-   headings take the mono eyebrow role in --text2, rows take --r-control and a
-   --bg hover, chips take --r-chip, and the search field takes the BG-P07 field
-   paint. A row hovers to --bg rather than to --recess because --recess is the
-   rail's own ground; --bg is the one step from it that moves the right way in
-   both themes, so every label on a hovered row gains contrast. Declarations were repointed in place — no rule was added or
-   removed, and no measurement moved.
+   headings take the mono eyebrow role in --text2, rows take --r-control, chips
+   take --r-chip, and the search field takes the BG-P07 field paint.
+
+   BG-P18b. EVERY HOVER FLIPPED FROM --bg TO --recess, and it is the same
+   argument BG-P13 made, run again after the ground moved. That note said a row
+   hovers to --bg because --recess is the rail's own ground; the rail is now
+   --bg — it lost its panel when the three columns became one surface — so
+   --recess is the step that separates a hovered row from it, in both themes.
+   --bg on --bg would be no hover at all.
 ──────────────────────────────────────────────── */
 
 .ns-right-title {
@@ -22,19 +25,23 @@
   letter-spacing: 0.08em; text-transform: uppercase;
   padding: 0 4px; margin-bottom: 14px;
 }
+/* BG-P18b. 40px, which is the height of every control in this frame — the
+   buttons in the left rail, the rows in both rails, the BG-P07 field. It was 34.
+   The glyph is 16 rather than 13, and 24px of margin under the field is the gap
+   to the first section heading. */
 .ns-right-search {
-  width: 100%; height: 34px;
+  width: 100%; height: 40px;
   border-radius: var(--r-control);
   background: var(--recess);
   border: 1px solid var(--line);
   display: flex; align-items: center;
   padding: 0 12px; gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
   cursor: pointer;
   transition: border-color 0.2s;
 }
 .ns-right-search:hover { border-color: var(--text2); }
-.ns-right-search svg { width: 13px; height: 13px; color: var(--text2); flex-shrink: 0; }
+.ns-right-search svg { width: 16px; height: 16px; color: var(--text2); flex-shrink: 0; }
 /* BG-P13. The wrapper above IS the field — it is what carries the --recess
    ground, the --line border and the --r-control radius, with the search icon
    inside it. BG-P07's global `input` rule paints every raw <input> in the app
@@ -48,13 +55,19 @@
   background: transparent !important;
   border: none !important;
   outline: none !important;
-  font-size: 11px; color: var(--text);
+  /* 15px: the rail's own row size, and the size a field's value has to be to
+     be read back. 11 was under every floor in the system. */
+  font-size: 15px; color: var(--text);
   font-family: inherit;
 }
 .ns-right-search input::placeholder { color: var(--text2); }
+/* The rail's padding is `16px 0 24px 24px` now, and the field is 40px tall
+   starting at the rail's 16px top inset — so the dropdown hangs 8px under it at
+   the rail's own inline edges rather than at the 14px inset of a rail that had
+   one. */
 .ns-right-search-results {
-  position: absolute; left: 14px; right: 14px; top: 68px;
-  background: var(--bg); border: 1px solid var(--line);
+  position: absolute; left: 24px; right: 0; top: 64px;
+  background: var(--recess); border: 1px solid var(--line);
   border-radius: var(--r-panel); max-height: 300px; overflow-y: auto; z-index: 20;
   padding: 6px;
   box-shadow: var(--elev-raised);
@@ -64,153 +77,45 @@
   padding: 6px 8px; border-radius: var(--r-control); cursor: pointer;
   transition: background 0.15s;
 }
-.ns-search-result:hover { background: var(--recess); }
-.ns-search-result-title { font-size: 11px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.ns-search-result-badge { font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace; font-size: 9px; padding: 1px 5px; border-radius: var(--r-chip); background: var(--recess); color: var(--text2); flex-shrink: 0; }
+.ns-search-result:hover { background: var(--bg); }
+.ns-search-result-title { font-size: 15px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.ns-search-result-badge { font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace; font-size: 12px; padding: 1px 5px; border-radius: var(--r-chip); background: var(--recess); color: var(--text2); flex-shrink: 0; }
 
-/* ── Right panel tile grid ── */
-.ns-tile-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 14px;
-}
+/* ── BG-P18b — twenty-one rules deleted here, and every one of them because the
+     markup that wore it is gone ──
 
-.ns-tile {
-  position: relative;
-  border-radius: var(--r-control);
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: background 0.15s;
-  background: var(--glass-2);
-  border: none;
-  overflow: hidden;
-  width: 100%;
-  text-align: left;
-}
+     `.ns-right-title` — the "EXPLORE" eyebrow over the search field.
+     `.ns-tile-grid`, `.ns-tile`, `.ns-tile-label`, `.ns-tile-count` and the
+       `ns-border-fill` keyframe — the three Browse tiles, which all navigated to
+       "/" and are now two rows that navigate somewhere.
+     `.ns-right-divider` — the hairline between Browse and Trending, which sat
+       between two sections 14px apart. They are 32 apart now and the space says
+       it.
+     `.ns-trending-title`, `.ns-trending-list`, `.ns-trending-item`,
+       `.ns-trending-rank`, `.ns-trending-info`, `.ns-trending-name`,
+       `.ns-trending-badge` — the trending rows, which are the rail's one row
+       shape now, with a mono count where a rank and a difficulty chip were.
+     `.ns-section-title` — the second spelling of the section heading.
+     `.ns-auth-btns`, `.ns-auth-btn`, `.ns-auth-btn.signin`, `.ns-auth-btn.join`
+       and their two hovers — the "Sign in" / "Join free" pair this rail showed
+       eight inches from the identical pair in the left rail.
+     `.ns-footer-links` — the footer's container, which carried a `border-top`
+       and a 16px margin; the links are spaced by a flexible spacer and an 8px
+       gap now.
 
-.ns-tile::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 20%; bottom: 20%;
-  width: 2px;
-  border-radius: 0 2px 2px 0;
-  background: var(--tile-hover-color, var(--line));
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.ns-tile:hover::before {
-  opacity: 1;
-}
-
-.ns-tile::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: 13px;
-  padding: 1px;
-  background: conic-gradient(
-    var(--tile-hover-color, var(--action)) var(--tile-fill, 0%),
-    transparent var(--tile-fill, 0%)
-  );
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-  z-index: 0;
-}
-
-.ns-tile:hover {
-  background: var(--bg);
-}
-
-.ns-tile:hover::after {
-  opacity: 1;
-  animation: ns-border-fill 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes ns-border-fill {
-  from {
-    background: conic-gradient(
-      var(--tile-hover-color) 0%,
-      transparent 0%
-    );
-  }
-  to {
-    background: conic-gradient(
-      var(--tile-hover-color) 100%,
-      transparent 100%
-    );
-  }
-}
-
-.ns-tile-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-  text-transform: none;
-  letter-spacing: 0;
-  flex: 1;
-}
-
-.ns-tile-count {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text2);
-  position: relative;
-  z-index: 1;
-}
-
-.ns-right-divider { height: 1px; background: var(--line); margin: 4px 0 14px; }
-.ns-trending-title {
-  font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
-  font-size: 12px; font-weight: 500;
-  color: var(--text2);
-  letter-spacing: 0.08em; text-transform: uppercase;
-  padding: 0 4px; margin-bottom: 10px;
-}
-.ns-trending-list {
-  display: flex; flex-direction: column; gap: 6px;
-}
-.ns-trending-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 8px; border-radius: var(--r-control);
-  cursor: pointer; transition: background 0.2s;
-}
-.ns-trending-item:hover { background: var(--bg); }
-.ns-trending-rank { font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace; font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text2); width: 16px; text-align: center; }
-.ns-trending-info { flex: 1; min-width: 0; }
-.ns-trending-name { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ns-trending-badge {
-  display: inline-block; padding: 2px 7px;
-  border-radius: var(--r-chip); font-size: 9px; font-weight: 600; letter-spacing: 0.3px;
-}
-/* BG-P05: the four difficulty colour rules that stood here are retired.
-   .ns-trending-badge above keeps the shape; the label's colour now comes from
-   DIFFICULTY_LABEL_CLASS in @/lib/content-types. */
+     `src/lib/theme/ns-classes.test.ts` is the map of which stylesheet defines
+     which class a live file wears, and its list is updated in the same commit.
+     The conic-gradient border animation went with `.ns-tile`: it painted a
+     rotating accent edge on hover, which is decoration this system does not
+     have and a compositing layer per tile besides. ── */
 
 /* ── Right panel sections ── */
-.ns-section-title {
-  font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
-  font-size: 12px; font-weight: 500;
-  color: var(--text2);
-  letter-spacing: 0.08em; text-transform: uppercase;
-  padding: 0 4px; margin: 14px 0 8px;
-}
 .ns-curator-item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 8px; border-radius: var(--r-control);
   cursor: pointer; transition: background 0.15s;
 }
-.ns-curator-item:hover { background: var(--bg); }
+.ns-curator-item:hover { background: var(--recess); }
 .ns-curator-avatar {
   width: 22px; height: 22px; border-radius: 50%;
   background: var(--recess); flex-shrink: 0;
@@ -222,7 +127,7 @@
   padding: 8px; border-radius: var(--r-control);
   cursor: pointer; transition: background 0.15s;
 }
-.ns-collection-item:hover { background: var(--bg); }
+.ns-collection-item:hover { background: var(--recess); }
 .ns-follow-item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 4px;
@@ -234,42 +139,15 @@
 }
 .ns-follow-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ns-follow-info { flex: 1; min-width: 0; }
-.ns-follow-name { font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ns-follow-handle { font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace; font-size: 10px; color: var(--text2); }
-.ns-footer-links {
-  margin-top: 16px; padding: 12px 4px 4px;
-  border-top: 1px solid var(--line);
-  display: flex; flex-direction: column; gap: 4px;
-}
+.ns-follow-name { font-size: 15px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ns-follow-handle { font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace; font-size: 12px; color: var(--text2); }
+/* 12px is the floor DM Mono is allowed at, and the face is stated here rather
+   than inherited: these two are data-face links, like every other mono label in
+   the rail. 10px was under the floor. */
 .ns-footer-link {
-  font-size: 10px; color: var(--text2);
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+  font-size: 12px; color: var(--text2);
   text-decoration: none; transition: color 0.15s;
   cursor: pointer;
 }
 .ns-footer-link:hover { color: var(--text); }
-
-/* ── Guest auth buttons (rail variant, unchanged from old shell) ── */
-.ns-auth-btns { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
-.ns-auth-btn {
-  display: flex; align-items: center; justify-content: center;
-  height: 32px; border-radius: var(--r-control); font-size: 12px; font-weight: 600;
-  cursor: pointer;
-  /* `transition: all` is forbidden by the theme — named properties only. */
-  transition: background-color 0.2s, border-color 0.2s, color 0.2s, opacity 0.2s;
-  border: none;
-}
-/* BG-P13. NEITHER OF THESE IS THE PRIMARY, AND THAT IS THE POINT. A
-   signed-out visitor at 1024 and up sees this pair AND the identical pair in
-   the left rail, so painting "Join free" as an --action fill here put two
-   primaries on one screen — the theme allows one, and two cancel each other
-   out. The left rail keeps the fill; this pair is the quieter repeat, one step
-   apart from each other by label colour alone. */
-.ns-auth-btn.signin {
-  background: var(--glass-2); border: 1px solid var(--line);
-  color: var(--text2);
-}
-.ns-auth-btn.signin:hover { background: var(--bg); color: var(--text); }
-.ns-auth-btn.join {
-  background: var(--glass-2); border: 1px solid var(--line); color: var(--text);
-}
-.ns-auth-btn.join:hover { background: var(--bg); }

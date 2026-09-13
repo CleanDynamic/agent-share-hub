@@ -27,25 +27,17 @@
 // hover, focus-visible — that a style object cannot read.
 
 import React from "react";
-import {
-  PlusCircle,
-  Trophy,
-  Sparkles,
-  Users,
-  TrendingUp,
-  Clock,
-  ChevronUp,
-  Layers,
-  RotateCw,
-} from "lucide-react";
+/* Five of the nine glyphs that were imported here went with the empty state's
+   disc: Sparkles, Users, TrendingUp, Clock, Layers and RotateCw each stood for
+   one tab's "nothing here" and said no more than that tab's own sentence did. */
+import { PlusCircle, Trophy, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   FOCUS_RING_CLASS,
-  TAB_TRIGGER_CLASS,
+  GLASS_BLUR,
   chipStyle,
   prefersReducedMotion,
-  tabTriggerStyle,
   uiTransition,
 } from "@/lib/theme/controls";
 import { elevation } from "@/lib/theme/elevation";
@@ -100,7 +92,6 @@ interface FeedShellProps {
   onComposeClick: () => void;
   isEmpty: boolean;
   onEmptyCTAClick: () => void;
-  liveActive: boolean;
   /**
    * BG-P18. The tab's own data failed.
    *
@@ -142,6 +133,50 @@ const TAB_LABEL: Record<FeedTabKey, string> = TABS.reduce(
  */
 const TAB_LABEL_TYPE = { ...labelText, fontSize: 15 } as const;
 
+/** The strip's height, and the line box a label is centred in. */
+const TAB_BAR_HEIGHT = 52;
+
+/**
+ * The width a tab stops dividing at and starts scrolling from.
+ *
+ * Six of these is 576, which fits inside the 600px column and does not fit
+ * inside a phone — so the strip divides evenly on a desktop and scrolls on a
+ * phone from one number rather than from a media query a style object cannot
+ * write.
+ */
+const TAB_MIN_WIDTH = 96;
+
+/** The active mark: 32px of `--action`, centred under the label. */
+const TAB_INDICATOR_WIDTH = 32;
+
+/**
+ * The empty and error states' one line of display type.
+ *
+ * `cardTitle` at 26/32 rather than its own 22/1.25. A card title is one object
+ * among many in a scrolling column; this is the only thing on the screen, and
+ * it has to hold the middle of a viewport on its own. Both clear the 20px floor
+ * the display face carries.
+ */
+const NOTICE_TITLE = { ...cardTitle, fontSize: "26px", lineHeight: "32px" } as const;
+
+/**
+ * The tab's colours, as classes rather than as a style object.
+ *
+ * NOT `TAB_TRIGGER_CLASS`. That constant is the kit's tab and carries a
+ * `--glass` fill and a full-width inset underline on the active one; this row
+ * wants neither — no background, no border, and a 32px bar under the word. What
+ * is shared is the mechanism: rest, hover and active are three states a style
+ * object cannot express without tracking hover in React, and these are
+ * Tailwind's own generated utilities rather than hand-written CSS, which is the
+ * same exception `.scrollbar-hide` takes.
+ *
+ * THE COLOUR IS NOT ALSO SET INLINE. An inline `color` would win over every one
+ * of these and pin the tab to one state.
+ */
+const TAB_LABEL_CLASS =
+  "text-[color:var(--text2)] hover:text-[color:var(--text)] " +
+  "data-[state=active]:text-[color:var(--text)]";
+
 /**
  * What each tab says when it has nothing, in the platform's voice.
  *
@@ -154,38 +189,32 @@ const TAB_LABEL_TYPE = { ...labelText, fontSize: 15 } as const;
  */
 const EMPTY_STATES: Record<
   FeedTabKey,
-  { icon: React.ElementType; headline: string; body: string; cta?: string }
+  { headline: string; body: string; cta?: string }
 > = {
   builds: {
-    icon: Layers,
     headline: "Nothing here yet",
     body: "Builds, rebuilds and the notes people leave after running one land here as they are published. The gallery has more.",
     cta: "Open the gallery",
   },
   foryou: {
-    icon: Sparkles,
     headline: "Nothing here yet",
     body: "This fills as the people you follow publish, run and rebuild things. The gallery has more.",
     cta: "Open Discover",
   },
   following: {
-    icon: Users,
     headline: "Nothing here yet",
     body: "When somebody you follow publishes, shares or comments, it lands here. The gallery has more.",
     cta: "Open Discover",
   },
   trending: {
-    icon: TrendingUp,
     headline: "Nothing trending right now",
     body: "Trending is recalculated through the day, so this is a lull rather than a wall. The gallery has more.",
   },
   recent: {
-    icon: Clock,
     headline: "Nothing published recently",
     body: "New builds, collections and rebuilds arrive here first. The gallery has more.",
   },
   bounties: {
-    icon: Trophy,
     headline: "No open bounties",
     body: "A bounty is a part of a build somebody marked unsolved. None are open right now — and you can mark one on a build of your own.",
     cta: "Start a bounty",
@@ -414,89 +443,129 @@ function ActiveCompetitionsStrip({
 function FeedTabBar({
   activeTab,
   onTabChange,
-  liveActive,
 }: {
   activeTab: FeedTabKey;
   onTabChange: (t: FeedTabKey) => void;
-  liveActive: boolean;
 }) {
-  const still = prefersReducedMotion();
+  const strip = React.useRef<HTMLDivElement>(null);
+
+  /* Task 4.3. Below 768 the six tabs do not fit and the strip scrolls, so a tab
+     made active by the URL — a link, a back button, the bounty CTA — can be
+     off-screen the moment it becomes current. Scrolling it into view is the
+     only part of "the reader can see which tab they are on" that CSS cannot do.
+     `block: "nearest"` so the page itself never scrolls; above 768 nothing
+     overflows and the call is a no-op. */
+  React.useEffect(() => {
+    const el = strip.current?.querySelector<HTMLElement>(`[data-feed-tab="${activeTab}"]`);
+    el?.scrollIntoView({
+      block: "nearest",
+      inline: "center",
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+  }, [activeTab]);
 
   return (
     <div
-      className="sticky top-2 z-10 flex items-center w-full"
+      ref={strip}
+      /* `feed-tabs`, not `feed-tab-bar`, and the mark is `feed-active-mark`:
+         `getByTestId(/^feed-tab-/)` is how the tier-3 spec says "the six tabs",
+         and two more elements answering to that prefix would silently change
+         what that assertion counts. */
+      data-testid="feed-tabs"
+      className="scrollbar-hide"
       style={{
-        minWidth: 0,
-        height: 44,
-        // Opaque, because the bar is sticky and the feed scrolls under it.
-        background: t.recess,
-        ...elevation.flat,
-        borderRadius: r.control,
+        position: "sticky",
+        top: 0,
+        zIndex: 2,
+        height: TAB_BAR_HEIGHT,
+        display: "flex",
+        alignItems: "stretch",
+        overflowX: "auto",
+        /* THE ONE BLUR VALUE, AND ONE OF ONLY TWO SURFACES ON THIS ROUTE THAT
+           MAY SPEND IT. The theme forbids blurring a full-height fixed panel
+           and allows a short sticky region; this is 52px tall and the feed
+           scrolls under it, which is the case glass is for. The bar was
+           `--recess` and opaque, with a `--r-control` radius that made it a
+           floating widget rather than the top edge of the column. */
+        background: t.glass,
+        backdropFilter: GLASS_BLUR,
+        WebkitBackdropFilter: GLASS_BLUR,
+        borderBottom: `1px solid ${t.line}`,
+        borderRadius: 0,
+        /* `min-width: 0` IS NOT ENOUGH, and the reason is worth keeping because
+           it cost a measurement to find. It removes the flex item's automatic
+           minimum, but the bar's own min-content is still six nowrap labels —
+           so at 768, where the frame gives the centre column 528px, the row
+           pushed the column out to 580 and shoved the left rail off the screen.
+           Nothing about this row's inline size depends on what is inside it: it
+           is a horizontal scroller. Saying so is what lets the column shrink
+           and the tabs scroll instead. */
+        contain: "inline-size",
       }}
     >
-      <div
-        className="relative flex h-full flex-1 min-w-0 items-center gap-1 justify-between overflow-x-auto scrollbar-hide"
-        style={{
-          padding: "0 12px",
-          /* `min-width: 0` IS NOT ENOUGH, and the reason is worth writing down
-             because it cost a measurement to find. It removes the flex item's
-             automatic minimum, but the bar's own min-content is still computed
-             from six nowrap labels — so at 768, where the frame gives the centre
-             column 456px, the row pushed the column out to 580 and shoved the
-             left rail off the screen. Nothing about the row's inline size
-             depends on what is inside it: it is a horizontal scroller. Saying so
-             is what lets the column shrink and the tabs scroll instead. */
-          contain: "inline-size",
-        }}
-      >
-        {TABS.map((tab) => (
+      {TABS.map((tab) => {
+        const active = activeTab === tab.key;
+        return (
           <button
             key={tab.key}
             type="button"
             onClick={() => onTabChange(tab.key)}
+            data-feed-tab={tab.key}
             data-testid={`feed-tab-${tab.key}`}
-            // The kit's own attribute, because the kit's own class reads it.
-            // Radix sets this on a real Tabs.Trigger; this row drives a URL
-            // parameter rather than Radix state, so it sets it itself and the
-            // paint is shared rather than reimplemented.
-            data-state={activeTab === tab.key ? "active" : "inactive"}
-            className={`flex-none ${TAB_TRIGGER_CLASS} ${FOCUS_RING_CLASS}`}
+            /* BG-P07's own attribute, kept: a Radix trigger sets it, this row
+               drives a URL parameter rather than Radix state, and the two mark
+               "current" the same way. The class below reads it. */
+            data-state={active ? "active" : "inactive"}
+            aria-current={active ? "page" : undefined}
+            className={`${TAB_LABEL_CLASS} ${FOCUS_RING_CLASS}`}
             style={{
-              ...tabTriggerStyle(),
+              /* `flex: 1 1 0` is what makes the six equal — a basis of `auto`
+                 would size each to its own label and hand "Following" more room
+                 than "Recent". 600 / 6 = 100 in the standard column. The
+                 min-width is the floor at which they stop dividing and start
+                 scrolling, which is what happens below 768. */
+              position: "relative",
+              flex: "1 1 0",
+              minWidth: TAB_MIN_WIDTH,
+              height: "100%",
+              padding: 0,
+              border: "none",
+              background: "transparent",
               ...TAB_LABEL_TYPE,
+              lineHeight: `${TAB_BAR_HEIGHT}px`,
               textAlign: "center",
               whiteSpace: "nowrap",
-              padding: "8px 12px",
-              border: "none",
+              cursor: "pointer",
+              transition: uiTransition(),
             }}
           >
             {tab.label}
-          </button>
-        ))}
-      </div>
-      {liveActive && (
-        <div
-          className="flex items-center gap-1.5"
-          style={{ flex: "0 0 auto", paddingRight: 12, paddingLeft: 8 }}
-        >
-          {/* `--evidence` is the token for "it worked, it is live", and the lamp
-              carries the signal rather than the word: amber is spoken for by the
-              reproduction lamp, and neither accent is legal as 12px type. */}
-          <span className="relative flex h-[6px] w-[6px]">
-            {still ? null : (
+            {/* THE ACTIVE MARK IS A BAR UNDER THE LABEL, NOT A CHIP AROUND IT.
+                BG-P18 gave the current tab a `--glass` fill at `--r-chip`,
+                which made one tab read as a button and the other five as text —
+                six labels with one of them current is what a tab row is. 32px
+                rather than the cell's full 100 so the mark belongs to the word
+                rather than to the column, and an absolutely positioned span
+                rather than a border so that becoming active changes no
+                measurement and shifts no neighbour. */}
+            {active ? (
               <span
-                className="absolute inline-flex h-full w-full animate-ping"
-                style={{ borderRadius: r.full, background: t.evidence, opacity: 0.75 }}
+                data-testid="feed-active-mark"
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  marginLeft: -(TAB_INDICATOR_WIDTH / 2),
+                  bottom: 0,
+                  width: TAB_INDICATOR_WIDTH,
+                  height: 2,
+                  background: t.action,
+                }}
               />
-            )}
-            <span
-              className="relative inline-flex h-[6px] w-[6px]"
-              style={{ borderRadius: r.full, background: t.evidence }}
-            />
-          </span>
-          <span style={{ ...eyebrowText, color: t.text2, whiteSpace: "nowrap" }}>Live</span>
-        </div>
-      )}
+            ) : null}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -576,25 +645,81 @@ function FeedContentArea({
   }
 
   return (
-    <div>
+    <FeedList testId="feed-list">
       {feedCards.map((card, i) => (
-        <React.Fragment key={i}>
-          {card}
-          {(i + 1) % 5 === 0 && i < feedCards.length - 1 && (
-            <div
-              className="my-4"
-              style={{
-                // Dotted, still: a rhythm marker every fifth item, which has to
-                // be distinguishable at a glance from the solid hairline every
-                // card wears. Only the colour moved.
-                borderTop: `1px dotted ${t.line}`,
-              }}
-            />
-          )}
-        </React.Fragment>
+        <FeedRow key={i}>{card}</FeedRow>
       ))}
+    </FeedList>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   The column's rhythm
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/** 16px between items, and 64px of ground after the last one. */
+const FEED_GAP = 16;
+const FEED_TAIL = 64;
+
+/**
+ * The card column: no background, no border, and one number for its rhythm.
+ *
+ * `paddingBottom` IS 48 AND THE COLUMN STILL ENDS WITH 64. The list is a flex
+ * item, so it establishes a block formatting context and the last row's 16px
+ * bottom margin stays inside it rather than collapsing out — 48 + 16 = 64, the
+ * measurement task 5.3 asks for. Written as the subtraction rather than as 48
+ * so the arithmetic is the thing a reader changes.
+ *
+ * The dotted rule every fifth card is gone. The ground showing through a 16px
+ * gap is the separator; a second one every fifth item was a rhythm marker for a
+ * column that had no rhythm, and it is the kind of line `better-layout` puts
+ * last ("space groups first, separator lines last and only where space alone
+ * can't carry the structure").
+ */
+function FeedList({
+  children,
+  testId,
+  slot = "feed-column",
+  decorative,
+}: {
+  children: React.ReactNode;
+  testId?: string;
+  slot?: string;
+  /** The skeleton is a placeholder, so it is hidden from assistive tech. */
+  decorative?: boolean;
+}) {
+  return (
+    <div
+      data-visual-slot={slot}
+      data-testid={testId}
+      aria-hidden={decorative || undefined}
+      style={{ paddingBottom: FEED_TAIL - FEED_GAP }}
+    >
+      {children}
     </div>
   );
+}
+
+/**
+ * One row of the column, and the reason the gap is exactly 16 on every tab.
+ *
+ * THIS IS A MARGIN AND NOT A FLEX `gap`, AND THAT IS THE WHOLE POINT. Five of
+ * the six tabs render the legacy cards — `feed-card.tsx` at `margin-bottom:
+ * 10px`, `FeedItem`, `CollectionFeedCard`, `ProjectFeedCard` and `ReblogCard`
+ * at 12 — and the Builds tab renders `BuildFeedItems`' own frame at 12. Those
+ * are shared components: `FeedCard` is also the card on Discover and Search, so
+ * removing the margin here would move those pages, and it is a structural
+ * property on an existing layout element besides.
+ *
+ * A flex `gap` would ADD to each of those and give a column of 26 and 28. A
+ * bottom margin COLLAPSES with them — this wrapper is a bare block with no
+ * padding, border or overflow, so its child's bottom margin and its own
+ * collapse to the larger of the two — and 16 is larger than every one of them.
+ * So the column measures 16 on all six tabs, and it keeps measuring 16 on the
+ * day one of those cards drops its margin.
+ */
+function FeedRow({ children }: { children: React.ReactNode }) {
+  return <div style={{ marginBottom: FEED_GAP }}>{children}</div>;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -621,9 +746,9 @@ const LEGACY_CARD = {
    * then collapse.
    */
   cover: 160,
-  /** The gap to the next item down. */
-  gap: 12,
 } as const;
+/* `gap: 12` stood here and is gone. The gap to the next item down is no longer
+   the card's to state — `FeedRow` above owns it, at 16, for every tab. */
 
 /**
  * The three shimmering cards a tab shows while its first page is in flight.
@@ -650,15 +775,14 @@ const LEGACY_CARD = {
  */
 export function FeedSkeleton() {
   return (
-    <div data-visual-slot="feed-skeleton" data-testid="feed-skeleton" aria-hidden>
+    <FeedList testId="feed-skeleton" slot="feed-skeleton" decorative>
       {[1, 2, 3].map((i) => (
+        <FeedRow key={i}>
         <div
-          key={i}
           style={{
             display: "flex",
             flexDirection: "column",
             gap: 10,
-            marginBottom: LEGACY_CARD.gap,
             padding: `${LEGACY_CARD.padY}px ${LEGACY_CARD.padX}px`,
             background: t.glass,
             ...elevation.flat,
@@ -698,27 +822,39 @@ export function FeedSkeleton() {
             <Skeleton style={{ height: 14, width: 40, borderRadius: r.chip }} />
           </div>
         </div>
+        </FeedRow>
       ))}
-    </div>
+    </FeedList>
   );
 }
 
 /**
- * The frame the empty and the error state share: a quiet mark, a line of
- * display type, a sentence, and at most one control.
+ * The frame the empty and the error state share: a line of display type, a
+ * sentence, and at most one control, centred in the viewport.
  *
  * ONE COMPONENT FOR BOTH, so the two cannot drift into two different ways of
  * saying "there is nothing to show here". They differ in their words and in
  * which control they offer, which is exactly as much as they should differ.
+ *
+ * THE DISC AND THE ICON ARE GONE. It was a 72px `--r-full` circle of `--recess`
+ * with a 28px lucide glyph in it — a 999px radius, which this system allows for
+ * spinners and avatars and nothing else, around an icon that said no more than
+ * the sentence under it did. What is left is the sentence, which is the whole
+ * of the content.
+ *
+ * `min-height: calc(100dvh - 52px - 16px)` IS THE TAB BAR AND THE GAP UNDER IT.
+ * The state then fills the rest of the viewport exactly and centres in it, so
+ * an empty tab is a column with something in the middle of it rather than a
+ * paragraph stranded under the chrome — and the centre column's two hairlines
+ * run to the fold because the column is as tall as the page whether or not
+ * anything loaded.
  */
 function FeedNotice({
-  icon: Icon,
   headline,
   body,
   testId,
   children,
 }: {
-  icon: React.ElementType;
   headline: string;
   body: React.ReactNode;
   testId?: string;
@@ -726,41 +862,40 @@ function FeedNotice({
 }) {
   return (
     <div
-      className="flex flex-col items-center text-center"
       data-visual-slot="feed-notice"
       data-testid={testId}
-      style={{ marginTop: 48 }}
+      style={{
+        minHeight: `calc(100dvh - ${TAB_BAR_HEIGHT}px - ${FEED_GAP}px)`,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        textAlign: "center",
+        padding: "0 64px",
+      }}
     >
-      {/* `--recess` under a hairline, not an accent wash. An empty tab is an
-          ordinary state, and a tinted disc around an icon reads as a warning
-          about one. */}
-      <div
-        className="flex items-center justify-center"
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: r.full,
-          background: t.recess,
-          ...elevation.flat,
-          marginBottom: 16,
-        }}
-      >
-        <Icon style={{ width: 28, height: 28, color: t.text2 }} />
-      </div>
-      <div style={{ ...cardTitle, color: t.text, marginBottom: 8 }}>{headline}</div>
+      {/* 26/32 Bodoni. The display face is legal from 20px up — below it the
+          didone's hairlines shimmer, worst on Dusk — and the `cardTitle` role
+          this used to take is 22, which is a title inside a card rather than
+          the one line on an otherwise empty screen. */}
+      <h2 style={{ ...NOTICE_TITLE, color: t.text, margin: 0, textWrap: "balance" }}>
+        {headline}
+      </h2>
       <p
         style={{
           ...bodyText,
+          lineHeight: "24px",
           color: t.text2,
           /* A measure, not a width: 44 characters is short enough that a
              two-sentence notice breaks where it reads best. */
           maxWidth: "44ch",
-          marginBottom: children ? 20 : 0,
+          margin: "12px 0 0",
+          textWrap: "pretty",
         }}
       >
         {body}
       </p>
-      {children}
+      {children ? <div style={{ marginTop: 24 }}>{children}</div> : null}
     </div>
   );
 }
@@ -781,7 +916,7 @@ export function FeedEmptyState({
 }) {
   const e = EMPTY_STATES[activeTab];
   return (
-    <FeedNotice icon={e.icon} headline={e.headline} body={e.body} testId="feed-empty">
+    <FeedNotice headline={e.headline} body={e.body} testId="feed-empty">
       {e.cta ? (
         /* SECONDARY, NOT PRIMARY. The theme allows one primary action per view
            and the compose strip at the top of the feed is already spending it;
@@ -790,7 +925,17 @@ export function FeedEmptyState({
            rule in an injected <style> — a class, which Tailwind's own output
            beats at build time, and which is the one styling mechanism
            `neoscale-ui` forbids outright. */
-        <Button type="button" variant="secondary" onClick={onEmptyCTAClick}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onEmptyCTAClick}
+          /* 15px, not the kit's `text-sm`. Every other row and label on this
+             route is 15 or 16, and 14 on the one control in an empty column is
+             the smallest thing on the screen sitting under the largest. The
+             cva's size classes are the kit's and are not touched; this is one
+             inline override on one button. */
+          style={{ height: 40, borderRadius: r.control, fontSize: 15 }}
+        >
           {e.cta}
         </Button>
       ) : null}
@@ -825,7 +970,6 @@ export function FeedErrorState({
   const said = (message ?? "").trim();
   return (
     <FeedNotice
-      icon={RotateCw}
       headline={`${TAB_LABEL[activeTab]} could not be loaded`}
       testId="feed-error"
       body={
@@ -842,7 +986,17 @@ export function FeedErrorState({
       }
     >
       {onRetry ? (
-        <Button type="button" variant="secondary" onClick={onRetry}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onRetry}
+          /* 15px, not the kit's `text-sm`. Every other row and label on this
+             route is 15 or 16, and 14 on the one control in an empty column is
+             the smallest thing on the screen sitting under the largest. The
+             cva's size classes are the kit's and are not touched; this is one
+             inline override on one button. */
+          style={{ height: 40, borderRadius: r.control, fontSize: 15 }}
+        >
           Try again
         </Button>
       ) : null}
@@ -865,54 +1019,60 @@ export function FeedShell({
   onComposeClick,
   isEmpty,
   onEmptyCTAClick,
-  liveActive,
   isError,
   errorMessage,
   onRetry,
 }: FeedShellProps) {
   return (
     <div
-      className="w-full max-w-[600px] mx-auto flex flex-col gap-3"
-      style={{
-        /* THE PAGE PAINTS ITS OWN GROUND, and this is the third surface in the
-           codebase to have to: the frame's centre column is transparent by
-           design ("no page background — BlobBackground paints it") and
-           BlobBackground is hard-coded to #25252F in BOTH themes. Every
-           element in this feed that is not inside a card — a rebuild note, an
-           empty state, a section label — is `--text` or `--text2` laid
-           directly on the centre, which in Exhibition is dark ink in a dark
-           room. `--bg` is the room this feed's tokens were measured against,
-           so painting it here is what makes the pairings in the colour
-           contract true rather than nominal. Gallery.tsx and /dev/wide do the
-           same thing for the same reason and say so; the real fix is
-           BlobBackground following the theme, which is nobody's prompt yet. */
-        background: t.bg,
-      }}
+      /* NO GROUND OF ITS OWN, AND THAT LINE IS THE POINT OF BG-P18b. This
+         carried `background: var(--bg)` and a note explaining that it had to,
+         because the centre column was transparent and `BlobBackground` painted
+         the page #25252F in both themes — so an Exhibition feed was dark ink in
+         a dark room unless the column repainted its own. That component is
+         gone and `html, body, #root` are `--bg`; repainting it here would be a
+         second paint of the same colour, and a 600px box of it that ends where
+         the content does. Gallery.tsx and /dev/wide still carry the same
+         workaround and are BG-P19's and their own prompt's to remove.
+
+         A COLUMN, NOT A GAPPED STACK. The `gap-3` that was here put 12px
+         between the compose strip, the competitions strip, the tab bar and the
+         feed alike — one rhythm for chrome and content. The tab bar is now the
+         column's top edge and sticks there, and everything under it takes the
+         column's own 16. */
+      className="w-full max-w-[600px] mx-auto"
+      data-visual-slot="feed-shell"
+      style={{ display: "flex", flexDirection: "column" }}
     >
       <NewPostsPill
         hasNewPosts={hasNewPosts}
         newPostCount={newPostCount}
         onLoadNewPosts={onLoadNewPosts}
       />
-      {currentUser && (
-        <ComposeStrip currentUser={currentUser} onComposeClick={onComposeClick} />
-      )}
-      <ActiveCompetitionsStrip
-        bounties={activeBounties}
-        onSeeAll={onBountySeeAll}
-        onBountyClick={onBountyClick}
-      />
-      <FeedTabBar activeTab={activeTab} onTabChange={onTabChange} liveActive={liveActive} />
-      <FeedContentArea
-        activeTab={activeTab}
-        feedCards={feedCards}
-        isLoading={isLoading}
-        isEmpty={isEmpty}
-        isError={isError}
-        errorMessage={errorMessage}
-        onRetry={onRetry}
-        onEmptyCTAClick={onEmptyCTAClick}
-      />
+      <FeedTabBar activeTab={activeTab} onTabChange={onTabChange} />
+      {/* 16px below the bar, and 16 between everything in the column. The two
+          strips are content and scroll under the bar like the cards do; the bar
+          is the one thing on this route that stays. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: FEED_GAP, paddingTop: FEED_GAP }}>
+        {currentUser && (
+          <ComposeStrip currentUser={currentUser} onComposeClick={onComposeClick} />
+        )}
+        <ActiveCompetitionsStrip
+          bounties={activeBounties}
+          onSeeAll={onBountySeeAll}
+          onBountyClick={onBountyClick}
+        />
+        <FeedContentArea
+          activeTab={activeTab}
+          feedCards={feedCards}
+          isLoading={isLoading}
+          isEmpty={isEmpty}
+          isError={isError}
+          errorMessage={errorMessage}
+          onRetry={onRetry}
+          onEmptyCTAClick={onEmptyCTAClick}
+        />
+      </div>
     </div>
   );
 }

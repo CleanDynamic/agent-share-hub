@@ -228,16 +228,22 @@ describe("AppShell mobile mode", () => {
 describe("theme toggle", () => {
   const toggle = () => screen.queryByRole("radiogroup", { name: "Theme" });
 
-  it("sits in the left rail's user area, above the user block", () => {
+  /* BG-P18b MOVED IT BELOW THE ACCOUNT BLOCK, and this assertion is inverted
+     rather than deleted because the ORDER is the decision. BG-P02 mounted the
+     toggle in `beforeUserSlot`, above the user block — which on a signed-out
+     rail put a setting directly above the one primary action the rail exists
+     for. A theme is a setting: it sits last, in the frame's `themeControl`
+     slot, under the account block. */
+  it("sits at the very bottom of the left rail, below the account block", () => {
     signIn();
     renderAt("/");
     const rail = document.querySelector(".fs-left");
     expect(rail).not.toBeNull();
     expect(rail!.contains(toggle()!)).toBe(true);
 
-    // The frame's order: nav list, then the beforeUserSlot, then the user block.
+    // The frame's order: nav list, beforeUserSlot, account block, theme control.
     const userSection = rail!.querySelector(".fs-user-section")!;
-    expect(toggle()!.compareDocumentPosition(userSection))
+    expect(userSection.compareDocumentPosition(toggle()!))
       .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 

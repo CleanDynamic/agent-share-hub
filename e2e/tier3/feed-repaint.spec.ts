@@ -234,13 +234,19 @@ test.describe("the feed's tab bar", () => {
 
     // The row has more content than room: that is what makes it a scroller
     // rather than six clipped labels.
-    const { clientWidth, scrollWidth, scrollbar } = await row.evaluate((el) => ({
-      clientWidth: el.clientWidth,
-      scrollWidth: el.scrollWidth,
-      // A hidden bar takes no space, which is the only part of
-      // `.scrollbar-hide` a measurement can see.
-      scrollbar: el.offsetHeight - el.clientHeight,
-    }));
+    const { clientWidth, scrollWidth, scrollbar } = await row.evaluate((el) => {
+      /* BG-P18b put the `--line` hairline on the strip's own bottom edge, and a
+         border counts in `offsetHeight` too — so the borders come off before
+         what is left can be called a scrollbar. A hidden bar takes no space,
+         which is the only part of `.scrollbar-hide` a measurement can see. */
+      const cs = getComputedStyle(el);
+      const borders = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+      return {
+        clientWidth: el.clientWidth,
+        scrollWidth: el.scrollWidth,
+        scrollbar: el.offsetHeight - el.clientHeight - borders,
+      };
+    });
     expect(scrollWidth).toBeGreaterThan(clientWidth);
     expect(scrollbar).toBe(0);
 
@@ -302,23 +308,30 @@ test.describe("the feed at four widths, in two themes", () => {
     }
   }
 
-  test("does not scroll the page sideways at 390, 768 or 1400", async ({ page }) => {
-    // 1024 IS LEFT OUT ON PURPOSE AND IS NOT THIS PROMPT'S. In standard mode the
-    // frame is 24px of padding, a 240px rail, a 24px gap, a fixed 600px centre,
-    // a 24px gap, a 300px rail and 24px of padding — 1236px, which does not fit
-    // 1024 and did not before BG-P18 either. The test below pins that it is the
-    // frame's arithmetic rather than the feed's.
-    await stubRestEmpty(page);
-    await stubFeed(page);
-    for (const width of [390, 768, 1400]) {
+  /* BG-P18b BROUGHT 1024 BACK INTO THIS SWEEP, and the test below it changed
+     from "the overflow is the frame's, not the feed's" to "there is no
+     overflow". When BG-P18 wrote this, standard mode was 24px of padding, a
+     240px rail, a 24px gap, a 600px centre, a 24px gap, a 300px rail and 24px
+     of padding — 1236, which does not fit 1024, and the frame's
+     `justify-content: center` pushed the left rail to x = -82 rather than
+     clipping anything. That was true and it was still a broken screen. The
+     frame's padding and gaps are 0 now and the centre is shrinkable, so the
+     band gives up reading measure instead of giving up the nav. */
+  /* One test per width rather than a loop in one: each pass is a full
+     navigation of a real route, and four of them do not fit in one test's
+     budget. */
+  for (const width of [390, 768, 1024, 1400]) {
+    test(`does not scroll the page sideways at ${width}`, async ({ page }) => {
+      await stubRestEmpty(page);
+      await stubFeed(page);
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/?tab=builds");
       await expect(page.getByTestId("feed-builds")).toBeVisible();
-      expect(await pageOverflows(page), `overflow at ${width}px`).toBe(false);
-    }
-  });
+      expect(await pageOverflows(page)).toBe(false);
+    });
+  }
 
-  test("at 1024 the overflow is the frame's fixed rails, not the feed", async ({ page }) => {
+  test("at 1024 the centre gives way and both rails stay on screen", async ({ page }) => {
     await stubRestEmpty(page);
     await stubFeed(page);
     await page.setViewportSize({ width: 1024, height: 900 });
@@ -326,16 +339,23 @@ test.describe("the feed at four widths, in two themes", () => {
     await expect(page.getByTestId("feed-builds")).toBeVisible();
 
     const boxes = await page.evaluate(() => {
-      const width = (sel: string) =>
-        document.querySelector(sel)?.getBoundingClientRect().width ?? 0;
-      return { left: width(".fs-left"), centre: width(".fs-centre"), right: width(".fs-right") };
+      const box = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+      return {
+        left: box(".fs-left").width,
+        leftEdge: box(".fs-left").left,
+        centre: box(".fs-centre").width,
+        right: box(".fs-right").width,
+        rightEdge: box(".fs-right").right,
+      };
     });
-    // Three fixed widths and two gaps and two paddings, all of them the frame's,
-    // add up past the viewport on their own.
+    // The two rails never move. 240 and 300 are the frame's contract.
     expect(boxes.left).toBe(240);
-    expect(boxes.centre).toBe(600);
     expect(boxes.right).toBe(300);
-    expect(boxes.left + boxes.centre + boxes.right + 24 * 4).toBeGreaterThan(1024);
+    // Both on screen — the left rail measured -82 before this change.
+    expect(boxes.leftEdge).toBeGreaterThanOrEqual(0);
+    expect(boxes.rightEdge).toBeLessThanOrEqual(1024);
+    // And the centre took what was left rather than holding its 634.
+    expect(boxes.centre).toBe(1024 - 240 - 300);
   });
 });
 

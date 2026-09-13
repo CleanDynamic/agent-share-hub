@@ -93,8 +93,10 @@ export function BuildsTab() {
   if (feed.isLoading) {
     return (
       <div data-testid="feed-builds-skeleton" aria-hidden>
+        {/* The column's 16, so the placeholder reserves the rhythm the cards
+            arrive in rather than one 4px tighter. */}
         {[0, 1, 2].map((i) => (
-          <div key={i} style={{ marginBottom: 12 }}>
+          <div key={i} style={{ marginBottom: 16 }}>
             <GalleryCardSkeleton layout="feed" />
           </div>
         ))}

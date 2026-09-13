@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { SPACE } from "@/lib/theme/space";
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -52,17 +53,37 @@ function decl(sel: string, prop: string): string | null {
   return null;
 }
 
-describe("the standard mode's measurements are untouched", () => {
-  it("keeps 1200 / 240 / 300 / 600", () => {
+/* BG-P18b CHANGED FOUR OF THE SIX NUMBERS THIS BLOCK GUARDED, and the
+   assertions are rewritten rather than removed, because what they are for is
+   unchanged: the frame has a measurement contract and a reader should be able
+   to read it here. The frame is still 1200 and the rails are still 240 and 300
+   — those four never move. What moved is the reading column (600 → 634, which
+   is 1 + 16 + 600 + 16 + 1, so a CARD is 600 where before the column was 600
+   and the card 568) and the frame's inset (24px padding and a 24px gap → 0,
+   which is what lets the three columns meet as one surface). Wide mode keeps
+   the old inset; that is asserted below. */
+describe("the standard mode's measurements", () => {
+  it("keeps 1200 / 240 / 300, and states the reading column at 634", () => {
     expect(decl(".fs-frame", "max-width")).toBe("1200px");
     expect(decl(".fs-left", "width")).toBe("240px");
     expect(decl(".fs-right", "width")).toBe("300px");
-    expect(decl(".fs-centre", "width")).toBe("600px");
+    expect(decl(".fs-centre", "width")).toBe("634px");
   });
 
-  it("keeps the frame's 24px padding and gap", () => {
-    expect(decl(".fs-frame", "padding")).toBe("24px");
-    expect(decl(".fs-frame", "gap")).toBe("24px");
+  it("closes the frame's padding and gap, so the three columns meet", () => {
+    expect(decl(".fs-frame", "padding")).toBe("0");
+    expect(decl(".fs-frame", "gap")).toBe("0");
+  });
+
+  it("gives the centre 16px of padding and a hairline on each side", () => {
+    // 634 = 1 + 16 + 600 + 16 + 1 under `box-sizing: border-box`, which is what
+    // makes a card exactly 600. The two hairlines are the only separation
+    // between the three columns; neither rail carries one.
+    expect(decl(".fs-centre", "padding")).toBe("0 16px");
+    expect(decl(".fs-centre", "border-left")).toBe("1px solid var(--line)");
+    expect(decl(".fs-centre", "border-right")).toBe("1px solid var(--line)");
+    expect(decl(".fs-centre", "box-sizing")).toBe("border-box");
+    expect(decl(".fs-centre", "min-height")).toBe("100dvh");
   });
 
   it("keeps the 768 and 1024 breakpoints", () => {
@@ -70,11 +91,83 @@ describe("the standard mode's measurements are untouched", () => {
     expect(css).toContain("@media (max-width: 767px)");
   });
 
-  it("keeps the reading column pinned — .fs-centre does not flex in standard mode", () => {
-    /* `flex-shrink: 0` on a 600px column is why standard mode is 600px and not
-       "600px until something pushes". Wide mode overrides it under .fs-wide;
-       the base rule must still say it. */
-    expect(decl(".fs-centre", "flex-shrink")).toBe("0");
+  it("lets the reading column give way rather than pushing a rail off-screen", () => {
+    /* `flex-shrink: 0` was why standard mode was "600px, full stop". At
+       1024–1173 all three columns render and 1174 does not fit, and a pinned
+       centre put the left rail at x = -82. The centre is shrinkable now, so
+       that band loses measure instead of losing the nav; above 1174 of frame
+       nothing shrinks and the column is exactly 634. */
+    expect(decl(".fs-centre", "flex")).toBe("0 1 auto");
+    expect(decl(".fs-centre", "min-width")).toBe("0");
+  });
+
+  it("puts no panel on either rail: no fill, no border, no radius, no blur", () => {
+    expect(decl(".fs-rail", "background")).toBe("transparent");
+    expect(decl(".fs-rail", "border")).toBe("none");
+    expect(decl(".fs-rail", "border-radius")).toBe("0");
+    expect(decl(".fs-rail", "box-shadow")).toBe("none");
+    // The rails are full-height sticky panels, which the theme never blurs.
+    expect(css).not.toMatch(/backdrop-filter/);
+  });
+
+  it("makes both rails sticky at full viewport height", () => {
+    expect(decl(".fs-rail", "position")).toBe("sticky");
+    expect(decl(".fs-rail", "top")).toBe("0");
+    expect(decl(".fs-rail", "height")).toBe("100dvh");
+    expect(decl(".fs-rail", "overscroll-behavior")).toBe("contain");
+    // Hidden scrollbars, the codebase's existing utility, on both.
+    expect(decl(".fs-left", "scrollbar-width")).toBe("none");
+    expect(decl(".fs-right", "scrollbar-width")).toBe("none");
+  });
+
+  it("states the rails' padding, and nothing else on the rail element", () => {
+    expect(decl(".fs-left", "padding")).toBe("24px 16px 24px 16px");
+    expect(decl(".fs-right", "padding")).toBe("16px 0 24px 24px");
+  });
+
+  it("paints nothing behind the frame", () => {
+    expect(decl(".fs-root", "background")).toBe("transparent");
+    expect(decl(".fs-frame", "background")).toBe("transparent");
+    // The home wrapper's 16px inset moved onto the column; keeping both would
+    // put the cards back at 568.
+    expect(decl(".fs-home-pad", "padding")).toBe("0");
+  });
+});
+
+/* BG-P18b — the page ground, asserted where it is declared.
+   jsdom resolves no custom properties and computes no cascade worth reading, so
+   the browser half of this is `e2e/tier3/home-ground.spec.ts`, which reads the
+   resolved colour off #root in both themes. This is the half that runs in CI on
+   every commit: that the declaration exists at all, and that nothing in the
+   stylesheet paints an image behind the page. */
+describe("one ground", () => {
+  const indexCss = readFileSync("src/index.css", "utf-8");
+  const bare = indexCss.replace(/\/\*[\s\S]*?\*\//g, "");
+
+  it("gives html, body and #root the --bg token and nothing else", () => {
+    expect(bare).toMatch(/html,\s*body,\s*#root\s*\{[^}]*background:\s*var\(--bg\)/);
+    expect(bare).toMatch(/#root\s*\{[^}]*min-height:\s*100dvh/);
+  });
+
+  it("declares --bg per theme and no longer in the legacy block", () => {
+    expect(bare).toMatch(/:root,\s*:root\[data-theme="exhibition"\]\s*\{[^}]*--bg:\s*#E4E6E8/);
+    expect(bare).toMatch(/:root\[data-theme="dusk"\]\s*\{[^}]*--bg:\s*#1F1B2B/);
+    expect(bare).not.toContain("#25252F");
+  });
+
+  it("paints no pattern anywhere in either stylesheet", () => {
+    // BlobBackground's dot grid was a `radial-gradient` at `background-size:
+    // 20px 20px`. Nothing on this route may carry a background image.
+    for (const text of [bare, css]) {
+      expect(text).not.toMatch(/background-image/);
+      expect(text).not.toMatch(/radial-gradient/);
+    }
+  });
+
+  it("has no BlobBackground left to mount", () => {
+    expect(existsSync(join(process.cwd(), "src/components/BlobBackground.tsx"))).toBe(false);
+    expect(readFileSync("src/App.tsx", "utf-8").replace(/\/\*[\s\S]*?\*\//g, ""))
+      .not.toContain("BlobBackground");
   });
 });
 
@@ -100,6 +193,14 @@ describe("the wide mode is additive", () => {
     const STRUCTURAL = new Set([
       "max-width", "width", "min-width", "flex", "display",
       "grid-template-columns", "gap", "align-items",
+      /* BG-P18b. Four more, and every one of them is here to keep wide mode
+         rendering as it did. The standard frame lost its 24px padding and gap
+         and the centre gained 16px of inline padding and two hairlines when the
+         three columns became one surface; a wide page is a grid in a frame with
+         no reading column, so it keeps the inset and takes neither the padding
+         nor the lines. `border-*-width: 0` is a measurement and names no
+         colour, which is what this check is actually for. */
+      "padding", "border-left-width", "border-right-width",
     ]);
     for (const { selector, decls } of wideRules) {
       for (const line of decls.split(";")) {

@@ -566,19 +566,16 @@ const Home = () => {
   /* ---- Realtime new-posts pill ---- */
   const [hasNewPosts, setHasNewPosts] = useState(false);
   const [newPostCount, setNewPostCount] = useState(0);
-  const [liveActive, setLiveActive] = useState(navigator.onLine);
   const channelRef = useRef<any>(null);
 
-  useEffect(() => {
-    const onOnline = () => setLiveActive(true);
-    const onOffline = () => setLiveActive(false);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
-  }, []);
+  /* BG-P18b. `liveActive` and its two window listeners stood here and fed a
+     "Live" lamp in the tab bar. The bar is now six equal 100px tabs across the
+     column's 600 and has no slack to put a seventh thing in — and it did not
+     need one: `navigator.onLine` going false is already stated in words, app
+     wide, by `<ConnectionBanner />` in App.tsx. Two controls for one fact is
+     what task 8.1 removes from the right rail; this is the same removal in the
+     tab bar. The realtime channel below, the new-posts pill it drives and every
+     query on this page are untouched. */
 
   useEffect(() => {
     const channelName = `home_feed_${crypto.randomUUID()}`;
@@ -598,9 +595,10 @@ const Home = () => {
           }
         }
       )
-      .subscribe((status) => {
-        setLiveActive(navigator.onLine && status === "SUBSCRIBED");
-      });
+      /* The status callback set the tab bar's "Live" lamp and nothing else; the
+         lamp is gone, so the callback is too. The subscription itself, its
+         channel name, its filter and its handler are unchanged. */
+      .subscribe();
     channelRef.current = channel;
     return () => {
       supabase.removeChannel(channel);
@@ -670,7 +668,6 @@ const Home = () => {
         errorMessage={tabData.errorMessage}
         onRetry={tabData.onRetry}
         onEmptyCTAClick={onEmptyCTAClick}
-        liveActive={liveActive}
       />
     </>
   );

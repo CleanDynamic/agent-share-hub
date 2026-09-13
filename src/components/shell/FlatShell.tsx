@@ -10,7 +10,13 @@ import "./flat-shell.css";
    the only frame, not an alternative to one. Hard rules (see
    flat-shell.css): no SVG filters, no 3D transforms, no scale wrapper,
    and — since BG-P13 — no backdrop-filter at all: both rails are
-   full-height fixed panels, which the theme's glass rule never blurs.
+   full-height sticky panels, which the theme's glass rule never blurs.
+
+   BG-P18b — ONE GROUND AND ONE SURFACE. The rails and the centre column
+   are not panels. Nothing in the frame paints a background: the page is
+   `--bg` on html/body/#root, the rails sit directly on it, and the only
+   separation between the three columns is a `--line` hairline down each
+   side of the centre. The rails are the room; the centre is the stage.
 
    This component knows nothing about routing, auth, or data — the wired
    container (AppShell) supplies everything through props.
@@ -42,6 +48,8 @@ export interface FlatShellUser {
   name: string;
   initials: string;
   avatarUrl?: string;
+  /** The @handle under the name in the rail's account block. */
+  handle?: string;
 }
 
 export interface FlatShellProps {
@@ -59,6 +67,16 @@ export interface FlatShellProps {
   isMobile: boolean;
   /** Optional slot rendered above the user block (e.g. the XP progress chip). */
   beforeUserSlot?: ReactNode;
+  /**
+   * BG-P18b. The theme control, at the very bottom of the left rail.
+   *
+   * A SLOT OF ITS OWN RATHER THAN `beforeUserSlot`, because the order is the
+   * decision. BG-P02 mounted the toggle in the slot above the account block,
+   * which put a setting between the nav and the one thing a signed-out rail is
+   * for. A theme is a setting, not a call to action: it sits last, under the
+   * account block, and this is the slot that says so.
+   */
+  themeControl?: ReactNode;
   /** Hide the left rail (blueprint editor on small desktops). */
   hideLeftRail?: boolean;
   /** Keep the right rail visible on tablet (blueprint editor workspace). */
@@ -100,6 +118,7 @@ export function FlatShell({
   children,
   isMobile,
   beforeUserSlot,
+  themeControl,
   hideLeftRail,
   forceRightRail,
   layout = "standard",
@@ -158,6 +177,13 @@ export function FlatShell({
 
             {beforeUserSlot}
 
+            {/* ═══ THE ACCOUNT BLOCK, then the theme control, and in that order.
+                Signed out the rail showed three nav rows at the top and a theme
+                toggle plus two buttons at the bottom with roughly 700px of
+                nothing between them — two groups that did not relate, with the
+                setting sitting above the sign-up it was competing with. The
+                spacer is the nav list's `flex: 1`; what is pinned to the bottom
+                is the account block, and 16px under it, last, the setting. ═══ */}
             <div className="fs-user-section" ref={menuRef}>
               {user ? (
                 <>
@@ -165,7 +191,12 @@ export function FlatShell({
                     <div className="fs-user-avatar">
                       {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : user.initials}
                     </div>
-                    <span className="fs-user-name">{user.name}</span>
+                    <span className="fs-user-id">
+                      <span className="fs-user-name">{user.name}</span>
+                      {user.handle ? (
+                        <span className="fs-user-handle">@{user.handle}</span>
+                      ) : null}
+                    </span>
                     <span className="fs-user-dots">⋯</span>
                   </button>
                   {menuOpen && (
@@ -177,12 +208,19 @@ export function FlatShell({
                   )}
                 </>
               ) : (
+                /* Primary first: the rail's one --action fill is the thing a
+                   signed-out rail exists for, and it was sitting under the
+                   quieter control. */
                 <div className="fs-auth-btns">
-                  <button className="fs-auth-btn signin" onClick={onSignIn}>Sign in</button>
                   <button className="fs-auth-btn join" onClick={onJoin}>Join free</button>
+                  <button className="fs-auth-btn signin" onClick={onSignIn}>Sign in</button>
                 </div>
               )}
             </div>
+
+            {themeControl ? (
+              <div style={{ marginTop: 16 }}>{themeControl}</div>
+            ) : null}
           </nav>
         )}
 
