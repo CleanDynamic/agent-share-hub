@@ -282,6 +282,7 @@ export {
   isStale,
   recordReproduction,
   recordSelfConfirmation,
+  requirementCopy,
   type Completeness,
   type CompletenessSource,
   type FreshnessSource,
