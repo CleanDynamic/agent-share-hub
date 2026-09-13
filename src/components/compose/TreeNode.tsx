@@ -311,13 +311,22 @@ export function TreeNode({
     /* A row is a row: --r-control. The ground is --bg, so the tree reads as the
        working surface it is rather than as a stack of cards. */
     borderRadius: r.control,
-    borderLeft: `2px ${accentStyle} ${accent}`,
+    /* LONGHANDS, NOT `borderLeft`. A CSS shorthand whose value contains a
+       `var()` is dropped wholesale by jsdom's parser, so the accent that says
+       "selected" or "unsolved" would be invisible to every unit test even though
+       a browser paints it — which is how an untested repaint slips through.
+       WorkspaceBar and controls.ts take the same position for the same reason. */
+    borderLeftWidth: 2,
+    borderLeftStyle: accentStyle,
+    borderLeftColor: accent,
     background: isSelected
       ? SELECTED_BACKGROUND
       : isNestTarget
         ? tokenAlpha(nestRefused ? "cat-breakage" : "action", 0.1)
         : "transparent",
-    outline: isNestTarget ? `1px dashed ${nestRefused ? t.catBreakage : t.action}` : "none",
+    outlineWidth: isNestTarget ? 1 : 0,
+    outlineStyle: isNestTarget ? "dashed" : "none",
+    outlineColor: nestRefused ? t.catBreakage : t.action,
     outlineOffset: -1,
     /* 0.6, not 0.4: the row being dragged still has to be readable, because it
        is the thing the creator is aiming. */

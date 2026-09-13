@@ -31,6 +31,8 @@ import {
   compactControlStyle,
   focusControl,
 } from "@/components/compose/fields";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 
 export interface PhaseSpan {
   /** Indices into the ordinal-ordered event list. */
@@ -80,7 +82,7 @@ const actionButton: React.CSSProperties = {
   alignItems: "center",
   gap: 6,
   padding: "5px 10px",
-  borderRadius: 8,
+  borderRadius: r.control,
   border: `1px solid ${CONTROL_BORDER}`,
   background: "transparent",
   color: TEXT_SECONDARY,
@@ -194,7 +196,7 @@ export function PhaseEditor({
 
       {!span.contiguous ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED, fontWeight: 300 }}>
+          <span style={{ ...labelText, fontSize: 11, color: t.text2, fontWeight: 400 }}>
             A phase has to be a run. Your selection skips {span.gaps}{" "}
             {span.gaps === 1 ? "event" : "events"}.
           </span>

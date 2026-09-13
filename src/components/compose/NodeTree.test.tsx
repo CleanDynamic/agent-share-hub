@@ -27,6 +27,7 @@ vi.mock("sonner", () => ({
 import type { BuildNode, NodeTree as NodeTreeShape } from "@/lib/build";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { GAP_RED } from "@/components/build/tokens";
+import { staticDoc, styleOf } from "@/test/tokenStyle";
 import { TreeNode } from "./TreeNode";
 import {
   MAX_DEPTH,
@@ -389,7 +390,96 @@ describe("TreeNode", () => {
       borderLeftColor: GAP_RED,
     });
   });
+
+  /* BG-P23 — THE SHAPE OF THE EDGE, WHICH jsdom CAN ACTUALLY SEE.
+     The assertion above reads a `var()` colour through `toHaveStyle`, and jsdom's
+     CSS parser stores no `var()`: both sides of that comparison come back empty,
+     so it passes whatever the row is painted. `borderLeftStyle` is a keyword
+     rather than a token, so it is the one half of the gap accent a unit test can
+     hold honestly — and it is the half this prompt changed. A dashed edge is what
+     the whole system uses for a part left unsolved ON PURPOSE; a solid red one
+     would read as a fault. */
+  it("dashes an unsolved row's edge and leaves every other row solid", () => {
+    const plain = node("D", 2, null);
+    const { unmount } = renderRow(plain);
+    expect(document.querySelector('[data-node-id="D"]')).toHaveStyle({
+      borderLeftStyle: "solid",
+    });
+    unmount();
+
+    renderRow({ ...plain, is_gap: true });
+    expect(document.querySelector('[data-node-id="D"]')).toHaveStyle({
+      borderLeftStyle: "dashed",
+    });
+  });
+
+  /* The tokens themselves, through the one route that can read them: a static
+     render, whose style attribute is never handed to the CSS parser. See
+     src/test/tokenStyle.tsx. */
+  it("carries the breakage token on a gap and the action token on a selection", () => {
+    const gapDoc = staticDoc(<StaticRow node={{ ...node("D", 2, null), is_gap: true }} />);
+    const gapRow = styleOf(gapDoc.querySelector('[data-node-id="D"]'));
+    expect(gapRow).toContain("border-left-color:var(--cat-breakage)");
+    expect(gapRow).toContain("border-left-style:dashed");
+
+    const selectedDoc = staticDoc(<StaticRow node={node("D", 2, null)} selected />);
+    const selectedRow = styleOf(selectedDoc.querySelector('[data-node-id="D"]'));
+    // Selected outranks the gap flag, and brings a low-alpha ground with it.
+    expect(selectedRow).toContain("border-left-color:var(--action)");
+    expect(selectedRow).toContain("var(--action)");
+    expect(selectedRow).toContain("border-left-style:solid");
+  });
 });
+
+/**
+ * One row, rendered statically so its TOKENS can be read.
+ *
+ * The same tree as `renderRow` — a query client, a DndContext and the real
+ * useNodeDrag — but through `renderToStaticMarkup`, which writes the style
+ * attribute as a string and never hands it to jsdom's CSS parser. That is the
+ * only way a `var()` or a `color-mix()` survives to be asserted. Effects do not
+ * run on the server and nothing about the paint depends on them.
+ */
+function StaticRow({ node: target, selected }: { node: NodeTreeShape; selected?: boolean }) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const tree = fixture();
+  client.setQueryData(composeBuildQueryKey(BUILD_ID), {
+    build: { id: BUILD_ID },
+    tree,
+    tray: TRAY,
+    events: [],
+    nodeTypes: [],
+  });
+
+  function Row() {
+    const rowDrag = useNodeDrag({
+      buildId: BUILD_ID,
+      tree,
+      tray: TRAY,
+      selectedNodeId: selected ? target.id : null,
+      onSelect: () => {},
+    });
+    return (
+      <TreeNode
+        node={target}
+        typesByKey={new Map()}
+        isSelected={Boolean(selected)}
+        isExpanded={false}
+        onToggle={() => {}}
+        onSelect={() => {}}
+        drag={rowDrag}
+      />
+    );
+  }
+
+  return (
+    <QueryClientProvider client={client}>
+      <DndContext>
+        <Row />
+      </DndContext>
+    </QueryClientProvider>
+  );
+}
 
 describe("a drop that changes nothing", () => {
   it("writes nothing when a tray node is dropped back on the tray", () => {

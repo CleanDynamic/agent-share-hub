@@ -51,6 +51,8 @@ import {
 } from "@/components/compose/fields";
 import { EventNodeLink, type NodeLinkOption } from "./EventNodeLink";
 import { tabular, type } from "@/lib/theme/type";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 
 // --- kinds -------------------------------------------------------------------
 
@@ -86,13 +88,19 @@ export const KIND_META: Record<EventKind, KindMeta> = {
   deploy: {
     label: "Deploy",
     Icon: Rocket,
-    colour: "#F59E0B",
+    /* A deploy is the artefact going out, so it takes the artefact hue. The
+       theme's rule for a colour that is not a part category is "resolve into
+       the nine, or --text2": #F59E0B was an amber picked by eye, and amber in
+       this system is LIGHT and never type — 3.01:1 on the Exhibition ground. */
+    colour: t.catArtefact,
     hint: "You shipped it somewhere",
   },
   note: {
     label: "Note",
     Icon: StickyNote,
-    colour: "#9CA3AF",
+    /* A note is the creator's own commentary, which is narrative. #9CA3AF was
+       a grey from no palette at all. */
+    colour: t.catNarrative,
     hint: "Your own commentary, not a model turn",
   },
 };
@@ -177,7 +185,7 @@ export function firstLine(payload: unknown): string {
 const segment: React.CSSProperties = {
   padding: "3px 8px",
   border: "1px solid transparent",
-  borderRadius: 6,
+  borderRadius: r.chip,
   background: "transparent",
   color: TEXT_MUTED,
   fontFamily: "inherit",
@@ -212,7 +220,7 @@ export function VisibilityControl({ value, onChange, label }: VisibilityControlP
         display: "flex",
         gap: 2,
         padding: 2,
-        borderRadius: 8,
+        borderRadius: r.control,
         border: `1px solid ${CONTROL_BORDER}`,
         background: CONTROL_BACKGROUND,
         flexShrink: 0,
@@ -283,7 +291,7 @@ function EventRowBase({
         flexWrap: "wrap",
         gap: 8,
         padding: "7px 10px",
-        borderRadius: 10,
+        borderRadius: r.media,
         border: `1px solid ${selected ? hexToRgba(TEAL, 0.32) : "transparent"}`,
         background: selected ? hexToRgba(TEAL, 0.05) : "transparent",
         borderBottom: `1px solid ${selected ? hexToRgba(TEAL, 0.32) : HAIRLINE}`,
@@ -332,7 +340,7 @@ function EventRowBase({
           minWidth: 140,
           marginTop: 1,
           fontSize: 13,
-          fontWeight: 300,
+          fontWeight: 400,
           lineHeight: 1.5,
           color: text ? TEXT_PRIMARY : TEXT_MUTED,
           overflow: "hidden",

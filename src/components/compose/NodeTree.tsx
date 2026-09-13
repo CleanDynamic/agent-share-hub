@@ -117,9 +117,13 @@ function Level({ nodes, parentId, depth, ...shared }: LevelProps) {
         listStyle: "none",
         margin: nested ? `0 0 0 ${INDENT}px` : 0,
         padding: nested ? "0 0 0 12px" : 0,
-        // The hairline connector down the left of every nested level: --line is
-        // the token for exactly this, and depth is the only thing it says.
-        borderLeft: nested ? `1px solid ${t.line}` : "none",
+        /* The hairline connector down the left of every nested level: --line is
+           the token for exactly this, and depth is the only thing it says.
+           Longhands, because a shorthand carrying a `var()` is dropped by
+           jsdom's parser and would be untestable. */
+        borderLeftWidth: nested ? 1 : 0,
+        borderLeftStyle: "solid",
+        borderLeftColor: t.line,
       }}
     >
       <GapZone parentId={parentId} index={0} drag={drag} />
@@ -167,7 +171,9 @@ function EmptyTree({ drag }: { drag: NodeDrag }) {
       style={{
         padding: "28px 18px",
         borderRadius: r.control,
-        border: `1px dashed ${isOver ? t.action : t.line}`,
+        borderWidth: 1,
+        borderStyle: "dashed",
+        borderColor: isOver ? t.action : t.line,
         background: isOver ? t.recess : "transparent",
         textAlign: "center",
         transition: rowTransition(),
@@ -192,7 +198,9 @@ function RejectionBanner({ reason, onDismiss }: { reason: string; onDismiss: () 
         padding: "8px 10px",
         borderRadius: r.chip,
         background: tokenAlpha("cat-breakage", 0.1),
-        border: `1px solid ${t.catBreakage}`,
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: t.catBreakage,
       }}
     >
       <span style={{ ...bodyText, fontSize: 13, margin: 0, flex: 1, color: t.catBreakage }}>

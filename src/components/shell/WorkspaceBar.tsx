@@ -120,6 +120,28 @@ export const workspacePanel: CSSProperties = {
 };
 
 /**
+ * A card, a row, an inset group standing INSIDE a workspace panel.
+ *
+ * The flat counterpart to `cardGlass` (src/components/build/tokens.ts), which is
+ * `--glass-2` over a `--glass-border` and is therefore glass — forbidden on a
+ * working surface by the rule at the top of this file, whether or not it carries
+ * a blur of its own. `--bg` inside a `--recess` panel steps the opposite way
+ * from the panel's own step off the ground, so a card reads as an object ON the
+ * panel in both rooms, and one `--line` hairline draws its edge.
+ *
+ * It lives here beside `workspacePanel` because this file is where the
+ * workspace's flat vocabulary is kept, and five surfaces across compose needed
+ * the same three declarations.
+ */
+export const workspaceCard: CSSProperties = {
+  backgroundColor: t.bg,
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderColor: t.line,
+  borderRadius: r.card,
+};
+
+/**
  * The hairline the workspace separates anything with.
  *
  * LONGHANDS RATHER THAN THE `border: 1px solid var(--line)` SHORTHAND, here and

@@ -49,6 +49,8 @@ import {
   focusControl,
   helpStyle,
 } from "@/components/compose/fields";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 
 /** Longest satisfied-by summary before it is cut. Rows are one line each. */
 const SUMMARY_MAX = 72;
@@ -250,7 +252,7 @@ function parseNumber(value: string): number | null {
 const tickBase: React.CSSProperties = {
   width: 14,
   height: 14,
-  borderRadius: 4,
+  borderRadius: r.chip,
   flexShrink: 0,
   marginTop: 2,
   display: "inline-flex",
@@ -420,8 +422,8 @@ export function CompletenessPanel({
           aria-label="How much of this record is filled in"
           style={{
             height: 4,
-            borderRadius: 4,
-            background: "rgba(255,255,255,0.06)",
+            borderRadius: r.chip,
+            background: t.line,
             overflow: "hidden",
           }}
         >
@@ -471,9 +473,9 @@ export function CompletenessPanel({
                     gap: 8,
                     textAlign: "left",
                     padding: "6px 6px",
-                    borderRadius: 8,
+                    borderRadius: r.control,
                     background:
-                      openField === row.key ? "rgba(255,255,255,0.04)" : "transparent",
+                      openField === row.key ? tokenAlpha("action", 0.1) : "transparent",
                     border: "1px solid transparent",
                     color: row.met ? TEXT_SECONDARY : TEXT_PRIMARY,
                     cursor: "pointer",
@@ -484,7 +486,7 @@ export function CompletenessPanel({
                     style={{
                       ...tickBase,
                       background: row.met ? hexToRgba(TEAL, 0.18) : "transparent",
-                      border: `1px solid ${row.met ? hexToRgba(TEAL, 0.5) : "rgba(255,255,255,0.14)"}`,
+                      border: `1px solid ${row.met ? t.evidence : t.line}`,
                       color: TEAL,
                     }}
                   >

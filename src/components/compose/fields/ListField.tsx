@@ -46,12 +46,12 @@ import {
   HAIRLINE,
   TEXT_MUTED,
   TEXT_SECONDARY,
-  cardGlass,
   labelText,
 } from "@/components/build/tokens";
 import { FieldShell } from "../SchemaForm";
 import { resolveWidget, type FieldWidgetProps } from "./index";
 import { r } from "@/lib/theme/radius";
+import { workspaceCard } from "@/components/shell/WorkspaceBar";
 
 /** A row is an object keyed by the sub-field keys. Anything else is repaired. */
 type Row = Record<string, Json | undefined>;
@@ -190,7 +190,7 @@ function ListRow({
     <li
       ref={setNodeRef}
       style={{
-        ...cardGlass,
+        ...workspaceCard,
         display: "flex",
         alignItems: "flex-start",
         gap: 6,

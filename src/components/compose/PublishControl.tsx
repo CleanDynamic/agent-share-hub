@@ -109,13 +109,12 @@ import {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   bodyText,
-  cardGlass,
   headingText,
   hexToRgba,
   labelText,
-  panelGlass,
   titleText,
 } from "@/components/build/tokens";
+import { workspaceCard, workspacePanel } from "@/components/shell/WorkspaceBar";
 
 /**
  * The sheet is the heaviest thing on this route that most presses never reach:
@@ -747,7 +746,7 @@ function PublishConfirmation({
         data-visual-slot="publish-confirmation"
         onClick={(event) => event.stopPropagation()}
         style={{
-          ...panelGlass,
+          ...workspacePanel,
           width: "min(520px, 100%)",
           maxHeight: "100%",
           overflowY: "auto",
@@ -772,7 +771,7 @@ function PublishConfirmation({
 
         <div
           style={{
-            ...cardGlass,
+            ...workspaceCard,
             display: "flex",
             alignItems: "center",
             gap: 10,
@@ -870,7 +869,7 @@ function GalleryLine({
     return (
       <div
         style={{
-          ...cardGlass,
+          ...workspaceCard,
           padding: "12px 14px",
           borderLeft: `2px solid ${TEAL}`,
           background: hexToRgba(TEAL, 0.06),
@@ -891,7 +890,7 @@ function GalleryLine({
   return (
     <div
       style={{
-        ...cardGlass,
+        ...workspaceCard,
         padding: "12px 14px",
         borderLeft: `2px solid ${ORANGE}`,
         background: hexToRgba(ORANGE, 0.05),

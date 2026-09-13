@@ -58,6 +58,8 @@ import {
 } from "./EventRow";
 import { PhaseEditor } from "./PhaseEditor";
 import type { Sequence } from "./useSequence";
+import { r } from "@/lib/theme/radius";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 
 /** One page of rows. Above this the list is sliced; at or below it, it is not. */
 export const PAGE_SIZE = 100;
@@ -105,7 +107,7 @@ const barButton: React.CSSProperties = {
   alignItems: "center",
   gap: 6,
   padding: "5px 10px",
-  borderRadius: 8,
+  borderRadius: r.control,
   border: `1px solid ${CONTROL_BORDER}`,
   background: "transparent",
   color: TEXT_SECONDARY,
@@ -144,13 +146,13 @@ function VisibilityLegend() {
               style={{
                 width: 7,
                 height: 7,
-                borderRadius: 999,
+                borderRadius: r.chip,
                 background: meta.colour,
                 flexShrink: 0,
               }}
             />
             <span style={{ ...labelText, fontSize: 11, color: TEXT_SECONDARY }}>{meta.label}</span>
-            <span style={{ fontSize: 11, fontWeight: 300, color: TEXT_MUTED }}>{meta.meaning}</span>
+            <span style={{ fontSize: 11, fontWeight: 400, color: t.text2 }}>{meta.meaning}</span>
           </li>
         );
       })}
@@ -304,7 +306,7 @@ export function SequenceView({ sequence, nodeOptions }: SequenceViewProps) {
         <p style={{ ...labelText, margin: 0, color: TEXT_SECONDARY }}>
           The sequence could not be loaded.
         </p>
-        <p style={{ fontSize: 12, fontWeight: 300, margin: 0, color: TEXT_MUTED }}>
+        <p style={{ fontSize: 12, fontWeight: 400, margin: 0, color: t.text2 }}>
           {loadError.message}
         </p>
       </div>
@@ -344,7 +346,7 @@ export function SequenceView({ sequence, nodeOptions }: SequenceViewProps) {
       </div>
 
       {events.length === 0 ? (
-        <p style={{ fontSize: 13, fontWeight: 300, lineHeight: 1.6, margin: 0, color: TEXT_MUTED }}>
+        <p style={{ fontSize: 13, fontWeight: 400, lineHeight: 1.6, margin: 0, color: t.text2 }}>
           Nothing has happened yet. Paste a transcript when you start a build and the
           sequence fills itself; until then this is where the story of the build will go.
         </p>
@@ -367,11 +369,17 @@ export function SequenceView({ sequence, nodeOptions }: SequenceViewProps) {
                 flexDirection: "column",
                 gap: 8,
                 padding: 10,
-                borderRadius: 12,
-                border: `1px solid ${hexToRgba(TEAL, 0.22)}`,
-                background: "rgba(16,16,24,0.94)",
-                backdropFilter: "blur(40px) saturate(180%)",
-                WebkitBackdropFilter: "blur(40px) saturate(180%)",
+                /* BG-P23 — THE LAST GLASS IN THE WORKSPACE, AND IT IS GONE.
+                   This was `blur(40px) saturate(180%)` behind a near-black
+                   wash: a second blur value the theme does not publish, on the
+                   one kind of surface the theme forbids glass on outright, over
+                   a ground that went black in the light room. A sticky bar has
+                   to be opaque to do its job, and `--recess` already is — so the
+                   panel is flat, with one `--line` hairline and the accent on
+                   the count beside it. */
+                borderRadius: r.panel,
+                border: `1px solid ${t.line}`,
+                background: t.recess,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
