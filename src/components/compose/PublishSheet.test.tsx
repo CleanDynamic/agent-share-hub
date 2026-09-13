@@ -326,6 +326,120 @@ describe("the publish sheet", () => {
     ).toBeTruthy();
   });
 
+  // --- BG-P24: the repaint ---------------------------------------------------
+  //
+  // WHAT THIS FILE CAN AND CANNOT PROVE. jsdom's CSS parser stores NOTHING for
+  // a colour whose value is a `var()` — not the reference, not a fallback, not
+  // the property — so no assertion here can see a token colour at all (see
+  // src/test/tokenStyle.ts). The usual way round it is `staticDoc`, which
+  // renders through SSR and reads the attribute verbatim; that is not open to
+  // this surface, because the sheet's content lives inside a Radix portal and
+  // `renderToStaticMarkup` emits no portal.
+  //
+  // So the division of labour is: THIS file asserts the structural half of the
+  // repaint — the properties jsdom does keep, the slots, the states and the
+  // fact that a refusal is inline rather than transient — and
+  // e2e/tier3/publish-repaint.spec.ts asserts the RESOLVED colour in both
+  // themes, which is the half only a browser can answer.
+
+  it("puts the kit's glass out and stands at --r-panel above the scrim", async () => {
+    getBuild.mockResolvedValue(publishable());
+    renderCompose();
+
+    const sheet = await openSheet();
+    const style = sheet.getAttribute("style") ?? "";
+
+    // `--r-panel` and the overlay shadow, which is the elevation level a
+    // dialog takes. (The `backdrop-filter: none` that puts the kit's glass out
+    // is not asserted here: jsdom drops the property entirely, supported or
+    // not. The tier-3 spec reads the computed filter in a real browser, which
+    // is the only place the absence of a blur is visible at all.)
+    expect(style).toContain("border-radius: var(--r-panel)");
+    expect(style).toContain("box-shadow: var(--elev-overlay)");
+
+    // The scrim belongs to the layer BEHIND the sheet, never to the sheet —
+    // spreading it here would dim the panel instead of the page.
+    expect(style).not.toContain("--porthole");
+  });
+
+  it("marks every checklist row with what it is and whether the button waits on it", async () => {
+    getBuild.mockResolvedValue(
+      record(draft({ outcome: null }), [node("n1", "prompt", "The triage prompt")])
+    );
+    renderCompose();
+
+    await openSheet();
+    const rows = await screen.findAllByTestId("publish-checklist-row");
+    expect(rows.length).toBeGreaterThan(0);
+
+    for (const row of rows) {
+      expect(row.dataset.requirement).toBeTruthy();
+      // The row is a target, not a label: --r-control, the scale's step for a
+      // list row, rather than the 8px chip radius it used to carry.
+      expect(row.getAttribute("style") ?? "").toContain("border-radius: var(--r-control)");
+    }
+
+    // At least one row is one the button is actually waiting on, and it says
+    // so under the sentence rather than only in a colour.
+    const blocking = rows.filter((row) => row.dataset.blocking === "true");
+    expect(blocking.length).toBeGreaterThan(0);
+    expect(blocking[0]).toHaveTextContent("needed to publish");
+  });
+
+  it("offers the picture as a line, not as a second call to action", async () => {
+    getBuild.mockResolvedValue(publishable());
+    renderCompose();
+
+    await openSheet();
+    const nudge = await screen.findByTestId("publish-cover-nudge");
+    const style = nudge.getAttribute("style") ?? "";
+
+    // No fill and no border. A tinted, bordered box here is a second primary
+    // standing beside Publish, and the theme allows one per view.
+    expect(style).toContain("background: transparent");
+    expect(style).toContain("border-width: 0");
+    // Underlined at rest: colour alone is not an affordance, and hover does
+    // not exist on a touch screen.
+    expect(style).toContain("text-decoration: underline");
+  });
+
+  it("gives Publish the kit's primary surface and says why, inline, when it refuses", async () => {
+    getBuild.mockResolvedValue(
+      record(draft({ outcome: null }), [node("n1", "prompt", "The triage prompt")])
+    );
+    renderCompose();
+
+    await openSheet();
+    const confirm = screen.getByTestId("publish-confirm");
+
+    // The kit's own button rather than a hand-rolled surface: it marks its own
+    // slot, and it is at --r-control rather than the retired 999px capsule.
+    expect(confirm.getAttribute("data-visual-slot")).toBe("btn-primary");
+    expect(confirm.getAttribute("style") ?? "").toContain("border-radius: var(--r-control)");
+
+    // Disabled, WITH THE REASON ON THE SCREEN. Never a toast: a refusal that
+    // disappears after four seconds is one the reader who needed it longest
+    // never finished reading.
+    expect(confirm).toBeDisabled();
+    const reason = screen.getByTestId("publish-blocked-reason");
+    expect(reason.textContent?.trim().length ?? 0).toBeGreaterThan(0);
+  });
+
+  it("keeps the publishing state on the one button rather than swapping surfaces", async () => {
+    getBuild.mockResolvedValue(publishable());
+    renderCompose();
+
+    await openSheet();
+    const confirm = screen.getByTestId("publish-confirm");
+    expect(confirm).toBeEnabled();
+    expect(confirm).toHaveTextContent("Publish");
+    // ONE PRIMARY ACTION ON THE SHEET. Scoped to the sheet rather than to the
+    // document, because the workspace bar's own trigger is a primary too — and
+    // it is behind this overlay, not competing with it.
+    const sheet = screen.getByTestId("publish-sheet");
+    expect(sheet.querySelectorAll('[data-visual-slot="btn-primary"]')).toHaveLength(1);
+  });
+
   it("renders nothing extra when no sections are passed", () => {
     const readiness: PublishReadiness = { ready: true, blocking: [], reason: null };
     render(
