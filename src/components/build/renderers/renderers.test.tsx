@@ -35,6 +35,7 @@ import type { Build, BuildMedia, BuildNode, NodeType } from "@/lib/build";
 import { NodeCard } from "../NodeCard";
 import { GenericRenderer, RENDERERS, resolveRenderer, getNodeCopyText } from "./index";
 import { mediaSrc } from "./shared";
+import { staticDoc, styleOf } from "@/test/tokenStyle";
 
 // --- fixtures ----------------------------------------------------------------
 
@@ -110,34 +111,41 @@ function renderCard(
   );
 }
 
-/** jsdom keeps hex in some shorthands and rgb() in others; accept either. */
-function colourMatches(value: string, hex: string): boolean {
-  const int = parseInt(hex.replace("#", ""), 16);
-  const rgb = `rgb(${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255})`;
-  return (
-    value.trim().toLowerCase() === hex.toLowerCase() ||
-    value.replace(/\s+/g, " ").trim() === rgb
+/* BG-P21 — THE COLOUR CLAIMS MOVED OFF `element.style`, and the hexes with them.
+   Every accent in these renderers is a `var(--token)` string now, and jsdom's
+   CSS parser drops a `var()` on assignment: `element.style.borderLeftColor`
+   answers "" for a border the browser paints. The structural half of each claim
+   still reads the real DOM; the colour half reads the same component rendered
+   to static markup, where the style attribute survives verbatim. See
+   src/test/tokenStyle.tsx. */
+
+/** The same card as `renderCard`, parsed from markup rather than mounted. */
+function staticCard(
+  node: BuildNode,
+  nodeType?: NodeType,
+  resolveMedia: (id: string | null | undefined) => BuildMedia | null | undefined = noMedia
+): Document {
+  return staticDoc(
+    <NodeCard
+      node={node}
+      nodeType={nodeType}
+      build={build}
+      resolveNode={noResolve}
+      resolveMedia={resolveMedia}
+    />
   );
 }
 
-/** jsdom serialises colours to rgb(); accept either form. */
-function borderLeftMatches(element: HTMLElement | null, hex: string): boolean {
-  if (!element) return false;
-  const { borderLeftWidth, borderLeftStyle, borderLeftColor } = element.style;
-  if (borderLeftWidth !== "3px" || borderLeftStyle !== "solid") return false;
-  const int = parseInt(hex.replace("#", ""), 16);
-  const rgb = `rgb(${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255})`;
-  return (
-    borderLeftColor.toLowerCase() === hex.toLowerCase() ||
-    borderLeftColor.replace(/\s+/g, " ") === rgb
-  );
+/** True when the element carries AccentSection's 3px edge in `token`. */
+function borderLeftMatches(element: Element | null | undefined, token: string): boolean {
+  return styleOf(element).includes(`border-left:3px solid ${token}`);
 }
 
 /** The nearest ancestor carrying a left border, which AccentSection draws. */
-function accentSectionFor(label: HTMLElement): HTMLElement | null {
-  let current: HTMLElement | null = label.parentElement;
+function accentSectionFor(label: Element | null): Element | null {
+  let current: Element | null = label?.parentElement ?? null;
   while (current) {
-    if (current.style.borderLeftWidth === "3px") return current;
+    if (styleOf(current).includes("border-left:3px solid")) return current;
     current = current.parentElement;
   }
   return null;
@@ -396,18 +404,20 @@ describe("the comparison table node", () => {
     expect(bodyRows[0].textContent).toContain("£0.34");
   });
 
-  it("marks the winner row with a teal left border", () => {
-    renderCard(
+  it("marks the winner row with an evidence left border", () => {
+    const doc = staticCard(
       makeNode({ type: "comparison_table", title: "Model bake-off", payload: comparisonPayload }),
       comparisonType
     );
 
-    const bodyRows = Array.from(document.querySelectorAll("tbody tr")) as HTMLElement[];
+    const bodyRows = Array.from(doc.querySelectorAll("tbody tr"));
     const winnerRow = bodyRows.find((row) => row.textContent?.includes("claude-opus-4-5"));
     const loserRow = bodyRows.find((row) => row.textContent?.includes("gpt-baseline"));
 
-    expect(borderLeftMatches(winnerRow?.querySelector("td") as HTMLElement, "#2EC4B6")).toBe(true);
-    expect(borderLeftMatches(loserRow?.querySelector("td") as HTMLElement, "#2EC4B6")).toBe(false);
+    expect(borderLeftMatches(winnerRow?.querySelector("td"), "var(--evidence)")).toBe(true);
+    expect(borderLeftMatches(loserRow?.querySelector("td"), "var(--evidence)")).toBe(false);
+    // The loser keeps the same 3px edge in transparent, so the two rows line up.
+    expect(borderLeftMatches(loserRow?.querySelector("td"), "transparent")).toBe(true);
   });
 
   it("prints the method and n as a footnote beneath the table", () => {
@@ -445,7 +455,24 @@ describe("the comparison table node", () => {
     const bodyRows = Array.from(document.querySelectorAll("tbody tr")) as HTMLElement[];
     expect(bodyRows.length).toBe(2);
     expect(bodyRows[0].textContent).toContain("96.7%");
-    expect(borderLeftMatches(bodyRows[0].querySelector("td") as HTMLElement, "#2EC4B6")).toBe(true);
+
+    const doc = staticCard(
+      makeNode({
+        type: "comparison_table",
+        title: "Model bake-off",
+        payload: {
+          ...comparisonPayload,
+          rows: [
+            { model: "claude-opus-4-5", accuracy: "96.7%", cost: "£2.80" },
+            { model: "gpt-baseline", accuracy: "88.0%", cost: "£1.10" },
+          ],
+        },
+      }),
+      comparisonType
+    );
+    expect(
+      borderLeftMatches(doc.querySelectorAll("tbody tr")[0]?.querySelector("td"), "var(--evidence)")
+    ).toBe(true);
   });
 });
 
@@ -488,18 +515,23 @@ const breakageNode = makeNode({
 });
 
 describe("the seeded breakage node", () => {
-  it("renders symptom, cause and resolution as three distinct red-bordered sections", () => {
+  it("renders symptom, cause and resolution as three distinct breakage-bordered sections", () => {
     renderCard(breakageNode, breakageType);
+    const doc = staticCard(breakageNode, breakageType);
 
-    const sections = ["Symptom", "Cause", "Resolution"].map((label) => {
-      const heading = screen.getByText(label);
+    const headings = Array.from(doc.querySelectorAll("span")).filter((span) =>
+      ["Symptom", "Cause", "Resolution"].includes(span.textContent ?? "")
+    );
+    expect(headings.length).toBe(3);
+
+    const sections = headings.map((heading) => {
       const section = accentSectionFor(heading);
-      expect(section, `${label} should sit in its own accent section`).toBeTruthy();
-      return section as HTMLElement;
+      expect(section, `${heading.textContent} should sit in its own accent section`).toBeTruthy();
+      return section as Element;
     });
 
     for (const section of sections) {
-      expect(borderLeftMatches(section, "#EF4444")).toBe(true);
+      expect(borderLeftMatches(section, "var(--cat-breakage)")).toBe(true);
     }
 
     // Three sections, not one block with three labels.
@@ -671,35 +703,38 @@ describe("the generated media variant grid", () => {
     },
   });
 
-  it("marks the chosen variant with a teal border and dims the rest to 60%", () => {
-    renderCard(
-      makeNode({
-        type: "generated_media",
-        title: "Hero image",
-        payload: {
-          prompt: "A dark control room, teal accents.",
-          model: "imagen-4",
-          variants: [
-            { media_id: "build-media/v1.png", chosen: false, note: "too busy" },
-            { media_id: "build-media/v2.png", chosen: true, note: "kept" },
-            { media_id: "build-media/v3.png", chosen: false },
-          ],
-        },
-      }),
-      generatedMediaType
-    );
+  it("marks the chosen variant with an evidence border and dims the rest to 60%", () => {
+    const chosenNode = makeNode({
+      type: "generated_media",
+      title: "Hero image",
+      payload: {
+        prompt: "A dark control room, teal accents.",
+        model: "imagen-4",
+        variants: [
+          { media_id: "build-media/v1.png", chosen: false, note: "too busy" },
+          { media_id: "build-media/v2.png", chosen: true, note: "kept" },
+          { media_id: "build-media/v3.png", chosen: false },
+        ],
+      },
+    });
+
+    renderCard(chosenNode, generatedMediaType);
 
     const figures = Array.from(document.querySelectorAll("figure")) as HTMLElement[];
     expect(figures.length).toBe(3);
 
     const chosen = figures[1];
-    expect(colourMatches(chosen.style.borderColor, "#2EC4B6")).toBe(true);
     expect(chosen.style.opacity).toBe("1");
     expect(within(chosen).getByText("chosen")).toBeTruthy();
 
     expect(figures[0].style.opacity).toBe("0.6");
     expect(figures[2].style.opacity).toBe("0.6");
-    expect(colourMatches(figures[0].style.borderColor, "#2EC4B6")).toBe(false);
+
+    const staticFigures = Array.from(
+      staticCard(chosenNode, generatedMediaType).querySelectorAll("figure")
+    );
+    expect(styleOf(staticFigures[1])).toContain("border:1px solid var(--evidence)");
+    expect(styleOf(staticFigures[0])).not.toContain("var(--evidence)");
   });
 
   it("requests each variant thumbnail transformed rather than at original size", () => {

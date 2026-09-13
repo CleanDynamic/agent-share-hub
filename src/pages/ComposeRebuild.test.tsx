@@ -238,10 +238,19 @@ describe("compose, on a rebuild", () => {
 
     // Selection still outranks the diff: the row being edited is the row the
     // creator needs to find, and the pill carries the other fact meanwhile.
-    expect(row(container, "d1n2").style.borderLeft).toBe("2px solid #E8571A");
+    //
+    // BG-P21 — THE SELECTED ACCENT IS ASSERTED THROUGH THE FILL, NOT THE EDGE.
+    // The edge is `2px solid var(--action)` now, and jsdom's CSS parser drops a
+    // `var()` on assignment rather than storing it, so `style.borderLeft` reads
+    // back empty for a border a browser paints. The selected fill is still a
+    // literal rgba and moves with the same flag, so it carries the claim: this
+    // row reads as selected while its treatment is "changed".
+    expect(row(container, "d1n2").style.background).toBe("rgba(232, 87, 26, 0.08)");
+    expect(row(container, "d1n2").getAttribute("data-rebuild")).toBe("changed");
 
     fireEvent.click(screen.getByText("First prompt"));
-    expect(row(container, "d1n2").style.borderLeft).toBe("2px solid rgba(232,87,26,0.75)");
+    expect(row(container, "d1n2").style.background).toBe("transparent");
+    expect(row(container, "d1n2").getAttribute("data-rebuild")).toBe("changed");
     // Untouched material stays quiet.
     expect(row(container, "d1n1").getAttribute("data-rebuild")).toBe("inherited");
   });
@@ -264,7 +273,13 @@ describe("compose, on a rebuild", () => {
     expect(within(row(container, "d1n3")).getByTestId("rebuild-node-pill").textContent).toBe(
       "new"
     );
-    expect(row(container, "d1n3").style.borderLeft).toBe("2px solid #2EC4B6");
+    // The "added" accent is `var(--evidence)` from BG-P21 and jsdom cannot read
+    // it back (see the note in the test above): a dropped declaration leaves the
+    // PREVIOUS value in place, so `style.borderLeft` here would assert whatever
+    // the row was painted before the treatment resolved rather than what it is.
+    // The treatment the accent is drawn from is asserted by the attribute and
+    // the pill, both of which are read from the same `rebuildNodes` entry.
+    expect(row(container, "d1n3").getAttribute("data-rebuild")).toBe("added");
     expect(row(container, "d1n2").getAttribute("data-rebuild")).toBe("inherited");
 
     expect(screen.getByTestId("rebuild-change-count").textContent).toBe("1 change");
