@@ -5,6 +5,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Eye, Star, ClipboardList } from "lucide-react";
 import { timeAgo, formatNum, roundedStars } from "@/components/FeedItem";
 import { displayContentType } from "@/lib/content-types";
+import { UI_EASING, UI_MS } from "@/lib/theme/controls";
+import { elevation } from "@/lib/theme/elevation";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { data as dataText } from "@/lib/theme/type";
 
 interface ProjectFeedCardProps {
   item: {
@@ -30,7 +35,7 @@ function CoverMosaic({ images, title }: { images: string[]; title: string }) {
   const cells = images.slice(0, 4);
   if (cells.length === 0) return null;
   return (
-    <div className="w-full rounded-xl overflow-hidden mt-2 grid grid-cols-2 gap-[2px]" style={{ maxHeight: 200 }}>
+    <div className="w-full overflow-hidden mt-2 grid grid-cols-2 gap-[2px]" style={{ maxHeight: 200, borderRadius: r.media }}>
       {cells.map((url, i) => (
         <img key={i} src={url} alt={`${title} item ${i + 1}`} loading="lazy" className="w-full h-[100px] object-cover"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
@@ -53,30 +58,37 @@ export function ProjectFeedCard({ item }: ProjectFeedCardProps) {
       onClick={() => navigate(`/project/${item.id}`)}
       data-visual-slot="feed-card"
       style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-card)',
+        // BG-P18. `--surface` and `--border` are the legacy `:root` pair — a 3%
+        // white and a 14% white, fixed for a dark page. `--glass` on a `--line`
+        // hairline at `--r-card` is the theme's own answer to the same three
+        // questions, and it is what puts this card in the same room as the
+        // build card beside it in the feed. Not `--card-frame`: that token is
+        // half of the build card's two-layer pair and means "the record", which
+        // this is not.
+        background: t.glass,
+        ...elevation.flat,
+        borderRadius: r.card,
         marginBottom: 12,
         padding: '18px 20px',
-        transition: 'border-color 0.2s ease',
+        transition: `border-color ${UI_MS}ms ${UI_EASING}`,
         cursor: 'pointer',
       }}
-      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--text2)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--line)'}
     >
       {/* Header */}
       <div className="flex items-center gap-2" style={{ height: 34 }}>
         <Link to={`/creator/${profile?.username}`} onClick={stop}>
           <Avatar className="shrink-0" style={{ width: 34, height: 34 }}>
-            <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
+            <AvatarFallback className="text-[10px]" style={{ background: t.action, color: t.onAction }}>{initials}</AvatarFallback>
           </Avatar>
         </Link>
-        <Link to={`/creator/${profile?.username}`} onClick={stop} className="hover:underline truncate" style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.90)' }}>
+        <Link to={`/creator/${profile?.username}`} onClick={stop} className="hover:underline truncate" style={{ fontSize: 13, fontWeight: 500, color: t.text }}>
           {profile?.display_name || profile?.username || "Unknown"}
         </Link>
-        <span className="truncate" style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>@{profile?.username}</span>
-        <span style={{ color: 'rgba(255,255,255,0.20)' }}>·</span>
-        <span className="shrink-0" style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)' }}>{timeAgo(item.approved_at || item.created_at)}</span>
+        <span className="truncate" style={{ ...dataText, fontSize: 12, color: t.text2 }}>@{profile?.username}</span>
+        <span style={{ color: t.text2 }}>·</span>
+        <span className="shrink-0" style={{ ...dataText, fontSize: 12, color: t.text2 }}>{timeAgo(item.approved_at || item.created_at)}</span>
         <div className="ml-auto shrink-0" onClick={stop}>
           <BookmarkButton contentId={item.id} />
         </div>
@@ -84,45 +96,51 @@ export function ProjectFeedCard({ item }: ProjectFeedCardProps) {
 
       {/* Badge + component type pills */}
       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-        <Badge variant="outline" className="text-[10px] font-medium bg-primary/20 text-primary border-primary/25">
-          Project
-        </Badge>
-        {compTypes.map((t) => (
-          <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">
-            {displayContentType(t)}
+        {/* Neutral, for the reason the collection card's badge is: see there. */}
+        <Badge variant="secondary">Project</Badge>
+        {compTypes.map((type) => (
+          <span
+            key={type}
+            className="text-[10px] px-1.5 py-0.5"
+            style={{ borderRadius: r.chip, background: t.recess, color: t.text2 }}
+          >
+            {displayContentType(type)}
           </span>
         ))}
         {extraTypes > 0 && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">+{extraTypes} more</span>
+          <span className="text-[10px] px-1.5 py-0.5" style={{ borderRadius: r.chip, background: t.recess, color: t.text2 }}>+{extraTypes} more</span>
         )}
       </div>
 
       {/* Title + Description */}
-      <p className="line-clamp-2" style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.90)', lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
+      <p className="line-clamp-2" style={{ fontSize: 15, fontWeight: 600, color: t.text, lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
       {item.description && (
-        <p className="truncate" style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{item.description}</p>
+        <p className="truncate" style={{ fontSize: 12, color: t.text2, marginTop: 4 }}>{item.description}</p>
       )}
 
       {/* Cover */}
       {item.cover_image_url ? (
         <img src={item.cover_image_url} alt={item.title} loading="lazy"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-          className="w-full rounded-xl mt-2 block object-cover" style={{ maxHeight: 200 }} />
+          className="w-full mt-2 block object-cover" style={{ maxHeight: 200, borderRadius: r.media }} />
       ) : item._cover_images && item._cover_images.length > 0 ? (
         <CoverMosaic images={item._cover_images} title={item.title} />
       ) : null}
 
       {/* Stats */}
-      <div className="flex items-center" style={{ gap: 16, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.12)', fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>
+      <div className="flex items-center" style={{ gap: 16, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${t.line}`, fontSize: 12, fontWeight: 400, color: t.text2 }}>
         <span className="inline-flex items-center gap-1 shrink-0">
           <ClipboardList style={{ width: 15, height: 15 }} />{item._component_count ?? 0} blueprints
         </span>
         <span className="inline-flex items-center gap-1 shrink-0"><Eye style={{ width: 15, height: 15 }} />{formatNum(item.view_count)}</span>
         {(item.rating_count ?? 0) > 0 && (
-          <span className="inline-flex items-center gap-1 shrink-0"><Star style={{ width: 15, height: 15, fill: '#1F7A6D', color: '#1F7A6D' }} />{(item.avg_rating ?? 0).toFixed(1)}</span>
+          <span className="inline-flex items-center gap-1 shrink-0"><Star style={{ width: 15, height: 15, fill: 'var(--evidence)', color: 'var(--evidence)' }} />{(item.avg_rating ?? 0).toFixed(1)}</span>
         )}
         {item.package_price_enabled && item.package_price_gbp != null && (
-          <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary border border-primary/25 font-medium">
+          <span
+            className="ml-auto text-[10px] px-1.5 py-0.5 font-medium"
+            style={{ borderRadius: r.chip, background: t.action, color: t.onAction }}
+          >
             From £{item.package_price_gbp}
           </span>
         )}

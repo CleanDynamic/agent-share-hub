@@ -14,7 +14,12 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { BuildFeedItemView } from "@/components/feed/BuildFeedItems";
-import { toFeedItem, type BuildFeedRow } from "@/lib/feed/getBuildFeed";
+import {
+  toFeedItem,
+  type BuildFeedRow,
+  type FeedItem,
+} from "@/lib/feed/getBuildFeed";
+import type { GalleryMedia } from "@/lib/build";
 
 function row(overrides: Partial<BuildFeedRow> = {}): BuildFeedRow {
   return {
@@ -52,6 +57,31 @@ function row(overrides: Partial<BuildFeedRow> = {}): BuildFeedRow {
     bounty_reward_gbp: null,
     bounty_gap_title: null,
     ...overrides,
+  };
+}
+
+/**
+ * One media row that IS part of a post, which is what `post_position` means.
+ *
+ * The feed's own rows never carry one — see the test that says so — so this is
+ * written here rather than derived from `row()`: the point is to hand the card
+ * the material the gallery's query already gives it and check that the feed asks
+ * for the right layout over it. Dimensions are real, because the card reserves
+ * its picture's height from them and a null pair takes a different branch.
+ */
+function postRow(position: number, text: string): GalleryMedia {
+  return {
+    id: `m${position}`,
+    node_id: null,
+    bucket: "build-media",
+    path: `p/${position}.png`,
+    kind: "image",
+    width: 1200,
+    height: 800,
+    poster_path: null,
+    duration: null,
+    post_position: position,
+    post_text: text,
   };
 }
 
@@ -150,13 +180,61 @@ describe("the rebuilt card in the feed", () => {
     expect(item.querySelector('[data-visual-slot="card-thread"]')).not.toBeNull();
   });
 
-  it("still lays the feed's cards out in grid layout, which is BG-P18's to switch", () => {
-    // The feed's own layout is not this prompt's. Until BG-P18 switches it, the
-    // card in the feed is the grid card: a fixed slot, no entry text, no unfold.
+  it("asks the card for FEED layout, on all three kinds that render one", () => {
+    // BG-P18. The switch BG-P09 left for this prompt. It is asserted on all
+    // three kinds because the literal lives in one constant for exactly this
+    // reason: a build in the gallery's layout beside a rebuild in the feed's
+    // would be one word wrong in one branch, and nothing else would say so.
+    for (const [testid, feedRow] of [
+      ["feed-item-build", row()],
+      ["feed-item-rebuild", row({ item_kind: "rebuild", parent_build_id: "b0", rebuild_note: "Swapped it." })],
+      ["feed-item-bounty", BOUNTY_ROW],
+    ] as const) {
+      const { unmount } = renderItem(feedRow);
+      const item = screen.getByTestId(testid);
+      expect(item.querySelector('[data-card-layout="feed"]')).not.toBeNull();
+      expect(item.querySelector('[data-card-layout="grid"]')).toBeNull();
+      unmount();
+    }
+  });
+
+  it("still draws the fixed slot for a row the feed query gives no post rows", () => {
+    // NOT A CONTRADICTION OF THE TEST ABOVE, and the distinction is the whole
+    // state of play after BG-P18. The card is ASKED for feed layout; it falls
+    // back to the gallery's fixed slot for a build with no post entries, because
+    // the guarantee that no card is ever empty outranks the layout it was asked
+    // for. get_build_feed returns one cover row with post_position null, so
+    // every row the feed has today takes that fallback — see coverRows in
+    // src/lib/feed/getBuildFeed.ts. This test is what will fail, loudly and in
+    // the right file, on the day that function starts returning the post's rows.
     renderItem(row());
     const item = screen.getByTestId("feed-item-build");
-    expect(item.querySelector('[data-card-layout="grid"]')).not.toBeNull();
+    expect(item.querySelector('[data-thread-layout="grid"]')).not.toBeNull();
     expect(item.querySelector("[data-thread-control]")).toBeNull();
+  });
+
+  it("draws the thread, with its unfold control, once a build carries a post", () => {
+    // The other side of the same seam, proven without the data layer: a build
+    // whose media rows ARE a post gets the thread box, the entries' text and the
+    // `Show thread` control — so the feed's `layout="feed"` is demonstrably
+    // wired to the card rather than merely written down.
+    const item = toFeedItem(row()) as Extract<FeedItem, { kind: "build" }>;
+    const posted: FeedItem = {
+      ...item,
+      build: { ...item.build, media: [postRow(0, "First, the inbox."), postRow(1, "Then the labels.")] },
+    };
+
+    render(
+      <MemoryRouter>
+        <BuildFeedItemView item={posted} srcByPath={new Map()} />
+      </MemoryRouter>
+    );
+
+    const rendered = screen.getByTestId("feed-item-build");
+    expect(rendered.querySelector('[data-thread-layout="feed"]')).not.toBeNull();
+    expect(rendered).toHaveTextContent("First, the inbox.");
+    expect(rendered.querySelector("[data-thread-control]")).not.toBeNull();
+    expect(within(rendered).getByRole("button")).toHaveTextContent("Show thread · 1 more");
   });
 
   it("puts the title, plaque and chips on the frame under the box, in order", () => {

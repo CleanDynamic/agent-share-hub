@@ -63,7 +63,7 @@ export function RightRailExplore() {
   const [searchFocused, setSearchFocused] = useState(false);
 
   /* ── Supabase: trending ── */
-  const { data: trendingItems } = useQuery({
+  const { data: trendingItems, isLoading: trendingLoading, isError: trendingError } = useQuery({
     queryKey: ["ns_trending"],
     queryFn: async () => {
       const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
@@ -325,9 +325,18 @@ export function RightRailExplore() {
             </div>
           </div>
         ))}
+        {/* BG-P18. This said "Loading…" for all three of loading, empty and
+            failed, so a rail whose query came back with nothing sat there
+            promising something that was never going to arrive. The three are
+            now three sentences, from flags the query already computed — no
+            change to the query itself. */}
         {(!trendingItems || trendingItems.length === 0) && (
           <div style={{ fontSize: 11, color: t.text2, padding: "8px 8px" }}>
-            Loading…
+            {trendingLoading
+              ? "Loading…"
+              : trendingError
+                ? "Trending could not be loaded."
+                : "Nothing trending this week."}
           </div>
         )}
       </div>

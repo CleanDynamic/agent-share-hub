@@ -24,10 +24,12 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { FeedEmptyState, FeedSkeleton } from "@/components/feed/FeedShell";
+import { FeedEmptyState, FeedErrorState } from "@/components/feed/FeedShell";
 import { BuildFeedItemView } from "@/components/feed/BuildFeedItems";
+import { GalleryCardSkeleton } from "@/components/gallery/GalleryCard";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
-import { TEXT_MUTED, labelText } from "@/components/build/tokens";
+import { t } from "@/lib/theme/tokens";
+import { data as dataText } from "@/lib/theme/type";
 import {
   FEED_PAGE_SIZE,
   getBuildFeed,
@@ -82,16 +84,35 @@ export function BuildsTab() {
     if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  if (feed.isLoading) return <FeedSkeleton />;
+  // BG-P18. THE CARD'S OWN SKELETON, at the card's own proportions, and this is
+  // the one tab that can afford it: `GalleryCardSkeleton` lives in the gallery
+  // card's module, which this chunk already carries and Home's entry bundle
+  // must not. `FeedShell`'s generic skeleton stands in for the five legacy tabs
+  // and for the moment before this chunk arrives; from here on the placeholder
+  // is the shape of the thing that is coming.
+  if (feed.isLoading) {
+    return (
+      <div data-testid="feed-builds-skeleton" aria-hidden>
+        {[0, 1, 2].map((i) => (
+          <div key={i} style={{ marginBottom: 12 }}>
+            <GalleryCardSkeleton layout="feed" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
+  // BG-P18. Was one line of muted mono with no way out of it. The shared error
+  // state names the tab, repeats what the data layer said, and offers the
+  // retry react-query already had — refetching this tab rather than reloading
+  // the page, so the reader keeps their scroll position and their tab.
   if (feed.isError) {
     return (
-      <p
-        data-testid="feed-builds-error"
-        style={{ ...labelText, color: TEXT_MUTED, marginTop: 48, textAlign: "center" }}
-      >
-        The feed could not be loaded. {(feed.error as Error).message}
-      </p>
+      <FeedErrorState
+        activeTab="builds"
+        message={(feed.error as Error)?.message}
+        onRetry={() => void feed.refetch()}
+      />
     );
   }
 
@@ -117,7 +138,7 @@ export function BuildsTab() {
       {isFetchingNextPage ? (
         <p
           data-testid="feed-builds-loading-more"
-          style={{ ...labelText, color: TEXT_MUTED, textAlign: "center", padding: "12px 0" }}
+          style={{ ...dataText, color: t.text2, textAlign: "center", padding: "12px 0" }}
         >
           Loading more…
         </p>
@@ -126,7 +147,7 @@ export function BuildsTab() {
       {hasNextPage === false ? (
         <p
           data-testid="feed-builds-end"
-          style={{ ...labelText, color: TEXT_MUTED, textAlign: "center", padding: "16px 0" }}
+          style={{ ...dataText, color: t.text2, textAlign: "center", padding: "16px 0" }}
         >
           That is everything published so far — the gallery has the rest.
         </p>

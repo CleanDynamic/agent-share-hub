@@ -241,7 +241,7 @@ export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
           color: t.text2,
         }}
       >
-        {freshness ? <Lamp dim={stale} size={size} /> : null}
+        {freshness ? <PlaqueLamp dim={stale} size={size} /> : null}
         <span
           style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
         >
@@ -261,8 +261,16 @@ export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
  * states twice — `--lit` is 3.01:1 on the Exhibition ground, legal as a lamp and
  * illegal as a word. `opacity` carries the stale state so the colour stays one
  * token in both themes rather than becoming two.
+ *
+ * EXPORTED SINCE BG-P18, BECAUSE THE SIGNAL IS IN TWO PLACES AND HAS TO BE ONE
+ * OBJECT. A reproduction note in the feed — "@rae ran it, and it worked on
+ * sonnet-4.5" — is the same claim this lamp reports on a card: somebody who is
+ * not the creator ran the thing and said what happened. Two lamps drawn from
+ * one token would still have been two lamps, free to drift in size, in shape and
+ * in what dimming means; this is the lamp, spent twice. Nothing about the plaque
+ * changed to export it.
  */
-function Lamp({ dim, size }: { dim: boolean; size: PlaqueSize }) {
+export function PlaqueLamp({ dim, size = "row" }: { dim: boolean; size?: PlaqueSize }) {
   return (
     <span
       aria-hidden

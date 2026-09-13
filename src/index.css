@@ -517,6 +517,21 @@ input[type="search"] { border-radius: var(--r-control); }
   }
 }
 
+/* BG-P18. The mobile right rail's two keyframes, moved out of a `<style>` tag
+   injected by RightRailDrawer.tsx. A keyframe is the one thing an inline style
+   cannot express and the theme puts it here; the component references it by
+   name and drops it under reduced motion in its own style object, the same
+   two-sided answer the skeleton gives. Only `opacity` and `transform` move —
+   neither is a layout property. */
+@keyframes rrFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes rrSlide {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
 /* ── The card's hover shadow (BG-P09) ─────────────────────────────────────────
    A PSEUDO-ELEMENT, BECAUSE THE THEME FORBIDS ANIMATING `box-shadow`. A shadow
    that changes has to change on a pseudo-element whose OPACITY is animated:

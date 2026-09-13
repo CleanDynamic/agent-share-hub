@@ -1,4 +1,9 @@
 import { type } from "@/lib/theme/type";
+import { categoryFill } from "@/lib/theme/category";
+import { UI_EASING, UI_MS, menuPanelStyle } from "@/lib/theme/controls";
+import { elevation } from "@/lib/theme/elevation";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 
 import { useState, useRef, useEffect } from "react"
 import { useNavigate } from 'react-router-dom'
@@ -16,22 +21,31 @@ import { AvatarLevelRing } from "@/components/profile-game/AvatarLevelRing"
 import AttributionChip from "@/components/remix/AttributionChip"
 import { useLineageParent } from "@/lib/remix/hooks"
 
-const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  prompt: { bg: "rgba(139, 69, 19, 0.15)", color: "#8B4513", border: "rgba(139, 69, 19, 0.3)" },
-  prompts: { bg: "rgba(139, 69, 19, 0.15)", color: "#8B4513", border: "rgba(139, 69, 19, 0.3)" },
-  agent: { bg: "rgba(31, 122, 109, 0.15)", color: "#1F7A6D", border: "rgba(31, 122, 109, 0.3)" },
-  agents: { bg: "rgba(31, 122, 109, 0.15)", color: "#1F7A6D", border: "rgba(31, 122, 109, 0.3)" },
-  workflow: { bg: "rgba(139, 92, 246, 0.15)", color: "#8B5CF6", border: "rgba(139, 92, 246, 0.3)" },
-  blog: { bg: "rgba(59, 130, 246, 0.15)", color: "#3B82F6", border: "rgba(59, 130, 246, 0.3)" },
-  tutorial: { bg: "rgba(34, 197, 94, 0.15)", color: "#22C55E", border: "rgba(34, 197, 94, 0.3)" },
-  "failure-library": { bg: "rgba(239, 68, 68, 0.15)", color: "#EF4444", border: "rgba(239, 68, 68, 0.3)" },
-  "failure library": { bg: "rgba(239, 68, 68, 0.15)", color: "#EF4444", border: "rgba(239, 68, 68, 0.3)" },
-  build: { bg: "rgba(139, 69, 19, 0.15)", color: "#8B4513", border: "rgba(139, 69, 19, 0.3)" },
-  technique: { bg: "rgba(31, 122, 109, 0.15)", color: "#1F7A6D", border: "rgba(31, 122, 109, 0.3)" },
-  discovery: { bg: "rgba(139, 92, 246, 0.15)", color: "#8B5CF6", border: "rgba(139, 92, 246, 0.3)" },
-  discussion: { bg: "rgba(59, 130, 246, 0.15)", color: "#3B82F6", border: "rgba(59, 130, 246, 0.3)" },
-  default: { bg: "rgba(255, 255, 255, 0.14)", color: "rgba(255, 255, 255, 0.55)", border: "rgba(255, 255, 255, 0.1)" },
-}
+/**
+ * BG-P18. THE FOURTEEN CONTENT-TYPE BADGE COLOURS ARE RETIRED, which the theme
+ * states outright: a content type is not a part category, the nine part hues
+ * encode meaning and are never borrowed, and anything needing a colour that is
+ * not one of the nine resolves to `--text2`. So this map — a hue per type, each
+ * at an unmeasured 15% alpha over a ground that no longer exists — collapses to
+ * one measured pair.
+ *
+ * It stays a map-shaped lookup rather than being inlined at the three call
+ * sites, because those sites also feed the avatar fallback and would otherwise
+ * each have to decide the same thing again. `--recess` under `--text2` is the
+ * kit's neutral chip, 4.55:1 on Exhibition and 5.73:1 on Dusk, and it is what
+ * `categoryFill` returns for a category the registry does not know — which is
+ * exactly what a content type is.
+ */
+const NEUTRAL_BADGE = {
+  bg: "var(--recess)",
+  color: "var(--text2)",
+  border: "var(--line)",
+} as const;
+
+const CONTENT_TYPE_COLORS: Record<string, { bg: string; color: string; border: string }> =
+  new Proxy({} as Record<string, { bg: string; color: string; border: string }>, {
+    get: () => NEUTRAL_BADGE,
+  });
 
 export interface FeedPost {
   id: string
@@ -238,18 +252,30 @@ export function FeedCard({ post }: { post: FeedPost }) {
 
   return (
     <article
-      className="group relative rounded-xl cursor-pointer transition-all duration-300 hover:bg-white/[0.02]"
+      className="group relative cursor-pointer"
       style={{
         padding: "14px 16px",
         marginBottom: "10px",
-        background: "linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.02) 100%)",
-        backdropFilter: "blur(60px)",
-        WebkitBackdropFilter: "blur(60px)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
-        borderTopColor: "rgba(255, 255, 255, 0.14)",
-        borderLeftColor: "rgba(255, 255, 255, 0.14)",
-        boxShadow: "0 2px 12px rgba(0, 0, 0, 0.20)",
+        /* BG-P18. `--glass` on a `--line` hairline at `--r-card`, which is the
+           theme's card and what puts this one in the same room as the build
+           card beside it in the feed. Not `--card-frame`: that token is half of
+           the build card's two-layer pair and means "the record".
+
+           THREE THINGS WENT, AND ALL THREE WERE COSTING SOMETHING. The 135°
+           gradient between two near-identical whites was invisible and is one
+           more thing to keep in step with a theme. `blur(60px)` was not the
+           system's blur — there is exactly one, 16px — and fifty of them on a
+           loaded feed is fifty compositing layers on the cold-load page, which
+           is the measured cost `neoscale-performance` names first. The 20% black
+           shadow was `raised` on a surface the theme puts at `flat`; a feed of
+           cards each casting a shadow is a feed of stickers. */
+        background: t.glass,
+        ...elevation.flat,
+        borderRadius: r.card,
+        transition: `border-color ${UI_MS}ms ${UI_EASING}`,
       }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--text2)" }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--line)" }}
       onClick={() => navigate(`/content/${post.id}`)}
     >
       {/* Header */}
@@ -283,16 +309,16 @@ export function FeedCard({ post }: { post: FeedPost }) {
           <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
               <AccountHoverCard account={post.author}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>
                   {post.author.display_name}
                 </span>
               </AccountHoverCard>
               <AccountHoverCard account={post.author}>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.40)" }}>
+                <span style={{ fontSize: 12, color: t.text2 }}>
                   @{post.author.username}
                 </span>
               </AccountHoverCard>
-              <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>·</span>
+              <span style={{ color: t.text2, fontSize: 10 }}>·</span>
               <span
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 4,
@@ -307,9 +333,9 @@ export function FeedCard({ post }: { post: FeedPost }) {
                 <span>{typeInfo.label.toUpperCase()}</span>
                 {typeInfo.sub && (
                   <span style={{
-                    color: 'rgba(255,255,255,0.45)',
+                    color: t.text2,
                     fontWeight: 600,
-                    borderLeft: '1px solid rgba(255,255,255,0.15)',
+                    borderLeft: `1px solid ${t.line}`,
                     paddingLeft: 4,
                   }}>
                     {typeInfo.sub.toUpperCase()}
@@ -318,21 +344,22 @@ export function FeedCard({ post }: { post: FeedPost }) {
               </span>
               {post.bounty_enabled === true && (
                 <>
-                  <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>·</span>
+                  <span style={{ color: t.text2, fontSize: 10 }}>·</span>
+                  {/* The breakage category's measured pair, which is where a
+                      bounty's hue is legal as ink, and `--r-chip` rather than
+                      999px — the capsule rule was dropped. */}
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 4,
-                    padding: '1px 8px', borderRadius: 9999,
+                    padding: '1px 8px', borderRadius: r.chip,
                     fontSize: 10, fontWeight: 700,
-                    background: 'rgba(245,158,11,0.15)',
-                    color: '#F59E0B',
-                    border: '1px solid rgba(245,158,11,0.30)',
+                    ...categoryFill('breakage'),
                   }}>
                     🎯 £{post.bounty_amount} Bounty
                   </span>
                 </>
               )}
-              <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>·</span>
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.40)" }}>
+              <span style={{ color: t.text2, fontSize: 10 }}>·</span>
+              <span style={{ fontSize: 12, color: t.text2 }}>
                 {getTimeAgo(post.created_at)}
               </span>
             </div>
@@ -340,7 +367,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
         </div>
 
         <button
-          style={{ padding: 4, color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}
+          style={{ padding: 4, color: t.text2, background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}
           onClick={(e) => e.stopPropagation()}
         >
           <MoreHorizontal size={16} />
@@ -350,7 +377,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
       {/* Title */}
       <h3 style={{
         ...type.cardTitle,
-          color: "rgba(255,255,255,0.90)",
+          color: t.text,
          marginTop: 10, marginBottom: 0,
       }}>
         {post.title}
@@ -372,15 +399,18 @@ export function FeedCard({ post }: { post: FeedPost }) {
             style={{
               marginTop: 8,
               padding: "8px 10px",
-              borderRadius: 8,
-              background: "rgba(245,158,11,0.05)",
-              border: "1px solid rgba(245,158,11,0.18)",
+              borderRadius: r.chip,
+              /* No tinted ground and no coloured edge: the theme is explicit
+                 that a bounty reads as an invitation, and a wash behind one
+                 reads as an error box. The recess says "a strip cut into the
+                 card" and the figures carry the hue. */
+              background: t.recess,
               display: "flex",
               alignItems: "center",
               flexWrap: "wrap",
               gap: 14,
               fontSize: 12,
-              color: "rgba(255,255,255,0.75)",
+              color: t.text,
             }}
           >
             {countdown && (
@@ -391,7 +421,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
                   alignItems: "center",
                   gap: 5,
                   fontWeight: 600,
-                  color: countdown.urgent ? "#F87171" : "#F59E0B",
+                  color: countdown.urgent ? "var(--cat-breakage)" : "var(--text2)",
                 }}
               >
                 ⏳ {countdown.label}
@@ -405,7 +435,9 @@ export function FeedCard({ post }: { post: FeedPost }) {
                   alignItems: "center",
                   gap: 5,
                   fontWeight: 600,
-                  color: "#F59E0B",
+                  ...categoryFill('breakage'),
+                  padding: '1px 8px',
+                  borderRadius: r.chip,
                 }}
               >
                 💰 {reward}
@@ -422,7 +454,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
                   flex: "0 1 160px",
                 }}
               >
-                <span style={{ flexShrink: 0, color: "rgba(255,255,255,0.55)" }}>
+                <span style={{ flexShrink: 0, color: t.text2 }}>
                   Slots {solvedSlots}/{totalSlots}
                 </span>
                 <span
@@ -430,7 +462,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
                     flex: 1,
                     height: 4,
                     borderRadius: 2,
-                    background: "rgba(255, 255, 255, 0.14)",
+                    background: t.recess,
                     overflow: "hidden",
                   }}
                 >
@@ -439,14 +471,16 @@ export function FeedCard({ post }: { post: FeedPost }) {
                       display: "block",
                       width: `${slotsPct}%`,
                       height: "100%",
-                      background: "rgba(34,197,94,0.55)",
+                      /* Progress is carried by `--lit` as LIGHT, which is the
+                       theme's rule for every bar, level and streak. */
+                    background: "var(--lit)",
                     }}
                   />
                 </span>
               </span>
             )}
             {activeSolvers > 0 && (
-              <span title="Active solvers" style={{ color: "rgba(255,255,255,0.55)" }}>
+              <span title="Active solvers" style={{ color: t.text2 }}>
                 👥 {activeSolvers} solver{activeSolvers === 1 ? "" : "s"}
               </span>
             )}
@@ -458,7 +492,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
       {previewText && (
         <p style={{
           marginTop: 6, fontSize: 13,
-          color: "rgba(255,255,255,0.50)", lineHeight: 1.6,
+          color: t.text2, lineHeight: 1.6,
         }}>
           {previewText}
         </p>
@@ -482,17 +516,19 @@ export function FeedCard({ post }: { post: FeedPost }) {
                 {i === 0 && (
                   <div style={{
                     width: 1, height: 8,
-                    background: 'rgba(59,130,246,0.20)',
+                    background: t.line,
                   }} />
                 )}
                 <div style={{
-                  width: 20, height: 20, borderRadius: '50%',
-                  background: 'rgba(59,130,246,0.10)',
-                  border: '1px solid rgba(59,130,246,0.20)',
+                  width: 20, height: 20, borderRadius: r.full,
+                  /* A discussion is not a part category, so it gets no hue —
+                     the theme's answer for everything the nine do not name. */
+                  background: t.recess,
+                  border: `1px solid ${t.line}`,
                   flexShrink: 0,
                   display: 'flex', alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 8, color: 'rgba(59,130,246,0.60)',
+                  fontSize: 8, color: t.text2,
                   fontWeight: 700,
                 }}>
                   {i + 2}
@@ -500,7 +536,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
               </div>
               <p style={{
                 fontSize: 12,
-                color: 'rgba(255,255,255,0.40)',
+                color: t.text2,
                 lineHeight: 1.55, margin: 0,
                 flex: 1, minWidth: 0,
                 overflow: 'hidden',
@@ -514,7 +550,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
           ))}
           {post.what_to_expect_blocks.length > 2 && (
             <div style={{
-              fontSize: 11, color: 'rgba(59,130,246,0.50)',
+              fontSize: 11, color: t.text2,
               marginTop: 6, paddingLeft: 38,
             }}>
               +{post.what_to_expect_blocks.length - 2} more in thread
@@ -532,7 +568,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
         return (
           <div style={{
             position: 'relative', marginTop: 14,
-            borderRadius: 10, overflow: 'hidden',
+            borderRadius: r.media, overflow: 'hidden',
           }}>
             {isVideo ? (
               <video
@@ -552,7 +588,10 @@ export function FeedCard({ post }: { post: FeedPost }) {
                 alt={post.title}
                 style={{
                   width: '100%', height: 160,
-                  objectFit: 'cover', opacity: 0.85,
+                  /* Was 0.85, which is a dark-theme trick: knocking a
+                     photograph back reads as haze on Exhibition's light ground
+                     rather than as restraint. */
+                  objectFit: 'cover',
                   display: 'block',
                   transition: 'transform 0.7s ease',
                 }}
@@ -560,7 +599,10 @@ export function FeedCard({ post }: { post: FeedPost }) {
             )}
             <div style={{
               position: 'absolute', inset: 0,
-              background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)',
+              /* Struck from `--porthole`, the darkest surface token in each
+                 theme, so the scrim belongs to the room rather than sitting on
+                 top of it — the same derivation `SCRIM` uses. */
+              background: 'linear-gradient(to top, color-mix(in srgb, var(--porthole) 50%, transparent), transparent)',
               pointerEvents: 'none',
             }} />
           </div>
@@ -577,13 +619,13 @@ export function FeedCard({ post }: { post: FeedPost }) {
             transition: "max-height 0.55s cubic-bezier(0.4,0,0.2,1), opacity 0.45s ease",
           }}
         >
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
+          <p style={{ fontSize: 13, color: t.text2, lineHeight: 1.6 }}>
             {remainingText}
           </p>
           {tags.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
               {tags.map((tag) => (
-                <span key={tag} style={{ fontSize: 12, color: "#1F7A6D" }}>#{tag}</span>
+                <span key={tag} style={{ fontSize: 12, color: t.text2 }}>#{tag}</span>
               ))}
             </div>
           )}
@@ -609,18 +651,18 @@ export function FeedCard({ post }: { post: FeedPost }) {
             transition: "max-height 0.65s cubic-bezier(0.4,0,0.2,1), opacity 0.50s ease",
           }}
         >
-          <hr style={{ border: "none", borderTop: "1px solid rgba(255, 255, 255, 0.14)", margin: "12px 0" }} />
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.30)", marginBottom: 8 }}>
+          <hr style={{ border: "none", borderTop: `1px solid ${t.line}`, margin: "12px 0" }} />
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: t.text2, marginBottom: 8 }}>
             What to expect
           </div>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
+          <p style={{ fontSize: 13, color: t.text2, lineHeight: 1.6 }}>
             {post.what_to_expect}
           </p>
           {post.what_to_expect_blocks?.map((block, i) => (
             <div key={i} style={{ marginTop: 8 }}>
               {block.type === "heading"
-                ? <h4 style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>{block.content}</h4>
-                : <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>{block.content}</p>
+                ? <h4 style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{block.content}</h4>
+                : <p style={{ fontSize: 13, color: t.text2 }}>{block.content}</p>
               }
             </div>
           ))}
@@ -630,9 +672,9 @@ export function FeedCard({ post }: { post: FeedPost }) {
       {/* Show more/less */}
       {canExpand && (
         <>
-          <hr style={{ border: "none", borderTop: "1px solid rgba(255, 255, 255, 0.14)", margin: "10px 0 4px 0" }} />
+          <hr style={{ border: "none", borderTop: `1px solid ${t.line}`, margin: "10px 0 4px 0" }} />
           <button
-            style={{ fontSize: 12, color: "rgba(255,255,255,0.40)", background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}
+            style={{ fontSize: 12, color: t.text2, background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}
             onClick={handleStageClick}
           >
             {expandStage === 0 && hasMoreContent && "Show more ↓"}
@@ -648,7 +690,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
       <div style={{
         display: "flex", alignItems: "center",
         marginTop: 14, paddingTop: 10,
-        borderTop: "1px solid rgba(255, 255, 255, 0.14)",
+        borderTop: `1px solid ${t.line}`,
       }}>
         {/* Like */}
         <ActionXpHint amount={1} trigger={likeXpTrigger}>
@@ -656,9 +698,13 @@ export function FeedCard({ post }: { post: FeedPost }) {
           style={{
             display: "flex", alignItems: "center", gap: 6,
             fontSize: 13, background: "none", border: "none", cursor: "pointer",
-            color: liked ? "#ef4444" : "rgba(255,255,255,0.40)",
+            /* One accent for "you did this", across all four toggles: the
+               theme allows one and the nine category hues mean something else.
+               A second red here would also read as breakage, which a like is
+               not. */
+            color: liked ? t.action : t.text2,
             transition: "color 0.15s",
-            padding: '4px 6px', borderRadius: 5,
+            padding: '4px 6px', borderRadius: r.chip,
           }}
           onClick={e => {
             e.stopPropagation();
@@ -678,9 +724,9 @@ export function FeedCard({ post }: { post: FeedPost }) {
           style={{
             display: "flex", alignItems: "center", gap: 6,
             fontSize: 13, background: "none", border: "none", cursor: "pointer",
-            color: "rgba(255,255,255,0.40)",
+            color: t.text2,
             transition: "color 0.15s",
-            padding: '4px 6px', borderRadius: 5,
+            padding: '4px 6px', borderRadius: r.chip,
             marginLeft: 14,
           }}
           onClick={e => {
@@ -701,13 +747,13 @@ export function FeedCard({ post }: { post: FeedPost }) {
             display: "flex", alignItems: "center", gap: 6,
             minHeight: 44,
             fontSize: 13,
-            color: userHasReblogged ? "#16A34A" : "rgba(255,255,255,0.40)",
+            color: userHasReblogged ? t.action : t.text2,
             background: "none", border: "none", cursor: "pointer",
             transition: "color 0.15s, background 0.15s",
-            padding: '4px 8px', borderRadius: 5,
+            padding: '4px 8px', borderRadius: r.chip,
             marginLeft: 14,
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(22, 163, 74, 0.08)" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--recess)" }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none" }}
           onClick={(e) => {
             e.stopPropagation()
@@ -728,8 +774,8 @@ export function FeedCard({ post }: { post: FeedPost }) {
           }}
           title={post.author.username && profile?.username === post.author.username ? "Reblog your own post" : (userHasReblogged ? "You reblogged this" : "Reblog")}
         >
-          <Repeat2 size={15} style={{ color: userHasReblogged ? "#16A34A" : "currentColor" }} />
-          {(reblogCount ?? 0) > 0 && <span style={{ color: userHasReblogged ? "#16A34A" : undefined }}>{reblogCount}</span>}
+          <Repeat2 size={15} style={{ color: userHasReblogged ? t.action : "currentColor" }} />
+          {(reblogCount ?? 0) > 0 && <span style={{ color: userHasReblogged ? t.action : undefined }}>{reblogCount}</span>}
         </button>
         )}
 
@@ -764,9 +810,9 @@ export function FeedCard({ post }: { post: FeedPost }) {
             display: 'flex', alignItems: 'center', gap: 4,
             fontSize: 13, background: 'none', border: 'none',
             cursor: 'pointer',
-            color: saved ? '#8B4513' : 'rgba(255,255,255,0.35)',
+            color: saved ? t.action : t.text2,
             transition: 'color 0.15s',
-            padding: '4px 6px', borderRadius: 5,
+            padding: '4px 6px', borderRadius: r.chip,
             marginLeft: 14,
           }}
           title={saved ? 'Unsave' : 'Save'}
@@ -795,9 +841,11 @@ export function FeedCard({ post }: { post: FeedPost }) {
             display: 'flex', alignItems: 'center', gap: 4,
             fontSize: 13, background: 'none', border: 'none',
             cursor: 'pointer',
-            color: copied ? '#1F7A6D' : 'rgba(255,255,255,0.35)',
+            /* `--evidence` is the token for "it worked", which is the whole
+               of what a copy confirmation says. */
+            color: copied ? t.evidence : t.text2,
             transition: 'color 0.15s',
-            padding: '4px 6px', borderRadius: 5,
+            padding: '4px 6px', borderRadius: r.chip,
             marginLeft: 14,
           }}
           title="Copy link"
@@ -820,9 +868,9 @@ export function FeedCard({ post }: { post: FeedPost }) {
             }}
             style={{
               background: 'none', border: 'none',
-              color: 'rgba(255,255,255,0.30)',
+              color: t.text2,
               cursor: 'pointer', fontSize: 16,
-              padding: '4px 6px', borderRadius: 5,
+              padding: '4px 6px', borderRadius: r.chip,
               display: 'flex', alignItems: 'center',
               letterSpacing: '0.05em',
             }}
@@ -835,12 +883,11 @@ export function FeedCard({ post }: { post: FeedPost }) {
               position: 'absolute',
               bottom: '100%', right: 0,
               marginBottom: 6,
-              background: 'rgba(8,8,12,0.98)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              borderRadius: 8,
+              /* BG-P07's own menu surface, so this popover and every Radix menu
+                 in the app are one decision rather than two that look alike. */
+              ...menuPanelStyle,
               padding: '4px 0',
               minWidth: 160,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.40)',
               zIndex: 100,
             }}>
               {[
@@ -870,12 +917,12 @@ export function FeedCard({ post }: { post: FeedPost }) {
                     padding: '8px 14px',
                     background: 'none', border: 'none',
                     fontSize: 13,
-                    color: 'rgba(255,255,255,0.55)',
+                    color: t.text2,
                     cursor: 'pointer',
                     transition: 'background 0.1s',
                   }}
                   onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(255, 255, 255, 0.14)';
+                    (e.currentTarget as HTMLElement).style.background = 'var(--recess)';
                   }}
                   onMouseLeave={e => {
                     (e.currentTarget as HTMLElement).style.background = 'transparent';
