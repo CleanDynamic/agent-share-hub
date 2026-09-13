@@ -38,7 +38,7 @@
    short of the fold; the gap left ~30px of ground between three filled panels,
    which is what made the chrome the figure and the feed the ground.
 
-   240 + 632 + 300 = 1172 into a 1200 frame. The remaining 28 is absorbed by
+   240 + 634 + 300 = 1174 into a 1200 frame. The remaining 26 is absorbed by
    `justify-content: center`, which is what `margin: 0 auto` on the frame does
    for the frame itself. The old numbers overflowed: 240 + 24 + 600 + 24 + 300
    is 1188 against a 1152 content box, which centred the row 18px past each
@@ -127,10 +127,18 @@
 .fs-right::-webkit-scrollbar { display: none; }
 
 /* ── Centre column: the stage ──
-     632 = 16 + 600 + 16, `box-sizing: border-box`, so a card renders at exactly
-     the 600px the card brief was designed to. It was 600 with a 16px inset
-     applied by the home wrapper on top, which made the column 568 — the cards
-     were 32px narrower than the one measurement the card is specified at.
+     634 = 1 + 16 + 600 + 16 + 1, `box-sizing: border-box`, so a card renders at
+     exactly the 600px the card brief was designed to. It was 600 with a 16px
+     inset applied by the home wrapper on top, which made the column 568 — the
+     cards were 32px narrower than the one measurement the card is specified at.
+
+     WHY 634 AND NOT THE 632 THE PROMPT NAMES. 632 was written as 16 + 600 + 16
+     and does not carry the two 1px hairlines the same task asks for. Under
+     `border-box` a border comes out of the declared width like padding does, so
+     632 with these two borders renders a 598px content box and 598px cards —
+     2px under the one number this width exists to produce. 634 is that column
+     with its hairlines paid for; the frame arithmetic becomes 240 + 634 + 300 =
+     1174, still inside the 1200 max-width.
 
      THE TWO HAIRLINES ARE THE ONLY SEPARATION between the three columns, and
      they are on this element rather than on the rails so that what is bounded
@@ -143,10 +151,10 @@
      does not fit; with the centre pinned, the row overflowed and
      `justify-content: center` pushed the left rail off the left edge (measured
      at x = -82 before this change). Shrinking the reading measure is a
-     degradation; losing the nav is a bug. Above 1172 of frame nothing shrinks
-     and the column is exactly 632. ── */
+     degradation; losing the nav is a bug. Above 1174 of frame nothing shrinks
+     and the column is exactly 634. ── */
 .fs-centre {
-  width: 632px;
+  width: 634px;
   flex: 0 1 auto;
   min-width: 0;
   display: flex;
