@@ -74,21 +74,16 @@ describe("the .ns-* rules inherited from the retired shell", () => {
     );
   });
 
-  it("resolves none of them through NeoScaleShell", () => {
-    // The whole point of the extraction. Asserted against the file only while
-    // it still exists, so this keeps working once BG-P17 deletes it.
-    const shell = "src/components/NeoScaleShell.tsx";
-    if (!existsSync(join(process.cwd(), shell))) return;
-    const text = read(shell);
-    for (const [path, classes] of Object.entries(DEFINITIONS)) {
-      for (const cls of classes) {
-        if (!defines(text, cls)) continue;
-        expect(
-          defines(read(path), cls),
-          `.${cls} is defined in the shell and would be lost when it goes`,
-        ).toBe(true);
-      }
-    }
+  it("no longer resolves anything through NeoScaleShell", () => {
+    // The shell is gone as of BG-P17, so nothing can resolve through it. Kept
+    // as an assertion rather than dropped: if the file ever returns, whoever
+    // brings it back is told to re-check that the rules above are still
+    // defined outside it, which is the condition that made deleting it safe.
+    const shell = join(process.cwd(), "src/components/NeoScaleShell.tsx");
+    expect(
+      existsSync(shell),
+      "NeoScaleShell is back — re-check that every class above is defined outside it",
+    ).toBe(false);
   });
 
   it("still finds nothing behind the three inert class names", () => {
