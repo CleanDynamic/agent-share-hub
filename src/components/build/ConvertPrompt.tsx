@@ -50,12 +50,18 @@ import {
 import { CategoryChip } from "@/components/brand/CategoryChip";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
+/* BG-P21 — THE HEADINGS KEEP THEIR SIZE AND CHANGE THEIR FACE. The page
+   headings were `pageHeadingText`, 22px Figtree 700; they are `cardTitle`, 22px
+   Bodoni 500 — the same size, in the face the theme reserves for display, and
+   clear of the 20px floor that rules the display face out below it. The section
+   heading was 15px Figtree 600 and stays a body-face heading at 16/600, because
+   a didone at 15 would breach that floor and a didone at 22 would make a
+   subheading louder than the page's own title. */
 import {
   body as bodyType,
   cardTitle,
   data as dataType,
   measure,
-  sectionHead,
 } from "@/lib/theme/type";
 
 interface ConvertLoad {
@@ -211,7 +217,7 @@ function Section({
         gap: 8,
       }}
     >
-      <h2 style={{ ...cardTitle, margin: 0, color: t.text }}>{title}</h2>
+      <h2 style={{ ...bodyType, fontWeight: 600, margin: 0, color: t.text }}>{title}</h2>
       {blurb ? <Quiet>{blurb}</Quiet> : null}
       {children}
     </section>
@@ -280,7 +286,7 @@ export default function ConvertPrompt() {
   if (load.isError || !load.data) {
     return (
       <Frame contentItemId={contentItemId}>
-        <h1 style={{ ...sectionHead, margin: 0, color: t.text }}>That post could not be read</h1>
+        <h1 style={{ ...cardTitle, margin: 0, color: t.text }}>That post could not be read</h1>
         <Quiet>{load.error ? messageOf(load.error) : "It may have been removed."}</Quiet>
         <Plain to={postUrl}>Back to the post</Plain>
       </Frame>
@@ -294,7 +300,7 @@ export default function ConvertPrompt() {
   if (user?.id !== creatorId) {
     return (
       <Frame contentItemId={contentItemId}>
-        <h1 style={{ ...sectionHead, margin: 0, color: t.text }}>This post is not yours</h1>
+        <h1 style={{ ...cardTitle, margin: 0, color: t.text }}>This post is not yours</h1>
         <Quiet>
           A post is converted by the person who wrote it. Nothing here changes
           what you can already read.
@@ -314,7 +320,7 @@ export default function ConvertPrompt() {
         <Helmet>
           <title>Converted — buildgallery</title>
         </Helmet>
-        <h1 style={{ ...sectionHead, margin: 0, color: t.text }}>
+        <h1 style={{ ...cardTitle, margin: 0, color: t.text }}>
           {converted ? "Converted" : "You have already converted this post"}
         </h1>
         <Quiet>
@@ -346,7 +352,7 @@ export default function ConvertPrompt() {
           and already-converted screens BELOW are kept, because there the post
           is the answer to the sentence above it rather than a way out. */}
       <header style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <h1 style={{ ...sectionHead, margin: 0, color: t.text }}>
+        <h1 style={{ ...cardTitle, margin: 0, color: t.text }}>
           Convert “{plan.header.title}” to a build record
         </h1>
         <Quiet>
