@@ -63,14 +63,14 @@ import { ReproductionAction } from "@/components/build/ReproductionAction";
 import { RebuildCount, RebuildsTab } from "@/components/build/RebuildsTab";
 import { Replay } from "@/components/build/Replay";
 import { RunView } from "@/components/build/RunView";
+import { skeletonStyle } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import {
-  HAIRLINE,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  headingText,
-} from "@/components/build/tokens";
+  body as bodyType,
+  measure,
+  sectionHead,
+} from "@/lib/theme/type";
 
 /** The app's QueryClient defaults to staleTime 0. A build record does not
  *  change while a reader is looking at it, so refetching on focus is waste. */
@@ -262,17 +262,15 @@ function payloadCaption(node: BuildNode | undefined): string | null {
    Figtree is past it. The frame decides how much room the page gets; this
    decides how much of it the prose uses.
 
-   NO `background`, WHICH IS DELIBERATE AND IS NOT THE SAME ANSWER /gallery
-   GOT. Both pages are still painted from the legacy dark token module
-   (src/components/build/tokens.ts) — white-alpha text that has not been
-   repainted onto the two-theme semantic tokens yet. /gallery could take a
-   `t.bg` ground because the surfaces it puts on that ground are repainted ones
-   (PageHeader, GalleryCard). This page's header, tabs and body are not: on an
-   Exhibition-light ground their white text would vanish. So it keeps the
-   application's centre ground — hard-coded dark in both themes today, which is
-   exactly what Home, Discover and the feed sit on — and `color: TEXT_PRIMARY`
-   stays with it, because inheriting `--text` would put Exhibition's dark ink
-   on that dark ground. Both come out when this page is repainted.
+   NO `background`, AND `color: t.text` (BG-P21). The note that used to sit
+   here said this page kept the application's dark centre because its header,
+   tabs and body were still painted in white alpha and would vanish on an
+   Exhibition ground. They are not any more: BG-P21 repointed
+   src/components/build/tokens.ts onto the semantic tokens and repainted every
+   surface on this route, so the page inherits the frame's own ground like
+   /gallery does and takes `--text` for its ink. There is still no `background`
+   here, because the frame owns the ground and a page that painted its own
+   would be the second one.
 
    `minHeight: 100vh` and `fontFamily: FONT_STACK` are gone as plain
    duplicates: the frame is 100dvh with its own scroll region, and `.fs-root`
@@ -281,9 +279,7 @@ function Frame({ children }: { children: React.ReactNode }) {
   return (
     <div
       data-visual-slot="build-page-frame"
-      style={{
-        color: TEXT_PRIMARY,
-      }}
+      style={{ color: t.text }}
     >
       <main style={{ maxWidth: 880, margin: "0 auto", padding: "32px 24px 96px" }}>
         {children}
@@ -292,19 +288,157 @@ function Frame({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Message({ heading, detail }: { heading: string; detail: string }) {
+/**
+ * The page's two dead ends: a record that could not be read, and no record at
+ * this address.
+ *
+ * BG-P21 — THE SAME SHAPE AS THE PAGE IT REPLACES. A `--line` rule where the
+ * hero's hairline would be, then the display face where the title would be,
+ * then one paragraph at the reading measure where the outcome would be. A
+ * reader who has arrived at an empty page should be able to see that it is the
+ * same page, rather than a different screen that happens to be on the same
+ * address. Neither state is painted in the breakage hue: a build that has been
+ * unpublished is not a fault, and a request that failed is not the reader's.
+ */
+function Message({
+  heading,
+  detail,
+  slot,
+}: {
+  heading: string;
+  detail: string;
+  slot: string;
+}) {
   return (
     <div
+      data-visual-slot={slot}
+      role="status"
       style={{
         display: "flex",
         flexDirection: "column",
         gap: 10,
         padding: "72px 0",
-        borderTop: `1px solid ${HAIRLINE}`,
+        borderTop: `1px solid ${t.line}`,
       }}
     >
-      <h1 style={{ ...headingText, margin: 0 }}>{heading}</h1>
-      <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>{detail}</p>
+      <h1 style={{ ...sectionHead, margin: 0, color: t.text }}>{heading}</h1>
+      <p style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}>{detail}</p>
+    </div>
+  );
+}
+
+/**
+ * A block of nothing, in the shape of the thing that is coming.
+ *
+ * `skeletonStyle()` is BG-P07's: `--recess` with a highlight swept across it by
+ * the `bgShimmer` keyframe, and a flat recess with no animation at all under
+ * `prefers-reduced-motion`. Every placeholder on this page is one of these, so
+ * the whole skeleton has one treatment rather than six.
+ */
+function Bone({
+  width,
+  height,
+  radius = r.control,
+}: {
+  width: number | string;
+  height: number;
+  radius?: string;
+}) {
+  return (
+    <div
+      aria-hidden
+      style={{ ...skeletonStyle(), width, height, borderRadius: radius, maxWidth: "100%" }}
+    />
+  );
+}
+
+/**
+ * The whole page, before the record arrives.
+ *
+ * IT IS THE PAGE'S OWN SHAPE AND NOT A SPINNER. A build page is a hero, a
+ * title, an outcome, a facts strip, a tab row and a column of parts, and the
+ * reader is about to read exactly that — so the wait is spent showing where
+ * each of those will be rather than showing that something is happening. The
+ * layout lands under the placeholders instead of replacing them, which is what
+ * keeps the page from jumping when the record arrives.
+ *
+ * `aria-busy` on the region and `aria-hidden` on every bone: a screen reader is
+ * told the page is loading once, rather than being read a list of empty boxes.
+ */
+function BuildPageSkeleton() {
+  return (
+    <div
+      data-visual-slot="build-page-skeleton"
+      aria-busy="true"
+      aria-label="Loading the build"
+      role="status"
+      style={{ display: "flex", flexDirection: "column", gap: 32 }}
+    >
+      {/* The hero well, at the 16:9 the slot most often holds. */}
+      <div
+        aria-hidden
+        style={{
+          ...skeletonStyle(),
+          borderTop: `1px solid ${t.line}`,
+          borderRadius: r.media,
+          width: "100%",
+          aspectRatio: "16 / 9",
+          maxHeight: 420,
+        }}
+      />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <Bone width="72%" height={52} />
+        <Bone width="90%" height={18} radius={r.chip} />
+        <Bone width="64%" height={18} radius={r.chip} />
+      </div>
+
+      {/* The facts strip, ruled exactly where the real one is ruled. */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 28,
+          padding: "16px 0",
+          borderTop: `1px solid ${t.line}`,
+          borderBottom: `1px solid ${t.line}`,
+        }}
+      >
+        {[0, 1, 2].map((index) => (
+          <div key={index} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <Bone width={72} height={10} radius={r.chip} />
+            <Bone width={128} height={16} radius={r.chip} />
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 24, borderBottom: `1px solid ${t.line}` }}>
+        {[96, 132, 118].map((width, index) => (
+          <div key={index} style={{ padding: "10px 2px" }}>
+            <Bone width={width} height={14} radius={r.chip} />
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {[0, 1, 2].map((index) => (
+          <div
+            key={index}
+            style={{
+              border: `1px solid ${t.glassBorder}`,
+              borderRadius: r.card,
+              padding: "14px 16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            <Bone width={104} height={20} radius={r.chip} />
+            <Bone width="58%" height={18} radius={r.chip} />
+            <Bone width="100%" height={56} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -687,9 +821,7 @@ export default function BuildPage() {
   if (isLoading) {
     return (
       <Frame>
-        <p style={{ ...bodyText, color: TEXT_MUTED, padding: "72px 0", margin: 0 }}>
-          Loading the build…
-        </p>
+        <BuildPageSkeleton />
       </Frame>
     );
   }
@@ -698,6 +830,7 @@ export default function BuildPage() {
     return (
       <Frame>
         <Message
+          slot="build-page-error"
           heading="This build could not be loaded"
           detail={
             error instanceof Error
@@ -713,6 +846,7 @@ export default function BuildPage() {
     return (
       <Frame>
         <Message
+          slot="build-page-not-found"
           heading="No build at this address"
           detail={`Nothing is published at /b2/${slug ?? ""}. It may have been unpublished, or the link may be wrong.`}
         />
