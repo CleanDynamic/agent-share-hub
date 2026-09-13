@@ -494,6 +494,19 @@ const REQUIREMENTS: Record<RequirementKey, Requirement> = {
  * node's type to its category; a node whose type is not in the registry passed
  * in cannot be classified and is skipped.
  */
+/**
+ * The instruction attached to one requirement.
+ *
+ * BG-P19. The gallery page names outstanding items to a creator looking at
+ * their own below-threshold build, and the sentence it uses has to be the SAME
+ * sentence the compose checklist uses — a second copy of "say who this is for"
+ * written at a call site is a copy that goes stale the first time either moves.
+ * REQUIREMENTS above stays the single source; this is the only way to read it.
+ */
+export function requirementCopy(key: RequirementKey): string {
+  return REQUIREMENTS[key].copy;
+}
+
 export function computeCompleteness(
   build: CompletenessSource,
   tree: NodeTree[],

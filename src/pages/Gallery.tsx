@@ -44,10 +44,14 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   GALLERY_PAGE_SIZE,
   countOpenBountyBuilds,
+  galleryShortfall,
+  galleryThreshold,
   getGalleryFacets,
   listGallery,
+  requirementCopy,
   type GalleryBuild,
   type GalleryPage,
+  type MissingItem,
 } from "@/lib/build";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
@@ -68,14 +72,20 @@ import {
   panelGlass,
 } from "@/components/build/tokens";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { useAuth } from "@/contexts/AuthContext";
 import { prefersReducedMotion } from "@/lib/theme/controls";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
+/* `data` imported under a name, because this file also binds `data` off a
+   query result and the scale module's own note says to rename rather than
+   shadow. */
+import { data as dataText } from "@/lib/theme/type";
 
 /** Facets change far more slowly than the builds they describe. */
 const FACETS_STALE_MS = 5 * 60 * 1000;
 
 export default function Gallery() {
+  const { user } = useAuth();
   const [madeFor, setMadeFor] = useState<string[]>([]);
   const [madeWith, setMadeWith] = useState<string[]>([]);
   /** The third filter (NS-P52): only builds asking for help. */
@@ -355,6 +365,7 @@ export default function Gallery() {
           isLoading={builds.isLoading}
           error={(builds.error as Error | null) ?? null}
           filtered={filtered}
+          viewerId={user?.id ?? null}
         />
 
         <Pagination
@@ -383,6 +394,7 @@ function Results({
   isLoading,
   error,
   filtered,
+  viewerId,
 }: {
   builds: GalleryBuild[];
   srcByPath: ReturnType<typeof useSignedMedia>;
@@ -390,6 +402,7 @@ function Results({
   isLoading: boolean;
   error: Error | null;
   filtered: boolean;
+  viewerId: string | null;
 }) {
   if (error) {
     return (
@@ -432,7 +445,7 @@ function Results({
           ? `${builds.length} shown`
           : `${total} build${total === 1 ? "" : "s"}`}
       </p>
-      <GalleryGrid builds={builds} srcByPath={srcByPath} />
+      <GalleryGrid builds={builds} srcByPath={srcByPath} viewerId={viewerId} />
     </>
   );
 }
@@ -480,9 +493,11 @@ function Results({
 function GalleryGrid({
   builds,
   srcByPath,
+  viewerId,
 }: {
   builds: GalleryBuild[];
   srcByPath: ReturnType<typeof useSignedMedia>;
+  viewerId: string | null;
 }) {
   /**
    * Whether this render is the grid's first.
@@ -514,6 +529,7 @@ function GalleryGrid({
               GALLERY_BUILD_COLUMNS like everything else the card shows — so the
               grid neither composes it nor can decline to pass it. */}
           <GalleryCard build={build} srcByPath={srcByPath} />
+          <Shortfall build={build} viewerId={viewerId} />
         </Reveal>
       ))}
     </div>
@@ -609,6 +625,98 @@ function Reveal({
       {children}
     </div>
   );
+}
+
+/* ── The creator's own shortfall ──────────────────────────────────────────── */
+
+/**
+ * Why this build has not earned its place, to the one person who can fix it.
+ *
+ * WHO SEES IT. The signed-in creator of this build, and nobody else. A visitor
+ * never sees it, another creator never sees it, and a signed-out reader never
+ * sees it — `viewerId` is null for the last of those and unequal for the first
+ * two.
+ *
+ * WHEN IT APPEARS AT ALL. A below-threshold build is in this grid for exactly
+ * one reason: an admin promoted it with `status = 'gallery'`, which gallery.ts
+ * describes as the editorial escape hatch for the record a rule table gets
+ * wrong. So this line is the honest reading of that situation — you are here
+ * because somebody put you here, and this is what would keep you here on the
+ * record's own merits.
+ *
+ * WHAT IT SAYS, AND WHAT IT REFUSES TO SAY. Plain instructions in the creator's
+ * own terms, taken from the same table the compose checklist reads, joined into
+ * one sentence. Never a score, never a grade, never a bar with a fill: the
+ * number exists, it is not something a creator can act on, and printing it
+ * turns a record into a mark. `--text2` at the data face, under the card rather
+ * than on it — the card is what a reader sees, and this is a note to one person
+ * beside it.
+ *
+ * WHY THE LIST CAN BE SHORTER THAN THE TRUTH. The gallery asks for five things
+ * and a card row can only answer three of them: the outcome and the two
+ * audience fields are columns on the row, while "something to run" and
+ * "evidence" are properties of a node tree this page deliberately does not
+ * fetch in full. So this names only what the row can PROVE is absent.
+ * Under-reporting is honest. Telling a creator to add evidence they have
+ * already added would not be, and neither would a second query per card on the
+ * one page in this codebase built not to make them.
+ */
+function Shortfall({
+  build,
+  viewerId,
+}: {
+  build: GalleryBuild;
+  viewerId: string | null;
+}) {
+  if (!viewerId || viewerId !== build.creator_id) return null;
+
+  const score = build.completeness ?? 0;
+  if (score >= galleryThreshold(build.shape)) return null;
+
+  const outstanding = galleryShortfall(build.shape, score, provableMissing(build));
+  if (outstanding.length === 0) return null;
+
+  return (
+    <p
+      data-testid="gallery-shortfall"
+      style={{
+        ...dataText,
+        margin: 0,
+        padding: `${SPACE.xs}px ${SPACE.xs}px 0`,
+        color: t.text2,
+      }}
+    >
+      Only you can see this — to earn its place in the gallery,{" "}
+      {sentence(outstanding)}.
+    </p>
+  );
+}
+
+/** The gallery requirements a card row carries enough columns to answer. */
+function provableMissing(build: GalleryBuild): MissingItem[] {
+  const missing: MissingItem[] = [];
+  if (!hasText(build.outcome)) missing.push(item("outcome"));
+  if (!hasEntries(build.made_for)) missing.push(item("made_for"));
+  if (!hasEntries(build.made_with)) missing.push(item("made_with"));
+  return missing;
+}
+
+const item = (key: "outcome" | "made_for" | "made_with"): MissingItem => ({
+  key,
+  copy: requirementCopy(key),
+});
+
+const hasText = (value: string | null | undefined): boolean =>
+  typeof value === "string" && value.trim().length > 0;
+
+const hasEntries = (value: string[] | null | undefined): boolean =>
+  Array.isArray(value) && value.some((entry) => (entry ?? "").trim().length > 0);
+
+/** "a", "a and b", "a, b and c" — one sentence, never a bulleted verdict. */
+function sentence(items: MissingItem[]): string {
+  const parts = items.map((entry) => entry.copy);
+  if (parts.length === 1) return parts[0];
+  return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 
 function Pagination({

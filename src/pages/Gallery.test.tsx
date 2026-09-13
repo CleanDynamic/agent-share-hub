@@ -125,6 +125,18 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+/**
+ * Who is looking.
+ *
+ * BG-P19 gave this page its first signed-in-only affordance — the shortfall
+ * line on a creator's own below-threshold build — so the viewer is now part of
+ * what the page renders and has to be controllable from a test. Reassigned per
+ * test rather than re-mocked, which is the shape every other suite in this
+ * codebase uses for `useAuth`.
+ */
+let auth: { user: { id: string } | null } = { user: null };
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => auth }));
+
 import Gallery from "@/pages/Gallery";
 import { CARD_MEDIA_WIDTH } from "@/components/gallery/cardMedia";
 import { DEFAULT_MEDIA_QUALITY } from "@/lib/build";
@@ -192,6 +204,7 @@ describe("the gallery page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setViewport(1024);
+    auth = { user: null };
     motion.reduced = false;
     ObserverStub.instances = [];
     (window as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
@@ -580,6 +593,92 @@ describe("the gallery page", () => {
     expect(cell).toHaveAttribute("data-revealed");
     expect(cell?.getAttribute("style")).toBeNull();
     expect(ObserverStub.instances).toHaveLength(0);
+  });
+
+  // BG-P19 ACCEPTANCE 4
+  describe("the shortfall line on a creator's own below-threshold build", () => {
+    /* Promoted by an admin, which is the only way a build under its shape's
+       threshold reaches this grid at all. 60 is under the app threshold of 72,
+       and the two audience fields are the gap. */
+    const promoted = () =>
+      build({
+        id: "mine",
+        slug: "mine",
+        title: "Promoted early",
+        status: "gallery",
+        creator_id: "c1",
+        completeness: 60,
+        made_for: [],
+        made_with: [],
+      });
+
+    const LINE =
+      "Only you can see this — to earn its place in the gallery, say who this is " +
+      "for and list the models and tools this was made with.";
+
+    it("names what is outstanding, in words and never as a score", async () => {
+      auth = { user: { id: "c1" } };
+      listGallery.mockResolvedValue({ builds: [promoted()], total: 1 });
+      renderGallery();
+
+      const note = await screen.findByTestId("gallery-shortfall");
+      expect(note).toHaveTextContent(LINE);
+      // No number anywhere in it: not the score, not the threshold, not a
+      // count of what is left. The copy is the compose checklist's own.
+      expect(note.textContent).not.toMatch(/\d/);
+    });
+
+    it("is invisible to a signed-out visitor", async () => {
+      auth = { user: null };
+      listGallery.mockResolvedValue({ builds: [promoted()], total: 1 });
+      renderGallery();
+
+      await screen.findByText("Promoted early");
+      expect(screen.queryByTestId("gallery-shortfall")).toBeNull();
+    });
+
+    it("is invisible to a signed-in reader who is not the creator", async () => {
+      auth = { user: { id: "someone-else" } };
+      listGallery.mockResolvedValue({ builds: [promoted()], total: 1 });
+      renderGallery();
+
+      await screen.findByText("Promoted early");
+      expect(screen.queryByTestId("gallery-shortfall")).toBeNull();
+    });
+
+    it("says nothing on the creator's own build that has cleared the bar", async () => {
+      auth = { user: { id: "c1" } };
+      // The default fixture is completeness 82 against an app threshold of 72.
+      renderGallery();
+
+      await screen.findByText("Inbox triage agent");
+      expect(screen.queryByTestId("gallery-shortfall")).toBeNull();
+    });
+
+    it("stays silent rather than guessing when the row cannot see the gap", async () => {
+      auth = { user: { id: "c1" } };
+      // Below the bar, but every column a card row carries is filled in: the
+      // outstanding items are in a node tree this page does not fetch. Naming
+      // something anyway would be telling a creator to redo work they have
+      // already done.
+      listGallery.mockResolvedValue({
+        builds: [
+          build({
+            id: "mine",
+            slug: "mine",
+            title: "Thin record",
+            status: "gallery",
+            creator_id: "c1",
+            completeness: 60,
+          }),
+        ],
+        total: 1,
+      });
+      renderGallery();
+
+      await screen.findByText("Thin record");
+      expect(screen.queryByTestId("gallery-shortfall")).toBeNull();
+    });
   });
 
   it("surfaces a failed load instead of an empty grid", async () => {
