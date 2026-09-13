@@ -289,10 +289,10 @@ describe("the retired badge colours", () => {
     // The difficulty four were duplicated into the shell's own stylesheet and
     // into NeoScaleShell's inline <style>. Deleting them from index.css alone
     // would have left the old hues rendering from the copies.
-    const others = [
-      "src/components/shell/right-rail-explore.css",
-      "src/components/NeoScaleShell.tsx",
-    ];
+    //
+    // BG-P17 deleted NeoScaleShell, which took the second copy with it. Only
+    // the rail's stylesheet is left to check.
+    const others = ["src/components/shell/right-rail-explore.css"];
     for (const path of others) {
       expect(readFileSync(path, "utf-8"), `${path} still carries an .ns-badge- rule`).not.toMatch(
         /\.ns-badge-[a-z-]+\s*\{/,

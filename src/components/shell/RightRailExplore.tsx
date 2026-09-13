@@ -13,10 +13,13 @@ import "./right-rail-explore.css";
 /* ────────────────────────────────────────────────
    RightRailExplore — the Explore panel content for the right rail.
 
-   Extracted verbatim from NeoScaleShell's inline right-panel JSX and
-   Supabase queries so its internals render and behave exactly as
-   before. The only removals are the 3D flip calls (doFlip) — clicks
-   now navigate directly — and the mouse-tilt effect on the panel.
+   Extracted verbatim from the inline right-panel JSX and Supabase
+   queries of NeoScaleShell, the frame this application used to render
+   in, so its internals behaved exactly as before the move. The only
+   removals were the 3D flip calls (doFlip) — clicks navigate directly —
+   and the mouse-tilt effect on the panel. That shell was deleted in
+   BG-P17; this component and right-rail-explore.css are what is left of
+   it, and they are self-contained.
 ──────────────────────────────────────────────── */
 
 const POST_TYPE_TILES = [

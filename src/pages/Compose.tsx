@@ -4,10 +4,12 @@
 // for it. /compose/:buildId loads that build, checks it belongs to the session
 // user, and hands it to ComposeFrame.
 //
-// Both render OUTSIDE NeoScaleShell, beside /b2/:slug. The shell's centre
-// column is a hardcoded 600x775 panel; the workspace is full-bleed. The route
-// is lazy because this is the heaviest page in the application and no other
-// route should pay for it.
+// Both render OUTSIDE the application frame, beside /b2/:slug. The frame that
+// ruled this out was NeoScaleShell, whose centre column was a hardcoded 600x775
+// panel; the workspace is full-bleed. That shell was deleted in BG-P17 and the
+// route stays outside the frame on its own merits — see the workspace chrome
+// BG-P16 gave it. It is lazy because this is the heaviest page in the
+// application and no other route should pay for it.
 
 import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";

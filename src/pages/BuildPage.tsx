@@ -3,7 +3,8 @@
 // BG-P15 — IT RENDERS INSIDE THE APPLICATION FRAME NOW. The reason it did not
 // is gone: the shell it could not fit in was NeoScaleShell, whose centre column
 // was a hardcoded 600x775 panel inside a 3D card flip, and a hero, a summary
-// strip and five tabs do not fit in that. FlatShell replaced it, BG-P14 gave
+// strip and five tabs do not fit in that. FlatShell replaced it and BG-P17
+// deleted it, BG-P14 gave
 // that frame a wide mode, and this page is listed in
 // src/components/shell/wideRoutes.ts — so the centre is now whatever the rails
 // leave of 1600px, which is room enough.

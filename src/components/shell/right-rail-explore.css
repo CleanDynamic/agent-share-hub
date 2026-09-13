@@ -1,7 +1,9 @@
 /* ────────────────────────────────────────────────
    right-rail-explore.css — internal styles for the Explore rail.
-   Copied VERBATIM from NeoScaleShell's injected CSS so the panel's
-   internals render exactly as before.
+   Copied VERBATIM out of the injected CSS of NeoScaleShell, the frame this
+   application used to render in, so the panel's internals rendered exactly as
+   before the move. That shell was deleted in BG-P17; these fifty-two rules are
+   now the only definition of the classes the rail wears.
 
    BG-P13. The colours are no longer verbatim: every one is a var(--token),
    so the rail follows <html data-theme> with the rest of the frame. Section

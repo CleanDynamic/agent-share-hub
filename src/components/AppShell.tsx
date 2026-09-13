@@ -33,13 +33,15 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 /* ────────────────────────────────────────────────
    AppShell — the wired container around FlatShell.
 
-   Replaces NeoScaleShell as the layout frame: same nav items, same
-   visibility filtering, same badge sources, same right-rail content and
-   same mobile chrome — but rendered through the flat 2D FlatShell frame
-   with a single router <Outlet />.
+   It replaced NeoScaleShell as the layout frame, keeping that shell's nav
+   items, visibility filtering, badge sources, right-rail content and mobile
+   chrome, but rendering them through the flat 2D FlatShell frame with a
+   single router <Outlet />. NeoScaleShell was deleted in BG-P17; where the
+   comments below say a behaviour is unchanged from it, they are recording
+   where that behaviour came from, not pointing at a file to go and read.
 ──────────────────────────────────────────────── */
 
-/* Route ↔ nav-page mapping (unchanged from NeoScaleShell) */
+/* Route ↔ nav-page mapping (carried over from the retired NeoScaleShell) */
 const ROUTE_TO_NAV: Record<string, string> = {
   "/":              "home",
   "/browse":        "discover",
@@ -164,7 +166,7 @@ export function AppShell() {
       ? null
       : <RightRailExplore />;
 
-  /* ── Mobile chrome plumbing (unchanged from NeoScaleShell) ── */
+  /* ── Mobile chrome plumbing (carried over from the retired shell) ── */
   const mobileRoute: MobileRoute = (() => {
     const p = pathname;
     if (p === "/" || p === "") return "home";
@@ -288,7 +290,7 @@ export function AppShell() {
         )}
       </FlatShell>
 
-      {/* ═══ MOBILE CHROME — existing components, mounted as NeoScaleShell did ═══ */}
+      {/* ═══ MOBILE CHROME — existing components, mounted as the retired shell did ═══ */}
       {isMobile && (
         <MobileTopBar
           pageContext={{ type: pageContextType, title: profile?.display_name || profile?.username }}

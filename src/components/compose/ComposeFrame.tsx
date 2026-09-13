@@ -1,8 +1,11 @@
 // The compose workspace frame: a full-bleed three-panel workspace.
 //
-// It renders OUTSIDE NeoScaleShell. The shell's centre column is a hardcoded
-// 600x775 panel inside a 3D card flip; a tray, a node tree and an inspector do
-// not fit in it and never will. This route takes the whole viewport instead.
+// It renders OUTSIDE the application frame. The frame it originally could not
+// fit in was NeoScaleShell, whose centre column was a hardcoded 600x775 panel
+// inside a 3D card flip; a tray, a node tree and an inspector do not fit in
+// that. FlatShell replaced that shell and BG-P17 deleted it, but the decision
+// stands on its own terms now: BG-P16 gave the four authoring routes a
+// workspace chrome of their own, and this route takes the whole viewport.
 //
 // The left and centre panels are the tray and the node tree; the right is the
 // inspector, which renders the selected node's type schema. The responsive

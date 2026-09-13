@@ -17,8 +17,11 @@
 //   3. It replaces itself in history. Back from the workspace goes to the
 //      build, not through a door that would fork a second draft on the way.
 //
-// It renders OUTSIDE NeoScaleShell, beside /compose and /b2/:slug, and it is
-// lazy — nothing else in the application should carry the rebuild path.
+// It renders OUTSIDE the application frame, beside /compose and /b2/:slug, and
+// it is lazy — nothing else in the application should carry the rebuild path.
+// The frame it was first written to avoid was NeoScaleShell, deleted in BG-P17;
+// it stays outside because the workspace chrome BG-P16 gave it is the frame it
+// wants.
 
 import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
