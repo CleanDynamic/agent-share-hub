@@ -12,16 +12,40 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 
+/**
+ * The accent a creator can pin to one of their collections.
+ *
+ * EIGHT HEXES BECOME EIGHT TOKEN REFERENCES. The old values were fixed colours
+ * chosen against a dark room — a fixed pink dot is a different object on the
+ * Exhibition ground than it is on Dusk, and none of them moved when the theme
+ * did. A `var()` reference does, because it is resolved by the browser against
+ * whatever `<html data-theme>` currently says.
+ *
+ * THE VALUE IS WHAT GETS STORED, so this is also a small migration: a
+ * collection saved from today holds `var(--cat-data)` where one saved last week
+ * holds a fixed hex. Both render — a hex is still a colour — so no row needs
+ * rewriting and nothing has to be backfilled; older collections simply keep the
+ * fixed dot they were given until their owner picks again.
+ *
+ * See the divergence note in this prompt's handoff: these are the nine part
+ * hues spent on something that is not a part category, which the theme
+ * otherwise forbids. The alternative was a tenth palette of decorative colours
+ * struck and measured for eight dots, and a dot is the one element small enough
+ * and meaningless enough to make that the worse trade. It is a 10px circle
+ * beside a name the owner chose; it carries no state and nothing reads it.
+ */
 export const ACCENT_SWATCHES: { name: string; value: string }[] = [
-  { name: "Orange", value: "#E8571A" },
-  { name: "Teal", value: "#2EC4B6" },
-  { name: "Amber", value: "#F59E0B" },
-  { name: "Purple", value: "#7C3AED" },
-  { name: "Pink", value: "#EC4899" },
-  { name: "Blue", value: "#3B82F6" },
-  { name: "Cyan", value: "#06B6D4" },
-  { name: "Neutral", value: "rgba(255,255,255,0.40)" },
+  { name: "Instruction", value: "var(--cat-instruction)" },
+  { name: "Evidence", value: "var(--cat-evidence)" },
+  { name: "Artefact", value: "var(--cat-artefact)" },
+  { name: "Agents", value: "var(--cat-agents)" },
+  { name: "Media", value: "var(--cat-media)" },
+  { name: "Data", value: "var(--cat-data)" },
+  { name: "Configuration", value: "var(--cat-configuration)" },
+  { name: "Neutral", value: "var(--text2)" },
 ];
 
 export interface CollectionFormValues {
@@ -125,13 +149,15 @@ export function CollectionFormModal({
                     style={{
                       width: 26,
                       height: 26,
-                      borderRadius: 999,
+                      /* Circular: the one thing `--r-full` is for. */
+                      borderRadius: r.full,
                       background: s.value,
-                      border: active
-                        ? "2px solid rgba(255,255,255,0.95)"
-                        : "2px solid rgba(255,255,255,0.1)",
+                      /* Selection is a ring in the page's own ink, so the
+                         chosen swatch reads as chosen in both rooms — a white
+                         ring vanished on Exhibition. */
+                      border: `2px solid ${active ? t.text : t.line}`,
                       cursor: "pointer",
-                      transition: "transform 0.1s",
+                      transition: "transform 160ms cubic-bezier(.2,.6,.35,1)",
                       transform: active ? "scale(1.05)" : "scale(1)",
                     }}
                   />

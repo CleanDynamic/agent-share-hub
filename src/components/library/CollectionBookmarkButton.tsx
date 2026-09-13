@@ -14,6 +14,8 @@ import {
   type ShareableType,
 } from "@/components/share/ShareMenuProvider";
 import type { CollectionItemKind } from "@/lib/library/types";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 
 interface CollectionBookmarkButtonProps {
   contentType: ShareableType; // "blueprint" | "blog" | "bounty" | "stage" | "block"
@@ -26,7 +28,10 @@ interface CollectionBookmarkButtonProps {
   variant?: "icon" | "subtle";
 }
 
-const TEAL = "#2EC4B6";
+/* Saved is an ACTION the reader took, not a claim anyone else made, so the
+   filled bookmark takes `--action` rather than the evidence token. It was a
+   fixed teal that read as a third accent on every card it appeared on. */
+const SAVED = t.action;
 
 /**
  * Quick bookmark affordance for cards & headers.
@@ -100,7 +105,9 @@ export function CollectionBookmarkButton({
         is_default: true,
         is_public: false,
         visibility: "private",
-        accent_color: "rgba(255,255,255,0.4)",
+        /* A token reference rather than a fixed white alpha: the default
+           collection's dot follows the theme like every other one. */
+        accent_color: "var(--text2)",
       } as any)
       .select("id")
       .single();
@@ -215,21 +222,21 @@ export function CollectionBookmarkButton({
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        background: variant === "subtle" ? "rgba(255, 255, 255, 0.12)" : "transparent",
+        background: variant === "subtle" ? t.recess : "transparent",
         border: "none",
-        borderRadius: 6,
+        borderRadius: r.chip,
         padding: variant === "subtle" ? 4 : 2,
         cursor: "pointer",
-        color: isSaved ? TEAL : "rgba(255,255,255,0.55)",
-        transition: "color 0.12s, background 0.12s",
+        color: isSaved ? SAVED : t.text2,
+        transition: "color 160ms cubic-bezier(.2,.6,.35,1), background 160ms cubic-bezier(.2,.6,.35,1)",
       }}
     >
       <Bookmark
         size={size}
         strokeWidth={1.75}
         style={{
-          fill: isSaved ? TEAL : "transparent",
-          color: isSaved ? TEAL : "currentColor",
+          fill: isSaved ? SAVED : "transparent",
+          color: isSaved ? SAVED : "currentColor",
           transition: "fill 0.15s, color 0.15s",
         }}
       />

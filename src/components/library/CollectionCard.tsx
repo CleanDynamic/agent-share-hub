@@ -19,6 +19,11 @@ import {
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { categoryColour, categoryFill } from "@/lib/theme/category";
+import { chipType, uiTransition } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body, data as dataText, tabular } from "@/lib/theme/type";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,12 +40,17 @@ const BLOCK_TYPE_ICONS: Record<string, React.ComponentType<{ size?: number; colo
   default: Box,
 };
 
-const BLOCK_TYPE_COLORS: Record<string, string> = {
-  logic: "#E8571A",
-  data: "#2EC4B6",
-  code: "#F59E0B",
-  settings: "#8B5CF6",
-  default: "#6B7280",
+/**
+ * A block type's hue, as one of the nine part categories rather than as a
+ * private five-hex palette. `categoryColour` falls back to the measured
+ * `--cat-fallback` for anything the registry does not know.
+ */
+const BLOCK_TYPE_CATEGORY: Record<string, string> = {
+  logic: "instruction",
+  data: "data",
+  code: "artefact",
+  settings: "configuration",
+  default: "",
 };
 
 export interface CoverItem {
@@ -115,7 +125,7 @@ function StageMiniMap({
             y1={fromBlock.y}
             x2={toBlock.x}
             y2={toBlock.y}
-            stroke="rgba(255,255,255,0.25)"
+            stroke={t.line}
             strokeWidth={0.8}
           />
         );
@@ -126,7 +136,7 @@ function StageMiniMap({
           cx={b.x}
           cy={b.y}
           r={3}
-          fill={b.color || "#2EC4B6"}
+          fill={b.color || t.evidence}
         />
       ))}
     </svg>
@@ -137,7 +147,8 @@ function CoverTile({ item }: { item: CoverItem }) {
   const tileStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
-    background: "rgba(255, 255, 255, 0.12)",
+    /* A media well, and the token named for one. */
+    background: t.porthole,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -163,19 +174,19 @@ function CoverTile({ item }: { item: CoverItem }) {
       }
       return (
         <div style={tileStyle}>
-          <FileStack size={24} color="rgba(255,255,255,0.35)" />
+          <FileStack size={24} color={t.chromeLo} />
         </div>
       );
     case "blog":
       return (
         <div style={tileStyle}>
-          <PenTool size={22} color="rgba(255,255,255,0.35)" />
+          <PenTool size={22} color={t.chromeLo} />
         </div>
       );
     case "bounty":
       return (
         <div style={tileStyle}>
-          <Target size={22} color="rgba(255,255,255,0.35)" />
+          <Target size={22} color={t.chromeLo} />
         </div>
       );
     case "stage":
@@ -187,15 +198,14 @@ function CoverTile({ item }: { item: CoverItem }) {
               connections={item.stagePreview.connections}
             />
           ) : (
-            <Layers size={22} color="rgba(255,255,255,0.35)" />
+            <Layers size={22} color={t.chromeLo} />
           )}
         </div>
       );
     case "block": {
-      const blockColor =
-        item.blockColor ||
-        BLOCK_TYPE_COLORS[item.blockType || "default"] ||
-        BLOCK_TYPE_COLORS.default;
+      const blockCategory = BLOCK_TYPE_CATEGORY[item.blockType || "default"] ?? "";
+      const blockFill = categoryFill(blockCategory);
+      const blockColor = item.blockColor || categoryColour(blockCategory);
       const BlockIcon =
         BLOCK_TYPE_ICONS[item.blockType || "default"] ||
         BLOCK_TYPE_ICONS.default;
@@ -203,7 +213,10 @@ function CoverTile({ item }: { item: CoverItem }) {
         <div
           style={{
             ...tileStyle,
-            background: `linear-gradient(135deg, ${blockColor}33, rgba(255, 255, 255, 0.12))`,
+            /* The measured ground for this hue, flat. A gradient between a
+               category tint and a white alpha had no second stop that was
+               legal on the Exhibition ground. */
+            backgroundColor: blockFill.background,
           }}
         >
           <BlockIcon size={22} color={blockColor} />
@@ -213,9 +226,9 @@ function CoverTile({ item }: { item: CoverItem }) {
                 position: "absolute",
                 bottom: 4,
                 right: 4,
+                ...chipType,
                 fontSize: 8,
-                fontFamily: "Figtree, sans-serif",
-                color: "rgba(255,255,255,0.55)",
+                color: t.text2,
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
               }}
@@ -237,7 +250,7 @@ function EmptyTile() {
       style={{
         width: "100%",
         height: "100%",
-        background: "rgba(255,255,255,0.02)",
+        background: t.recess,
       }}
     />
   );
@@ -255,12 +268,12 @@ function CoverComposition({ items }: { items: CoverItem[] }) {
           alignItems: "center",
           justifyContent: "center",
           gap: 6,
-          color: "rgba(255,255,255,0.35)",
-          background: "rgba(255,255,255,0.02)",
+          color: t.text2,
+          background: t.recess,
         }}
       >
         <FileStack size={28} />
-        <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11 }}>
+        <span style={{ ...body, fontSize: 11 }}>
           Empty
         </span>
       </div>
@@ -296,7 +309,10 @@ export function CollectionCard({
   const [isHovered, setIsHovered] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
 
-  const accentColor = collection.accentColor || "rgba(255, 255, 255, 0.4)";
+  /* A collection's own accent, when its owner picked one; otherwise the
+     secondary ink. The dot is 8px of colour and carries no state, so a
+     user-chosen value is legal here in a way it would not be on type. */
+  const accentColor = collection.accentColor || t.text2;
 
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("[data-menu-trigger]")) return;
@@ -312,18 +328,18 @@ export function CollectionCard({
       }}
       onClick={handleCardClick}
       style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 12,
+        background: t.glass,
+        border: `1px solid ${t.glassBorder}`,
+        borderRadius: r.card,
         overflow: "hidden",
         cursor: "pointer",
-        transition: "border-color 0.15s, background 0.15s, transform 0.15s",
+        transition: uiTransition(),
         display: "flex",
         flexDirection: "column",
         ...(isHovered
           ? {
-              borderColor: "rgba(255,255,255,0.16)",
-              background: "rgba(255,255,255,0.05)",
+              borderColor: t.line,
+              background: t.glassHi,
               transform: "translateY(-1px)",
             }
           : {}),
@@ -341,12 +357,12 @@ export function CollectionCard({
                   data-menu-trigger
                   onClick={(e) => e.stopPropagation()}
                   style={{
-                    background: "rgba(0,0,0,0.55)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    borderRadius: 6,
+                    background: t.glassHi,
+                    border: `1px solid ${t.line}`,
+                    borderRadius: r.chip,
                     padding: 4,
                     cursor: "pointer",
-                    color: "rgba(255,255,255,0.9)",
+                    color: t.text,
                     display: "inline-flex",
                   }}
                 >
@@ -414,17 +430,18 @@ export function CollectionCard({
             style={{
               width: 8,
               height: 8,
-              borderRadius: 999,
+              /* Circular, which is the one thing `--r-full` is for. */
+              borderRadius: r.full,
               background: accentColor,
               flexShrink: 0,
             }}
           />
           <span
             style={{
-              fontFamily: "Figtree, sans-serif",
+              ...body,
               fontSize: 14,
               fontWeight: 600,
-              color: "rgba(255,255,255,0.95)",
+              color: t.text,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -438,9 +455,10 @@ export function CollectionCard({
             display: "flex",
             alignItems: "center",
             gap: 6,
-            fontFamily: "Figtree, sans-serif",
+            ...dataText,
+            ...tabular,
             fontSize: 11,
-            color: "rgba(255,255,255,0.5)",
+            color: t.text2,
           }}
         >
           <span>

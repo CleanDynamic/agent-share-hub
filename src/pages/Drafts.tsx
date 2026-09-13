@@ -20,6 +20,43 @@ import { ShellHeader } from "@/components/shell/ShellHeader";
 // imported by App, and the barrel would pull the whole build layer — intake,
 // portable, gallery, layers — into the main chunk with it.
 import { listDraftBuildsByCreator } from "@/lib/build/builds";
+import { categoryFill } from "@/lib/theme/category";
+import { buttonStyle, chipStyle, chipType, uiTransition } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body, data as dataText } from "@/lib/theme/type";
+
+/* ── THE COMPLETENESS VOICE (BG-P25 task 5) ─────────────────────────────────
+   A percentage over a part-full row is a mark out of a hundred whatever the
+   words around it say, and a creator whose draft is finished at 60% is being
+   told they are four-tenths short of something. BG-P23 took the percentage and
+   the bar out of the compose panel for exactly that reason, and left a count of
+   outstanding items in words: "Everything this record asks for is here", "One
+   thing left to add", "3 things left to add". These two functions say the same
+   thing about a draft row, in the same voice, in `--text2` like every other
+   line on the row — an invitation, never a score, and never a badge.
+
+   A BUILD DRAFT HAS NO SUCH COUNT TO REPORT. This list reads build HEADERS —
+   no nodes, no tree — so `computeCompleteness` cannot run here and the only
+   figure available is `builds.completeness`, which is the percentage. Turning
+   a percentage into a fake count would be inventing the number, so the build
+   line says the true thing it can say and points at the place that knows the
+   rest. The column is still written and the gallery still gates on it; it is
+   simply not something this page says out loud.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/** What a content draft still needs, in words. */
+function contentDraftLine(filled: number, total: number): string {
+  const left = Math.max(0, total - filled);
+  if (left === 0) return "Everything this draft asks for is here.";
+  return `${left === 1 ? "One thing" : `${left} things`} left to add`;
+}
+
+/** The same, for a build draft, which can only report finished or not. */
+function buildDraftLine(completeness: number): string {
+  if (completeness >= 100) return "Everything this record asks for is here.";
+  return "Open it to see what the record still needs";
+}
 
 function completionCount(item: any): { filled: number; total: number } {
   const total = 5;
@@ -53,9 +90,12 @@ interface DraftRow {
   item: any;
 }
 
-const TOOL_LABEL: Record<DraftSource, { label: string; color: string }> = {
-  build:   { label: "Build workspace",  color: "#E8571A" },
-  content: { label: "Previous tool",    color: "#9CA3AF" },
+/* Which tool wrote a draft is a fact about the record, not a category of part,
+   so neither of these borrows a category hue: the current workspace takes the
+   recess fill and the previous one an outline. */
+const TOOL_LABEL: Record<DraftSource, { label: string; filled: boolean }> = {
+  build:   { label: "Build workspace", filled: true },
+  content: { label: "Previous tool",   filled: false },
 };
 
 export default function DraftsPage() {
@@ -162,84 +202,91 @@ export default function DraftsPage() {
               const isBuild = row.source === "build";
               const tool = TOOL_LABEL[row.source];
               const { filled, total } = completionCount(draft);
-              const allComplete = filled === total;
               const displayName = row.displayName;
               const savedAt = row.savedAt;
 
               return (
                 <div
                   key={`${row.source}:${row.id}`}
+                  /* A list row: transparent at rest behind a `--line`
+                     hairline, `--recess` under the pointer at `--r-control`.
+                     A row that is already a filled box cannot get louder on
+                     hover, which is what made a list of these read as a stack
+                     of cards. */
                   style={{
-                    background: 'rgba(255,255,255,0.025)',
-                    border: '1px solid rgba(255, 255, 255, 0.14)',
-                    borderRadius: 14,
+                    background: 'transparent',
+                    border: `1px solid ${t.line}`,
+                    borderRadius: r.control,
                     padding: '18px 20px',
                     marginBottom: 12,
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: 16,
-                    transition: 'border-color 0.2s ease',
+                    transition: uiTransition(),
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.14)')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = t.recess)}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
                   {/* Left */}
                   <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: displayName ? 'rgba(255,255,255,0.90)' : 'rgba(255,255,255,0.35)', fontStyle: displayName ? 'normal' : 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p style={{ ...body, fontSize: 15, fontWeight: 600, color: displayName ? t.text : t.text2, fontStyle: displayName ? 'normal' : 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
                       {displayName || "Untitled draft"}
                     </p>
                     <div className="flex items-center flex-wrap" style={{ gap: 6 }}>
                       {/* Which tool this draft belongs to, and so which editor
                           the Continue button opens. */}
-                      <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 100, background: `${tool.color}14`, color: tool.color, border: `1px solid ${tool.color}40` }}>
+                      <span style={{ ...chipStyle(tool.filled ? "neutral" : "outline"), fontSize: 10, padding: '2px 8px' }}>
                         {tool.label}
                       </span>
                       {isBuild ? (
                         draft.shape && (
-                          <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(139,69,19,0.08)', color: '#8B4513', border: '1px solid rgba(139,69,19,0.2)' }}>
+                          <span style={{ ...chipStyle("outline"), fontSize: 10, padding: '2px 8px' }}>
                             {draft.shape}
                           </span>
                         )
                       ) : (() => {
                         const pt = (draft.post_type as string | null) || 'blueprint';
-                        const ptMap: Record<string, { label: string; color: string }> = {
-                          blueprint: { label: 'Blueprint', color: '#E8571A' },
-                          blog:       { label: 'Blog',      color: '#2EC4B6' },
-                          discussion: { label: 'Blog',      color: '#2EC4B6' },
-                          bounty:     { label: 'Bounty',    color: '#F59E0B' },
+                        /* Four private hexes become four of the nine part
+                           categories, both halves of each measured pair. */
+                        const ptMap: Record<string, { label: string; category: string }> = {
+                          blueprint:  { label: 'Blueprint', category: 'configuration' },
+                          blog:       { label: 'Blog',      category: 'narrative' },
+                          discussion: { label: 'Blog',      category: 'narrative' },
+                          bounty:     { label: 'Bounty',    category: 'breakage' },
                         };
                         const meta = ptMap[pt] ?? ptMap.blueprint;
+                        const fill = categoryFill(meta.category);
                         return (
-                          <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: `${meta.color}14`, color: meta.color, border: `1px solid ${meta.color}40` }}>
+                          <span style={{ ...chipType, fontSize: 10, padding: '2px 8px', borderRadius: r.chip, backgroundColor: fill.background, color: fill.color }}>
                             {meta.label}
                           </span>
                         );
                       })()}
                       {!isBuild && draft.content_type && (
-                        <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(139,69,19,0.08)', color: '#8B4513', border: '1px solid rgba(139,69,19,0.2)' }}>
+                        <span style={{ ...chipStyle("outline"), fontSize: 10, padding: '2px 8px' }}>
                           {displayContentType(draft.content_type)}
                         </span>
                       )}
                       {!isBuild && draft.difficulty && (
-                        <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 100, background: 'rgba(255, 255, 255, 0.12)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        /* BG-P05: difficulty is not a part category and carries
+                           no colour — one uncoloured mono label. */
+                        <span style={{ ...chipStyle("outline"), fontSize: 10, padding: '2px 8px' }}>
                           {draft.difficulty}
                         </span>
                       )}
                     </div>
-                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+                    <p style={{ ...dataText, fontSize: 12, color: t.text2, margin: 0 }}>
                       Last saved {formatDistanceToNow(new Date(savedAt), { addSuffix: true })}
                     </p>
-                    {isBuild ? (
-                      <p style={{ fontSize: 12, color: (draft.completeness ?? 0) >= 100 ? '#34D399' : 'rgba(255,255,255,0.35)' }}>
-                        {(draft.completeness ?? 0) >= 100
-                          ? "Ready to publish ✓"
-                          : `${draft.completeness ?? 0}% of this shape's record filled in`}
-                      </p>
-                    ) : (
-                      <p style={{ fontSize: 12, color: allComplete ? '#34D399' : 'rgba(255,255,255,0.35)' }}>
-                        {allComplete ? "Ready to preview ✓" : `${filled} of ${total} required fields complete`}
-                      </p>
-                    )}
+                    {/* ONE INK FOR BOTH OUTCOMES. The finished line used to go
+                        green and the unfinished line grey, which made "not
+                        finished yet" read as a fault. Both are `--text2`: a
+                        draft in progress is a draft, not a failure. */}
+                    <p style={{ ...body, fontSize: 12, color: t.text2, margin: 0 }}>
+                      {isBuild
+                        ? buildDraftLine(draft.completeness ?? 0)
+                        : contentDraftLine(filled, total)}
+                    </p>
                   </div>
 
                   {/* Right */}
@@ -252,7 +299,9 @@ export default function DraftsPage() {
                         else if (pt === 'bounty') navigate(`/upload/bounty?id=${draft.id}`);
                         else navigate(`/upload/blueprint?draft=${draft.id}`);
                       }}
-                      style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(31,122,109,0.3)', color: '#1F7A6D', background: 'rgba(31,122,109,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                      /* The row's one primary: continuing is what a drafts
+                         list is for. */
+                      style={{ ...buttonStyle("default"), ...body, fontSize: 12, fontWeight: 500, padding: '6px 14px', display: 'flex', alignItems: 'center', gap: 4 }}
                     >
                       <Pencil style={{ width: 13, height: 13 }} /> Continue editing
                     </button>
@@ -263,13 +312,14 @@ export default function DraftsPage() {
                       <>
                         <button
                           onClick={() => navigate(`/content/${draft.id}`)}
-                          style={{ fontSize: 12, fontWeight: 500, padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.60)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                          style={{ ...buttonStyle("secondary"), ...body, fontSize: 12, fontWeight: 500, padding: '6px 14px', color: t.text2, display: 'flex', alignItems: 'center', gap: 4 }}
                         >
                           <Eye style={{ width: 13, height: 13 }} /> Preview
                         </button>
                         <button
                           onClick={() => setDeleteTarget(draft.id)}
-                          style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: '1px solid rgba(239,68,68,0.25)', color: '#EF4444', background: 'transparent', cursor: 'pointer' }}
+                          aria-label="Delete draft"
+                          style={{ ...buttonStyle("secondary"), width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', borderColor: t.catBreakage, color: t.catBreakage }}
                         >
                           <Trash2 style={{ width: 14, height: 14 }} />
                         </button>
@@ -282,13 +332,14 @@ export default function DraftsPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p style={{ fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.45)', marginBottom: 6 }}>No drafts yet.</p>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.28)', marginBottom: 20 }}>
+            <p style={{ ...body, fontSize: 14, fontWeight: 500, color: t.text, marginBottom: 6 }}>No drafts yet.</p>
+            <p style={{ ...body, fontSize: 13, color: t.text2, marginBottom: 20, textWrap: "pretty" }}>
               Start a new post and save it as a draft to see it here.
             </p>
             <button
               onClick={() => openUploadTypePicker()}
-              style={{ fontSize: 13, fontWeight: 500, padding: '8px 20px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.70)', background: 'transparent', cursor: 'pointer' }}
+              /* The one way out of an empty view earns the primary. */
+              style={{ ...buttonStyle("default"), ...body, fontSize: 13, fontWeight: 500, padding: '8px 20px' }}
             >
               Start writing
             </button>

@@ -9,7 +9,12 @@ import {
 } from "lucide-react";
 import { CollectionCard, type CollectionMenuAction } from "./CollectionCard";
 import type { CollectionPreview, SavedItem } from "@/lib/library/types";
-import { type } from "@/lib/theme/type";
+import { categoryFill } from "@/lib/theme/category";
+import { buttonStyle, chipStyle, chipType, fieldStyle, uiTransition } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body, data as dataText, tabular, type } from "@/lib/theme/type";
 
 export type ViewMode = "collections" | "all";
 export type TypeFilter =
@@ -70,12 +75,20 @@ const SORT_ALL: { value: SortOption; label: string }[] = [
   { value: "a-z", label: "A-Z" },
 ];
 
-const TYPE_COLORS: Record<string, string> = {
-  blueprint: "#3B82F6",
-  blog: "#8B5CF6",
-  bounty: "#10B981",
-  stage: "#F59E0B",
-  block: "#EC4899",
+/**
+ * A saved item's kind, as one of the nine part categories.
+ *
+ * It was five private hexes — a sixth palette, disagreeing with the badges on
+ * the same rows about what colour a blueprint is. `categoryFill` returns the
+ * measured background/ink pair for each, and a kind this table does not carry
+ * lands on the measured fallback rather than on an invented slate.
+ */
+const KIND_CATEGORY: Record<string, string> = {
+  blueprint: "configuration",
+  blog: "narrative",
+  bounty: "breakage",
+  stage: "narrative",
+  block: "instruction",
 };
 
 export function LibraryShell({
@@ -126,16 +139,14 @@ export function LibraryShell({
             {isOwnLibrary && (
               <button
                 onClick={onCreateCollection}
+                /* The one primary on the library: making a collection is what
+                   this page is for, and nothing else here is filled. */
                 style={{
-                  background: "rgba(232, 87, 26, 0.15)",
-                  border: "1px solid rgba(232, 87, 26, 0.4)",
-                  color: "#E8571A",
-                  borderRadius: 8,
+                  ...buttonStyle("default"),
                   padding: "8px 14px",
-                  fontFamily: "Figtree, sans-serif",
+                  ...body,
                   fontSize: 13,
                   fontWeight: 500,
-                  cursor: "pointer",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -150,7 +161,7 @@ export function LibraryShell({
               display: "flex",
               gap: 4,
               marginBottom: 16,
-              borderBottom: "1px solid rgba(255,255,255,0.08)",
+              borderBottom: `1px solid ${t.line}`,
             }}
           >
             <TabButton
@@ -190,7 +201,7 @@ export function LibraryShell({
                 left: 10,
                 top: "50%",
                 transform: "translateY(-50%)",
-                color: "rgba(255,255,255,0.4)",
+                color: t.text2,
               }}
             />
             <input
@@ -198,16 +209,17 @@ export function LibraryShell({
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
               placeholder="Search collections…"
+              /* The kit's field: an inset `--recess` well with a `--line`
+                 hairline at `--r-control`. A field sits IN the page; a button
+                 sits on it. */
               style={{
                 width: "100%",
                 height: 32,
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 6,
+                ...fieldStyle(),
                 padding: "0 28px 0 32px",
-                fontFamily: "Figtree, sans-serif",
+                ...body,
                 fontSize: 12,
-                color: "rgba(255,255,255,0.9)",
+                color: t.text,
                 outline: "none",
               }}
             />
@@ -221,7 +233,7 @@ export function LibraryShell({
                   transform: "translateY(-50%)",
                   background: "transparent",
                   border: "none",
-                  color: "rgba(255,255,255,0.4)",
+                  color: t.text2,
                   cursor: "pointer",
                   padding: 2,
                   display: "flex",
@@ -251,9 +263,9 @@ export function LibraryShell({
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span
               style={{
-                fontFamily: "Figtree, sans-serif",
+                ...chipType,
                 fontSize: 11,
-                color: "rgba(255,255,255,0.45)",
+                color: t.text2,
                 textTransform: "uppercase",
                 letterSpacing: 0.5,
                 marginRight: 4,
@@ -261,28 +273,14 @@ export function LibraryShell({
             >
               Type:
             </span>
-            {TYPE_FILTERS.map((f) => {
-              const active = typeFilter === f.value;
-              return (
-                <button
-                  key={f.value}
-                  onClick={() => onTypeFilterChange(f.value)}
-                  style={{
-                    fontFamily: "Figtree, sans-serif",
-                    fontSize: 11,
-                    fontWeight: 500,
-                    padding: "4px 10px",
-                    borderRadius: 12,
-                    border: "none",
-                    cursor: "pointer",
-                    background: active ? "rgba(232, 87, 26, 0.2)" : "rgba(255,255,255,0.05)",
-                    color: active ? "#E8571A" : "rgba(255,255,255,0.6)",
-                  }}
-                >
-                  {f.label}
-                </button>
-              );
-            })}
+            {TYPE_FILTERS.map((f) => (
+              <FilterChip
+                key={f.value}
+                label={f.label}
+                selected={typeFilter === f.value}
+                onSelect={() => onTypeFilterChange(f.value)}
+              />
+            ))}
           </div>
           <SortDropdown value={sort} options={sortOptions} onChange={onSortChange} />
         </div>
@@ -328,6 +326,35 @@ export function LibraryShell({
   );
 }
 
+/** One type filter, on the kit's chip. Selection is a border and ink. */
+function FilterChip({
+  label,
+  selected,
+  onSelect,
+}: {
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      {...handlers}
+      style={{
+        padding: "4px 10px",
+        ...chipStyle("outline", { selectable: true, ...state }),
+        fontSize: 11,
+        ...(selected ? { borderColor: t.action, color: t.text } : {}),
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 function TabButton({
   icon,
   label,
@@ -353,21 +380,24 @@ function TabButton({
         background: "transparent",
         border: "none",
         cursor: "pointer",
-        color: isActive ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.55)",
-        fontFamily: "Figtree, sans-serif",
+        color: isActive ? t.text : t.text2,
+        ...body,
         fontSize: 13,
         fontWeight: 500,
+        transition: uiTransition(),
       }}
     >
       <span style={{ display: "inline-flex" }}>{icon}</span>
       <span>{label}</span>
       <span
         style={{
+          ...chipType,
+          ...tabular,
           fontSize: 10,
           padding: "2px 6px",
-          borderRadius: 10,
-          background: "rgba(255,255,255,0.08)",
-          color: "rgba(255,255,255,0.6)",
+          borderRadius: r.chip,
+          background: t.recess,
+          color: t.text2,
         }}
       >
         {count}
@@ -380,8 +410,7 @@ function TabButton({
             left: 8,
             right: 8,
             height: 2,
-            background: "#E8571A",
-            borderRadius: 2,
+            background: t.action,
           }}
         />
       )}
@@ -405,19 +434,19 @@ function SortDropdown({
         onChange={(e) => onChange(e.target.value as SortOption)}
         style={{
           appearance: "none",
-          background: "rgba(255,255,255,0.05)",
-          border: "1px solid rgba(255,255,255,0.1)",
-          borderRadius: 6,
+          ...fieldStyle(),
           padding: "6px 28px 6px 10px",
-          fontFamily: "Figtree, sans-serif",
+          ...body,
           fontSize: 12,
-          color: "rgba(255,255,255,0.7)",
+          color: t.text2,
           cursor: "pointer",
           outline: "none",
         }}
       >
+        {/* The native option list is painted by the OS, so it takes the two
+            tokens directly rather than a hex that only worked in one room. */}
         {options.map((o) => (
-          <option key={o.value} value={o.value} style={{ background: "#0F0F14", color: "#fff" }}>
+          <option key={o.value} value={o.value} style={{ background: t.bg, color: t.text }}>
             Sort: {o.label}
           </option>
         ))}
@@ -429,7 +458,7 @@ function SortDropdown({
           right: 8,
           top: "50%",
           transform: "translateY(-50%)",
-          color: "rgba(255,255,255,0.5)",
+          color: t.text2,
           pointerEvents: "none",
         }}
       />
@@ -533,44 +562,46 @@ function SavedItemCard({
   onRemove: () => void;
   isOwnLibrary: boolean;
 }) {
-  const color = TYPE_COLORS[item.kind] || "#94A3B8";
+  const kind = categoryFill(KIND_CATEGORY[item.kind] ?? "");
   return (
     <div
       className="group"
       onClick={onClick}
+      /* A LIST ROW, not a card: transparent at rest with a `--line` hairline,
+         and `--recess` under the pointer at `--r-control`. A row that is a
+         filled box at rest cannot get louder on hover, which is why a list of
+         forty of them read as forty cards rather than as one list. */
       style={{
         display: "flex",
         alignItems: "center",
         gap: 12,
         padding: "10px 12px",
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 10,
+        background: "transparent",
+        border: `1px solid ${t.line}`,
+        borderRadius: r.control,
         cursor: "pointer",
-        transition: "border-color 0.15s, background 0.15s",
+        transition: uiTransition(),
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.16)";
-        e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+        e.currentTarget.style.background = t.recess;
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-        e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+        e.currentTarget.style.background = "transparent";
       }}
     >
       <div
         style={{
           width: 38,
           height: 38,
-          borderRadius: 8,
-          background: `${color}22`,
-          color,
+          borderRadius: r.chip,
+          /* Both halves of the measured pair, or neither. */
+          backgroundColor: kind.background,
+          color: kind.color,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "Figtree, sans-serif",
+          ...chipType,
           fontSize: 10,
-          fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: 0.6,
           flexShrink: 0,
@@ -581,10 +612,10 @@ function SavedItemCard({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontFamily: "Figtree, sans-serif",
+            ...body,
             fontSize: 13,
             fontWeight: 500,
-            color: "rgba(255,255,255,0.92)",
+            color: t.text,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -598,9 +629,9 @@ function SavedItemCard({
             gap: 6,
             flexWrap: "wrap",
             marginTop: 3,
-            fontFamily: "Figtree, sans-serif",
+            ...chipType,
             fontSize: 11,
-            color: "rgba(255,255,255,0.5)",
+            color: t.text2,
           }}
         >
           {item.inCollections.map((c) => (
@@ -608,8 +639,8 @@ function SavedItemCard({
               key={c.id}
               style={{
                 padding: "2px 6px",
-                borderRadius: 8,
-                background: "rgba(255,255,255,0.05)",
+                borderRadius: r.chip,
+                background: t.recess,
               }}
             >
               in {c.name}
@@ -624,25 +655,25 @@ function SavedItemCard({
             onRemove();
           }}
           className="opacity-0 group-hover:opacity-100"
+          /* Removing something is destructive, so hover says so in breakage
+             red rather than in a generic lift. */
           style={{
-            background: "rgba(255,255,255,0.1)",
-            border: "none",
-            borderRadius: 6,
+            ...buttonStyle("secondary"),
             padding: "6px 10px",
-            cursor: "pointer",
-            color: "rgba(255,255,255,0.85)",
-            fontFamily: "Figtree, sans-serif",
+            color: t.text2,
+            ...body,
             fontSize: 11,
             display: "inline-flex",
             alignItems: "center",
             gap: 4,
-            transition: "opacity 0.15s, background 0.15s",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+            e.currentTarget.style.color = t.catBreakage;
+            e.currentTarget.style.borderColor = t.catBreakage;
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+            e.currentTarget.style.color = t.text2;
+            e.currentTarget.style.borderColor = t.line;
           }}
         >
           <X size={12} />
@@ -677,19 +708,19 @@ function EmptyState({
         justifyContent: "center",
         textAlign: "center",
         padding: "64px 24px",
-        color: "rgba(255,255,255,0.55)",
+        color: t.text2,
       }}
     >
       <div
         style={{
           width: 56,
           height: 56,
-          borderRadius: 14,
-          background: "rgba(255, 255, 255, 0.12)",
+          borderRadius: r.card,
+          background: t.recess,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "rgba(255,255,255,0.4)",
+          color: t.text2,
           marginBottom: 14,
         }}
       >
@@ -698,8 +729,7 @@ function EmptyState({
       <h2
         style={{
           ...type.cardTitle,
-
-          color: "rgba(255,255,255,0.92)",
+          color: t.text,
           margin: 0,
         }}
       >
@@ -707,10 +737,12 @@ function EmptyState({
       </h2>
       <p
         style={{
-          fontFamily: "Figtree, sans-serif",
+          ...body,
           fontSize: 13,
+          color: t.text2,
           margin: "8px 0 0",
           maxWidth: 420,
+          textWrap: "pretty",
         }}
       >
         {description}
@@ -718,17 +750,15 @@ function EmptyState({
       {showCta && ctaLabel && onCtaClick && (
         <button
           onClick={onCtaClick}
+          /* An empty view's one way out earns the primary: there is nothing
+             on the screen for it to compete with. */
           style={{
             marginTop: 20,
-            background: "rgba(232, 87, 26, 0.15)",
-            border: "1px solid rgba(232, 87, 26, 0.4)",
-            color: "#E8571A",
-            borderRadius: 8,
+            ...buttonStyle("default"),
             padding: "8px 14px",
-            fontFamily: "Figtree, sans-serif",
+            ...body,
             fontSize: 13,
             fontWeight: 500,
-            cursor: "pointer",
           }}
         >
           {ctaLabel}

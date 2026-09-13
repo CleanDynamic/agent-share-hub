@@ -55,6 +55,10 @@ import type {
   SavedItem,
 } from "@/lib/library/types";
 import { type } from "@/lib/theme/type";
+import { buttonStyle } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body } from "@/lib/theme/type";
 
 const TYPE_TO_KIND: Record<TypeFilter, CollectionItemKind | "all"> = {
   all: "all",
@@ -323,7 +327,7 @@ export default function CollectionDetailRoute() {
   // Loading / error states
   if (detailQuery.isLoading) {
     return (
-      <div style={{ padding: 40, textAlign: "center", color: "rgba(255,255,255,0.5)" }}>
+      <div style={{ padding: 40, textAlign: "center", ...body, color: t.text2 }}>
         Loading collection…
       </div>
     );
@@ -337,21 +341,20 @@ export default function CollectionDetailRoute() {
         style={{
           padding: 64,
           textAlign: "center",
-          color: "rgba(255,255,255,0.6)",
-          fontFamily: "Figtree, sans-serif",
+          color: t.text2,
+          ...body,
         }}
       >
         <h1
           style={{
             ...type.cardTitle,
-
-            color: "rgba(255,255,255,0.95)",
+            color: t.text,
             marginBottom: 8,
           }}
         >
           {isPrivate ? "This collection is private" : "Collection not found"}
         </h1>
-        <p style={{ fontSize: 13 }}>
+        <p style={{ ...body, fontSize: 13, color: t.text2 }}>
           {isPrivate
             ? "You don't have permission to view it."
             : "It may have been deleted or the link is broken."}
@@ -384,9 +387,12 @@ export default function CollectionDetailRoute() {
             alignItems: "center",
             justifyContent: "space-between",
             gap: 12,
-            background: "rgba(46, 196, 182, 0.08)",
-            border: "1px solid rgba(46, 196, 182, 0.25)",
-            borderRadius: 12,
+            /* An invitation, on the recess ground the rest of the page uses
+               for an inset panel. The teal wash it carried was a value nobody
+               measured, and on Exhibition it was invisible. */
+            background: t.recess,
+            border: `1px solid ${t.line}`,
+            borderRadius: r.panel,
           }}
         >
           <div
@@ -394,12 +400,12 @@ export default function CollectionDetailRoute() {
               display: "flex",
               alignItems: "center",
               gap: 10,
-              fontFamily: "Figtree, sans-serif",
+              ...body,
               fontSize: 13,
-              color: "rgba(255,255,255,0.85)",
+              color: t.text,
             }}
           >
-            <LibraryIcon size={16} color="#2EC4B6" />
+            <LibraryIcon size={16} color={t.text2} />
             <span>
               Like this collection? Copy all {items.length} item
               {items.length === 1 ? "" : "s"} into your own library.
@@ -409,11 +415,9 @@ export default function CollectionDetailRoute() {
             size="sm"
             onClick={handleBulkSave}
             disabled={bulkSaving}
-            style={{
-              background: "#2EC4B6",
-              color: "#25252F",
-              border: "none",
-            }}
+            /* The one primary in this strip: the whole strip exists to ask
+               for this click. */
+            style={buttonStyle("default")}
           >
             {bulkSaving ? "Saving…" : "Add all to my library"}
           </Button>
@@ -530,7 +534,7 @@ export default function CollectionDetailRoute() {
                     }}
                   />
                   <span className="flex-1">{c.isDefault ? "Saved items" : c.name}</span>
-                  <span className="text-[11px] text-muted-foreground">
+                  <span style={{ ...body, fontSize: 11, color: t.text2 }}>
                     {c.itemCount}
                   </span>
                 </button>
