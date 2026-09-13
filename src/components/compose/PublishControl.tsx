@@ -77,7 +77,7 @@ import {
   parseReward,
   type GapDraft,
 } from "@/components/compose/BountySection";
-import { rebuildCreditLine } from "@/components/build/rebuildCredit";
+import type { RebuildCreditSource } from "@/components/build/rebuildCredit";
 import type { RebuildDiff } from "@/hooks/useRebuildDiff";
 import type { BuildBounties } from "@/hooks/useBuildBounties";
 import { createBountyForGap, type Bounty } from "@/lib/bounty";
@@ -420,12 +420,20 @@ export function PublishControl({
       : readiness;
 
   /**
-   * Frozen at the fork. The publish sheet's card no longer takes it — it reads
-   * the same two columns off the draft itself (BG-P11) — so this is the
-   * rebuild section's copy, shown beside the note where the sheet says the
-   * credit is permanent.
+   * Frozen at the fork, and handed to the section as the SOURCE rather than as
+   * a composed sentence (BG-P24).
+   *
+   * The section renders the shared RebuildCredit now, which composes the
+   * sentence from these two columns itself — so the credit a creator reads
+   * beside the note is the same rendering the card and the build page show,
+   * rather than a second one that happens to agree.
+   *
+   * WHETHER THERE IS A CREDIT AT ALL is no longer decided here. A fork taken
+   * before the snapshot columns existed composes to no sentence, and the
+   * section asks `rebuildCreditLine` that question where it renders the
+   * answer. This file only says whether the draft is a rebuild.
    */
-  const credit = isRebuild ? rebuildCreditLine(build) : null;
+  const credit: RebuildCreditSource | null = isRebuild ? build : null;
 
   /** The pill only opens a sheet, so nothing but a write in flight closes it. */
   const canOpen = !isPublishing;
@@ -595,7 +603,7 @@ export function PublishControl({
                       diffed={Boolean(rebuild?.changes)}
                       note={note}
                       onNoteChange={setNote}
-                      credit={credit}
+                      source={credit}
                     />
                   ) : null}
                   {gaps.length > 0 ? (

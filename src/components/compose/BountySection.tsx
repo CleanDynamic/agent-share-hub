@@ -32,20 +32,19 @@
 import type { CSSProperties } from "react";
 import type { Bounty } from "@/lib/bounty";
 import { gapProblem, type NodeTree, type NodeType } from "@/lib/build";
-import { TypePill } from "@/components/compose/TreeNode";
+import { GapMarker, gapEdge, gapState } from "@/components/brand/GapMarker";
+import { rewardLabel } from "@/components/bounty/bountyDisplay";
+import { Switch } from "@/components/ui/switch";
+import { UI_EASING, UI_MS, fieldMessageStyle, fieldStyle } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import {
-  GAP_RED,
-  HAIRLINE,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  bodyText,
-  cardGlass,
-  hexToRgba,
-  labelText,
-} from "@/components/build/tokens";
+  body as bodyText,
+  data as dataText,
+  eyebrow as eyebrowText,
+  label as labelText,
+  tabular,
+} from "@/lib/theme/type";
 
 /**
  * The copy, held as constants because it is the design.
@@ -123,6 +122,26 @@ export function closesAtFrom(date: string): string | null {
   return end.toISOString();
 }
 
+/**
+ * The two outcome panels' shared surface.
+ *
+ * A `--bg` card inside the confirmation's `--recess` panel, with the state on a
+ * 2px left edge and NO TINTED GROUND. The wash behind these was `hexToRgba` of
+ * the hue at 6%, which on a light room turns a sentence about a live build into
+ * something that reads like an alert. The edge carries the state; the ground
+ * stays the workspace's own.
+ */
+const outcomeCard: CSSProperties = {
+  backgroundColor: t.bg,
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderColor: t.line,
+  borderRadius: r.card,
+  borderLeftWidth: 2,
+  borderLeftStyle: "solid",
+  padding: "12px 14px",
+};
+
 // --- the outcome copy --------------------------------------------------------
 
 /**
@@ -159,22 +178,29 @@ export function bountyFiledSentence(filed: number): string {
 
 // --- shared control styling --------------------------------------------------
 
+/**
+ * The reward and deadline fields.
+ *
+ * THE KIT'S PAINT WITHOUT THE KIT'S BOX (BG-P24). `fieldStyle()` is what the
+ * BG-P07 Input spends — a `--recess` well, a `--line` border that brightens to
+ * `--action` on focus, `--r-control`, and the shared ring — and it is a style
+ * function rather than a component, so these two fields take all of it at the
+ * 30px height this row was laid out around. Dropping the component in would
+ * have made them 40px tall, which is a structural change to an existing row
+ * and the one thing a repaint may never make.
+ *
+ * Mono and tabular, because both fields hold a number that sits in a column
+ * beside other rows' numbers.
+ */
 const inputStyle: CSSProperties = {
-  ...bodyText,
-  fontFamily: "inherit",
+  ...dataText,
+  ...tabular,
+  ...fieldStyle(),
   minWidth: 0,
   height: 30,
   padding: "0 8px",
-  borderRadius: 8,
   outline: "none",
-  background: "rgba(255,255,255,0.025)",
-  border: `1px solid ${HAIRLINE}`,
-  color: TEXT_PRIMARY,
 };
-
-const TRACK_WIDTH = 34;
-const TRACK_HEIGHT = 20;
-const KNOB = 14;
 
 // --- the section -------------------------------------------------------------
 
@@ -220,28 +246,27 @@ export function BountySection({
         flexDirection: "column",
         gap: 10,
         paddingTop: 12,
-        borderTop: `1px solid ${HAIRLINE}`,
+        borderTopWidth: 1,
+        borderTopStyle: "solid",
+        borderTopColor: t.line,
       }}
     >
-      {/* The uppercase label is the sheet's rhythm — the checklist and the
-          rebuild section both open with one. The question is a sentence and
-          reads as one, so it sits under the label rather than being shouted. */}
-      <span style={{ ...labelText, textTransform: "uppercase", color: TEXT_MUTED }}>
-        {SECTION_LABEL}
-      </span>
-      <p style={{ ...bodyText, margin: 0, color: TEXT_PRIMARY }}>
+      {/* The eyebrow is the sheet's rhythm — the checklist and the rebuild
+          section both open with one, and all three are 12px mono uppercase in
+          `--text2`. The question is a sentence and reads as one, so it sits
+          under the label rather than being shouted. */}
+      <span style={{ ...eyebrowText, color: t.text2 }}>{SECTION_LABEL}</span>
+      <p style={{ ...bodyText, margin: 0, color: t.text }}>
         {`You’ve marked ${marked === 1 ? "1 part" : `${marked} parts`} unsolved. ${HEADING}`}
       </p>
 
       {open.length === 0 ? (
-        <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+        <p style={{ ...bodyText, margin: 0, color: t.text2 }}>
           Every one of them already carries a bounty. Nothing new will be filed.
         </p>
       ) : (
         <>
-          <p style={{ ...bodyText, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
-            {UNPRICED}
-          </p>
+          <p style={{ ...bodyText, margin: 0, color: t.text2 }}>{UNPRICED}</p>
 
           <ul
             style={{
@@ -255,7 +280,7 @@ export function BountySection({
               // is NOT going to happen. Dimmed rather than unmounted, so a
               // creator can see what they are declining.
               opacity: skip ? 0.45 : 1,
-              transition: "opacity 140ms ease",
+              transition: `opacity ${UI_MS}ms ${UI_EASING}`,
             }}
           >
             {gaps.map((gap) => (
@@ -285,46 +310,26 @@ export function BountySection({
         }}
       >
         <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-          <span style={{ ...labelText, color: skip ? TEXT_PRIMARY : TEXT_SECONDARY }}>
+          <span style={{ ...labelText, color: skip ? t.text : t.text2 }}>
             {SKIP_LABEL}
           </span>
-          <span style={{ ...bodyText, fontSize: 11, color: TEXT_MUTED }}>{SKIP_HELP}</span>
+          <span style={{ ...dataText, color: t.text2 }}>{SKIP_HELP}</span>
         </span>
 
-        <button
-          type="button"
-          role="switch"
+        {/* THE BG-P07 SWITCH. It was a hand-rolled track and knob with its own
+            geometry, its own transition and a hard-coded near-black thumb that
+            was invisible against an Exhibition ground. The kit's carries the
+            `--action` track, the `--bg` thumb, the shared focus ring and the
+            reduced-motion gate, and it is the same switch every other toggle
+            in the app is. `role="switch"` and `aria-checked` come from Radix,
+            so the accessible contract the tests read is unchanged. */}
+        <Switch
           data-testid="bounty-skip"
-          aria-checked={skip}
           aria-label={SKIP_LABEL}
-          onClick={() => onSkipChange(!skip)}
-          style={{
-            position: "relative",
-            flexShrink: 0,
-            width: TRACK_WIDTH,
-            height: TRACK_HEIGHT,
-            padding: 0,
-            borderRadius: TRACK_HEIGHT,
-            border: `1px solid ${skip ? hexToRgba(ORANGE, 0.75) : HAIRLINE}`,
-            background: skip ? hexToRgba(ORANGE, 0.75) : "rgba(255,255,255,0.04)",
-            cursor: "pointer",
-            transition: "background 140ms ease, border-color 140ms ease",
-          }}
-        >
-          <span
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: skip ? TRACK_WIDTH - KNOB - 4 : 2,
-              width: KNOB,
-              height: KNOB,
-              marginTop: -(KNOB / 2),
-              borderRadius: "50%",
-              background: skip ? "#08080C" : TEXT_MUTED,
-              transition: "left 140ms ease, background 140ms ease",
-            }}
-          />
-        </button>
+          checked={skip}
+          onCheckedChange={onSkipChange}
+          style={{ flexShrink: 0 }}
+        />
       </div>
       )}
     </section>
@@ -334,8 +339,32 @@ export function BountySection({
 /**
  * One gap, as one row: what it is, what is wrong with it, and what it is worth.
  *
- * The type pill is TreeNode's, imported rather than reimplemented, so the row a
- * creator reads here is recognisably the row they ticked over in the tree.
+ * BG-P24 — THE ROW IS THE SHARED `GapMarker` IN ITS ROW PLACEMENT.
+ *
+ * It was a hand-rolled arrangement: TreeNode's type pill, a 2px solid left edge
+ * in a 60%-alpha red, and "Already has a bounty." set in teal. Every one of
+ * those is a second answer to a question the brand component already answers,
+ * and each was a different answer from the one the build page and the card
+ * give for the same object.
+ *
+ * What the marker brings, and why each half matters:
+ *
+ *   THE EDGE IS DASHED, not solid. Solid says "this is what it is"; dashed says
+ *   "this is where something goes". A gap is an invitation, and the edge is the
+ *   whole of the treatment — no red wash, because a tinted ground behind an
+ *   invitation reads as an error box.
+ *
+ *   THE CHIP KEEPS THE PART'S TRUE CATEGORY. A gap on an agent config is still
+ *   configuration; that is what routes it to people who write agent configs.
+ *   The marker never recolours it red, and neither does this row.
+ *
+ *   THE STATE WORD AND THE REWARD ARE MEASURED PAIRS, not the breakage hue as
+ *   text on whatever ground the row happens to sit on.
+ *
+ * A row whose gap is already filed renders `funded` with the reward it carries,
+ * which is the marker's own way of saying the same thing the teal sentence used
+ * to say — and it says it in the vocabulary a reader already knows from the
+ * board.
  */
 function GapRow({
   gap,
@@ -358,15 +387,34 @@ function GapRow({
   const ticked = filed ? false : draft.ticked;
   const locked = disabled || filed !== null;
 
+  /* An ask already on the board is `funded` when it carries money and
+     `unsolved` when it does not — the marker's own two words for the same
+     distinction the section makes between a priced and an unpriced gap. */
+  const filedReward = filed ? rewardLabel(filed.reward_gbp) : null;
+  const state = gapState(false, filedReward);
+
   return (
     <li
       data-testid="bounty-gap-row"
       data-node-id={gap.id}
       style={{
-        ...cardGlass,
+        /* The workspace's flat card — `--bg` inside the `--recess` sheet with
+           one `--line` hairline — rather than the glass film it was. A working
+           surface carries no glass, whether or not it carries a blur. */
+        backgroundColor: t.bg,
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: t.line,
+        borderRadius: r.card,
         margin: 0,
         padding: "10px 12px",
-        borderLeft: `2px solid ${hexToRgba(GAP_RED, filed ? 0.3 : 0.6)}`,
+        /* The brand edge, applied to the element that already has a border —
+           the marker exports it as a value for exactly this, because wrapping
+           this row in a marker would change its structure. Dimmed for a gap
+           that is already spoken for, which is the one thing about this row
+           that is not the marker's to say. */
+        ...gapEdge("row", state),
+        opacity: filed ? 0.72 : 1,
         display: "flex",
         flexDirection: "column",
         gap: 8,
@@ -378,6 +426,7 @@ function GapRow({
           alignItems: "center",
           gap: 8,
           minWidth: 0,
+          flexWrap: "wrap",
           cursor: locked ? "default" : "pointer",
         }}
       >
@@ -386,9 +435,24 @@ function GapRow({
           checked={ticked}
           disabled={locked}
           onChange={(event) => onChange({ ticked: event.target.checked })}
-          style={{ flexShrink: 0, width: 14, height: 14, accentColor: ORANGE }}
+          style={{
+            flexShrink: 0,
+            width: 14,
+            height: 14,
+            borderRadius: r.chip,
+            accentColor: t.action,
+          }}
         />
-        <TypePill nodeType={nodeType} typeKey={gap.type} />
+        {/* The shared marker in its row placement: the part's own category
+            chip, the state word on its measured ground, and the reward it
+            already carries when it carries one. */}
+        <GapMarker
+          placement="row"
+          state={state}
+          category={nodeType?.category ?? gap.type}
+          categoryLabel={nodeType?.label ?? gap.type}
+          reward={filedReward}
+        />
         <span
           style={{
             ...bodyText,
@@ -396,7 +460,7 @@ function GapRow({
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
-            color: gap.title ? TEXT_PRIMARY : TEXT_MUTED,
+            color: gap.title ? t.text : t.text2,
           }}
         >
           {title}
@@ -408,8 +472,7 @@ function GapRow({
           style={{
             ...bodyText,
             margin: 0,
-            fontSize: 12,
-            color: TEXT_SECONDARY,
+            color: t.text2,
             // Two lines of it. The whole statement is on the node, and the
             // creator wrote it — this is a reminder, not the reading of it.
             display: "-webkit-box",
@@ -421,18 +484,15 @@ function GapRow({
           {problem}
         </p>
       ) : (
-        <p style={{ ...bodyText, margin: 0, fontSize: 11, color: TEXT_MUTED }}>
-          {NO_PROBLEM}
-        </p>
+        <p style={{ ...dataText, margin: 0, color: t.text2 }}>{NO_PROBLEM}</p>
       )}
 
       {filed ? (
-        <span style={{ ...labelText, fontSize: 11, color: TEAL }}>
-          {ALREADY_FILED}
-          {filed.reward_gbp !== null && filed.reward_gbp !== undefined
-            ? ` £${filed.reward_gbp}`
-            : ""}
-        </span>
+        /* The marker above already shows the state and the money as measured
+           tags; this is the one thing it cannot say — that the ask is on the
+           board ALREADY, so nothing new is filed for it. `--text2`, because a
+           fact about a row is not a state of it. */
+        <span style={{ ...dataText, color: t.text2 }}>{ALREADY_FILED}</span>
       ) : (
         <div
           style={{
@@ -443,11 +503,11 @@ function GapRow({
           }}
         >
           <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-            <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>
+            <span style={{ ...labelText, color: t.text2 }}>
               {`${REWARD_LABEL} — ${REWARD_HELP}`}
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ ...bodyText, color: TEXT_MUTED }} aria-hidden>
+              <span style={{ ...dataText, color: t.text2 }} aria-hidden>
                 £
               </span>
               <input
@@ -461,19 +521,21 @@ function GapRow({
                 disabled={locked}
                 placeholder="0"
                 onChange={(event) => onChange({ reward: event.target.value })}
+                aria-invalid={badReward || undefined}
                 style={{
                   ...inputStyle,
                   width: 96,
-                  borderColor: badReward ? hexToRgba(GAP_RED, 0.5) : HAIRLINE,
+                  /* The kit's own invalid treatment, taken from the same
+                     function the field's resting paint comes from, so the
+                     two cannot land on different reds. */
+                  ...(badReward ? fieldStyle({ invalid: true }) : null),
                 }}
               />
             </span>
           </span>
 
           <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-            <span style={{ ...labelText, fontSize: 11, color: TEXT_MUTED }}>
-              {DEADLINE_LABEL}
-            </span>
+            <span style={{ ...labelText, color: t.text2 }}>{DEADLINE_LABEL}</span>
             <input
               type="date"
               data-testid="bounty-deadline-input"
@@ -487,8 +549,14 @@ function GapRow({
         </div>
       )}
 
+      {/* `fieldMessageStyle` is the kit's message under an invalid field —
+          breakage red in mono, which the theme measures as legal text on both
+          grounds. It travels with the border above rather than being a second
+          opinion about what "wrong" looks like. */}
       {badReward && !filed ? (
-        <span style={{ ...labelText, fontSize: 11, color: GAP_RED }}>{BAD_REWARD}</span>
+        <span role="alert" style={fieldMessageStyle}>
+          {BAD_REWARD}
+        </span>
       ) : null}
     </li>
   );
@@ -525,17 +593,15 @@ export function BountyOutcome({
         data-testid="bounty-outcome"
         role="alert"
         style={{
-          ...cardGlass,
-          padding: "12px 14px",
-          borderLeft: `2px solid ${GAP_RED}`,
-          background: hexToRgba(GAP_RED, 0.06),
+          ...outcomeCard,
+          borderLeftColor: t.catBreakage,
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-start",
           gap: 8,
         }}
       >
-        <p style={{ ...bodyText, margin: 0 }}>{failedSentence}</p>
+        <p style={{ ...bodyText, margin: 0, color: t.text }}>{failedSentence}</p>
         <button
           type="button"
           data-testid="bounty-retry"
@@ -546,10 +612,13 @@ export function BountyOutcome({
             fontFamily: "inherit",
             height: 28,
             padding: "0 12px",
-            borderRadius: 100,
-            background: "rgba(255,255,255,0.025)",
-            border: `1px solid ${HAIRLINE}`,
-            color: busy ? TEXT_MUTED : TEXT_PRIMARY,
+            /* `--r-control`, not the retired 999px capsule. */
+            borderRadius: r.control,
+            backgroundColor: t.recess,
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: t.line,
+            color: busy ? t.text2 : t.text,
             cursor: busy ? "default" : "pointer",
           }}
         >
@@ -565,14 +634,9 @@ export function BountyOutcome({
   return (
     <div
       data-testid="bounty-outcome"
-      style={{
-        ...cardGlass,
-        padding: "12px 14px",
-        borderLeft: `2px solid ${TEAL}`,
-        background: hexToRgba(TEAL, 0.06),
-      }}
+      style={{ ...outcomeCard, borderLeftColor: t.evidence }}
     >
-      <p style={{ ...bodyText, margin: 0 }}>{filedSentence}</p>
+      <p style={{ ...bodyText, margin: 0, color: t.text }}>{filedSentence}</p>
     </div>
   );
 }
