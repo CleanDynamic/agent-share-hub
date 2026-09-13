@@ -16,6 +16,7 @@ import { describe, expect, it } from "vitest";
 import { BuildHeader, type HeroMedia } from "./BuildHeader";
 import type { Build, NodeTree, NodeType } from "@/lib/build";
 import { staticDoc, styleOf } from "@/test/tokenStyle";
+import { type } from "@/lib/theme/type";
 
 const build = {
   id: "b1",
@@ -125,7 +126,9 @@ describe("the hero is a well, not a framed card", () => {
 describe("the header block", () => {
   it("sets the title in the display face, clamped above the 20px floor", () => {
     const style = styleOf(staticDoc(header()).querySelector("h1"));
-    expect(style).toContain("Bodoni Moda");
+    // The face by reference, never by name: the type audit holds the display
+    // stack to one definition, and a literal here would be a second one.
+    expect(style).toContain(`font-family:${type.hero.fontFamily}`);
     expect(style).toContain("font-size:clamp(40px, 4.6vw, 64px)");
     expect(style).toContain("color:var(--text)");
   });

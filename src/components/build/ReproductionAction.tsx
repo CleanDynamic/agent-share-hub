@@ -50,46 +50,56 @@ import {
   type BuildReproduction,
 } from "@/lib/build";
 import { Plaque } from "@/components/brand/Plaque";
+import { fieldStyle } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import {
-  GAP_RED,
-  HAIRLINE,
-  ORANGE,
-  TEAL,
-  TEXT_MUTED,
-  TEXT_PRIMARY,
-  TEXT_SECONDARY,
-  VOID,
-  bodyText,
-  hexToRgba,
-  labelText,
-  panelGlass,
-  titleText,
-} from "./tokens";
+  body as bodyType,
+  cardTitle,
+  data as dataType,
+  eyebrow,
+  label as labelType,
+  measure,
+} from "@/lib/theme/type";
+import { panelGlass } from "./tokens";
+import { useActionStyle } from "./actionStyle";
 
 /** Enough rows that a reader's own is almost always among them. See `mine`. */
 const REPRODUCTION_FETCH_LIMIT = 200;
 
 const REPRODUCTIONS_STALE_TIME = 60_000;
 
+/**
+ * The geometry every control on this panel keeps, over BG-P07's treatments.
+ *
+ * Padding, whitespace and the label role only: the colour, the border and the
+ * radius come from `buttonStyle` through `useActionStyle`, so a control here
+ * is repainted without being moved.
+ */
 const controlBase: React.CSSProperties = {
-  ...labelText,
-  fontFamily: "inherit",
-  fontSize: 12,
+  ...labelType,
   padding: "8px 14px",
-  borderRadius: 8,
-  cursor: "pointer",
   whiteSpace: "nowrap",
 };
 
+/**
+ * The sheet's inputs, on BG-P07's field treatment.
+ *
+ * A field is a surface the page is cut INTO — `--recess` with a `--line` border
+ * that brightens to `--action` on focus — which is what separates it from a
+ * button sitting on the page. It was a 2.5% white wash with a 6% white border,
+ * invisible in the light room.
+ *
+ * No font size is set here on purpose: index.css forces 16px on every input
+ * below 768px, because anything smaller makes mobile Safari zoom the viewport
+ * on focus and never zoom back.
+ */
 const inputStyle: React.CSSProperties = {
-  ...bodyText,
+  ...fieldStyle(),
   fontFamily: "inherit",
   width: "100%",
   padding: "8px 10px",
-  borderRadius: 8,
-  background: "rgba(255,255,255,0.025)",
-  border: `1px solid rgba(255,255,255,0.06)`,
-  color: TEXT_PRIMARY,
+  color: t.text,
   outline: "none",
 };
 
@@ -104,10 +114,10 @@ function Field({
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <span style={{ ...labelText, fontSize: 11, color: TEXT_SECONDARY }}>{label}</span>
+      <span style={{ ...eyebrow, color: t.text2 }}>{label}</span>
       {children}
       {help ? (
-        <span style={{ ...bodyText, fontSize: 11, color: TEXT_MUTED }}>{help}</span>
+        <span style={{ ...dataType, ...measure, color: t.text2 }}>{help}</span>
       ) : null}
     </div>
   );
@@ -134,6 +144,13 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
   const [model, setModel] = useState("");
   const [note, setNote] = useState("");
   const [pending, setPending] = useState(false);
+  /* One per control, because each tracks its own hover, focus and press. The
+     sheet's pair is mounted with the sheet and costs nothing while it is shut. */
+  const confirmAction = useActionStyle("secondary");
+  const inviteAction = useActionStyle("secondary");
+  const updateAction = useActionStyle("ghost");
+  const declineAction = useActionStyle("ghost", { disabled: pending });
+  const submitAction = useActionStyle("default", { disabled: pending });
   const [error, setError] = useState<string | null>(null);
   /** The row this session just wrote. Authoritative over the list below. */
   const [justRecorded, setJustRecorded] = useState<BuildReproduction | null>(null);
@@ -255,16 +272,7 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
       data-visual-slot="build-reproduction"
       style={{ display: "flex", flexDirection: "column", gap: 10 }}
     >
-      <span
-        style={{
-          ...labelText,
-          fontSize: 11,
-          color: TEXT_MUTED,
-          textTransform: "uppercase",
-        }}
-      >
-        Reproduction
-      </span>
+      <span style={{ ...eyebrow, color: t.text2 }}>Reproduction</span>
 
       {/* BG-P11: the count and the freshness line are the SHARED PLAQUE now,
           in the slot they already occupied. Two things changed and neither is
@@ -292,26 +300,32 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
           {stale ? (
             <p
               data-testid="stale-prompt"
-              style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY, maxWidth: 460 }}
+              style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}
             >
               no one has confirmed this in four months — is it still working?
             </p>
           ) : null}
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            {/* SECONDARY IN BOTH STATES, AND STALE IS NOT ALARM. A build that
+                has gone quiet is a prompt to its creator, not a failure — the
+                plaque above has already dimmed its lamp, which is the theme's
+                own signal for it. Stale here only thickens the border to
+                `--action` and adds the weight; it does not fill, because a
+                filled button would be this page's second primary and would
+                read as "something is wrong" rather than "worth a look". */}
             <button
               type="button"
               onClick={openSheet}
+              {...confirmAction.handlers}
               style={{
+                ...confirmAction.style,
                 ...controlBase,
-                color: stale ? VOID : TEXT_SECONDARY,
-                background: stale ? ORANGE : "rgba(255,255,255,0.025)",
-                border: `1px solid ${stale ? ORANGE : "rgba(255,255,255,0.06)"}`,
-                fontWeight: stale ? 600 : 500,
+                ...(stale ? { borderColor: t.action, color: t.action, fontWeight: 600 } : {}),
               }}
             >
               It still works
             </button>
-            <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED, maxWidth: 320 }}>
+            <span style={{ ...dataType, ...measure, color: t.text2 }}>
               The count is other people. Your own confirmation moves the date,
               not the number.
             </span>
@@ -321,11 +335,19 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           {mine ? (
             <>
+              {/* THE QUIET CONFIRMATION. Once a reader has recorded one, the
+                  invitation has been taken and the control becomes a record of
+                  it: a 6px lamp in `--evidence` and a line of mono, with the
+                  correction available as a ghost link beside it. No fill, no
+                  border, nothing competing with the plaque above — the fact is
+                  already filed, and a button that keeps asking would be asking
+                  for something it already has. `--cat-breakage` carries the
+                  other answer, in the one hue this system spends on a part
+                  that did not work. */}
               <span
                 style={{
-                  ...labelText,
-                  fontSize: 12,
-                  color: mine.worked ? TEAL : GAP_RED,
+                  ...dataType,
+                  color: mine.worked ? t.evidence : t.catBreakage,
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 6,
@@ -336,8 +358,8 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
                   style={{
                     width: 6,
                     height: 6,
-                    borderRadius: 999,
-                    background: mine.worked ? TEAL : GAP_RED,
+                    borderRadius: r.full,
+                    background: mine.worked ? t.evidence : t.catBreakage,
                   }}
                 />
                 {mine.worked
@@ -349,12 +371,11 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
               <button
                 type="button"
                 onClick={openSheet}
+                {...updateAction.handlers}
                 style={{
+                  ...updateAction.style,
                   ...controlBase,
                   padding: 0,
-                  background: "transparent",
-                  border: "none",
-                  color: TEXT_SECONDARY,
                   textDecoration: "underline",
                   textUnderlineOffset: 3,
                 }}
@@ -363,29 +384,29 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
               </button>
             </>
           ) : (
-            // VISUAL SLOT — the primary button surface is supplied externally.
-            // Geometry and behaviour only here.
-            <span data-visual-slot="btn-primary" style={{ display: "inline-flex" }}>
-              <button
-                type="button"
-                onClick={openSheet}
-                style={{
-                  ...controlBase,
-                  color: VOID,
-                  background: ORANGE,
-                  border: `1px solid ${ORANGE}`,
-                  fontWeight: 600,
-                }}
-              >
-                I ran this and it worked
-              </button>
-            </span>
+            // THE INVITATION, AND IT IS SECONDARY FROM BG-P21. It was a filled
+            // `--action` button carrying the primary slot, which made it the
+            // page's second primary beside "Rebuild this" — two solid fills in
+            // one view, asking the reader twice which thing matters most. The
+            // theme allows one. Rebuilding is the act this whole record exists
+            // to invite, so it keeps the fill and this takes the secondary
+            // treatment: still a button, still the only control in its strip,
+            // and still the one thing a reader who has run the build is being
+            // asked for.
+            <button
+              type="button"
+              onClick={openSheet}
+              {...inviteAction.handlers}
+              style={{ ...inviteAction.style, ...controlBase, fontWeight: 600 }}
+            >
+              I ran this and it worked
+            </button>
           )}
         </div>
       )}
 
       {error && !open ? (
-        <span role="alert" style={{ ...bodyText, fontSize: 12, color: GAP_RED }}>
+        <span role="alert" style={{ ...dataType, color: t.catBreakage }}>
           {error}
         </span>
       ) : null}
@@ -396,20 +417,22 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
           data-visual-slot="modal-surface"
           style={{
             ...panelGlass,
-            color: TEXT_PRIMARY,
+            color: t.text,
             fontFamily: "inherit",
             display: "flex",
             flexDirection: "column",
             gap: 14,
             maxWidth: 520,
             margin: "0 auto",
-            borderRadius: "12px 12px 0 0",
+            /* A sheet is a panel, so `--r-panel` — and only on the two corners
+               that are not against the edge of the screen. */
+            borderRadius: `${r.panel} ${r.panel} 0 0`,
           }}
         >
-          <SheetTitle style={{ ...titleText, margin: 0 }}>
+          <SheetTitle style={{ ...cardTitle, margin: 0, color: t.text }}>
             {isCreator ? "You ran your own build" : "You ran this build"}
           </SheetTitle>
-          <SheetDescription style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
+          <SheetDescription style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}>
             {isCreator
               ? "This moves the date on the freshness line. It does not touch the count — that stays other people."
               : "What you say here is what the next reader sees. Both answers are worth having."}
@@ -457,7 +480,7 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
           )}
 
           {error ? (
-            <span role="alert" style={{ ...bodyText, fontSize: 12, color: GAP_RED }}>
+            <span role="alert" style={{ ...dataType, color: t.catBreakage }}>
               {error}
             </span>
           ) : null}
@@ -470,7 +493,7 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
               gap: 12,
               flexWrap: "wrap",
               paddingTop: 4,
-              borderTop: `1px solid ${HAIRLINE}`,
+              borderTop: `1px solid ${t.line}`,
             }}
           >
             {/* The quieter path. Quieter, not hidden: a build that does not
@@ -485,12 +508,11 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
                 type="button"
                 disabled={pending}
                 onClick={() => void submit(false)}
+                {...declineAction.handlers}
                 style={{
+                  ...declineAction.style,
                   ...controlBase,
                   padding: "6px 0",
-                  background: "transparent",
-                  border: "none",
-                  color: TEXT_SECONDARY,
                   textDecoration: "underline",
                   textUnderlineOffset: 3,
                   cursor: pending ? "progress" : "pointer",
@@ -507,11 +529,14 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
                 onClick={() =>
                   isCreator ? void confirmStillWorks() : void submit(true)
                 }
+                {...submitAction.handlers}
+                /* THE SHEET IS ITS OWN VIEW, so it keeps a primary of its own:
+                   the one-primary rule is per view, and a modal with no filled
+                   action is a modal with no answer. `--action` with
+                   `--on-action` on it, at the measured pairing. */
                 style={{
+                  ...submitAction.style,
                   ...controlBase,
-                  color: VOID,
-                  background: pending ? hexToRgba(ORANGE, 0.5) : ORANGE,
-                  border: `1px solid ${ORANGE}`,
                   fontWeight: 600,
                   cursor: pending ? "progress" : "pointer",
                 }}
