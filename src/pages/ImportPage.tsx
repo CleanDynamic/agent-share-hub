@@ -70,12 +70,34 @@ import {
   measure,
 } from "@/lib/theme/type";
 
-/** Served from public/buildfile/. Both are plain Markdown, ~5 kB and ~2 kB. */
-const EXTRACTOR_URL = "/buildfile/NEOSCALE_EXTRACTOR.md";
-const COMPILER_URL = "/buildfile/NEOSCALE_COMPILER.md";
+/*  THE TWO KIT DOCUMENTS (BG-P24).
+ *
+ *  Served from public/buildfile/. Both are plain Markdown, ~5 kB and ~2 kB.
+ *
+ *  THEY ARE CALLED BUILDGALLERY NOW, AND THE OLD NAMES STILL SERVE. The
+ *  documents were NEOSCALE_EXTRACTOR.md and NEOSCALE_COMPILER.md, and this
+ *  page is the only thing in the product that links to them — but it is not
+ *  the only thing that HAS them. A creator who downloaded one, bookmarked
+ *  one, or pasted one into a chat months ago is holding the old URL, and a
+ *  renamed static asset would turn every one of those into a 404 for no
+ *  benefit they can see. So public/buildfile/ carries FOUR files: the two
+ *  buildgallery-named ones, which are canonical and what this page offers,
+ *  and the two NEOSCALE-named ones, which serve the identical bytes.
+ *  buildfileDocuments.test.ts is what holds those two pairs byte-identical.
+ *
+ *  WHAT IS NOT RENAMED IS `neoscale_build`, THE KEY INSIDE THE FORMAT. A
+ *  document's filename is a WORD — something a person reads, and therefore
+ *  something a rebrand may change. That key is an IDENTIFIER: the parser
+ *  matches on it to decide whether a dropped file is a Build File at all, and
+ *  every file any creator has ever been given carries it. Renaming it would
+ *  refuse every Build File in the wild, including the ones these very
+ *  documents have already told people to produce. It stays exactly as it is,
+ *  in both copies, and the test proves it. */
+const EXTRACTOR_URL = "/buildfile/BUILDGALLERY_EXTRACTOR.md";
+const COMPILER_URL = "/buildfile/BUILDGALLERY_COMPILER.md";
 
-const EXTRACTOR_FILENAME = "NEOSCALE_EXTRACTOR.md";
-const COMPILER_FILENAME = "NEOSCALE_COMPILER.md";
+const EXTRACTOR_FILENAME = "BUILDGALLERY_EXTRACTOR.md";
+const COMPILER_FILENAME = "BUILDGALLERY_COMPILER.md";
 
 /** Long enough to read, short enough not to look stuck. */
 const COPIED_MS = 2200;

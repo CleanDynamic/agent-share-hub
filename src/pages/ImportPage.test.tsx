@@ -144,8 +144,8 @@ const COMPILER_BODY = "# buildgallery Build File — Compiler v1\n\nEach source 
 let written: string[] = [];
 
 function serve(url: string): string | null {
-  if (url.endsWith("/buildfile/NEOSCALE_EXTRACTOR.md")) return EXTRACTOR_BODY;
-  if (url.endsWith("/buildfile/NEOSCALE_COMPILER.md")) return COMPILER_BODY;
+  if (url.endsWith("/buildfile/BUILDGALLERY_EXTRACTOR.md")) return EXTRACTOR_BODY;
+  if (url.endsWith("/buildfile/BUILDGALLERY_COMPILER.md")) return COMPILER_BODY;
   return null;
 }
 
@@ -222,8 +222,11 @@ describe("/import", () => {
     renderPage();
 
     const link = screen.getByTestId("download-extractor");
-    expect(link).toHaveAttribute("href", "/buildfile/NEOSCALE_EXTRACTOR.md");
-    expect(link).toHaveAttribute("download", "NEOSCALE_EXTRACTOR.md");
+    // The buildgallery-named document is what the page offers. The
+    // NEOSCALE-named path still serves the identical bytes for anyone holding
+    // the old URL — see buildfileDocuments.test.ts.
+    expect(link).toHaveAttribute("href", "/buildfile/BUILDGALLERY_EXTRACTOR.md");
+    expect(link).toHaveAttribute("download", "BUILDGALLERY_EXTRACTOR.md");
   });
 
   it("shows the drop target as a live target", () => {
