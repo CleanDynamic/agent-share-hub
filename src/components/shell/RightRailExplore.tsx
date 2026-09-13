@@ -4,8 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { FollowButton } from "@/components/FollowButton";
-import { DIFFICULTY_LABEL_CLASS, displayContentType } from "@/lib/content-types";
+import { displayContentType } from "@/lib/content-types";
+import { Skeleton } from "@/components/ui/skeleton";
 import { focusRing } from "@/lib/theme/focus";
+import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { eyebrow } from "@/lib/theme/type";
 import "./right-rail-explore.css";
@@ -22,29 +24,122 @@ import "./right-rail-explore.css";
    it, and they are self-contained.
 ──────────────────────────────────────────────── */
 
-const POST_TYPE_TILES = [
-  { value: 'blueprint', label: 'Blueprints', emoji: '🔷' },
-  { value: 'blog',      label: 'Blogs',      emoji: '📝' },
-  { value: 'bounty',    label: 'Bounties',   emoji: '🎯' },
+/* ── Browse ──
+   BG-P18b. THREE TILES WENT TO TWO ROWS, AND ALL THREE OF THE OLD ONES WENT
+   NOWHERE. "Blueprints", "Blogs" and "Bounties" each called `navigate("/")` —
+   they were three labelled buttons that reloaded the page the reader was
+   already on, which is worse than no rail at all.
+
+   - Blogs is REMOVED. Blog was retired in the NS series; there is no route and
+     no content type behind it.
+   - Blueprints is REMOVED. `/upload/blueprint` is an authoring route, not a
+     browse destination, and there is no mounted route that lists blueprints —
+     `App.tsx` has none, and nothing else in the application links to one.
+   - Gallery and Bounties are what is left, and they are real: `/gallery` is a
+     mounted route, and the open-bounty surface reachable from anywhere today is
+     the home feed's own Bounties tab. `/gallery?bounties=1` is NOT wired — the
+     gallery's bounty facet is component state, not a URL parameter — so
+     pointing at it would have rebuilt the defect this row is fixing. */
+const BROWSE_ROWS: { label: string; to: string }[] = [
+  { label: 'Gallery', to: '/gallery' },
+  { label: 'Bounties', to: '/?tab=bounties' },
 ];
 
-/* BG-P13. The tiles used to pick a hover colour at random from ten hard-coded
-   hexes on every mouse-enter. The nine category hues encode a part's category
-   and are never used decoratively, and a colour drawn from a hat cannot be
-   repointed at a token at all — so the rainbow is gone and the hover edge is
-   --action, the same mark the active nav row carries. */
-const TILE_EDGE = t.action;
-
-// BG-P05. The four `.ns-badge-*` difficulty classes are retired: difficulty is
-// not a part category and carries no colour. The trending badge keeps its shape
-// (.ns-trending-badge is layout) and loses its fill — one uncoloured mono label,
-// defined once in @/lib/content-types.
-function diffBadgeClass(_difficulty?: string): string {
-  return DIFFICULTY_LABEL_CLASS;
-}
+/* BG-P05 retired the four `.ns-badge-*` difficulty colours and left
+   `diffBadgeClass` here to paint the trending row's difficulty chip with the one
+   uncoloured mono label that replaced them. BG-P18b removed the chip: a
+   trending row is a title and a count, and difficulty is not what makes
+   something trend. The helper and its import went with it. */
 
 /** The mono eyebrow the rail's section headings wear, in --text2. */
 const SECTION_LABEL = { ...eyebrow, color: t.text2 } as const;
+
+/** 300 minus the rail's 24px leading padding. Nothing in the rail exceeds it. */
+const RAIL_CONTENT_WIDTH = 276;
+
+/**
+ * A section: a mono heading 8px above its rows, 32px below whatever came before.
+ *
+ * The 8-to-32 ratio is the whole of the grouping here. A heading nearer its own
+ * rows than to the section above it reads as belonging to them, which is
+ * proximity doing what a divider used to — `.ns-right-divider` drew a hairline
+ * between Browse and Trending because the two sat 14px apart and needed one.
+ */
+function RailSection({
+  heading,
+  first,
+  children,
+}: {
+  heading: string;
+  first?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <section style={{ marginTop: first ? 0 : 32 }}>
+      <h2 style={{ ...SECTION_LABEL, letterSpacing: "0.06em", margin: "0 0 8px", padding: "0 12px" }}>
+        {heading}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+/**
+ * One row of the rail: 40px tall, 12px of inline padding, `--r-control`.
+ *
+ * THE SAME ROW THE LEFT RAIL'S NAV IS, deliberately. Two rails either side of
+ * one column with two row shapes between them is two things for a reader to
+ * learn; one shape in both is `law-of-similarity` spent on the thing it is for.
+ * The trailing glyph is 16px `--text2` — an arrow, not an icon, because every
+ * one of these rows goes somewhere.
+ */
+function RailRow({
+  label,
+  trailing,
+  onClick,
+  testId,
+}: {
+  label: React.ReactNode;
+  trailing?: React.ReactNode;
+  onClick: () => void;
+  testId?: string;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        width: "100%",
+        height: 40,
+        padding: "0 12px",
+        border: "none",
+        borderRadius: r.control,
+        background: hovered ? t.recess : "transparent",
+        color: t.text,
+        font: "inherit",
+        fontSize: 15,
+        fontWeight: 500,
+        textAlign: "left",
+        cursor: "pointer",
+        transition: "background 0.15s ease",
+      }}
+    >
+      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {label}
+      </span>
+      <span style={{ flexShrink: 0, fontSize: 16, lineHeight: 1, color: t.text2 }}>
+        {trailing ?? "→"}
+      </span>
+    </button>
+  );
+}
 
 export function RightRailExplore() {
   const navigate = useNavigate();
@@ -168,7 +263,12 @@ export function RightRailExplore() {
 
   return (
     <>
-      <div className="ns-right-title">Explore</div>
+      {/* BG-P18b. The "EXPLORE" eyebrow that stood here is gone. It labelled the
+          rail, and a rail does not need naming to a reader who can see what is
+          in it — what it actually did was push the one control in the rail 26px
+          down and make the section headings below it read as its children. The
+          field leads now, and the headings label sections rather than
+          subsections. */}
 
       {/* Working search bar */}
       <div
@@ -179,7 +279,7 @@ export function RightRailExplore() {
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
-          placeholder="Quick search…"
+          placeholder="Search builds"
           value={searchQuery}
           onFocus={(e) => setSearchFocused(e.currentTarget.matches(":focus-visible"))}
           onBlur={() => setSearchFocused(false)}
@@ -274,118 +374,109 @@ export function RightRailExplore() {
         </div>
       )}
 
-      {/* ── Section label */}
-      <div style={{
-        ...SECTION_LABEL,
-        padding: '0 4px',
-        marginBottom: 10,
-      }}>
-        Browse
-      </div>
-
-      {/* ── Post type tile grid — 3 primary tiles */}
-      <div className="ns-tile-grid">
-        {POST_TYPE_TILES.map(tile => (
-          <div
-            key={tile.value}
-            className="ns-tile"
-            style={{
-              '--tile-hover-color': TILE_EDGE,
-            } as React.CSSProperties}
-            onClick={() => navigate("/")}
-          >
-            <span className="ns-tile-label">{tile.label}</span>
-            <span style={{
-              fontSize: 11,
-              color: t.text2,
-              marginLeft: 'auto',
-              flexShrink: 0,
-            }}>→</span>
-          </div>
+      <RailSection heading="Browse" first>
+        {BROWSE_ROWS.map((row) => (
+          <RailRow
+            key={row.to}
+            label={row.label}
+            testId={`rail-browse-${row.label.toLowerCase()}`}
+            onClick={() => navigate(row.to)}
+          />
         ))}
-      </div>
+      </RailSection>
 
-      <div className="ns-right-divider" />
-
-      {/* Trending */}
-      <div className="ns-trending-title">Trending</div>
-      <div className="ns-trending-list">
-        {(trendingItems ?? []).map((item: any, i: number) => (
-          <div
-            key={item.id}
-            className="ns-trending-item"
-            onClick={() => navigate(`/content/${item.id}`)}
-          >
-            <span className="ns-trending-rank">{i + 1}</span>
-            <div className="ns-trending-info">
-              <div className="ns-trending-name">{item.title}</div>
-              <span className={`ns-trending-badge ${diffBadgeClass(item.difficulty)}`}>
-                {item.difficulty || "Any"}
-              </span>
-            </div>
+      {/* ── Trending ──
+          THREE STATES, AND THE EMPTY ONE IS SILENCE. It said "Loading…" while
+          the query was in flight, which is a word standing in for a shape — the
+          rail is 276px of known geometry and a placeholder can say so. When the
+          query comes back with nothing, the whole section including its heading
+          is gone: a heading over a sentence explaining that there is nothing
+          under it is two lines spent saying less than no lines would. The
+          failure keeps its sentence, because "we could not find out" and "there
+          is nothing" are different facts. The query itself is untouched. */}
+      {trendingLoading ? (
+        <RailSection heading="Trending">
+          <div aria-hidden data-testid="rail-trending-skeleton">
+            {[1, 2, 3].map((i) => (
+              <div key={i} style={{ height: 40, display: "flex", alignItems: "center", padding: "0 12px" }}>
+                <Skeleton style={{ height: 16, width: `${72 - i * 8}%`, borderRadius: r.chip }} />
+              </div>
+            ))}
           </div>
-        ))}
-        {/* BG-P18. This said "Loading…" for all three of loading, empty and
-            failed, so a rail whose query came back with nothing sat there
-            promising something that was never going to arrive. The three are
-            now three sentences, from flags the query already computed — no
-            change to the query itself. */}
-        {(!trendingItems || trendingItems.length === 0) && (
-          <div style={{ fontSize: 11, color: t.text2, padding: "8px 8px" }}>
-            {trendingLoading
-              ? "Loading…"
-              : trendingError
-                ? "Trending could not be loaded."
-                : "Nothing trending this week."}
-          </div>
-        )}
-      </div>
+        </RailSection>
+      ) : trendingError ? (
+        <RailSection heading="Trending">
+          <p style={{ margin: 0, padding: "0 12px", fontSize: 15, color: t.text2 }}>
+            Trending could not be loaded.
+          </p>
+        </RailSection>
+      ) : trendingItems && trendingItems.length > 0 ? (
+        <RailSection heading="Trending">
+          {trendingItems.map((item: any) => (
+            <RailRow
+              key={item.id}
+              label={item.title}
+              onClick={() => navigate(`/content/${item.id}`)}
+              trailing={
+                <span
+                  style={{
+                    ...SECTION_LABEL,
+                    letterSpacing: 0,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {item.download_count ?? 0}
+                </span>
+              }
+            />
+          ))}
+        </RailSection>
+      ) : null}
 
-      {/* Curator Picks */}
+      {/* ── Curator Picks, Collections, Who to Follow ──
+          Not named by this prompt, so their rows and their queries are as they
+          were. What changed is the heading: `.ns-section-title` and
+          `RailSection` were two spellings of the same mono eyebrow at two
+          different spacings, and the rail now has one. */}
       {curatorPicks && curatorPicks.length > 0 && (
-        <>
-          <div className="ns-section-title">Curator Picks</div>
+        <RailSection heading="Curator Picks">
           {curatorPicks.map((pick: any) => {
             const content = pick.content_items;
             const curator = pick.curators?.profiles;
             return (
               <div key={pick.id} className="ns-curator-item" onClick={() => { if (content) { navigate(`/content/${content.id}`); } }}>
                 <div className="ns-curator-avatar">
-                  {curator?.avatar_url ? <img src={curator.avatar_url} alt="" /> : <span style={{ fontSize: 10, color: t.text2, display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>✦</span>}
+                  {curator?.avatar_url ? <img src={curator.avatar_url} alt="" /> : <span style={{ fontSize: 12, color: t.text2, display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>✦</span>}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{content?.title}</div>
+                  <div style={{ fontSize: 15, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{content?.title}</div>
                   <span className="ns-search-result-badge">{content?.content_type ? displayContentType(content.content_type) : ""}</span>
                 </div>
               </div>
             );
           })}
-        </>
+        </RailSection>
       )}
 
-      {/* Featured Collections */}
       {featuredCollections && featuredCollections.length > 0 && (
-        <>
-          <div className="ns-section-title">Collections</div>
+        <RailSection heading="Collections">
           {featuredCollections.map((col: any) => (
             <div key={col.id} className="ns-collection-item" onClick={() => navigate(`/collection/${col.slug || col.id}`)}>
-              <div style={{ fontSize: 12, color: t.text, fontWeight: 500 }}>{col.title}</div>
-              <div style={{ fontSize: 10, fontFamily: eyebrow.fontFamily, color: t.text2 }}>
+              <div style={{ fontSize: 15, color: t.text, fontWeight: 500 }}>{col.title}</div>
+              <div style={{ fontSize: 12, fontFamily: eyebrow.fontFamily, color: t.text2 }}>
                 {(col.profiles as any)?.display_name || (col.profiles as any)?.username || "Creator"} · {col.item_count} items
               </div>
             </div>
           ))}
-        </>
+        </RailSection>
       )}
 
-      {/* Who to Follow */}
       {isLoggedIn && followSuggestions && followSuggestions.length > 0 && (
-        <>
-          <div className="ns-section-title">Who to Follow</div>
+        <RailSection heading="Who to Follow">
           {followSuggestions.map((s: any) => (
             <div key={s.id} className="ns-follow-item">
               <div className="ns-follow-avatar" style={{ cursor: "pointer" }} onClick={() => navigate(`/creator/${s.username}`)}>
-                {s.avatar_url ? <img src={s.avatar_url} alt="" /> : <span style={{ fontSize: 11, color: t.text2, display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>{(s.display_name || "?")[0]}</span>}
+                {s.avatar_url ? <img src={s.avatar_url} alt="" /> : <span style={{ fontSize: 12, color: t.text2, display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>{(s.display_name || "?")[0]}</span>}
               </div>
               <div className="ns-follow-info" style={{ cursor: "pointer" }} onClick={() => navigate(`/creator/${s.username}`)}>
                 <div className="ns-follow-name">{s.display_name || s.username}</div>
@@ -394,23 +485,32 @@ export function RightRailExplore() {
               <FollowButton creatorId={s.id} />
             </div>
           ))}
-        </>
+        </RailSection>
       )}
 
-      {/* Auth buttons for guests */}
-      {!isLoggedIn && (
-        <div style={{ marginTop: 16 }}>
-          <div className="ns-auth-btns">
-            <button className="ns-auth-btn signin" onClick={() => navigate("/login")}>Sign in</button>
-            <button className="ns-auth-btn join" onClick={() => navigate("/signup")}>Join free</button>
-          </div>
-        </div>
-      )}
+      {/* ── The footer, pushed to the bottom of the rail ──
+          BG-P18b REMOVED THE "Sign in" / "Join free" PAIR THAT STOOD ABOVE THIS.
+          The identical pair is in the left rail, 900px to the left of it and on
+          the same screen at every width this rail renders at — and the same two
+          controls twice tells a visitor they are two different things. The left
+          rail keeps them: it is where the account lives, and it is where the one
+          `--action` fill on this page belongs.
 
-      {/* Footer links */}
-      <div className="ns-footer-links">
+          A flexible spacer above, so the links sit at the foot of the rail
+          rather than under whichever section happened to load. "X", not
+          "Twitter": the platform's current name. The rail's own 24px bottom
+          padding is the gap under them. */}
+      <div style={{ flex: 1, minHeight: 24 }} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "0 12px" }}>
         <span className="ns-footer-link" onClick={() => navigate("/about")}>About buildgallery.ai →</span>
-        <a className="ns-footer-link" href="https://twitter.com/neoscaleai" target="_blank" rel="noopener noreferrer">Twitter @neoscaleai →</a>
+        <a
+          className="ns-footer-link"
+          href="https://x.com/neoscaleai"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          @neoscaleai on X →
+        </a>
       </div>
     </>
   );

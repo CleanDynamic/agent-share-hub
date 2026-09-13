@@ -27,17 +27,10 @@
 // hover, focus-visible — that a style object cannot read.
 
 import React from "react";
-import {
-  PlusCircle,
-  Trophy,
-  Sparkles,
-  Users,
-  TrendingUp,
-  Clock,
-  ChevronUp,
-  Layers,
-  RotateCw,
-} from "lucide-react";
+/* Five of the nine glyphs that were imported here went with the empty state's
+   disc: Sparkles, Users, TrendingUp, Clock, Layers and RotateCw each stood for
+   one tab's "nothing here" and said no more than that tab's own sentence did. */
+import { PlusCircle, Trophy, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -157,6 +150,16 @@ const TAB_MIN_WIDTH = 96;
 const TAB_INDICATOR_WIDTH = 32;
 
 /**
+ * The empty and error states' one line of display type.
+ *
+ * `cardTitle` at 26/32 rather than its own 22/1.25. A card title is one object
+ * among many in a scrolling column; this is the only thing on the screen, and
+ * it has to hold the middle of a viewport on its own. Both clear the 20px floor
+ * the display face carries.
+ */
+const NOTICE_TITLE = { ...cardTitle, fontSize: "26px", lineHeight: "32px" } as const;
+
+/**
  * The tab's colours, as classes rather than as a style object.
  *
  * NOT `TAB_TRIGGER_CLASS`. That constant is the kit's tab and carries a
@@ -186,38 +189,32 @@ const TAB_LABEL_CLASS =
  */
 const EMPTY_STATES: Record<
   FeedTabKey,
-  { icon: React.ElementType; headline: string; body: string; cta?: string }
+  { headline: string; body: string; cta?: string }
 > = {
   builds: {
-    icon: Layers,
     headline: "Nothing here yet",
     body: "Builds, rebuilds and the notes people leave after running one land here as they are published. The gallery has more.",
     cta: "Open the gallery",
   },
   foryou: {
-    icon: Sparkles,
     headline: "Nothing here yet",
     body: "This fills as the people you follow publish, run and rebuild things. The gallery has more.",
     cta: "Open Discover",
   },
   following: {
-    icon: Users,
     headline: "Nothing here yet",
     body: "When somebody you follow publishes, shares or comments, it lands here. The gallery has more.",
     cta: "Open Discover",
   },
   trending: {
-    icon: TrendingUp,
     headline: "Nothing trending right now",
     body: "Trending is recalculated through the day, so this is a lull rather than a wall. The gallery has more.",
   },
   recent: {
-    icon: Clock,
     headline: "Nothing published recently",
     body: "New builds, collections and rebuilds arrive here first. The gallery has more.",
   },
   bounties: {
-    icon: Trophy,
     headline: "No open bounties",
     body: "A bounty is a part of a build somebody marked unsolved. None are open right now — and you can mark one on a build of your own.",
     cta: "Start a bounty",
@@ -828,21 +825,32 @@ export function FeedSkeleton() {
 }
 
 /**
- * The frame the empty and the error state share: a quiet mark, a line of
- * display type, a sentence, and at most one control.
+ * The frame the empty and the error state share: a line of display type, a
+ * sentence, and at most one control, centred in the viewport.
  *
  * ONE COMPONENT FOR BOTH, so the two cannot drift into two different ways of
  * saying "there is nothing to show here". They differ in their words and in
  * which control they offer, which is exactly as much as they should differ.
+ *
+ * THE DISC AND THE ICON ARE GONE. It was a 72px `--r-full` circle of `--recess`
+ * with a 28px lucide glyph in it — a 999px radius, which this system allows for
+ * spinners and avatars and nothing else, around an icon that said no more than
+ * the sentence under it did. What is left is the sentence, which is the whole
+ * of the content.
+ *
+ * `min-height: calc(100dvh - 52px - 16px)` IS THE TAB BAR AND THE GAP UNDER IT.
+ * The state then fills the rest of the viewport exactly and centres in it, so
+ * an empty tab is a column with something in the middle of it rather than a
+ * paragraph stranded under the chrome — and the centre column's two hairlines
+ * run to the fold because the column is as tall as the page whether or not
+ * anything loaded.
  */
 function FeedNotice({
-  icon: Icon,
   headline,
   body,
   testId,
   children,
 }: {
-  icon: React.ElementType;
   headline: string;
   body: React.ReactNode;
   testId?: string;
@@ -850,41 +858,40 @@ function FeedNotice({
 }) {
   return (
     <div
-      className="flex flex-col items-center text-center"
       data-visual-slot="feed-notice"
       data-testid={testId}
-      style={{ marginTop: 48 }}
+      style={{
+        minHeight: `calc(100dvh - ${TAB_BAR_HEIGHT}px - ${FEED_GAP}px)`,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        textAlign: "center",
+        padding: "0 64px",
+      }}
     >
-      {/* `--recess` under a hairline, not an accent wash. An empty tab is an
-          ordinary state, and a tinted disc around an icon reads as a warning
-          about one. */}
-      <div
-        className="flex items-center justify-center"
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: r.full,
-          background: t.recess,
-          ...elevation.flat,
-          marginBottom: 16,
-        }}
-      >
-        <Icon style={{ width: 28, height: 28, color: t.text2 }} />
-      </div>
-      <div style={{ ...cardTitle, color: t.text, marginBottom: 8 }}>{headline}</div>
+      {/* 26/32 Bodoni. The display face is legal from 20px up — below it the
+          didone's hairlines shimmer, worst on Dusk — and the `cardTitle` role
+          this used to take is 22, which is a title inside a card rather than
+          the one line on an otherwise empty screen. */}
+      <h2 style={{ ...NOTICE_TITLE, color: t.text, margin: 0, textWrap: "balance" }}>
+        {headline}
+      </h2>
       <p
         style={{
           ...bodyText,
+          lineHeight: "24px",
           color: t.text2,
           /* A measure, not a width: 44 characters is short enough that a
              two-sentence notice breaks where it reads best. */
           maxWidth: "44ch",
-          marginBottom: children ? 20 : 0,
+          margin: "12px 0 0",
+          textWrap: "pretty",
         }}
       >
         {body}
       </p>
-      {children}
+      {children ? <div style={{ marginTop: 24 }}>{children}</div> : null}
     </div>
   );
 }
@@ -905,7 +912,7 @@ export function FeedEmptyState({
 }) {
   const e = EMPTY_STATES[activeTab];
   return (
-    <FeedNotice icon={e.icon} headline={e.headline} body={e.body} testId="feed-empty">
+    <FeedNotice headline={e.headline} body={e.body} testId="feed-empty">
       {e.cta ? (
         /* SECONDARY, NOT PRIMARY. The theme allows one primary action per view
            and the compose strip at the top of the feed is already spending it;
@@ -914,7 +921,12 @@ export function FeedEmptyState({
            rule in an injected <style> — a class, which Tailwind's own output
            beats at build time, and which is the one styling mechanism
            `neoscale-ui` forbids outright. */
-        <Button type="button" variant="secondary" onClick={onEmptyCTAClick}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onEmptyCTAClick}
+          style={{ height: 40, borderRadius: r.control }}
+        >
           {e.cta}
         </Button>
       ) : null}
@@ -949,7 +961,6 @@ export function FeedErrorState({
   const said = (message ?? "").trim();
   return (
     <FeedNotice
-      icon={RotateCw}
       headline={`${TAB_LABEL[activeTab]} could not be loaded`}
       testId="feed-error"
       body={
@@ -966,7 +977,12 @@ export function FeedErrorState({
       }
     >
       {onRetry ? (
-        <Button type="button" variant="secondary" onClick={onRetry}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onRetry}
+          style={{ height: 40, borderRadius: r.control }}
+        >
           Try again
         </Button>
       ) : null}

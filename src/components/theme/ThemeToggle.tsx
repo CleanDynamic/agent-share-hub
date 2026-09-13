@@ -1,6 +1,10 @@
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { useTheme, type ThemeChoice } from "@/contexts/ThemeContext";
-import { themeToggleGroupStyle, themeToggleSegmentStyle } from "@/lib/theme/controls";
+import { themeToggleGroupStyle, themeToggleSegmentStyle, uiTransition } from "@/lib/theme/controls";
+import { focusRing } from "@/lib/theme/focus";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { data as dataText } from "@/lib/theme/type";
 
 /* ────────────────────────────────────────────────────────────────────────────
    ThemeToggle — the control that flips the room.
@@ -37,7 +41,62 @@ const OPTIONS: readonly { value: ThemeChoice; label: string }[] = [
   { value: "system", label: "System" },
 ];
 
-export function ThemeToggle() {
+/**
+ * BG-P18b — the rail's variant of the same control.
+ *
+ * WHY A VARIANT AND NOT A REPAINT. The default is the kit's: a `--recess` group
+ * with the current segment filled `--action`, and it is what /dev/kit and the
+ * workspace bar render. In the left rail that fill is a second `--action` mark
+ * eight pixels under the rail's one primary button, and the theme's rule is one
+ * primary action per view — a setting is not one. So in the rail the group has
+ * no ground of its own, it is full width and 32px tall, and the current segment
+ * is `--text` on `--recess`: the same step every other row in this rail marks
+ * itself with. Nothing about the default changed, and neither of the other two
+ * call sites moves.
+ */
+export type ThemeToggleVariant = "kit" | "rail";
+
+/** The rail variant's group: full width, 32 tall, no fill. */
+const RAIL_GROUP: CSSProperties = {
+  display: "flex",
+  width: "100%",
+  height: 32,
+  gap: 2,
+  background: "transparent",
+  borderRadius: r.chip,
+};
+
+/** The rail variant's segment, at rest, hovered and current. */
+function railSegmentStyle(state: { selected: boolean; hovered: boolean; focusVisible: boolean }): CSSProperties {
+  const { selected, hovered, focusVisible } = state;
+  return {
+    ...dataText,
+    /* 12px flat rather than the data role's clamp: this is a rail control at a
+       fixed width, not body copy that should breathe with the viewport, and 12
+       is the floor DM Mono is allowed at. */
+    fontSize: 12,
+    /* `1 1 auto`, NOT `1 1 0`. Three equal thirds of the rail's 208px is 69
+       each, and "Exhibition" at 12px DM Mono needs 72 — it clipped to
+       "Exhibitior". Sizing from the labels and sharing the slack keeps all
+       three whole, which matters more here than three identical boxes: the
+       labels are the control. */
+    flex: "1 1 auto",
+    minWidth: 0,
+    height: "100%",
+    padding: "0 4px",
+    textAlign: "center",
+    whiteSpace: "nowrap",
+    border: "none",
+    borderRadius: r.chip,
+    background: selected ? t.recess : "transparent",
+    color: selected || hovered ? t.text : t.text2,
+    cursor: "pointer",
+    transition: uiTransition(),
+    ...(focusVisible ? focusRing : null),
+  };
+}
+
+export function ThemeToggle({ variant = "kit" }: { variant?: ThemeToggleVariant } = {}) {
   const { theme, setTheme } = useTheme();
   const [keyboardFocus, setKeyboardFocus] = useState<ThemeChoice | null>(null);
   const [hovered, setHovered] = useState<ThemeChoice | null>(null);
@@ -75,11 +134,15 @@ export function ThemeToggle() {
          segment therefore meets the group's hairline directly. If that reads
          tight, the fix is a padding change and belongs to the prompt that owns
          this surface's layout — reported, not quietly taken. */
-      style={{
-        display: "flex",
-        gap: 2,
-        ...themeToggleGroupStyle,
-      }}
+      style={
+        variant === "rail"
+          ? RAIL_GROUP
+          : {
+              display: "flex",
+              gap: 2,
+              ...themeToggleGroupStyle,
+            }
+      }
     >
       {OPTIONS.map((option) => {
         const selected = theme === option.value;
@@ -107,15 +170,23 @@ export function ThemeToggle() {
               if (visible) setKeyboardFocus(option.value);
             }}
             onBlur={() => setKeyboardFocus(null)}
-            style={{
-              padding: "4px 8px",
-              border: "none",
-              ...themeToggleSegmentStyle({
-                selected,
-                hovered: hovered === option.value,
-                focusVisible: keyboardFocus === option.value,
-              }),
-            }}
+            style={
+              variant === "rail"
+                ? railSegmentStyle({
+                    selected,
+                    hovered: hovered === option.value,
+                    focusVisible: keyboardFocus === option.value,
+                  })
+                : {
+                    padding: "4px 8px",
+                    border: "none",
+                    ...themeToggleSegmentStyle({
+                      selected,
+                      hovered: hovered === option.value,
+                      focusVisible: keyboardFocus === option.value,
+                    }),
+                  }
+            }
           >
             {option.label}
           </button>

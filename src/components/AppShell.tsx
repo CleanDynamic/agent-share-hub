@@ -147,6 +147,10 @@ export function AppShell() {
         name: profile?.display_name || profile?.username || "User",
         initials: initialsSafe,
         avatarUrl: profile?.avatar_url || undefined,
+        /* BG-P18b. The rail's account block is a name over a handle now, which
+           is the same identity the mobile drawer has always shown. Read from
+           the profile already in hand — no query is added. */
+        handle: profile?.username || undefined,
       }
     : null;
 
@@ -260,24 +264,20 @@ export function AppShell() {
         layout={layout}
         wideRightRail={wideRoute?.rightRail ?? false}
         beforeUserSlot={
-          /* The left rail's user area, immediately above the user block.
-             BG-P02 mounts the theme toggle here rather than adjacent: it is the
-             frame's existing slot for chrome that belongs to the visitor rather
-             than to the page, and using it needs no change to FlatShell.
-
-             The slot now renders for signed-out visitors too — the theme is
-             not an account setting. The progress chip keeps its own condition. */
-          <>
-            {isLoggedIn && (
-              <div style={{ padding: "0 12px 10px" }}>
-                <NavProgressChipMount onClick={() => navigate("/analytics")} />
-              </div>
-            )}
-            <div style={{ padding: "0 12px 10px" }}>
-              <ThemeToggle />
+          /* The left rail's slot immediately above the account block. BG-P02
+             mounted the theme toggle here too; BG-P18b moved it to the
+             `themeControl` slot below the account block, because the rail's
+             order is wordmark, nav, spacer, account, setting — a setting does
+             not sit above the sign-up it would otherwise compete with. What is
+             left here is the progress chip, which is about the reader's account
+             and belongs beside it. */
+          isLoggedIn ? (
+            <div style={{ padding: "0 0 12px" }}>
+              <NavProgressChipMount onClick={() => navigate("/analytics")} />
             </div>
-          </>
+          ) : null
         }
+        themeControl={<ThemeToggle variant="rail" />}
       >
         {/* Single outlet: every route, including "/", renders here. The home
             route keeps the 16px inset its old front-face wrapper provided. */}

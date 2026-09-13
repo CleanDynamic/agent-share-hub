@@ -254,10 +254,17 @@
   font-family: 'Bodoni Moda', 'Didot', 'Times New Roman', Georgia, serif;
   font-size: 22px;
   font-weight: 500;
+  line-height: 28px;
   letter-spacing: -0.01em;
   color: var(--text);
-  padding: 0 8px;
-  margin-bottom: 28px;
+  /* 12px, not 8, and 24 below rather than 28. The padding is the nav row's
+     padding, so the wordmark's left edge lands on the icons' left edge — one
+     alignment edge down the whole rail rather than two 4px apart
+     (`better-layout`: pick alignment edges and stick to them). 24 is the scale
+     step that separates the wordmark from the nav; the rows are 4px apart
+     inside it, which is the ratio that makes the nav read as one group. */
+  padding: 0 12px;
+  margin-bottom: 24px;
   cursor: pointer;
 }
 
@@ -279,11 +286,15 @@
      wash, which are graphical marks floored at 3.0:1 and clear it in both
      themes — the same move the theme makes with amber, which is light and
      never type. ── */
+/* `flex: 1` is the flexible spacer task 7.3 asks for. It is on the list rather
+   than on a separate element because the list is already the thing between the
+   wordmark and the account block, and an empty div would be a second way of
+   saying the same thing. */
 .fs-nav-list {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   flex: 1;
   margin: 0;
   padding: 0;
@@ -291,18 +302,21 @@
 .fs-nav-divider {
   height: 1px;
   background: var(--line);
-  margin: 8px 4px;
+  margin: 8px 12px;
 }
+/* A fixed 40px row with 12px of inline padding, which is the same row the right
+   rail's Browse and Trending rows are — one row shape in both rails rather than
+   two that nearly match. */
 .fs-nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
+  height: 40px;
+  padding: 0 12px;
   border-radius: var(--r-control);
-  border-left: 2px solid transparent;
   cursor: pointer;
   color: var(--text2);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 /* BG-P18b. THE HOVER AND THE ROW'S GROUND SWAPPED PLACES, because the rail's
    ground did. BG-P13 reasoned that the rail was --recess so the hover had to be
@@ -319,9 +333,16 @@
    --recess, and --bg is the lighter of the two on Exhibition and the darker on
    Dusk — either way the same alpha of --action reads one step louder on it. The
    2px edge is what carries the state; the wash only has to say "this row". */
+/* THE 2px EDGE IS AN INSET SHADOW, NOT A BORDER, AND THAT IS WHAT KEEPS THE
+   PADDING AT 12. A `border-left` is part of the box: carried on every row as
+   `transparent` it pushed every icon to 14px from the row's edge, which is 2px
+   off the wordmark above them; carried only on the active row it would shove
+   that row's icon sideways on every navigation. An inset shadow draws inside
+   the 12px padding, costs no width, and moves nothing. Nothing animates it —
+   the row transitions `background` and `color` only. */
 .fs-nav-item.active {
   background: color-mix(in oklch, var(--action) 8%, transparent);
-  border-left-color: var(--action);
+  box-shadow: inset 2px 0 0 var(--action);
   color: var(--text);
 }
 .fs-nav-icon {
@@ -371,11 +392,16 @@
   flex-shrink: 0;
 }
 
-/* ── User block at the bottom of the left rail ── */
+/* ── The account block, pinned to the bottom of the left rail ──
+     BG-P18b. The `border-top` hairline that stood here is gone. The nav's
+     `flex: 1` already puts the whole height of the rail between this block and
+     the last nav row, and a line drawn across a gap that large is a separator
+     for a separation nobody could miss (`better-layout`: space groups first,
+     lines last and only where space cannot carry it). The padding is the rail's
+     12px inline rhythm, with nothing at the bottom — the rail's own 24px is the
+     bottom margin. */
 .fs-user-section {
-  padding: 12px 8px 4px;
-  border-top: 1px solid var(--line);
-  margin-top: 8px;
+  padding: 0;
   position: relative;
 }
 .fs-user-btn {
@@ -383,7 +409,8 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 8px;
+  height: 48px;
+  padding: 0 12px;
   border-radius: var(--r-control);
   cursor: pointer;
   transition: background 0.15s;
@@ -409,14 +436,34 @@
   overflow: hidden;
 }
 .fs-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+/* A two-line identity: the name in the UI face at the rail's own row size, the
+   handle in the data face under it. 14px was under the 15px floor every other
+   row in this rail sits at, and `--text2` on a name that identifies the reader
+   made the one personal thing in the frame its quietest. */
+.fs-user-id {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 .fs-user-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
+  line-height: 18px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fs-user-handle {
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+  font-size: 12px;
+  line-height: 16px;
   color: var(--text2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;
 }
 .fs-user-dots { color: var(--text2); font-size: 16px; }
 /* --recess, not --bg: this is a menu floating over a rail that is itself --bg
@@ -452,40 +499,58 @@
 }
 .fs-user-menu button:hover { background: var(--bg); }
 
-/* ── Signed-out: stacked auth buttons ── */
+/* ── Signed out: the two account buttons, full rail width ──
+     PRIMARY ABOVE SECONDARY. "Join free" was under "Sign in", which put the
+     rail's one primary action — the thing a signed-out rail is for — in second
+     place and read as an afterthought to a control most visitors cannot use
+     yet. Both are 40px, which is the height every control in this frame is, and
+     8px apart: one step, because they are one pair. */
 .fs-auth-btns {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px;
+  gap: 8px;
+  padding: 0;
 }
 .fs-auth-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 34px;
+  height: 40px;
   border-radius: var(--r-control);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, opacity 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
   border: none;
 }
-/* Secondary: glass with a --line border. Primary: --action fill with an
-   --on-action label. One primary action in the rail, and the gradient is gone —
-   the system has no gradients. */
+/* BG-P07's two treatments, spelled in this file's own vocabulary: primary is
+   --action with an --on-action label; secondary is --glass on a --line
+   hairline, lightening to --glass-hi with a --text2 edge on hover.
+
+   THE PRIMARY'S HOVER IS A COLOUR MIX AND NOT `opacity: 0.9`, which is what it
+   was. Opacity fades the LABEL with the fill and lets the rail show through a
+   button whose whole job is to be solid. It is also not the kit's
+   `filter: brightness(1.08)`: this stylesheet bans `filter` outright, and for a
+   good reason — a filter on a persistent surface is what made the old shell
+   slow. Mixing 12% of --text into --action moves the fill one step AWAY from
+   the ground in both themes, darker on Exhibition and lighter on Dusk, which is
+   also the direction that gains contrast against --on-action rather than losing
+   it. */
 .fs-auth-btn.signin {
-  background: var(--glass-2);
+  background: var(--glass);
   border: 1px solid var(--line);
   color: var(--text);
 }
-.fs-auth-btn.signin:hover { background: var(--bg); }
+.fs-auth-btn.signin:hover {
+  background: var(--glass-hi);
+  border-color: var(--text2);
+}
 .fs-auth-btn.join {
   background: var(--action);
   color: var(--on-action);
 }
-.fs-auth-btn.join:hover { opacity: 0.9; }
+.fs-auth-btn.join:hover { background: color-mix(in oklch, var(--action) 88%, var(--text)); }
 
 /* ── Tablet 768–1023px: hide right rail, centre may grow ── */
 @media (min-width: 768px) and (max-width: 1023px) {

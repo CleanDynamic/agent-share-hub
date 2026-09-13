@@ -38,15 +38,21 @@ const RAIL = "src/components/shell/right-rail-explore.css";
 
 const DEFINITIONS: Record<string, string[]> = {
   [SHARED]: ["ns-back-btn", "ns-section-label", "ns-engagement-bar", "ns-comment-drawer"],
+  /* BG-P18b removed sixteen names from this list, and removed their rules from
+     the stylesheet in the same commit. This list is "where every class a LIVE
+     FILE WEARS is defined", so a class no live file wears any more does not
+     belong in it — keeping the name here would assert that a dead rule must
+     stay, which is the opposite of what the test is for. What went, and why, is
+     written at the top of the rail's stylesheet: the "EXPLORE" eyebrow, the
+     three Browse tiles, the Browse/Trending divider, the seven trending-row
+     classes, the second spelling of the section heading, the duplicated auth
+     pair, and the footer's container. */
   [RAIL]: [
-    "ns-auth-btn", "ns-auth-btns", "ns-collection-item", "ns-curator-avatar",
-    "ns-curator-item", "ns-follow-avatar", "ns-follow-handle", "ns-follow-info",
-    "ns-follow-item", "ns-follow-name", "ns-footer-link", "ns-footer-links",
-    "ns-right-divider", "ns-right-search", "ns-right-search-results",
-    "ns-right-title", "ns-search-result", "ns-search-result-badge",
-    "ns-search-result-title", "ns-section-title", "ns-tile", "ns-tile-grid",
-    "ns-tile-label", "ns-trending-badge", "ns-trending-info", "ns-trending-item",
-    "ns-trending-list", "ns-trending-name", "ns-trending-rank", "ns-trending-title",
+    "ns-collection-item", "ns-curator-avatar", "ns-curator-item",
+    "ns-follow-avatar", "ns-follow-handle", "ns-follow-info", "ns-follow-item",
+    "ns-follow-name", "ns-footer-link", "ns-right-search",
+    "ns-right-search-results", "ns-search-result", "ns-search-result-badge",
+    "ns-search-result-title",
   ],
   "src/index.css": ["ns-badge"],
   /* These three never left their consumer, so the rule and the markup that
