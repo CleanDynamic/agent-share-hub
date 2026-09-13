@@ -31,42 +31,75 @@
   color: var(--text);
 }
 
+/* BG-P18b. THE 24px PADDING AND THE 24px GAP ARE BOTH 0 IN STANDARD MODE, and
+   that is the arithmetic that lets the three columns read as one surface. The
+   padding held the rails 24px clear of the viewport's top and bottom, so a
+   full-height rail could not be full-height and the centre's hairlines stopped
+   short of the fold; the gap left ~30px of ground between three filled panels,
+   which is what made the chrome the figure and the feed the ground.
+
+   240 + 632 + 300 = 1172 into a 1200 frame. The remaining 28 is absorbed by
+   `justify-content: center`, which is what `margin: 0 auto` on the frame does
+   for the frame itself. The old numbers overflowed: 240 + 24 + 600 + 24 + 300
+   is 1188 against a 1152 content box, which centred the row 18px past each
+   edge and — at 1024, where all three columns still show — pushed the left rail
+   to x = -82.
+
+   WIDE MODE KEEPS BOTH, restored under `.fs-wide` in the BG-P14 section below.
+   A wide page is a grid inside a panel-less frame and wants the inset; this
+   prompt remodels the standard frame only. */
 .fs-frame {
   display: flex;
   justify-content: center;
-  gap: 24px;
+  gap: 0;
   width: 100%;
   max-width: 1200px;
   height: 100dvh;
-  padding: 24px;
+  padding: 0;
   background: transparent;
   box-sizing: border-box;
 }
 
-/* ── The two rails ──
-     BG-P13. These carried `backdrop-filter: blur(28px) saturate(160%)` and no
-     longer do. Both are full-height fixed panels — `height: 100%` inside a
-     100dvh frame, visible on every route — and the theme's glass rule says
-     plainly that a full-height fixed panel is never blurred. It is the one
-     surface shape where the browser must re-sample and re-blur the entire
-     backdrop on every scroll frame of the centre column, for an effect nobody
-     sees: a rail is opaque chrome, and there is nothing behind it to read.
+/* ── The two rails: the room, not the furniture ──
+     BG-P13 took the blur off these — both are full-height fixed panels, and the
+     theme's glass rule never blurs one. That still holds and there is still no
+     `backdrop-filter` in this file.
 
-     What replaces it is what the spec names: --recess plus a --line hairline.
-     Depth comes from the recess colour and the hairline, which is how this
-     system draws depth everywhere else. ── */
+     BG-P18b TAKES THE PANEL OFF THEM TOO. They were --recess under a --line
+     border at --r-panel: two filled, rounded, floating boxes with ~30px of
+     ground showing between them and the feed. That reads as three objects on a
+     page, with the chrome bounded and the content unbounded — the figure/ground
+     relation exactly inverted for a reading surface, where the column of cards
+     is the work and the rails are the room it hangs in (`law-of-figure-ground`:
+     figure is bounded, higher contrast, smaller in area; ground is unbounded
+     and uniform). A rail's grouping does not need the container: the nav's rows
+     sit 4px apart and 24px from anything else, which is proximity doing the job
+     common region was doing at the cost of a whole panel (`law-of-proximity`,
+     and `law-of-common-region`'s own advice to use the weakest container that
+     works — here, none).
+
+     So the rails are flat `--bg`, they carry no hairline of their own (the two
+     that remain are on the centre column, so the centre reads as the stage and
+     the rails as the room), and they are sticky at the top of the viewport at
+     full height. `overscroll-behavior: contain` stops a rail that HAS
+     overflowed from handing its scroll on to the page when it bottoms out; on
+     `/` neither rail overflows and neither scrolls. ── */
 .fs-rail {
-  background: var(--recess);
-  border: 0.5px solid var(--line);
-  border-radius: var(--r-panel);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overscroll-behavior: contain;
   flex-shrink: 0;
   box-sizing: border-box;
-  height: 100%;
 }
 
 .fs-left {
   width: 240px;
-  padding: 24px 16px;
+  padding: 24px 16px 24px 16px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -75,27 +108,58 @@
 }
 .fs-left::-webkit-scrollbar { display: none; }
 
+/* The right rail's inline padding is asymmetric on purpose: 24px from the
+   centre column's hairline, 0 at the frame's outer edge, so the rail's content
+   is 276px wide and its rows end where the frame does rather than floating in
+   a second margin. `position` is NOT restated here — `.fs-rail` above makes it
+   sticky, which is also a positioned element, so the search dropdown's
+   `position: absolute` still resolves against this rail as it did when this
+   said `relative`. */
 .fs-right {
   width: 300px;
-  padding: 20px 14px;
+  padding: 16px 0 24px 24px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: none;
-  position: relative;
 }
 .fs-right::-webkit-scrollbar { display: none; }
 
-/* ── Centre column: transparent, no blur, its own scroll region ── */
+/* ── Centre column: the stage ──
+     632 = 16 + 600 + 16, `box-sizing: border-box`, so a card renders at exactly
+     the 600px the card brief was designed to. It was 600 with a 16px inset
+     applied by the home wrapper on top, which made the column 568 — the cards
+     were 32px narrower than the one measurement the card is specified at.
+
+     THE TWO HAIRLINES ARE THE ONLY SEPARATION between the three columns, and
+     they are on this element rather than on the rails so that what is bounded
+     is the stage. `min-height: 100dvh` alongside `height: 100%` is belt and
+     braces: the column is a 100dvh-tall flex child today, and the min-height is
+     what keeps the hairlines running to the fold if the frame ever stops being
+     a fixed-height box.
+
+     `flex-shrink` IS NO LONGER 0. At 1024–1171 all three columns show and 1172
+     does not fit; with the centre pinned, the row overflowed and
+     `justify-content: center` pushed the left rail off the left edge (measured
+     at x = -82 before this change). Shrinking the reading measure is a
+     degradation; losing the nav is a bug. Above 1172 of frame nothing shrinks
+     and the column is exactly 632. ── */
 .fs-centre {
-  width: 600px;
-  flex-shrink: 0;
+  width: 632px;
+  flex: 0 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  min-height: 100dvh;
   height: 100%;
+  padding: 0 16px;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
   background: transparent;
+  box-sizing: border-box;
 }
 
 .fs-page-body {
@@ -157,11 +221,19 @@
   margin-right: 0 !important;
 }
 
-/* ── Home feed wrapper — reproduces the old front face's .ns-feed-scroll
-     16px inset so the feed renders exactly as before. Applied by AppShell
-     on the "/" route only; other routes had no inset. ── */
+/* ── Home feed wrapper ──
+     BG-P18b. This carried the old front face's 16px inset on all four sides.
+     The inline half is now the centre column's own `padding: 0 16px`, which is
+     what makes the column 632 and the cards 600; keeping both would inset the
+     feed twice and put the cards back at 568. The block half went with it: the
+     tab bar is sticky at `top: 0` and has to start at the column's top edge,
+     and the column's bottom inset is the feed list's own 64px.
+
+     The class is kept rather than removed from AppShell: it is the route-scoped
+     hook for anything the home column needs that other routes do not, and
+     `.fs-page-body > *` still stretches it. ── */
 .fs-home-pad {
-  padding: 16px;
+  padding: 0;
 }
 
 /* ── Wordmark ──
@@ -224,19 +296,23 @@
   color: var(--text2);
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-/* The rail's ground is --recess, so the hover cannot also be --recess: it is
-   --bg, the room the rail sits in. That token is the one step from --recess
-   that moves the RIGHT WAY in both themes — lighter on Exhibition, darker on
-   Dusk — so a hovered row separates from the rail and every label on it gains
-   contrast rather than losing it. A neutral wash mixed from --text did the
-   first job and not the second: it took --text2 to 4.00:1 on Exhibition, under
-   the floor, where --bg takes it to 5.26:1. */
+/* BG-P18b. THE HOVER AND THE ROW'S GROUND SWAPPED PLACES, because the rail's
+   ground did. BG-P13 reasoned that the rail was --recess so the hover had to be
+   --bg; the rail is now --bg, so the hover is --recess. The argument is the same
+   one and it still holds in both directions: --recess is the one step from --bg
+   that moves the right way in both themes, and --text2 measures 4.55:1 on it in
+   Exhibition and 5.73:1 in Dusk — above the text floor, where the pair it
+   replaces would now be --bg on --bg and no step at all. */
 .fs-nav-item:hover {
-  background: var(--bg);
+  background: var(--recess);
   color: var(--text);
 }
+/* 8% rather than 12%. The wash is read against --bg now rather than against
+   --recess, and --bg is the lighter of the two on Exhibition and the darker on
+   Dusk — either way the same alpha of --action reads one step louder on it. The
+   2px edge is what carries the state; the wash only has to say "this row". */
 .fs-nav-item.active {
-  background: color-mix(in oklch, var(--action) 12%, transparent);
+  background: color-mix(in oklch, var(--action) 8%, transparent);
   border-left-color: var(--action);
   color: var(--text);
 }
@@ -309,7 +385,7 @@
   color: inherit;
   font-family: inherit;
 }
-.fs-user-btn:hover { background: var(--bg); }
+.fs-user-btn:hover { background: var(--recess); }
 .fs-user-avatar {
   width: 32px;
   height: 32px;
@@ -335,12 +411,16 @@
   flex: 1;
 }
 .fs-user-dots { color: var(--text2); font-size: 16px; }
+/* --recess, not --bg: this is a menu floating over a rail that is itself --bg
+   now, and a raised surface has to be a step off the ground it floats on. The
+   --line border and --elev-raised stay; together they are the theme's own
+   "raised" and they are the whole of the depth here. */
 .fs-user-menu {
   position: absolute;
   bottom: 56px;
   left: 8px;
   right: 8px;
-  background: var(--bg);
+  background: var(--recess);
   border: 1px solid var(--line);
   border-radius: var(--r-panel);
   padding: 4px;
@@ -362,7 +442,7 @@
   font-family: inherit;
   transition: background 0.15s;
 }
-.fs-user-menu button:hover { background: var(--recess); }
+.fs-user-menu button:hover { background: var(--bg); }
 
 /* ── Signed-out: stacked auth buttons ── */
 .fs-auth-btns {
@@ -420,10 +500,18 @@
     max-width: none;
     gap: 0;
   }
+  /* The hairlines go with the rails. They are the two edges of a stage between
+     two rails, and on a phone there are no rails — a hairline flush against
+     each side of the viewport is chrome drawing attention to the fold rather
+     than to the work. The 16px inline padding STAYS: it is the layout margin
+     the feed used to get from `.fs-home-pad`, and a card touching the screen
+     edge is the thing that inset exists to prevent. */
   .fs-centre {
     width: 100%;
     max-width: none;
     flex: 1 1 auto;
+    border-left-width: 0;
+    border-right-width: 0;
   }
   .fs-page-body {
     padding-top: calc(56px + env(safe-area-inset-top));
@@ -467,14 +555,26 @@
      actually shrink — without it a grid child wider than its track floors the
      column at that child's width and pushes the rail off the frame. ── */
 @media (min-width: 768px) {
+  /* BG-P18b restored the frame's 24px padding and gap here, and zeroed the
+     centre's new inline padding and its two hairlines. Every declaration added
+     to this block exists to leave wide mode rendering EXACTLY as it did: the
+     standard frame lost those four measurements when its three columns became
+     one surface, and a wide page — a grid in a frame with no reading column and
+     often no right rail — is the layout they were for. Nothing here is a new
+     capability, and nothing here is a colour: `border-*-width: 0` names none. */
   .fs-wide .fs-frame {
     max-width: 1600px;
+    padding: 24px;
+    gap: 24px;
   }
   .fs-wide .fs-centre {
     width: auto;
     max-width: none;
     flex: 1 1 0%;
     min-width: 0;
+    padding: 0;
+    border-left-width: 0;
+    border-right-width: 0;
   }
 }
 

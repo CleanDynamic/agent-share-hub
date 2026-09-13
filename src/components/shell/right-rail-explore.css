@@ -7,12 +7,15 @@
 
    BG-P13. The colours are no longer verbatim: every one is a var(--token),
    so the rail follows <html data-theme> with the rest of the frame. Section
-   headings take the mono eyebrow role in --text2, rows take --r-control and a
-   --bg hover, chips take --r-chip, and the search field takes the BG-P07 field
-   paint. A row hovers to --bg rather than to --recess because --recess is the
-   rail's own ground; --bg is the one step from it that moves the right way in
-   both themes, so every label on a hovered row gains contrast. Declarations were repointed in place — no rule was added or
-   removed, and no measurement moved.
+   headings take the mono eyebrow role in --text2, rows take --r-control, chips
+   take --r-chip, and the search field takes the BG-P07 field paint.
+
+   BG-P18b. EVERY HOVER FLIPPED FROM --bg TO --recess, and it is the same
+   argument BG-P13 made, run again after the ground moved. That note said a row
+   hovers to --bg because --recess is the rail's own ground; the rail is now
+   --bg — it lost its panel when the three columns became one surface — so
+   --recess is the step that separates a hovered row from it, in both themes.
+   --bg on --bg would be no hover at all.
 ──────────────────────────────────────────────── */
 
 .ns-right-title {
@@ -54,7 +57,7 @@
 .ns-right-search input::placeholder { color: var(--text2); }
 .ns-right-search-results {
   position: absolute; left: 14px; right: 14px; top: 68px;
-  background: var(--bg); border: 1px solid var(--line);
+  background: var(--recess); border: 1px solid var(--line);
   border-radius: var(--r-panel); max-height: 300px; overflow-y: auto; z-index: 20;
   padding: 6px;
   box-shadow: var(--elev-raised);
@@ -64,7 +67,7 @@
   padding: 6px 8px; border-radius: var(--r-control); cursor: pointer;
   transition: background 0.15s;
 }
-.ns-search-result:hover { background: var(--recess); }
+.ns-search-result:hover { background: var(--bg); }
 .ns-search-result-title { font-size: 11px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .ns-search-result-badge { font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace; font-size: 9px; padding: 1px 5px; border-radius: var(--r-chip); background: var(--recess); color: var(--text2); flex-shrink: 0; }
 
@@ -129,7 +132,7 @@
 }
 
 .ns-tile:hover {
-  background: var(--bg);
+  background: var(--recess);
 }
 
 .ns-tile:hover::after {
@@ -185,7 +188,7 @@
   padding: 8px 8px; border-radius: var(--r-control);
   cursor: pointer; transition: background 0.2s;
 }
-.ns-trending-item:hover { background: var(--bg); }
+.ns-trending-item:hover { background: var(--recess); }
 .ns-trending-rank { font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace; font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text2); width: 16px; text-align: center; }
 .ns-trending-info { flex: 1; min-width: 0; }
 .ns-trending-name { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -210,7 +213,7 @@
   padding: 6px 8px; border-radius: var(--r-control);
   cursor: pointer; transition: background 0.15s;
 }
-.ns-curator-item:hover { background: var(--bg); }
+.ns-curator-item:hover { background: var(--recess); }
 .ns-curator-avatar {
   width: 22px; height: 22px; border-radius: 50%;
   background: var(--recess); flex-shrink: 0;
@@ -222,7 +225,7 @@
   padding: 8px; border-radius: var(--r-control);
   cursor: pointer; transition: background 0.15s;
 }
-.ns-collection-item:hover { background: var(--bg); }
+.ns-collection-item:hover { background: var(--recess); }
 .ns-follow-item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 4px;
@@ -268,8 +271,8 @@
   background: var(--glass-2); border: 1px solid var(--line);
   color: var(--text2);
 }
-.ns-auth-btn.signin:hover { background: var(--bg); color: var(--text); }
+.ns-auth-btn.signin:hover { background: var(--recess); color: var(--text); }
 .ns-auth-btn.join {
   background: var(--glass-2); border: 1px solid var(--line); color: var(--text);
 }
-.ns-auth-btn.join:hover { background: var(--bg); }
+.ns-auth-btn.join:hover { background: var(--recess); }
