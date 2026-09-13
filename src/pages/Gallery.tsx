@@ -37,7 +37,7 @@
 // Still lazy-loaded, and it still adds no navigation entry anywhere: reachable
 // directly and from the publish confirmation.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -68,6 +68,7 @@ import {
   panelGlass,
 } from "@/components/build/tokens";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { prefersReducedMotion } from "@/lib/theme/controls";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 
@@ -431,28 +432,182 @@ function Results({
           ? `${builds.length} shown`
           : `${total} build${total === 1 ? "" : "s"}`}
       </p>
-      <div
-        data-visual-slot="gallery-grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(272px, 1fr))",
-          gap: 14,
-          alignItems: "start",
-        }}
-      >
-        {/* The credit is the CARD's now (BG-P11). It reads the two frozen
-            snapshot columns off the record it was handed — they ride in on
-            GALLERY_BUILD_COLUMNS like everything else the card shows — so the
-            grid neither composes it nor can decline to pass it. */}
-        {builds.map((build) => (
-          <GalleryCard
-            key={build.id}
-            build={build}
-            srcByPath={srcByPath}
-          />
-        ))}
-      </div>
+      <GalleryGrid builds={builds} srcByPath={srcByPath} />
     </>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   The grid
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * THE GRID IS UNIFORM, AND THAT IS A DECISION RATHER THAN AN OVERSIGHT.
+ *
+ * Every card here renders with `layout="grid"` — the card's default — so every
+ * media block keeps its fixed slot and every card in a row is the same height.
+ * The card CAN do the other thing: `layout="feed"` lets a picture keep its own
+ * shape, and the home feed passes it, which is where natural picture shapes
+ * earn their keep because a feed is a single column read top to bottom.
+ *
+ * A wall of ragged cards is not a gallery. In a three-column grid, unequal
+ * heights break the horizontal line the eye uses to compare one build with the
+ * next, and comparison is the entire reason this page exists rather than a
+ * second feed. So:
+ *
+ *   - do not pass `layout="feed"` on this page;
+ *   - do not introduce masonry, and do not install a masonry library;
+ *   - if a later prompt asks for "more interesting shapes here", this comment
+ *     is the answer it is looking for.
+ *
+ * THE COLUMNS ARE `.fs-grid`, WHICH IS BG-P14'S AND NOT THIS PAGE'S. The page
+ * used to carry its own `repeat(auto-fill, minmax(272px, 1fr))` at a 14px
+ * gutter, written before the wide frame existed. Three things were wrong with
+ * keeping it: 272 is below the 320px floor a build card needs before its title
+ * wraps to three lines; 14 is not on the spacing scale, and at 14 the gap to
+ * the neighbour is SMALLER than the card's own padding, which is the one rule
+ * `space.ts` states as an assertion — past it the eye groups across the gap and
+ * a row of cards reads as one band rather than as separate objects; and nothing
+ * in the inline rule said what to do on a phone, so a 700px screen got two
+ * columns.
+ *
+ * `.fs-grid` is the frame's own: auto-filled 320px columns, gutters `md` (24)
+ * below 1280 and `lg` (40) above, one column below 768, `align-items: start`.
+ * Three across at 1400, two at 1100, one at 700. It is an existing class rather
+ * than a new one — /dev/wide has rendered the same grid since BG-P14 — so
+ * nothing here is a class added for styling.
+ */
+function GalleryGrid({
+  builds,
+  srcByPath,
+}: {
+  builds: GalleryBuild[];
+  srcByPath: ReturnType<typeof useSignedMedia>;
+}) {
+  /**
+   * Whether this render is the grid's first.
+   *
+   * The stagger is a LIST ENTRANCE, which the theme allows on this page, and
+   * not scroll storytelling, which it does not. So it runs once, on the first
+   * cards the grid ever puts up, and never again: a filter change swaps the
+   * grid's contents four times in ten seconds, and re-animating on each of them
+   * would be movement as decoration.
+   */
+  const firstPaint = useRef(true);
+  useEffect(() => {
+    firstPaint.current = false;
+  }, []);
+
+  /* Reduced motion is answered by never entering the hidden state at all — the
+     end state is identical, it simply arrives at once — and so is a runtime
+     without IntersectionObserver, where a card that started at opacity 0 would
+     have nothing to bring it back. */
+  const canReveal =
+    !prefersReducedMotion() && typeof IntersectionObserver !== "undefined";
+
+  return (
+    <div className="fs-grid" data-visual-slot="gallery-grid" data-testid="gallery-grid">
+      {builds.map((build, index) => (
+        <Reveal key={build.id} index={index} animate={canReveal && firstPaint.current}>
+          {/* The credit is the CARD's (BG-P11). It reads the two frozen
+              snapshot columns off the record it was handed — they ride in on
+              GALLERY_BUILD_COLUMNS like everything else the card shows — so the
+              grid neither composes it nor can decline to pass it. */}
+          <GalleryCard build={build} srcByPath={srcByPath} />
+        </Reveal>
+      ))}
+    </div>
+  );
+}
+
+/* ── The stagger ──────────────────────────────────────────────────────────── */
+
+/** The theme's scroll-entry figures, and the only two it gives. */
+const REVEAL_MS = 450;
+const REVEAL_SHIFT = 14;
+
+/** Between one card and the next. */
+const REVEAL_STEP = 50;
+
+/**
+ * How many cards take a step before the stagger flattens.
+ *
+ * Eight, so the ripple runs across the first screen — three columns, three
+ * rows — and tops out at 400ms. Without a cap, card twenty-four would wait a
+ * second and a fifth after it had already scrolled into view, which is a page
+ * withholding its content rather than presenting it.
+ */
+const REVEAL_MAX_STEPS = 8;
+
+/** Never `ease-in` on an entrance: it reads as the page hesitating. */
+const REVEAL_EASING = "cubic-bezier(.2,.6,.35,1)";
+
+/**
+ * One grid cell, revealed once when it first comes near the viewport.
+ *
+ * `transform` and `opacity` only, which are the two properties that composite;
+ * the observer disconnects on the first intersection, so nothing here is still
+ * watching once the page has settled.
+ *
+ * AFTER THE REVEAL THE TRANSFORM IS `none` RATHER THAN `translateY(0)`. A
+ * lingering transform makes the cell a containing block, and the card inside it
+ * carries a `backdrop-filter` — which would then sample the cell rather than
+ * the page, and quietly change what the glass is made of. `none` interpolates
+ * from a translate exactly as `translateY(0)` does and leaves nothing behind.
+ */
+function Reveal({
+  index,
+  animate,
+  children,
+}: {
+  index: number;
+  animate: boolean;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [shown, setShown] = useState(!animate);
+
+  useEffect(() => {
+    if (!animate) return;
+    const element = ref.current;
+    if (!element || typeof IntersectionObserver === "undefined") {
+      setShown(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setShown(true);
+        observer.disconnect();
+      }
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [animate]);
+
+  const delay = Math.min(index, REVEAL_MAX_STEPS) * REVEAL_STEP;
+
+  return (
+    <div
+      ref={ref}
+      data-visual-slot="gallery-grid-cell"
+      data-revealed={!animate || shown ? "" : undefined}
+      style={
+        animate
+          ? shown
+            ? {
+                opacity: 1,
+                transform: "none",
+                transition:
+                  `opacity ${REVEAL_MS}ms ${REVEAL_EASING} ${delay}ms, ` +
+                  `transform ${REVEAL_MS}ms ${REVEAL_EASING} ${delay}ms`,
+              }
+            : { opacity: 0, transform: `translateY(${REVEAL_SHIFT}px)` }
+          : undefined
+      }
+    >
+      {children}
+    </div>
   );
 }
 

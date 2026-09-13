@@ -38,6 +38,87 @@ vi.mock("@/lib/build", async (importOriginal) => {
  */
 const createSignedUrl = vi.fn();
 
+/**
+ * A LIVE `matchMedia`, replacing the flat `matches: false` in the shared setup.
+ *
+ * TWO THINGS MAKE THIS FIDDLIER THAN IT LOOKS, and both are properties of
+ * `controls.ts` rather than of this test.
+ *
+ * It caches ONE MediaQueryList per query for the whole application, so
+ * reassigning `window.matchMedia` between tests would be ignored the moment any
+ * earlier render had already asked the same question. The object below answers
+ * from a GETTER, so the cached list stays correct however many times the flag
+ * moves.
+ *
+ * And the cache is filled at IMPORT time, not at render time: `tabsListStyle`
+ * is a module-level const whose `transition` calls `uiTransition()`, which asks
+ * about reduced motion while the module is still being evaluated. ES imports
+ * are hoisted above every statement in this file, so a plain top-level
+ * assignment here would land after `controls.ts` had already cached the setup's
+ * inert object. `vi.hoisted` is what runs first.
+ */
+const motion = vi.hoisted(() => {
+  const state = { reduced: false };
+  Object.defineProperty(globalThis.window, "matchMedia", {
+    writable: true,
+    value: (query: string) => ({
+      get matches() {
+        return query.includes("prefers-reduced-motion") ? state.reduced : false;
+      },
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+  return state;
+});
+
+/**
+ * IntersectionObserver, which jsdom does not ship.
+ *
+ * HELD RATHER THAN AUTO-FIRING, so a test can assert the hidden state of the
+ * grid BEFORE the reveal and the shown state after. Without that gap there is
+ * no way to tell a stagger that ran from cards that were simply never hidden,
+ * which is exactly the difference the reduced-motion claim turns on.
+ */
+class ObserverStub implements IntersectionObserver {
+  static instances: ObserverStub[] = [];
+  readonly root = null;
+  readonly rootMargin = "";
+  readonly thresholds: readonly number[] = [];
+  readonly observed: Element[] = [];
+  disconnected = false;
+
+  constructor(private readonly callback: IntersectionObserverCallback) {
+    ObserverStub.instances.push(this);
+  }
+
+  observe(element: Element) {
+    this.observed.push(element);
+  }
+  unobserve() {}
+  disconnect() {
+    this.disconnected = true;
+  }
+  takeRecords(): IntersectionObserverEntry[] {
+    return [];
+  }
+
+  /** Report everything this instance watches as on screen. */
+  reveal() {
+    this.callback(
+      this.observed.map(
+        (target) => ({ target, isIntersecting: true }) as IntersectionObserverEntry,
+      ),
+      this,
+    );
+  }
+}
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     storage: { from: () => ({ createSignedUrl }) },
@@ -111,6 +192,10 @@ describe("the gallery page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setViewport(1024);
+    motion.reduced = false;
+    ObserverStub.instances = [];
+    (window as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
+      ObserverStub;
     createSignedUrl.mockImplementation(async (path: string) => ({
       data: { signedUrl: `https://signed.test/${path}` },
       error: null,
@@ -432,6 +517,69 @@ describe("the gallery page", () => {
     await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(2));
     expect(listGallery.mock.calls[1][0]).toMatchObject({ madeFor: ["lawyer"] });
     expect(getGalleryFacets).toHaveBeenCalledTimes(1);
+  });
+
+  // BG-P19 ACCEPTANCE 3
+  it("staggers the grid in once, and never again", async () => {
+    listGallery.mockResolvedValue({
+      builds: [build({ id: "a", slug: "a" }), build({ id: "b", slug: "b" })],
+      total: 2,
+    });
+
+    renderGallery();
+    await screen.findByTestId("gallery-grid");
+
+    const cells = () =>
+      Array.from(document.querySelectorAll('[data-visual-slot="gallery-grid-cell"]'));
+
+    // Hidden and shifted until the observer says they are on screen, and the
+    // second card carries a longer delay than the first — which is the stagger.
+    expect(cells()).toHaveLength(2);
+    for (const cell of cells()) {
+      expect(cell).toHaveStyle({ opacity: "0" });
+      expect(cell).not.toHaveAttribute("data-revealed");
+    }
+
+    for (const observer of ObserverStub.instances) observer.reveal();
+    await waitFor(() => expect(cells()[0]).toHaveAttribute("data-revealed"));
+
+    for (const cell of cells()) {
+      expect(cell).toHaveStyle({ opacity: "1", transform: "none" });
+    }
+    // The theme's two figures, and the per-card step.
+    expect(cells()[0].getAttribute("style")).toContain("450ms");
+    expect(cells()[0].getAttribute("style")).toContain("0ms");
+    expect(cells()[1].getAttribute("style")).toContain("50ms");
+    // Once: every observer is torn down on the first intersection.
+    expect(ObserverStub.instances.every((o) => o.disconnected)).toBe(true);
+
+    // A filter change is not a first paint. The replacement cards arrive
+    // already visible rather than fading in for a second time.
+    listGallery.mockResolvedValue({
+      builds: [build({ id: "c", slug: "c", title: "After the filter" })],
+      total: 1,
+    });
+    const before = ObserverStub.instances.length;
+    fireEvent.click(screen.getByTestId("facet-made-for-lawyer"));
+    await screen.findByText("After the filter");
+
+    expect(ObserverStub.instances).toHaveLength(before);
+    expect(cells()[0]).toHaveAttribute("data-revealed");
+    expect(cells()[0].getAttribute("style")).toBeNull();
+  });
+
+  // BG-P19 ACCEPTANCE 3
+  it("does not stagger at all under prefers-reduced-motion", async () => {
+    motion.reduced = true;
+    renderGallery();
+    await screen.findByTestId("gallery-grid");
+
+    const cell = document.querySelector('[data-visual-slot="gallery-grid-cell"]');
+    // Not "animated to visible instantly" — never hidden, never observed, and
+    // carrying no inline style at all. The card is simply there.
+    expect(cell).toHaveAttribute("data-revealed");
+    expect(cell?.getAttribute("style")).toBeNull();
+    expect(ObserverStub.instances).toHaveLength(0);
   });
 
   it("surfaces a failed load instead of an empty grid", async () => {
