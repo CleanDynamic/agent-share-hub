@@ -340,7 +340,14 @@ function EditableContext({
       style={{
         ...fieldStyle(state),
         ...labelType,
-        fontSize: 15,
+        /* BG-P23 — THE TITLE OUTRANKS BODY, because it is the one thing on the
+           screen that names the work. 18 against a 16–17 body is one clear step
+           up rather than the half-step 17 would be, and 600 weight clears the
+           scale's floor for anything under 18. The height below is unchanged, so
+           the bar is still WORKSPACE_BAR_HEIGHT — measured by the tier-3 spec at
+           every width, which is what stops a type change from resizing the
+           chrome the tray, tree and inspector share their pixels with. */
+        fontSize: 18,
         fontWeight: 600,
         fontFamily: "inherit",
         flex: 1,
