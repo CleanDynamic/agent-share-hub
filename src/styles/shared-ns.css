@@ -12,7 +12,7 @@
 
    BG-P17 RETIRED NeoScaleShell, AND FOUND NOTHING LEFT TO EXTRACT. The audit
    that prompt ran resolved every .ns-* class referenced by a live file to a
-   definition outside the shell: the four below, the Explore rail's fifty-two in
+   definition outside the shell: the four below, the Explore rail's thirty-one in
    src/components/shell/right-rail-explore.css, .ns-badge in src/index.css, and
    .ns-collections-grid, .ns-detail-grid and .ns-comment-new-reply in <style>
    blocks inside their own consumers. Three more — .ns-btn-primary,

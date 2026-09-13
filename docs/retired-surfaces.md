@@ -1622,3 +1622,118 @@ environment could give.
 - **`npm run lint` exits 1** on a large pre-existing baseline, untouched here.
 
 *End of the NS-P27–NS-P56 series.*
+
+---
+
+# BG-P17 — NeoScaleShell, deleted
+
+**Deleted** BG-P17, 13 Sep 2026. `src/components/NeoScaleShell.tsx`, 2,096
+lines.
+
+**This is the first entry on this page that is a deletion and not a freeze.**
+Everything above is frozen: the code is still in the repository, the rows are
+still in Postgres, and the affordance is gone from the UI. This is not that.
+The file is gone from the tree and the only way back is `git revert`. It earns
+the exception by being unreachable: no module imported it, so no route rendered
+it, so nothing it contained ever reached a browser.
+
+**Replaced by** `FlatShell` (`src/components/shell/FlatShell.tsx`) with
+`AppShell` as its wired container — the swap itself happened earlier in the
+series; BG-P17 only removed what the swap left behind.
+
+## What went with it
+
+- The 3D card-flip: `.ns-middle-flipper`, `.ns-middle-front`, `.ns-middle-back`,
+  `.ns-middle-face`, `perspective: 1400`, `transformStyle: preserve-3d`.
+- The hardcoded 600×775 centre column, and the `.ns-scale-wrapper` that scaled
+  the whole frame to fit it.
+- 73 `.ns-*` selectors in an injected `<style>` block that never mounted,
+  because the component was never rendered.
+- Four `LiquidGlassPanel` usages.
+
+## What was not there to remove
+
+Both of the other removals this prompt scheduled had already happened.
+
+- **`src/components/LiquidGlassPanel.tsx` does not exist.** The shell's line 47
+  imported `./LiquidGlassPanel`. That file was deleted earlier without the
+  import being cleaned up — which is proof of how dead the shell was, since a
+  single importer would have failed the build on the spot.
+- **`liquid-glass-react` is in neither `package.json` nor `package-lock.json`.**
+  The install that broke the CSS stacking context on fixed-position elements —
+  the incident behind automatic-fail rule 4 in the code-review skill — was
+  reverted long before this prompt. Nothing to drop, and no weight to name.
+
+## The extracted rules, and where they went
+
+The prompt expected this deletion to be blocked until the `.ns-*` rules live
+files depend on were moved out of the shell. The audit found that work already
+done, by BG-P13 and the prompts around it. Nothing was moved here, and no
+declaration was edited.
+
+| Class(es) | Defined in | Repainted? |
+|---|---|---|
+| `.ns-back-btn`, `.ns-section-label`, `.ns-engagement-bar`, `.ns-comment-drawer` | `src/styles/shared-ns.css`, imported in `src/main.tsx` | **No — still on old colours** |
+| The Explore rail's 31 classes, in 52 rules (`.ns-tile`, `.ns-trending-*`, `.ns-follow-*`, `.ns-right-search`, …) | `src/components/shell/right-rail-explore.css`, imported by the component | Yes, BG-P13 |
+| `.ns-badge` | `src/index.css` | Yes, BG-P07 (radius); carries no colour |
+| `.ns-collections-grid`, `.ns-detail-grid`, `.ns-comment-new-reply` | `<style>` blocks in their own consumers | n/a — layout only |
+| `.ns-shimmer`, `.ns-deep-link-pulse` | `@keyframes` in their own consumers | n/a |
+| `.ns-btn-primary`, `.ns-btn-silver`, `.ns-right-cat` | **nowhere** | n/a — inert before the deletion and after it |
+
+`.ns-resize` is not in this table and is not a class: it is the `ns-resize`
+cursor keyword, north–south. A grep for `ns-` that does not anchor the token
+finds it, along with `columns-`, `icons-` and `translations-`, which is why the
+first pass of this audit counted 160 dependent files instead of 15.
+
+The map is asserted in `src/lib/theme/ns-classes.test.ts`, including that both
+stylesheets are still imported — a stylesheet nobody imports is a stylesheet
+that was deleted, and nothing throws when a class stops resolving.
+
+## Bundle delta: zero
+
+Not "small". Zero, and measured rather than assumed:
+
+| | Before | After |
+|---|---|---|
+| `dist/assets` total | 4,386,893 B | 4,386,893 B |
+| Main chunk | 3,399,154 B | 3,399,154 B |
+| Main chunk, gzipped | 922,786 B | 922,786 B |
+| CSS | 143,946 B | 143,946 B |
+| CSS md5 | `0980a236…` | `0980a236…` |
+
+The content-hashed filenames are also unchanged, which is the same statement
+put more strongly: Rolldown produced identical bytes. The shell was never in
+the bundle to begin with — `grep` for `.ns-middle-flipper` and
+`.ns-scale-wrapper` across `dist/assets` found nothing before the deletion.
+
+**So this commit bought no load time.** What it bought is that the single most
+misleading file in the codebase — 2,096 lines describing a frame that had not
+rendered for months — is no longer the first thing a reader finds.
+
+## Rendering evidence
+
+40 screenshots, taken with the shell present and again with it gone: ten routes
+× two themes (Exhibition, Dusk) × two viewports (1440×900, 412×915), animation
+frozen so a shimmer could not make two identical renders differ. **All 40 pairs
+are byte-identical.** The set includes `/dev/wide/rail`, which renders the
+Explore rail — thirty of the inherited classes on one screen.
+
+Not covered: the routes that need seeded data or credentials, which this
+environment has neither of. 22 of the 63 tier-3 specs skip for the same reason,
+as they did before this prompt.
+
+## Still owed — BG-P29
+
+The four rules in `src/styles/shared-ns.css` are on hardcoded
+`rgba(255,255,255,…)` inherited from a shell that only ever rendered on a dark
+ground. They do not read `<html data-theme>` and so do not change between
+Exhibition and Dusk. BG-P17 deliberately did not touch them: it is a deletion,
+and a deletion that also repaints is a deletion nobody can bisect.
+
+- `.ns-back-btn` — `color`, `border-bottom`, and the `:hover` colour.
+- `.ns-section-label` — `color`.
+- `.ns-comment-drawer` — `border-top`, inside the `max-width: 767px` block.
+- `.ns-engagement-bar` — geometry only, no colour; nothing to repaint.
+
+The rail's stylesheet needs nothing: BG-P13 put every one of its colours on a
+token already.
