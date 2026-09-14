@@ -115,7 +115,7 @@ function Track({ pct, color }: { pct: number; color: string }) {
       style={{
         height: 5,
         borderRadius: tokens.radius.pill,
-        background: "rgba(255,255,255,0.08)",
+        background: tokens.surface.card,
         overflow: "hidden",
       }}
     >

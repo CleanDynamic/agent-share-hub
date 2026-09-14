@@ -37,12 +37,13 @@ export default function FounderMark({
         fontSize: 12.5,
         fontWeight: 700,
         letterSpacing: 0.3,
-        color: "#FFFFFF",
-        boxShadow: "0 2px 12px rgba(232,87,26,0.35)",
+        /* The measured label for an `--action` ground. White was legal on one
+           of the two orange values and on neither ground. */
+        color: tokens.brand.onOrange,
         ...style,
       }}
     >
-      <Crown size={15} color="#FFFFFF" strokeWidth={2.25} aria-hidden />
+      <Crown size={15} color={tokens.brand.onOrange} strokeWidth={2.25} aria-hidden />
       {text}
     </span>
   )

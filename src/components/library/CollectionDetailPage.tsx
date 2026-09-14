@@ -40,6 +40,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { type } from "@/lib/theme/type";
+import { categoryFill } from "@/lib/theme/category";
+import { buttonStyle, chipStyle, chipType, fieldStyle, uiTransition } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body, data as dataText, measure, tabular } from "@/lib/theme/type";
 
 export type ItemKind = "blueprint" | "blog" | "bounty" | "stage" | "block";
 
@@ -86,12 +92,20 @@ interface CollectionDetailPageProps {
   isOwnCollection: boolean;
 }
 
-const KIND_STYLES: Record<ItemKind, { label: string; color: string }> = {
-  blueprint: { label: "Blueprint", color: "rgba(59, 130, 246, 0.85)" },
-  blog: { label: "Blog", color: "rgba(168, 85, 247, 0.85)" },
-  bounty: { label: "Bounty", color: "rgba(234, 179, 8, 0.85)" },
-  stage: { label: "Stage", color: "rgba(34, 197, 94, 0.85)" },
-  block: { label: "Block", color: "rgba(236, 72, 153, 0.85)" },
+/**
+ * An item's kind, as a label plus one of the nine part categories.
+ *
+ * The five hues here were a private palette — a sixth in the codebase, and one
+ * that disagreed with `LibraryShell`'s about what colour a blueprint is. Both
+ * now resolve through `categoryFill`, so a saved item looks the same in the
+ * list it came from and in the collection it was added to.
+ */
+const KIND_STYLES: Record<ItemKind, { label: string; category: string }> = {
+  blueprint: { label: "Blueprint", category: "configuration" },
+  blog: { label: "Blog", category: "narrative" },
+  bounty: { label: "Bounty", category: "breakage" },
+  stage: { label: "Stage", category: "narrative" },
+  block: { label: "Block", category: "instruction" },
 };
 
 function formatDate(d: Date | string): string {
@@ -122,28 +136,29 @@ function ItemCard({
   item: DetailItem;
   onClick: () => void;
 }) {
-  const { label, color } = KIND_STYLES[item.kind];
+  const { label, category } = KIND_STYLES[item.kind];
+  const kind = categoryFill(category);
   return (
     <button
       onClick={onClick}
       className="text-left w-full"
       style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 12,
+        background: t.glass,
+        border: `1px solid ${t.glassBorder}`,
+        borderRadius: r.card,
         overflow: "hidden",
         cursor: "pointer",
         display: "flex",
         flexDirection: "column",
-        transition: "border-color 0.15s, background 0.15s",
+        transition: uiTransition(),
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.16)";
-        e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+        e.currentTarget.style.borderColor = t.line;
+        e.currentTarget.style.background = t.glassHi;
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-        e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+        e.currentTarget.style.borderColor = t.glassBorder;
+        e.currentTarget.style.background = t.glass;
       }}
     >
       {item.imageUrl ? (
@@ -151,7 +166,7 @@ function ItemCard({
           style={{
             width: "100%",
             aspectRatio: "16 / 10",
-            background: "rgba(255, 255, 255, 0.12)",
+            background: t.porthole,
             overflow: "hidden",
           }}
         >
@@ -169,7 +184,8 @@ function ItemCard({
           style={{
             width: "100%",
             aspectRatio: "16 / 10",
-            background: `linear-gradient(135deg, ${color}22, rgba(255,255,255,0.03))`,
+            /* The measured ground for this kind, flat. */
+            backgroundColor: kind.background,
           }}
         />
       )}
@@ -177,15 +193,15 @@ function ItemCard({
         <span
           style={{
             display: "inline-block",
-            fontFamily: "Figtree, sans-serif",
+            ...chipType,
             fontSize: 10,
-            fontWeight: 600,
             textTransform: "uppercase",
             letterSpacing: 0.6,
             padding: "2px 6px",
-            borderRadius: 4,
-            background: `${color}22`,
-            color,
+            borderRadius: r.chip,
+            /* Both halves of the pair, never one of them on another ground. */
+            backgroundColor: kind.background,
+            color: kind.color,
             marginBottom: 6,
           }}
         >
@@ -193,10 +209,10 @@ function ItemCard({
         </span>
         <div
           style={{
-            fontFamily: "Figtree, sans-serif",
+            ...body,
             fontSize: 13,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.95)",
+            color: t.text,
             lineHeight: 1.3,
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -209,9 +225,9 @@ function ItemCard({
         {item.description && (
           <div
             style={{
-              fontFamily: "Figtree, sans-serif",
+              ...body,
               fontSize: 11,
-              color: "rgba(255,255,255,0.55)",
+              color: t.text2,
               marginTop: 4,
               display: "-webkit-box",
               WebkitLineClamp: 2,
@@ -271,14 +287,19 @@ function SortableItemCard({
             top: 8,
             left: 8,
             zIndex: 10,
-            background: "rgba(0,0,0,0.55)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: 6,
+            /* THE REORDERING AFFORDANCE. It has to read as a grip against
+               whatever is behind it — a cover photograph, a tinted well, a
+               glass card — in both rooms, so it takes the glass highlight and
+               a `--line` hairline rather than a fixed black wash that
+               disappeared over a dark image and shouted over a light one. */
+            background: t.glassHi,
+            border: `1px solid ${t.line}`,
+            borderRadius: r.chip,
             padding: 4,
             cursor: "grab",
-            color: "rgba(255,255,255,0.9)",
+            color: t.text,
             display: "inline-flex",
-            transition: "opacity 0.15s",
+            transition: uiTransition(),
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -301,12 +322,12 @@ function SortableItemCard({
             <button
               onClick={(e) => e.stopPropagation()}
               style={{
-                background: "rgba(0,0,0,0.55)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: 6,
+                background: t.glassHi,
+                border: `1px solid ${t.line}`,
+                borderRadius: r.chip,
                 padding: 4,
                 cursor: "pointer",
-                color: "rgba(255,255,255,0.9)",
+                color: t.text,
                 display: "inline-flex",
               }}
             >
@@ -340,7 +361,7 @@ function SortableItemCard({
                     e.stopPropagation();
                     onItemRemove(item);
                   }}
-                  className="text-destructive focus:text-destructive"
+                  style={{ color: t.catBreakage }}
                 >
                   <Trash2 size={14} className="mr-2" />
                   Remove from collection
@@ -371,28 +392,24 @@ function FilterChip({
     <button
       onClick={onClick}
       style={{
-        fontFamily: "Figtree, sans-serif",
-        fontSize: 11,
-        fontWeight: 500,
         padding: "4px 10px",
-        borderRadius: 12,
-        border: "none",
-        cursor: "pointer",
-        background: isActive ? "rgba(232, 87, 26, 0.2)" : "rgba(255,255,255,0.05)",
-        color: isActive ? "#E8571A" : "rgba(255,255,255,0.6)",
+        ...chipStyle("outline", { selectable: true }),
+        fontSize: 11,
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
+        ...(isActive ? { borderColor: t.action, color: t.text } : {}),
       }}
     >
       <span>{label}</span>
       <span
         style={{
-          opacity: 0.7,
+          ...tabular,
           fontSize: 10,
           padding: "1px 5px",
-          borderRadius: 8,
-          background: isActive ? "rgba(232, 87, 26, 0.15)" : "rgba(255, 255, 255, 0.14)",
+          borderRadius: r.chip,
+          background: t.recess,
+          color: t.text2,
         }}
       >
         {count}
@@ -410,19 +427,19 @@ function EmptyState({ isOwn }: { isOwn: boolean }) {
         alignItems: "center",
         textAlign: "center",
         padding: "64px 24px",
-        color: "rgba(255,255,255,0.55)",
+        color: t.text2,
       }}
     >
       <div
         style={{
           width: 56,
           height: 56,
-          borderRadius: 14,
-          background: "rgba(255, 255, 255, 0.12)",
+          borderRadius: r.card,
+          background: t.recess,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "rgba(255,255,255,0.4)",
+          color: t.text2,
           marginBottom: 14,
         }}
       >
@@ -431,8 +448,7 @@ function EmptyState({ isOwn }: { isOwn: boolean }) {
       <h2
         style={{
           ...type.cardTitle,
-
-          color: "rgba(255,255,255,0.92)",
+          color: t.text,
           margin: 0,
         }}
       >
@@ -440,10 +456,12 @@ function EmptyState({ isOwn }: { isOwn: boolean }) {
       </h2>
       <p
         style={{
-          fontFamily: "Figtree, sans-serif",
+          ...body,
           fontSize: 13,
+          color: t.text2,
           margin: "8px 0 0",
           maxWidth: 420,
+          textWrap: "pretty",
         }}
       >
         {isOwn
@@ -547,9 +565,9 @@ export function CollectionDetailPage({
               background: "transparent",
               border: "none",
               cursor: "pointer",
-              fontFamily: "Figtree, sans-serif",
+              ...body,
               fontSize: 12,
-              color: "rgba(255,255,255,0.55)",
+              color: t.text2,
               padding: 0,
             }}
           >
@@ -562,12 +580,9 @@ export function CollectionDetailPage({
               <DropdownMenuTrigger asChild>
                 <button
                   style={{
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: 6,
+                    ...buttonStyle("secondary"),
                     padding: 6,
-                    cursor: "pointer",
-                    color: "rgba(255,255,255,0.85)",
+                    color: t.text2,
                     display: "inline-flex",
                   }}
                   aria-label="More actions"
@@ -580,7 +595,7 @@ export function CollectionDetailPage({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={onDelete}
-                  className="text-destructive focus:text-destructive"
+                  style={{ color: t.catBreakage }}
                 >
                   Delete collection
                 </DropdownMenuItem>
@@ -595,16 +610,15 @@ export function CollectionDetailPage({
               style={{
                 width: 10,
                 height: 10,
-                borderRadius: 999,
-                background: collection.accentColor || "rgba(255,255,255,0.4)",
+                borderRadius: r.full,
+                background: collection.accentColor || t.text2,
                 flexShrink: 0,
               }}
             />
             <h1
               style={{
                 ...type.sectionHead,
-
-                color: "rgba(255,255,255,0.95)",
+                color: t.text,
                 margin: 0,
               }}
             >
@@ -616,11 +630,11 @@ export function CollectionDetailPage({
                 alignItems: "center",
                 gap: 4,
                 padding: "3px 8px",
-                borderRadius: 999,
-                background: "rgba(255,255,255,0.05)",
-                fontFamily: "Figtree, sans-serif",
+                borderRadius: r.chip,
+                background: t.recess,
+                ...chipType,
                 fontSize: 11,
-                color: "rgba(255,255,255,0.6)",
+                color: t.text2,
               }}
             >
               {collection.isPrivate ? <Lock size={11} /> : <Globe size={11} />}
@@ -630,12 +644,16 @@ export function CollectionDetailPage({
 
           {collection.description && (
             <p
+              /* The description, capped at the theme's 68-character measure
+                 rather than at 720px: measure is a count of characters, and a
+                 pixel cap lets a 13px line run past it on a wide screen. */
               style={{
-                fontFamily: "Figtree, sans-serif",
+                ...body,
+                ...measure,
                 fontSize: 13,
-                color: "rgba(255,255,255,0.7)",
+                color: t.text,
                 margin: 0,
-                maxWidth: 720,
+                textWrap: "pretty",
               }}
             >
               {collection.description}
@@ -644,9 +662,10 @@ export function CollectionDetailPage({
 
           <div
             style={{
-              fontFamily: "Figtree, sans-serif",
+              ...dataText,
+              ...tabular,
               fontSize: 11,
-              color: "rgba(255,255,255,0.45)",
+              color: t.text2,
             }}
           >
             {collection.itemCount} item{collection.itemCount === 1 ? "" : "s"} · Created{" "}
@@ -699,14 +718,11 @@ export function CollectionDetailPage({
           <DropdownMenuTrigger asChild>
             <button
               style={{
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 6,
+                ...buttonStyle("outline"),
                 padding: "6px 10px",
-                fontFamily: "Figtree, sans-serif",
+                ...body,
                 fontSize: 12,
-                color: "rgba(255,255,255,0.7)",
-                cursor: "pointer",
+                color: t.text2,
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 6,

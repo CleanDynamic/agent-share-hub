@@ -1,20 +1,40 @@
+// The legacy portfolio card — repainted for BG-P25, not replaced.
+//
+// WHY IT SURVIVES. This renders `content_items`: the work published through the
+// previous upload editor, before builds existed. `GalleryCard` reads a build
+// record — nodes, media, a plaque, a completeness — and none of those columns
+// exist on a row this card is given, so pointing it at one would produce a card
+// with an empty everything. A creator's older work is still their work and has
+// to keep looking like it belongs on the same wall, which is what a repaint is
+// for.
+//
+// THE NINE PLACEHOLDER ACCENTS RESOLVE INTO THE NINE CATEGORIES. `TYPE_ACCENT`
+// was a private hue per content type — a second palette answering the question
+// `LEGACY_BADGE_CATEGORY` already answers, and answering it differently: a
+// Prompt File was brown here and instruction-orange on its badge two lines
+// below. Both now come from one table, so the letter in the thumbnail and the
+// badge beside it are the same colour, and a type the table does not carry
+// lands on the measured fallback pair rather than on an invented grey.
+//
+// THE CARD'S SURFACE LEAVES THE LEGACY `:root` BLOCK. `var(--surface)`,
+// `var(--border)` and `var(--border-hover)` are the old dark paint — white
+// alphas that resolve to an invisible card on the Exhibition ground. They are
+// shared with surfaces this prompt does not own, so the names stay where they
+// are and this file stops reading them.
+
 import { useNavigate } from "react-router-dom";
 import { Eye, Download, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { DIFFICULTY_LABEL_CLASS, TYPE_COLORS, displayContentType } from "@/lib/content-types";
-
-/** Accent colours per type for placeholder thumbnails */
-const TYPE_ACCENT: Record<string, string> = {
-  "Prompt File": "#8B4513",
-  "Agent Blueprint": "#7C3AED",
-  "Workflow Template": "#3B82F6",
-  "Agent Stack": "#EF4444",
-  "Model Config Guide": "#22C55E",
-  "Integration Guide": "#F59E0B",
-  "Evaluation Framework": "#EC4899",
-  "Failure Library": "#9CA3AF",
-  "AI Tools (LLMs)": "#A78BFA",
-};
+import {
+  DIFFICULTY_LABEL_CLASS,
+  LEGACY_BADGE_CATEGORY,
+  TYPE_COLORS,
+  displayContentType,
+} from "@/lib/content-types";
+import { categoryFill } from "@/lib/theme/category";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body, data as dataText, tabular, type } from "@/lib/theme/type";
 
 // BG-P05. Difficulty is not a part category and carries no colour: one
 // uncoloured mono label, defined once in @/lib/content-types.
@@ -47,7 +67,10 @@ interface PortfolioCardProps {
 
 export function PortfolioCard({ item }: PortfolioCardProps) {
   const navigate = useNavigate();
-  const accent = TYPE_ACCENT[item.content_type] || "#9999AA";
+  /* One table, both halves of the pair. The fill is the measured ground and
+     the colour is the ink that was measured against it — using one without the
+     other is a pairing nobody checked. */
+  const accent = categoryFill(LEGACY_BADGE_CATEGORY[item.content_type] ?? "");
   const typeColor = TYPE_COLORS[item.content_type] || "";
   const diffStyle = DIFFICULTY_STYLES[item.difficulty] || DIFFICULTY_STYLES.Any;
 
@@ -57,15 +80,15 @@ export function PortfolioCard({ item }: PortfolioCardProps) {
       className="flex overflow-hidden"
       data-visual-slot="feed-card"
       style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-card)',
+        background: t.glass,
+        border: `1px solid ${t.glassBorder}`,
+        borderRadius: r.card,
         marginBottom: '8px',
-        transition: 'border-color 0.15s ease',
+        transition: 'border-color 160ms cubic-bezier(.2,.6,.35,1)',
         cursor: 'pointer',
       }}
-      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = t.line)}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = t.glassBorder)}
     >
       {/* Thumbnail */}
       <div className="w-[140px] shrink-0 min-h-[120px]">
@@ -78,9 +101,11 @@ export function PortfolioCard({ item }: PortfolioCardProps) {
         ) : (
           <div
             className="w-full h-full flex items-center justify-center"
-            style={{ backgroundColor: accent + "33" }}
+            style={{ backgroundColor: accent.background }}
           >
-            <span className="text-[32px] font-bold" style={{ color: accent }}>
+            {/* The display face is legal at 32px — well above the 20px floor
+                below which Bodoni's hairlines shimmer. */}
+            <span style={{ ...type.cardTitle, fontSize: 32, color: accent.color }}>
               {(item.content_type || "?")[0]}
             </span>
           </div>
@@ -103,13 +128,21 @@ export function PortfolioCard({ item }: PortfolioCardProps) {
           </div>
 
           {/* Title */}
-          <h3 className="text-[15px] font-semibold text-foreground leading-[1.3] line-clamp-2">
+          <h3
+            className="line-clamp-2"
+            style={{ ...body, fontSize: 15, fontWeight: 600, lineHeight: 1.3, color: t.text, margin: 0 }}
+          >
             {item.title}
           </h3>
         </div>
 
         {/* Stats */}
-        <div className="flex items-center gap-3 pt-2.5 text-[13px] text-[#9999AA]">
+        {/* Counts, in the data face with tabular figures so a column of these
+            cards lines its numbers up. */}
+        <div
+          className="flex items-center gap-3 pt-2.5"
+          style={{ ...dataText, ...tabular, fontSize: 13, color: t.text2 }}
+        >
           <span className="flex items-center gap-1">
             <Eye className="h-3 w-3" /> {formatCount(item.view_count)}
           </span>
@@ -118,7 +151,9 @@ export function PortfolioCard({ item }: PortfolioCardProps) {
           </span>
           {item.rating_count > 0 && (
             <span className="flex items-center gap-1">
-              <Star className="h-3.5 w-3.5 fill-[#8B4513] text-[#8B4513]" />
+              {/* A lamp, not amber type — and the figure beside it stays
+                  `--text2` like every other count in the row. */}
+              <Star className="h-3.5 w-3.5" style={{ fill: t.lit, color: t.lit }} />
               <span>{item.avg_rating.toFixed(1)}</span>
             </span>
           )}

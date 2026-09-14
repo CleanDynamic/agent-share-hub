@@ -42,9 +42,15 @@ export default function ShowcaseStrip({ items }: ShowcaseStripProps) {
               className="flex items-end"
               style={{
                 height: 104,
+                /* `--porthole` BEHIND a picture, `--recess` when there is
+                   none. A two-stop ramp struck from an accent plus a dark-room
+                   grey had no second stop that was legal on Exhibition; a
+                   porthole slab with nothing in it is legal and still wrong,
+                   because an empty well is the darkest object in a light room
+                   and there are three of them in a row. */
                 background: item.imageUrl
-                  ? `center / cover no-repeat url(${item.imageUrl})`
-                  : `linear-gradient(135deg, ${accent}40 0%, rgba(82,82,100,0.4) 100%)`,
+                  ? `${tokens.surface.well} center / cover no-repeat url(${item.imageUrl})`
+                  : tokens.surface.input,
                 borderBottom: `2px solid ${accent}`,
               }}
             />

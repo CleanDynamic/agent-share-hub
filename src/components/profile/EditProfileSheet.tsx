@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { t } from "@/lib/theme/tokens";
+import { body } from "@/lib/theme/type";
 
 interface EditProfileSheetProps {
   open: boolean;
@@ -110,7 +112,7 @@ export function EditProfileSheet({
               maxLength={280}
               placeholder="A short line about yourself"
             />
-            <p className="text-xs text-muted-foreground">
+            <p style={{ ...body, fontSize: 12, color: t.text2 }}>
               {customBio.length}/280
             </p>
           </div>

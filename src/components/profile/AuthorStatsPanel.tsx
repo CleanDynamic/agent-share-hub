@@ -1,4 +1,32 @@
+// The author-stats panel — repainted for BG-P25.
+//
+// THESE ARE COUNTS, NOT CLAIMS, and the repaint is where that distinction gets
+// made visible. The two figures a reader should trust — reproductions received
+// and rebuilds of this creator's work — are up in the header on the plaque's
+// own treatment; everything in this panel is a number the creator's own
+// activity produced, so it takes `--text` on a `--recess` ground and no accent
+// at all. A 22px figure in full ink was competing with the header for the eye
+// and winning, which is the opposite of what `visual-hierarchy` asks of a
+// profile: the entry point is the work.
+//
+// THE BLOCK-TYPE FINGERPRINT RESOLVES INTO THE NINE CATEGORY HUES. Its colours
+// used to come from `getAuthorStats`, as `hsl(var(--muted-foreground))` and
+// friends — the shadcn palette, which is a second colour system this one
+// replaces. The bar now maps each block type through `categoryFill`, which is
+// the sanctioned resolver: a type the registry does not know lands on the
+// measured fallback pair rather than on an invented grey.
+//
+// THE TWO COMPETITION TAGS lose their teal and sienna and take the evidence
+// pair and the recess fill respectively — a bounty contributor is somebody
+// other people's bounties accepted, and a bounty creator is a role rather than
+// an endorsement.
+
 import { useState } from "react";
+import { categoryColour, categoryFill } from "@/lib/theme/category";
+import { chipType } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body, data as dataText, tabular } from "@/lib/theme/type";
 
 interface BlockTypeData {
   type: string;
@@ -32,34 +60,28 @@ function CompetitionTag({
   label: string;
   tone: "contributor" | "creator";
 }) {
+  const evidence = categoryFill("evidence");
   const palette =
     tone === "contributor"
-      ? {
-          bg: "rgba(31,122,109,0.12)",
-          color: "#2EC4B6",
-          border: "rgba(46,196,182,0.30)",
-        }
-      : {
-          bg: "rgba(232,87,26,0.12)",
-          color: "#E8571A",
-          border: "rgba(232,87,26,0.30)",
-        };
+      ? { bg: evidence.background, color: t.text }
+      : { bg: t.recess, color: t.text2 };
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
         gap: 4,
-        fontFamily: "Figtree, sans-serif",
+        ...chipType,
         fontSize: 10,
-        fontWeight: 600,
         textTransform: "uppercase",
         letterSpacing: "0.06em",
         padding: "2px 8px",
-        borderRadius: 100,
-        background: palette.bg,
+        /* The chip step. 100 was a capsule, and the shape language that had
+           capsules in it was dropped by decision. */
+        borderRadius: r.chip,
+        backgroundColor: palette.bg,
         color: palette.color,
-        border: `0.5px solid ${palette.border}`,
+        border: `1px solid ${t.line}`,
       }}
     >
       🏆 {label}
@@ -89,33 +111,36 @@ function StatCell({
   return (
     <div className="flex flex-col gap-1">
       <span
+        /* The eyebrow: 12-mono is the role the type scale names for one. */
         style={{
-          fontFamily: "Figtree, sans-serif",
+          ...chipType,
           fontSize: "10px",
-          fontWeight: 600,
           textTransform: "uppercase",
           letterSpacing: "0.08em",
-          color: "rgba(255,255,255,0.40)",
+          color: t.text2,
         }}
       >
         {label}
       </span>
       <span
+        /* Tabular, because five of these sit in a grid and their digits have to
+           line up as they land. 20px rather than 22 and weight 500 rather than
+           700: it is a figure in a supporting panel, not a headline. */
         style={{
-          fontFamily: "Figtree, sans-serif",
-          fontSize: "22px",
-          fontWeight: 700,
-          color: "rgba(255,255,255,0.95)",
+          ...dataText,
+          ...tabular,
+          fontSize: "20px",
+          fontWeight: 500,
+          color: t.text,
         }}
       >
         {value}
       </span>
       <span
         style={{
-          fontFamily: "Figtree, sans-serif",
+          ...body,
           fontSize: "11px",
-          fontWeight: 400,
-          color: "rgba(255,255,255,0.40)",
+          color: t.text2,
         }}
       >
         {subtitle}
@@ -139,12 +164,11 @@ function BlockTypeBar({
     <div>
       <span
         style={{
-          fontFamily: "Figtree, sans-serif",
+          ...chipType,
           fontSize: "10px",
-          fontWeight: 600,
           textTransform: "uppercase",
           letterSpacing: "0.08em",
-          color: "rgba(255,255,255,0.40)",
+          color: t.text2,
           display: "block",
           marginBottom: "8px",
         }}
@@ -154,16 +178,18 @@ function BlockTypeBar({
 
       <div
         className="relative flex w-full overflow-hidden"
-        style={{ height: "10px", borderRadius: "5px" }}
+        style={{ height: "10px", borderRadius: r.chip }}
       >
         {distribution.map((block, index) => (
           <div
             key={block.type}
             className="relative h-full cursor-pointer transition-opacity"
+            /* The category hue, resolved rather than carried: the `color` on
+               the row is shadcn's palette and this system does not read it. */
             style={{
               width: `${block.percentage}%`,
-              backgroundColor: block.color,
-              opacity: 0.65,
+              backgroundColor: categoryColour(block.type),
+              opacity: 0.9,
             }}
             onMouseEnter={() => setHoveredIndex(index)}
             onMouseLeave={() => setHoveredIndex(null)}
@@ -172,12 +198,13 @@ function BlockTypeBar({
               <div
                 className="absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap px-2 py-1"
                 style={{
-                  backgroundColor: "rgba(0,0,0,0.9)",
-                  borderRadius: "4px",
-                  fontFamily: "Figtree, sans-serif",
+                  backgroundColor: t.recess,
+                  border: `1px solid ${t.line}`,
+                  borderRadius: r.chip,
+                  ...body,
                   fontSize: "11px",
                   fontWeight: 500,
-                  color: "rgba(255,255,255,0.90)",
+                  color: t.text,
                 }}
               >
                 {block.type.charAt(0).toUpperCase() + block.type.slice(1)} blocks · {block.percentage}% ({block.count} blocks)
@@ -194,26 +221,26 @@ function BlockTypeBar({
               style={{
                 width: "6px",
                 height: "6px",
-                borderRadius: "50%",
-                backgroundColor: block.color,
+                borderRadius: r.full,
+                backgroundColor: categoryColour(block.type),
               }}
             />
             <span
               style={{
-                fontFamily: "Figtree, sans-serif",
+                ...body,
                 fontSize: "10px",
                 fontWeight: 500,
-                color: "rgba(255,255,255,0.60)",
+                color: t.text,
               }}
             >
               {block.type.charAt(0).toUpperCase() + block.type.slice(1)}
             </span>
             <span
               style={{
-                fontFamily: "Figtree, sans-serif",
+                ...dataText,
+                ...tabular,
                 fontSize: "10px",
-                fontWeight: 400,
-                color: "rgba(255,255,255,0.35)",
+                color: t.text2,
               }}
             >
               {block.percentage}%
@@ -280,10 +307,11 @@ export function AuthorStatsPanel({ stats }: AuthorStatsPanelProps) {
   return (
     <div
       className="w-full"
+      /* A panel, at the panel radius, on the recess ground. */
       style={{
-        backgroundColor: "rgba(22,22,30,0.40)",
-        border: "0.5px solid rgba(255, 255, 255, 0.14)",
-        borderRadius: "10px",
+        backgroundColor: t.recess,
+        border: `1px solid ${t.line}`,
+        borderRadius: r.panel,
         padding: "18px",
         marginTop: "24px",
       }}
@@ -348,8 +376,10 @@ export function AuthorStatsPanel({ stats }: AuthorStatsPanelProps) {
         <>
           <div
             style={{
+              /* 0.5px, untouched: `height` is structural and this prompt
+                 repaints. Only the colour moved. */
               height: "0.5px",
-              backgroundColor: "rgba(255, 255, 255, 0.12)",
+              backgroundColor: t.line,
               margin: "16px 0",
             }}
           />
@@ -365,9 +395,9 @@ export function AuthorStatsPanelSkeleton() {
     <div
       className="w-full animate-pulse"
       style={{
-        backgroundColor: "rgba(22,22,30,0.40)",
-        border: "0.5px solid rgba(255, 255, 255, 0.14)",
-        borderRadius: "10px",
+        backgroundColor: t.recess,
+        border: `1px solid ${t.line}`,
+        borderRadius: r.panel,
         padding: "18px",
         marginTop: "24px",
         height: "140px",

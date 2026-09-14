@@ -106,7 +106,14 @@ describe("Drafts — both tools in one list", () => {
 
     await waitFor(() => expect(screen.getByText("Build workspace")).toBeTruthy());
     expect(screen.getByText("Previous tool")).toBeTruthy();
-    expect(screen.getByText("60% of this shape's record filled in")).toBeTruthy();
+    /* BG-P25 task 5: the completion indicator is a plain-language line, never
+       a percentage. A build draft's list row reads headers only — no tree — so
+       the one honest thing it can say about an unfinished record is that it is
+       unfinished, and where to go and see what is missing. */
+    expect(
+      screen.getByText("Open it to see what the record still needs"),
+    ).toBeTruthy();
+    expect(screen.queryByText(/%/)).toBeNull();
   });
 
   it("opens each draft in the tool it belongs to", async () => {

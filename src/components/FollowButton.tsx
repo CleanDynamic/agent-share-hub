@@ -6,6 +6,19 @@ import { Button } from "@/components/ui/button";
 import { UserPlus, UserCheck, UserMinus, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { buttonStyle } from "@/lib/theme/controls";
+import { t } from "@/lib/theme/tokens";
+
+// The follow control on /creator/:username — BG-P25.
+//
+// NOT FOLLOWING IS THE PRIMARY, FOLLOWING IS THE SECONDARY, and that ordering
+// is the whole of this repaint. Both states used to be the same white-alpha
+// ghost on the legacy `--border` and `--legacy-text` — the old dark paint,
+// which resolves to an almost-invisible button on the Exhibition ground and
+// asks for the click exactly as loudly once you have already given it. Follow
+// is now BG-P07's primary, the same control `/profile` shows, and Following
+// steps down to the secondary treatment because the work is done. Hover on the
+// secondary says what pressing it would do, in breakage red and in words.
 
 interface FollowButtonProps {
   creatorId: string;
@@ -107,7 +120,7 @@ export function FollowButton({ creatorId, onCountChange }: FollowButtonProps) {
 
   if (loading) {
     return (
-      <Button variant="outline" size="sm" disabled className="border-secondary text-secondary">
+      <Button size="sm" disabled style={buttonStyle("secondary", { disabled: true })}>
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
       </Button>
     );
@@ -119,10 +132,10 @@ export function FollowButton({ creatorId, onCountChange }: FollowButtonProps) {
         size="sm"
         data-visual-slot="btn-secondary"
         style={{
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--r-control)',
-          color: 'var(--legacy-text)',
+          ...buttonStyle("secondary", { hovered: hovering, disabled: acting }),
+          ...(hovering && !acting
+            ? { color: t.catBreakage, borderColor: t.catBreakage }
+            : {}),
         }}
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
@@ -143,13 +156,8 @@ export function FollowButton({ creatorId, onCountChange }: FollowButtonProps) {
   return (
     <Button
       size="sm"
-      data-visual-slot="btn-secondary"
-      style={{
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--r-control)',
-        color: 'var(--legacy-text)',
-      }}
+      data-visual-slot="btn-primary"
+      style={buttonStyle("default", { disabled: acting })}
       onClick={handleClick}
       disabled={acting}
     >

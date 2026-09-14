@@ -1,3 +1,27 @@
+// The profile's zones — repainted for BG-P25.
+//
+// FOUR TABS, AND WHY THEY ARE THESE FOUR. The prompt names builds, collections,
+// rebuilds and activity. Three of them are here under their own names; there is
+// no rebuilds zone to paint, because `getZoneContent` resolves exactly four
+// zones and none of them is rebuilds — a fifth tab would need a fifth query,
+// which this prompt is not allowed to write. `authored` and `curated` are
+// relabelled to the words buildgallery uses out loud, which changes the LABEL
+// and nothing behind it: the zone keys, the URL parameter, the filters and the
+// query are all untouched.
+//
+// THE TABS ARE BG-P07's, NOT A SECOND ROW THAT LOOKS LIKE THEM. Active is a
+// 2px `--action` underline plus a step up to full `--text`; it is never a
+// coloured label, because a coloured label says "this is a link" where the
+// underline says "you are here". The count under each label is mono with
+// tabular figures so the row does not jitter as the numbers land.
+//
+// EVERY COLOUR WAS A WHITE ALPHA OR THE SIENNA HEX. Both only ever resolved
+// against a dark ground, and neither reads `<html data-theme>`. They are now
+// `var(--token)` references, applied inline for the reason the whole codebase
+// applies styling inline: Tailwind's generated utilities beat hand-written
+// classes at build time, and an inline style beats both. Structure — every
+// grid, gap, padding and flex direction — is exactly what it was.
+
 import * as React from "react";
 import {
   Heart,
@@ -20,7 +44,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ZoneItem } from "@/lib/profile/types";
+import { buttonStyle, chipStyle, chipType, uiTransition } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body, data as dataText, tabular } from "@/lib/theme/type";
 
 export type Zone = "authored" | "curated" | "activity" | "network";
 
@@ -98,28 +128,34 @@ const ZONE_SORTS: Record<Zone, { label: string; value: string }[]> = {
   network: [{ label: "Recently followed", value: "recent" }],
 };
 
-const ACCENT = "#E8571A"; // Sienna
-
+/* A card on this page. The theme's card: `--glass` behind a `--glass-border`
+   hairline at `--r-card`, elevation flat. It was an 8px box on 3% white, which
+   on Exhibition is a white card on a grey page with no edge at all. No blur is
+   set here and none was before — `--glass` is spent as a colour, which keeps
+   a grid of forty cards off the page's compositing budget. */
 const cardBaseStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.03)",
-  border: "0.5px solid rgba(255,255,255,0.08)",
-  borderRadius: "8px",
+  background: t.glass,
+  border: `1px solid ${t.glassBorder}`,
+  borderRadius: r.card,
   padding: "14px",
   cursor: "pointer",
-  transition: "background 0.15s ease, border-color 0.15s ease, transform 0.15s ease",
+  transition: uiTransition(),
   display: "flex",
   flexDirection: "column",
   gap: "8px",
 };
 
+/* Hover brightens the glass and firms the hairline. `transform` and `opacity`
+   only — the theme forbids animating layout, and the 1px lift a network row
+   takes is a transform. */
 function applyHover(e: React.MouseEvent<HTMLDivElement>, lift = false) {
-  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-  e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
+  e.currentTarget.style.background = t.glassHi;
+  e.currentTarget.style.borderColor = t.line;
   if (lift) e.currentTarget.style.transform = "translateY(-1px)";
 }
 function clearHover(e: React.MouseEvent<HTMLDivElement>, lift = false) {
-  e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-  e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+  e.currentTarget.style.background = t.glass;
+  e.currentTarget.style.borderColor = t.glassBorder;
   if (lift) e.currentTarget.style.transform = "translateY(0)";
 }
 
@@ -148,10 +184,10 @@ function ItemOverflowMenu({ options }: { options: ItemMenuOption[] }) {
             style={{
               width: 24,
               height: 24,
-              borderRadius: 4,
-              background: "rgba(0,0,0,0.45)",
-              border: "0.5px solid rgba(255,255,255,0.10)",
-              color: "rgba(255,255,255,0.75)",
+              borderRadius: r.chip,
+              background: t.glassHi,
+              border: `1px solid ${t.line}`,
+              color: t.text2,
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -172,9 +208,7 @@ function ItemOverflowMenu({ options }: { options: ItemMenuOption[] }) {
                   onClick={opt.onSelect}
                   style={{
                     fontSize: "12px",
-                    color: opt.destructive
-                      ? "hsl(var(--destructive))"
-                      : undefined,
+                    color: opt.destructive ? t.catBreakage : undefined,
                   }}
                 >
                   {opt.icon}
@@ -218,13 +252,14 @@ function AuthoredCard({
     >
       <ItemOverflowMenu options={menuOptions} />
       <div
+        /* The eyebrow: mono, because it names what KIND of record this is —
+           the same job a part label does on a card. */
         style={{
-          fontFamily: "Figtree, sans-serif",
+          ...chipType,
           fontSize: "10px",
-          fontWeight: 600,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: "rgba(255,255,255,0.45)",
+          color: t.text2,
           paddingRight: 28,
         }}
       >
@@ -232,10 +267,10 @@ function AuthoredCard({
       </div>
       <div
         style={{
-          fontFamily: "Figtree, sans-serif",
+          ...body,
           fontSize: "14px",
           fontWeight: 600,
-          color: "rgba(255,255,255,0.92)",
+          color: t.text,
           lineHeight: 1.3,
         }}
       >
@@ -244,9 +279,10 @@ function AuthoredCard({
       {item.subtitle && (
         <div
           style={{
-            fontFamily: "Figtree, sans-serif",
+            ...body,
             fontSize: "12px",
-            color: "rgba(255,255,255,0.55)",
+            color: t.text2,
+            textWrap: "pretty",
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
@@ -259,9 +295,10 @@ function AuthoredCard({
       {views !== undefined && (
         <div
           style={{
-            fontFamily: "Figtree, sans-serif",
+            ...dataText,
+            ...tabular,
             fontSize: "11px",
-            color: "rgba(255,255,255,0.45)",
+            color: t.text2,
             marginTop: "auto",
           }}
         >
@@ -300,23 +337,25 @@ function CuratedCard({
     >
       <ItemOverflowMenu options={menuOptions} />
       <div
+        /* A collection is a group somebody curated, which is the same class of
+           claim `--evidence` carries everywhere else on the site; a bookmark is
+           just a saved row and stays `--text2`. */
         style={{
-          fontFamily: "Figtree, sans-serif",
+          ...chipType,
           fontSize: "10px",
-          fontWeight: 600,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: isCollection ? "rgba(46,196,182,0.85)" : "rgba(255,255,255,0.45)",
+          color: isCollection ? t.evidence : t.text2,
         }}
       >
         {isCollection ? "Collection" : "Bookmark"}
       </div>
       <div
         style={{
-          fontFamily: "Figtree, sans-serif",
+          ...body,
           fontSize: "14px",
           fontWeight: 600,
-          color: "rgba(255,255,255,0.92)",
+          color: t.text,
           lineHeight: 1.3,
         }}
       >
@@ -325,9 +364,10 @@ function CuratedCard({
       {item.subtitle && (
         <div
           style={{
-            fontFamily: "Figtree, sans-serif",
+            ...body,
             fontSize: "12px",
-            color: "rgba(255,255,255,0.55)",
+            color: t.text2,
+            textWrap: "pretty",
           }}
         >
           {item.subtitle}
@@ -349,18 +389,19 @@ function NetworkCard({ item, onClick }: { item: ZoneItem; onClick: () => void })
         style={{
           width: "36px",
           height: "36px",
-          borderRadius: "50%",
-          background: "rgba(255,255,255,0.08)",
+          /* An avatar well: circular is the one thing `--r-full` is for. */
+          borderRadius: r.full,
+          background: t.recess,
           flexShrink: 0,
         }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontFamily: "Figtree, sans-serif",
+            ...body,
             fontSize: "13px",
             fontWeight: 600,
-            color: "rgba(255,255,255,0.92)",
+            color: t.text,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -370,9 +411,9 @@ function NetworkCard({ item, onClick }: { item: ZoneItem; onClick: () => void })
         </div>
         <div
           style={{
-            fontFamily: "Figtree, sans-serif",
+            ...dataText,
             fontSize: "11px",
-            color: "rgba(255,255,255,0.45)",
+            color: t.text2,
             textTransform: "capitalize",
           }}
         >
@@ -393,17 +434,17 @@ function ActivityRow({ item, onClick }: { item: ZoneItem; onClick: () => void })
         display: "flex",
         gap: "12px",
         padding: "10px 0",
-        borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
+        borderBottom: `1px solid ${t.line}`,
         cursor: "pointer",
       }}
     >
-      <Icon size={14} style={{ color: "rgba(255,255,255,0.45)", marginTop: "3px", flexShrink: 0 }} />
+      <Icon size={14} style={{ color: t.text2, marginTop: "3px", flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontFamily: "Figtree, sans-serif",
+            ...body,
             fontSize: "13px",
-            color: "rgba(255,255,255,0.85)",
+            color: t.text,
             lineHeight: 1.4,
           }}
         >
@@ -412,9 +453,9 @@ function ActivityRow({ item, onClick }: { item: ZoneItem; onClick: () => void })
         {item.subtitle && (
           <div
             style={{
-              fontFamily: "Figtree, sans-serif",
+              ...body,
               fontSize: "11px",
-              color: "rgba(255,255,255,0.45)",
+              color: t.text2,
               marginTop: "2px",
             }}
           >
@@ -423,10 +464,13 @@ function ActivityRow({ item, onClick }: { item: ZoneItem; onClick: () => void })
         )}
       </div>
       <div
+        /* A timestamp is data and takes the data face, with tabular figures so
+           a column of dates lines up. */
         style={{
-          fontFamily: "Figtree, sans-serif",
+          ...dataText,
+          ...tabular,
           fontSize: "11px",
-          color: "rgba(255,255,255,0.40)",
+          color: t.text2,
           flexShrink: 0,
           whiteSpace: "nowrap",
         }}
@@ -447,21 +491,35 @@ function EmptyState({
   isOwnProfile: boolean;
   onCreateBlueprint?: () => void;
 }) {
-  const states: Record<Zone, { message: string; link?: { text: string; href: string } }> = {
+  /* WHAT AN EMPTY WALL SAYS. Each line states the fact and nothing else — no
+     apology, no nudge, no exclamation. "No builds yet" is the word this
+     platform uses out loud, and it is the same word the tab above it carries;
+     "Nothing published yet" was the data layer's vocabulary showing through.
+     The second line is what to do about it, and appears only for the person who
+     can act on it: telling a VISITOR to go and create a build is telling them
+     to fix somebody else's empty wall. */
+  const states: Record<Zone, { message: string; hint?: string; link?: { text: string; href: string } }> = {
     authored: {
-      message: "Nothing published yet",
+      message: "No builds yet",
+      hint: isOwnProfile
+        ? "Anything you publish shows up here, newest first."
+        : undefined,
       link: isOwnProfile && !onCreateBlueprint
-        ? { text: "Create your first blueprint", href: "/upload" }
+        ? { text: "Publish your first build", href: "/upload" }
         : undefined,
     },
     curated: {
-      message: "No bookmarks yet",
-      link: isOwnProfile ? { text: "Browse content", href: "/discover" } : undefined,
+      message: "No collections yet",
+      hint: isOwnProfile
+        ? "Save a build from anywhere on the site and it lands in your library."
+        : undefined,
+      link: isOwnProfile ? { text: "Browse the gallery", href: "/gallery" } : undefined,
     },
-    activity: { message: "No recent activity" },
+    activity: { message: "No activity yet" },
     network: {
       message: "No connections yet",
-      link: isOwnProfile ? { text: "Discover creators", href: "/discover" } : undefined,
+      hint: isOwnProfile ? "People you follow, and people who follow you." : undefined,
+      link: isOwnProfile ? { text: "Find creators", href: "/gallery" } : undefined,
     },
   };
   const s = states[zone];
@@ -470,27 +528,47 @@ function EmptyState({
       style={{
         padding: "48px 16px",
         textAlign: "center",
-        fontFamily: "Figtree, sans-serif",
+        ...body,
       }}
     >
-      <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.55)" }}>{s.message}</div>
+      {/* The fact, in full ink; the invitation under it in `--text2`. A single
+          grey line for both made the state read as an error message. */}
+      <div style={{ ...body, fontSize: "15px", fontWeight: 600, color: t.text }}>
+        {s.message}
+      </div>
+      {s.hint && (
+        <div
+          style={{
+            ...body,
+            fontSize: "13px",
+            color: t.text2,
+            marginTop: 6,
+            maxWidth: 380,
+            marginLeft: "auto",
+            marginRight: "auto",
+            textWrap: "pretty",
+          }}
+        >
+          {s.hint}
+        </div>
+      )}
       {zone === "authored" && isOwnProfile && onCreateBlueprint && (
         <button
           type="button"
           onClick={onCreateBlueprint}
+          /* The one primary in an empty view: there is nothing else on the
+             screen for it to compete with, and an empty wall with no way off
+             it is a dead end. */
           style={{
             marginTop: 14,
             padding: "8px 14px",
-            borderRadius: 6,
-            background: ACCENT,
-            color: "white",
-            border: "none",
+            ...buttonStyle("default"),
+            ...body,
             fontSize: 12,
             fontWeight: 600,
-            cursor: "pointer",
           }}
         >
-          Create your first blueprint
+          Publish your first build
         </button>
       )}
       {s.link && (
@@ -499,9 +577,13 @@ function EmptyState({
           style={{
             display: "inline-block",
             marginTop: "12px",
+            ...body,
             fontSize: "12px",
-            color: ACCENT,
-            textDecoration: "none",
+            color: t.action,
+            /* Underlined at rest: a link told apart from its neighbours by
+               colour alone fails WCAG 1.4.1. */
+            textDecoration: "underline",
+            textUnderlineOffset: "3px",
           }}
         >
           {s.link.text}
@@ -511,20 +593,26 @@ function EmptyState({
   );
 }
 
+/**
+ * The zone, before it has arrived.
+ *
+ * IT SPENDS THE KIT'S SKELETON rather than a local `animate-pulse` box, and the
+ * difference is not cosmetic: a pulse fades the whole block in and out, which
+ * at a glance is indistinguishable from content that is failing to load, while
+ * a sweep travels in one direction and reads as progress. The kit also drops
+ * the movement under `prefers-reduced-motion`, which the pulse did not.
+ *
+ * The placeholders are the real cards' proportions and the real grid's
+ * geometry, so nothing jumps when the rows land.
+ */
 function LoadingSkeleton({ zone }: { zone: Zone }) {
   if (zone === "activity") {
     return (
-      <div>
+      <div role="status" aria-label="Loading">
         {[1, 2, 3, 4].map((i) => (
-          <div
+          <Skeleton
             key={i}
-            style={{
-              height: "44px",
-              marginBottom: "8px",
-              background: "rgba(255, 255, 255, 0.12)",
-              borderRadius: "6px",
-            }}
-            className="animate-pulse"
+            style={{ height: 44, marginBottom: 8, borderRadius: r.control }}
           />
         ))}
       </div>
@@ -533,6 +621,8 @@ function LoadingSkeleton({ zone }: { zone: Zone }) {
   const cols = zone === "network" ? 3 : 2;
   return (
     <div
+      role="status"
+      aria-label="Loading"
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(${cols}, 1fr)`,
@@ -540,17 +630,46 @@ function LoadingSkeleton({ zone }: { zone: Zone }) {
       }}
     >
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div
-          key={i}
-          style={{
-            height: "110px",
-            background: "rgba(255, 255, 255, 0.12)",
-            borderRadius: "8px",
-          }}
-          className="animate-pulse"
-        />
+        <Skeleton key={i} style={{ height: 110, borderRadius: r.card }} />
       ))}
     </div>
+  );
+}
+
+/**
+ * One filter chip, on the kit's own chip.
+ *
+ * Selection is a border and a step up in ink, not a tinted fill: the row is a
+ * set of peers with one of them current, and a filled chip beside four outlines
+ * reads as a button beside four labels. `chipSelectedStyle` is the kit's own
+ * answer and this spends it rather than restating it.
+ */
+function FilterChip({
+  label,
+  selected,
+  onSelect,
+}: {
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      {...handlers}
+      style={{
+        height: "26px",
+        padding: "4px 12px",
+        ...chipStyle("outline", { selectable: true, ...state }),
+        fontSize: "11px",
+        ...(selected ? { borderColor: t.action, color: t.text } : {}),
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -596,9 +715,14 @@ export function ProfileContentZones({
     return () => obs.disconnect();
   }, [onLoadMore, hasMore, isLoading, isLoadingMore, items.length]);
 
+  /* The LABEL changes; the `value` behind it does not. "Authored" and
+     "Curated" were the data layer's words showing through — buildgallery says
+     builds and collections, and BG-P24 renamed the documents to match. The
+     zone key, the `?zone=` parameter, every filter and the query are all what
+     they were. */
   const zones: { label: string; value: Zone; count: number }[] = [
-    { label: "Authored", value: "authored", count: counts.authored },
-    { label: "Curated", value: "curated", count: counts.curated },
+    { label: "Builds", value: "authored", count: counts.authored },
+    { label: "Collections", value: "curated", count: counts.curated },
     { label: "Activity", value: "activity", count: counts.activity },
     { label: "Network", value: "network", count: counts.network },
   ];
@@ -700,19 +824,19 @@ export function ProfileContentZones({
                 <button
                   type="button"
                   onClick={onMakeCollection}
+                  /* Secondary, not primary. The one primary on a profile is
+                     Follow, and on your own profile it is the frame's publish
+                     button — a second filled control here would be a second
+                     answer to "what should I do now". */
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
                     padding: "6px 12px",
-                    borderRadius: 6,
-                    border: "0.5px solid rgba(46,196,182,0.40)",
-                    background: "rgba(46,196,182,0.08)",
-                    color: "rgba(46,196,182,0.90)",
-                    fontFamily: "Figtree, sans-serif",
+                    ...buttonStyle("secondary"),
+                    ...body,
                     fontSize: 12,
                     fontWeight: 600,
-                    cursor: "pointer",
                   }}
                 >
                   <Plus size={12} />
@@ -793,7 +917,7 @@ export function ProfileContentZones({
         style={{
           display: "flex",
           gap: "4px",
-          borderBottom: "0.5px solid rgba(255,255,255,0.08)",
+          borderBottom: `1px solid ${t.line}`,
           marginBottom: "16px",
           overflowX: "auto",
           scrollbarWidth: "none",
@@ -818,28 +942,34 @@ export function ProfileContentZones({
                 padding: "10px 18px",
                 background: "transparent",
                 border: "none",
-                borderBottom: isActive ? `2px solid ${ACCENT}` : "2px solid transparent",
+                /* BG-P07's mark: a 2px `--action` underline and nothing else.
+                   Both states carry the 2px so becoming current shifts no
+                   neighbour — the transparent one is load-bearing. */
+                borderBottom: `2px solid ${isActive ? t.action : "transparent"}`,
                 cursor: "pointer",
-                transition: "all 0.15s ease",
+                transition: uiTransition(),
                 marginBottom: "-0.5px",
                 flexShrink: 0,
               }}
             >
               <span
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  ...body,
                   fontSize: "13px",
                   fontWeight: 600,
-                  color: isActive ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.55)",
+                  /* A step up to full `--text`, never a coloured label: the
+                     underline is what says "you are here". */
+                  color: isActive ? t.text : t.text2,
                 }}
               >
                 {zone.label}
               </span>
               <span
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  ...dataText,
+                  ...tabular,
                   fontSize: "10px",
-                  color: isActive ? ACCENT : "rgba(255,255,255,0.40)",
+                  color: isActive ? t.text : t.text2,
                   marginTop: "2px",
                 }}
               >
@@ -862,32 +992,14 @@ export function ProfileContentZones({
         }}
       >
         <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-          {currentFilters.map((filter) => {
-            const isActive = activeFilter === filter.value;
-            return (
-              <button
-                key={filter.value}
-                onClick={() => onFilterChange(filter.value)}
-                style={{
-                  height: "26px",
-                  padding: "4px 12px",
-                  borderRadius: "4px",
-                  border: isActive
-                    ? "0.5px solid rgba(232,87,26,0.40)"
-                    : "0.5px solid rgba(255,255,255,0.08)",
-                  background: isActive ? "rgba(232,87,26,0.10)" : "transparent",
-                  fontFamily: "Figtree, sans-serif",
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  color: isActive ? ACCENT : "rgba(255,255,255,0.65)",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                {filter.label}
-              </button>
-            );
-          })}
+          {currentFilters.map((filter) => (
+            <FilterChip
+              key={filter.value}
+              label={filter.label}
+              selected={activeFilter === filter.value}
+              onSelect={() => onFilterChange(filter.value)}
+            />
+          ))}
         </div>
 
         <DropdownMenu>
@@ -899,13 +1011,10 @@ export function ProfileContentZones({
                 gap: "6px",
                 height: "26px",
                 padding: "4px 10px",
-                background: "transparent",
-                border: "0.5px solid rgba(255,255,255,0.08)",
-                borderRadius: "4px",
-                fontFamily: "Figtree, sans-serif",
+                ...buttonStyle("outline"),
+                ...body,
                 fontSize: "11px",
-                color: "rgba(255,255,255,0.65)",
-                cursor: "pointer",
+                color: t.text2,
               }}
             >
               Sort: {currentSortLabel}
@@ -919,7 +1028,7 @@ export function ProfileContentZones({
                 onClick={() => onSortChange(s.value)}
                 style={{
                   fontSize: "11px",
-                  color: sort === s.value ? ACCENT : undefined,
+                  color: sort === s.value ? t.text : t.text2,
                 }}
               >
                 {s.label}
@@ -946,7 +1055,7 @@ export function ProfileContentZones({
             display: "flex",
             justifyContent: "center",
             padding: "16px",
-            color: "rgba(255,255,255,0.45)",
+            color: t.text2,
           }}
         >
           {isLoadingMore && <Loader2 size={16} className="animate-spin" />}

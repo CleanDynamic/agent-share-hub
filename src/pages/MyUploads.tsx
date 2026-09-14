@@ -14,6 +14,11 @@ import { Plus, Star, StarHalf, RefreshCw, X } from "lucide-react";
 import { PublishUpdateModal } from "@/components/PublishUpdateModal";
 import { useToast } from "@/hooks/use-toast";
 import { useDraftCount } from "@/hooks/useDraftCount";
+import { categoryFill } from "@/lib/theme/category";
+import { chipType } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body, data as dataText, tabular, type } from "@/lib/theme/type";
 
 function roundedStars(avg: number, count: number): number {
   if (count === 0) return 0;
@@ -31,22 +36,44 @@ function roundedStars(avg: number, count: number): number {
 function TinyStars({ value }: { value: number }) {
   const stars = [];
   for (let i = 1; i <= 5; i++) {
-    if (i <= Math.floor(value)) stars.push(<Star key={i} className="h-2.5 w-2.5 fill-primary text-primary" />);
-    else if (i - 0.5 === value) stars.push(<StarHalf key={i} className="h-2.5 w-2.5 fill-primary text-primary" />);
-    else stars.push(<Star key={i} className="h-2.5 w-2.5 text-muted-foreground/30" />);
+    if (i <= Math.floor(value)) stars.push(<Star key={i} className="h-2.5 w-2.5" style={{ fill: t.lit, color: t.lit }} />);
+    else if (i - 0.5 === value) stars.push(<StarHalf key={i} className="h-2.5 w-2.5" style={{ fill: t.lit, color: t.lit }} />);
+    else stars.push(<Star key={i} className="h-2.5 w-2.5" style={{ color: t.line }} />);
   }
   return <span className="inline-flex gap-0.5">{stars}</span>;
 }
 
+/**
+ * A review outcome, as three tokens rather than three Tailwind hues.
+ *
+ * Approved is `--evidence` — somebody other than the creator looked and said
+ * yes, which is the claim that token names. Rejected is `--cat-breakage`.
+ * Pending is neither: it is not a warning and not a fault, it is a queue
+ * position, so it takes the neutral recess like any other uncoloured label.
+ */
 function statusBadge(status: string) {
-  switch (status) {
-    case "approved":
-      return <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px]">Approved</Badge>;
-    case "rejected":
-      return <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-[10px]">Rejected</Badge>;
-    default:
-      return <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px]">Pending</Badge>;
-  }
+  const evidence = categoryFill("evidence");
+  const breakage = categoryFill("breakage");
+  const paint =
+    status === "approved"
+      ? { label: "Approved", ...evidence }
+      : status === "rejected"
+        ? { label: "Rejected", ...breakage }
+        : { label: "Pending", background: t.recess, color: t.text2 };
+  return (
+    <Badge
+      style={{
+        ...chipType,
+        fontSize: 10,
+        borderRadius: r.chip,
+        backgroundColor: paint.background,
+        color: paint.color,
+        borderColor: "transparent",
+      }}
+    >
+      {paint.label}
+    </Badge>
+  );
 }
 
 export default function MyUploads() {
@@ -131,38 +158,56 @@ export default function MyUploads() {
       <SeoHead title="My Uploads — buildgallery.ai" description="Manage your uploaded content." path="/my-uploads" noIndex />
       <div className="mx-auto max-w-5xl">
         {/* Drafts indicator */}
+        {/* Unfinished drafts are a NOTE, not a warning. The amber-on-amber
+            panel this was read as an error on a page that had none; it takes
+            the recess ground every other inset panel on the site uses, and
+            the count goes in the data face. */}
         {draftDisplay && (
-          <div className="mb-4 rounded-xl border px-4 py-3 flex items-center justify-between" style={{ backgroundColor: "#1A1500", borderColor: "#BA7517" }}>
-            <p className="text-sm" style={{ color: "#EF9F27" }}>
+          <div className="mb-4 border px-4 py-3 flex items-center justify-between" style={{ backgroundColor: t.recess, borderColor: t.line, borderRadius: r.panel }}>
+            <p style={{ ...dataText, ...tabular, fontSize: 13, color: t.text }}>
               {draftDisplay} draft{draftCount > 1 ? "s" : ""} in progress
             </p>
-            <button onClick={() => navigate("/drafts")} className="text-xs hover:underline" style={{ color: "#EF9F27" }}>
+            <button onClick={() => navigate("/drafts")} style={{ ...body, fontSize: 12, background: "transparent", border: "none", cursor: "pointer", color: t.action, textDecoration: "underline", textUnderlineOffset: "3px" }}>
               View drafts →
             </button>
           </div>
         )}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-foreground">My uploads</h1>
+          <h1 style={{ ...type.sectionHead, fontSize: 30, color: t.text, margin: 0 }}>My uploads</h1>
           <Button size="sm" className="min-h-[44px]" asChild>
             <Link to="/upload"><Plus className="h-4 w-4 mr-1.5" /> Upload new</Link>
           </Button>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-0 border-b border-border mb-6">
-          {(["content", "projects"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                tab === t
-                  ? "text-foreground border-primary"
-                  : "text-muted-foreground border-transparent hover:text-foreground"
-              }`}
-            >
-              {t === "content" ? "Content" : "Projects"}
-            </button>
-          ))}
+        {/* BG-P07's tab: a 2px `--action` underline and a step up to full
+            `--text`, the same mark /profile and /creator now carry. */}
+        <div className="flex gap-0 mb-6" style={{ borderBottom: `1px solid ${t.line}` }}>
+          {(["content", "projects"] as const).map((key) => {
+            const active = tab === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                data-state={active ? "active" : "inactive"}
+                aria-current={active ? "page" : undefined}
+                className="px-4 py-2.5"
+                style={{
+                  ...body,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: `2px solid ${active ? t.action : "transparent"}`,
+                  color: active ? t.text : t.text2,
+                  cursor: "pointer",
+                  transition: "color 160ms cubic-bezier(.2,.6,.35,1)",
+                }}
+              >
+                {key === "content" ? "Content" : "Projects"}
+              </button>
+            );
+          })}
         </div>
 
         {tab === "content" ? (
@@ -177,15 +222,15 @@ export default function MyUploads() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border">
-                      <TableHead className="text-muted-foreground">Title</TableHead>
-                      <TableHead className="text-muted-foreground">Type</TableHead>
-                      <TableHead className="text-muted-foreground">Status</TableHead>
-                      <TableHead className="text-muted-foreground text-right">Rating</TableHead>
-                      <TableHead className="text-muted-foreground text-right">Views</TableHead>
-                      <TableHead className="text-muted-foreground text-right">Downloads</TableHead>
-                      <TableHead className="text-muted-foreground text-right">Date</TableHead>
-                      <TableHead className="text-muted-foreground">Version</TableHead>
-                       <TableHead className="text-muted-foreground text-right"></TableHead>
+                      <TableHead style={{ ...dataText, color: t.text2 }}>Title</TableHead>
+                      <TableHead style={{ ...dataText, color: t.text2 }}>Type</TableHead>
+                      <TableHead style={{ ...dataText, color: t.text2 }}>Status</TableHead>
+                      <TableHead className="text-right" style={{ ...dataText, color: t.text2 }}>Rating</TableHead>
+                      <TableHead className="text-right" style={{ ...dataText, color: t.text2 }}>Views</TableHead>
+                      <TableHead className="text-right" style={{ ...dataText, color: t.text2 }}>Downloads</TableHead>
+                      <TableHead className="text-right" style={{ ...dataText, color: t.text2 }}>Date</TableHead>
+                      <TableHead style={{ ...dataText, color: t.text2 }}>Version</TableHead>
+                       <TableHead className="text-right" style={{ ...dataText, color: t.text2 }}></TableHead>
                     </TableRow>
                    </TableHeader>
                    <TableBody>
@@ -194,25 +239,25 @@ export default function MyUploads() {
                       const sv = roundedStars(Number((item as any).avg_rating) || 0, rc);
                       return (
                         <TableRow key={item.id} className="border-border cursor-pointer hover:bg-accent/50" onClick={() => navigate(`/content/${item.id}`)}>
-                          <TableCell className="text-foreground font-medium text-sm">{item.title}</TableCell>
-                          <TableCell className="text-muted-foreground text-xs">{item.content_type}</TableCell>
+                          <TableCell style={{ ...body, fontSize: 14, fontWeight: 500, color: t.text }}>{item.title}</TableCell>
+                          <TableCell style={{ ...dataText, fontSize: 12, color: t.text2 }}>{item.content_type}</TableCell>
                           <TableCell>{statusBadge(item.status)}</TableCell>
                           <TableCell className="text-right">
                             {rc > 0 ? (
                               <div className="flex items-center justify-end gap-1">
                                 <TinyStars value={sv} />
-                                <span className="text-[10px] text-muted-foreground">({rc})</span>
+                                <span style={{ ...dataText, ...tabular, fontSize: 10, color: t.text2 }}>({rc})</span>
                               </div>
                             ) : (
-                              <span className="text-[10px] text-muted-foreground">—</span>
+                              <span style={{ ...dataText, ...tabular, fontSize: 10, color: t.text2 }}>—</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-sm text-right">{(item as any).view_count ?? 0}</TableCell>
-                          <TableCell className="text-muted-foreground text-sm text-right">{item.download_count}</TableCell>
-                          <TableCell className="text-muted-foreground text-xs text-right">
+                          <TableCell className="text-right" style={{ ...dataText, ...tabular, fontSize: 13, color: t.text2 }}>{(item as any).view_count ?? 0}</TableCell>
+                          <TableCell className="text-right" style={{ ...dataText, ...tabular, fontSize: 13, color: t.text2 }}>{item.download_count}</TableCell>
+                          <TableCell className="text-right" style={{ ...dataText, ...tabular, fontSize: 12, color: t.text2 }}>
                             {new Date(item.created_at).toLocaleDateString()}
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-xs">
+                          <TableCell style={{ ...dataText, fontSize: 12, color: t.text2 }}>
                             v{(item as any).current_version || "1.0"}
                           </TableCell>
                           <TableCell className="text-right">
@@ -227,7 +272,7 @@ export default function MyUploads() {
                                       version: (item as any).current_version || "1.0",
                                     });
                                   }}
-                                  className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                                  className="hover:underline flex items-center gap-1" style={{ ...body, fontSize: 11, background: "transparent", border: "none", padding: 0, cursor: "pointer", color: t.action }}
                                 >
                                   <RefreshCw className="h-3 w-3" /> Publish update
                                 </button>
@@ -248,10 +293,10 @@ export default function MyUploads() {
                               <div className="mt-2 space-y-1">
                                 {(pendingInvites ?? []).filter((inv: any) => inv.content_id === item.id).map((inv: any) => (
                                   <div key={inv.id} className="flex items-center justify-end gap-2 text-[11px]">
-                                    <span className="text-muted-foreground">@{inv.profiles?.username || inv.profiles?.display_name}</span>
+                                    <span style={{ ...dataText, color: t.text2 }}>@{inv.profiles?.username || inv.profiles?.display_name}</span>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); withdrawInvite(inv.id); }}
-                                      className="text-destructive hover:underline flex items-center gap-0.5"
+                                      className="hover:underline flex items-center gap-0.5" style={{ ...body, fontSize: 12, background: "transparent", border: "none", padding: 0, cursor: "pointer", color: t.catBreakage }}
                                     >
                                       <X className="h-3 w-3" /> Withdraw
                                     </button>
@@ -273,13 +318,13 @@ export default function MyUploads() {
                   <div
                     key={item.id}
                     onClick={() => navigate(`/content/${item.id}`)}
-                    className="border border-border rounded-xl p-4 bg-card cursor-pointer hover:border-primary/30 transition-colors space-y-2"
+                    className="p-4 cursor-pointer space-y-2" style={{ border: `1px solid ${t.glassBorder}`, borderRadius: r.card, background: t.glass }}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold text-foreground line-clamp-2">{item.title}</p>
+                      <p className="line-clamp-2" style={{ ...body, fontSize: 14, fontWeight: 600, color: t.text }}>{item.title}</p>
                       {statusBadge(item.status)}
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-4" style={{ ...dataText, ...tabular, fontSize: 12, color: t.text2 }}>
                       <span>v{(item as any).current_version || "1.0"}</span>
                       <span>{item.download_count} downloads</span>
                       <span>{new Date(item.created_at).toLocaleDateString()}</span>
@@ -290,7 +335,7 @@ export default function MyUploads() {
                           e.stopPropagation();
                           setUpdateTarget({ id: item.id, title: item.title, version: (item as any).current_version || "1.0" });
                         }}
-                        className="text-[11px] text-primary flex items-center gap-1 mt-1"
+                        className="flex items-center gap-1 mt-1" style={{ ...body, fontSize: 11, background: "transparent", border: "none", padding: 0, cursor: "pointer", color: t.action, textDecoration: "underline", textUnderlineOffset: "3px" }}
                       >
                         <RefreshCw className="h-3 w-3" /> Publish update
                       </button>
@@ -301,7 +346,7 @@ export default function MyUploads() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <p className="text-sm text-muted-foreground mb-4">You haven't uploaded anything yet.</p>
+              <p className="mb-4" style={{ ...body, fontSize: 14, color: t.text2 }}>You haven't uploaded anything yet.</p>
               <Button className="min-h-[44px]" asChild>
                 <Link to="/upload">Upload your first content</Link>
               </Button>
@@ -319,32 +364,32 @@ export default function MyUploads() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border">
-                      <TableHead className="text-muted-foreground">Title</TableHead>
-                      <TableHead className="text-muted-foreground">Components</TableHead>
-                      <TableHead className="text-muted-foreground">Pricing</TableHead>
-                      <TableHead className="text-muted-foreground text-right">Views</TableHead>
-                      <TableHead className="text-muted-foreground">Status</TableHead>
-                      <TableHead className="text-muted-foreground text-right">Date</TableHead>
-                      <TableHead className="text-muted-foreground text-right"></TableHead>
+                      <TableHead style={{ ...dataText, color: t.text2 }}>Title</TableHead>
+                      <TableHead style={{ ...dataText, color: t.text2 }}>Components</TableHead>
+                      <TableHead style={{ ...dataText, color: t.text2 }}>Pricing</TableHead>
+                      <TableHead className="text-right" style={{ ...dataText, color: t.text2 }}>Views</TableHead>
+                      <TableHead style={{ ...dataText, color: t.text2 }}>Status</TableHead>
+                      <TableHead className="text-right" style={{ ...dataText, color: t.text2 }}>Date</TableHead>
+                      <TableHead className="text-right" style={{ ...dataText, color: t.text2 }}></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {projects.map((proj) => (
                       <TableRow key={proj.id} className="border-border cursor-pointer hover:bg-accent/50" onClick={() => navigate(`/project/${proj.id}`)}>
-                        <TableCell className="text-foreground font-medium text-sm">{proj.title}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{proj.componentCount}</TableCell>
+                        <TableCell style={{ ...body, fontSize: 14, fontWeight: 500, color: t.text }}>{proj.title}</TableCell>
+                        <TableCell style={{ ...dataText, ...tabular, fontSize: 13, color: t.text2 }}>{proj.componentCount}</TableCell>
                         <TableCell>
                           {(proj as any).package_price_enabled ? (
-                            <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px]">
+                            <Badge style={{ ...chipType, fontSize: 10, background: t.recess, color: t.text2, borderColor: t.line, borderRadius: r.chip }}>
                               Package: £{Number((proj as any).package_price_gbp ?? 0).toFixed(2)}
                             </Badge>
                           ) : (
-                            <span className="text-xs text-muted-foreground">Individual only</span>
+                            <span style={{ ...body, fontSize: 12, color: t.text2 }}>Individual only</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-sm text-right">{proj.view_count}</TableCell>
+                        <TableCell className="text-right" style={{ ...dataText, ...tabular, fontSize: 13, color: t.text2 }}>{proj.view_count}</TableCell>
                         <TableCell>{statusBadge(proj.status)}</TableCell>
-                        <TableCell className="text-muted-foreground text-xs text-right">
+                        <TableCell className="text-right" style={{ ...dataText, ...tabular, fontSize: 12, color: t.text2 }}>
                           {new Date(proj.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
@@ -354,7 +399,7 @@ export default function MyUploads() {
                               e.stopPropagation();
                               navigate(`/project/${proj.id}/edit`);
                             }}
-                            className="text-[11px] text-primary hover:underline"
+                            className="hover:underline" style={{ ...body, fontSize: 11, background: "transparent", border: "none", padding: 0, cursor: "pointer", color: t.action }}
                           >
                             Edit pricing
                           </button>
@@ -371,13 +416,13 @@ export default function MyUploads() {
                   <div
                     key={proj.id}
                     onClick={() => navigate(`/project/${proj.id}`)}
-                    className="border border-border rounded-xl p-4 bg-card cursor-pointer hover:border-primary/30 transition-colors space-y-2"
+                    className="p-4 cursor-pointer space-y-2" style={{ border: `1px solid ${t.glassBorder}`, borderRadius: r.card, background: t.glass }}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold text-foreground line-clamp-2">{proj.title}</p>
+                      <p className="line-clamp-2" style={{ ...body, fontSize: 14, fontWeight: 600, color: t.text }}>{proj.title}</p>
                       {statusBadge(proj.status)}
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-4" style={{ ...dataText, ...tabular, fontSize: 12, color: t.text2 }}>
                       <span>{proj.componentCount} components</span>
                       <span>
                         {(proj as any).package_price_enabled
@@ -391,7 +436,7 @@ export default function MyUploads() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <p className="text-sm text-muted-foreground mb-4">You haven't created any projects yet.</p>
+              <p className="mb-4" style={{ ...body, fontSize: 14, color: t.text2 }}>You haven't created any projects yet.</p>
               <Button className="min-h-[44px]" asChild>
                 <Link to="/upload">Create your first project</Link>
               </Button>

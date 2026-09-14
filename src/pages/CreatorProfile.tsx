@@ -11,6 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { FeedItem } from "@/components/FeedItem";
 import { PortfolioCard } from "@/components/PortfolioCard";
+import { categoryFill } from "@/lib/theme/category";
+import { buttonStyle, chipType, GLASS_BLUR, uiTransition } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body, data as dataText, measure, tabular, type as typeRole } from "@/lib/theme/type";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -65,7 +71,7 @@ const CreatorProfile = () => {
   if (!profile || error) {
     return (
       <div className="py-20 px-6 flex flex-col items-center gap-4 text-center">
-        <p className="text-sm text-muted-foreground">Creator not found.</p>
+        <p style={{ ...body, fontSize: 14, color: t.text2 }}>Creator not found.</p>
         <Button variant="outline" size="sm" asChild>
           <Link to="/browse">Back to Browse</Link>
         </Button>
@@ -240,16 +246,20 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
         {profile.banner_url ? (
           <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full" style={{ background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.4) 100%)" }} />
+          /* `--recess`, not a two-stop ramp off the shadcn primary and not
+             `--porthole` either. See the note on the same band in
+             `ProfileHeader`: a 200px full-width slab is the largest object on
+             the page, and in the media-well colour it is also the darkest. */
+          <div className="w-full h-full" style={{ background: t.recess }} />
         )}
       </div>
 
       {/* AVATAR + ACTION */}
       <div className="px-4 flex justify-between items-start">
         <div className="relative -mt-10">
-          <Avatar className="shrink-0" style={{ width: 72, height: 72, border: '3px solid rgba(8,8,12,1)' }}>
+          <Avatar className="shrink-0" style={{ width: 72, height: 72, border: `3px solid ${t.bg}` }}>
             {profile.avatar_url && <AvatarImage src={profile.avatar_url} />}
-            <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">{initials}</AvatarFallback>
+            <AvatarFallback style={{ ...typeRole.cardTitle, background: t.recess, color: t.text2 }}>{initials}</AvatarFallback>
           </Avatar>
         </div>
         <div className="mt-3 flex items-center gap-2">
@@ -265,75 +275,104 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
       {/* INFO */}
       <div className="px-4 mt-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <h1 style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{displayName}</h1>
+          <h1 style={{ ...typeRole.cardTitle, color: t.text, margin: 0 }}>{displayName}</h1>
           {profile.is_creator && (
-            <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">
+            <Badge style={{ ...chipType, fontSize: 10, background: t.recess, color: t.text2, borderColor: t.line, borderRadius: r.chip }}>
               <BadgeCheck className="h-3 w-3 mr-1" /> Creator
             </Badge>
           )}
+          {/* The top step of the rarity ladder: a `--lit` FILL with the
+              measured label on it. Amber is light here and never type. */}
           {profile.is_curator && (
-            <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">
+            <Badge style={{ ...chipType, fontSize: 10, background: t.lit, color: t.onLit, borderColor: "transparent", borderRadius: r.chip }}>
               <ShieldCheck className="h-3 w-3 mr-1" /> Curator ✦
             </Badge>
           )}
         </div>
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>@{profile.username}</p>
-        {profile.bio && <p style={{ fontSize: 13, fontWeight: 300, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5, marginTop: 8 }}>{profile.bio}</p>}
+        <p style={{ ...dataText, fontSize: 14, color: t.text2, marginTop: 2 }}>@{profile.username}</p>
+        {/* The bio, capped at the theme's 68-character measure. Weight 300 is
+            below the 400 floor the type system sets for anything under 18px. */}
+        {profile.bio && (
+          <p style={{ ...body, ...measure, fontSize: 13, color: t.text, lineHeight: 1.5, marginTop: 8, textWrap: "pretty" }}>
+            {profile.bio}
+          </p>
+        )}
         <div className="flex items-center gap-3 mt-2 flex-wrap">
           {profile.website_url && (
-            <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-secondary hover:underline">
+            <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1" style={{ ...body, fontSize: 12, color: t.action, textDecoration: "underline", textUnderlineOffset: "3px" }}>
               <ExternalLink className="h-3 w-3" /> {profile.website_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
             </a>
           )}
           {profile.twitter_handle && (
-            <a href={`https://twitter.com/${profile.twitter_handle.replace("@", "")}`} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground">
+            <a href={`https://twitter.com/${profile.twitter_handle.replace("@", "")}`} target="_blank" rel="noopener noreferrer" style={{ ...body, fontSize: 12, color: t.action, textDecoration: "underline", textUnderlineOffset: "3px" }}>
               𝕏 @{profile.twitter_handle.replace("@", "")}
             </a>
           )}
         </div>
         {joinDate && (
-          <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 mt-2" style={{ ...dataText, fontSize: 12, color: t.text2 }}>
             <Calendar className="h-3 w-3" />
             <span>Joined {format(new Date(joinDate), "MMMM yyyy")}</span>
           </div>
         )}
-        <div className="flex items-center flex-wrap" style={{ gap: 16, marginTop: 12, fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
-          <button onClick={() => setFollowingOpen(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
-            <span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{followingCount}</span> Following
+        {/* The counts. Tabular figures throughout, so a row of five numbers
+            does not shuffle as each query lands. */}
+        <div className="flex items-center flex-wrap" style={{ gap: 16, marginTop: 12, ...dataText, ...tabular, fontSize: 13, color: t.text2 }}>
+          <button onClick={() => setFollowingOpen(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', ...dataText, ...tabular, fontSize: 13, color: t.text2 }}>
+            <span style={{ fontWeight: 500, color: t.text }}>{followingCount}</span> Following
           </button>
-          <button onClick={() => setFollowersOpen(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
-            <span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{followerCount}</span> Followers
+          <button onClick={() => setFollowersOpen(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', ...dataText, ...tabular, fontSize: 13, color: t.text2 }}>
+            <span style={{ fontWeight: 500, color: t.text }}>{followerCount}</span> Followers
           </button>
-          <span><span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{contentItems?.length ?? 0}</span> posts</span>
-          <span><span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{totalDownloads.toLocaleString()}</span> downloads</span>
-          <span><span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{totalViews.toLocaleString()}</span> views</span>
+          <span><span style={{ fontWeight: 500, color: t.text }}>{contentItems?.length ?? 0}</span> posts</span>
+          <span><span style={{ fontWeight: 500, color: t.text }}>{totalDownloads.toLocaleString()}</span> downloads</span>
+          <span><span style={{ fontWeight: 500, color: t.text }}>{totalViews.toLocaleString()}</span> views</span>
           {(profile.bounties_solved ?? 0) > 0 && (
-            <span style={{ color: '#1F7A6D' }}>★ <span style={{ fontWeight: 600 }}>{profile.bounties_solved}</span> bounties solved</span>
+            /* Solved bounties is somebody else accepting your work: the
+               evidence token, not a private teal. */
+            <span style={{ color: t.evidence }}>★ <span style={{ fontWeight: 500 }}>{profile.bounties_solved}</span> bounties solved</span>
           )}
         </div>
       </div>
 
       {/* TAB BAR */}
-      <div className="flex items-center gap-1 mt-4 sticky top-0 z-10 overflow-x-auto" style={{ background: 'rgba(8,8,12,0.80)', backdropFilter: 'blur(12px)', paddingBottom: 12, borderBottom: '1px solid rgba(255, 255, 255, 0.14)', marginBottom: 20 }}>
-        {allTabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            style={{
-              fontSize: 13,
-              fontWeight: 500,
-              padding: '6px 16px',
-              borderRadius: 100,
-              border: 'none',
-              cursor: 'pointer',
-              background: activeTab === tab.key ? 'rgba(139,69,19,0.08)' : 'transparent',
-              color: activeTab === tab.key ? '#8B4513' : 'rgba(255,255,255,0.45)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* THE TAB BAR, ON BG-P07's TAB. It was a row of capsules with the
+          current one filled and its label recoloured — which made one tab read
+          as a button and the rest as text, and put a second accent on a page
+          whose only accent should be Follow. Active is now a 2px `--action`
+          underline plus a step up to full `--text`, exactly as on /profile and
+          in the feed. The strip is short and sticky, which is the one case the
+          theme lets a surface spend the single blur value on. */}
+      <div className="flex items-center gap-1 mt-4 sticky top-0 z-10 overflow-x-auto" style={{ background: t.glass, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, paddingBottom: 12, borderBottom: `1px solid ${t.line}`, marginBottom: 20 }}>
+        {allTabs.map((tab) => {
+          const active = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              data-state={active ? "active" : "inactive"}
+              aria-current={active ? "page" : undefined}
+              style={{
+                ...body,
+                fontSize: 13,
+                fontWeight: 500,
+                padding: '6px 16px',
+                borderRadius: 0,
+                border: 'none',
+                /* Both states carry the 2px, so becoming current shifts no
+                   neighbour. */
+                borderBottom: `2px solid ${active ? t.action : "transparent"}`,
+                cursor: 'pointer',
+                background: 'transparent',
+                color: active ? t.text : t.text2,
+                whiteSpace: 'nowrap',
+                transition: uiTransition(),
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* TAB CONTENT */}
@@ -343,8 +382,8 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
             <CreatorPostsTab items={contentItems} />
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <FileText className="h-10 w-10 text-muted-foreground mb-4" />
-              <p className="text-sm text-muted-foreground">{displayName} hasn't published anything yet.</p>
+              <FileText className="h-10 w-10 mb-4" style={{ color: t.text2 }} />
+              <p style={{ ...body, fontSize: 14, color: t.text2 }}>{displayName} hasn't published anything yet.</p>
             </div>
           )
         )}
@@ -354,15 +393,15 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
               {replies.map((reply: any) => {
                 const content = reply.content_items;
                 return (
-                  <div key={reply.id} className="px-4 py-3 border-b border-border cursor-pointer hover:bg-[hsl(0_0%_100%/0.03)] transition-colors" onClick={() => content && navigate(`/content/${content.id}`)}>
+                  <div key={reply.id} className="px-4 py-3 cursor-pointer" style={{ borderBottom: `1px solid ${t.line}`, transition: uiTransition() }} onClick={() => content && navigate(`/content/${content.id}`)}>
                     {content && (
-                      <p className="text-xs text-muted-foreground mb-1">
+                      <p className="mb-1" style={{ ...dataText, fontSize: 12, color: t.text2 }}>
                         Replied to <Badge variant="outline" className="text-[10px] font-medium">{content.content_type}</Badge>{" "}
-                        <span className="text-secondary">{content.title}</span>
+                        <span style={{ color: t.action }}>{content.title}</span>
                       </p>
                     )}
-                    <p className="text-sm text-foreground">{reply.text}</p>
-                    <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                    <p style={{ ...body, fontSize: 14, color: t.text }}>{reply.text}</p>
+                    <div className="flex items-center gap-3 mt-1.5" style={{ ...dataText, ...tabular, fontSize: 12, color: t.text2 }}>
                       <span>{timeAgo(reply.created_at)}</span>
                       {reply.like_count > 0 && <span className="inline-flex items-center gap-1"><Heart className="h-3 w-3" /> {reply.like_count}</span>}
                     </div>
@@ -372,8 +411,8 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <MessageSquare className="h-10 w-10 text-muted-foreground mb-4" />
-              <p className="text-sm text-muted-foreground">No replies yet.</p>
+              <MessageSquare className="h-10 w-10 mb-4" style={{ color: t.text2 }} />
+              <p style={{ ...body, fontSize: 14, color: t.text2 }}>No replies yet.</p>
             </div>
           )
         )}
@@ -388,8 +427,8 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <ImageIcon className="h-10 w-10 text-muted-foreground mb-4" />
-              <p className="text-sm text-muted-foreground">No media posts yet.</p>
+              <ImageIcon className="h-10 w-10 mb-4" style={{ color: t.text2 }} />
+              <p style={{ ...body, fontSize: 14, color: t.text2 }}>No media posts yet.</p>
             </div>
           )
         )}
@@ -398,8 +437,8 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
             <div>{likedItems.map((item: any) => <FeedItem key={item.id} item={item} context="profile" navState={{ from: "profile", name: displayName }} />)}</div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <Heart className="h-10 w-10 text-muted-foreground mb-4" />
-              <p className="text-sm text-muted-foreground">No liked posts yet.</p>
+              <Heart className="h-10 w-10 mb-4" style={{ color: t.text2 }} />
+              <p style={{ ...body, fontSize: 14, color: t.text2 }}>No liked posts yet.</p>
             </div>
           )
         )}
@@ -407,9 +446,9 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
           <div className="p-4 space-y-3">
             {collections.map((col: any) => (
               <button key={col.id} onClick={() => navigate(`/collections/${col.slug || col.id}`)} className="w-full text-left rounded-xl border border-border bg-card p-4 hover:brightness-110 transition-colors">
-                <p className="text-sm font-semibold text-foreground">{col.title}</p>
-                {col.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{col.description}</p>}
-                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                <p style={{ ...body, fontSize: 14, fontWeight: 600, color: t.text }}>{col.title}</p>
+                {col.description && <p className="mt-1 line-clamp-2" style={{ ...body, fontSize: 12, color: t.text2 }}>{col.description}</p>}
+                <div className="flex items-center gap-3 mt-2" style={{ ...dataText, ...tabular, fontSize: 12, color: t.text2 }}>
                   <span>{col.item_count} items</span>
                   <span>{col.follower_count} followers</span>
                 </div>
@@ -422,7 +461,7 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
             <div>{bountyItems.map((item: any) => <FeedItem key={item.id} item={item} context="profile" navState={{ from: "profile", name: displayName }} />)}</div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <p className="text-sm text-muted-foreground">No bounties posted yet.</p>
+              <p style={{ ...body, fontSize: 14, color: t.text2 }}>No bounties posted yet.</p>
             </div>
           )
         )}
@@ -434,17 +473,31 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
                 return (
                   <Link key={resp.id} to={`/content/${resp.bounty_content_id}?tab=responses`} className="block rounded-xl border border-green-500/30 bg-card p-4 hover:brightness-110 transition-colors">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-bold text-green-400 px-2 py-0.5 rounded-full bg-green-500/15">✓ Solution</span>
+                      <span
+                        /* An accepted solution is the evidence claim: somebody
+                           else ran it and said it worked. The measured pair,
+                           at the chip radius — green is not in this palette. */
+                        style={{
+                          ...chipType,
+                          fontSize: 10,
+                          padding: "2px 8px",
+                          borderRadius: r.chip,
+                          backgroundColor: categoryFill("evidence").background,
+                          color: t.text,
+                        }}
+                      >
+                        ✓ Solution
+                      </span>
                     </div>
-                    <p className="text-sm font-semibold text-foreground">{bounty?.title || "Unknown bounty"}</p>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{resp.how_it_fixes}</p>
+                    <p style={{ ...body, fontSize: 14, fontWeight: 600, color: t.text }}>{bounty?.title || "Unknown bounty"}</p>
+                    <p className="mt-1 line-clamp-2" style={{ ...body, fontSize: 12, color: t.text2 }}>{resp.how_it_fixes}</p>
                   </Link>
                 );
               })}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <p className="text-sm text-muted-foreground">No solved bounties yet.</p>
+              <p style={{ ...body, fontSize: 14, color: t.text2 }}>No solved bounties yet.</p>
             </div>
           )
         )}
@@ -478,7 +531,10 @@ function FollowListModal({ open, onClose, userId, mode }: { open: boolean; onClo
       <DialogContent
         className="sm:max-w-sm"
         data-visual-slot="modal-surface"
-        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+        /* The dialog surface, from the theme rather than a near-black hex and
+           the legacy border name: on Exhibition a near-black sheet is a dark
+           rectangle in a lit room. */
+        style={{ background: t.glass, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid ${t.glassBorder}`, borderRadius: r.panel }}
       >
         <DialogHeader>
           <DialogTitle>{mode === "followers" ? "Followers" : "Following"}</DialogTitle>
@@ -488,16 +544,16 @@ function FollowListModal({ open, onClose, userId, mode }: { open: boolean; onClo
             <Link key={u.id} to={`/creator/${u.username}`} onClick={onClose} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-accent/60 transition-colors">
               <Avatar className="h-9 w-9">
                 {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{(u.display_name || u.username || "?").slice(0, 2).toUpperCase()}</AvatarFallback>
+                <AvatarFallback style={{ ...chipType, background: t.recess, color: t.text2 }}>{(u.display_name || u.username || "?").slice(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-foreground truncate">{u.display_name || u.username}</p>
-                <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
+                <p className="truncate" style={{ ...body, fontSize: 14, fontWeight: 600, color: t.text, margin: 0 }}>{u.display_name || u.username}</p>
+                <p className="truncate" style={{ ...dataText, fontSize: 12, color: t.text2, margin: 0 }}>@{u.username}</p>
               </div>
               <FollowButton creatorId={u.id} />
             </Link>
           )) : (
-            <p className="text-sm text-muted-foreground text-center py-8">{mode === "followers" ? "No followers yet." : "Not following anyone yet."}</p>
+            <p className="text-center py-8" style={{ ...body, fontSize: 14, color: t.text2 }}>{mode === "followers" ? "No followers yet." : "Not following anyone yet."}</p>
           )}
         </div>
       </DialogContent>
@@ -541,13 +597,28 @@ function CreatorPostsTab({ items }: { items: any[] }) {
           <button
             key={o.value}
             onClick={() => setSort(o.value)}
-            className={`relative px-2.5 py-1 text-xs font-medium transition-colors ${
-              sort === o.value ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className="relative px-2.5 py-1"
+            style={{
+              ...body,
+              fontSize: 12,
+              fontWeight: 500,
+              background: "transparent",
+              border: "none",
+              borderRadius: 0,
+              cursor: "pointer",
+              color: sort === o.value ? t.text : t.text2,
+              transition: uiTransition(),
+            }}
           >
             {o.label}
             {sort === o.value && (
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[2px] bg-primary rounded-full" />
+              /* Absolutely positioned, so becoming current changes no
+                 measurement and shifts no neighbour. */
+              <span
+                aria-hidden
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full"
+                style={{ height: 2, background: t.action }}
+              />
             )}
           </button>
         ))}
