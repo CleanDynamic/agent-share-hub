@@ -106,7 +106,7 @@ function Chip({
         fontSize: 11,
         fontWeight: 500,
         padding: '3px 8px',
-        borderRadius: 100,
+        borderRadius: 'var(--r-chip)',
         background: selected ? 'color-mix(in srgb, var(--action) 10%, transparent)' : 'var(--recess)',
         color: selected ? 'var(--action)' : 'var(--text2)',
         border: selected ? '0.5px solid color-mix(in srgb, var(--action) 40%, transparent)' : '0.5px solid var(--line)',

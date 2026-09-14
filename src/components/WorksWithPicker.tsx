@@ -131,7 +131,7 @@ export function WorksWithPicker({ value, onChange, onSubmitToolClick }: WorksWit
               style={{
                 borderColor: "hsl(var(--primary-container))",
                 color: "hsl(var(--primary-container))",
-                background: "hsl(var(--primary-container) / 0.08)",
+                background: "color-mix(in srgb, var(--action) 8%, transparent)",
               }}
             >
               {tool}
@@ -198,13 +198,13 @@ export function WorksWithPicker({ value, onChange, onSubmitToolClick }: WorksWit
                   ? {
                       borderColor: "hsl(var(--primary-container))",
                       color: "hsl(var(--primary-container))",
-                      background: "hsl(var(--primary-container) / 0.1)",
-                      boxShadow: "0 0 8px hsl(var(--primary-container) / 0.15)",
+                      background: "color-mix(in srgb, var(--action) 10%, transparent)",
+                      boxShadow: "var(--elev-raised)",
                     }
                   : {
                       borderColor: "hsl(var(--border))",
                       color: "hsl(var(--muted-foreground))",
-                      background: "hsl(var(--card) / 0.5)",
+                      background: "var(--recess)",
                     }
               }
             >

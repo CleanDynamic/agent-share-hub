@@ -514,7 +514,7 @@ export default function ReblogComposeSheet({
             style={{
               width: 36,
               height: 4,
-              borderRadius: 9999,
+              borderRadius: 'var(--r-control)',
               background: "var(--recess)",
             }}
           />

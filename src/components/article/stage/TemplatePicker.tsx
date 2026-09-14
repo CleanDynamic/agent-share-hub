@@ -197,9 +197,9 @@ export function TemplatePicker({
       <DialogContent
         className="max-w-4xl p-0 overflow-hidden"
         style={{
-          background: 'hsl(240 20% 8% / 0.96)',
+          background: 'var(--bg)',
           backdropFilter: 'blur(20px)',
-          border: '1px solid hsl(var(--foreground) / 0.08)',
+          border: '1px solid var(--line)',
         }}
       >
         <DialogHeader className="px-6 pt-6 pb-3">

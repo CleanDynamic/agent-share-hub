@@ -88,7 +88,7 @@ export function BountyByline({
               alignItems: "center",
               gap: 4,
               padding: "4px 10px",
-              borderRadius: 100,
+              borderRadius: 'var(--r-chip)',
               background: "color-mix(in srgb, var(--evidence) 10%, transparent)",
               border: "0.5px solid color-mix(in srgb, var(--evidence) 25%, transparent)",
               color: "var(--evidence)",

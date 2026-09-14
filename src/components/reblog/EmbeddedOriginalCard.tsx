@@ -63,7 +63,7 @@ function PostTypePill({ postType }: { postType: EmbeddedOriginalCardPost["postTy
         color,
         backgroundColor: bg,
         padding: "2px 6px",
-        borderRadius: "100px",
+        borderRadius: 'var(--r-chip)',
         lineHeight: "14px",
         whiteSpace: "nowrap",
       }}

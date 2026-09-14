@@ -176,7 +176,7 @@ export default function Search() {
           display: 'flex', alignItems: 'center', gap: 8,
           background: 'var(--recess)',
           border: '1px solid var(--line)',
-          borderRadius: 9999, padding: '8px 14px',
+          borderRadius: 'var(--r-control)', padding: '8px 14px',
         }}>
           <span style={{ fontSize: 13,
             color: 'var(--text2)' }}>🔍</span>

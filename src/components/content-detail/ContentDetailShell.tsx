@@ -564,7 +564,7 @@ export function ContentDetailShell({
                 color: isFollowing ? "var(--text2)" : "var(--action)",
                 backgroundColor: isFollowing ? "var(--recess)" : "color-mix(in srgb, var(--action) 14%, transparent)",
                 border: "none",
-                borderRadius: 100,
+                borderRadius: 'var(--r-control)',
                 padding: "6px 14px",
                 cursor: "pointer",
               }}
@@ -714,7 +714,7 @@ export function ContentDetailShell({
                   color: isFollowing ? "var(--text2)" : "var(--action)",
                   backgroundColor: isFollowing ? "var(--recess)" : "color-mix(in srgb, var(--action) 14%, transparent)",
                   border: "none",
-                  borderRadius: 100,
+                  borderRadius: 'var(--r-control)',
                   padding: "6px 14px",
                   cursor: "pointer",
                 }}

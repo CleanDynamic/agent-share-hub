@@ -144,7 +144,7 @@ export function CanvasHeader({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '3px 12px', borderRadius: 9999,
+            padding: '3px 12px', borderRadius: 'var(--r-chip)',
             background: tc.bg, border: `1px solid ${tc.border}`,
           }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: tc.color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
@@ -157,7 +157,7 @@ export function CanvasHeader({
             )}
           </div>
           {difficulty && (
-            <div style={{ padding: '3px 10px', borderRadius: 9999, background: 'var(--recess)', border: '1px solid var(--line)', fontSize: 10, fontWeight: 500, color: 'var(--text2)' }}>
+            <div style={{ padding: '3px 10px', borderRadius: 'var(--r-chip)', background: 'var(--recess)', border: '1px solid var(--line)', fontSize: 10, fontWeight: 500, color: 'var(--text2)' }}>
               {difficulty}
             </div>
           )}
@@ -187,7 +187,7 @@ export function CanvasHeader({
           onClick={onPostTypeClick}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '3px 12px', borderRadius: 9999,
+            padding: '3px 12px', borderRadius: 'var(--r-chip)',
             background: tc.bg, border: `1px solid ${tc.border}`,
             cursor: 'pointer',
           }}
@@ -204,7 +204,7 @@ export function CanvasHeader({
         </div>
 
         {difficulty && (
-          <div style={{ padding: '3px 10px', borderRadius: 9999, background: 'var(--recess)', border: '1px solid var(--line)', fontSize: 10, fontWeight: 500, color: 'var(--text2)' }}>
+          <div style={{ padding: '3px 10px', borderRadius: 'var(--r-chip)', background: 'var(--recess)', border: '1px solid var(--line)', fontSize: 10, fontWeight: 500, color: 'var(--text2)' }}>
             {difficulty}
           </div>
         )}
@@ -213,7 +213,7 @@ export function CanvasHeader({
         {!coverPreview ? (
           <label style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
-            padding: '3px 10px', borderRadius: 9999, fontSize: 10,
+            padding: '3px 10px', borderRadius: 'var(--r-chip)', fontSize: 10,
             cursor: 'pointer', background: 'var(--recess)',
             border: '1px dashed var(--line)',
             color: 'var(--text2)',

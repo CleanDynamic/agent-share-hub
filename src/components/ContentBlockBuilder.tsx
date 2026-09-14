@@ -856,7 +856,7 @@ const ChipInput = ({ values, onChange, placeholder }: {
         {values.map(v => (
           <span key={v} style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
-            padding: '2px 8px', borderRadius: 9999, fontSize: 12,
+            padding: '2px 8px', borderRadius: 'var(--r-chip)', fontSize: 12,
             background: 'var(--recess)',
             border: '1px solid var(--line)', color: 'var(--text)',
           }}>
@@ -979,7 +979,7 @@ const PromptBlockEditor = ({ block, update, index }: {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {detected.map(v => (
               <span key={v} style={{
-                padding: '2px 10px', borderRadius: 9999, fontSize: 12,
+                padding: '2px 10px', borderRadius: 'var(--r-chip)', fontSize: 12,
                 background: 'color-mix(in srgb, var(--evidence) 15%, transparent)',
                 border: '1px solid color-mix(in srgb, var(--evidence) 30%, transparent)',
                 color: 'var(--evidence)', fontFamily: 'Courier New, monospace',

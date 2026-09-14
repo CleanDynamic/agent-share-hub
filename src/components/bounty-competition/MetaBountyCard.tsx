@@ -65,7 +65,7 @@ export function MetaBountyCard({
           letterSpacing: "0.06em",
           textTransform: "uppercase",
           padding: "2px 8px",
-          borderRadius: "100px",
+          borderRadius: 'var(--r-chip)',
         }}
       >
         META

@@ -696,7 +696,7 @@ export function CanvasShell(props: CanvasShellProps) {
       display: 'flex',
       height: '100%',
       overflow: 'hidden',
-      background: 'hsl(var(--glass-panel-surface) / 0.04)',
+      background: 'var(--glass-2)',
       position: 'relative',
     }}>
 

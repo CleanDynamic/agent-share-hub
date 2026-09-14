@@ -281,7 +281,7 @@ export function StageThumbnail({
             flexShrink: 0,
             padding: '2px 8px',
             background: 'var(--recess)',
-            borderRadius: 100,
+            borderRadius: 'var(--r-chip)',
             fontFamily: 'Figtree, sans-serif',
             fontSize: 11,
             fontWeight: 500,

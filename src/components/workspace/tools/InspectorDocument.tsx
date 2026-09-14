@@ -353,7 +353,7 @@ export function InspectorDocument({
                 top: "calc(100% + 4px)",
                 left: 0,
                 right: 0,
-                backgroundColor: 'hsl(var(--background) / 0.98)',
+                backgroundColor: 'var(--bg)',
                 border: "1px solid var(--line)",
                 borderRadius: PANEL_INPUT_RADIUS,
                 padding: 4,

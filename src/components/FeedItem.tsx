@@ -109,7 +109,7 @@ function ToolsUseCasesRow({ item }: { item: any }) {
   const displayTopics = topics.slice(0, 2);
   const extraTopics = topics.length - 2;
 
-  const pillClass = "text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]";
+  const pillClass = "text-[10px] px-1.5 py-0.5 rounded bg-[var(--cat-data)] text-[var(--text2)]";
   const topicPillClass = "text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary/70";
 
   return (
@@ -303,7 +303,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
           <>
             <span className="text-[10px] text-muted-foreground/60">🖥️ Local</span>
             {(item as any).model_parameters && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--cat-data)] text-[var(--text2)]">
                 {(item as any).model_parameters}
               </span>
             )}

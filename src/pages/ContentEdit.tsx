@@ -316,7 +316,7 @@ export default function ContentEditPage() {
 
       <div className="mx-auto max-w-4xl py-6 sm:py-10 px-4 sm:px-6">
         {/* Changelog note field — always visible */}
-        <div className="rounded-xl border border-border bg-card p-4 mb-6 border-l-2" style={{ borderLeftColor: "hsl(36, 77%, 41%)" }}>
+        <div className="rounded-xl border border-border bg-card p-4 mb-6 border-l-2" style={{ borderLeftColor: "var(--action)" }}>
           <p className="text-sm font-semibold text-foreground mb-2">What changed in this update?</p>
           <div className="relative mb-2">
             <Textarea
@@ -577,7 +577,7 @@ export default function ContentEditPage() {
             </div>
 
             {/* Changelog note preview */}
-            <div className="rounded-lg border p-3" style={{ borderColor: "hsl(36, 77%, 41%)", backgroundColor: "hsl(36, 77%, 41%, 0.05)" }}>
+            <div className="rounded-lg border p-3" style={{ borderColor: "var(--action)", backgroundColor: "color-mix(in srgb, var(--action) 5%, transparent)" }}>
               {changeNote.trim() ? (
                 <p className="text-sm text-foreground">{changeNote}</p>
               ) : (

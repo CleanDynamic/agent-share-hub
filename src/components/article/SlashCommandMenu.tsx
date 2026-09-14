@@ -273,12 +273,12 @@ export function SlashCommandMenu({
         top: position.y,
         width: 320,
         maxHeight: 400,
-        background: 'hsl(240 20% 8% / 0.95)',
+        background: 'var(--bg)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid hsl(var(--foreground) / 0.08)',
+        border: '1px solid var(--line)',
         borderRadius: 12,
-        boxShadow: '0 12px 32px hsl(240 10% 2% / 0.6)',
+        boxShadow: '0 12px 32px var(--line)',
         overflow: 'hidden',
         fontFamily: 'Figtree, sans-serif',
         zIndex: 100,
@@ -287,7 +287,7 @@ export function SlashCommandMenu({
       <div
         style={{
           padding: '6px 10px',
-          borderBottom: '1px solid hsl(var(--foreground) / 0.06)',
+          borderBottom: '1px solid var(--line)',
         }}
       >
         <input
@@ -300,11 +300,11 @@ export function SlashCommandMenu({
             width: '100%',
             height: 36,
             padding: '0 10px',
-            background: 'hsl(var(--foreground) / 0.03)',
+            background: 'var(--recess)',
             border: 'none',
             borderRadius: 6,
             outline: 'none',
-            color: 'hsl(var(--foreground) / 0.9)',
+            color: 'var(--text)',
             fontSize: 13,
             fontWeight: 500,
             fontFamily: 'Figtree, sans-serif',
@@ -324,7 +324,7 @@ export function SlashCommandMenu({
             style={{
               padding: '20px 10px',
               textAlign: 'center',
-              color: 'hsl(var(--foreground) / 0.45)',
+              color: 'var(--text2)',
               fontSize: 13,
             }}
           >
@@ -339,7 +339,7 @@ export function SlashCommandMenu({
                   fontSize: 10,
                   fontWeight: 600,
                   letterSpacing: '0.08em',
-                  color: 'hsl(var(--foreground) / 0.3)',
+                  color: 'var(--text2)',
                   textTransform: 'uppercase',
                 }}
               >
@@ -367,12 +367,12 @@ export function SlashCommandMenu({
                       margin: '0 6px',
                       borderRadius: 6,
                       cursor: 'pointer',
-                      background: isSelected ? 'hsl(var(--secondary) / 0.1)' : 'transparent',
+                      background: isSelected ? 'color-mix(in srgb, var(--action) 10%, transparent)' : 'transparent',
                       borderLeft: isSelected ? '2px solid hsl(var(--secondary))' : '2px solid transparent',
                       transition: 'background 0.1s ease',
                     }}
                     onMouseOver={(event) => {
-                      if (!isSelected) event.currentTarget.style.background = 'hsl(var(--foreground) / 0.06)';
+                      if (!isSelected) event.currentTarget.style.background = 'var(--recess)';
                     }}
                     onMouseOut={(event) => {
                       if (!isSelected) event.currentTarget.style.background = 'transparent';
@@ -388,7 +388,7 @@ export function SlashCommandMenu({
                         flexShrink: 0,
                       }}
                     >
-                      <Icon size={16} style={{ color: 'hsl(var(--foreground) / 0.6)' }} />
+                      <Icon size={16} style={{ color: 'var(--text2)' }} />
                     </div>
 
                     <div
@@ -402,7 +402,7 @@ export function SlashCommandMenu({
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: 'hsl(var(--foreground) / 0.9)',
+                          color: 'var(--text)',
                           lineHeight: 1.2,
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
@@ -415,7 +415,7 @@ export function SlashCommandMenu({
                         style={{
                           fontSize: 11,
                           fontWeight: 400,
-                          color: 'hsl(var(--foreground) / 0.45)',
+                          color: 'var(--text2)',
                           lineHeight: 1.2,
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
@@ -431,11 +431,11 @@ export function SlashCommandMenu({
                         style={{
                           marginLeft: 8,
                           padding: '1px 6px',
-                          background: 'hsl(var(--foreground) / 0.04)',
+                          background: 'var(--recess)',
                           borderRadius: 4,
                           fontSize: 10,
                           fontWeight: 500,
-                          color: 'hsl(var(--foreground) / 0.45)',
+                          color: 'var(--text2)',
                           whiteSpace: 'nowrap',
                           flexShrink: 0,
                         }}

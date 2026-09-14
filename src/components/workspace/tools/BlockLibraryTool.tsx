@@ -160,7 +160,7 @@ export function BlockLibraryTool({
                 flexShrink: 0,
                 height: 22,
                 padding: '4px 10px',
-                borderRadius: 100,
+                borderRadius: 'var(--r-chip)',
                 border: 'none',
                 background: active ? 'color-mix(in srgb, var(--action) 12%, transparent)' : 'var(--recess)',
                 color: active ? 'var(--action)' : 'var(--text2)',

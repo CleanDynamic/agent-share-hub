@@ -216,7 +216,7 @@ export function DiscussionCompose({
           onClick={onPost}
           disabled={!mainText.trim() || isOverLimit || submitting}
           style={{
-            padding: '8px 22px', borderRadius: 9999,
+            padding: '8px 22px', borderRadius: 'var(--r-control)',
             background: mainText.trim() && !isOverLimit
               ? 'var(--cat-data)' : 'color-mix(in srgb, var(--cat-data) 25%, transparent)',
             border: 'none', color: 'var(--text)',

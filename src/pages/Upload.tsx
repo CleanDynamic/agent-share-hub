@@ -2236,7 +2236,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 onClick={() => setIsProjectMode(p => !p)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '4px 12px', borderRadius: 9999, fontSize: 11,
+                  padding: '4px 12px', borderRadius: 'var(--r-chip)', fontSize: 11,
                   fontWeight: 600, cursor: 'pointer',
                   background: isProjectMode
                     ? 'color-mix(in srgb, var(--action) 15%, transparent)' : 'var(--recess)',
@@ -2314,7 +2314,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       title="Click to change post type"
                       style={{
                         display: 'inline-flex', alignItems: 'center',
-                        gap: 6, padding: '3px 12px', borderRadius: 9999,
+                        gap: 6, padding: '3px 12px', borderRadius: 'var(--r-chip)',
                         background: ptConfig.bg,
                         border: `1px solid ${ptConfig.border}`,
                         cursor: 'pointer',
@@ -2353,7 +2353,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                         onClick={cycleDiff}
                         title="Click to cycle difficulty"
                         style={{
-                          padding: '3px 12px', borderRadius: 9999,
+                          padding: '3px 12px', borderRadius: 'var(--r-chip)',
                           fontSize: 10, fontWeight: 700,
                           textTransform: 'uppercase',
                           letterSpacing: '0.08em',
@@ -2371,7 +2371,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     {!coverImagePreview ? (
                       <label style={{
                         display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '3px 12px', borderRadius: 9999, fontSize: 10,
+                        padding: '3px 12px', borderRadius: 'var(--r-chip)', fontSize: 10,
                         fontWeight: 700, textTransform: 'uppercase',
                         letterSpacing: '0.08em',
                         background: 'var(--recess)',
@@ -2410,7 +2410,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     ) : (
                       <div style={{
                         display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '2px 4px 2px 8px', borderRadius: 9999,
+                        padding: '2px 4px 2px 8px', borderRadius: 'var(--r-chip)',
                         background: 'var(--recess)',
                         border: '1px solid var(--line)',
                       }}>

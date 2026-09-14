@@ -73,7 +73,7 @@ export function CompactUploadHeader({
           <span style={{
             fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 600,
             letterSpacing: "0.06em", color: typeStyle.color, background: typeStyle.bg,
-            padding: "3px 10px", borderRadius: "100px",
+            padding: "3px 10px", borderRadius: 'var(--r-chip)',
           }}>
             {typeStyle.label}
           </span>
@@ -198,7 +198,7 @@ export function CompactUploadHeader({
             <span style={{
               fontFamily: "Figtree, sans-serif", fontSize: "9px", fontWeight: 600,
               letterSpacing: "0.06em", color: typeStyle.color, background: typeStyle.bg,
-              padding: "2px 8px", borderRadius: "100px",
+              padding: "2px 8px", borderRadius: 'var(--r-chip)',
             }}>
               {typeStyle.label}
             </span>

@@ -635,7 +635,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         {block.prompt_role && (
           <span style={{
-            padding: '2px 10px', borderRadius: 9999, fontSize: 11,
+            padding: '2px 10px', borderRadius: 'var(--r-chip)', fontSize: 11,
             fontWeight: 700, textTransform: 'uppercase',
             background: 'color-mix(in srgb, var(--action) 15%, transparent)',
             border: '1px solid color-mix(in srgb, var(--action) 30%, transparent)',
@@ -646,7 +646,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
         )}
         {block.prompt_model && (
           <span style={{
-            padding: '2px 10px', borderRadius: 9999, fontSize: 11,
+            padding: '2px 10px', borderRadius: 'var(--r-chip)', fontSize: 11,
             background: 'var(--recess)',
             border: '1px solid var(--line)',
             color: 'var(--text)',
@@ -821,7 +821,7 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
                     {step.tool && (
                       <span style={{
                         fontSize: 11, padding: '1px 8px',
-                        borderRadius: 9999,
+                        borderRadius: 'var(--r-chip)',
                         background: 'var(--recess)',
                         color: 'var(--text2)',
                       }}>
@@ -903,7 +903,7 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
       {block.code_language && (
         <div style={{ marginBottom: 8 }}>
           <span style={{
-            padding: '2px 10px', borderRadius: 9999, fontSize: 11,
+            padding: '2px 10px', borderRadius: 'var(--r-chip)', fontSize: 11,
             fontWeight: 700, textTransform: 'uppercase',
             background: 'color-mix(in srgb, var(--cat-data) 15%, transparent)',
             border: '1px solid color-mix(in srgb, var(--cat-data) 30%, transparent)',

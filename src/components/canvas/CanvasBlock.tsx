@@ -441,7 +441,7 @@ export function CanvasBlock({
                 color: 'var(--text2)',
                 background: 'var(--recess)',
                 border: '1px solid var(--line)',
-                borderRadius: 100, padding: '1px 8px',
+                borderRadius: 'var(--r-chip)', padding: '1px 8px',
               }}>
                 {typeLabel}
               </div>

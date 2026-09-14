@@ -379,7 +379,7 @@ export default function BountyUpload() {
               type="button"
               onClick={() => setStep(s => s - 1)}
               style={{
-                padding: '10px 18px', borderRadius: 9999,
+                padding: '10px 18px', borderRadius: 'var(--r-control)',
                 background: 'var(--recess)',
                 border: '1px solid var(--line)',
                 color: 'var(--text2)',
@@ -401,7 +401,7 @@ export default function BountyUpload() {
               submitting
             }
             style={{
-              flex: 1, padding: '10px 0', borderRadius: 9999,
+              flex: 1, padding: '10px 0', borderRadius: 'var(--r-control)',
               background: 'linear-gradient(135deg, var(--cat-breakage), #D97706)',
               border: 'none', color: 'var(--text)',
               fontSize: 13, fontWeight: 700, cursor: 'pointer',

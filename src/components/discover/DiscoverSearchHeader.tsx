@@ -242,7 +242,7 @@ export function DiscoverSearchHeader({
                 fontSize: 11,
                 fontWeight: 500,
                 padding: '3px 8px',
-                borderRadius: 100,
+                borderRadius: 'var(--r-chip)',
                 background: 'color-mix(in srgb, var(--action) 10%, transparent)',
                 color: 'var(--action)',
                 border: '0.5px solid color-mix(in srgb, var(--action) 20%, transparent)',

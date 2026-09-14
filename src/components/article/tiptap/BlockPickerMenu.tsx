@@ -110,10 +110,10 @@ export function BlockPickerMenu({
         width: 320,
         maxHeight: 300,
         overflowY: 'auto',
-        background: 'hsl(240 20% 8% / 0.98)',
-        border: '1px solid hsl(var(--foreground) / 0.08)',
+        background: 'var(--bg)',
+        border: '1px solid var(--line)',
         borderRadius: 10,
-        boxShadow: '0 10px 30px hsl(240 10% 2% / 0.55)',
+        boxShadow: '0 10px 30px var(--line)',
         padding: 4,
         fontFamily: 'Figtree, sans-serif',
       }}
@@ -126,7 +126,7 @@ export function BlockPickerMenu({
           fontWeight: 600,
           letterSpacing: '0.05em',
           textTransform: 'uppercase',
-          color: 'hsl(var(--foreground) / 0.5)',
+          color: 'var(--text2)',
           padding: '6px 8px 4px',
         }}
       >
@@ -137,7 +137,7 @@ export function BlockPickerMenu({
           style={{
             padding: '12px 10px',
             fontSize: 12,
-            color: 'hsl(var(--foreground) / 0.5)',
+            color: 'var(--text2)',
           }}
         >
           No blocks found
@@ -163,9 +163,9 @@ export function BlockPickerMenu({
                 borderRadius: 6,
                 border: 'none',
                 background: active
-                  ? 'hsl(var(--foreground) / 0.08)'
+                  ? 'var(--recess)'
                   : 'transparent',
-                color: 'hsl(var(--foreground) / 0.9)',
+                color: 'var(--text)',
                 fontSize: 12,
                 fontFamily: 'Figtree, sans-serif',
                 textAlign: 'left',
@@ -194,7 +194,7 @@ export function BlockPickerMenu({
               <span
                 style={{
                   fontSize: 10,
-                  color: 'hsl(var(--foreground) / 0.45)',
+                  color: 'var(--text2)',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',

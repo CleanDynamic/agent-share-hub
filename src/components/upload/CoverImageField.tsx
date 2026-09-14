@@ -321,7 +321,7 @@ export function CoverImageField({
                 background: "var(--recess)",
                 border: "0.5px solid var(--line)",
                 padding: "6px 14px",
-                borderRadius: "100px",
+                borderRadius: 'var(--r-control)',
                 cursor: "pointer",
               }}
             >
@@ -380,7 +380,7 @@ export function CoverImageField({
                 height: "22px",
                 marginLeft: "-11px",
                 marginTop: "-11px",
-                borderRadius: "100px",
+                borderRadius: 'var(--r-control)',
                 border: "1.5px solid var(--action)",
                 background: "color-mix(in srgb, var(--action) 22%, transparent)",
                 boxShadow: "0 0 0 1px rgba(0,0,0,0.45)",
@@ -409,7 +409,7 @@ export function CoverImageField({
                   background: "transparent",
                   border: "0.5px solid var(--line)",
                   padding: "6px 14px",
-                  borderRadius: "100px",
+                  borderRadius: 'var(--r-control)',
                   cursor: "pointer",
                 }}
               >
@@ -426,7 +426,7 @@ export function CoverImageField({
                   background: "var(--action)",
                   border: "none",
                   padding: "7px 14px",
-                  borderRadius: "100px",
+                  borderRadius: 'var(--r-control)',
                   cursor: "pointer",
                 }}
               >
@@ -446,7 +446,7 @@ export function CoverImageField({
               backdropFilter: "blur(14px)",
               WebkitBackdropFilter: "blur(14px)",
               border: "0.5px solid var(--line)",
-              borderRadius: "100px",
+              borderRadius: 'var(--r-chip)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -509,7 +509,7 @@ function ToolbarIconButton({
       style={{
         width: "26px",
         height: "26px",
-        borderRadius: "100px",
+        borderRadius: 'var(--r-control)',
         background: hover ? "var(--recess)" : "transparent",
         border: "none",
         cursor: "pointer",

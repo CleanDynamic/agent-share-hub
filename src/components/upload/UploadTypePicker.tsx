@@ -268,7 +268,7 @@ export function UploadTypePicker({
                 width: "36px",
                 height: "4px",
                 backgroundColor: "var(--recess)",
-                borderRadius: "9999px",
+                borderRadius: 'var(--r-control)',
               }}
             />
           </div>

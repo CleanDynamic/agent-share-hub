@@ -104,7 +104,7 @@ function ActionButton({
       style={{
         height: 40,
         padding: "8px 14px",
-        borderRadius: 100,
+        borderRadius: 'var(--r-control)',
         display: "flex",
         alignItems: "center",
         gap: 6,
@@ -217,7 +217,7 @@ export function FloatingEngagementBar({
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         border: "0.5px solid var(--line)",
-        borderRadius: 100,
+        borderRadius: 'var(--r-chip)',
         boxShadow: "var(--elev-raised)",
         padding: "4px 12px",
         display: "flex",

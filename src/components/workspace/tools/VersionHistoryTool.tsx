@@ -75,8 +75,8 @@ function Avatar({ name }: { name: string }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'hsl(var(--foreground) / 0.08)',
-        color: 'hsl(var(--foreground) / 0.72)',
+        backgroundColor: 'var(--recess)',
+        color: 'var(--text2)',
         fontSize: 8,
         fontWeight: 600,
       }}
@@ -159,8 +159,8 @@ export function VersionHistoryTool({
             alignItems: 'center',
             padding: 2,
             borderRadius: 999,
-            backgroundColor: 'hsl(var(--foreground) / 0.04)',
-            border: '0.5px solid hsl(var(--foreground) / 0.08)',
+            backgroundColor: 'var(--recess)',
+            border: '0.5px solid var(--line)',
           }}
         >
           {([
@@ -179,8 +179,8 @@ export function VersionHistoryTool({
                   border: 'none',
                   borderRadius: 999,
                   padding: '0 8px',
-                  backgroundColor: active ? 'hsl(var(--foreground) / 0.08)' : 'transparent',
-                  color: active ? 'hsl(var(--foreground) / 0.92)' : 'hsl(var(--foreground) / 0.45)',
+                  backgroundColor: active ? 'var(--recess)' : 'transparent',
+                  color: active ? 'var(--text)' : 'var(--text2)',
                   fontSize: 10,
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -217,7 +217,7 @@ export function VersionHistoryTool({
                   fontWeight: 600,
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
-                  color: 'hsl(var(--foreground) / 0.3)',
+                  color: 'var(--text2)',
                 }}
               >
                 {group}
@@ -243,7 +243,7 @@ export function VersionHistoryTool({
                         ? '2px solid hsl(var(--secondary))'
                         : '2px solid transparent',
                        backgroundColor: active
-                         ? 'hsl(var(--secondary) / 0.06)'
+                         ? 'color-mix(in srgb, var(--action) 6%, transparent)'
                          : 'transparent',
                       textAlign: 'left',
                       display: 'flex',
@@ -260,7 +260,7 @@ export function VersionHistoryTool({
                           style={{
                             fontSize: 11,
                             fontWeight: 500,
-                            color: 'hsl(var(--foreground) / 0.9)',
+                            color: 'var(--text)',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -272,7 +272,7 @@ export function VersionHistoryTool({
                           style={{
                             fontSize: 10,
                             fontWeight: 400,
-                            color: 'hsl(var(--foreground) / 0.35)',
+                            color: 'var(--text2)',
                             flexShrink: 0,
                           }}
                         >
@@ -284,7 +284,7 @@ export function VersionHistoryTool({
                         style={{
                           fontSize: 10,
                           fontWeight: 400,
-                          color: 'hsl(var(--foreground) / 0.55)',
+                          color: 'var(--text2)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -316,7 +316,7 @@ export function VersionHistoryTool({
                           border: 'none',
                           borderRadius: 4,
                           backgroundColor: 'transparent',
-                          color: 'hsl(var(--foreground) / 0.45)',
+                          color: 'var(--text2)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -338,7 +338,7 @@ export function VersionHistoryTool({
                           border: 'none',
                           borderRadius: 4,
                           backgroundColor: 'transparent',
-                          color: 'hsl(var(--foreground) / 0.45)',
+                          color: 'var(--text2)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -362,7 +362,7 @@ export function VersionHistoryTool({
             height: 48,
             minHeight: 48,
              borderTop: PANEL_DIVIDER,
-            backgroundColor: 'hsl(38 92% 50% / 0.08)',
+            backgroundColor: 'var(--action)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -370,7 +370,7 @@ export function VersionHistoryTool({
             padding: '0 10px',
           }}
         >
-          <span style={{ fontSize: 11, fontWeight: 500, color: 'hsl(38 92% 50%)' }}>
+          <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--action)' }}>
             Viewing version from {previewLabel}
           </span>
 
@@ -401,7 +401,7 @@ export function VersionHistoryTool({
                 borderRadius: 6,
                 padding: '0 8px',
                 backgroundColor: 'transparent',
-                color: 'hsl(var(--foreground) / 0.55)',
+                color: 'var(--text2)',
                 fontSize: 11,
                 fontWeight: 500,
                 cursor: 'pointer',
