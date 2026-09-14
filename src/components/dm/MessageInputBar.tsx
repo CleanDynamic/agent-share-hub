@@ -9,6 +9,10 @@ import { sendContentShareMessage } from "@/lib/messaging";
 import { queryBlueprints } from "@/lib/discover/queryBlueprints";
 import { queryStages } from "@/lib/discover/queryStages";
 import { queryBlocks } from "@/lib/discover/queryBlocks";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
+import { r } from "@/lib/theme/radius";
+import { data as dataType, tabular } from "@/lib/theme/type";
+import { uiTransition } from "@/lib/theme/controls";
 
 interface MessageInputBarProps {
   threadId: string;
@@ -334,18 +338,29 @@ export function MessageInputBar({
   // Voice preview state
   if (voiceBlob && !recording) {
     return (
-      <div className="px-3 py-2 border-t border-border flex items-center gap-3 shrink-0" style={{ backgroundColor: "#0A0A0F" }}>
-        <button onClick={cancelRecording} className="text-muted-foreground hover:text-foreground">
+      <div className="px-3 py-2 border-t border-border flex items-center gap-3 shrink-0" style={{ backgroundColor: t.bg }}>
+        <button onClick={cancelRecording} style={{ color: t.text2, transition: uiTransition() }} aria-label="Discard the recording">
           <X className="h-5 w-5" />
         </button>
         <div className="flex-1 flex items-center gap-2">
-          <span className="text-sm text-foreground">🎤 Voice message</span>
-          <span className="text-xs text-muted-foreground">{fmtDur}</span>
+          <span className="text-sm" style={{ color: t.text }}>🎤 Voice message</span>
+          <span
+            className="text-xs"
+            style={{ fontFamily: dataType.fontFamily, ...tabular, color: t.text2 }}
+          >
+            {fmtDur}
+          </span>
         </div>
         <button
           onClick={sendVoice}
           disabled={sending}
-          className="p-2 rounded-full bg-primary text-primary-foreground"
+          className="p-2"
+          style={{
+            borderRadius: r["r-control"],
+            background: t.action,
+            color: t.onAction,
+            transition: uiTransition(),
+          }}
         >
           {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </button>
@@ -356,15 +371,37 @@ export function MessageInputBar({
   // Recording state
   if (recording) {
     return (
-      <div className="px-3 py-2 border-t border-border flex items-center gap-3 shrink-0" style={{ backgroundColor: "#0A0A0F" }}>
-        <button onClick={cancelRecording} className="text-muted-foreground hover:text-foreground text-xs">
+      <div className="px-3 py-2 border-t border-border flex items-center gap-3 shrink-0" style={{ backgroundColor: t.bg }}>
+        <button onClick={cancelRecording} className="text-xs" style={{ color: t.text2, transition: uiTransition() }}>
           ← Slide to cancel
         </button>
         <div className="flex-1 flex items-center justify-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
-          <span className="text-sm text-foreground font-mono">{fmtDur}</span>
+          {/* Recording is a live state, so the dot is `--cat-breakage` — the
+              token that already means "this needs attention" — rather than
+              shadcn's destructive, which is a palette colour and not a theme
+              token. */}
+          <span
+            className="h-2 w-2 rounded-full animate-pulse"
+            data-bg-animated=""
+            style={{ background: t.catBreakage }}
+          />
+          <span
+            className="text-sm"
+            style={{ fontFamily: dataType.fontFamily, ...tabular, color: t.text }}
+          >
+            {fmtDur}
+          </span>
         </div>
-        <button onClick={stopRecording} className="p-2 rounded-full bg-destructive text-destructive-foreground">
+        <button
+          onClick={stopRecording}
+          className="p-2"
+          style={{
+            borderRadius: r["r-control"],
+            background: t.catBreakageFill,
+            color: t.catBreakage,
+            transition: uiTransition(),
+          }}
+        >
           <Square className="h-4 w-4" />
         </button>
       </div>
@@ -372,23 +409,38 @@ export function MessageInputBar({
   }
 
   return (
-    <div className="shrink-0" style={{ backgroundColor: "#0A0A0F" }}>
+    <div className="shrink-0" style={{ backgroundColor: t.bg }}>
       {/* Pending share chip */}
       {pendingShare && (
         <div className="px-3 pt-2 flex items-start">
-          <div className="flex items-center gap-2 max-w-full pr-2 pl-2 py-1.5 rounded-lg border border-white/10 bg-white/5">
-            <div className="h-6 w-6 rounded flex items-center justify-center bg-secondary/20 text-secondary shrink-0">
+          <div
+            className="flex items-center gap-2 max-w-full pr-2 pl-2 py-1.5"
+            style={{ borderRadius: r["r-chip"], border: `1px solid ${t.line}`, background: t.recess }}
+          >
+            <div
+              className="h-6 w-6 flex items-center justify-center shrink-0"
+              style={{
+                borderRadius: r["r-chip"],
+                background: tokenAlpha("action", 0.14),
+                color: t.text,
+              }}
+            >
               {pendingShare.type === "blueprint" ? <FileText className="h-3 w-3" /> : pendingShare.type === "stage" ? <Layers className="h-3 w-3" /> : <Box className="h-3 w-3" />}
             </div>
             <div className="min-w-0">
-              <div className="text-[12px] font-medium text-foreground truncate max-w-[220px]">{pendingShare.label}</div>
+              <div className="text-[12px] font-medium truncate max-w-[220px]" style={{ color: t.text }}>
+                {pendingShare.label}
+              </div>
               {pendingShare.subtitle && (
-                <div className="text-[10px] text-muted-foreground truncate max-w-[220px]">{pendingShare.subtitle}</div>
+                <div className="text-[10px] truncate max-w-[220px]" style={{ color: t.text2 }}>
+                  {pendingShare.subtitle}
+                </div>
               )}
             </div>
             <button
               onClick={() => setPendingShare(null)}
-              className="ml-1 text-muted-foreground hover:text-foreground shrink-0"
+              className="ml-1 shrink-0"
+              style={{ color: t.text2, transition: uiTransition() }}
               aria-label="Remove pending share"
             >
               <X className="h-3.5 w-3.5" />
@@ -401,10 +453,18 @@ export function MessageInputBar({
       {imagePreviewUrl && (
         <div className="px-3 pt-2 flex items-start gap-2">
           <div className="relative">
-            <img src={imagePreviewUrl} alt="" className="h-16 w-16 rounded-lg object-cover" />
+            {/* An image thumbnail takes `--r-media`, which is the token for
+                exactly this and is 10px rather than the 8px `rounded-lg` was. */}
+            <img
+              src={imagePreviewUrl}
+              alt=""
+              className="h-16 w-16 object-cover"
+              style={{ borderRadius: r["r-media"] }}
+            />
             <button
               onClick={() => { setImageFile(null); setImagePreviewUrl(null); }}
-              className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-background border border-border flex items-center justify-center"
+              className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center"
+              style={{ background: t.bg, border: `1px solid ${t.line}`, color: t.text2 }}
             >
               <X className="h-3 w-3" />
             </button>
@@ -428,21 +488,27 @@ export function MessageInputBar({
         <div className="flex items-center gap-1 shrink-0 pb-1">
           <button
             onClick={() => cameraInputRef.current?.click()}
-            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+            className="p-1"
+            style={{ color: t.text2, transition: uiTransition() }}
+            aria-label="Take a photo"
           >
             <Camera className="h-5 w-5" />
           </button>
           <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageSelect} />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+            className="p-1"
+            style={{ color: t.text2, transition: uiTransition() }}
+            aria-label="Attach an image"
           >
             <ImageIcon className="h-5 w-5" />
           </button>
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
           <button
             onClick={startRecording}
-            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+            className="p-1"
+            style={{ color: t.text2, transition: uiTransition() }}
+            aria-label="Record a voice note"
           >
             <Mic className="h-5 w-5" />
           </button>
@@ -453,7 +519,8 @@ export function MessageInputBar({
               if (pickerOpen) closePicker();
               else openPicker("");
             }}
-            className={`p-1 transition-colors ${pickerOpen ? "text-secondary" : "text-muted-foreground hover:text-foreground"}`}
+            className="p-1"
+            style={{ color: pickerOpen ? t.text : t.text2, transition: uiTransition() }}
             aria-label="Share content"
           >
             <AtSign className="h-5 w-5" />
@@ -468,12 +535,20 @@ export function MessageInputBar({
             onChange={(e) => handleTextChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={pendingShare ? "Add a note (optional)…" : "Message…"}
-            className="min-h-[36px] max-h-[120px] resize-none rounded-full bg-accent/50 border-border text-sm px-4 py-2 pr-10"
+            /* The BG-P07 textarea already paints itself — `--recess` ground,
+               `--line` border, `--r-control` corners, the kit's focus ring. The
+               three classes dropped here (`rounded-full`, `bg-accent/50`,
+               `border-border`) were overriding all of that with a pill in a
+               shadcn palette colour. Sizes and padding stay: they are
+               structural. */
+            className="min-h-[36px] max-h-[120px] resize-none text-sm px-4 py-2 pr-10"
             rows={1}
           />
           <button
             onClick={() => setShowEmoji(!showEmoji)}
-            className="absolute right-3 bottom-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="absolute right-3 bottom-2"
+            style={{ color: t.text2, transition: uiTransition() }}
+            aria-label="Insert an emoji"
           >
             <Smile className="h-4 w-4" />
           </button>
@@ -485,13 +560,32 @@ export function MessageInputBar({
             <button
               onClick={imageFile ? sendImage : sendText}
               disabled={sending}
-              className="p-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="p-2"
+              style={{
+                // The one primary action on this surface: `--action` fill with
+                // `--on-action` on it, the measured pair (5.65:1 on Exhibition,
+                // 6.35:1 on Dusk). `bg-primary` was a shadcn palette colour and
+                // carried neither room's action hue.
+                borderRadius: r["r-control"],
+                background: t.action,
+                color: t.onAction,
+                opacity: sending ? 0.6 : 1,
+                transition: uiTransition(),
+              }}
+              aria-label="Send"
             >
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </button>
           ) : (
-            <button onClick={sendHeart} className="p-2 text-primary hover:scale-110 transition-transform">
-              <Heart className="h-5 w-5 fill-primary" />
+            // Tertiary, because there is one primary per view and the send
+            // button above is it. The heart is a ghost control in `--text2`.
+            <button
+              onClick={sendHeart}
+              className="p-2"
+              style={{ color: t.text2, transition: uiTransition() }}
+              aria-label="Send a heart"
+            >
+              <Heart className="h-5 w-5" />
             </button>
           )}
         </div>

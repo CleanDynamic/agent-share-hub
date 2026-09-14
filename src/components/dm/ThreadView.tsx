@@ -18,6 +18,7 @@ import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { r } from "@/lib/theme/radius";
 import { data as dataType, tabular } from "@/lib/theme/type";
 import { prefersReducedMotion, uiTransition } from "@/lib/theme/controls";
+import { TypingIndicator } from "@/components/dm/TypingIndicator";
 
 const initials = (name: string) => (name || "?").slice(0, 2).toUpperCase();
 
@@ -125,7 +126,13 @@ function VoiceMessage({ url, duration }: { url: string; duration: number }) {
         style={{
           width: 3,
           height: h,
-          backgroundColor: filled ? "hsl(var(--secondary))" : "hsl(var(--muted-foreground) / 0.3)",
+          // BG-P26. `--evidence` is the token for a live state, and a played
+          // bar is exactly that. The bars are graphics rather than type, so
+          // they answer to the 3.0:1 UI floor: measured 4.23:1 on `--recess`
+          // and 3.83:1 on the own-message wash on Exhibition, 6.14 and 6.09 on
+          // Dusk. The unplayed bars drop to 30% of the same hue so the track
+          // reads as one object at two states, not as two colours.
+          backgroundColor: filled ? t.evidence : tokenAlpha("evidence", 0.3),
           transition: "background-color 0.1s",
         }}
       />
@@ -136,11 +143,16 @@ function VoiceMessage({ url, duration }: { url: string; duration: number }) {
 
   return (
     <div className="flex items-center gap-2" style={{ width: 220, height: 48 }} onClick={toggle}>
-      <button className="shrink-0 text-foreground">
+      <button className="shrink-0" style={{ color: t.text }}>
         {playing ? "⏸" : "▶"}
       </button>
       <div className="flex items-end gap-[2px] flex-1 h-6">{bars}</div>
-      <span className="text-[11px] text-muted-foreground shrink-0">{fmtDur}</span>
+      <span
+        className="text-[11px] shrink-0"
+        style={{ fontFamily: dataType.fontFamily, ...tabular, color: t.text2 }}
+      >
+        {fmtDur}
+      </span>
     </div>
   );
 }
@@ -455,6 +467,12 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
 
      This is presentation state and nothing else: it reads the ids the query
      already returned and opens no subscription of its own. */
+  /* No transport carries a typing signal yet; see TypingIndicator's header for
+     why BG-P26 could not add one. Kept as a named constant rather than an
+     inline `false` so the wiring point is obvious to whoever adds the
+     broadcast. */
+  const isOtherTyping = false;
+
   const seenMsgIdsRef = useRef<Set<string> | null>(null);
   const isNewMessage = (id: string) =>
     seenMsgIdsRef.current !== null && !seenMsgIdsRef.current.has(id);
@@ -1196,6 +1214,8 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
         ) : (
           messages.map((msg: any, idx: number) => renderMessage(msg, idx, messages))
         )}
+        {/* At the foot of the thread, where the next message would land. */}
+        <TypingIndicator active={isOtherTyping} who={displayName} />
         <div ref={messagesEndRef} />
       </div>
 
